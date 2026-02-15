@@ -1,0 +1,850 @@
+"use client";
+
+import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import {
+  ChevronDown,
+  X,
+  MapPin,
+  Calendar,
+  User,
+  DollarSign,
+  Plus,
+  Trash2,
+  Send,
+  Sparkles,
+  Clock,
+  AlertTriangle,
+  CreditCard,
+  Check,
+} from "lucide-react";
+import { PriorityIcon } from "./priority-icon";
+import { StatusIcon } from "./status-icon";
+import { PopoverMenu } from "./popover-menu";
+import { useToastStore } from "./action-toast";
+import { useJobsStore } from "@/lib/jobs-store";
+import { clients, team, type Client, type Priority, type JobStatus, type Job } from "@/lib/data";
+
+/* ── Types & Config ───────────────────────────────────────── */
+
+interface CreateJobModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+interface QuoteLineItem {
+  id: string;
+  description: string;
+  cost: number;
+}
+
+const priorities: { value: Priority; label: string }[] = [
+  { value: "urgent", label: "Urgent" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+  { value: "none", label: "No priority" },
+];
+
+const statuses: { value: JobStatus; label: string }[] = [
+  { value: "backlog", label: "Backlog" },
+  { value: "todo", label: "Todo" },
+  { value: "in_progress", label: "In Progress" },
+];
+
+const catalogItems = [
+  { name: "Boiler service — annual", price: 450 },
+  { name: "Boiler installation — gas", price: 3200 },
+  { name: "Hot water system inspection", price: 180 },
+  { name: "Blocked drain — CCTV & jetting", price: 680 },
+  { name: "Pipe repair — copper", price: 350 },
+  { name: "Pipe repair — PEX", price: 280 },
+  { name: "Tap replacement", price: 220 },
+  { name: "Toilet replacement", price: 480 },
+  { name: "Gas compliance certificate", price: 200 },
+  { name: "Emergency call-out surcharge", price: 110 },
+];
+
+const gradients = [
+  "from-violet-600/30 to-indigo-800/30",
+  "from-emerald-600/30 to-teal-800/30",
+  "from-amber-600/30 to-orange-800/30",
+  "from-rose-600/30 to-pink-800/30",
+  "from-blue-600/30 to-cyan-800/30",
+];
+
+function getGrad(initials: string) {
+  const c = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
+  return gradients[c % gradients.length];
+}
+
+/* ── Component ────────────────────────────────────────────── */
+
+export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
+  /* ── State ──────────────────────────────────────────────── */
+  const [clientQuery, setClientQuery] = useState("");
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<Priority>("none");
+  const [status, setStatus] = useState<JobStatus>("backlog");
+  const [assignee, setAssignee] = useState("Unassigned");
+  const [targetDate, setTargetDate] = useState("");
+  const [activePill, setActivePill] = useState<string | null>(null);
+
+  const [estimateMode, setEstimateMode] = useState(false);
+  const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [activeCatalogIdx, setActiveCatalogIdx] = useState(0);
+  const [catalogDropdownPos, setCatalogDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const [createMore, setCreateMore] = useState(false);
+
+  const clientInputRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const catalogInputRef = useRef<HTMLInputElement>(null);
+
+  const { addToast } = useToastStore();
+  const { addJob } = useJobsStore();
+
+  /* ── Derived ────────────────────────────────────────────── */
+  const filteredClients = useMemo(
+    () =>
+      clientQuery.length > 0
+        ? clients.filter(
+            (c) =>
+              c.name.toLowerCase().includes(clientQuery.toLowerCase()) ||
+              (c.address || "").toLowerCase().includes(clientQuery.toLowerCase())
+          )
+        : [],
+    [clientQuery]
+  );
+
+  const filteredCatalog = useMemo(
+    () =>
+      catalogQuery.length > 0
+        ? catalogItems.filter((ci) =>
+            ci.name.toLowerCase().includes(catalogQuery.toLowerCase())
+          )
+        : [],
+    [catalogQuery]
+  );
+
+  const quoteTotal = lineItems.reduce((sum, li) => sum + li.cost, 0);
+
+  const assigneeTeam = team.map((t) => ({
+    value: t.name,
+    label: t.name,
+    icon: (
+      <div className={`flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br text-[6px] font-bold text-zinc-300 ${getGrad(t.initials)}`}>
+        {t.initials}
+      </div>
+    ),
+  }));
+  assigneeTeam.push({ value: "Unassigned", label: "Unassigned", icon: <User size={12} className="text-zinc-600" /> });
+
+  /* Days until target date */
+  const daysUntilDue = targetDate
+    ? Math.ceil((new Date(targetDate).getTime() - Date.now()) / 86400000)
+    : null;
+
+  /* ── Catalog dropdown positioning ─────────────────────── */
+  const updateCatalogPos = useCallback(() => {
+    if (catalogInputRef.current) {
+      const rect = catalogInputRef.current.getBoundingClientRect();
+      setCatalogDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left - 16,
+        width: rect.width + 32,
+      });
+    }
+  }, []);
+
+  /* ── Reset on open ──────────────────────────────────────── */
+  useEffect(() => {
+    if (open) {
+      setClientQuery("");
+      setSelectedClient(null);
+      setShowClientDropdown(false);
+      setTitle("");
+      setDescription("");
+      setPriority("none");
+      setStatus("backlog");
+      setAssignee("Unassigned");
+      setTargetDate("");
+      setActivePill(null);
+      setEstimateMode(false);
+      setLineItems([]);
+      setCatalogQuery("");
+      setShowCatalog(false);
+      setTimeout(() => clientInputRef.current?.focus(), 120);
+    }
+  }, [open]);
+
+  /* ── Client selection ───────────────────────────────────── */
+  function selectClient(client: Client) {
+    setSelectedClient(client);
+    setClientQuery("");
+    setShowClientDropdown(false);
+    setTimeout(() => titleRef.current?.focus(), 50);
+  }
+
+  function clearClient() {
+    setSelectedClient(null);
+    setClientQuery("");
+    setTimeout(() => clientInputRef.current?.focus(), 50);
+  }
+
+  /* ── Line items ─────────────────────────────────────────── */
+  function addCatalogItem(name: string, price: number) {
+    setLineItems((prev) => [
+      ...prev,
+      { id: `qi-${Date.now()}-${Math.random()}`, description: name, cost: price },
+    ]);
+    setCatalogQuery("");
+    setShowCatalog(false);
+    setTimeout(() => catalogInputRef.current?.focus(), 50);
+  }
+
+  function addCustomItem() {
+    if (!catalogQuery.trim()) return;
+    setLineItems((prev) => [
+      ...prev,
+      { id: `qi-${Date.now()}`, description: catalogQuery.trim(), cost: 0 },
+    ]);
+    setCatalogQuery("");
+    setShowCatalog(false);
+  }
+
+  function removeLineItem(id: string) {
+    setLineItems((prev) => prev.filter((li) => li.id !== id));
+  }
+
+  function updateLineItemCost(id: string, cost: number) {
+    setLineItems((prev) =>
+      prev.map((li) => (li.id === id ? { ...li, cost } : li))
+    );
+  }
+
+  /* ── Save ───────────────────────────────────────────────── */
+  function handleSave() {
+    if (!title.trim()) return;
+    const jobId = `JOB-${400 + Math.floor(Math.random() * 200)}`;
+
+    const newJob: Job = {
+      id: jobId,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      priority,
+      status: estimateMode ? "backlog" : status,
+      assignee: assignee === "Unassigned" ? "" : assignee,
+      assigneeInitials: assignee === "Unassigned" ? "" : (team.find((t) => t.name === assignee)?.initials || ""),
+      client: selectedClient?.name || "",
+      due: targetDate || "—",
+      labels: [],
+      created: "Just now",
+      location: selectedClient?.address,
+      locationCoords: selectedClient?.addressCoords,
+      revenue: estimateMode && quoteTotal > 0 ? quoteTotal : undefined,
+    };
+
+    addJob(newJob);
+
+    if (estimateMode && quoteTotal > 0) {
+      addToast(`${jobId} created — Quote $${quoteTotal.toLocaleString()} sent`);
+    } else {
+      addToast(`${jobId} created`);
+    }
+
+    if (createMore) {
+      setTitle("");
+      setDescription("");
+      setPriority("none");
+      setStatus("backlog");
+      setAssignee("Unassigned");
+      setTargetDate("");
+      setEstimateMode(false);
+      setLineItems([]);
+      setTimeout(() => titleRef.current?.focus(), 50);
+    } else {
+      onClose();
+    }
+  }
+
+  /* ── Keys ───────────────────────────────────────────────── */
+  useEffect(() => {
+    if (!open) return;
+    function handleKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSave();
+      }
+      if (e.key === "Escape") {
+        if (showCatalog) { setShowCatalog(false); return; }
+        if (showClientDropdown) { setShowClientDropdown(false); return; }
+        if (activePill) { setActivePill(null); return; }
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, onClose, activePill, title, createMore, showCatalog, showClientDropdown, estimateMode, quoteTotal]);
+
+  /* ── Render ─────────────────────────────────────────────── */
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[8px]"
+            onClick={onClose}
+          />
+
+          {/* Stage */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "circOut" }}
+            layout
+            className="fixed top-[8%] left-1/2 z-50 flex w-full max-w-[900px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#121212]"
+            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", maxHeight: "82vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* ── Header ────────────────────────────────────── */}
+            <div className="flex shrink-0 items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-2.5">
+              <span className="text-[12px] text-zinc-600">
+                New Job <span className="text-zinc-700">/</span>{" "}
+                <span className="text-zinc-500">{estimateMode ? "Quote" : "Draft"}</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <kbd className="rounded bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
+                  Esc
+                </kbd>
+                <button
+                  onClick={onClose}
+                  className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* ── Scrollable body ───────────────────────────── */}
+            <div className="flex-1 overflow-y-auto">
+              {/* ══════════════════════════════════════════════ */}
+              {/* ZONE 1: Context (Who & Where)                 */}
+              {/* ══════════════════════════════════════════════ */}
+              <div className="px-6 pt-5">
+                {selectedClient ? (
+                  /* Client pill + map */
+                  <div>
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br text-[9px] font-semibold text-zinc-300 ${getGrad(selectedClient.initials)}`}>
+                        {selectedClient.initials}
+                      </div>
+                      <span className="text-[14px] font-medium text-zinc-200">
+                        {selectedClient.name}
+                      </span>
+                      <button
+                        onClick={clearClient}
+                        className="rounded-md p-0.5 text-zinc-600 transition-colors hover:text-zinc-400"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+
+                    {/* Map + Client snapshot */}
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      className="mb-4 flex gap-3 overflow-hidden"
+                    >
+                      {/* Map card */}
+                      {selectedClient.address && (
+                        <div className="flex-1 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)]">
+                          <div className="relative h-[100px] bg-[#0a0a0a]">
+                            <div className="absolute inset-0 opacity-[0.03]">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-white" style={{ top: `${i * 25}%` }} />
+                              ))}
+                              {Array.from({ length: 7 }).map((_, i) => (
+                                <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l border-white" style={{ left: `${i * 16.6}%` }} />
+                              ))}
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <motion.div
+                                initial={{ y: -10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.2 }}
+                              >
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#5E6AD2] shadow-lg shadow-[#5E6AD2]/30">
+                                  <MapPin size={10} className="text-white" />
+                                </div>
+                                <motion.div
+                                  animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                  className="absolute inset-0 rounded-full border border-[#5E6AD2]"
+                                />
+                              </motion.div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-[rgba(255,255,255,0.02)] px-3 py-1.5 text-[10px] text-zinc-500">
+                            <MapPin size={9} className="text-zinc-600" />
+                            {selectedClient.address}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Client health snapshot */}
+                      <div className="w-[200px] shrink-0 space-y-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
+                        <div className="text-[9px] font-medium tracking-wider text-zinc-600 uppercase">
+                          Client Health
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-zinc-600">Outstanding</span>
+                          <span className="text-[10px] font-medium text-emerald-400">$0</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-zinc-600">Last Job</span>
+                          <span className="text-[10px] text-zinc-400">{selectedClient.lastJob}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-zinc-600">Credit</span>
+                          <span className="text-[10px] text-emerald-400">Good</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-zinc-600">LTV</span>
+                          <span className="text-[10px] text-zinc-400">{selectedClient.lifetimeValue}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                ) : (
+                  /* Magic Input */
+                  <div className="relative mb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="shrink-0 text-zinc-700" />
+                      <input
+                        ref={clientInputRef}
+                        value={clientQuery}
+                        onChange={(e) => {
+                          setClientQuery(e.target.value);
+                          setShowClientDropdown(e.target.value.length > 0);
+                        }}
+                        onFocus={() => {
+                          if (clientQuery.length > 0) setShowClientDropdown(true);
+                        }}
+                        placeholder="Client name or address..."
+                        className="w-full bg-transparent text-[20px] font-medium tracking-tight text-zinc-100 outline-none placeholder:text-zinc-700"
+                      />
+                    </div>
+
+                    {/* Client dropdown */}
+                    <AnimatePresence>
+                      {showClientDropdown && filteredClients.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.1 }}
+                          className="absolute top-full left-0 right-0 z-20 mt-2 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                        >
+                          {filteredClients.map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => selectClient(c)}
+                              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-zinc-800"
+                            >
+                              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[8px] font-semibold text-zinc-300 ${getGrad(c.initials)}`}>
+                                {c.initials}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-[12px] font-medium text-zinc-300">{c.name}</div>
+                                {c.address && (
+                                  <div className="truncate text-[10px] text-zinc-600">{c.address}</div>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-zinc-600">{c.lifetimeValue}</span>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </div>
+
+              {/* ══════════════════════════════════════════════ */}
+              {/* ZONE 2: Scope (What)                          */}
+              {/* ══════════════════════════════════════════════ */}
+              <div className="px-6">
+                {/* Title */}
+                <input
+                  ref={titleRef}
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Summary of works..."
+                  className="mb-2 w-full bg-transparent text-[22px] font-medium tracking-tight text-zinc-100 outline-none placeholder:text-zinc-700"
+                />
+
+                {/* Description */}
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Add description..."
+                  rows={3}
+                  className="mb-4 w-full resize-none bg-transparent text-[13px] leading-relaxed text-zinc-400 outline-none placeholder:text-zinc-700"
+                />
+
+                {/* Property pills */}
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  {/* Status */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setActivePill(activePill === "status" ? null : "status")}
+                      className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+                    >
+                      <StatusIcon status={status} size={12} />
+                      {statuses.find((s) => s.value === status)?.label}
+                      <ChevronDown size={10} className="text-zinc-600" />
+                    </button>
+                    <div className="absolute bottom-full left-0 mb-1">
+                      <PopoverMenu
+                        open={activePill === "status"}
+                        onClose={() => setActivePill(null)}
+                        items={statuses.map((s) => ({
+                          value: s.value,
+                          label: s.label,
+                          icon: <StatusIcon status={s.value} size={12} />,
+                        }))}
+                        selected={status}
+                        onSelect={(v) => setStatus(v)}
+                        width={180}
+                        searchable={false}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Priority */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setActivePill(activePill === "priority" ? null : "priority")}
+                      className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+                    >
+                      <PriorityIcon priority={priority} size={12} />
+                      {priorities.find((p) => p.value === priority)?.label || "Priority"}
+                      <ChevronDown size={10} className="text-zinc-600" />
+                    </button>
+                    <div className="absolute bottom-full left-0 mb-1">
+                      <PopoverMenu
+                        open={activePill === "priority"}
+                        onClose={() => setActivePill(null)}
+                        items={priorities.map((p) => ({
+                          value: p.value,
+                          label: p.label,
+                          icon: <PriorityIcon priority={p.value} size={12} />,
+                        }))}
+                        selected={priority}
+                        onSelect={(v) => setPriority(v)}
+                        width={180}
+                        searchable={false}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lead Tech */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setActivePill(activePill === "assignee" ? null : "assignee")}
+                      className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+                    >
+                      <User size={11} className="text-zinc-600" />
+                      {assignee}
+                      <ChevronDown size={10} className="text-zinc-600" />
+                    </button>
+                    <div className="absolute bottom-full left-0 mb-1">
+                      <PopoverMenu
+                        open={activePill === "assignee"}
+                        onClose={() => setActivePill(null)}
+                        items={assigneeTeam}
+                        selected={assignee}
+                        onSelect={(v) => setAssignee(v)}
+                        width={220}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Target Date */}
+                  <div className="relative flex items-center gap-1.5">
+                    <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300">
+                      <Calendar size={11} className="text-zinc-600" />
+                      {targetDate ? (
+                        <span className="text-zinc-300">
+                          {new Date(targetDate).toLocaleDateString("en-AU", { month: "short", day: "numeric" })}
+                        </span>
+                      ) : (
+                        "Target Date"
+                      )}
+                      <input
+                        type="date"
+                        value={targetDate}
+                        onChange={(e) => setTargetDate(e.target.value)}
+                        className="absolute h-0 w-0 opacity-0"
+                      />
+                    </label>
+                    {daysUntilDue !== null && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          daysUntilDue <= 1
+                            ? "bg-red-500/10 text-red-400"
+                            : daysUntilDue <= 3
+                              ? "bg-amber-500/10 text-amber-400"
+                              : "bg-zinc-500/10 text-zinc-400"
+                        }`}
+                      >
+                        <Clock size={8} className="mr-0.5 inline" />
+                        {daysUntilDue <= 0 ? "Today" : `In ${daysUntilDue}d`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ══════════════════════════════════════════════ */}
+              {/* ZONE 3: Financials (The Quote Engine)          */}
+              {/* ══════════════════════════════════════════════ */}
+              <div className="border-t border-[rgba(255,255,255,0.06)] px-6 py-4">
+                {/* Toggle */}
+                <div className="mb-3 flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-[12px] text-zinc-400">
+                    <button
+                      onClick={() => setEstimateMode(!estimateMode)}
+                      className={`relative h-[18px] w-[32px] rounded-full transition-colors ${estimateMode ? "bg-[#5E6AD2]" : "bg-zinc-700"}`}
+                    >
+                      <motion.div
+                        layout
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        className="absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white"
+                        style={{ left: estimateMode ? 15 : 2 }}
+                      />
+                    </button>
+                    <DollarSign size={12} className="text-zinc-600" />
+                    Generate Estimate
+                  </label>
+                  {estimateMode && quoteTotal > 0 && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-[16px] font-semibold tracking-tight text-zinc-100"
+                    >
+                      ${quoteTotal.toLocaleString()}
+                    </motion.span>
+                  )}
+                </div>
+
+                <AnimatePresence>
+                  {estimateMode && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      className="overflow-hidden"
+                    >
+                      {/* Receipt UI */}
+                      <div className="mb-3 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+                        {/* Line items */}
+                        {lineItems.length > 0 && (
+                          <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+                            {lineItems.map((li) => (
+                              <motion.div
+                                key={li.id}
+                                initial={{ opacity: 0, y: -4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="group flex items-center gap-3 px-4 py-2.5"
+                              >
+                                <span className="min-w-0 flex-1 text-[12px] text-zinc-400">
+                                  {li.description}
+                                </span>
+                                <div className="flex items-center gap-0.5">
+                                  <span className="text-[10px] text-zinc-600">$</span>
+                                  <input
+                                    type="number"
+                                    value={li.cost || ""}
+                                    onChange={(e) => updateLineItemCost(li.id, Number(e.target.value) || 0)}
+                                    className="w-16 bg-transparent text-right text-[12px] font-medium text-zinc-300 outline-none"
+                                    placeholder="0"
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => removeLineItem(li.id)}
+                                  className="rounded-md p-0.5 text-zinc-700 opacity-0 transition-all hover:text-red-400 group-hover:opacity-100"
+                                >
+                                  <Trash2 size={10} />
+                                </button>
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add item input */}
+                        <div className="relative border-t border-[rgba(255,255,255,0.04)] px-4 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <Plus size={12} className="shrink-0 text-zinc-600" />
+                            <input
+                              ref={catalogInputRef}
+                              value={catalogQuery}
+                              onChange={(e) => {
+                                setCatalogQuery(e.target.value);
+                                setShowCatalog(e.target.value.length > 0);
+                                setActiveCatalogIdx(0);
+                                updateCatalogPos();
+                              }}
+                              onFocus={() => {
+                                if (catalogQuery.length > 0) {
+                                  setShowCatalog(true);
+                                  updateCatalogPos();
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "ArrowDown") { e.preventDefault(); setActiveCatalogIdx((i) => Math.min(i + 1, filteredCatalog.length - 1)); }
+                                else if (e.key === "ArrowUp") { e.preventDefault(); setActiveCatalogIdx((i) => Math.max(i - 1, 0)); }
+                                else if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  if (filteredCatalog[activeCatalogIdx]) {
+                                    addCatalogItem(filteredCatalog[activeCatalogIdx].name, filteredCatalog[activeCatalogIdx].price);
+                                  } else if (catalogQuery.trim()) {
+                                    addCustomItem();
+                                  }
+                                }
+                              }}
+                              placeholder="Add service from catalog..."
+                              className="w-full bg-transparent text-[12px] text-zinc-400 outline-none placeholder:text-zinc-700"
+                            />
+                          </div>
+
+                          {/* Catalog dropdown renders via portal below */}
+                        </div>
+                      </div>
+
+                      {/* Quote total */}
+                      {lineItems.length > 0 && (
+                        <motion.div
+                          layout
+                          className="flex items-center justify-between rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
+                        >
+                          <span className="text-[11px] font-medium text-zinc-500">Estimated Total</span>
+                          <motion.span
+                            key={quoteTotal}
+                            initial={{ y: -4, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            className="text-[18px] font-semibold tracking-tight text-zinc-100"
+                          >
+                            ${quoteTotal.toLocaleString()}
+                          </motion.span>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* ── Footer / Action Row ───────────────────────── */}
+            <div className="flex shrink-0 items-center justify-between border-t border-[rgba(255,255,255,0.06)] px-5 py-3">
+              {/* Create more toggle */}
+              <label className="flex items-center gap-2 text-[11px] text-zinc-600">
+                <button
+                  onClick={() => setCreateMore(!createMore)}
+                  className={`relative h-[16px] w-[28px] rounded-full transition-colors ${createMore ? "bg-[#5E6AD2]" : "bg-zinc-700"}`}
+                >
+                  <motion.div
+                    layout
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="absolute top-[2px] h-3 w-3 rounded-full bg-white"
+                    style={{ left: createMore ? 13 : 2 }}
+                  />
+                </button>
+                Create more
+              </label>
+
+              {/* Submit button */}
+              {estimateMode && quoteTotal > 0 ? (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSave}
+                  disabled={!title.trim()}
+                  className="relative flex items-center gap-2 overflow-hidden rounded-md bg-gradient-to-r from-[#5E6AD2] to-[#7C3AED] px-4 py-1.5 text-[13px] font-medium text-white transition-all hover:from-[#6E7AE2] hover:to-[#8B5CF6] disabled:opacity-30"
+                >
+                  <Send size={12} />
+                  Send Quote &amp; Save
+                  <kbd className="rounded bg-[rgba(255,255,255,0.15)] px-1 py-0.5 font-mono text-[9px]">
+                    ⌘↵
+                  </kbd>
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSave}
+                  disabled={!title.trim()}
+                  className="flex items-center gap-2 rounded-md bg-white px-4 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-30"
+                >
+                  <Check size={12} />
+                  Create Job
+                  <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">
+                    ⌘↵
+                  </kbd>
+                </motion.button>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Catalog dropdown — rendered via portal to escape overflow clipping */}
+          {showCatalog && filteredCatalog.length > 0 && catalogDropdownPos &&
+            createPortal(
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                className="fixed z-[100] overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                style={{
+                  top: catalogDropdownPos.top,
+                  left: catalogDropdownPos.left,
+                  width: catalogDropdownPos.width,
+                }}
+              >
+                {filteredCatalog.map((ci, i) => (
+                  <button
+                    key={ci.name}
+                    onClick={() => addCatalogItem(ci.name, ci.price)}
+                    onMouseEnter={() => setActiveCatalogIdx(i)}
+                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors ${
+                      i === activeCatalogIdx ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/60"
+                    }`}
+                  >
+                    <span className="text-[12px]">{ci.name}</span>
+                    <span className="text-[11px] text-zinc-500">${ci.price}</span>
+                  </button>
+                ))}
+              </motion.div>,
+              document.body
+            )
+          }
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

@@ -1,0 +1,970 @@
+"use client";
+
+import { motion, AnimatePresence } from "framer-motion";
+import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Printer,
+  Share2,
+  Check,
+  CheckCircle2,
+  MapPin,
+  MessageSquare,
+  Camera,
+  FileText,
+  Users,
+  Sparkles,
+  Clock,
+  Calendar,
+  User,
+  Tag,
+  MoreHorizontal,
+  Trash2,
+  Copy,
+} from "lucide-react";
+import { useJobsStore } from "@/lib/jobs-store";
+import { useToastStore } from "@/components/app/action-toast";
+import { StatusIcon, StatusLabel } from "@/components/app/status-icon";
+import { PriorityIcon } from "@/components/app/priority-icon";
+import { PopoverMenu } from "@/components/app/popover-menu";
+import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
+import type { JobStatus, Priority } from "@/lib/data";
+
+/* ── Constants ────────────────────────────────────────────── */
+
+const statusOptions: { value: JobStatus; label: string }[] = [
+  { value: "backlog", label: "Backlog" },
+  { value: "todo", label: "Todo" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "done", label: "Done" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+const priorityOptions: { value: Priority; label: string }[] = [
+  { value: "urgent", label: "Urgent" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+  { value: "none", label: "None" },
+];
+
+const assigneeOptions = [
+  "Mike Thompson",
+  "Sarah Chen",
+  "James O'Brien",
+  "Tom Liu",
+  "Unassigned",
+];
+
+const activityIcons: Record<string, typeof MessageSquare> = {
+  status_change: CheckCircle2,
+  comment: MessageSquare,
+  photo: Camera,
+  invoice: FileText,
+  creation: Sparkles,
+  assignment: Users,
+};
+
+const headerContextItems: ContextMenuItem[] = [
+  { id: "copy", label: "Copy Job ID", icon: <Copy size={13} />, shortcut: "⌘L" },
+  { id: "print", label: "Print", icon: <Printer size={13} /> },
+  { id: "share", label: "Share link", icon: <Share2 size={13} /> },
+  { id: "divider", label: "", divider: true },
+  { id: "delete", label: "Delete Job", icon: <Trash2 size={13} />, danger: true },
+];
+
+/* ── Page Component ───────────────────────────────────────── */
+
+export default function JobDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const jobId = params.id as string;
+
+  const { jobs, updateJob, deleteJob, restoreJobs, toggleSubtask } = useJobsStore();
+  const { addToast } = useToastStore();
+
+  const job = jobs.find((j) => j.id === jobId);
+
+  /* Local editable state */
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [localTitle, setLocalTitle] = useState("");
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [localDesc, setLocalDesc] = useState("");
+  const [activePopover, setActivePopover] = useState<string | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ open: boolean; x: number; y: number }>({
+    open: false,
+    x: 0,
+    y: 0,
+  });
+  const [savedField, setSavedField] = useState<string | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  // Sync local state when job changes
+  useEffect(() => {
+    if (job) {
+      setLocalTitle(job.title);
+      setLocalDesc(job.description || "");
+    }
+  }, [job]);
+
+  // Auto-focus title input
+  useEffect(() => {
+    if (editingTitle) titleRef.current?.focus();
+  }, [editingTitle]);
+
+  useEffect(() => {
+    if (editingDesc) descRef.current?.focus();
+  }, [editingDesc]);
+
+  // Flash "saved" indicator
+  function flashSaved(field: string) {
+    setSavedField(field);
+    setTimeout(() => setSavedField(null), 1500);
+  }
+
+  // Handle title save
+  function saveTitle() {
+    if (!job) return;
+    setEditingTitle(false);
+    if (localTitle.trim() && localTitle !== job.title) {
+      updateJob(job.id, { title: localTitle.trim() });
+      flashSaved("title");
+      addToast("Title updated");
+    } else {
+      setLocalTitle(job.title);
+    }
+  }
+
+  // Handle description save
+  function saveDesc() {
+    if (!job) return;
+    setEditingDesc(false);
+    if (localDesc !== (job.description || "")) {
+      updateJob(job.id, { description: localDesc });
+      flashSaved("description");
+      addToast("Saved");
+    }
+  }
+
+  // Keyboard handler
+  const handleKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (activePopover) setActivePopover(null);
+        else if (editingTitle) saveTitle();
+        else if (editingDesc) saveDesc();
+        else router.push("/dashboard/jobs");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activePopover, editingTitle, editingDesc, router]
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [handleKey]);
+
+  function handleHeaderContextAction(actionId: string) {
+    if (!job) return;
+    if (actionId === "copy") {
+      navigator.clipboard?.writeText(job.id);
+      addToast(`${job.id} copied to clipboard`);
+    } else if (actionId === "delete") {
+      const deleted = job;
+      deleteJob(job.id);
+      addToast(`${job.id} deleted`, () => restoreJobs([deleted]));
+      router.push("/dashboard/jobs");
+    } else if (actionId === "share") {
+      navigator.clipboard?.writeText(`${window.location.origin}/dashboard/jobs/${job.id}`);
+      addToast("Link copied to clipboard");
+    }
+  }
+
+  /* ── Not found ──────────────────────────────────────────── */
+
+  if (!job) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <h2 className="mb-2 text-lg font-medium text-zinc-300">Job not found</h2>
+          <p className="mb-4 text-[13px] text-zinc-600">
+            This job may have been deleted or doesn&apos;t exist.
+          </p>
+          <button
+            onClick={() => router.push("/dashboard/jobs")}
+            className="text-[13px] text-zinc-500 transition-colors hover:text-zinc-300"
+          >
+            Back to Jobs
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Computed ────────────────────────────────────────────── */
+
+  const subtasks = job.subtasks || [];
+  const completedSubtasks = subtasks.filter((st) => st.completed).length;
+  const subtaskProgress = subtasks.length > 0 ? completedSubtasks / subtasks.length : 0;
+
+  const margin = (job.revenue || 0) - (job.cost || 0);
+  const marginPercent =
+    job.revenue && job.revenue > 0 ? Math.round((margin / job.revenue) * 100) : 0;
+
+  /* ── Render ─────────────────────────────────────────────── */
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+      className="flex h-full flex-col"
+    >
+      {/* ── Sticky Header ────────────────────────────────── */}
+      <div className="sticky top-0 z-10 border-b border-[rgba(255,255,255,0.06)] bg-black/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-6 py-3">
+          {/* Breadcrumbs */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => router.push("/dashboard/jobs")}
+              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-300"
+            >
+              <ArrowLeft size={12} />
+              Jobs
+            </button>
+            <ChevronRight size={12} className="text-zinc-700" />
+            <span className="text-[12px] text-zinc-500">
+              {job.status
+                .replace("_", " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())}
+            </span>
+            <ChevronRight size={12} className="text-zinc-700" />
+            <span
+              className="cursor-pointer font-mono text-[12px] text-zinc-400 transition-colors hover:text-zinc-200"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setCtxMenu({ open: true, x: e.clientX, y: e.clientY });
+              }}
+            >
+              {job.id}
+            </span>
+          </div>
+
+          {/* Action bar */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(
+                  `${window.location.origin}/dashboard/jobs/${job.id}`
+                );
+                addToast("Link copied");
+              }}
+              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              title="Share"
+            >
+              <Share2 size={14} />
+            </button>
+            <button
+              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              title="Print"
+            >
+              <Printer size={14} />
+            </button>
+            <button
+              onClick={(e) =>
+                setCtxMenu({ open: true, x: e.clientX, y: e.clientY })
+              }
+              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+            >
+              <MoreHorizontal size={14} />
+            </button>
+
+            {/* Complete Job CTA */}
+            {job.status !== "done" && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  updateJob(job.id, { status: "done" });
+                  addToast("Job marked as complete");
+                }}
+                className="relative ml-2 overflow-hidden rounded-md bg-emerald-600 px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-emerald-500"
+              >
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 opacity-20">
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      background:
+                        "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)",
+                      animation: "shimmer 2s infinite",
+                    }}
+                  />
+                </div>
+                <span className="relative flex items-center gap-1.5">
+                  <Check size={13} />
+                  Complete Job
+                </span>
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2-Column Body ──────────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* ── Canvas (Left 70%) ─────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto p-6 pr-0">
+          <div className="max-w-3xl">
+            {/* ── Title ──────────────────────────────────────── */}
+            <div className="relative mb-1">
+              {editingTitle ? (
+                <input
+                  ref={titleRef}
+                  value={localTitle}
+                  onChange={(e) => setLocalTitle(e.target.value)}
+                  onBlur={saveTitle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveTitle();
+                  }}
+                  className="w-full bg-transparent text-[28px] font-semibold tracking-tight text-zinc-100 outline-none"
+                />
+              ) : (
+                <h1
+                  onClick={() => setEditingTitle(true)}
+                  className="cursor-text text-[28px] font-semibold tracking-tight text-zinc-100 transition-colors hover:text-white"
+                >
+                  {localTitle}
+                </h1>
+              )}
+              <AnimatePresence>
+                {savedField === "title" && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -4 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute -right-6 top-1/2 -translate-y-1/2"
+                  >
+                    <Check size={14} className="text-emerald-400" />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Label pills */}
+            <div className="mb-6 flex items-center gap-2">
+              {job.labels.map((label) => (
+                <span
+                  key={label}
+                  className="rounded border border-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[11px] text-zinc-500"
+                >
+                  {label}
+                </span>
+              ))}
+              <span className="text-[11px] text-zinc-700">{job.created}</span>
+            </div>
+
+            {/* ── Description ────────────────────────────────── */}
+            <div className="relative mb-8">
+              <h3 className="mb-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                Description
+              </h3>
+              {editingDesc ? (
+                <textarea
+                  ref={descRef}
+                  value={localDesc}
+                  onChange={(e) => setLocalDesc(e.target.value)}
+                  onBlur={saveDesc}
+                  className="w-full resize-none rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-4 text-[13px] leading-relaxed text-zinc-300 outline-none focus:border-[rgba(255,255,255,0.15)]"
+                  rows={5}
+                />
+              ) : (
+                <div
+                  onClick={() => setEditingDesc(true)}
+                  className="cursor-text rounded-lg p-0 text-[13px] leading-relaxed text-zinc-400 transition-colors hover:text-zinc-300"
+                >
+                  {localDesc || (
+                    <span className="text-zinc-700">Scope of works...</span>
+                  )}
+                </div>
+              )}
+              <AnimatePresence>
+                {savedField === "description" && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute -right-6 top-8"
+                  >
+                    <Check size={14} className="text-emerald-400" />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* ── Sub-Tasks ──────────────────────────────────── */}
+            {subtasks.length > 0 && (
+              <div className="mb-8">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                    Sub-tasks
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-zinc-600">
+                      {completedSubtasks}/{subtasks.length}
+                    </span>
+                    {/* Progress ring */}
+                    <svg width={20} height={20} viewBox="0 0 20 20">
+                      <circle
+                        cx={10}
+                        cy={10}
+                        r={8}
+                        fill="none"
+                        stroke="rgba(255,255,255,0.06)"
+                        strokeWidth={2}
+                      />
+                      <motion.circle
+                        cx={10}
+                        cy={10}
+                        r={8}
+                        fill="none"
+                        stroke={subtaskProgress === 1 ? "#34d399" : "#5E6AD2"}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 8}`}
+                        initial={{ strokeDashoffset: 2 * Math.PI * 8 }}
+                        animate={{
+                          strokeDashoffset:
+                            2 * Math.PI * 8 * (1 - subtaskProgress),
+                        }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                        style={{
+                          transform: "rotate(-90deg)",
+                          transformOrigin: "center",
+                        }}
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  {subtasks.map((st, i) => (
+                    <motion.div
+                      key={st.id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.03, duration: 0.2 }}
+                      onClick={() => toggleSubtask(job.id, st.id)}
+                      className="group flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+                    >
+                      <div
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all ${
+                          st.completed
+                            ? "border-emerald-500 bg-emerald-500"
+                            : "border-[rgba(255,255,255,0.15)] group-hover:border-[rgba(255,255,255,0.25)]"
+                        }`}
+                      >
+                        {st.completed && (
+                          <motion.svg
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            viewBox="0 0 12 12"
+                            className="h-3 w-3 text-white"
+                          >
+                            <path
+                              d="M3 6l2 2 4-4"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </motion.svg>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[13px] transition-all ${
+                          st.completed
+                            ? "text-zinc-600 line-through"
+                            : "text-zinc-300"
+                        }`}
+                      >
+                        {st.title}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Map Widget ─────────────────────────────────── */}
+            {job.location && (
+              <div className="mb-8">
+                <h3 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                  Location
+                </h3>
+                <div className="overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)]">
+                  <div className="relative h-[200px] bg-[#0a0a0a]">
+                    {/* Stylized dark map placeholder */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="relative">
+                        {/* Grid lines */}
+                        <div className="absolute -inset-20 opacity-[0.03]">
+                          {Array.from({ length: 8 }).map((_, i) => (
+                            <div
+                              key={`h-${i}`}
+                              className="absolute left-0 right-0 border-t border-white"
+                              style={{ top: `${i * 14.3}%` }}
+                            />
+                          ))}
+                          {Array.from({ length: 8 }).map((_, i) => (
+                            <div
+                              key={`v-${i}`}
+                              className="absolute top-0 bottom-0 border-l border-white"
+                              style={{ left: `${i * 14.3}%` }}
+                            />
+                          ))}
+                        </div>
+                        {/* Pin */}
+                        <motion.div
+                          initial={{ y: -20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 15,
+                            delay: 0.3,
+                          }}
+                          className="relative z-10 flex flex-col items-center"
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5E6AD2] shadow-lg shadow-[#5E6AD2]/30">
+                            <MapPin size={14} className="text-white" />
+                          </div>
+                          <div className="mt-0.5 h-2 w-2 rounded-full bg-[#5E6AD2]/40" />
+                          {/* Pulse ring */}
+                          <motion.div
+                            animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeOut",
+                            }}
+                            className="absolute top-0 h-8 w-8 rounded-full border border-[#5E6AD2]"
+                          />
+                        </motion.div>
+                      </div>
+                    </div>
+                    {/* Address overlay */}
+                    <div className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2.5 py-1 text-[11px] text-zinc-400 backdrop-blur-sm">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin size={10} className="text-zinc-500" />
+                        {job.location}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Activity Stream ────────────────────────────── */}
+            <div>
+              <h3 className="mb-4 flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                <MessageSquare size={12} />
+                Activity
+              </h3>
+              <div className="relative pl-6">
+                {/* Timeline line */}
+                <div className="absolute top-2 bottom-2 left-[7px] w-px bg-[rgba(255,255,255,0.06)]" />
+
+                <div className="space-y-4">
+                  {(job.activity || []).map((entry, i) => {
+                    const Icon = activityIcons[entry.type] || MessageSquare;
+                    return (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05, duration: 0.25 }}
+                        className="relative flex gap-3"
+                      >
+                        {/* Dot */}
+                        <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[rgba(255,255,255,0.1)] bg-[#0a0a0a]">
+                          <Icon size={8} className="text-zinc-500" />
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="text-[12px] text-zinc-500">
+                            <span className="font-medium text-zinc-400">
+                              {entry.user}
+                            </span>{" "}
+                            {entry.text}
+                          </div>
+                          <div className="mt-0.5 text-[10px] text-zinc-700">
+                            {entry.time}
+                          </div>
+
+                          {/* Photo thumbnails */}
+                          {entry.photos && entry.photos.length > 0 && (
+                            <div className="mt-2 flex gap-2">
+                              {entry.photos.map((photo, pi) => (
+                                <motion.div
+                                  key={pi}
+                                  whileHover={{ scale: 1.05 }}
+                                  className="h-16 w-20 rounded-md border border-[rgba(255,255,255,0.06)] bg-zinc-900"
+                                >
+                                  <div className="flex h-full w-full items-center justify-center">
+                                    <Camera
+                                      size={14}
+                                      className="text-zinc-700"
+                                    />
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── HUD (Right 30%) ───────────────────────────────── */}
+        <div className="w-[320px] shrink-0 overflow-y-auto border-l border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]">
+          <div className="p-5">
+            {/* ── Status Pill ────────────────────────────────── */}
+            <div className="relative mb-6">
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() =>
+                  setActivePopover(activePopover === "status" ? null : "status")
+                }
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-2.5 transition-colors ${
+                  job.status === "done"
+                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    : job.status === "in_progress"
+                      ? "border-yellow-500/20 bg-yellow-500/5"
+                      : job.priority === "urgent"
+                        ? "border-red-500/20 bg-red-500/5"
+                        : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={job.status} size={16} />
+                  <span className="text-[13px] font-medium text-zinc-200">
+                    {statusOptions.find((s) => s.value === job.status)?.label}
+                  </span>
+                </div>
+                <ChevronRight
+                  size={12}
+                  className="text-zinc-600 transition-transform"
+                  style={{
+                    transform:
+                      activePopover === "status" ? "rotate(90deg)" : "rotate(0)",
+                  }}
+                />
+              </motion.button>
+              <div className="absolute top-full left-0 z-20 mt-1 w-full">
+                <PopoverMenu
+                  open={activePopover === "status"}
+                  onClose={() => setActivePopover(null)}
+                  items={statusOptions.map((s) => ({
+                    value: s.value,
+                    label: s.label,
+                    icon: <StatusIcon status={s.value} size={13} />,
+                  }))}
+                  selected={job.status}
+                  onSelect={(v) => {
+                    updateJob(job.id, { status: v });
+                    addToast(
+                      `Status changed to ${statusOptions.find((s) => s.value === v)?.label}`
+                    );
+                  }}
+                  width={280}
+                  searchable={false}
+                />
+              </div>
+            </div>
+
+            {/* ── Financial Pulse ────────────────────────────── */}
+            <div className="mb-6 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-4">
+              <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                Financial Pulse
+              </h4>
+              <div className="mb-3 flex items-end justify-between">
+                <div>
+                  <div className="text-[22px] font-semibold tracking-tight text-zinc-100">
+                    ${(job.revenue || 0).toLocaleString()}
+                  </div>
+                  <div className="text-[11px] text-zinc-600">Revenue</div>
+                </div>
+                <div className="text-right">
+                  <div
+                    className={`text-[15px] font-medium ${margin >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {margin >= 0 ? "+" : ""}${margin.toLocaleString()}
+                  </div>
+                  <div className="text-[11px] text-zinc-600">
+                    {marginPercent}% margin
+                  </div>
+                </div>
+              </div>
+
+              {/* Sparkline */}
+              <div className="h-10 w-full">
+                <svg viewBox="0 0 280 40" className="w-full">
+                  <defs>
+                    <linearGradient
+                      id={`margin-grad-${job.id}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor={margin >= 0 ? "#34d399" : "#ef4444"}
+                        stopOpacity="0.3"
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={margin >= 0 ? "#34d399" : "#ef4444"}
+                        stopOpacity="0"
+                      />
+                    </linearGradient>
+                  </defs>
+                  {/* Area fill */}
+                  <motion.path
+                    d="M0 35 L40 28 L80 32 L120 20 L160 22 L200 15 L240 10 L280 8 L280 40 L0 40 Z"
+                    fill={`url(#margin-grad-${job.id})`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.8 }}
+                  />
+                  {/* Line */}
+                  <motion.path
+                    d="M0 35 L40 28 L80 32 L120 20 L160 22 L200 15 L240 10 L280 8"
+                    fill="none"
+                    stroke={margin >= 0 ? "#34d399" : "#ef4444"}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                  />
+                </svg>
+              </div>
+
+              {/* Cost breakdown */}
+              <div className="mt-3 flex items-center justify-between border-t border-[rgba(255,255,255,0.06)] pt-3">
+                <div className="text-[11px] text-zinc-600">
+                  Cost:{" "}
+                  <span className="text-zinc-400">
+                    ${(job.cost || 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="text-[11px] text-zinc-600">
+                  Hours:{" "}
+                  <span className="text-zinc-400">
+                    {job.actualHours || 0}/{job.estimatedHours || 0}h
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Properties ─────────────────────────────────── */}
+            <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+              Properties
+            </h4>
+            <div className="space-y-1">
+              {/* Priority */}
+              <div className="relative">
+                <PropertyRow
+                  label="Priority"
+                  onClick={() =>
+                    setActivePopover(
+                      activePopover === "priority" ? null : "priority"
+                    )
+                  }
+                >
+                  <PriorityIcon priority={job.priority} size={13} />
+                  <span
+                    className={`text-[12px] ${
+                      job.priority === "urgent"
+                        ? "text-red-400"
+                        : job.priority === "high"
+                          ? "text-orange-400"
+                          : "text-zinc-400"
+                    }`}
+                  >
+                    {priorityOptions.find((p) => p.value === job.priority)?.label}
+                    {job.priority === "urgent" && (
+                      <motion.span
+                        animate={{ opacity: [1, 0.4, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-red-500"
+                      />
+                    )}
+                  </span>
+                </PropertyRow>
+                <div className="absolute top-full right-0 z-20 mt-1">
+                  <PopoverMenu
+                    open={activePopover === "priority"}
+                    onClose={() => setActivePopover(null)}
+                    items={priorityOptions.map((p) => ({
+                      value: p.value,
+                      label: p.label,
+                      icon: <PriorityIcon priority={p.value} size={13} />,
+                    }))}
+                    selected={job.priority}
+                    onSelect={(v) => {
+                      updateJob(job.id, { priority: v });
+                      addToast(
+                        `Priority changed to ${priorityOptions.find((p) => p.value === v)?.label}`
+                      );
+                    }}
+                    width={180}
+                    align="right"
+                    searchable={false}
+                  />
+                </div>
+              </div>
+
+              {/* Assignee */}
+              <div className="relative">
+                <PropertyRow
+                  label="Assignee"
+                  onClick={() =>
+                    setActivePopover(
+                      activePopover === "assignee" ? null : "assignee"
+                    )
+                  }
+                >
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-400">
+                    {job.assigneeInitials}
+                  </div>
+                  <span className="text-[12px] text-zinc-400">{job.assignee}</span>
+                </PropertyRow>
+                <div className="absolute top-full right-0 z-20 mt-1">
+                  <PopoverMenu
+                    open={activePopover === "assignee"}
+                    onClose={() => setActivePopover(null)}
+                    items={assigneeOptions.map((a) => ({
+                      value: a,
+                      label: a,
+                    }))}
+                    selected={job.assignee}
+                    onSelect={(v) => {
+                      const initials = v === "Unassigned" ? "??" : v.split(" ").map((n) => n[0]).join("");
+                      updateJob(job.id, {
+                        assignee: v,
+                        assigneeInitials: initials,
+                      });
+                      addToast(`Assigned to ${v}`);
+                    }}
+                    width={200}
+                    align="right"
+                  />
+                </div>
+              </div>
+
+              {/* Due Date */}
+              <PropertyRow label="Due Date">
+                <Calendar size={12} className="text-zinc-600" />
+                <span
+                  className={`text-[12px] ${
+                    job.due === "Today"
+                      ? "font-medium text-amber-400"
+                      : job.due === "Tomorrow"
+                        ? "text-zinc-300"
+                        : "text-zinc-400"
+                  }`}
+                >
+                  {job.due}
+                </span>
+              </PropertyRow>
+
+              {/* Client */}
+              <PropertyRow label="Customer">
+                <User size={12} className="text-zinc-600" />
+                <span className="text-[12px] text-zinc-400">{job.client}</span>
+              </PropertyRow>
+
+              {/* Labels */}
+              <div className="flex items-start justify-between rounded-md px-3 py-2">
+                <span className="text-[11px] text-zinc-600">Labels</span>
+                <div className="flex flex-wrap justify-end gap-1">
+                  {job.labels.map((label) => (
+                    <span
+                      key={label}
+                      className="rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[10px] text-zinc-500"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hours */}
+              <PropertyRow label="Hours">
+                <Clock size={12} className="text-zinc-600" />
+                <span className="text-[12px] text-zinc-400">
+                  {job.actualHours || 0}h / {job.estimatedHours || 0}h est.
+                </span>
+              </PropertyRow>
+
+              {/* Created */}
+              <PropertyRow label="Created">
+                <Sparkles size={12} className="text-zinc-600" />
+                <span className="text-[12px] text-zinc-500">{job.created}</span>
+              </PropertyRow>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Context Menu */}
+      <ContextMenu
+        open={ctxMenu.open}
+        x={ctxMenu.x}
+        y={ctxMenu.y}
+        items={headerContextItems}
+        onSelect={handleHeaderContextAction}
+        onClose={() => setCtxMenu((p) => ({ ...p, open: false }))}
+      />
+    </motion.div>
+  );
+}
+
+/* ── Property Row Component ───────────────────────────────── */
+
+function PropertyRow({
+  label,
+  children,
+  onClick,
+}: {
+  label: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className={`flex items-center justify-between rounded-md px-3 py-2 transition-colors ${
+        onClick
+          ? "cursor-pointer hover:bg-[rgba(255,255,255,0.03)]"
+          : ""
+      }`}
+    >
+      <span className="text-[11px] text-zinc-600">{label}</span>
+      <div className="flex items-center gap-1.5">{children}</div>
+    </div>
+  );
+}
