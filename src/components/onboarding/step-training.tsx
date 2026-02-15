@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
-import { Search, FileText, CalendarDays, Users, Receipt, X } from "lucide-react";
+import { Search, FileText, CalendarDays, Users, Receipt, X, SkipForward } from "lucide-react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { CheckmarkDraw } from "./spinner";
 
@@ -27,9 +27,7 @@ export function StepTraining() {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         if (phase === "prompt") {
-          setPhase("menu");
-          // Start typing simulation
-          setTimeout(() => setPhase("typing"), 600);
+          openMenu();
         }
       }
       if (phase === "menu" || phase === "typing") {
@@ -75,10 +73,20 @@ export function StepTraining() {
     return () => clearInterval(interval);
   }, [phase]);
 
+  function openMenu() {
+    setPhase("menu");
+    setTimeout(() => setPhase("typing"), 600);
+  }
+
   function handleSuccess() {
     setPhase("success");
     setCommandMenuCompleted();
     setTimeout(() => advanceStep(), 1200);
+  }
+
+  function handleSkip() {
+    setCommandMenuCompleted();
+    advanceStep();
   }
 
   return (
@@ -112,10 +120,12 @@ export function StepTraining() {
               iWorkr. Try it now.
             </p>
 
-            <motion.div
+            {/* Keyboard shortcut hint — tap to try on mobile */}
+            <motion.button
+              onClick={openMenu}
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-5 py-3 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.05)]"
             >
               <span className="text-sm text-zinc-400">Press</span>
               <kbd className="rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-1.5 font-mono text-sm text-zinc-200 shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
@@ -125,7 +135,20 @@ export function StepTraining() {
               <kbd className="rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-1.5 font-mono text-sm text-zinc-200 shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
                 K
               </kbd>
-            </motion.div>
+              <span className="ml-1 text-[11px] text-zinc-600 md:hidden">or tap here</span>
+            </motion.button>
+
+            {/* Skip link */}
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 2 }}
+              onClick={handleSkip}
+              className="mt-6 flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-400"
+            >
+              <SkipForward size={12} />
+              Skip this step
+            </motion.button>
           </motion.div>
         )}
 
@@ -189,7 +212,7 @@ export function StepTraining() {
                 })}
             </div>
 
-            {/* Hint */}
+            {/* Hint — tap or press Enter */}
             {phase === "typing" && searchText === "Create Job" && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -197,11 +220,16 @@ export function StepTraining() {
                 className="border-t border-[rgba(255,255,255,0.06)] px-4 py-2.5"
               >
                 <span className="text-[11px] text-zinc-500">
-                  Press{" "}
-                  <kbd className="rounded border border-[rgba(255,255,255,0.08)] px-1 py-0.5 font-mono text-[10px] text-zinc-400">
-                    ↵
-                  </kbd>{" "}
-                  to select
+                  <span className="hidden md:inline">
+                    Press{" "}
+                    <kbd className="rounded border border-[rgba(255,255,255,0.08)] px-1 py-0.5 font-mono text-[10px] text-zinc-400">
+                      ↵
+                    </kbd>{" "}
+                    to select
+                  </span>
+                  <span className="md:hidden">
+                    Tap &quot;Create Job&quot; above to continue
+                  </span>
                 </span>
               </motion.div>
             )}
