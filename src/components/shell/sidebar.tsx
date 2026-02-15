@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, type MouseEvent as ReactMouseEvent } from "react";
+import { useRef, useEffect, type MouseEvent as ReactMouseEvent } from "react";
 import { useShellStore } from "@/lib/shell-store";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 
@@ -150,7 +150,7 @@ interface SidebarProps {
 
 export function Sidebar({ onCreateClick }: SidebarProps = {}) {
   const pathname = usePathname();
-  const { sidebarCollapsed, toggleSidebar } = useShellStore();
+  const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useShellStore();
   const companyName =
     useOnboardingStore((s) => s.companyName) || "Apex Plumbing";
 
@@ -159,13 +159,35 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
     return pathname.startsWith(href);
   };
 
+  // Auto-close mobile sidebar on navigation
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [pathname, setMobileSidebarOpen]);
+
   return (
-    <motion.aside
-      layout
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      className="fixed top-0 left-0 z-30 flex h-screen flex-col border-r border-[rgba(255,255,255,0.08)] bg-[#080808]"
-      style={{ width: sidebarCollapsed ? 64 : 240 }}
-    >
+    <>
+      {/* Mobile backdrop */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setMobileSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.aside
+        layout
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className={`fixed top-0 left-0 z-50 flex h-screen flex-col border-r border-[rgba(255,255,255,0.08)] bg-[#080808] transition-transform duration-300 md:z-30 md:translate-x-0 ${
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+        style={{ width: sidebarCollapsed ? 64 : 240 }}
+      >
       {/* ── Workspace Switcher ── */}
       <div className="flex h-12 items-center border-b border-[rgba(255,255,255,0.08)] px-3">
         <button className="flex w-full items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-[rgba(255,255,255,0.04)]">
@@ -345,5 +367,6 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
         </button>
       </div>
     </motion.aside>
+    </>
   );
 }

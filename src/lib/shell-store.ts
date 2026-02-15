@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 interface ShellState {
   sidebarCollapsed: boolean;
+  mobileSidebarOpen: boolean;
   commandMenuOpen: boolean;
   slideOverOpen: boolean;
   slideOverContent: { type: string; id: string; title: string } | null;
@@ -13,6 +14,7 @@ interface ShellState {
 
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  setMobileSidebarOpen: (open: boolean) => void;
   setCommandMenuOpen: (open: boolean) => void;
   openSlideOver: (content: { type: string; id: string; title: string }) => void;
   closeSlideOver: () => void;
@@ -26,6 +28,7 @@ export const useShellStore = create<ShellState>()(
   persist(
     (set) => ({
       sidebarCollapsed: false,
+      mobileSidebarOpen: false,
       commandMenuOpen: false,
       slideOverOpen: false,
       slideOverContent: null,
@@ -38,6 +41,7 @@ export const useShellStore = create<ShellState>()(
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarCollapsed: (collapsed) =>
         set({ sidebarCollapsed: collapsed }),
+      setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
       setCommandMenuOpen: (open) => set({ commandMenuOpen: open }),
       openSlideOver: (content) =>
         set({ slideOverOpen: true, slideOverContent: content }),

@@ -132,6 +132,19 @@ export default function DashboardLayout({
     return () => window.removeEventListener("keydown", handleGlobalKey);
   }, [handleGlobalKey]);
 
+  /* ── Responsive sidebar margin ────────────────────── */
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+
+  const mainMarginLeft = isMobile ? 0 : sidebarCollapsed ? 64 : 240;
+
   return (
     <div className="flex h-screen overflow-hidden bg-black">
       {/* Noise grain */}
@@ -146,12 +159,10 @@ export default function DashboardLayout({
 
       <Sidebar onCreateClick={() => setCreateModalOpen(true)} />
 
-      {/* Main area */}
-      <motion.div
-        layout
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className="flex flex-1 flex-col overflow-hidden"
-        style={{ marginLeft: sidebarCollapsed ? 64 : 240 }}
+      {/* Main area — no margin on mobile (sidebar overlays), sidebar width on md+ */}
+      <div
+        className="flex flex-1 flex-col overflow-hidden transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        style={{ marginLeft: mainMarginLeft }}
       >
         <Topbar />
 
@@ -163,7 +174,7 @@ export default function DashboardLayout({
               : { scale: 1, filter: "brightness(1)" }
           }
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="flex-1 overflow-y-auto bg-black"
+          className="flex-1 overflow-y-auto overflow-x-hidden bg-black"
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -178,7 +189,7 @@ export default function DashboardLayout({
             </motion.div>
           </AnimatePresence>
         </motion.main>
-      </motion.div>
+      </div>
 
       {/* Global overlays */}
       <CommandMenu />

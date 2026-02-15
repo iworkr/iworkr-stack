@@ -46,6 +46,20 @@ html {
 body {
   background: #000;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Prevent horizontal scroll on all app containers */
+#__next,
+main {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Ensure images/media don't overflow */
+img, video, svg, canvas {
+  max-width: 100%;
+  height: auto;
 }
 
 /* Marquee animation */

@@ -436,9 +436,9 @@ export default function InboxPage() {
   const preview = selectedItem ? getPreviewContent(selectedItem) : null;
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col md:flex-row">
       {/* ── Left Pane: The Feed ────────────────────────── */}
-      <div className="flex w-[350px] shrink-0 flex-col border-r border-[rgba(255,255,255,0.06)] bg-black/20">
+      <div className="flex w-full shrink-0 flex-col border-b border-[rgba(255,255,255,0.06)] bg-black/20 md:w-[350px] md:border-b-0 md:border-r">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-3">
           <div className="flex items-center gap-2">
@@ -642,8 +642,8 @@ export default function InboxPage() {
         </div>
       </div>
 
-      {/* ── Right Pane: The Preview ────────────────────── */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-black">
+      {/* ── Right Pane: The Preview (hidden on mobile) ── */}
+      <div className="hidden flex-1 flex-col overflow-hidden bg-black md:flex">
         <AnimatePresence mode="wait">
           {selectedItem && preview ? (
             <motion.div

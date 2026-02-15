@@ -144,8 +144,8 @@ function MobileVisual() {
 function AIWaveformVisual() {
   return (
     <div className="mt-6 space-y-3">
-      {/* Waveform bars */}
-      <div className="flex items-end justify-center gap-[3px]">
+      {/* Waveform bars — fixed height container to prevent CLS */}
+      <div className="flex h-[50px] items-end justify-center gap-[3px]">
         {Array.from({ length: 24 }).map((_, i) => {
           const height = Math.sin(i * 0.5) * 20 + 25;
           return (

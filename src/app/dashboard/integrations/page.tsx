@@ -91,9 +91,9 @@ export default function IntegrationsPage() {
   return (
     <div className="flex h-full flex-col">
       {/* ── Header ───────────────────────────────────── */}
-      <div className="border-b border-[rgba(255,255,255,0.06)] px-6 pb-0 pt-5">
+      <div className="border-b border-[rgba(255,255,255,0.06)] px-4 pb-0 pt-4 md:px-6 md:pt-5">
         {/* Title row */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-[15px] font-medium text-zinc-200">Integrations</h1>
             <p className="mt-0.5 text-[12px] text-zinc-600">

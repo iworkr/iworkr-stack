@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Search, Bell, ChevronRight, Wifi } from "lucide-react";
+import { Search, Bell, ChevronRight, Wifi, Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useShellStore } from "@/lib/shell-store";
 import { useOnboardingStore } from "@/lib/onboarding-store";
@@ -37,15 +37,23 @@ function getBreadcrumbs(pathname: string, companyName: string) {
 
 export function Topbar() {
   const pathname = usePathname();
-  const { setCommandMenuOpen } = useShellStore();
+  const { setCommandMenuOpen, setMobileSidebarOpen } = useShellStore();
   const companyName =
     useOnboardingStore((s) => s.companyName) || "Apex Plumbing";
   const breadcrumbs = getBreadcrumbs(pathname, companyName);
 
   return (
-    <header className="flex h-12 shrink-0 items-center border-b border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.5)] px-4 backdrop-blur-xl">
+    <header className="flex h-12 shrink-0 items-center border-b border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.5)] px-3 backdrop-blur-xl md:px-4">
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setMobileSidebarOpen(true)}
+        className="mr-2 flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300 md:hidden"
+      >
+        <Menu size={18} strokeWidth={1.5} />
+      </button>
+
       {/* Breadcrumbs — thin, monochromatic */}
-      <nav className="flex items-center gap-1 text-[13px]">
+      <nav className="flex min-w-0 items-center gap-1 text-[13px]">
         {breadcrumbs.map((crumb, i) => (
           <span key={crumb.href + i} className="flex items-center gap-1">
             {i > 0 && (

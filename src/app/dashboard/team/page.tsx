@@ -150,9 +150,9 @@ export default function TeamPage() {
   return (
     <div className="flex h-full flex-col">
       {/* ── Header ───────────────────────────────────── */}
-      <div className="border-b border-[rgba(255,255,255,0.06)] px-6 pb-4 pt-5">
+      <div className="border-b border-[rgba(255,255,255,0.06)] px-4 pb-4 pt-4 md:px-6 md:pt-5">
         {/* Title row */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-[15px] font-medium text-zinc-200">Members</h1>
             <p className="mt-0.5 text-[12px] text-zinc-600">
@@ -256,9 +256,10 @@ export default function TeamPage() {
       </div>
 
       {/* ── Data Grid ────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-auto">
+        <div className="min-w-[700px]">
         {/* Table header */}
-        <div className="sticky top-0 z-10 grid grid-cols-12 gap-3 border-b border-[rgba(255,255,255,0.06)] bg-black/80 px-6 py-2.5 text-[10px] font-medium uppercase tracking-wider text-zinc-700 backdrop-blur-sm">
+        <div className="sticky top-0 z-10 grid grid-cols-12 gap-3 border-b border-[rgba(255,255,255,0.06)] bg-black/80 px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-zinc-700 backdrop-blur-sm md:px-6">
           <span className="col-span-4">Member</span>
           <span className="col-span-2">Role</span>
           <span className="col-span-1">Branch</span>
@@ -435,6 +436,7 @@ export default function TeamPage() {
             <p className="mt-0.5 text-[10px] text-zinc-700">Try adjusting your search or filters.</p>
           </div>
         )}
+        </div>{/* close min-w wrapper */}
       </div>
 
       {/* ── Overlays ─────────────────────────────────── */}
