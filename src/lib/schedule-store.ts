@@ -1,20 +1,74 @@
 import { create } from "zustand";
 import {
   scheduleBlocks as initialBlocks,
+  technicians as initialTechnicians,
   type ScheduleBlock,
   type ScheduleBlockStatus,
+  type Technician,
 } from "./data";
+import {
+  getScheduleBlocks,
+  getOrgTechnicians,
+  getScheduleView,
+  moveScheduleBlockServer,
+  resizeScheduleBlockServer,
+  deleteScheduleBlock as deleteBlockServer,
+  type BacklogJob,
+  type ScheduleEvent,
+} from "@/app/actions/schedule";
 
 export type ViewScale = "day" | "week" | "month";
 
+/* ── Helper function to generate initials ─────────────── */
+function getInitials(name: string): string {
+  if (!name) return "??";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+/* ── Helper function to convert time to decimal hours ─── */
+function timeToDecimalHours(timeStr: string): number {
+  const date = new Date(timeStr);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  return hours + minutes / 60;
+}
+
+/* ── Helper function to calculate duration in hours ────── */
+function calculateDuration(startTime: string, endTime: string): number {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+}
+
+/* ── Convert decimal hour to ISO timestamp for a given date ── */
+function decimalHourToISO(date: string, hour: number): string {
+  const d = new Date(date);
+  const h = Math.floor(hour);
+  const m = Math.round((hour - h) * 60);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+}
+
 interface ScheduleState {
   blocks: ScheduleBlock[];
+  technicians: Technician[];
+  backlogJobs: BacklogJob[];
+  scheduleEvents: ScheduleEvent[];
+  loaded: boolean;
+  loading: boolean;
+  orgId: string | null;
   viewScale: ViewScale;
-  selectedDate: string; // ISO date string
+  selectedDate: string;
   draggingBlockId: string | null;
   peekBlockId: string | null;
   unscheduledDrawerOpen: boolean;
 
+  loadFromServer: (orgId: string, date: string) => Promise<void>;
+  refresh: () => Promise<void>;
   setViewScale: (scale: ViewScale) => void;
   setSelectedDate: (date: string) => void;
   setDraggingBlockId: (id: string | null) => void;
@@ -28,15 +82,121 @@ interface ScheduleState {
   restoreBlock: (block: ScheduleBlock) => void;
   addBlock: (block: ScheduleBlock) => void;
   updateBlockStatus: (blockId: string, status: ScheduleBlockStatus) => void;
+
+  /** Called by realtime when a schedule_block changes */
+  handleRealtimeUpdate: () => void;
 }
 
-export const useScheduleStore = create<ScheduleState>((set) => ({
+function mapServerBlock(b: any): ScheduleBlock {
+  return {
+    id: b.id,
+    jobId: b.job_id || "",
+    technicianId: b.technician_id || "",
+    title: b.title,
+    client: b.client_name || "",
+    location: b.location || "",
+    startHour: b.start_time ? timeToDecimalHours(b.start_time) : 0,
+    duration: b.start_time && b.end_time ? calculateDuration(b.start_time, b.end_time) : 0,
+    status: b.status,
+    travelTime: b.travel_minutes || undefined,
+    conflict: b.is_conflict || false,
+  };
+}
+
+function mapServerTechnician(t: any): Technician {
+  return {
+    id: t.id,
+    name: t.full_name || "",
+    initials: getInitials(t.full_name || ""),
+    skill: "general" as const,
+    status: "offline" as const,
+    hoursBooked: typeof t.hours_booked === "number" ? Math.round(t.hours_booked * 10) / 10 : 0,
+    hoursAvailable: 8,
+    avatar: undefined,
+  };
+}
+
+export const useScheduleStore = create<ScheduleState>((set, get) => ({
   blocks: initialBlocks,
+  technicians: initialTechnicians,
+  backlogJobs: [],
+  scheduleEvents: [],
+  loaded: false,
+  loading: false,
+  orgId: null,
   viewScale: "day",
   selectedDate: new Date().toISOString().split("T")[0],
   draggingBlockId: null,
   peekBlockId: null,
   unscheduledDrawerOpen: false,
+
+  loadFromServer: async (orgId: string, date: string) => {
+    set({ loading: true, orgId, selectedDate: date });
+    try {
+      // Try unified RPC first
+      const { data } = await getScheduleView(orgId, date);
+
+      if (data) {
+        const mappedBlocks = (data.blocks || []).map(mapServerBlock);
+        const mappedTechs = (data.technicians || []).map(mapServerTechnician);
+
+        set({
+          blocks: mappedBlocks.length > 0 ? mappedBlocks : initialBlocks,
+          technicians: mappedTechs.length > 0 ? mappedTechs : initialTechnicians,
+          backlogJobs: data.backlog || [],
+          scheduleEvents: data.events || [],
+          loaded: true,
+          loading: false,
+        });
+        return;
+      }
+
+      // Fallback to old method
+      const [blocksResult, techniciansResult] = await Promise.all([
+        getScheduleBlocks(orgId, date),
+        getOrgTechnicians(orgId),
+      ]);
+
+      const allBlocks: any[] = [];
+      if (blocksResult.data) {
+        Object.values(blocksResult.data).forEach((techBlocks: any) => {
+          if (Array.isArray(techBlocks)) allBlocks.push(...techBlocks);
+        });
+      }
+      const mappedBlocks = allBlocks.map(mapServerBlock);
+      const mappedTechs = (techniciansResult.data || []).map(mapServerTechnician);
+
+      set({
+        blocks: mappedBlocks.length > 0 ? mappedBlocks : initialBlocks,
+        technicians: mappedTechs.length > 0 ? mappedTechs : initialTechnicians,
+        loaded: true,
+        loading: false,
+      });
+    } catch (error) {
+      console.error("Failed to load schedule data:", error);
+      set({ loading: false });
+    }
+  },
+
+  refresh: async () => {
+    const { orgId, selectedDate } = get();
+    if (!orgId) return;
+    try {
+      const { data } = await getScheduleView(orgId, selectedDate);
+      if (data) {
+        const mappedBlocks = (data.blocks || []).map(mapServerBlock);
+        const mappedTechs = (data.technicians || []).map(mapServerTechnician);
+        set({
+          blocks: mappedBlocks.length > 0 ? mappedBlocks : get().blocks,
+          technicians: mappedTechs.length > 0 ? mappedTechs : get().technicians,
+          backlogJobs: data.backlog || [],
+          scheduleEvents: data.events || [],
+        });
+      }
+    } catch {
+      // silent refresh failure
+    }
+  },
 
   setViewScale: (scale) => set({ viewScale: scale }),
   setSelectedDate: (date) => set({ selectedDate: date }),
@@ -46,32 +206,68 @@ export const useScheduleStore = create<ScheduleState>((set) => ({
     set((s) => ({ unscheduledDrawerOpen: !s.unscheduledDrawerOpen })),
   setUnscheduledDrawerOpen: (open) => set({ unscheduledDrawerOpen: open }),
 
-  moveBlock: (blockId, newStartHour, newTechId) =>
+  moveBlock: (blockId, newStartHour, newTechId) => {
+    const block = get().blocks.find((b) => b.id === blockId);
+    const snappedHour = Math.round(newStartHour * 4) / 4;
+
+    // Optimistic local update
     set((s) => ({
       blocks: s.blocks.map((b) =>
         b.id === blockId
           ? {
               ...b,
-              startHour: Math.round(newStartHour * 4) / 4, // snap to 15m
+              startHour: snappedHour,
               ...(newTechId ? { technicianId: newTechId } : {}),
             }
           : b
       ),
-    })),
+    }));
 
-  resizeBlock: (blockId, newDuration) =>
+    // Persist to server
+    if (block) {
+      const date = get().selectedDate;
+      const startISO = decimalHourToISO(date, snappedHour);
+      const endISO = decimalHourToISO(date, snappedHour + block.duration);
+      const techId = newTechId || block.technicianId;
+
+      moveScheduleBlockServer(blockId, techId, startISO, endISO).catch((err) => {
+        console.error("Failed to persist block move:", err);
+      });
+    }
+  },
+
+  resizeBlock: (blockId, newDuration) => {
+    const block = get().blocks.find((b) => b.id === blockId);
+    const snapped = Math.max(0.25, Math.round(newDuration * 4) / 4);
+
+    // Optimistic local update
     set((s) => ({
       blocks: s.blocks.map((b) =>
-        b.id === blockId
-          ? { ...b, duration: Math.max(0.25, Math.round(newDuration * 4) / 4) }
-          : b
+        b.id === blockId ? { ...b, duration: snapped } : b
       ),
-    })),
+    }));
 
-  deleteBlock: (blockId) =>
+    // Persist to server
+    if (block) {
+      const date = get().selectedDate;
+      const endISO = decimalHourToISO(date, block.startHour + snapped);
+      resizeScheduleBlockServer(blockId, endISO).catch((err) => {
+        console.error("Failed to persist block resize:", err);
+      });
+    }
+  },
+
+  deleteBlock: (blockId) => {
+    // Optimistic local delete
     set((s) => ({
       blocks: s.blocks.filter((b) => b.id !== blockId),
-    })),
+    }));
+
+    // Persist to server
+    deleteBlockServer(blockId).catch((err) => {
+      console.error("Failed to persist block delete:", err);
+    });
+  },
 
   restoreBlock: (block) =>
     set((s) => ({
@@ -89,4 +285,8 @@ export const useScheduleStore = create<ScheduleState>((set) => ({
         b.id === blockId ? { ...b, status } : b
       ),
     })),
+
+  handleRealtimeUpdate: () => {
+    get().refresh();
+  },
 }));

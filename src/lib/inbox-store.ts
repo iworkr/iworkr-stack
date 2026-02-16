@@ -1,16 +1,66 @@
 import { create } from "zustand";
 import { inboxItems, type InboxItem } from "./data";
+import {
+  getNotifications,
+  markRead,
+  archiveNotification,
+  unarchiveNotification,
+  snoozeNotification,
+  unsnoozeNotification,
+} from "@/app/actions/notifications";
 
 /* ── Inbox tab types ─────────────────────────────────── */
 export type InboxTab = "all" | "unread" | "snoozed";
 
+/* ── Helper function to generate initials ─────────────── */
+function getInitials(name: string): string {
+  if (!name) return "??";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+/* ── Map server notification to InboxItem ────────────── */
+function mapNotification(n: any): InboxItem {
+  return {
+    id: n.id,
+    type: n.type,
+    title: n.title,
+    body: n.body || "",
+    time: n.created_at
+      ? new Date(n.created_at).toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })
+      : "",
+    read: n.read || false,
+    jobRef: n.related_job_id || undefined,
+    sender: n.sender_name || "System",
+    senderInitials: getInitials(n.sender_name || "System"),
+    context: n.context || undefined,
+    snoozedUntil: n.snoozed_until || null,
+    archived: n.archived || false,
+  };
+}
+
 /* ── Store interface ─────────────────────────────────── */
 interface InboxStore {
   items: InboxItem[];
+  loaded: boolean;
+  loading: boolean;
   selectedId: string | null;
   focusedIndex: number;
   activeTab: InboxTab;
   replyText: string;
+
+  loadFromServer: (orgId: string) => Promise<void>;
+  refresh: () => Promise<void>;
+  addRealtimeItem: (payload: any) => void;
 
   /* Derived selectors */
   getFilteredItems: () => InboxItem[];
@@ -23,7 +73,7 @@ interface InboxStore {
   setActiveTab: (tab: InboxTab) => void;
   setReplyText: (text: string) => void;
 
-  /* Triage */
+  /* Triage — now server-synced */
   markAsRead: (id: string) => void;
   archive: (id: string) => InboxItem | undefined;
   unarchive: (item: InboxItem) => void;
@@ -41,10 +91,62 @@ interface InboxStore {
 
 export const useInboxStore = create<InboxStore>((set, get) => ({
   items: inboxItems.map((item) => ({ ...item, archived: false, snoozedUntil: null })),
+  loaded: false,
+  loading: false,
   selectedId: inboxItems[0]?.id || null,
   focusedIndex: 0,
   activeTab: "all",
   replyText: "",
+
+  loadFromServer: async (_orgId: string) => {
+    set({ loading: true });
+    try {
+      const result = await getNotifications();
+
+      if (result.data && result.data.length > 0) {
+        const mappedItems = result.data.map(mapNotification);
+        set({
+          items: mappedItems,
+          loaded: true,
+          loading: false,
+          selectedId: mappedItems[0]?.id || null,
+        });
+      } else {
+        set({
+          items: inboxItems.map((item) => ({ ...item, archived: false, snoozedUntil: null })),
+          loaded: true,
+          loading: false,
+          selectedId: inboxItems[0]?.id || null,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load inbox data:", error);
+      set({ loading: false });
+    }
+  },
+
+  refresh: async () => {
+    try {
+      const result = await getNotifications();
+      if (result.data && result.data.length > 0) {
+        const mappedItems = result.data.map(mapNotification);
+        const { selectedId } = get();
+        set({
+          items: mappedItems,
+          selectedId: mappedItems.find(i => i.id === selectedId) ? selectedId : mappedItems[0]?.id || null,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to refresh inbox:", error);
+    }
+  },
+
+  addRealtimeItem: (payload: any) => {
+    const newItem = mapNotification(payload.new);
+    set((s) => ({
+      items: [newItem, ...s.items],
+    }));
+  },
 
   /* ── Derived ───────────────────────────────────────── */
   getFilteredItems: () => {
@@ -74,24 +176,30 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
   setFocusedIndex: (index) => set({ focusedIndex: index }),
   setActiveTab: (tab) => {
     set({ activeTab: tab, focusedIndex: 0 });
-    // Auto-select first item of new tab
     const filtered = get().getFilteredItems();
     set({ selectedId: filtered[0]?.id || null });
   },
   setReplyText: (text) => set({ replyText: text }),
 
-  /* ── Triage actions ────────────────────────────────── */
-  markAsRead: (id) =>
+  /* ── Triage actions — optimistic + server sync ─────── */
+  markAsRead: (id) => {
+    // Optimistic update
     set((s) => ({
       items: s.items.map((i) => (i.id === id ? { ...i, read: true } : i)),
-    })),
+    }));
+    // Fire-and-forget server sync
+    markRead(id).catch(console.error);
+  },
 
   archive: (id) => {
     const item = get().items.find((i) => i.id === id);
     if (!item) return undefined;
+
+    // Optimistic update
     set((s) => ({
-      items: s.items.map((i) => (i.id === id ? { ...i, archived: true } : i)),
+      items: s.items.map((i) => (i.id === id ? { ...i, archived: true, read: true } : i)),
     }));
+
     // Move selection to next visible item
     const filtered = get().getFilteredItems();
     const idx = get().focusedIndex;
@@ -100,20 +208,33 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
       selectedId: next?.id || null,
       focusedIndex: Math.min(idx, Math.max(filtered.length - 1, 0)),
     });
+
+    // Server sync
+    archiveNotification(id).catch(console.error);
     return item;
   },
 
-  unarchive: (item) =>
+  unarchive: (item) => {
+    // Optimistic update
     set((s) => ({
       items: s.items.map((i) => (i.id === item.id ? { ...i, archived: false } : i)),
-    })),
+    }));
+    // Server sync
+    unarchiveNotification(item.id).catch(console.error);
+  },
 
   snooze: (id, until) => {
     const item = get().items.find((i) => i.id === id);
     if (!item) return undefined;
+
+    // Convert friendly labels to ISO timestamps
+    const snoozeUntil = resolveSnoozeTime(until);
+
+    // Optimistic update
     set((s) => ({
-      items: s.items.map((i) => (i.id === id ? { ...i, snoozedUntil: until } : i)),
+      items: s.items.map((i) => (i.id === id ? { ...i, snoozedUntil: snoozeUntil } : i)),
     }));
+
     // Move selection to next visible item
     const filtered = get().getFilteredItems();
     const idx = get().focusedIndex;
@@ -122,13 +243,20 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
       selectedId: next?.id || null,
       focusedIndex: Math.min(idx, Math.max(filtered.length - 1, 0)),
     });
+
+    // Server sync with resolved ISO timestamp
+    snoozeNotification(id, snoozeUntil).catch(console.error);
     return item;
   },
 
-  unsnooze: (item) =>
+  unsnooze: (item) => {
+    // Optimistic update
     set((s) => ({
       items: s.items.map((i) => (i.id === item.id ? { ...i, snoozedUntil: null } : i)),
-    })),
+    }));
+    // Server sync
+    unsnoozeNotification(item.id).catch(console.error);
+  },
 
   /* ── Reply ─────────────────────────────────────────── */
   sendReply: (id, text) => {
@@ -138,6 +266,7 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
       items: s.items.map((i) => (i.id === id ? { ...i, read: true } : i)),
       replyText: "",
     }));
+    markRead(id).catch(console.error);
   },
 
   /* ── Navigation ────────────────────────────────────── */
@@ -160,8 +289,42 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
     const item = filtered[get().focusedIndex];
     if (item) {
       set({ selectedId: item.id });
-      // Mark as read on select
       get().markAsRead(item.id);
     }
   },
 }));
+
+/* ── Snooze time resolver ────────────────────────────── */
+function resolveSnoozeTime(value: string): string {
+  const now = new Date();
+
+  switch (value) {
+    case "later_today": {
+      // 3 hours from now, or 5 PM today, whichever is sooner
+      const threeHours = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+      const fivePM = new Date(now);
+      fivePM.setHours(17, 0, 0, 0);
+      return (threeHours < fivePM ? threeHours : fivePM).toISOString();
+    }
+    case "tomorrow": {
+      // Tomorrow at 9 AM
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(9, 0, 0, 0);
+      return tomorrow.toISOString();
+    }
+    case "next_week": {
+      // Next Monday at 9 AM
+      const nextMonday = new Date(now);
+      const daysUntilMonday = (8 - now.getDay()) % 7 || 7;
+      nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
+      nextMonday.setHours(9, 0, 0, 0);
+      return nextMonday.toISOString();
+    }
+    default:
+      // If it's already an ISO string, return as-is
+      if (value.includes("T") || value.includes("-")) return value;
+      // Fallback: 3 hours
+      return new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString();
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { type ReactNode } from "react";
 
 interface SpotlightButtonProps {
@@ -38,6 +39,16 @@ export function SpotlightButton({
   const baseClasses = `inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`;
 
   if (href) {
+    const isInternal = href.startsWith("/");
+
+    if (isInternal) {
+      return (
+        <Link href={href} className={baseClasses}>
+          {children}
+        </Link>
+      );
+    }
+
     return (
       <motion.a
         href={href}

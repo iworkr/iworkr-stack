@@ -214,6 +214,11 @@ export function Workflow() {
 
   return (
     <Section id="workflow" className="overflow-hidden">
+      {/* Line grid texture */}
+      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-50" />
+      {/* Radial fade overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,black_100%)]" />
+
       <FadeIn>
         <SectionHeader
           label="Workflow"

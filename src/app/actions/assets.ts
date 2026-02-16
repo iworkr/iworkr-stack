@@ -1,0 +1,683 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use server";
+
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import { Events, dispatch } from "@/lib/automation";
+import { logger } from "@/lib/logger";
+
+export interface Asset {
+  id: string;
+  organization_id: string;
+  name: string;
+  category: "vehicle" | "tool" | "equipment" | "other";
+  status: "available" | "assigned" | "maintenance" | "retired";
+  assigned_to: string | null;
+  serial_number: string | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  location: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
+  purchase_date: string | null;
+  purchase_cost: number | null;
+  last_service: string | null;
+  next_service: string | null;
+  notes: string | null;
+  metadata: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  assigned_to_name?: string | null;
+}
+
+export interface InventoryItem {
+  id: string;
+  organization_id: string;
+  name: string;
+  sku: string | null;
+  category: string | null;
+  quantity: number;
+  min_quantity: number;
+  unit_cost: number | null;
+  location: string | null;
+  stock_level: "ok" | "low" | "critical";
+  supplier: string | null;
+  metadata: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssetAudit {
+  id: string;
+  organization_id: string;
+  asset_id: string | null;
+  inventory_id: string | null;
+  action: string;
+  notes: string | null;
+  user_id: string | null;
+  user_name: string | null;
+  metadata: Record<string, any> | null;
+  created_at: string;
+}
+
+export interface CreateAssetParams {
+  organization_id: string;
+  name: string;
+  category: "vehicle" | "tool" | "equipment" | "other";
+  status?: "available" | "assigned" | "maintenance" | "retired";
+  assigned_to?: string | null;
+  serial_number?: string | null;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
+  location?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  purchase_date?: string | null;
+  purchase_cost?: number | null;
+  last_service?: string | null;
+  next_service?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, any> | null;
+}
+
+export interface UpdateAssetParams {
+  name?: string;
+  category?: "vehicle" | "tool" | "equipment" | "other";
+  status?: "available" | "assigned" | "maintenance" | "retired";
+  assigned_to?: string | null;
+  serial_number?: string | null;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
+  location?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  purchase_date?: string | null;
+  purchase_cost?: number | null;
+  last_service?: string | null;
+  next_service?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, any> | null;
+}
+
+export interface CreateInventoryItemParams {
+  organization_id: string;
+  name: string;
+  sku?: string | null;
+  category?: string | null;
+  quantity?: number;
+  min_quantity?: number;
+  unit_cost?: number | null;
+  location?: string | null;
+  supplier?: string | null;
+  metadata?: Record<string, any> | null;
+}
+
+export interface UpdateInventoryItemParams {
+  name?: string;
+  sku?: string | null;
+  category?: string | null;
+  quantity?: number;
+  min_quantity?: number;
+  unit_cost?: number | null;
+  location?: string | null;
+  supplier?: string | null;
+  metadata?: Record<string, any> | null;
+}
+
+/**
+ * Get all non-deleted assets with assigned_to profile name
+ */
+export async function getAssets(orgId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data: assets, error } = await supabase
+      .from("assets")
+      .select(`
+        *,
+        profiles:assigned_to (
+          full_name
+        )
+      `)
+      .eq("organization_id", orgId)
+      .is("deleted_at", null)
+      .order("name", { ascending: true });
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    const formattedAssets = (assets || []).map((asset: any) => ({
+      ...asset,
+      assigned_to_name: asset.profiles?.full_name || null,
+      profiles: undefined,
+    }));
+
+    return { data: formattedAssets, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to fetch assets" };
+  }
+}
+
+/**
+ * Create an asset and create audit entry
+ */
+export async function createAsset(params: CreateAssetParams) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: "Not authenticated" };
+    }
+
+    const assetData = {
+      organization_id: params.organization_id,
+      name: params.name,
+      category: params.category,
+      status: params.status || "available",
+      assigned_to: params.assigned_to || null,
+      serial_number: params.serial_number || null,
+      make: params.make || null,
+      model: params.model || null,
+      year: params.year || null,
+      location: params.location || null,
+      location_lat: params.location_lat || null,
+      location_lng: params.location_lng || null,
+      purchase_date: params.purchase_date || null,
+      purchase_cost: params.purchase_cost || null,
+      last_service: params.last_service || null,
+      next_service: params.next_service || null,
+      notes: params.notes || null,
+      metadata: params.metadata || null,
+    };
+
+    const { data: asset, error: assetError } = await supabase
+      .from("assets")
+      .insert(assetData)
+      .select()
+      .single();
+
+    if (assetError) {
+      return { data: null, error: assetError.message };
+    }
+
+    // Create audit entry
+    const userName = user?.user_metadata?.full_name || user?.email || "Unknown";
+    await supabase
+      .from("asset_audits")
+      .insert({
+        organization_id: params.organization_id,
+        asset_id: asset.id,
+        inventory_id: null,
+        action: "created",
+        notes: `Asset "${params.name}" was created`,
+        user_id: user.id,
+        user_name: userName,
+        metadata: { asset_name: params.name },
+      });
+
+    revalidatePath("/dashboard/assets");
+    return { data: asset, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to create asset" };
+  }
+}
+
+/**
+ * Update an asset and create audit entry
+ */
+export async function updateAsset(assetId: string, updates: UpdateAssetParams) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: "Not authenticated" };
+    }
+
+    // Get current asset for audit
+    const { data: currentAsset, error: fetchError } = await supabase
+      .from("assets")
+      .select("name, status, assigned_to")
+      .eq("id", assetId)
+      .is("deleted_at", null)
+      .single();
+
+    if (fetchError) {
+      return { data: null, error: fetchError.message };
+    }
+
+    const updateData: any = {};
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.category !== undefined) updateData.category = updates.category;
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.assigned_to !== undefined) updateData.assigned_to = updates.assigned_to;
+    if (updates.serial_number !== undefined) updateData.serial_number = updates.serial_number;
+    if (updates.make !== undefined) updateData.make = updates.make;
+    if (updates.model !== undefined) updateData.model = updates.model;
+    if (updates.year !== undefined) updateData.year = updates.year;
+    if (updates.location !== undefined) updateData.location = updates.location;
+    if (updates.location_lat !== undefined) updateData.location_lat = updates.location_lat;
+    if (updates.location_lng !== undefined) updateData.location_lng = updates.location_lng;
+    if (updates.purchase_date !== undefined) updateData.purchase_date = updates.purchase_date;
+    if (updates.purchase_cost !== undefined) updateData.purchase_cost = updates.purchase_cost;
+    if (updates.last_service !== undefined) updateData.last_service = updates.last_service;
+    if (updates.next_service !== undefined) updateData.next_service = updates.next_service;
+    if (updates.notes !== undefined) updateData.notes = updates.notes;
+    if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
+
+    updateData.updated_at = new Date().toISOString();
+
+    const { data: asset, error: updateError } = await supabase
+      .from("assets")
+      .update(updateData)
+      .eq("id", assetId)
+      .is("deleted_at", null)
+      .select()
+      .single();
+
+    if (updateError) {
+      return { data: null, error: updateError.message };
+    }
+
+    // Create audit entry for significant changes
+    const userName = user?.user_metadata?.full_name || user?.email || "Unknown";
+    const auditNotes: string[] = [];
+    
+    if (updates.status && updates.status !== currentAsset.status) {
+      auditNotes.push(`Status changed from ${currentAsset.status} to ${updates.status}`);
+    }
+    if (updates.assigned_to !== undefined && updates.assigned_to !== currentAsset.assigned_to) {
+      auditNotes.push(`Assignment changed`);
+    }
+    if (updates.name && updates.name !== currentAsset.name) {
+      auditNotes.push(`Name changed from "${currentAsset.name}" to "${updates.name}"`);
+    }
+
+    if (auditNotes.length > 0) {
+      await supabase
+        .from("asset_audits")
+        .insert({
+          organization_id: asset.organization_id,
+          asset_id: asset.id,
+          inventory_id: null,
+          action: "updated",
+          notes: auditNotes.join("; "),
+          user_id: user.id,
+          user_name: userName,
+          metadata: { updates },
+        });
+    }
+
+    revalidatePath("/dashboard/assets");
+    return { data: asset, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to update asset" };
+  }
+}
+
+/**
+ * Get all inventory items for an organization
+ */
+export async function getInventoryItems(orgId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data: items, error } = await supabase
+      .from("inventory_items")
+      .select("*")
+      .eq("organization_id", orgId)
+      .order("name", { ascending: true });
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    return { data: items || [], error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to fetch inventory items" };
+  }
+}
+
+/**
+ * Update inventory item quantity and auto-calculate stock_level
+ */
+export async function updateInventoryItem(itemId: string, updates: UpdateInventoryItemParams) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: "Not authenticated" };
+    }
+
+    // Get current item to calculate stock level
+    const { data: currentItem, error: fetchError } = await supabase
+      .from("inventory_items")
+      .select("quantity, min_quantity")
+      .eq("id", itemId)
+      .single();
+
+    if (fetchError) {
+      return { data: null, error: fetchError.message };
+    }
+
+    const updateData: any = {};
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.sku !== undefined) updateData.sku = updates.sku;
+    if (updates.category !== undefined) updateData.category = updates.category;
+    if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
+    if (updates.min_quantity !== undefined) updateData.min_quantity = updates.min_quantity;
+    if (updates.unit_cost !== undefined) updateData.unit_cost = updates.unit_cost;
+    if (updates.location !== undefined) updateData.location = updates.location;
+    if (updates.supplier !== undefined) updateData.supplier = updates.supplier;
+    if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
+
+    // Auto-calculate stock_level based on quantity vs min_quantity
+    const quantity = updates.quantity !== undefined ? updates.quantity : currentItem.quantity;
+    const minQuantity = updates.min_quantity !== undefined ? updates.min_quantity : currentItem.min_quantity;
+
+    if (quantity <= 0) {
+      updateData.stock_level = "critical";
+    } else if (quantity <= minQuantity) {
+      updateData.stock_level = "low";
+    } else {
+      updateData.stock_level = "ok";
+    }
+
+    updateData.updated_at = new Date().toISOString();
+
+    const { data: item, error: updateError } = await supabase
+      .from("inventory_items")
+      .update(updateData)
+      .eq("id", itemId)
+      .select()
+      .single();
+
+    if (updateError) {
+      return { data: null, error: updateError.message };
+    }
+
+    // Dispatch low/critical stock alerts
+    if (item.stock_level === "low") {
+      dispatch(Events.inventoryLowStock(item.organization_id, itemId, {
+        name: item.name,
+        quantity: item.quantity,
+        min_quantity: item.min_quantity,
+        stock_level: "low",
+      }));
+    } else if (item.stock_level === "critical") {
+      dispatch(Events.inventoryCriticalStock(item.organization_id, itemId, {
+        name: item.name,
+        quantity: item.quantity,
+        min_quantity: item.min_quantity,
+        stock_level: "critical",
+      }));
+    }
+
+    revalidatePath("/dashboard/assets");
+    return { data: item, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to update inventory item" };
+  }
+}
+
+/**
+ * Create a new inventory item
+ */
+export async function createInventoryItem(params: CreateInventoryItemParams) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: "Not authenticated" };
+    }
+
+    const quantity = params.quantity || 0;
+    const minQuantity = params.min_quantity || 0;
+
+    // Auto-calculate stock_level
+    let stockLevel: "ok" | "low" | "critical" = "ok";
+    if (quantity <= 0) {
+      stockLevel = "critical";
+    } else if (quantity <= minQuantity) {
+      stockLevel = "low";
+    }
+
+    const itemData = {
+      organization_id: params.organization_id,
+      name: params.name,
+      sku: params.sku || null,
+      category: params.category || null,
+      quantity,
+      min_quantity: minQuantity,
+      unit_cost: params.unit_cost || null,
+      location: params.location || null,
+      stock_level: stockLevel,
+      supplier: params.supplier || null,
+      metadata: params.metadata || null,
+    };
+
+    const { data: item, error: itemError } = await supabase
+      .from("inventory_items")
+      .insert(itemData)
+      .select()
+      .single();
+
+    if (itemError) {
+      return { data: null, error: itemError.message };
+    }
+
+    revalidatePath("/dashboard/assets");
+    return { data: item, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to create inventory item" };
+  }
+}
+
+/**
+ * Get recent asset audit entries for an organization
+ */
+export async function getAssetAudits(orgId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data: audits, error } = await supabase
+      .from("asset_audits")
+      .select("*")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    return { data: audits || [], error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to fetch asset audits" };
+  }
+}
+
+/* ── RPC-backed Operations ─────────────────────────────── */
+
+export interface AssetsOverview {
+  total_assets: number;
+  total_asset_value: number;
+  vehicles_active: number;
+  assets_assigned: number;
+  assets_maintenance: number;
+  service_due_count: number;
+  low_stock_count: number;
+  critical_stock_count: number;
+  total_inventory_value: number;
+}
+
+/**
+ * Get assets overview stats via RPC
+ */
+export async function getAssetsOverview(orgId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data, error } = await supabase.rpc("get_assets_overview", {
+      p_org_id: orgId,
+    });
+
+    if (error) {
+      logger.error("get_assets_overview RPC failed", "assets", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    return { data: data as AssetsOverview, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to fetch assets overview" };
+  }
+}
+
+/**
+ * Toggle asset custody (check-in / check-out) via RPC
+ */
+export async function toggleAssetCustody(
+  assetId: string,
+  targetUserId: string | null,
+  notes?: string
+) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await supabase.rpc("toggle_asset_custody", {
+      p_asset_id: assetId,
+      p_target_user_id: targetUserId,
+      p_actor_id: user.id,
+      p_notes: notes || null,
+    });
+
+    if (error) {
+      logger.error("toggle_asset_custody RPC failed", "assets", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    if (data?.error) {
+      return { data: null, error: data.error };
+    }
+
+    revalidatePath("/dashboard/assets");
+    return { data, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to toggle custody" };
+  }
+}
+
+/**
+ * Consume inventory on a job via RPC
+ */
+export async function consumeInventory(
+  inventoryId: string,
+  quantity: number,
+  jobId?: string,
+  notes?: string
+) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await supabase.rpc("consume_inventory", {
+      p_inventory_id: inventoryId,
+      p_quantity: quantity,
+      p_job_id: jobId || null,
+      p_actor_id: user.id,
+      p_notes: notes || null,
+    });
+
+    if (error) {
+      logger.error("consume_inventory RPC failed", "assets", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    if (data?.error) {
+      return { data: null, error: data.error };
+    }
+
+    // Dispatch low stock alerts
+    if (data?.low_stock_alert) {
+      const { data: item } = await supabase
+        .from("inventory_items")
+        .select("name, quantity, min_quantity, organization_id")
+        .eq("id", inventoryId)
+        .single();
+
+      if (item) {
+        if (data.stock_level === "critical") {
+          dispatch(Events.inventoryCriticalStock(item.organization_id, inventoryId, {
+            name: item.name, quantity: data.new_quantity, min_quantity: item.min_quantity, stock_level: "critical",
+          }));
+        } else {
+          dispatch(Events.inventoryLowStock(item.organization_id, inventoryId, {
+            name: item.name, quantity: data.new_quantity, min_quantity: item.min_quantity, stock_level: "low",
+          }));
+        }
+      }
+    }
+
+    revalidatePath("/dashboard/assets");
+    return { data, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to consume inventory" };
+  }
+}
+
+/**
+ * Log service for an asset via RPC
+ */
+export async function logAssetService(assetId: string, notes?: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await supabase.rpc("log_asset_service", {
+      p_asset_id: assetId,
+      p_actor_id: user.id,
+      p_notes: notes || null,
+    });
+
+    if (error) {
+      logger.error("log_asset_service RPC failed", "assets", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    if (data?.error) {
+      return { data: null, error: data.error };
+    }
+
+    revalidatePath("/dashboard/assets");
+    return { data, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to log service" };
+  }
+}

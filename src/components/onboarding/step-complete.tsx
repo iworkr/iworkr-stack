@@ -3,19 +3,40 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
+import { completeOnboarding, sendTeamInvites } from "@/app/actions/onboarding";
+import { useAuthStore } from "@/lib/auth-store";
 
 export function StepComplete() {
-  const { companyName } = useOnboardingStore();
+  const { companyName, organizationId, teamInvites } = useOnboardingStore();
+  const { refreshOrganizations } = useAuthStore();
   const [entering, setEntering] = useState(false);
 
-  const handleEnter = useCallback(() => {
+  const handleEnter = useCallback(async () => {
     if (entering) return;
     setEntering(true);
-    // Simulate entering workspace
+
+    try {
+      // Finalize onboarding on the backend
+      await completeOnboarding();
+
+      // Send any queued team invites
+      if (organizationId && teamInvites.length > 0) {
+        await sendTeamInvites(
+          organizationId,
+          teamInvites.map((t) => t.email)
+        );
+      }
+
+      // Refresh the auth store so the dashboard picks up the new org
+      await refreshOrganizations();
+    } catch {
+      // Graceful degradation — continue to dashboard even if backend isn't configured
+    }
+
     setTimeout(() => {
       window.location.href = "/dashboard";
-    }, 1500);
-  }, [entering]);
+    }, 1200);
+  }, [entering, organizationId, teamInvites, refreshOrganizations]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {

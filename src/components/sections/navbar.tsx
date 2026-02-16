@@ -3,13 +3,15 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "Workflow", href: "#workflow" },
+  { label: "Download", href: "#download" },
   { label: "Pricing", href: "#pricing" },
-  { label: "Testimonials", href: "#testimonials" },
 ];
 
 export function Navbar() {
@@ -37,17 +39,22 @@ export function Navbar() {
 
         <nav className="relative mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4 md:px-12">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white">
-              <span className="text-sm font-semibold text-black">iW</span>
-            </div>
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/logos/logo-mark.png"
+              alt="iWorkr"
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain"
+              priority
+            />
             <span className="text-sm font-medium tracking-tight text-zinc-100">
               iWorkr
             </span>
             <span className="hidden rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 sm:inline-block">
               v2.0
             </span>
-          </a>
+          </Link>
 
           {/* Desktop Links */}
           <div className="hidden items-center gap-8 md:flex">
@@ -64,13 +71,13 @@ export function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden items-center gap-3 md:flex">
-            <a
-              href="#pricing"
+            <Link
+              href="/auth"
               className="text-sm text-zinc-400 transition-colors hover:text-zinc-100"
             >
               Sign in
-            </a>
-            <SpotlightButton size="sm" href="#pricing">
+            </Link>
+            <SpotlightButton size="sm" href="/auth">
               Start free
             </SpotlightButton>
           </div>
@@ -106,7 +113,7 @@ export function Navbar() {
               </a>
             ))}
             <div className="mt-3 border-t border-[rgba(255,255,255,0.08)] pt-3">
-              <SpotlightButton size="md" className="w-full" href="#pricing">
+              <SpotlightButton size="md" className="w-full" href="/auth">
                 Start free trial
               </SpotlightButton>
             </div>

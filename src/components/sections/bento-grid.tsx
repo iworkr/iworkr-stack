@@ -266,14 +266,13 @@ function QuotesVisual() {
 }
 
 function FinancialsVisual() {
-  // Revenue line chart points
   const points = [
     20, 35, 30, 45, 42, 55, 60, 58, 70, 75, 72, 85, 90, 95, 92, 100, 105, 115, 120,
     130,
   ];
   const max = Math.max(...points);
-  const h = 120;
-  const w = 100; // percentage
+  const h = 60;
+  const w = 200;
 
   const pathD = points
     .map((p, i) => {
@@ -285,7 +284,7 @@ function FinancialsVisual() {
 
   return (
     <div className="mt-6">
-      <div className="mb-4 flex items-end gap-6">
+      <div className="mb-4 flex flex-wrap items-end gap-4 md:gap-6">
         <div>
           <div className="text-[10px] text-zinc-500">Monthly Revenue</div>
           <div className="text-2xl font-medium tracking-tight text-zinc-200">
@@ -305,40 +304,39 @@ function FinancialsVisual() {
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" preserveAspectRatio="none">
-        {/* Grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((frac) => (
-          <line
-            key={frac}
-            x1="0"
-            y1={h * frac}
-            x2={w}
-            y2={h * frac}
-            stroke="rgba(255,255,255,0.04)"
-            strokeWidth="0.5"
+      <div className="w-full max-h-[180px] md:max-h-[240px]" style={{ aspectRatio: "21 / 5" }}>
+        <svg viewBox={`0 0 ${w} ${h}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
+          {[0, 0.25, 0.5, 0.75, 1].map((frac) => (
+            <line
+              key={frac}
+              x1="0"
+              y1={h * frac}
+              x2={w}
+              y2={h * frac}
+              stroke="rgba(255,255,255,0.04)"
+              strokeWidth="0.3"
+            />
+          ))}
+          <defs>
+            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+            </linearGradient>
+          </defs>
+          <path
+            d={`${pathD} L ${w} ${h} L 0 ${h} Z`}
+            fill="url(#chartGrad)"
+            className="animate-line-draw"
           />
-        ))}
-        {/* Gradient fill */}
-        <defs>
-          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-          </linearGradient>
-        </defs>
-        <path
-          d={`${pathD} L ${w} ${h} L 0 ${h} Z`}
-          fill="url(#chartGrad)"
-          className="animate-line-draw"
-        />
-        {/* Line */}
-        <path
-          d={pathD}
-          fill="none"
-          stroke="rgba(255,255,255,0.4)"
-          strokeWidth="1"
-          className="animate-line-draw"
-        />
-      </svg>
+          <path
+            d={pathD}
+            fill="none"
+            stroke="rgba(255,255,255,0.4)"
+            strokeWidth="0.8"
+            className="animate-line-draw"
+          />
+        </svg>
+      </div>
     </div>
   );
 }

@@ -3,8 +3,10 @@
 import { motion } from "framer-motion";
 import { CalendarDays, ArrowRight, Clock, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
-import { scheduleBlocks } from "@/lib/data";
+import { useEffect, useMemo, useState } from "react";
+import { useScheduleStore } from "@/lib/schedule-store";
+import { useOrg } from "@/lib/hooks/use-org";
+import { getMySchedule, type ScheduleItem } from "@/app/actions/dashboard";
 import { WidgetShell } from "./widget-shell";
 
 const statusColors: Record<string, { bg: string; border: string; text: string; dot: string }> = {
@@ -22,25 +24,105 @@ function formatHour(h: number) {
   return min > 0 ? `${h12}:${min.toString().padStart(2, "0")} ${ampm}` : `${h12} ${ampm}`;
 }
 
+function timeToDecimal(timeStr: string): number {
+  const d = new Date(timeStr);
+  return d.getHours() + d.getMinutes() / 60;
+}
+
+function durationHours(start: string, end: string): number {
+  const s = new Date(start);
+  const e = new Date(end);
+  return (e.getTime() - s.getTime()) / (1000 * 60 * 60);
+}
+
+interface DisplayBlock {
+  id: string;
+  jobId: string | null;
+  title: string;
+  location: string;
+  startHour: number;
+  duration: number;
+  status: string;
+}
+
 export function WidgetSchedule() {
   const router = useRouter();
+  const { orgId } = useOrg();
+  const storeBlocks = useScheduleStore((s) => s.blocks);
+  const scheduleLoaded = useScheduleStore((s) => s.loaded);
+  const [serverBlocks, setServerBlocks] = useState<ScheduleItem[]>([]);
+  const [rpcLoaded, setRpcLoaded] = useState(false);
 
-  // Mike's schedule (tech-1)
-  const myBlocks = useMemo(
-    () => scheduleBlocks.filter((b) => b.technicianId === "tech-1").sort((a, b) => a.startHour - b.startHour),
-    []
-  );
+  // Fetch personal schedule via RPC
+  useEffect(() => {
+    getMySchedule(5).then(({ data }) => {
+      if (data && data.length > 0) setServerBlocks(data);
+      setRpcLoaded(true);
+    });
+  }, []);
+
+  // Map to display format — prefer RPC data, fall back to store
+  const myBlocks: DisplayBlock[] = useMemo(() => {
+    if (serverBlocks.length > 0) {
+      return serverBlocks.map(b => ({
+        id: b.id,
+        jobId: b.job_id,
+        title: b.title,
+        location: b.location || "",
+        startHour: timeToDecimal(b.start_time),
+        duration: durationHours(b.start_time, b.end_time),
+        status: b.status,
+      }));
+    }
+
+    // Fall back to store data
+    if (scheduleLoaded && storeBlocks.length > 0) {
+      return storeBlocks
+        .slice(0, 5)
+        .sort((a, b) => a.startHour - b.startHour)
+        .map(b => ({
+          id: b.id,
+          jobId: b.jobId,
+          title: b.title,
+          location: b.location || "",
+          startHour: b.startHour,
+          duration: b.duration,
+          status: b.status,
+        }));
+    }
+
+    return [];
+  }, [serverBlocks, storeBlocks, scheduleLoaded]);
 
   const now = new Date();
   const nowDecimal = now.getHours() + now.getMinutes() / 60;
 
-  // Find the "next up" block (first block that hasn't started yet or is en_route)
   const nextUpId = useMemo(() => {
     const next = myBlocks.find(
       (b) => b.status === "scheduled" || b.status === "en_route"
     );
     return next?.id;
   }, [myBlocks]);
+
+  // Skeleton loading state
+  if (!rpcLoaded && !scheduleLoaded) {
+    return (
+      <WidgetShell delay={0.15}>
+        <div className="px-4 py-3 space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-900 p-2.5">
+              <div className="h-3 w-12 animate-pulse rounded bg-zinc-900" />
+              <div className="h-2 w-2 animate-pulse rounded-full bg-zinc-900" />
+              <div className="flex-1 space-y-1">
+                <div className="h-3 w-24 animate-pulse rounded bg-zinc-900" />
+                <div className="h-2 w-16 animate-pulse rounded bg-zinc-900" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </WidgetShell>
+    );
+  }
 
   return (
     <WidgetShell
@@ -63,6 +145,12 @@ export function WidgetSchedule() {
       }
     >
       <div className="relative space-y-0.5 px-4 py-3">
+        {myBlocks.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <CalendarDays size={24} className="mb-2 text-zinc-700" />
+            <p className="text-[12px] text-zinc-600">No upcoming schedule blocks</p>
+          </div>
+        )}
         {myBlocks.map((block, i) => {
           const c = statusColors[block.status] || statusColors.scheduled;
           const isNext = block.id === nextUpId;
@@ -81,7 +169,7 @@ export function WidgetSchedule() {
                 duration: 0.4,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              onClick={() => router.push(`/dashboard/jobs/${block.jobId}`)}
+              onClick={() => block.jobId && router.push(`/dashboard/jobs/${block.jobId}`)}
               className={`group relative flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition-all ${
                 isNext
                   ? `${c.bg} ${c.border} shadow-[0_0_15px_rgba(94,106,210,0.15)]`
@@ -96,7 +184,7 @@ export function WidgetSchedule() {
                   {formatHour(block.startHour)}
                 </span>
                 <span className="text-[8px] text-zinc-700">
-                  {block.duration}h
+                  {block.duration.toFixed(1)}h
                 </span>
               </div>
 
@@ -113,10 +201,12 @@ export function WidgetSchedule() {
                 <div className={`truncate text-[11px] font-medium ${isComplete ? "text-zinc-600 line-through" : "text-zinc-300"}`}>
                   {block.title}
                 </div>
-                <div className="flex items-center gap-1.5 text-[9px] text-zinc-600">
-                  <MapPin size={8} />
-                  <span className="truncate">{block.location}</span>
-                </div>
+                {block.location && (
+                  <div className="flex items-center gap-1.5 text-[9px] text-zinc-600">
+                    <MapPin size={8} />
+                    <span className="truncate">{block.location}</span>
+                  </div>
+                )}
                 {isNext && (
                   <motion.div
                     initial={{ opacity: 0, width: 0 }}
@@ -133,8 +223,8 @@ export function WidgetSchedule() {
           );
         })}
 
-        {/* Current time indicator — red horizontal line */}
-        {nowDecimal >= 7 && nowDecimal <= 18 && (
+        {/* Current time indicator */}
+        {nowDecimal >= 7 && nowDecimal <= 18 && myBlocks.length > 0 && (
           <motion.div
             initial={{ opacity: 0, scaleX: 0 }}
             animate={{ opacity: 1, scaleX: 1 }}

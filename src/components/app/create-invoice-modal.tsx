@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { useToastStore } from "./action-toast";
 import { useFinanceStore } from "@/lib/finance-store";
+import { useClientsStore } from "@/lib/clients-store";
+import { useOrg } from "@/lib/hooks/use-org";
 import {
-  clients,
+  clients as mockClients,
   type Client,
   type Invoice,
   type LineItem,
@@ -108,19 +110,23 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   const catalogInputRef = useRef<HTMLInputElement>(null);
 
   const { addToast } = useToastStore();
-  const { addInvoice } = useFinanceStore();
+  const { addInvoice, createInvoiceServer } = useFinanceStore();
+  const { orgId } = useOrg();
+  const storeClients = useClientsStore((s) => s.clients);
+  const allClients = storeClients.length > 0 ? storeClients : mockClients;
+  const [saving, setSaving] = useState(false);
 
   /* ── Derived ────────────────────────────────────────────── */
   const filteredClients = useMemo(
     () =>
       clientQuery.length > 0
-        ? clients.filter(
+        ? allClients.filter(
             (c) =>
               c.name.toLowerCase().includes(clientQuery.toLowerCase()) ||
-              c.email.toLowerCase().includes(clientQuery.toLowerCase())
+              (c.email || "").toLowerCase().includes(clientQuery.toLowerCase())
           )
         : [],
-    [clientQuery]
+    [clientQuery, allClients]
   );
 
   const filteredCatalog = useMemo(
@@ -158,6 +164,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
       setAttachPdf(true);
       setSplitMenuOpen(false);
       setSent(false);
+      setSaving(false);
       setTimeout(() => clientInputRef.current?.focus(), 120);
     }
   }, [open]);
@@ -209,9 +216,54 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   }
 
   /* ── Save / Send ────────────────────────────────────────── */
-  function handleSubmit(mode: "send" | "draft" | "link") {
-    if (!isValid) return;
+  async function handleSubmit(mode: "send" | "draft" | "link") {
+    if (!isValid || saving) return;
 
+    // If org is available, persist to server
+    if (orgId) {
+      setSaving(true);
+      const result = await createInvoiceServer({
+        organization_id: orgId,
+        client_id: selectedClient!.id,
+        client_name: selectedClient!.name,
+        client_email: selectedClient!.email || null,
+        client_address: selectedClient!.address || null,
+        status: mode === "send" ? "sent" : "draft",
+        issue_date: issueDate.toISOString().split("T")[0],
+        due_date: dueDate.toISOString().split("T")[0],
+        tax_rate: 10,
+        notes: notes || null,
+        line_items: lineItems.map((li) => ({
+          description: li.description,
+          quantity: li.qty,
+          unit_price: li.rate,
+        })),
+      });
+      setSaving(false);
+
+      if (!result.success) {
+        addToast(`Error: ${result.error || "Failed to create invoice"}`);
+        return;
+      }
+
+      setSent(true);
+      const invId = result.displayId || "INV-????";
+
+      if (mode === "send") {
+        addToast(`${invId} sent to ${selectedClient!.email} — $${total.toLocaleString()}`);
+      } else if (mode === "draft") {
+        addToast(`${invId} saved as draft`);
+      } else if (mode === "link") {
+        const payLink = `https://pay.iworkr.app/${invId.toLowerCase()}`;
+        navigator.clipboard?.writeText(payLink);
+        addToast(`${invId} created — Payment link copied`);
+      }
+
+      setTimeout(() => onClose(), 400);
+      return;
+    }
+
+    // Fallback: local only (no org)
     const invNum = 1250 + Math.floor(Math.random() * 200);
     const invId = `INV-${invNum}`;
 

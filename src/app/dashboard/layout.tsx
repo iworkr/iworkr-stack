@@ -1,18 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
-import { CommandMenu } from "@/components/shell/command-menu";
 import { SlideOver } from "@/components/shell/slide-over";
-import { CreateJobModal } from "@/components/app/create-job-modal";
-import { CreateClientModal } from "@/components/app/create-client-modal";
-import { CreateInvoiceModal } from "@/components/app/create-invoice-modal";
-import { KeyboardShortcuts } from "@/components/app/keyboard-shortcuts";
 import { ActionToastContainer } from "@/components/app/action-toast";
+import { DataProvider } from "@/components/app/data-provider";
 import { useShellStore } from "@/lib/shell-store";
+
+// Lazy-load modals and overlays (only rendered when opened)
+const CommandMenu = dynamic(() => import("@/components/shell/command-menu").then((m) => m.CommandMenu), { ssr: false });
+const CreateJobModal = dynamic(() => import("@/components/app/create-job-modal").then((m) => m.CreateJobModal), { ssr: false });
+const CreateClientModal = dynamic(() => import("@/components/app/create-client-modal").then((m) => m.CreateClientModal), { ssr: false });
+const CreateInvoiceModal = dynamic(() => import("@/components/app/create-invoice-modal").then((m) => m.CreateInvoiceModal), { ssr: false });
+const KeyboardShortcuts = dynamic(() => import("@/components/app/keyboard-shortcuts").then((m) => m.KeyboardShortcuts), { ssr: false });
 
 export default function DashboardLayout({
   children,
@@ -176,18 +180,20 @@ export default function DashboardLayout({
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="flex-1 overflow-y-auto overflow-x-hidden bg-black"
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={pathname}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="h-full"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          <DataProvider>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="h-full"
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </DataProvider>
         </motion.main>
       </div>
 

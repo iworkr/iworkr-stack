@@ -37,11 +37,11 @@ export function FinalCTA() {
 
         <FadeIn delay={0.25}>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <SpotlightButton size="lg" href="#pricing">
+            <SpotlightButton size="lg" href="/auth">
               Start free trial
               <ArrowRight size={16} />
             </SpotlightButton>
-            <SpotlightButton variant="secondary" size="lg" href="#pricing">
+            <SpotlightButton variant="secondary" size="lg" href="mailto:sales@iworkr.com">
               Contact sales
             </SpotlightButton>
           </div>

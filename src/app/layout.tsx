@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { AuthProvider } from "@/components/providers/auth-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,15 +15,56 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iworkrapp.com";
+
 export const metadata: Metadata = {
-  title: "iWorkr — The Operating System for Service Work",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "iWorkr — The Operating System for Service Work",
+    template: "%s | iWorkr",
+  },
   description:
     "Purpose-built for plumbers, electricians, and field teams. Manage jobs, scheduling, and payments with engineering precision.",
+  keywords: [
+    "field service management",
+    "plumber software",
+    "electrician scheduling",
+    "job management",
+    "service work",
+    "invoicing",
+    "team scheduling",
+    "work orders",
+  ],
+  authors: [{ name: "iWorkr" }],
+  creator: "iWorkr",
   openGraph: {
     title: "iWorkr — The Operating System for Service Work",
     description:
       "Purpose-built for plumbers, electricians, and field teams. Manage jobs, scheduling, and payments with engineering precision.",
+    url: siteUrl,
+    siteName: "iWorkr",
     type: "website",
+    locale: "en_AU",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "iWorkr — The Operating System for Service Work",
+    description:
+      "Purpose-built for plumbers, electricians, and field teams. Manage jobs, scheduling, and payments with engineering precision.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: "/favicon.ico",
   },
 };
 
@@ -45,7 +87,9 @@ export default function RootLayout({
             backgroundSize: "256px 256px",
           }}
         />
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

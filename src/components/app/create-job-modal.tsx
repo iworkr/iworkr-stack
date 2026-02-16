@@ -24,7 +24,9 @@ import { StatusIcon } from "./status-icon";
 import { PopoverMenu } from "./popover-menu";
 import { useToastStore } from "./action-toast";
 import { useJobsStore } from "@/lib/jobs-store";
-import { clients, team, type Client, type Priority, type JobStatus, type Job } from "@/lib/data";
+import { useClientsStore } from "@/lib/clients-store";
+import { useOrg } from "@/lib/hooks/use-org";
+import { clients as mockClients, team, type Client, type Priority, type JobStatus, type Job } from "@/lib/data";
 
 /* ── Types & Config ───────────────────────────────────────── */
 
@@ -109,19 +111,23 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   const catalogInputRef = useRef<HTMLInputElement>(null);
 
   const { addToast } = useToastStore();
-  const { addJob } = useJobsStore();
+  const { createJobServer, addJob } = useJobsStore();
+  const storeClients = useClientsStore((s) => s.clients);
+  const { orgId } = useOrg();
+  const [saving, setSaving] = useState(false);
 
   /* ── Derived ────────────────────────────────────────────── */
+  const allClients = storeClients.length > 0 ? storeClients : mockClients;
   const filteredClients = useMemo(
     () =>
       clientQuery.length > 0
-        ? clients.filter(
+        ? allClients.filter(
             (c) =>
               c.name.toLowerCase().includes(clientQuery.toLowerCase()) ||
               (c.address || "").toLowerCase().includes(clientQuery.toLowerCase())
           )
         : [],
-    [clientQuery]
+    [clientQuery, allClients]
   );
 
   const filteredCatalog = useMemo(
@@ -231,33 +237,80 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   }
 
   /* ── Save ───────────────────────────────────────────────── */
-  function handleSave() {
-    if (!title.trim()) return;
-    const jobId = `JOB-${400 + Math.floor(Math.random() * 200)}`;
+  async function handleSave() {
+    if (!title.trim() || saving) return;
 
-    const newJob: Job = {
-      id: jobId,
-      title: title.trim(),
-      description: description.trim() || undefined,
-      priority,
-      status: estimateMode ? "backlog" : status,
-      assignee: assignee === "Unassigned" ? "" : assignee,
-      assigneeInitials: assignee === "Unassigned" ? "" : (team.find((t) => t.name === assignee)?.initials || ""),
-      client: selectedClient?.name || "",
-      due: targetDate || "—",
-      labels: [],
-      created: "Just now",
-      location: selectedClient?.address,
-      locationCoords: selectedClient?.addressCoords,
-      revenue: estimateMode && quoteTotal > 0 ? quoteTotal : undefined,
-    };
+    // Find the team member to get their profile id for assignment
+    const assigneeMember = assignee !== "Unassigned" ? team.find((t) => t.name === assignee) : null;
 
-    addJob(newJob);
+    if (orgId) {
+      // Server-synced path
+      setSaving(true);
+      try {
+        const serverLineItems = estimateMode
+          ? lineItems.map((li) => ({
+              description: li.description,
+              quantity: 1,
+              unit_price_cents: Math.round(li.cost * 100),
+            }))
+          : [];
 
-    if (estimateMode && quoteTotal > 0) {
-      addToast(`${jobId} created — Quote $${quoteTotal.toLocaleString()} sent`);
+        const result = await createJobServer({
+          organization_id: orgId,
+          title: title.trim(),
+          description: description.trim() || null,
+          status: estimateMode ? "backlog" : status,
+          priority,
+          client_id: selectedClient?.id || null,
+          assignee_id: (assigneeMember as any)?.id || null,
+          due_date: targetDate || null,
+          location: selectedClient?.address || null,
+          location_lat: selectedClient?.addressCoords?.lat || null,
+          location_lng: selectedClient?.addressCoords?.lng || null,
+          labels: [],
+          revenue: estimateMode && quoteTotal > 0 ? quoteTotal : null,
+          line_items: serverLineItems,
+        });
+
+        if (result.success) {
+          const displayId = result.displayId || "New Job";
+          if (estimateMode && quoteTotal > 0) {
+            addToast(`${displayId} created — Quote $${quoteTotal.toLocaleString()} sent`);
+          } else {
+            addToast(`${displayId} created`);
+          }
+        } else {
+          addToast(`Error: ${result.error || "Failed to create job"}`);
+        }
+      } finally {
+        setSaving(false);
+      }
     } else {
-      addToast(`${jobId} created`);
+      // Fallback: local-only mode
+      const jobId = `JOB-${400 + Math.floor(Math.random() * 200)}`;
+      const newJob: Job = {
+        id: jobId,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        status: estimateMode ? "backlog" : status,
+        assignee: assignee === "Unassigned" ? "" : assignee,
+        assigneeInitials: assignee === "Unassigned" ? "" : (team.find((t) => t.name === assignee)?.initials || ""),
+        client: selectedClient?.name || "",
+        due: targetDate || "—",
+        labels: [],
+        created: "Just now",
+        location: selectedClient?.address,
+        locationCoords: selectedClient?.addressCoords,
+        revenue: estimateMode && quoteTotal > 0 ? quoteTotal : undefined,
+      };
+      addJob(newJob);
+
+      if (estimateMode && quoteTotal > 0) {
+        addToast(`${jobId} created — Quote $${quoteTotal.toLocaleString()} sent`);
+      } else {
+        addToast(`${jobId} created`);
+      }
     }
 
     if (createMore) {
@@ -786,11 +839,11 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
-                  disabled={!title.trim()}
+                  disabled={!title.trim() || saving}
                   className="relative flex items-center gap-2 overflow-hidden rounded-md bg-gradient-to-r from-[#5E6AD2] to-[#7C3AED] px-4 py-1.5 text-[13px] font-medium text-white transition-all hover:from-[#6E7AE2] hover:to-[#8B5CF6] disabled:opacity-30"
                 >
                   <Send size={12} />
-                  Send Quote &amp; Save
+                  {saving ? "Saving..." : "Send Quote & Save"}
                   <kbd className="rounded bg-[rgba(255,255,255,0.15)] px-1 py-0.5 font-mono text-[9px]">
                     ⌘↵
                   </kbd>
@@ -799,11 +852,11 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
-                  disabled={!title.trim()}
+                  disabled={!title.trim() || saving}
                   className="flex items-center gap-2 rounded-md bg-white px-4 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-30"
                 >
                   <Check size={12} />
-                  Create Job
+                  {saving ? "Saving..." : "Create Job"}
                   <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">
                     ⌘↵
                   </kbd>

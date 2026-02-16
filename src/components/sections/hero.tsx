@@ -1,9 +1,56 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Smartphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
+
+function AppleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
+    </svg>
+  );
+}
+
+function WindowsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
+    </svg>
+  );
+}
+
+function AndroidIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.523 15.341a.998.998 0 0 1-.997-.998c0-.55.447-.997.997-.997s.998.447.998.997-.448.998-.998.998m-11.046 0a.998.998 0 0 1-.998-.998c0-.55.448-.997.998-.997s.997.447.997.997-.447.998-.997.998m11.4-6.423 1.9-3.29a.399.399 0 0 0-.146-.543.399.399 0 0 0-.544.146l-1.925 3.332A11.741 11.741 0 0 0 12 7.122a11.741 11.741 0 0 0-5.162 1.441L4.913 5.231a.399.399 0 0 0-.544-.146.399.399 0 0 0-.146.543l1.9 3.29C2.815 11.068.5 14.831.5 19.107h23c0-4.276-2.315-8.039-5.623-10.189" />
+    </svg>
+  );
+}
+
+const downloadPlatforms = [
+  { id: "macos", name: "macOS", iconType: "apple" as const },
+  { id: "windows", name: "Windows", iconType: "windows" as const },
+  { id: "ios", name: "iOS", iconType: "ios" as const },
+  { id: "android", name: "Android", iconType: "android" as const },
+];
+
+function PlatformIcon({ type }: { type: string }) {
+  const cls = "h-[14px] w-[14px]";
+  switch (type) {
+    case "apple":
+      return <AppleIcon className={cls} />;
+    case "windows":
+      return <WindowsIcon className={cls} />;
+    case "ios":
+      return <Smartphone size={14} strokeWidth={1.5} />;
+    case "android":
+      return <AndroidIcon className={cls} />;
+    default:
+      return null;
+  }
+}
 
 const wordVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -87,7 +134,7 @@ export function Hero() {
           transition={{ delay: 1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="flex items-center gap-4"
         >
-          <SpotlightButton size="lg" href="#pricing">
+          <SpotlightButton size="lg" href="/auth">
             Start building free
             <ArrowRight size={16} />
           </SpotlightButton>
@@ -97,6 +144,41 @@ export function Hero() {
             </kbd>
             to get started
           </span>
+        </motion.div>
+
+        {/* Download Strip */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-8 flex flex-col items-center gap-3"
+        >
+          <span className="text-[11px] tracking-widest uppercase text-zinc-600">
+            Download
+          </span>
+          <div className="flex items-center gap-1">
+            {downloadPlatforms.map((p, i) => (
+              <motion.a
+                key={p.id}
+                href="/auth"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: 1.25 + i * 0.06,
+                  duration: 0.4,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="group flex flex-col items-center gap-1.5 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-[rgba(255,255,255,0.04)]"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-zinc-500 transition-all duration-200 group-hover:border-[rgba(255,255,255,0.15)] group-hover:bg-[rgba(255,255,255,0.06)] group-hover:text-zinc-300">
+                  <PlatformIcon type={p.iconType} />
+                </div>
+                <span className="text-[10px] text-zinc-600 transition-colors duration-200 group-hover:text-zinc-400">
+                  {p.name}
+                </span>
+              </motion.a>
+            ))}
+          </div>
         </motion.div>
       </div>
 

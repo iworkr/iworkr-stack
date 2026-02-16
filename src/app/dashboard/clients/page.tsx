@@ -16,9 +16,10 @@ import {
   Pencil,
   SlidersHorizontal,
 } from "lucide-react";
-import { clients as initialClients, type Client } from "@/lib/data";
 import { useToastStore } from "@/components/app/action-toast";
 import { useShellStore } from "@/lib/shell-store";
+import { useClientsStore } from "@/lib/clients-store";
+import { deleteClient as deleteClientAction } from "@/app/actions/clients";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 
 /* ── Status config ────────────────────────────────────────── */
@@ -61,7 +62,7 @@ export default function ClientsPage() {
   const router = useRouter();
   const { addToast } = useToastStore();
   const { setCreateClientModalOpen } = useShellStore();
-  const [clientsList, setClientsList] = useState(initialClients);
+  const { clients: clientsList, archiveClient, restoreClient } = useClientsStore();
   const [search, setSearch] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(0);
 
@@ -72,7 +73,7 @@ export default function ClientsPage() {
   const filtered = clientsList.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase()) ||
+      (c.email || "").toLowerCase().includes(search.toLowerCase()) ||
       (c.tags || []).some((t) => t.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -114,9 +115,10 @@ export default function ClientsPage() {
       addToast("Email copied to clipboard");
     } else if (actionId === "archive") {
       const archived = client;
-      setClientsList((prev) => prev.filter((c) => c.id !== client.id));
+      archiveClient(client.id);
+      deleteClientAction(client.id);
       addToast(`${client.name} archived`, () => {
-        setClientsList((prev) => [...prev, archived].sort((a, b) => a.name.localeCompare(b.name)));
+        restoreClient(archived);
       });
     }
   }

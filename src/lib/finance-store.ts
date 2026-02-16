@@ -1,10 +1,25 @@
 import { create } from "zustand";
 import {
   invoices as initialInvoices,
+  payouts as initialPayouts,
+  dailyRevenue as initialDailyRevenue,
   type Invoice,
   type InvoiceStatus,
   type LineItem,
+  type Payout,
+  type DailyRevenue,
 } from "./data";
+import {
+  getInvoices,
+  getInvoice,
+  getPayouts,
+  getRevenueStats,
+  getFinanceOverview,
+  createInvoiceFull,
+  updateInvoiceStatus as updateInvoiceStatusServer,
+  type CreateInvoiceParams,
+  type FinanceOverview,
+} from "@/app/actions/finance";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -14,9 +29,17 @@ export type FinanceTab = "overview" | "invoices" | "payouts";
 
 interface FinanceState {
   invoices: Invoice[];
+  payouts: Payout[];
+  dailyRevenue: DailyRevenue[];
+  overview: FinanceOverview | null;
+  loaded: boolean;
+  loading: boolean;
   activeTab: FinanceTab;
   focusedIndex: number;
+  orgId: string | null;
 
+  loadFromServer: (orgId: string) => Promise<void>;
+  refresh: () => Promise<void>;
   setActiveTab: (tab: FinanceTab) => void;
   setFocusedIndex: (i: number) => void;
 
@@ -29,14 +52,210 @@ interface FinanceState {
   deleteInvoice: (id: string) => void;
   restoreInvoice: (invoice: Invoice) => void;
 
+  /** Server-synced create — persists to DB and updates local state */
+  createInvoiceServer: (params: CreateInvoiceParams) => Promise<{ success: boolean; displayId?: string; invoiceId?: string; error?: string }>;
+
+  /** Server-synced status update — persists to DB */
+  updateInvoiceStatusServer: (invoiceId: string, dbId: string, status: InvoiceStatus) => Promise<void>;
+
+  /** Handle realtime update */
+  handleRealtimeUpdate: () => void;
+
   /* Recalculate totals from line items */
   recalcInvoice: (id: string) => void;
 }
 
-export const useFinanceStore = create<FinanceState>((set) => ({
+export const useFinanceStore = create<FinanceState>((set, get) => ({
   invoices: initialInvoices,
+  payouts: initialPayouts,
+  dailyRevenue: initialDailyRevenue,
+  overview: null,
+  loaded: false,
+  loading: false,
   activeTab: "overview",
   focusedIndex: 0,
+  orgId: null,
+
+  loadFromServer: async (orgId: string) => {
+    set({ loading: true, orgId });
+    try {
+      const [invoicesResult, payoutsResult, revenueResult, overviewResult] = await Promise.all([
+        getInvoices(orgId),
+        getPayouts(orgId),
+        getRevenueStats(orgId),
+        getFinanceOverview(orgId),
+      ]);
+
+      const mappedInvoices: Invoice[] = [];
+      if (invoicesResult.data && invoicesResult.data.length > 0) {
+        // Fetch full invoice details with line items and events for each invoice
+        const invoicePromises = invoicesResult.data.map((inv: any) => getInvoice(inv.id));
+        const invoiceResults = await Promise.all(invoicePromises);
+        
+        for (const result of invoiceResults) {
+          if (result.data) {
+            const fullInvoice = result.data;
+            mappedInvoices.push({
+              id: fullInvoice.display_id || fullInvoice.id,
+              clientId: fullInvoice.client_id || "",
+              clientName: fullInvoice.client_name || "",
+              clientEmail: fullInvoice.client_email || "",
+              clientAddress: fullInvoice.client_address || "",
+              status: fullInvoice.status,
+              issueDate: fullInvoice.issue_date
+                ? new Date(fullInvoice.issue_date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "",
+              dueDate: fullInvoice.due_date
+                ? new Date(fullInvoice.due_date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "",
+              paidDate: fullInvoice.paid_date
+                ? new Date(fullInvoice.paid_date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : undefined,
+              lineItems: (fullInvoice.invoice_line_items || []).map((li: any) => ({
+                id: li.id,
+                description: li.description,
+                quantity: li.quantity,
+                unitPrice: li.unit_price,
+              })),
+              subtotal: fullInvoice.subtotal,
+              tax: fullInvoice.tax,
+              total: fullInvoice.total,
+              paymentLink: fullInvoice.payment_link || undefined,
+              events: (fullInvoice.invoice_events || []).map((ev: any) => ({
+                id: ev.id,
+                type: ev.type,
+                text: ev.text || "",
+                time: new Date(ev.created_at).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                }),
+              })),
+              notes: fullInvoice.notes || undefined,
+            });
+          }
+        }
+      }
+
+      const mappedPayouts: Payout[] = [];
+      if (payoutsResult.data && payoutsResult.data.length > 0) {
+        mappedPayouts.push(
+          ...payoutsResult.data.map((p: any) => ({
+            id: p.id,
+            amount: p.amount,
+            date: p.payout_date
+              ? new Date(p.payout_date).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "",
+            bank: p.bank || "",
+            invoiceIds: p.invoice_ids || [],
+            status: p.status,
+          }))
+        );
+      }
+
+      const mappedRevenue: DailyRevenue[] = [];
+      if (revenueResult.data && revenueResult.data.length > 0) {
+        mappedRevenue.push(
+          ...revenueResult.data.map((r: any) => ({
+            date: new Date(r.date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            }),
+            amount: r.total_amount || r.revenue || 0,
+            invoiceCount: r.invoice_count || 0,
+          }))
+        );
+      }
+
+      set({
+        invoices: mappedInvoices.length > 0 ? mappedInvoices : initialInvoices,
+        payouts: mappedPayouts.length > 0 ? mappedPayouts : initialPayouts,
+        dailyRevenue: mappedRevenue.length > 0 ? mappedRevenue : initialDailyRevenue,
+        overview: overviewResult.data || null,
+        loaded: true,
+        loading: false,
+      });
+    } catch (error) {
+      console.error("Failed to load finance data:", error);
+      set({ loading: false });
+    }
+  },
+
+  refresh: async () => {
+    const orgId = get().orgId;
+    if (!orgId) return;
+    try {
+      const [invoicesResult, payoutsResult, overviewResult] = await Promise.all([
+        getInvoices(orgId),
+        getPayouts(orgId),
+        getFinanceOverview(orgId),
+      ]);
+
+      const mappedInvoices: Invoice[] = [];
+      if (invoicesResult.data && invoicesResult.data.length > 0) {
+        const invoicePromises = invoicesResult.data.map((inv: any) => getInvoice(inv.id));
+        const invoiceResults = await Promise.all(invoicePromises);
+        for (const result of invoiceResults) {
+          if (result.data) {
+            const fi = result.data;
+            mappedInvoices.push({
+              id: fi.display_id || fi.id,
+              clientId: fi.client_id || "",
+              clientName: fi.client_name || "",
+              clientEmail: fi.client_email || "",
+              clientAddress: fi.client_address || "",
+              status: fi.status,
+              issueDate: fi.issue_date ? new Date(fi.issue_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
+              dueDate: fi.due_date ? new Date(fi.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
+              paidDate: fi.paid_date ? new Date(fi.paid_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : undefined,
+              lineItems: (fi.invoice_line_items || []).map((li: any) => ({ id: li.id, description: li.description, quantity: li.quantity, unitPrice: li.unit_price })),
+              subtotal: fi.subtotal,
+              tax: fi.tax,
+              total: fi.total,
+              paymentLink: fi.payment_link || undefined,
+              events: (fi.invoice_events || []).map((ev: any) => ({ id: ev.id, type: ev.type, text: ev.text || "", time: new Date(ev.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) })),
+              notes: fi.notes || undefined,
+            });
+          }
+        }
+      }
+
+      const mappedPayouts: Payout[] = (payoutsResult.data || []).map((p: any) => ({
+        id: p.id,
+        amount: p.amount,
+        date: p.payout_date ? new Date(p.payout_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
+        bank: p.bank || "",
+        invoiceIds: p.invoice_ids || [],
+        status: p.status,
+      }));
+
+      set({
+        invoices: mappedInvoices.length > 0 ? mappedInvoices : get().invoices,
+        payouts: mappedPayouts.length > 0 ? mappedPayouts : get().payouts,
+        overview: overviewResult.data || get().overview,
+      });
+    } catch {
+      // silent refresh failure
+    }
+  },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setFocusedIndex: (i) => set({ focusedIndex: i }),
@@ -131,4 +350,29 @@ export const useFinanceStore = create<FinanceState>((set) => ({
         return { ...inv, subtotal, tax, total: subtotal + tax };
       }),
     })),
+
+  createInvoiceServer: async (params: CreateInvoiceParams) => {
+    try {
+      const { data, error } = await createInvoiceFull(params);
+      if (error || !data) {
+        return { success: false, error: error || "Failed to create invoice" };
+      }
+      // Refresh to get the full mapped invoice
+      await get().refresh();
+      return { success: true, displayId: data.display_id, invoiceId: data.invoice_id };
+    } catch (err: any) {
+      return { success: false, error: err.message || "Unexpected error" };
+    }
+  },
+
+  updateInvoiceStatusServer: async (invoiceId: string, dbId: string, status: InvoiceStatus) => {
+    // Optimistic update
+    get().updateInvoiceStatus(invoiceId, status);
+    // Persist to server
+    await updateInvoiceStatusServer(dbId, status);
+  },
+
+  handleRealtimeUpdate: () => {
+    get().refresh();
+  },
 }));

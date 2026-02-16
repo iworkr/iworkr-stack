@@ -6,66 +6,12 @@ import { useState } from "react";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/fade-in";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
+import { PLANS } from "@/lib/plans";
 
-const plans = [
-  {
-    name: "Starter",
-    description: "For solo operators getting organized.",
-    monthlyPrice: 47,
-    yearlyPrice: 38,
-    features: [
-      "Up to 5 users",
-      "Job scheduling",
-      "Basic invoicing",
-      "Mobile app (iOS + Android)",
-      "Client database",
-      "Email support",
-    ],
-    highlighted: false,
-    cta: "Start free trial",
-  },
-  {
-    name: "Standard",
-    description: "For growing teams that need automation.",
-    monthlyPrice: 97,
-    yearlyPrice: 78,
-    features: [
-      "Unlimited users",
-      "AI Phone Agent",
-      "Smart routing",
-      "Stripe + Xero integration",
-      "Custom forms & quotes",
-      "Priority support",
-      "Multi-branch",
-      "API access",
-    ],
-    highlighted: true,
-    cta: "Start free trial",
-    badge: "Most popular",
-  },
-  {
-    name: "Enterprise",
-    description: "For operations at scale.",
-    monthlyPrice: 247,
-    yearlyPrice: 198,
-    features: [
-      "Everything in Standard",
-      "Dedicated account manager",
-      "Custom integrations",
-      "SLA guarantee",
-      "Advanced analytics",
-      "SSO / SAML",
-      "On-premise option",
-      "Training & onboarding",
-    ],
-    highlighted: false,
-    cta: "Contact sales",
-  },
-];
+const displayPlans = PLANS.filter((p) => p.key !== "free");
 
 function PriceDisplay({
   price,
-  isYearly,
 }: {
   price: number;
   isYearly: boolean;
@@ -94,7 +40,10 @@ export function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
 
   return (
-    <Section id="pricing">
+    <Section id="pricing" className="overflow-hidden">
+      {/* Dot grid texture */}
+      <div className="pointer-events-none absolute inset-0 bg-dot-grid opacity-[0.03]" />
+
       <FadeIn>
         <SectionHeader
           label="Pricing"
@@ -138,8 +87,8 @@ export function Pricing() {
         className="grid grid-cols-1 gap-4 md:grid-cols-3"
         staggerDelay={0.1}
       >
-        {plans.map((plan) => (
-          <StaggerItem key={plan.name}>
+        {displayPlans.map((plan) => (
+          <StaggerItem key={plan.key}>
             <motion.div
               whileHover={{ y: -4 }}
               transition={{ duration: 0.2 }}
@@ -173,7 +122,9 @@ export function Pricing() {
                 />
                 {isYearly && (
                   <p className="mt-1 text-[11px] text-zinc-600">
-                    Billed annually (${(isYearly ? plan.yearlyPrice : plan.monthlyPrice) * 12}/yr)
+                    Billed annually ($
+                    {plan.yearlyPrice * 12}
+                    /yr)
                   </p>
                 )}
               </div>
@@ -183,9 +134,15 @@ export function Pricing() {
                 variant={plan.highlighted ? "primary" : "secondary"}
                 size="md"
                 className="mb-6 w-full"
-                href="#"
+                href={
+                  plan.ctaLabel === "Contact sales"
+                    ? "mailto:sales@iworkr.com"
+                    : plan.polarProductId
+                    ? `/api/checkout?products=${plan.polarProductId}`
+                    : "/auth"
+                }
               >
-                {plan.cta}
+                {plan.ctaLabel}
                 <ArrowRight size={14} />
               </SpotlightButton>
 

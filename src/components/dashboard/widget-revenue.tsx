@@ -1,17 +1,38 @@
 "use client";
 
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { dailyRevenue } from "@/lib/data";
+import { useFinanceStore } from "@/lib/finance-store";
+import { useOrg } from "@/lib/hooks/use-org";
+import { getDashboardStats, type DashboardStats } from "@/app/actions/dashboard";
 import { WidgetShell } from "./widget-shell";
-
-/* ── Revenue MTD from real data ──────────────────────── */
-const revenueMTD = dailyRevenue.reduce((sum, d) => sum + d.amount, 0);
 
 export function WidgetRevenue() {
   const router = useRouter();
+  const { orgId } = useOrg();
+  const dailyRevenue = useFinanceStore((s) => s.dailyRevenue);
+  const financeLoaded = useFinanceStore((s) => s.loaded);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
+  // Fetch dashboard stats from RPC
+  useEffect(() => {
+    if (!orgId) return;
+    getDashboardStats(orgId).then(({ data }) => {
+      if (data) setStats(data);
+    });
+  }, [orgId]);
+
+  // Calculate revenue from store data (fallback if RPC unavailable)
+  const revenueMTD = useMemo(() => {
+    if (stats?.revenue_current) return stats.revenue_current;
+    return dailyRevenue.reduce((sum, d) => sum + d.amount, 0);
+  }, [stats, dailyRevenue]);
+
+  const growthPct = stats?.revenue_growth_pct ?? 0;
+  const isPositiveGrowth = growthPct >= 0;
+
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) =>
     Math.floor(v).toLocaleString("en-US")
@@ -23,18 +44,18 @@ export function WidgetRevenue() {
       ease: [0.16, 1, 0.3, 1],
     });
     return controls.stop;
-  }, [count]);
+  }, [count, revenueMTD]);
 
   /* ── Chart geometry ───────────────────────────────── */
   const chartRef = useRef<SVGSVGElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
-  const amounts = useMemo(() => dailyRevenue.map((d) => d.amount), []);
+  const amounts = useMemo(() => dailyRevenue.map((d) => d.amount), [dailyRevenue]);
   const maxAmount = useMemo(() => Math.max(...amounts, 1), [amounts]);
   const W = 400;
-  const H = 120;
+  const H = 80;
   const padX = 0;
-  const padY = 8;
+  const padY = 6;
 
   const points = useMemo(
     () =>
@@ -83,6 +104,19 @@ export function WidgetRevenue() {
   const hoverPoint = hoverIndex !== null ? points[hoverIndex] : null;
   const hoverData = hoverIndex !== null ? dailyRevenue[hoverIndex] : null;
 
+  // Show skeleton while loading
+  if (!financeLoaded && dailyRevenue.length === 0) {
+    return (
+      <WidgetShell delay={0}>
+        <div className="p-5">
+          <div className="h-4 w-24 animate-pulse rounded bg-zinc-900" />
+          <div className="mt-3 h-8 w-32 animate-pulse rounded bg-zinc-900" />
+          <div className="mt-4 h-[55px] w-full animate-pulse rounded bg-zinc-900" />
+        </div>
+      </WidgetShell>
+    );
+  }
+
   return (
     <WidgetShell delay={0}>
       <div
@@ -94,7 +128,7 @@ export function WidgetRevenue() {
           ref={chartRef}
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
-          className="absolute inset-x-0 bottom-0 h-[65%] w-full"
+          className="absolute inset-x-0 bottom-0 h-[55%] w-full"
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverIndex(null)}
         >
@@ -146,6 +180,12 @@ export function WidgetRevenue() {
               <circle
                 cx={hoverPoint.x}
                 cy={hoverPoint.y}
+                r="12"
+                fill="transparent"
+              />
+              <circle
+                cx={hoverPoint.x}
+                cy={hoverPoint.y}
                 r="4"
                 fill="#10B981"
                 stroke="#0C0C0C"
@@ -188,8 +228,14 @@ export function WidgetRevenue() {
             </motion.span>
           </div>
           <div className="mt-1 flex items-center gap-1.5">
-            <TrendingUp size={12} className="text-emerald-400" />
-            <span className="text-[11px] font-medium text-emerald-400">+12%</span>
+            {isPositiveGrowth ? (
+              <TrendingUp size={12} className="text-emerald-400" />
+            ) : (
+              <TrendingDown size={12} className="text-red-400" />
+            )}
+            <span className={`text-[11px] font-medium ${isPositiveGrowth ? "text-emerald-400" : "text-red-400"}`}>
+              {isPositiveGrowth ? "+" : ""}{growthPct}%
+            </span>
             <span className="text-[11px] text-zinc-600">vs last month</span>
           </div>
         </div>

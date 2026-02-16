@@ -1,25 +1,54 @@
+import Image from "next/image";
 import { FadeIn } from "@/components/ui/fade-in";
 
 const footerLinks = [
   {
     title: "Product",
-    links: ["Scheduler", "Mobile App", "AI Agent", "Invoicing", "Reports"],
+    links: [
+      { label: "Scheduler", href: "/#features" },
+      { label: "Mobile App", href: "/#features" },
+      { label: "AI Agent", href: "/#features" },
+      { label: "Invoicing", href: "/#workflow" },
+      { label: "Pricing", href: "/#pricing" },
+    ],
   },
   {
     title: "Features",
-    links: ["Smart Routing", "Offline Mode", "Tap to Pay", "Client CRM", "Multi-branch"],
+    links: [
+      { label: "Smart Routing", href: "/#workflow" },
+      { label: "Offline Mode", href: "/#features" },
+      { label: "Tap to Pay", href: "/#workflow" },
+      { label: "Client CRM", href: "/#features" },
+      { label: "Multi-branch", href: "/#features" },
+    ],
   },
   {
     title: "Resources",
-    links: ["Documentation", "API Reference", "Changelog", "Blog", "Webinars"],
+    links: [
+      { label: "Documentation", href: "mailto:support@iworkr.com" },
+      { label: "API Reference", href: "mailto:support@iworkr.com" },
+      { label: "Changelog", href: "/#features" },
+      { label: "Blog", href: "/#testimonials" },
+      { label: "Contact Us", href: "mailto:hello@iworkr.com" },
+    ],
   },
   {
     title: "Company",
-    links: ["About", "Careers", "Press", "Partners", "Contact"],
+    links: [
+      { label: "About", href: "/#workflow" },
+      { label: "Careers", href: "mailto:careers@iworkr.com" },
+      { label: "Partners", href: "mailto:partners@iworkr.com" },
+      { label: "Contact Sales", href: "mailto:sales@iworkr.com" },
+    ],
   },
   {
-    title: "Legal",
-    links: ["Privacy Policy", "Terms of Service", "Cookie Policy", "DPA", "SLA"],
+    title: "Account",
+    links: [
+      { label: "Sign in", href: "/auth" },
+      { label: "Start free trial", href: "/auth" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+    ],
   },
 ];
 
@@ -36,12 +65,12 @@ export function Footer() {
                 </h4>
                 <ul className="space-y-2.5">
                   {group.links.map((link) => (
-                    <li key={link}>
+                    <li key={link.label}>
                       <a
-                        href="#"
+                        href={link.href}
                         className="text-sm text-zinc-600 transition-colors duration-200 hover:text-zinc-300"
                       >
-                        {link}
+                        {link.label}
                       </a>
                     </li>
                   ))}
@@ -55,9 +84,13 @@ export function Footer() {
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-[rgba(255,255,255,0.06)] pt-8 sm:flex-row">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
-              <span className="text-[10px] font-semibold text-black">iW</span>
-            </div>
+            <Image
+              src="/logos/logo-mark.png"
+              alt="iWorkr"
+              width={24}
+              height={24}
+              className="h-6 w-6 object-contain"
+            />
             <span className="text-sm text-zinc-500">
               &copy; {new Date().getFullYear()} iWorkr. All rights reserved.
             </span>

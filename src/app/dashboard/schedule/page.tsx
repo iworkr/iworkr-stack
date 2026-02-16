@@ -24,10 +24,12 @@ import {
   Navigation,
   Grip,
 } from "lucide-react";
-import { technicians, type ScheduleBlock, type Technician } from "@/lib/data";
+import { technicians as mockTechnicians, type ScheduleBlock, type Technician } from "@/lib/data";
 import { useScheduleStore, type ViewScale } from "@/lib/schedule-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
+import { useOrg } from "@/lib/hooks/use-org";
+import { assignJobToSchedule, type BacklogJob } from "@/app/actions/schedule";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -94,6 +96,17 @@ const contextItems: ContextMenuItem[] = [
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
+function timeToDecimalHours(timeStr: string): number {
+  const date = new Date(timeStr);
+  return date.getHours() + date.getMinutes() / 60;
+}
+
+function calculateDuration(startTime: string, endTime: string): number {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+}
+
 function formatHour(h: number): string {
   const hour = Math.floor(h);
   const min = Math.round((h - hour) * 60);
@@ -128,9 +141,13 @@ export default function SchedulePage() {
   const router = useRouter();
   const {
     blocks,
+    technicians: storeTechnicians,
+    backlogJobs,
+    scheduleEvents,
     viewScale,
     peekBlockId,
     unscheduledDrawerOpen,
+    selectedDate,
     setViewScale,
     setPeekBlockId,
     setUnscheduledDrawerOpen,
@@ -138,8 +155,13 @@ export default function SchedulePage() {
     resizeBlock,
     deleteBlock,
     restoreBlock,
+    refresh,
   } = useScheduleStore();
   const { addToast } = useToastStore();
+  const { orgId } = useOrg();
+
+  // Use store technicians (live data) or fallback to mock
+  const technicians = storeTechnicians.length > 0 ? storeTechnicians : mockTechnicians;
 
   /* ── Drag state ─────────────────────────────────────────── */
   const [dragState, setDragState] = useState<{
@@ -313,18 +335,49 @@ export default function SchedulePage() {
 
           {/* Date navigation */}
           <div className="flex items-center gap-1">
-            <button className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-400">
+            <button
+              onClick={() => {
+                const d = new Date(selectedDate);
+                d.setDate(d.getDate() - 1);
+                const newDate = d.toISOString().split("T")[0];
+                useScheduleStore.getState().setSelectedDate(newDate);
+                if (orgId) useScheduleStore.getState().loadFromServer(orgId, newDate);
+              }}
+              className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-400"
+            >
               <ChevronLeft size={14} />
             </button>
             <span className="min-w-[100px] text-center text-[13px] font-medium text-zinc-300">
-              Today — Feb 15
+              {(() => {
+                const d = new Date(selectedDate + "T12:00:00");
+                const today = new Date();
+                const isToday = d.toDateString() === today.toDateString();
+                const label = d.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
+                return isToday ? `Today — ${label}` : label;
+              })()}
             </span>
-            <button className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-400">
+            <button
+              onClick={() => {
+                const d = new Date(selectedDate);
+                d.setDate(d.getDate() + 1);
+                const newDate = d.toISOString().split("T")[0];
+                useScheduleStore.getState().setSelectedDate(newDate);
+                if (orgId) useScheduleStore.getState().loadFromServer(orgId, newDate);
+              }}
+              className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-400"
+            >
               <ChevronRight size={14} />
             </button>
           </div>
 
-          <button className="rounded-md border border-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[11px] text-zinc-500 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300">
+          <button
+            onClick={() => {
+              const today = new Date().toISOString().split("T")[0];
+              useScheduleStore.getState().setSelectedDate(today);
+              if (orgId) useScheduleStore.getState().loadFromServer(orgId, today);
+            }}
+            className="rounded-md border border-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[11px] text-zinc-500 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+          >
             Today
           </button>
         </div>
@@ -499,6 +552,45 @@ export default function SchedulePage() {
                       >
                         <div className="h-full w-px bg-red-500/50" />
                       </div>
+
+                      {/* Schedule Events (breaks/meetings) */}
+                      {scheduleEvents
+                        .filter((evt) => evt.user_id === tech.id)
+                        .map((evt, i) => {
+                          const evtStart = timeToDecimalHours(evt.start_time);
+                          const evtDuration = calculateDuration(evt.start_time, evt.end_time);
+                          const evtLeft = hourToX(evtStart);
+                          const evtWidth = evtDuration * HOUR_W;
+                          const typeColor = evt.type === "break"
+                            ? "bg-zinc-500/10 border-zinc-600/30"
+                            : evt.type === "meeting"
+                              ? "bg-purple-500/10 border-purple-500/25"
+                              : evt.type === "personal"
+                                ? "bg-teal-500/10 border-teal-500/25"
+                                : "bg-red-500/10 border-red-500/25";
+
+                          return (
+                            <motion.div
+                              key={evt.id}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: i * 0.02 }}
+                              className={`absolute top-2 z-[5] rounded-md border border-dashed ${typeColor}`}
+                              style={{
+                                left: evtLeft,
+                                width: Math.max(24, evtWidth),
+                                height: ROW_H - 16,
+                              }}
+                            >
+                              <div className="flex h-full items-center justify-center truncate px-2">
+                                <span className="truncate text-[9px] text-zinc-500">
+                                  {evt.title}
+                                </span>
+                              </div>
+                            </motion.div>
+                          );
+                        })
+                      }
 
                       {/* Job Blocks */}
                       {techBlocks.map((block, i) => {
@@ -700,51 +792,68 @@ export default function SchedulePage() {
                 {/* Backlog items */}
                 <div className="flex-1 overflow-y-auto p-3">
                   <div className="space-y-2">
-                    {/* Jobs that are backlog/todo and not currently scheduled */}
-                    {[
-                      { id: "JOB-409", title: "Toilet replacement — ensuite", client: "Lisa Chen", priority: "low", location: "18 Stanley St" },
-                      { id: "JOB-410", title: "Stormwater drainage", client: "Tom Andrews", priority: "high", location: "7 Albert St" },
-                      { id: "JOB-411", title: "Roof leak investigation", client: "New Lead", priority: "medium", location: "TBD" },
-                    ].map((item) => (
-                      <motion.div
-                        key={item.id}
-                        layout
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="cursor-grab rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 transition-colors hover:border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.04)]"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-[9px] text-zinc-600">
-                                {item.id}
-                              </span>
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${
-                                  item.priority === "high"
-                                    ? "bg-orange-400"
-                                    : item.priority === "medium"
-                                      ? "bg-yellow-500"
-                                      : "bg-blue-400"
-                                }`}
-                              />
+                    {backlogJobs.length > 0 ? (
+                      backlogJobs.map((item: BacklogJob) => (
+                        <motion.div
+                          key={item.id}
+                          layout
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="cursor-grab rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 transition-colors hover:border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.04)]"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-[9px] text-zinc-600">
+                                  {item.display_id}
+                                </span>
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-full ${
+                                    item.priority === "urgent"
+                                      ? "bg-red-400"
+                                      : item.priority === "high"
+                                        ? "bg-orange-400"
+                                        : item.priority === "medium"
+                                          ? "bg-yellow-500"
+                                          : "bg-blue-400"
+                                  }`}
+                                />
+                              </div>
+                              <div className="mt-1 truncate text-[12px] font-medium text-zinc-300">
+                                {item.title}
+                              </div>
+                              {item.client_name && (
+                                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
+                                  <User size={8} />
+                                  {item.client_name}
+                                </div>
+                              )}
+                              {item.location && (
+                                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
+                                  <MapPin size={8} />
+                                  {item.location}
+                                </div>
+                              )}
+                              {item.estimated_duration_minutes && (
+                                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
+                                  <Clock size={8} />
+                                  {item.estimated_duration_minutes}m est.
+                                </div>
+                              )}
                             </div>
-                            <div className="mt-1 truncate text-[12px] font-medium text-zinc-300">
-                              {item.title}
-                            </div>
-                            <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
-                              <User size={8} />
-                              {item.client}
-                            </div>
-                            <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
-                              <MapPin size={8} />
-                              {item.location}
-                            </div>
+                            <Grip size={12} className="shrink-0 text-zinc-700" />
                           </div>
-                          <Grip size={12} className="shrink-0 text-zinc-700" />
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center py-8 text-center">
+                        <Calendar size={20} className="mb-2 text-zinc-700" />
+                        <p className="text-[12px] text-zinc-600">No unscheduled jobs</p>
+                        <p className="mt-0.5 text-[10px] text-zinc-700">
+                          Create a job to see it here
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -30,8 +30,11 @@ import {
   ExternalLink,
   DollarSign,
 } from "lucide-react";
-import { clients, type Client, type ClientActivity } from "@/lib/data";
+import { clients as mockClients, type Client, type ClientActivity } from "@/lib/data";
 import { useToastStore } from "@/components/app/action-toast";
+import { useClientsStore } from "@/lib/clients-store";
+import { getClientDetails, updateClient as updateClientAction, deleteClient as deleteClientAction } from "@/app/actions/clients";
+import { useOrg } from "@/lib/hooks/use-org";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 
 /* ── Constants ────────────────────────────────────────────── */
@@ -91,8 +94,51 @@ export default function ClientDossierPage() {
   const router = useRouter();
   const clientId = params.id as string;
   const { addToast } = useToastStore();
+  const { orgId } = useOrg();
 
-  const client = clients.find((c) => c.id === clientId);
+  // Try store first, fall back to mock data
+  const storeClients = useClientsStore((s) => s.clients);
+  const storeClient = storeClients.find((c) => c.id === clientId);
+  const mockClient = mockClients.find((c) => c.id === clientId);
+
+  // Server-fetched detail data (contacts, activity, spend)
+  const [serverDetail, setServerDetail] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (!clientId || detailLoading || serverDetail) return;
+    setDetailLoading(true);
+    getClientDetails(clientId).then(({ data }) => {
+      if (data) setServerDetail(data);
+      setDetailLoading(false);
+    }).catch(() => setDetailLoading(false));
+  }, [clientId, detailLoading, serverDetail]);
+
+  // Merge: store client (list-level) + server detail (contacts/activity/spend)
+  const client: Client | undefined = storeClient
+    ? {
+        ...storeClient,
+        contacts: serverDetail?.contacts?.map((cc: any) => ({
+          id: cc.id,
+          name: cc.name || cc.full_name || "",
+          initials: (cc.name || "").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "??",
+          role: cc.role || "",
+          email: cc.email || "",
+          phone: cc.phone || "",
+        })) || storeClient.contacts,
+        activity: serverDetail?.recent_activity?.map((a: any) => ({
+          id: a.id,
+          type: a.action_type || "note",
+          description: a.metadata?.description || a.action_type || "",
+          date: a.created_at ? new Date(a.created_at).toLocaleDateString("en-AU", { month: "short", day: "numeric" }) : "",
+          user: a.user_name || "System",
+        })) || storeClient.activity,
+        spendHistory: serverDetail?.spend_history?.map((inv: any) => ({
+          month: new Date(inv.created_at).toLocaleDateString("en-AU", { month: "short" }),
+          amount: Number(inv.total || 0),
+        })) || storeClient.spendHistory,
+      }
+    : mockClient;
 
   /* ── Editable state ─────────────────────────────────────── */
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -111,7 +157,7 @@ export default function ClientDossierPage() {
       setLocalEmail(client.email);
       setLocalNotes(client.notes || "");
     }
-  }, [client]);
+  }, [client?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function flashSaved(field: string) {
     setSavedField(field);
@@ -142,7 +188,9 @@ export default function ClientDossierPage() {
       navigator.clipboard?.writeText(client.phone);
       addToast("Phone copied");
     } else if (actionId === "archive") {
-      addToast(`${client.name} archived`, () => {});
+      deleteClientAction(clientId);
+      useClientsStore.getState().archiveClient(clientId);
+      addToast(`${client.name} archived`);
       router.push("/dashboard/clients");
     }
   }
@@ -597,6 +645,7 @@ export default function ClientDossierPage() {
                   onSave={() => {
                     setEditingField(null);
                     flashSaved("email");
+                    updateClientAction(clientId, { email: localEmail });
                     addToast("Email updated");
                   }}
                 />
@@ -612,6 +661,7 @@ export default function ClientDossierPage() {
                   onSave={() => {
                     setEditingField(null);
                     flashSaved("phone");
+                    updateClientAction(clientId, { phone: localPhone });
                     addToast("Phone updated");
                   }}
                 />

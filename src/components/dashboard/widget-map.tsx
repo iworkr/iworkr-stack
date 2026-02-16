@@ -2,16 +2,12 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, MapPin, Radio } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useOrg } from "@/lib/hooks/use-org";
+import { getLiveDispatch, type DispatchPin } from "@/app/actions/dashboard";
+import { createClient } from "@/lib/supabase/client";
 import { WidgetShell } from "./widget-shell";
-
-const pins = [
-  { id: "1", name: "Mike T.", task: "Boiler Repair", status: "on_job" as const, x: "28%", y: "35%" },
-  { id: "2", name: "Sarah C.", task: "Pipe Inspection", status: "on_job" as const, x: "55%", y: "55%" },
-  { id: "3", name: "James O.", task: "Emergency Call", status: "en_route" as const, x: "72%", y: "28%" },
-  { id: "4", name: "Tom L.", task: "Maintenance", status: "idle" as const, x: "40%", y: "70%" },
-];
 
 const statusConfig = {
   on_job: { color: "bg-emerald-500", ring: "ring-emerald-500/30", label: "On Job" },
@@ -19,9 +15,101 @@ const statusConfig = {
   idle: { color: "bg-zinc-500", ring: "ring-zinc-500/30", label: "Idle" },
 };
 
+// Map lat/lng into percentage-based position within the widget
+function coordsToPosition(lat: number | null, lng: number | null, allPins: DispatchPin[]) {
+  if (!lat || !lng) return { x: "50%", y: "50%" };
+
+  const lats = allPins.filter(p => p.location_lat).map(p => p.location_lat!);
+  const lngs = allPins.filter(p => p.location_lng).map(p => p.location_lng!);
+
+  if (lats.length < 2) return { x: "50%", y: "50%" };
+
+  const minLat = Math.min(...lats) - 0.01;
+  const maxLat = Math.max(...lats) + 0.01;
+  const minLng = Math.min(...lngs) - 0.01;
+  const maxLng = Math.max(...lngs) + 0.01;
+
+  const x = ((lng - minLng) / (maxLng - minLng)) * 70 + 15;
+  const y = (1 - (lat - minLat) / (maxLat - minLat)) * 60 + 20;
+
+  return { x: `${Math.max(10, Math.min(90, x))}%`, y: `${Math.max(10, Math.min(90, y))}%` };
+}
+
+interface Pin {
+  id: string;
+  name: string;
+  task: string;
+  status: "on_job" | "en_route" | "idle";
+  x: string;
+  y: string;
+}
+
+// Fallback pins for when no live data is available
+const fallbackPins: Pin[] = [
+  { id: "1", name: "Mike T.", task: "Boiler Repair", status: "on_job", x: "28%", y: "35%" },
+  { id: "2", name: "Sarah C.", task: "Pipe Inspection", status: "on_job", x: "55%", y: "55%" },
+  { id: "3", name: "James O.", task: "Emergency Call", status: "en_route", x: "72%", y: "28%" },
+  { id: "4", name: "Tom L.", task: "Maintenance", status: "idle", x: "40%", y: "70%" },
+];
+
 export function WidgetMap() {
   const router = useRouter();
+  const { orgId } = useOrg();
   const [hovered, setHovered] = useState<string | null>(null);
+  const [dispatchData, setDispatchData] = useState<DispatchPin[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  // Fetch live dispatch data
+  useEffect(() => {
+    if (!orgId) return;
+    getLiveDispatch(orgId).then(({ data }) => {
+      if (data && data.length > 0) setDispatchData(data);
+      setLoaded(true);
+    });
+  }, [orgId]);
+
+  // Subscribe to realtime job changes
+  useEffect(() => {
+    if (!orgId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("live-dispatch")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "jobs",
+        filter: `organization_id=eq.${orgId}`,
+      }, () => {
+        // Refetch dispatch data on any job change
+        getLiveDispatch(orgId).then(({ data }) => {
+          if (data) setDispatchData(data);
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orgId]);
+
+  // Map dispatch data to pins
+  const pins: Pin[] = useMemo(() => {
+    if (dispatchData.length === 0) return fallbackPins;
+
+    return dispatchData.map(d => {
+      const pos = coordsToPosition(d.location_lat, d.location_lng, dispatchData);
+      return {
+        id: d.id,
+        name: d.name ? d.name.split(" ").map(n => n[0]).join("") + "." : "Unassigned",
+        task: d.task,
+        status: d.dispatch_status === "on_job" ? "on_job" as const : "en_route" as const,
+        x: pos.x,
+        y: pos.y,
+      };
+    });
+  }, [dispatchData]);
+
   const activeCount = pins.filter((p) => p.status !== "idle").length;
 
   return (
@@ -75,11 +163,9 @@ export function WidgetMap() {
 
         {/* Radar sweep from HQ */}
         <div className="absolute" style={{ left: "48%", top: "48%", transform: "translate(-50%, -50%)" }}>
-          {/* HQ marker */}
           <div className="relative z-10 flex h-4 w-4 items-center justify-center rounded-sm border border-zinc-600 bg-zinc-800">
             <div className="h-1.5 w-1.5 rounded-full bg-white" />
           </div>
-          {/* Radar circles */}
           {[80, 140, 200].map((r) => (
             <div
               key={r}
@@ -92,34 +178,31 @@ export function WidgetMap() {
               }}
             />
           ))}
-          {/* Radar sweep arm */}
           <motion.div
-            className="absolute left-1/2 top-1/2 origin-bottom-left"
-            style={{ width: 200, height: 1, marginTop: -0.5 }}
+            className="absolute left-1/2 top-1/2"
+            style={{ width: 0, height: 0 }}
             animate={{ rotate: [0, 360] }}
             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
           >
             <div
-              className="h-full w-full rounded-full"
+              className="absolute top-0 left-0 origin-left"
               style={{
-                background: "linear-gradient(90deg, rgba(99,102,241,0.3) 0%, transparent 100%)",
+                width: 200,
+                height: 2,
+                marginTop: -1,
+                background: "linear-gradient(90deg, rgba(99,102,241,0.6) 0%, rgba(99,102,241,0.1) 70%, transparent 100%)",
+                borderRadius: 1,
+              }}
+            />
+            <div
+              className="absolute top-0 left-0 origin-top-left"
+              style={{
+                width: 200,
+                height: 200,
+                background: "conic-gradient(from 0deg at 0% 0%, rgba(99,102,241,0.08) 0deg, rgba(99,102,241,0.04) 20deg, transparent 50deg)",
               }}
             />
           </motion.div>
-          {/* Sweep cone */}
-          <motion.div
-            className="absolute left-1/2 top-1/2"
-            style={{
-              width: 200,
-              height: 200,
-              marginLeft: -100,
-              marginTop: -100,
-              background: "conic-gradient(from 0deg, rgba(99,102,241,0.06) 0deg, transparent 40deg)",
-              borderRadius: "50%",
-            }}
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-          />
         </div>
 
         {/* Technician pins */}
@@ -133,7 +216,6 @@ export function WidgetMap() {
               onMouseEnter={() => setHovered(pin.id)}
               onMouseLeave={() => setHovered(null)}
             >
-              {/* Pulse ring for active techs */}
               {pin.status !== "idle" && (
                 <motion.div
                   animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
@@ -142,13 +224,9 @@ export function WidgetMap() {
                   style={{ width: 12, height: 12, margin: "-2px" }}
                 />
               )}
-
-              {/* Dot */}
               <div
                 className={`relative h-3 w-3 cursor-pointer rounded-full ${cfg.color} ring-2 ring-black transition-transform hover:scale-150`}
               />
-
-              {/* Tooltip */}
               {hovered === pin.id && (
                 <motion.div
                   initial={{ opacity: 0, y: 5, scale: 0.95 }}

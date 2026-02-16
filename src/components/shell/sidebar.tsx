@@ -22,16 +22,22 @@ import {
   Workflow,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useRef, useEffect, type MouseEvent as ReactMouseEvent } from "react";
 import { useShellStore } from "@/lib/shell-store";
 import { useOnboardingStore } from "@/lib/onboarding-store";
+import { useAuthStore } from "@/lib/auth-store";
+import { useTeamStore } from "@/lib/team-store";
+import { useOrg } from "@/lib/hooks/use-org";
+import { getTeamStatus, type TeamMemberStatus } from "@/app/actions/dashboard";
+import { useInboxStore } from "@/lib/inbox-store";
+import { useState } from "react";
 
 /* ── Data ─────────────────────────────────────────────── */
 
 const navItems = [
   { id: "nav_dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", shortcut: "D" },
-  { id: "nav_inbox", label: "Inbox", icon: Inbox, href: "/dashboard/inbox", shortcut: "I", badge: 3 },
+  { id: "nav_inbox", label: "Inbox", icon: Inbox, href: "/dashboard/inbox", shortcut: "I" },
   { id: "nav_jobs", label: "My Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "J" },
   { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "S" },
   { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "C" },
@@ -43,16 +49,16 @@ const navItems = [
   { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations" },
 ];
 
-const teamMembers = [
+const fallbackTeamMembers = [
   { name: "Mike Thompson", initials: "MT", status: "online" as const, role: "On Job" },
   { name: "Sarah Chen", initials: "SC", status: "online" as const, role: "En Route" },
   { name: "James O'Brien", initials: "JO", status: "away" as const, role: "Break" },
 ];
 
 const systemItems = [
-  { label: "Settings", icon: Settings, href: "/settings" },
-  { label: "Help", icon: HelpCircle, href: "#" },
-  { label: "Invite Team", icon: UserPlus, href: "#" },
+  { label: "Settings", icon: Settings, href: "/settings", action: null },
+  { label: "Help", icon: HelpCircle, href: "mailto:support@iworkr.com", action: null },
+  { label: "Invite Team", icon: UserPlus, href: null, action: "invite" },
 ];
 
 /* ── Spotlight Nav Item ───────────────────────────────── */
@@ -61,10 +67,12 @@ function NavLink({
   item,
   active,
   collapsed,
+  badge,
 }: {
   item: (typeof navItems)[0];
   active: boolean;
   collapsed: boolean;
+  badge?: number;
 }) {
   const Icon = item.icon;
   const ref = useRef<HTMLAnchorElement>(null);
@@ -126,9 +134,9 @@ function NavLink({
           >
             <span>{item.label}</span>
             <span className="flex items-center gap-1.5">
-              {item.badge && (
+              {badge && badge > 0 && (
                 <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500/15 px-1 text-[9px] font-medium text-red-400">
-                  {item.badge}
+                  {badge}
                 </span>
               )}
               <kbd className="hidden rounded border border-[rgba(255,255,255,0.06)] px-1 py-0.5 font-mono text-[9px] text-zinc-600 group-hover:inline-block">
@@ -150,9 +158,33 @@ interface SidebarProps {
 
 export function Sidebar({ onCreateClick }: SidebarProps = {}) {
   const pathname = usePathname();
+  const router = useRouter();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useShellStore();
-  const companyName =
-    useOnboardingStore((s) => s.companyName) || "Apex Plumbing";
+  const { setInviteModalOpen } = useTeamStore();
+  const onboardingName = useOnboardingStore((s) => s.companyName);
+  const { currentOrg } = useAuthStore();
+  const { orgId } = useOrg();
+  const companyName = currentOrg?.name || onboardingName || "Apex Plumbing";
+
+  // Live unread count for inbox badge
+  const unreadCount = useInboxStore((s) => s.items.filter(i => !i.read && !i.archived).length);
+
+  // Live team status
+  const [teamMembers, setTeamMembers] = useState(fallbackTeamMembers);
+
+  useEffect(() => {
+    if (!orgId) return;
+    getTeamStatus(orgId).then(({ data }) => {
+      if (data && data.length > 0) {
+        setTeamMembers(data.map((m: TeamMemberStatus) => ({
+          name: m.name || "Team Member",
+          initials: m.initials || m.name?.substring(0, 2).toUpperCase() || "??",
+          status: (m.status === "on_job" || m.status === "en_route" ? "online" : "away") as "online" | "away",
+          role: m.status === "on_job" ? "On Job" : m.status === "en_route" ? "En Route" : "Idle",
+        })));
+      }
+    });
+  }, [orgId]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -269,6 +301,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
               item={item}
               active={isActive(item.href)}
               collapsed={sidebarCollapsed}
+              badge={item.id === "nav_inbox" ? unreadCount : undefined}
             />
           ))}
         </div>
@@ -291,6 +324,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                 {teamMembers.map((member) => (
                   <button
                     key={member.name}
+                    onClick={() => router.push("/dashboard/team")}
                     className="flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
                   >
                     <div className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-500">
@@ -331,15 +365,27 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
             >
               {systemItems.map((item) => {
                 const Icon = item.icon;
+                if (item.action === "invite") {
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => setInviteModalOpen(true)}
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-400"
+                    >
+                      <Icon size={14} strokeWidth={1.5} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                }
                 return (
-                  <Link
+                  <a
                     key={item.label}
-                    href={item.href}
+                    href={item.href || "#"}
                     className="flex items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-400"
                   >
                     <Icon size={14} strokeWidth={1.5} />
                     <span>{item.label}</span>
-                  </Link>
+                  </a>
                 );
               })}
             </motion.div>

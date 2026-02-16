@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /setup/
+Disallow: /settings/
+Disallow: /api/
+Disallow: /auth/
+
+Sitemap: https://iworkrapp.com/sitemap.xml

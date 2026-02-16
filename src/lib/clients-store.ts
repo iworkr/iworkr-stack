@@ -1,20 +1,88 @@
 import { create } from "zustand";
-import { clients as initialClients, type Client } from "./data";
+import { clients as mockClients, type Client } from "./data";
+import {
+  getClients,
+  getClientsWithStats,
+  createClientFull,
+  type CreateClientParams,
+} from "@/app/actions/clients";
+
+function getInitials(name: string): string {
+  if (!name) return "??";
+  return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function formatCurrency(num: number): string {
+  return `$${num.toLocaleString("en-AU")}`;
+}
+
+function formatRelativeDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? "s" : ""} ago`;
+  return d.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
+}
+
+function mapServerClient(sc: any): Client {
+  const totalSpend = Number(sc.total_spend || 0);
+  return {
+    id: sc.id,
+    name: sc.name,
+    email: sc.email || "",
+    phone: sc.phone || "",
+    initials: getInitials(sc.name),
+    totalJobs: Number(sc.job_count || 0),
+    lifetimeValue: formatCurrency(totalSpend),
+    lifetimeValueNum: totalSpend,
+    lastJob: sc.last_job_date ? formatRelativeDate(sc.last_job_date) : "Never",
+    status: sc.status || "lead",
+    type: sc.type || "residential",
+    address: sc.address,
+    addressCoords: sc.address_lat && sc.address_lng ? { lat: sc.address_lat, lng: sc.address_lng } : undefined,
+    tags: sc.tags || [],
+    notes: sc.notes,
+    since: sc.since ? new Date(sc.since).toLocaleDateString("en-AU", { month: "short", year: "numeric" }) : undefined,
+    contacts: sc.client_contacts?.map((cc: any) => ({
+      id: cc.id,
+      name: cc.name,
+      initials: getInitials(cc.name),
+      role: cc.role || "",
+      email: cc.email || "",
+      phone: cc.phone || "",
+    })),
+  };
+}
 
 interface ClientsState {
   clients: Client[];
   focusedIndex: number;
+  loaded: boolean;
+  loading: boolean;
+  orgId: string | null;
 
   setFocusedIndex: (i: number) => void;
   addClient: (client: Client) => void;
   updateClient: (id: string, patch: Partial<Client>) => void;
   archiveClient: (id: string) => void;
   restoreClient: (client: Client) => void;
+  loadFromServer: (orgId: string) => Promise<void>;
+  refresh: () => Promise<void>;
+
+  /** Server-synced create — persists to DB and updates local state */
+  createClientServer: (params: CreateClientParams) => Promise<{ success: boolean; clientId?: string; error?: string }>;
 }
 
-export const useClientsStore = create<ClientsState>((set) => ({
-  clients: initialClients,
+export const useClientsStore = create<ClientsState>((set, get) => ({
+  clients: mockClients,
   focusedIndex: 0,
+  loaded: false,
+  loading: false,
+  orgId: null,
 
   setFocusedIndex: (i) => set({ focusedIndex: i }),
 
@@ -35,4 +103,51 @@ export const useClientsStore = create<ClientsState>((set) => ({
     set((s) => ({
       clients: [...s.clients, client].sort((a, b) => a.id.localeCompare(b.id)),
     })),
+
+  loadFromServer: async (orgId: string) => {
+    if (get().loaded || get().loading) return;
+    set({ loading: true, orgId });
+    try {
+      // Use RPC for efficient aggregation
+      const { data, error } = await getClientsWithStats(orgId);
+      if (data && !error) {
+        const mapped = (data as any[]).map(mapServerClient);
+        set({ clients: mapped.length > 0 ? mapped : mockClients, loaded: true, loading: false });
+      } else {
+        set({ loading: false });
+      }
+    } catch {
+      set({ loading: false });
+    }
+  },
+
+  refresh: async () => {
+    const orgId = get().orgId;
+    if (!orgId) return;
+    try {
+      const { data, error } = await getClientsWithStats(orgId);
+      if (data && !error) {
+        const mapped = (data as any[]).map(mapServerClient);
+        set({ clients: mapped.length > 0 ? mapped : get().clients });
+      }
+    } catch {
+      // silent refresh failure
+    }
+  },
+
+  createClientServer: async (params: CreateClientParams) => {
+    try {
+      const { data, error } = await createClientFull(params);
+      if (error || !data) {
+        return { success: false, error: error || "Failed to create client" };
+      }
+
+      // Map and prepend to local store
+      const mapped = mapServerClient(data);
+      set((s) => ({ clients: [mapped, ...s.clients] }));
+      return { success: true, clientId: data.id };
+    } catch (err: any) {
+      return { success: false, error: err.message || "Unexpected error" };
+    }
+  },
 }));

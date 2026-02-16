@@ -5,10 +5,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { companyNameSchema } from "@/lib/validation";
 import { CheckmarkDraw } from "./spinner";
+import { createOrganization } from "@/app/actions/onboarding";
 
 export function StepIdentity() {
-  const { companyName, workspaceSlug, setCompanyName, advanceStep } =
+  const { companyName, workspaceSlug, setCompanyName, advanceStep, setOrganizationId, selectedTrade } =
     useOnboardingStore();
+  const [submitting, setSubmitting] = useState(false);
   const [localName, setLocalName] = useState(companyName);
   const [error, setError] = useState<string | null>(null);
   const [validated, setValidated] = useState(false);
@@ -44,11 +46,33 @@ export function StepIdentity() {
     debounceRef.current = setTimeout(() => validate(value), 500);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (submitting) return;
     const result = companyNameSchema.safeParse(localName);
     if (result.success) {
       setValidated(true);
-      setTimeout(() => advanceStep(), 300);
+      setSubmitting(true);
+
+      // Create the organization in Supabase
+      try {
+        const res = await createOrganization({
+          name: localName,
+          trade: selectedTrade,
+        });
+        if ("error" in res && res.error) {
+          setError(res.error as string);
+          setSubmitting(false);
+          return;
+        }
+        if ("organization" in res && res.organization) {
+          setOrganizationId((res.organization as { id: string }).id);
+        }
+      } catch {
+        // If Supabase is not configured yet, continue anyway (graceful degradation)
+      }
+
+      setSubmitting(false);
+      advanceStep();
     } else {
       setError(result.error.issues[0].message);
     }

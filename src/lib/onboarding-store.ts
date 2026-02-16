@@ -41,6 +41,9 @@ export interface OnboardingState {
   commandMenuCompleted: boolean;
   connectedIntegrations: string[];
 
+  // Backend link — the created organization ID (set after identity step syncs to Supabase)
+  organizationId: string | null;
+
   // Actions
   setAuth: (email: string, name: string) => void;
   setCompanyName: (name: string) => void;
@@ -49,6 +52,7 @@ export interface OnboardingState {
   removeTeamInvite: (id: string) => void;
   setCommandMenuCompleted: () => void;
   toggleIntegration: (name: string) => void;
+  setOrganizationId: (id: string) => void;
   advanceStep: () => void;
   goToStep: (step: OnboardingStep) => void;
   reset: () => void;
@@ -75,6 +79,7 @@ const initialState = {
   teamInvites: [] as TeamInvite[],
   commandMenuCompleted: false,
   connectedIntegrations: [] as string[],
+  organizationId: null,
 };
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -104,6 +109,8 @@ export const useOnboardingStore = create<OnboardingState>()(
         })),
 
       setCommandMenuCompleted: () => set({ commandMenuCompleted: true }),
+
+      setOrganizationId: (id) => set({ organizationId: id }),
 
       toggleIntegration: (name) =>
         set((state) => {

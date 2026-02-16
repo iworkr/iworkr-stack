@@ -25,7 +25,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import { dailyRevenue, payouts, type Invoice, type Payout } from "@/lib/data";
+import { dailyRevenue as mockDailyRevenue, payouts as mockPayouts, type Invoice, type Payout } from "@/lib/data";
 import { useFinanceStore, type FinanceTab } from "@/lib/finance-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
@@ -81,7 +81,7 @@ function AnimatedNumber({ value, prefix = "$" }: { value: number; prefix?: strin
 
 export default function FinancePage() {
   const router = useRouter();
-  const { invoices, activeTab, setActiveTab, focusedIndex, setFocusedIndex, updateInvoiceStatus, deleteInvoice, restoreInvoice } = useFinanceStore();
+  const { invoices, payouts: storePayouts, dailyRevenue: storeDailyRevenue, overview, activeTab, setActiveTab, focusedIndex, setFocusedIndex, updateInvoiceStatus, deleteInvoice, restoreInvoice } = useFinanceStore();
   const { addToast } = useToastStore();
   const { setCreateInvoiceModalOpen } = useShellStore();
 
@@ -92,13 +92,16 @@ export default function FinancePage() {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [expandedPayout, setExpandedPayout] = useState<string | null>(null);
 
+  const dailyRevenue = storeDailyRevenue.length > 0 ? storeDailyRevenue : mockDailyRevenue;
+  const payouts = storePayouts.length > 0 ? storePayouts : mockPayouts;
+
   /* ── Computed ────────────────────────────────────────────── */
-  const totalRevenueMTD = dailyRevenue.reduce((sum, d) => sum + d.amount, 0);
+  const totalRevenueMTD = overview?.revenue_mtd ?? dailyRevenue.reduce((sum, d) => sum + d.amount, 0);
   const paidInvoices = invoices.filter((i) => i.status === "paid");
   const overdueInvoices = invoices.filter((i) => i.status === "overdue");
-  const totalOverdue = overdueInvoices.reduce((sum, i) => sum + i.total, 0);
-  const stripeBalance = 4200;
-  const avgPayoutDays = 2.4;
+  const totalOverdue = overview?.overdue_amount ?? overdueInvoices.reduce((sum, i) => sum + i.total, 0);
+  const stripeBalance = overview?.stripe_balance ?? 4200;
+  const avgPayoutDays = overview?.avg_payout_days ?? 2.4;
 
   const filteredInvoices = invoices.filter(
     (inv) =>

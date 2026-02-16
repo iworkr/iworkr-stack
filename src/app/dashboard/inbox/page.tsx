@@ -22,6 +22,7 @@ import {
   Sun,
   Sparkles,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { type InboxItem, type InboxItemType } from "@/lib/data";
 import { useToastStore } from "@/components/app/action-toast";
 import { useInboxStore, type InboxTab } from "@/lib/inbox-store";
@@ -170,6 +171,7 @@ function getPreviewContent(item: InboxItem) {
    ══════════════════════════════════════════════════════════ */
 
 export default function InboxPage() {
+  const router = useRouter();
   const {
     items,
     selectedId,
@@ -664,9 +666,16 @@ export default function InboxPage() {
                     </span>
                   ))}
                 </div>
-                <button className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] text-zinc-600 transition-colors hover:bg-white/5 hover:text-zinc-400">
+                <button
+                  onClick={() => {
+                    if (selectedItem?.jobRef) {
+                      router.push(`/dashboard/jobs/${selectedItem.jobRef}`);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] text-zinc-600 transition-colors hover:bg-white/5 hover:text-zinc-400"
+                >
                   <ExternalLink size={12} strokeWidth={1.5} />
-                  Open Full Page
+                  {selectedItem?.jobRef ? "Open Job" : "Open Full Page"}
                 </button>
               </div>
 
@@ -741,7 +750,10 @@ export default function InboxPage() {
                     transition={{ delay: 0.3 }}
                     className="mt-4"
                   >
-                    <button className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 font-mono text-[11px] text-zinc-500 transition-colors hover:border-blue-500/30 hover:text-blue-400">
+                    <button
+                      onClick={() => router.push(`/dashboard/jobs/${selectedItem.jobRef}`)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 font-mono text-[11px] text-zinc-500 transition-colors hover:border-blue-500/30 hover:text-blue-400"
+                    >
                       {selectedItem.jobRef}
                       <ExternalLink size={10} />
                     </button>

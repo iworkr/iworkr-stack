@@ -19,6 +19,7 @@ import {
 import { PopoverMenu } from "./popover-menu";
 import { useToastStore } from "./action-toast";
 import { useClientsStore } from "@/lib/clients-store";
+import { useOrg } from "@/lib/hooks/use-org";
 import { clients as existingClients, type Client, type ClientStatus } from "@/lib/data";
 
 /* ── Types & Config ───────────────────────────────────────── */
@@ -117,7 +118,9 @@ export function CreateClientModal({
   const enrichTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { addToast } = useToastStore();
-  const { addClient } = useClientsStore();
+  const { addClient, createClientServer } = useClientsStore();
+  const { orgId } = useOrg();
+  const [saving, setSaving] = useState(false);
 
   /* ── Derived ────────────────────────────────────────────── */
   const initials = clientName ? makeInitials(clientName) : "";
@@ -151,6 +154,7 @@ export function CreateClientModal({
       setActivePill(null);
       setSplitMenuOpen(false);
       setSaved(false);
+      setSaving(false);
       setTimeout(() => nameInputRef.current?.focus(), 120);
     }
   }, [open]);
@@ -197,9 +201,63 @@ export function CreateClientModal({
   }
 
   /* ── Save ───────────────────────────────────────────────── */
-  function handleSave(mode: "save" | "save_and_job" | "save_and_quote" = "save") {
-    if (!isValid) return;
+  async function handleSave(mode: "save" | "save_and_job" | "save_and_quote" = "save") {
+    if (!isValid || saving) return;
 
+    const billingTermMap: Record<string, string> = {
+      due_receipt: "due_on_receipt", net_7: "net_7", net_14: "net_14", net_30: "net_30", net_60: "net_60",
+    };
+
+    // If org is available, persist to server
+    if (orgId) {
+      setSaving(true);
+      const result = await createClientServer({
+        organization_id: orgId,
+        name: clientName.trim(),
+        email: contactEmail || null,
+        phone: contactPhone || null,
+        status: "active",
+        type: clientType,
+        address: address || null,
+        address_lat: addressCoords?.lat || null,
+        address_lng: addressCoords?.lng || null,
+        tags,
+        billing_terms: billingTermMap[billingTerm] || "due_on_receipt",
+        initial_contact: contactName
+          ? {
+              name: contactName,
+              role: contactRole || "Primary Contact",
+              email: contactEmail || null,
+              phone: contactPhone || null,
+              is_primary: true,
+            }
+          : undefined,
+      });
+      setSaving(false);
+
+      if (!result.success) {
+        addToast(`Error: ${result.error || "Failed to create client"}`);
+        return;
+      }
+
+      setSaved(true);
+      const toastMsg = sendWelcome && contactEmail
+        ? `${clientName} created — Welcome email sent`
+        : `${clientName} created`;
+      addToast(toastMsg);
+
+      setTimeout(() => {
+        onClose();
+        if (mode === "save_and_job" && onCreateAndJob) {
+          onCreateAndJob(result.clientId!);
+        } else if (mode === "save_and_quote" && onCreateAndQuote) {
+          onCreateAndQuote(result.clientId!);
+        }
+      }, 400);
+      return;
+    }
+
+    // Fallback: local only (no org)
     const id = `c${Date.now()}`;
     const billingTag = billingTerms.find((b) => b.value === billingTerm)?.label || "";
 
@@ -237,7 +295,6 @@ export function CreateClientModal({
 
     addClient(newClient);
 
-    // Success animation
     setSaved(true);
     const toastMsg = sendWelcome && contactEmail
       ? `${clientName} created — Welcome email sent`

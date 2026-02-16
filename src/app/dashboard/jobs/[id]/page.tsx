@@ -23,6 +23,9 @@ import {
   MoreHorizontal,
   Trash2,
   Copy,
+  DollarSign,
+  Plus,
+  Receipt,
 } from "lucide-react";
 import { useJobsStore } from "@/lib/jobs-store";
 import { useToastStore } from "@/components/app/action-toast";
@@ -31,6 +34,13 @@ import { PriorityIcon } from "@/components/app/priority-icon";
 import { PopoverMenu } from "@/components/app/popover-menu";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import type { JobStatus, Priority } from "@/lib/data";
+import {
+  getJobLineItems,
+  addJobLineItem,
+  deleteJobLineItem,
+  updateJobLineItem,
+  type JobLineItem,
+} from "@/app/actions/jobs";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -99,8 +109,13 @@ export default function JobDetailPage() {
     y: 0,
   });
   const [savedField, setSavedField] = useState<string | null>(null);
+  const [lineItems, setLineItems] = useState<JobLineItem[]>([]);
+  const [lineItemsLoaded, setLineItemsLoaded] = useState(false);
+  const [newItemDesc, setNewItemDesc] = useState("");
+  const [newItemPrice, setNewItemPrice] = useState("");
   const titleRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
+  const newItemRef = useRef<HTMLInputElement>(null);
 
   // Sync local state when job changes
   useEffect(() => {
@@ -109,6 +124,15 @@ export default function JobDetailPage() {
       setLocalDesc(job.description || "");
     }
   }, [job]);
+
+  // Load line items from server
+  useEffect(() => {
+    if (!jobId || lineItemsLoaded) return;
+    getJobLineItems(jobId).then(({ data }) => {
+      if (data) setLineItems(data);
+      setLineItemsLoaded(true);
+    });
+  }, [jobId, lineItemsLoaded]);
 
   // Auto-focus title input
   useEffect(() => {
@@ -405,6 +429,142 @@ export default function JobDetailPage() {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* ── Estimate / Line Items ──────────────────────── */}
+            {(lineItems.length > 0 || lineItemsLoaded) && (
+              <div className="mb-8">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="flex items-center gap-1.5 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                    <Receipt size={12} />
+                    Estimate
+                  </h3>
+                  {lineItems.length > 0 && (
+                    <span className="text-[14px] font-semibold tracking-tight text-zinc-200">
+                      $
+                      {(
+                        lineItems.reduce(
+                          (sum, li) => sum + li.unit_price_cents * li.quantity,
+                          0
+                        ) / 100
+                      ).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+                  {lineItems.length > 0 && (
+                    <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+                      {lineItems.map((li) => (
+                        <motion.div
+                          key={li.id}
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="group flex items-center gap-3 px-4 py-2.5"
+                        >
+                          <span className="min-w-0 flex-1 text-[12px] text-zinc-400">
+                            {li.description}
+                          </span>
+                          <span className="text-[10px] text-zinc-600">
+                            ×{li.quantity}
+                          </span>
+                          <span className="w-20 text-right text-[12px] font-medium text-zinc-300">
+                            ${(li.unit_price_cents / 100).toLocaleString()}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              await deleteJobLineItem(li.id);
+                              setLineItems((prev) =>
+                                prev.filter((x) => x.id !== li.id)
+                              );
+                              addToast("Line item removed");
+                            }}
+                            className="rounded-md p-0.5 text-zinc-700 opacity-0 transition-all hover:text-red-400 group-hover:opacity-100"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new line item */}
+                  <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.04)] px-4 py-2.5">
+                    <Plus size={12} className="shrink-0 text-zinc-600" />
+                    <input
+                      ref={newItemRef}
+                      value={newItemDesc}
+                      onChange={(e) => setNewItemDesc(e.target.value)}
+                      placeholder="Add line item..."
+                      className="min-w-0 flex-1 bg-transparent text-[12px] text-zinc-400 outline-none placeholder:text-zinc-700"
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter" && newItemDesc.trim()) {
+                          const priceCents = Math.round(
+                            (parseFloat(newItemPrice) || 0) * 100
+                          );
+                          const { data } = await addJobLineItem(jobId, {
+                            description: newItemDesc.trim(),
+                            quantity: 1,
+                            unit_price_cents: priceCents,
+                          });
+                          if (data) {
+                            setLineItems((prev) => [...prev, data]);
+                            setNewItemDesc("");
+                            setNewItemPrice("");
+                            addToast("Line item added");
+                          }
+                        }
+                      }}
+                    />
+                    <div className="flex items-center gap-0.5">
+                      <span className="text-[10px] text-zinc-600">$</span>
+                      <input
+                        value={newItemPrice}
+                        onChange={(e) => setNewItemPrice(e.target.value)}
+                        placeholder="0"
+                        type="number"
+                        className="w-16 bg-transparent text-right text-[12px] font-medium text-zinc-300 outline-none placeholder:text-zinc-700"
+                        onKeyDown={async (e) => {
+                          if (e.key === "Enter" && newItemDesc.trim()) {
+                            const priceCents = Math.round(
+                              (parseFloat(newItemPrice) || 0) * 100
+                            );
+                            const { data } = await addJobLineItem(jobId, {
+                              description: newItemDesc.trim(),
+                              quantity: 1,
+                              unit_price_cents: priceCents,
+                            });
+                            if (data) {
+                              setLineItems((prev) => [...prev, data]);
+                              setNewItemDesc("");
+                              setNewItemPrice("");
+                              addToast("Line item added");
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Total row */}
+                  {lineItems.length > 0 && (
+                    <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.08)] px-4 py-3">
+                      <span className="text-[11px] font-medium text-zinc-500">
+                        Total
+                      </span>
+                      <span className="text-[16px] font-semibold tracking-tight text-zinc-100">
+                        $
+                        {(
+                          lineItems.reduce(
+                            (sum, li) => sum + li.unit_price_cents * li.quantity,
+                            0
+                          ) / 100
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* ── Sub-Tasks ──────────────────────────────────── */}
             {subtasks.length > 0 && (

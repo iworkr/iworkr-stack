@@ -106,6 +106,9 @@ export function Testimonials() {
 
   return (
     <Section id="testimonials" className="overflow-hidden">
+      {/* Dot grid texture */}
+      <div className="pointer-events-none absolute inset-0 bg-dot-grid opacity-[0.025]" />
+
       <FadeIn>
         <SectionHeader
           label="Testimonials"
@@ -116,20 +119,27 @@ export function Testimonials() {
       </FadeIn>
 
       <div ref={constraintRef} className="relative -mx-6 md:-mx-12">
-        {/* Edge gradients */}
-        <div className="pointer-events-none absolute top-0 left-0 z-10 h-full w-16 bg-gradient-to-r from-black to-transparent md:w-32" />
-        <div className="pointer-events-none absolute top-0 right-0 z-10 h-full w-16 bg-gradient-to-l from-black to-transparent md:w-32" />
-
-        <motion.div
-          drag="x"
-          dragConstraints={{ left: -((testimonials.length - 1) * 400), right: 0 }}
-          style={{ x: springX }}
-          className="flex cursor-grab gap-5 px-6 active:cursor-grabbing md:px-12"
+        {/* Smooth CSS-mask fade on both edges */}
+        <div
+          className="overflow-hidden"
+          style={{
+            maskImage:
+              "linear-gradient(to right, transparent 0%, black 8%, black 88%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent 0%, black 8%, black 88%, transparent 100%)",
+          }}
         >
-          {testimonials.map((t, i) => (
-            <TestimonialCard key={t.name} testimonial={t} isCenter={i === 0} />
-          ))}
-        </motion.div>
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: -((testimonials.length - 1) * 400), right: 0 }}
+            style={{ x: springX }}
+            className="flex cursor-grab gap-5 px-6 active:cursor-grabbing md:px-12"
+          >
+            {testimonials.map((t, i) => (
+              <TestimonialCard key={t.name} testimonial={t} isCenter={i === 0} />
+            ))}
+          </motion.div>
+        </div>
 
         {/* Drag hint */}
         <FadeIn delay={0.5} className="mt-6 text-center">

@@ -1,22 +1,34 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowRight, Mail } from "lucide-react";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight, ArrowLeft, Mail } from "lucide-react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { emailSchema } from "@/lib/validation";
 import { Spinner } from "@/components/onboarding/spinner";
+import { createClient } from "@/lib/supabase/client";
 
-type AuthMode = "choice" | "email" | "authenticating";
+type AuthMode = "choice" | "email" | "magic_link_sent" | "authenticating";
 
 export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-black" />}>
+      <AuthPageInner />
+    </Suspense>
+  );
+}
+
+function AuthPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setAuth } = useOnboardingStore();
   const [mode, setMode] = useState<AuthMode>("choice");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     if (mode === "email") {
@@ -24,16 +36,27 @@ export default function AuthPage() {
     }
   }, [mode]);
 
-  function handleGoogleAuth() {
+  // Show error from callback
+  useEffect(() => {
+    const err = searchParams.get("error");
+    if (err) setError("Authentication failed. Please try again.");
+  }, [searchParams]);
+
+  async function handleGoogleAuth() {
     setMode("authenticating");
-    // Simulate OAuth
-    setTimeout(() => {
-      setAuth("user@company.com", "User");
-      router.push("/setup");
-    }, 2000);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setError(error.message);
+      setMode("choice");
+    }
   }
 
-  function handleEmailSubmit() {
+  async function handleEmailSubmit() {
     const result = emailSchema.safeParse(email);
     if (!result.success) {
       setError(result.error.issues[0].message);
@@ -41,11 +64,23 @@ export default function AuthPage() {
     }
     setError(null);
     setMode("authenticating");
-    // Simulate magic link
-    setTimeout(() => {
-      setAuth(email, email.split("@")[0]);
-      router.push("/setup");
-    }, 2000);
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setMode("email");
+      return;
+    }
+
+    // Also sync with the onboarding store for backwards compat during transition
+    setAuth(email, email.split("@")[0]);
+    setMode("magic_link_sent");
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -79,6 +114,17 @@ export default function AuthPage() {
             backgroundSize: "80px 80px",
           }}
         />
+      </div>
+
+      {/* Back to home */}
+      <div className="fixed top-6 left-6 z-10">
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-300"
+        >
+          <ArrowLeft size={13} />
+          Back to iWorkr
+        </Link>
       </div>
 
       {/* Content */}
@@ -273,6 +319,43 @@ export default function AuthPage() {
                   Authenticating secure session
                 </motion.p>
               </div>
+            </motion.div>
+          )}
+
+          {mode === "magic_link_sent" && (
+            <motion.div
+              key="magic_link_sent"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center space-y-6 text-center"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)]"
+              >
+                <Mail size={24} className="text-zinc-400" />
+              </motion.div>
+              <div>
+                <h2 className="text-xl font-medium tracking-tight text-zinc-100">
+                  Check your email
+                </h2>
+                <p className="mt-2 text-sm text-zinc-500">
+                  We sent a magic link to{" "}
+                  <span className="text-zinc-300">{email}</span>
+                </p>
+                <p className="mt-1 text-xs text-zinc-600">
+                  Click the link in the email to sign in.
+                </p>
+              </div>
+              <button
+                onClick={() => setMode("email")}
+                className="text-xs text-zinc-600 transition-colors hover:text-zinc-300"
+              >
+                Use a different email
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
