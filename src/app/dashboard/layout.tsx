@@ -32,13 +32,16 @@ export default function DashboardLayout({
     slideOverOpen,
     toggleSidebar,
     commandMenuOpen,
+    createJobModalOpen,
+    setCreateJobModalOpen,
     createClientModalOpen,
     setCreateClientModalOpen,
     createInvoiceModalOpen,
     setCreateInvoiceModalOpen,
   } = useShellStore();
 
-  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const createModalOpen = createJobModalOpen;
+  const setCreateModalOpen = setCreateJobModalOpen;
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const pendingGRef = useRef(false);
   const gTimeoutRef = useRef<NodeJS.Timeout | null>(null);

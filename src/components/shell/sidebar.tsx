@@ -22,6 +22,8 @@ import {
   Workflow,
   Sun,
   Moon,
+  Bot,
+  Smartphone,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -53,11 +55,13 @@ const navItems = [
   { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "T" },
   { id: "nav_automations", label: "Automations", icon: Workflow, href: "/dashboard/automations", shortcut: "W" },
   { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations" },
+  { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent" },
 ];
 
 type SidebarTeamMember = { name: string; initials: string; status: "online" | "away"; role: string };
 
 const systemItems = [
+  { label: "Get App", icon: Smartphone, href: "/dashboard/get-app", action: null },
   { label: "Settings", icon: Settings, href: "/settings", action: null },
   { label: "Help", icon: HelpCircle, href: "/dashboard/help", action: null },
   { label: "Invite Team", icon: UserPlus, href: null, action: "invite" },

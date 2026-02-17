@@ -181,15 +181,33 @@ export default function JobsPage() {
     }
   }
 
+  // State for bulk delete confirmation
+  const [bulkDeleteJobs, setBulkDeleteJobs] = useState<Job[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
   function handleBulkDelete() {
     const deletedIds = new Set(selected);
     const deletedJobs = jobsList.filter((j) => deletedIds.has(j.id));
     if (deletedJobs.length === 1) {
       handleDeleteClick(deletedJobs[0]);
-    } else {
-      deletedJobs.forEach((j) => deleteJobServer(j.id));
+    } else if (deletedJobs.length > 1) {
+      setBulkDeleteJobs(deletedJobs);
+      setIsBulkDeleteModalOpen(true);
+    }
+  }
+
+  async function confirmBulkDelete() {
+    setIsDeleting(true);
+    try {
+      await Promise.all(bulkDeleteJobs.map((j) => deleteJobServer(j.id)));
       clearSelection();
-      addToast(`${deletedIds.size} jobs deleted`);
+      addToast(`${bulkDeleteJobs.length} jobs deleted`);
+    } catch {
+      addToast("Failed to delete some jobs");
+    } finally {
+      setIsBulkDeleteModalOpen(false);
+      setBulkDeleteJobs([]);
+      setIsDeleting(false);
     }
   }
 
@@ -485,6 +503,57 @@ export default function JobsPage() {
         onDelete={handleBulkDelete}
         onClear={clearSelection}
       />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isBulkDeleteModalOpen && bulkDeleteJobs.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => !isDeleting && setIsBulkDeleteModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[400px] rounded-xl border border-[rgba(255,255,255,0.1)] bg-zinc-900 p-0 shadow-2xl"
+            >
+              <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10">
+                  <AlertTriangle size={18} className="text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-zinc-100">
+                    Delete {bulkDeleteJobs.length} Jobs
+                  </h3>
+                  <p className="text-[12px] text-zinc-500">This action cannot be undone.</p>
+                </div>
+              </div>
+              <div className="px-5 py-3">
+                <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
+                  {bulkDeleteJobs.map((j) => (
+                    <div key={j.id} className="flex items-center gap-2 text-[11px]">
+                      <span className="font-mono text-zinc-600">{j.id}</span>
+                      <span className="truncate text-zinc-400">{j.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 border-t border-[rgba(255,255,255,0.06)] px-5 py-3">
+                <button onClick={() => setIsBulkDeleteModalOpen(false)} disabled={isDeleting} className="rounded-md px-3 py-1.5 text-[13px] text-zinc-400 hover:bg-[rgba(255,255,255,0.05)]">Cancel</button>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={confirmBulkDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-md bg-red-500/15 px-3 py-1.5 text-[13px] font-medium text-red-400 hover:bg-red-500/25 disabled:opacity-50">
+                  <Trash2 size={13} />
+                  {isDeleting ? "Deleting…" : `Delete ${bulkDeleteJobs.length} Jobs`}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

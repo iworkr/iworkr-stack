@@ -20,6 +20,8 @@ import {
   BarChart3,
   Import,
   Plus,
+  MapPin,
+  Code2,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { Shimmer } from "@/components/ui/shimmer";
@@ -63,6 +65,8 @@ const sections: NavSection[] = [
       { id: "members", label: "Members", href: "/settings/members", icon: Users },
       { id: "billing", label: "Billing", href: "/settings/billing", icon: CreditCard },
       { id: "integrations", label: "Integrations", href: "/settings/integrations", icon: Plug },
+      { id: "branches", label: "Branches", href: "/settings/branches", icon: MapPin },
+      { id: "developers", label: "Developer API", href: "/settings/developers", icon: Code2 },
       { id: "import", label: "Import / Export", href: "/settings/import", icon: Import },
     ],
   },
