@@ -70,11 +70,11 @@ const catalogItems = [
 ];
 
 const gradients = [
-  "from-violet-600/30 to-indigo-800/30",
-  "from-emerald-600/30 to-teal-800/30",
-  "from-amber-600/30 to-orange-800/30",
-  "from-rose-600/30 to-pink-800/30",
-  "from-blue-600/30 to-cyan-800/30",
+  "from-zinc-600/30 to-zinc-800/30",
+  "from-zinc-500/30 to-zinc-700/30",
+  "from-zinc-700/30 to-zinc-900/30",
+  "from-zinc-600/30 to-zinc-800/30",
+  "from-zinc-500/30 to-zinc-700/30",
 ];
 
 function getGrad(initials: string) {
@@ -364,8 +364,8 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "circOut" }}
             layout
-            className="fixed top-[8%] left-1/2 z-50 flex w-full max-w-[900px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#121212]"
-            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", maxHeight: "82vh" }}
+            className="fixed top-[8%] left-1/2 z-50 flex w-full max-w-[900px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0C0C0C] backdrop-blur-md"
+            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5), 0 0 40px -10px rgba(0,230,118,0.06)", maxHeight: "82vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ── Header ────────────────────────────────────── */}
@@ -436,13 +436,13 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.2 }}
                               >
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#5E6AD2] shadow-lg shadow-[#5E6AD2]/30">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
                                   <MapPin size={10} className="text-white" />
                                 </div>
                                 <motion.div
                                   animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
                                   transition={{ duration: 2, repeat: Infinity }}
-                                  className="absolute inset-0 rounded-full border border-[#5E6AD2]"
+                                  className="absolute inset-0 rounded-full border border-[#00E676]"
                                 />
                               </motion.div>
                             </div>
@@ -679,7 +679,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   <label className="flex items-center gap-2 text-[12px] text-zinc-400">
                     <button
                       onClick={() => setEstimateMode(!estimateMode)}
-                      className={`relative h-[18px] w-[32px] rounded-full transition-colors ${estimateMode ? "bg-[#5E6AD2]" : "bg-zinc-700"}`}
+                      className={`relative h-[18px] w-[32px] rounded-full transition-colors ${estimateMode ? "bg-[#00E676]" : "bg-zinc-700"}`}
                     >
                       <motion.div
                         layout
@@ -816,7 +816,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
               <label className="flex items-center gap-2 text-[11px] text-zinc-600">
                 <button
                   onClick={() => setCreateMore(!createMore)}
-                  className={`relative h-[16px] w-[28px] rounded-full transition-colors ${createMore ? "bg-[#5E6AD2]" : "bg-zinc-700"}`}
+                  className={`relative h-[16px] w-[28px] rounded-full transition-colors ${createMore ? "bg-[#00E676]" : "bg-zinc-700"}`}
                 >
                   <motion.div
                     layout
@@ -834,7 +834,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
                   disabled={!title.trim() || saving}
-                  className="relative flex items-center gap-2 overflow-hidden rounded-md bg-gradient-to-r from-[#5E6AD2] to-[#7C3AED] px-4 py-1.5 text-[13px] font-medium text-white transition-all hover:from-[#6E7AE2] hover:to-[#8B5CF6] disabled:opacity-30"
+                  className="relative flex items-center gap-2 overflow-hidden rounded-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-4 py-1.5 text-[13px] font-medium text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] disabled:opacity-30"
                 >
                   <Send size={12} />
                   {saving ? "Saving..." : "Send Quote & Save"}
@@ -847,7 +847,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
                   disabled={!title.trim() || saving}
-                  className="flex items-center gap-2 rounded-md bg-white px-4 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-30"
+                  className="flex items-center gap-2 rounded-md bg-[#00E676] px-4 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-[#00C853] disabled:opacity-30"
                 >
                   <Check size={12} />
                   {saving ? "Saving..." : "Create Job"}

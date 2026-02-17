@@ -101,7 +101,7 @@ export default function MembersPage() {
               <div className="w-24">
                 <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
                   role === "owner" || role === "manager"
-                    ? "border-violet-500/30 bg-violet-500/10 text-violet-400"
+                    ? "border-[rgba(0,230,118,0.3)] bg-[rgba(0,230,118,0.08)] text-[#00E676]"
                     : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-zinc-500"
                 }`}>
                   {role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}

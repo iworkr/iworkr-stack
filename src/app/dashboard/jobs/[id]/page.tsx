@@ -590,7 +590,7 @@ export default function JobDetailPage() {
                         cy={10}
                         r={8}
                         fill="none"
-                        stroke={subtaskProgress === 1 ? "#34d399" : "#5E6AD2"}
+                        stroke={subtaskProgress === 1 ? "#34d399" : "#00E676"}
                         strokeWidth={2}
                         strokeLinecap="round"
                         strokeDasharray={`${2 * Math.PI * 8}`}
@@ -698,10 +698,10 @@ export default function JobDetailPage() {
                           }}
                           className="relative z-10 flex flex-col items-center"
                         >
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5E6AD2] shadow-lg shadow-[#5E6AD2]/30">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
                             <MapPin size={14} className="text-white" />
                           </div>
-                          <div className="mt-0.5 h-2 w-2 rounded-full bg-[#5E6AD2]/40" />
+                          <div className="mt-0.5 h-2 w-2 rounded-full bg-[#00E676]/40" />
                           {/* Pulse ring */}
                           <motion.div
                             animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
@@ -710,7 +710,7 @@ export default function JobDetailPage() {
                               repeat: Infinity,
                               ease: "easeOut",
                             }}
-                            className="absolute top-0 h-8 w-8 rounded-full border border-[#5E6AD2]"
+                            className="absolute top-0 h-8 w-8 rounded-full border border-[#00E676]"
                           />
                         </motion.div>
                       </div>

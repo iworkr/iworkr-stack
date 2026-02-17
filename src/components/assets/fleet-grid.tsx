@@ -17,14 +17,14 @@ const categoryIcons: Record<AssetCategory, typeof Truck> = {
 };
 
 const categoryColors: Record<AssetCategory, string> = {
-  vehicle: "from-blue-600/30 to-blue-800/20",
+  vehicle: "from-zinc-600/30 to-zinc-800/20",
   tool: "from-amber-600/30 to-amber-800/20",
-  equipment: "from-violet-600/30 to-violet-800/20",
+  equipment: "from-zinc-500/30 to-zinc-700/20",
 };
 
 const statusConfig = {
   available: { color: "bg-emerald-500", ring: "ring-emerald-500/30", label: "Available" },
-  assigned: { color: "bg-blue-500", ring: "ring-blue-500/30", label: "Assigned" },
+  assigned: { color: "bg-[#00E676]", ring: "ring-[rgba(0,230,118,0.3)]", label: "Assigned" },
   maintenance: { color: "bg-red-500", ring: "ring-red-500/30", label: "Maintenance" },
 };
 
@@ -125,7 +125,7 @@ function AssetCard({ asset, index }: { asset: Asset; index: number }) {
           <span className="font-mono text-[10px] text-zinc-600">{asset.tag}</span>
           <span className={`text-[9px] font-medium ${
             asset.status === "available" ? "text-emerald-400" :
-            asset.status === "assigned" ? "text-blue-400" :
+            asset.status === "assigned" ? "text-[#00E676]" :
             "text-red-400"
           }`}>
             {status.label}

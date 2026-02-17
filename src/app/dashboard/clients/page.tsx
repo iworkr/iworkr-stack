@@ -29,7 +29,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu
 
 const statusConfig: Record<string, { label: string; dot: string; text: string }> = {
   active: { label: "Active", dot: "bg-emerald-400", text: "text-emerald-400/80" },
-  lead: { label: "Lead", dot: "bg-blue-400", text: "text-blue-400/80" },
+  lead: { label: "Lead", dot: "bg-[#00E676]", text: "text-[rgba(0,230,118,0.8)]" },
   churned: { label: "Churned", dot: "bg-red-400", text: "text-red-400/70" },
   inactive: { label: "Inactive", dot: "bg-zinc-500", text: "text-zinc-500" },
 };
@@ -46,12 +46,12 @@ const contextItems: ContextMenuItem[] = [
 /* ── Avatar gradient based on initials ────────────────────── */
 
 const gradients = [
-  "from-violet-600/30 to-indigo-800/30",
+  "from-zinc-600/30 to-zinc-800/30",
   "from-emerald-600/30 to-teal-800/30",
   "from-amber-600/30 to-orange-800/30",
   "from-rose-600/30 to-pink-800/30",
-  "from-blue-600/30 to-cyan-800/30",
-  "from-fuchsia-600/30 to-purple-800/30",
+  "from-zinc-500/30 to-zinc-700/30",
+  "from-zinc-700/30 to-zinc-900/30",
 ];
 
 function getGradient(initials: string): string {
@@ -197,14 +197,14 @@ export default function ClientsPage() {
               onClick={() => setFilterOpen((v) => !v)}
               className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] transition-colors ${
                 hasActiveFilters
-                  ? "border-[#5E6AD2]/40 text-[#5E6AD2] hover:border-[#5E6AD2]/60"
+                  ? "border-[#00E676]/40 text-[#00E676] hover:border-[#00E676]/60"
                   : "border-[rgba(255,255,255,0.08)] text-zinc-500 hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
               }`}
             >
               <SlidersHorizontal size={12} />
               Filter
               {hasActiveFilters && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#5E6AD2] text-[9px] font-medium text-white">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#00E676] text-[9px] font-medium text-white">
                   {(filterStatus ? 1 : 0) + (filterType ? 1 : 0)}
                 </span>
               )}

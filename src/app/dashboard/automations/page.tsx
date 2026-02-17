@@ -149,13 +149,13 @@ export default function AutomationsPage() {
             {/* Stats */}
             <div className="flex items-center gap-4 pr-3">
               <div className="flex items-center gap-1.5">
-                <Zap size={12} className="text-emerald-500" />
+                <Zap size={12} className="text-[#00E676]" />
                 <span className="text-[11px] text-zinc-500">
                   <span className="font-medium text-zinc-300">{activeCount}</span> Active Flows
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Activity size={12} className="text-blue-500" />
+                <Activity size={12} className="text-[#00E676]" />
                 <span className="text-[11px] text-zinc-500">
                   <span className="font-medium text-zinc-300">{totalRuns.toLocaleString()}</span> runs today
                 </span>
@@ -192,7 +192,7 @@ export default function AutomationsPage() {
             <button
               onClick={handleNewFlow}
               disabled={creatingFlow}
-              className={`flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 text-[12px] font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(59,130,246,0.4)] ${creatingFlow ? "opacity-60 cursor-not-allowed" : ""}`}
+              className={`flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-b from-[#00E676] to-[#00C853] px-4 text-[12px] font-semibold text-black shadow-[0_0_20px_-4px_rgba(0,230,118,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(0,230,118,0.4)] ${creatingFlow ? "opacity-60 cursor-not-allowed" : ""}`}
             >
               <Plus size={13} strokeWidth={2} />
               {creatingFlow ? "Creating..." : "New Flow"}
@@ -223,7 +223,7 @@ export default function AutomationsPage() {
                 {isActive && (
                   <motion.div
                     layoutId="automations-tab-indicator"
-                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-white"
+                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[#00E676]"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -261,8 +261,8 @@ export default function AutomationsPage() {
             ))
           ) : flows.length === 0 && !searchQuery ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/10 to-violet-500/10 ring-1 ring-white/5">
-                <Zap size={28} strokeWidth={1} className="text-blue-400" />
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(0,230,118,0.08)] ring-1 ring-[rgba(0,230,118,0.15)]">
+                <Zap size={28} strokeWidth={1} className="text-[#00E676]" />
               </div>
               <h3 className="text-[14px] font-medium text-zinc-300">No Automations Yet</h3>
               <p className="mt-1 max-w-[280px] text-[11px] leading-relaxed text-zinc-600">
@@ -271,7 +271,7 @@ export default function AutomationsPage() {
               <button
                 onClick={handleNewFlow}
                 disabled={creatingFlow}
-                className="mt-5 flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2 text-[12px] font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(59,130,246,0.4)]"
+                className="mt-5 flex items-center gap-2 rounded-lg bg-gradient-to-b from-[#00E676] to-[#00C853] px-5 py-2 text-[12px] font-semibold text-black shadow-[0_0_20px_-4px_rgba(0,230,118,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(0,230,118,0.4)]"
               >
                 <Plus size={13} strokeWidth={2} />
                 {creatingFlow ? "Creating..." : "Create First Flow"}

@@ -28,30 +28,30 @@ export default function PaymentReceiptEmail({
   const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://iworkrapp.com";
 
   return (
-    <EmailLayout preview={`Payment of ${amount} received — ${invoiceNumber}`}>
-      {/* Success accent */}
+    <EmailLayout preview={`Cha-ching! ${amount} received — ${invoiceNumber}`}>
+      {/* Green accent line */}
       <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%", marginBottom: "28px" }}>
         <tr>
-          <td style={{ height: "2px", background: `linear-gradient(90deg, transparent, ${colors.success}, transparent)` }} />
+          <td style={styles.accentLine} />
         </tr>
       </table>
 
       <Section style={{ textAlign: "center" as const, marginBottom: "24px" }}>
         <span style={{
           ...styles.badge,
-          backgroundColor: colors.successBg,
-          color: colors.success,
-          border: `1px solid rgba(34,197,94,0.15)`,
+          backgroundColor: colors.greenBg,
+          color: colors.green,
+          border: `1px solid ${colors.greenBorder}`,
         }}>
           ✓ Payment Received
         </span>
       </Section>
 
       <Text style={{ ...styles.heading, textAlign: "center" as const }}>
-        {amount}
+        {amount} 💸
       </Text>
       <Text style={{ ...styles.subheading, textAlign: "center" as const }}>
-        Hey {name}, your payment for {companyName} has been processed.
+        Hey {name}, your payment for {companyName} has been processed successfully.
       </Text>
 
       {/* Receipt card */}
@@ -66,7 +66,7 @@ export default function PaymentReceiptEmail({
             <td style={{
               padding: "20px 24px",
               borderBottom: `1px solid ${colors.cardBorder}`,
-              backgroundColor: "rgba(255,255,255,0.02)",
+              backgroundColor: colors.surfaceSubtle,
             }}>
               <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
                 <tr>
@@ -81,9 +81,9 @@ export default function PaymentReceiptEmail({
                   <td style={{ textAlign: "right" as const, verticalAlign: "top" }}>
                     <span style={{
                       ...styles.badge,
-                      backgroundColor: colors.successBg,
-                      color: colors.success,
-                      border: `1px solid rgba(34,197,94,0.15)`,
+                      backgroundColor: colors.greenBg,
+                      color: colors.green,
+                      border: `1px solid ${colors.greenBorder}`,
                     }}>
                       Paid
                     </span>
@@ -95,7 +95,7 @@ export default function PaymentReceiptEmail({
         </table>
 
         {/* Receipt body */}
-        <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%", padding: "20px 24px" }}>
+        <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
           <tr>
             <td style={{ padding: "20px 24px" }}>
               <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
@@ -125,7 +125,7 @@ export default function PaymentReceiptEmail({
               <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
                 <tr>
                   <td style={{ fontSize: "14px", fontWeight: 600, color: colors.white }}>Total</td>
-                  <td style={{ fontSize: "14px", fontWeight: 600, color: colors.white, textAlign: "right" as const }}>{amount}</td>
+                  <td style={{ fontSize: "14px", fontWeight: 700, color: colors.green, textAlign: "right" as const }}>{amount}</td>
                 </tr>
               </table>
             </td>
@@ -156,8 +156,8 @@ export default function PaymentReceiptEmail({
       <Hr style={{ borderTop: `1px solid ${colors.cardBorder}`, margin: "28px 0 20px" }} />
 
       <Text style={styles.smallText}>
-        This is an automated receipt for your iWorkr subscription. 
-        If you have any questions about this charge, reply to this email.
+        This is an automated receipt for your iWorkr subscription.
+        If you have questions about this charge, reply to this email.
       </Text>
     </EmailLayout>
   );

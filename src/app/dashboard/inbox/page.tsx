@@ -39,17 +39,17 @@ const typeIcons: Record<InboxItemType, typeof Bell> = {
 };
 
 const typeColors: Record<InboxItemType, string> = {
-  job_assigned: "text-blue-400",
-  quote_approved: "text-emerald-400",
-  mention: "text-violet-400",
+  job_assigned: "text-[#00E676]",
+  quote_approved: "text-[#00E676]",
+  mention: "text-zinc-400",
   system: "text-amber-400",
   review: "text-yellow-400",
 };
 
 const typeBgColors: Record<InboxItemType, string> = {
-  job_assigned: "bg-blue-500/10",
-  quote_approved: "bg-emerald-500/10",
-  mention: "bg-violet-500/10",
+  job_assigned: "bg-[rgba(0,230,118,0.08)]",
+  quote_approved: "bg-[rgba(0,230,118,0.08)]",
+  mention: "bg-zinc-500/10",
   system: "bg-amber-500/10",
   review: "bg-yellow-500/10",
 };
@@ -58,12 +58,12 @@ const typeBgColors: Record<InboxItemType, string> = {
 
 function getAvatarGrad(initials: string) {
   const grads: string[] = [
-    "from-blue-500 to-indigo-600",
-    "from-violet-500 to-purple-600",
-    "from-emerald-500 to-teal-600",
-    "from-amber-500 to-orange-600",
-    "from-rose-500 to-pink-600",
-    "from-cyan-500 to-blue-600",
+    "from-zinc-600 to-zinc-700",
+    "from-zinc-700 to-zinc-800",
+    "from-zinc-500 to-zinc-700",
+    "from-zinc-600 to-zinc-800",
+    "from-zinc-500 to-zinc-600",
+    "from-zinc-700 to-zinc-900",
   ];
   let hash = 0;
   for (let i = 0; i < initials.length; i++) hash = initials.charCodeAt(i) + ((hash << 5) - hash);
@@ -333,7 +333,7 @@ export default function InboxPage() {
             className="absolute -left-1/4 -top-1/4 h-[150%] w-[150%] rounded-full"
             style={{
               background:
-                "radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.4) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(168,85,247,0.3) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(56,189,248,0.3) 0%, transparent 60%)",
+                "radial-gradient(ellipse at 30% 50%, rgba(0,230,118,0.15) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(0,200,83,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(0,230,118,0.08) 0%, transparent 60%)",
             }}
             animate={{
               rotate: [0, 360],
@@ -460,7 +460,7 @@ export default function InboxPage() {
               <motion.span
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-500/20 px-1.5 text-[10px] font-medium text-blue-400"
+                className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[rgba(0,230,118,0.12)] px-1.5 text-[10px] font-medium text-[#00E676]"
               >
                 {unreadCount}
               </motion.span>
@@ -471,7 +471,7 @@ export default function InboxPage() {
             title={filter === "mentions" ? "Showing mentions only — click for all" : "Filter: Mentions only"}
             className={`rounded-md p-1.5 transition-colors hover:bg-white/5 ${
               filter === "mentions"
-                ? "bg-violet-500/10 text-violet-400"
+                ? "bg-[rgba(0,230,118,0.08)] text-[#00E676]"
                 : "text-zinc-600 hover:text-zinc-400"
             }`}
           >
@@ -493,7 +493,7 @@ export default function InboxPage() {
               {activeTab === tab.id && (
                 <motion.div
                   layoutId="inbox-tab-indicator"
-                  className="absolute inset-x-0 -bottom-px h-px bg-zinc-200"
+                  className="absolute inset-x-0 -bottom-px h-px bg-[#00E676]"
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />
               )}
@@ -564,22 +564,22 @@ export default function InboxPage() {
                         : "hover:bg-white/[0.02]"
                   } ${!item.read ? "" : "opacity-70"}`}
                 >
-                  {/* Blue left border for active */}
+                  {/* Green left border for active */}
                   {isActive && (
                     <motion.div
                       layoutId="inbox-active-indicator"
-                      className="absolute bottom-2 left-0 top-2 w-[2px] rounded-full bg-blue-500"
+                      className="absolute bottom-2 left-0 top-2 w-[2px] rounded-full bg-[#00E676]"
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     />
                   )}
 
-                  {/* Blue dot for unread */}
+                  {/* Green dot for unread */}
                   {!item.read && (
                     <div className="absolute left-1.5 top-1/2 -translate-y-1/2">
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="h-[6px] w-[6px] rounded-full bg-blue-500"
+                        className="h-[6px] w-[6px] rounded-full bg-[#00E676]"
                       />
                     </div>
                   )}
@@ -771,7 +771,7 @@ export default function InboxPage() {
                   >
                     <button
                       onClick={() => router.push(`/dashboard/jobs/${selectedItem.jobRef}`)}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 font-mono text-[11px] text-zinc-500 transition-colors hover:border-blue-500/30 hover:text-blue-400"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 font-mono text-[11px] text-zinc-500 transition-colors hover:border-[rgba(0,230,118,0.3)] hover:text-[#00E676]"
                     >
                       {selectedItem.jobRef}
                       <ExternalLink size={10} />
@@ -788,7 +788,7 @@ export default function InboxPage() {
                       if (item) addToast(`"${item.title}" archived`, () => unarchive(item));
                     }}
                     disabled={!selectedId}
-                    className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[12px] font-medium text-black transition-colors hover:bg-[#00C853] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Archive size={12} />
                     Mark Done
@@ -840,7 +840,7 @@ export default function InboxPage() {
               {/* Quick Reply Bar */}
               <div className="shrink-0 border-t border-[rgba(255,255,255,0.06)] bg-black/40 px-6 py-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-zinc-600 to-zinc-800">
                     <span className="text-[9px] font-semibold text-white">
                       {profile?.full_name
                         ? profile.full_name.split(/\s+/).map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
@@ -860,7 +860,7 @@ export default function InboxPage() {
                           handleReply();
                         }
                       }}
-                      className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-[13px] text-zinc-300 placeholder-zinc-700 outline-none transition-colors focus:border-[rgba(94,106,210,0.5)] focus:bg-[rgba(255,255,255,0.04)]"
+                      className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-[13px] text-zinc-300 placeholder-zinc-700 outline-none transition-colors focus:border-[rgba(0,230,118,0.4)] focus:bg-[rgba(255,255,255,0.04)]"
                     />
                   </div>
                   <motion.button
@@ -868,7 +868,7 @@ export default function InboxPage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={handleReply}
                     disabled={!replyText.trim()}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white transition-opacity disabled:opacity-30"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#00E676] text-black transition-opacity disabled:opacity-30"
                   >
                     <Send size={14} strokeWidth={1.5} />
                   </motion.button>

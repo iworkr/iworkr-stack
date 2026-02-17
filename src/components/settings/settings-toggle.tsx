@@ -16,7 +16,7 @@ export function Toggle({ checked, onChange, disabled }: ToggleProps) {
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative h-[20px] w-[36px] shrink-0 rounded-full transition-colors duration-200 ${
-        checked ? "bg-[#5E6AD2]" : "bg-zinc-700"
+        checked ? "bg-[#00E676]" : "bg-zinc-700"
       } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
     >
       <motion.div

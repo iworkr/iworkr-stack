@@ -47,12 +47,12 @@ const clientTypes: { value: "residential" | "commercial"; label: string; icon: t
 ];
 
 const gradients = [
-  "from-violet-600/40 to-indigo-800/40",
-  "from-emerald-600/40 to-teal-800/40",
-  "from-amber-600/40 to-orange-800/40",
-  "from-rose-600/40 to-pink-800/40",
-  "from-blue-600/40 to-cyan-800/40",
-  "from-fuchsia-600/40 to-purple-800/40",
+  "from-zinc-600/40 to-zinc-800/40",
+  "from-zinc-500/40 to-zinc-700/40",
+  "from-zinc-700/40 to-zinc-900/40",
+  "from-zinc-600/40 to-zinc-800/40",
+  "from-zinc-500/40 to-zinc-700/40",
+  "from-zinc-600/40 to-zinc-800/40",
 ];
 
 function getGrad(initials: string) {
@@ -107,7 +107,7 @@ export function CreateClientModal({
 
   const [billingTerm, setBillingTerm] = useState<BillingTerm>("net_14");
   const [tags, setTags] = useState<string[]>([]);
-  const [sendWelcome, setSendWelcome] = useState(true);
+  const [sendWelcome, setSendWelcome] = useState(false);
 
   const [activePill, setActivePill] = useState<string | null>(null);
   const [splitMenuOpen, setSplitMenuOpen] = useState(false);
@@ -150,7 +150,7 @@ export function CreateClientModal({
       setContactRole("");
       setBillingTerm("net_14");
       setTags([]);
-      setSendWelcome(true);
+      setSendWelcome(false);
       setActivePill(null);
       setSplitMenuOpen(false);
       setSaved(false);
@@ -310,8 +310,8 @@ export function CreateClientModal({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "circOut" }}
             layout
-            className="fixed top-[10%] left-1/2 z-50 flex w-full max-w-[800px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#141414]"
-            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", maxHeight: "80vh" }}
+            className="fixed top-[10%] left-1/2 z-50 flex w-full max-w-[800px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0C0C0C] backdrop-blur-md"
+            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5), 0 0 40px -10px rgba(0,230,118,0.06)", maxHeight: "80vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ── Header ────────────────────────────────────── */}
@@ -371,7 +371,7 @@ export function CreateClientModal({
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         >
-                          <Sparkles size={18} className="text-[#5E6AD2]" />
+                          <Sparkles size={18} className="text-[#00E676]" />
                         </motion.div>
                       ) : (
                         <Sparkles size={18} className="text-zinc-700" />
@@ -431,13 +431,13 @@ export function CreateClientModal({
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 12, delay: 0.3 }}
                               >
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5E6AD2] shadow-lg shadow-[#5E6AD2]/30">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
                                   <MapPin size={12} className="text-white" />
                                 </div>
                                 <motion.div
                                   animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
                                   transition={{ duration: 2, repeat: Infinity }}
-                                  className="absolute inset-0 rounded-full border border-[#5E6AD2]"
+                                  className="absolute inset-0 rounded-full border border-[#00E676]"
                                 />
                               </motion.div>
                             </div>
@@ -451,7 +451,7 @@ export function CreateClientModal({
                               transition={{ delay: 0.5 }}
                               className="absolute bottom-2 left-2 right-2 flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.7)] px-3 py-2 backdrop-blur-md"
                             >
-                              <MapPin size={10} className="shrink-0 text-[#5E6AD2]" />
+                              <MapPin size={10} className="shrink-0 text-[#00E676]" />
                               <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-300">
                                 {address}
                               </span>
@@ -470,7 +470,7 @@ export function CreateClientModal({
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
                             placeholder="Enter address..."
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#5E6AD2]"
+                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
                           />
                         </div>
                       )}
@@ -491,7 +491,7 @@ export function CreateClientModal({
                               onClick={() => setClientType(ct.value)}
                               className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12px] transition-all ${
                                 active
-                                  ? "border-[#5E6AD2]/40 bg-[#5E6AD2]/10 text-[#5E6AD2]"
+                                  ? "border-[#00E676]/40 bg-[#00E676]/10 text-[#00E676]"
                                   : "border-[rgba(255,255,255,0.08)] text-zinc-500 hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-400"
                               }`}
                             >
@@ -514,7 +514,7 @@ export function CreateClientModal({
                             value={contactName}
                             onChange={(e) => setContactName(e.target.value)}
                             placeholder="Full name"
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#5E6AD2]"
+                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
                           />
                         </div>
 
@@ -527,7 +527,7 @@ export function CreateClientModal({
                             value={contactRole}
                             onChange={(e) => setContactRole(e.target.value)}
                             placeholder="e.g. Owner, Site Manager"
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#5E6AD2]"
+                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
                           />
                         </div>
 
@@ -542,7 +542,7 @@ export function CreateClientModal({
                             value={contactEmail}
                             onChange={(e) => setContactEmail(e.target.value)}
                             placeholder="email@company.com"
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#5E6AD2]"
+                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
                           />
                         </div>
 
@@ -557,7 +557,7 @@ export function CreateClientModal({
                             value={contactPhone}
                             onChange={(e) => setContactPhone(e.target.value)}
                             placeholder="+61 400 000 000"
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#5E6AD2]"
+                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
                           />
                         </div>
                       </div>
@@ -632,21 +632,35 @@ export function CreateClientModal({
             {/* ── Footer / Action Bar ───────────────────────── */}
             <div className="flex shrink-0 items-center justify-between border-t border-[rgba(255,255,255,0.06)] px-5 py-3">
               {/* Send welcome email toggle */}
-              <label className="flex items-center gap-2 text-[11px] text-zinc-600">
-                <button
-                  onClick={() => setSendWelcome(!sendWelcome)}
-                  className={`relative h-[16px] w-[28px] rounded-full transition-colors ${sendWelcome ? "bg-[#5E6AD2]" : "bg-zinc-700"}`}
-                >
-                  <motion.div
-                    layout
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="absolute top-[2px] h-3 w-3 rounded-full bg-white"
-                    style={{ left: sendWelcome ? 13 : 2 }}
-                  />
-                </button>
-                <Mail size={10} className="text-zinc-600" />
-                Send Welcome Email
-              </label>
+              <div className="flex flex-col gap-1">
+                <label className="flex items-center gap-2 text-[11px] text-zinc-600">
+                  <button
+                    onClick={() => setSendWelcome(!sendWelcome)}
+                    className={`relative h-[16px] w-[28px] rounded-full transition-colors ${sendWelcome ? "bg-[#00E676]" : "bg-zinc-700"}`}
+                  >
+                    <motion.div
+                      layout
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className="absolute top-[2px] h-3 w-3 rounded-full bg-white"
+                      style={{ left: sendWelcome ? 13 : 2 }}
+                    />
+                  </button>
+                  <Mail size={10} className="text-zinc-600" />
+                  Send Welcome Email
+                </label>
+                <AnimatePresence>
+                  {sendWelcome && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-[10px] text-amber-400/80 pl-[36px]"
+                    >
+                      This will immediately email the client.
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Split button */}
               <div className="relative flex items-center">
@@ -655,7 +669,7 @@ export function CreateClientModal({
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSave("save")}
                   disabled={!isValid}
-                  className="flex items-center gap-2 rounded-l-md bg-white px-4 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-30"
+                  className="flex items-center gap-2 rounded-l-md bg-[#00E676] px-4 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-[#00C853] disabled:opacity-30"
                 >
                   {saved ? (
                     <motion.div
@@ -680,7 +694,7 @@ export function CreateClientModal({
                 <button
                   onClick={() => setSplitMenuOpen(!splitMenuOpen)}
                   disabled={!isValid}
-                  className="flex h-[32px] items-center rounded-r-md border-l border-zinc-300 bg-white px-1.5 text-black transition-colors hover:bg-zinc-200 disabled:opacity-30"
+                  className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(0,0,0,0.15)] bg-[#00E676] px-1.5 text-black transition-colors hover:bg-[#00C853] disabled:opacity-30"
                 >
                   <ChevronDown size={12} />
                 </button>

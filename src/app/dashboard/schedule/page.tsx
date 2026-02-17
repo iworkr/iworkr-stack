@@ -44,11 +44,11 @@ const HOUR_W = 120; // pixels per hour
 
 const statusColorMap: Record<string, { bg: string; border: string; text: string; accent: string; dot: string }> = {
   scheduled: {
-    bg: "bg-blue-500/8",
-    border: "border-blue-500/25",
-    text: "text-blue-200",
-    accent: "bg-blue-500",
-    dot: "bg-blue-400",
+    bg: "bg-[rgba(0,230,118,0.06)]",
+    border: "border-[rgba(0,230,118,0.2)]",
+    text: "text-[#00E676]",
+    accent: "bg-[#00E676]",
+    dot: "bg-[#00E676]",
   },
   en_route: {
     bg: "bg-amber-500/8",
@@ -584,7 +584,7 @@ export default function SchedulePage() {
                           const typeColor = evt.type === "break"
                             ? "bg-zinc-500/10 border-zinc-600/30"
                             : evt.type === "meeting"
-                              ? "bg-purple-500/10 border-purple-500/25"
+                              ? "bg-[rgba(0,230,118,0.08)] border-[rgba(0,230,118,0.2)]"
                               : evt.type === "personal"
                                 ? "bg-teal-500/10 border-teal-500/25"
                                 : "bg-red-500/10 border-red-500/25";
@@ -835,7 +835,7 @@ export default function SchedulePage() {
                                         ? "bg-orange-400"
                                         : item.priority === "medium"
                                           ? "bg-yellow-500"
-                                          : "bg-blue-400"
+                                          : "bg-[#00E676]"
                                   }`}
                                 />
                               </div>
@@ -976,13 +976,13 @@ function JobPeekCard({
             transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 15 }}
             className="relative z-10"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#5E6AD2] shadow-lg shadow-[#5E6AD2]/30">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
               <MapPin size={10} className="text-white" />
             </div>
             <motion.div
               animate={{ scale: [1, 2, 1], opacity: [0.3, 0, 0.3] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="absolute inset-0 rounded-full border border-[#5E6AD2]"
+              className="absolute inset-0 rounded-full border border-[#00E676]"
             />
           </motion.div>
         </div>
@@ -1045,7 +1045,7 @@ function JobPeekCard({
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={onOpenFull}
-          className="flex items-center gap-1.5 rounded-md bg-[#5E6AD2] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[#6E7AE2]"
+          className="flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[#00C853]"
         >
           <ExternalLink size={11} />
           Open Mission Control

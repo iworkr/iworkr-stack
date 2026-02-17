@@ -3,12 +3,12 @@
 import { Plus } from "lucide-react";
 
 const labels = [
-  { name: "Plumbing", color: "bg-blue-500" },
+  { name: "Plumbing", color: "bg-[#00E676]" },
   { name: "Electrical", color: "bg-amber-500" },
   { name: "HVAC", color: "bg-cyan-500" },
   { name: "Emergency", color: "bg-red-500" },
   { name: "Maintenance", color: "bg-emerald-500" },
-  { name: "Install", color: "bg-violet-500" },
+  { name: "Install", color: "bg-zinc-500" },
   { name: "Inspection", color: "bg-orange-500" },
   { name: "Compliance", color: "bg-pink-500" },
   { name: "Drainage", color: "bg-teal-500" },

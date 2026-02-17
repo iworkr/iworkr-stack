@@ -68,7 +68,7 @@ export function HydrationGate({ children }: { children: ReactNode }) {
             className="fixed inset-0 z-[99999] flex items-center justify-center bg-black"
           >
             {/* Subtle radial glow */}
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.06)_0%,transparent_70%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,230,118,0.06)_0%,transparent_70%)]" />
 
             {/* Logo + pulse */}
             <motion.div
@@ -86,7 +86,7 @@ export function HydrationGate({ children }: { children: ReactNode }) {
               <motion.div
                 className="absolute inset-0 rounded-full"
                 style={{
-                  border: "1.5px solid rgba(99,102,241,0.3)",
+                  border: "1.5px solid rgba(0,230,118,0.3)",
                   margin: "-8px",
                   borderRadius: "50%",
                 }}

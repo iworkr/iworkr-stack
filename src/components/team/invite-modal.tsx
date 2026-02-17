@@ -19,7 +19,7 @@ import { useToastStore } from "@/components/app/action-toast";
 const roleColorMap: Record<string, string> = {
   red: "bg-red-500/15 text-red-400",
   purple: "bg-purple-500/15 text-purple-400",
-  blue: "bg-blue-500/15 text-blue-400",
+  blue: "bg-[rgba(0,230,118,0.1)] text-[#00E676]",
   cyan: "bg-cyan-500/15 text-cyan-400",
   emerald: "bg-emerald-500/15 text-emerald-400",
   orange: "bg-orange-500/15 text-orange-400",
@@ -145,8 +145,8 @@ export function InviteModal() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-                  <UserPlus size={16} className="text-blue-400" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(0,230,118,0.08)]">
+                  <UserPlus size={16} className="text-[#00E676]" />
                 </div>
                 <div>
                   <h2 className="text-[14px] font-semibold text-zinc-200">Invite People</h2>
@@ -177,12 +177,12 @@ export function InviteModal() {
                       key={email}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] text-blue-300"
+                      className="flex items-center gap-1 rounded-full bg-[rgba(0,230,118,0.08)] px-2.5 py-1 text-[11px] text-[#00E676]"
                     >
                       {email}
                       <button
                         onClick={(e) => { e.stopPropagation(); removeEmail(email); }}
-                        className="ml-0.5 text-blue-400/60 hover:text-blue-300"
+                        className="ml-0.5 text-[rgba(0,230,118,0.6)] hover:text-[#00E676]"
                       >
                         <X size={10} />
                       </button>
@@ -267,12 +267,12 @@ export function InviteModal() {
                         onClick={() => toggleBranch(branch)}
                         className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-[12px] font-medium transition-all ${
                           isSelected
-                            ? "border-blue-500/30 bg-blue-500/10 text-blue-300"
+                            ? "border-[rgba(0,230,118,0.3)] bg-[rgba(0,230,118,0.08)] text-[#00E676]"
                             : "border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] text-zinc-500 hover:border-[rgba(255,255,255,0.12)] hover:text-zinc-300"
                         }`}
                       >
                         <div className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-                          isSelected ? "border-blue-400 bg-blue-500" : "border-zinc-700 bg-transparent"
+                          isSelected ? "border-[#00E676] bg-[#00E676]" : "border-zinc-700 bg-transparent"
                         }`}>
                           {isSelected && <Check size={10} className="text-white" />}
                         </div>
@@ -298,7 +298,7 @@ export function InviteModal() {
                     ? "bg-emerald-500 text-white"
                     : emails.length === 0
                     ? "cursor-not-allowed bg-zinc-800 text-zinc-600"
-                    : "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_-4px_rgba(59,130,246,0.5)]"
+                    : "bg-gradient-to-r from-[#00E676] to-[#00C853] text-black shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] hover:shadow-[0_0_30px_-4px_rgba(0,230,118,0.5)]"
                 }`}
               >
                 {sent ? (

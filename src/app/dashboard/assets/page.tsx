@@ -162,7 +162,7 @@ export default function AssetsPage() {
           </div>
           <div className="h-3 w-px bg-zinc-800" />
           <div className="flex items-center gap-2">
-            <Radio size={13} className="text-blue-500" />
+            <Radio size={13} className="text-[#00E676]" />
             <span className="text-[11px] text-zinc-500">Vehicles Active</span>
             <span className="font-mono text-[12px] font-medium text-zinc-200">{vehiclesActive}</span>
           </div>
@@ -287,7 +287,7 @@ function FleetListView({ assets }: { assets: Asset[] }) {
 
   const statusConfig = {
     available: { color: "bg-emerald-500", label: "Available" },
-    assigned: { color: "bg-blue-500", label: "Assigned" },
+    assigned: { color: "bg-[#00E676]", label: "Assigned" },
     maintenance: { color: "bg-red-500", label: "Maintenance" },
   };
 

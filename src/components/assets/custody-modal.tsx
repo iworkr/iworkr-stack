@@ -86,7 +86,7 @@ export function CustodyModal({ asset, isOpen, onClose }: CustodyModalProps) {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-4">
             <div className="flex items-center gap-2">
-              <UserCheck size={16} className="text-blue-400" />
+              <UserCheck size={16} className="text-[#00E676]" />
               <h2 className="text-[14px] font-medium text-zinc-200">
                 {asset.assignee ? "Re-Assign" : "Assign"} {asset.name}
               </h2>
@@ -129,7 +129,7 @@ export function CustodyModal({ asset, isOpen, onClose }: CustodyModalProps) {
                   onClick={() => setSelectedId(m.user_id)}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                     selectedId === m.user_id
-                      ? "bg-blue-500/10 border border-blue-500/20"
+                      ? "bg-[rgba(0,230,118,0.08)] border border-[rgba(0,230,118,0.2)]"
                       : "hover:bg-white/[0.03] border border-transparent"
                   }`}
                 >
@@ -141,7 +141,7 @@ export function CustodyModal({ asset, isOpen, onClose }: CustodyModalProps) {
                     <p className="truncate text-[10px] text-zinc-600">{m.email}</p>
                   </div>
                   {selectedId === m.user_id && (
-                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                    <div className="h-2 w-2 rounded-full bg-[#00E676]" />
                   )}
                 </button>
               ))
@@ -159,7 +159,7 @@ export function CustodyModal({ asset, isOpen, onClose }: CustodyModalProps) {
             <button
               onClick={handleAssign}
               disabled={!selectedId || submitting}
-              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 rounded-lg bg-[#00E676] px-4 py-1.5 text-[11px] font-medium text-black transition-colors hover:bg-[#00C853] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {submitting && <Loader2 size={12} className="animate-spin" />}
               {asset.assignee ? "Re-Assign" : "Assign"}

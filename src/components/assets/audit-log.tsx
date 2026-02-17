@@ -5,11 +5,11 @@ import { ArrowRightLeft, Wrench, PlusCircle, Trash2, Package } from "lucide-reac
 import { type AssetAuditEntry } from "@/lib/assets-data";
 
 const typeConfig = {
-  transfer: { icon: ArrowRightLeft, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", label: "Transfer" },
+  transfer: { icon: ArrowRightLeft, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.2)]", label: "Transfer" },
   service: { icon: Wrench, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", label: "Service" },
   create: { icon: PlusCircle, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Created" },
   retire: { icon: Trash2, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", label: "Retired" },
-  stock_adjust: { icon: Package, color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20", label: "Stock" },
+  stock_adjust: { icon: Package, color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20", label: "Stock" },
 };
 
 interface AuditLogProps {

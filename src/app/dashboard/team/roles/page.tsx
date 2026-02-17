@@ -30,8 +30,8 @@ import { useToastStore } from "@/components/app/action-toast";
 
 const roleColorMap: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   red: { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/20", dot: "bg-red-500" },
-  purple: { bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-500/20", dot: "bg-purple-500" },
-  blue: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", dot: "bg-blue-500" },
+  purple: { bg: "bg-[rgba(0,230,118,0.08)]", text: "text-[#00E676]", border: "border-[rgba(0,230,118,0.2)]", dot: "bg-[#00E676]" },
+  blue: { bg: "bg-zinc-500/10", text: "text-zinc-400", border: "border-zinc-500/20", dot: "bg-zinc-500" },
   cyan: { bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-500/20", dot: "bg-cyan-500" },
   emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", dot: "bg-emerald-500" },
   orange: { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20", dot: "bg-orange-500" },

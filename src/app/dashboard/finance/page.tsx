@@ -35,7 +35,7 @@ import { useShellStore } from "@/lib/shell-store";
 
 const statusConfig: Record<string, { label: string; dot: string; text: string; bg: string }> = {
   draft: { label: "Draft", dot: "bg-zinc-500", text: "text-zinc-400", bg: "bg-zinc-500/10" },
-  sent: { label: "Sent", dot: "bg-blue-400", text: "text-blue-400", bg: "bg-blue-500/10" },
+  sent: { label: "Sent", dot: "bg-[#00E676]", text: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
   paid: { label: "Paid", dot: "bg-emerald-400", text: "text-emerald-400", bg: "bg-emerald-500/10" },
   overdue: { label: "Overdue", dot: "bg-red-400", text: "text-red-400", bg: "bg-red-500/10" },
   voided: { label: "Voided", dot: "bg-zinc-600", text: "text-zinc-600", bg: "bg-zinc-600/10" },
@@ -425,7 +425,7 @@ export default function FinancePage() {
                       initial={{ width: 0 }}
                       animate={{ width: "65%" }}
                       transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
-                      className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500"
+                      className="h-full rounded-full bg-gradient-to-r from-[#00E676] to-[#00C853]"
                     />
                   </div>
                   <div className="mt-1 text-[9px] text-zinc-700">Clearing...</div>
@@ -674,7 +674,7 @@ export default function FinancePage() {
                     payout.status === "completed"
                       ? "text-emerald-400 bg-emerald-500/10"
                       : payout.status === "processing"
-                        ? "text-blue-400 bg-blue-500/10"
+                        ? "text-[#00E676] bg-[rgba(0,230,118,0.08)]"
                         : "text-amber-400 bg-amber-500/10";
 
                   return (
@@ -703,7 +703,7 @@ export default function FinancePage() {
                           {payout.status === "completed" ? (
                             <ArrowDownRight size={12} className="text-emerald-400" />
                           ) : (
-                            <ArrowUpRight size={12} className="text-blue-400" />
+                            <ArrowUpRight size={12} className="text-[#00E676]" />
                           )}
                           <span className="text-[14px] font-semibold text-zinc-200">
                             ${payout.amount.toLocaleString()}

@@ -12,25 +12,32 @@ export default function MagicLinkEmail({
   email,
 }: MagicLinkEmailProps) {
   return (
-    <EmailLayout preview="Your sign-in link for iWorkr">
+    <EmailLayout preview="Your sign-in link — tap to enter iWorkr">
+      {/* Green accent line */}
+      <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%", marginBottom: "28px" }}>
+        <tr>
+          <td style={styles.accentLine} />
+        </tr>
+      </table>
+
       <Text style={{ ...styles.heading, textAlign: "center" as const }}>
-        Sign in to iWorkr
+        You&apos;re in. 🔑
       </Text>
       <Text style={{ ...styles.subheading, textAlign: "center" as const }}>
-        Click the button below to securely sign in.
-        {email ? ` This link was requested for ${email}.` : ""}
+        No password needed — just tap below to enter your workspace.
+        {email ? <><br /><span style={{ color: colors.subtle }}>Requested for {email}</span></> : ""}
       </Text>
 
       <Section style={{ textAlign: "center" as const, margin: "32px 0" }}>
-        <Button href={magicLink} style={styles.button}>
-          Sign In →
+        <Button href={magicLink} style={styles.buttonLarge}>
+          Enter Dashboard →
         </Button>
       </Section>
 
       {/* Security notice */}
       <Section style={{
         ...styles.infoCard,
-        backgroundColor: "rgba(255,255,255,0.02)",
+        backgroundColor: colors.surfaceSubtle,
       }}>
         <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
           <tr>
@@ -39,8 +46,8 @@ export default function MagicLinkEmail({
             </td>
             <td>
               <Text style={{ fontSize: "12px", color: colors.muted, lineHeight: "18px", margin: 0 }}>
-                This link expires in 10 minutes and can only be used once. 
-                If you didn't request this, you can safely ignore this email.
+                This link expires in <strong style={{ color: colors.text }}>10 minutes</strong> and
+                can only be used once. If you didn&apos;t request this, ignore it.
               </Text>
             </td>
           </tr>
@@ -50,7 +57,7 @@ export default function MagicLinkEmail({
       <Hr style={{ borderTop: `1px solid ${colors.cardBorder}`, margin: "24px 0 20px" }} />
 
       <Text style={styles.smallText}>
-        If the button doesn't work, copy and paste this URL into your browser:
+        If the button doesn&apos;t work, copy and paste this URL:
       </Text>
       <Text style={{
         fontSize: "11px",
@@ -58,9 +65,10 @@ export default function MagicLinkEmail({
         wordBreak: "break-all" as const,
         margin: "8px 0 0",
         padding: "12px",
-        backgroundColor: "rgba(255,255,255,0.02)",
+        backgroundColor: colors.surfaceSubtle,
         borderRadius: "8px",
         border: `1px solid ${colors.cardBorder}`,
+        fontFamily: "monospace",
       }}>
         {magicLink}
       </Text>

@@ -12,7 +12,7 @@ import type { WidgetSize } from "@/lib/dashboard-store";
 const typeConfig = {
   warning: { icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-500/10" },
   alert: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
-  info: { icon: Info, color: "text-blue-400", bg: "bg-blue-500/10" },
+  info: { icon: Info, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
   success: { icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10" },
 };
 
@@ -77,7 +77,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
       <WidgetShell delay={0.25}>
         <div className="flex h-full flex-col items-center justify-center p-3 text-center">
           <div className="relative mb-1.5">
-            <Sparkles size={14} className="text-indigo-400" />
+            <Sparkles size={14} className="text-[#00E676]" />
           </div>
           <div className={`flex h-5 w-5 items-center justify-center rounded ${config.bg} mb-1`}>
             <Icon size={10} className={config.color} />
@@ -100,15 +100,15 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
           {/* Aurora background */}
           <div className="pointer-events-none absolute inset-[-50%] z-0 opacity-[0.08]">
             <motion.div className="h-full w-full"
-              style={{ background: "conic-gradient(from 180deg at 50% 50%, rgba(99,102,241,0.5) 0deg, rgba(168,85,247,0.4) 60deg, rgba(56,189,248,0.3) 120deg, rgba(16,185,129,0.3) 180deg, rgba(99,102,241,0.5) 240deg, rgba(168,85,247,0.4) 300deg, rgba(56,189,248,0.3) 360deg)", filter: "blur(40px)" }}
+              style={{ background: "conic-gradient(from 180deg at 50% 50%, rgba(0,230,118,0.5) 0deg, rgba(0,230,118,0.4) 60deg, rgba(0,200,83,0.3) 120deg, rgba(16,185,129,0.3) 180deg, rgba(0,230,118,0.5) 240deg, rgba(0,230,118,0.4) 300deg, rgba(0,200,83,0.3) 360deg)", filter: "blur(40px)" }}
               animate={{ rotate: [0, 360] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             />
           </div>
 
           <div className="relative z-10 p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Sparkles size={14} className="text-indigo-400" />
-              <span className="text-[10px] font-medium uppercase tracking-wider text-indigo-400/80">AI Insights</span>
+              <Sparkles size={14} className="text-[#00E676]" />
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[rgba(0,230,118,0.8)]">AI Insights</span>
               <span className="text-[10px] text-zinc-600">{insights.length} active</span>
             </div>
 
@@ -133,7 +133,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
                       {ins.action && ins.action_route && (
                         <button
                           onClick={() => router.push(ins.action_route!)}
-                          className="mt-1.5 flex items-center gap-1 text-[9px] font-medium text-indigo-400 hover:text-indigo-300"
+                          className="mt-1.5 flex items-center gap-1 text-[9px] font-medium text-[#00E676] hover:text-[#00E676]"
                         >
                           <Calendar size={9} /> {ins.action}
                         </button>
@@ -155,7 +155,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
       <div className="relative overflow-hidden p-5">
         <div className="pointer-events-none absolute inset-[-50%] z-0 opacity-[0.12]">
           <motion.div className="h-full w-full"
-            style={{ background: "conic-gradient(from 180deg at 50% 50%, rgba(99,102,241,0.5) 0deg, rgba(168,85,247,0.4) 60deg, rgba(56,189,248,0.3) 120deg, rgba(16,185,129,0.3) 180deg, rgba(99,102,241,0.5) 240deg, rgba(168,85,247,0.4) 300deg, rgba(56,189,248,0.3) 360deg)", filter: "blur(40px)" }}
+            style={{ background: "conic-gradient(from 180deg at 50% 50%, rgba(0,230,118,0.5) 0deg, rgba(0,230,118,0.4) 60deg, rgba(0,200,83,0.3) 120deg, rgba(16,185,129,0.3) 180deg, rgba(0,230,118,0.5) 240deg, rgba(0,230,118,0.4) 300deg, rgba(0,200,83,0.3) 360deg)", filter: "blur(40px)" }}
             animate={{ rotate: [0, 360] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           />
         </div>
@@ -170,10 +170,10 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
         <div className="relative z-10">
           <div className="mb-3 flex items-center gap-2">
             <div className="relative">
-              <Sparkles size={14} className="text-indigo-400" />
-              <div className="absolute inset-0 animate-pulse blur-sm"><Sparkles size={14} className="text-indigo-400/50" /></div>
+              <Sparkles size={14} className="text-[#00E676]" />
+              <div className="absolute inset-0 animate-pulse blur-sm"><Sparkles size={14} className="text-[rgba(0,230,118,0.5)]" /></div>
             </div>
-            <span className="text-[10px] font-medium uppercase tracking-wider text-indigo-400/80">AI Insight</span>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-[rgba(0,230,118,0.8)]">AI Insight</span>
           </div>
           <div className="flex items-start gap-3">
             <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${config.bg}`}>
@@ -185,7 +185,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
               {insight.action && insight.action_route && (
                 <button
                   onClick={() => router.push(insight.action_route!)}
-                  className="mt-3 flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-all hover:border-indigo-500/30 hover:bg-indigo-500/5 hover:text-indigo-400"
+                  className="mt-3 flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-all hover:border-[rgba(0,230,118,0.3)] hover:bg-[rgba(0,230,118,0.05)] hover:text-[#00E676]"
                 >
                   <Calendar size={11} /> {insight.action}
                 </button>

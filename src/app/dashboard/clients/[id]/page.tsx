@@ -41,7 +41,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu
 
 const statusConfig: Record<string, { label: string; dot: string; border: string; bg: string }> = {
   active: { label: "Active", dot: "bg-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/5" },
-  lead: { label: "Lead", dot: "bg-blue-400", border: "border-blue-500/30", bg: "bg-blue-500/5" },
+  lead: { label: "Lead", dot: "bg-[#00E676]", border: "border-[rgba(0,230,118,0.3)]", bg: "bg-[rgba(0,230,118,0.04)]" },
   churned: { label: "Churned", dot: "bg-red-400", border: "border-red-500/30", bg: "bg-red-500/5" },
   inactive: { label: "Inactive", dot: "bg-zinc-500", border: "border-zinc-600/30", bg: "bg-zinc-500/5" },
 };
@@ -60,19 +60,19 @@ const activityColors: Record<string, string> = {
   job_completed: "text-emerald-400",
   invoice_paid: "text-emerald-400",
   invoice_sent: "text-amber-400",
-  quote_sent: "text-blue-400",
+  quote_sent: "text-[#00E676]",
   note: "text-yellow-400",
-  job_created: "text-violet-400",
-  call: "text-blue-400",
+  job_created: "text-zinc-400",
+  call: "text-[#00E676]",
 };
 
 const gradients = [
-  "from-violet-600/40 to-indigo-800/40",
+  "from-zinc-600/40 to-zinc-800/40",
   "from-emerald-600/40 to-teal-800/40",
   "from-amber-600/40 to-orange-800/40",
   "from-rose-600/40 to-pink-800/40",
-  "from-blue-600/40 to-cyan-800/40",
-  "from-fuchsia-600/40 to-purple-800/40",
+  "from-zinc-500/40 to-zinc-700/40",
+  "from-zinc-700/40 to-zinc-900/40",
 ];
 
 function getGradient(initials: string): string {
@@ -313,7 +313,7 @@ export default function ClientDossierPage() {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               onClick={() => router.push(`/dashboard/jobs?clientId=${client.id}&clientName=${encodeURIComponent(client.name)}`)}
-              className="ml-2 flex items-center gap-1.5 rounded-md bg-[#5E6AD2] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#6E7AE2]"
+              className="ml-2 flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#00C853]"
             >
               <Plus size={12} />
               Create Job
@@ -346,7 +346,7 @@ export default function ClientDossierPage() {
                 </span>
               )}
               {client.type === "commercial" && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/5 px-2 py-0.5 text-[10px] text-blue-400">
+                <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(0,230,118,0.2)] bg-[rgba(0,230,118,0.04)] px-2 py-0.5 text-[10px] text-[#00E676]">
                   <Building2 size={8} />
                   Commercial
                 </span>
@@ -583,13 +583,13 @@ export default function ClientDossierPage() {
                         transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.3 }}
                         className="relative"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5E6AD2] shadow-lg shadow-[#5E6AD2]/30">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
                           <MapPin size={12} className="text-white" />
                         </div>
                         <motion.div
                           animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
                           transition={{ duration: 2, repeat: Infinity }}
-                          className="absolute inset-0 rounded-full border border-[#5E6AD2]"
+                          className="absolute inset-0 rounded-full border border-[#00E676]"
                         />
                       </motion.div>
                     </div>
@@ -752,7 +752,7 @@ export default function ClientDossierPage() {
                     }}
                     onBlur={() => { setNewTagValue(""); setAddingTag(false); }}
                     placeholder="Tag name..."
-                    className="inline-flex w-20 rounded-full border border-[#5E6AD2]/40 bg-[rgba(255,255,255,0.03)] px-2.5 py-1 text-[11px] text-zinc-300 outline-none placeholder:text-zinc-600"
+                    className="inline-flex w-20 rounded-full border border-[#00E676]/40 bg-[rgba(255,255,255,0.03)] px-2.5 py-1 text-[11px] text-zinc-300 outline-none placeholder:text-zinc-600"
                   />
                 ) : (
                   <button

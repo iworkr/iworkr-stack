@@ -20,24 +20,31 @@ export default function InviteAcceptedEmail({
   const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://iworkrapp.com";
 
   return (
-    <EmailLayout preview={`${memberName} just joined ${companyName}`}>
-      {/* Success badge */}
+    <EmailLayout preview={`${memberName} just joined ${companyName} — roster updated`}>
+      {/* Green accent line */}
+      <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%", marginBottom: "28px" }}>
+        <tr>
+          <td style={styles.accentLine} />
+        </tr>
+      </table>
+
+      {/* Badge */}
       <Section style={{ textAlign: "center" as const, marginBottom: "24px" }}>
         <span style={{
           ...styles.badge,
-          backgroundColor: colors.successBg,
-          color: colors.success,
-          border: `1px solid rgba(34,197,94,0.15)`,
+          backgroundColor: colors.greenBg,
+          color: colors.green,
+          border: `1px solid ${colors.greenBorder}`,
         }}>
-          ✓ New Member
+          ✓ New Teammate
         </span>
       </Section>
 
       <Text style={{ ...styles.heading, textAlign: "center" as const }}>
-        {memberName} joined {companyName}
+        {memberName} is on the roster. 🎯
       </Text>
       <Text style={{ ...styles.subheading, textAlign: "center" as const }}>
-        Hey {ownerName}, your team just got bigger.
+        Hey {ownerName}, your team just got stronger.
       </Text>
 
       {/* Member details */}
@@ -60,9 +67,9 @@ export default function InviteAcceptedEmail({
             <td style={{ verticalAlign: "middle", whiteSpace: "nowrap" as const }}>
               <span style={{
                 ...styles.badge,
-                backgroundColor: "rgba(255,255,255,0.05)",
-                color: colors.muted,
-                border: `1px solid ${colors.cardBorder}`,
+                backgroundColor: colors.greenBg,
+                color: colors.green,
+                border: `1px solid ${colors.greenBorder}`,
                 textTransform: "capitalize" as const,
               }}>
                 {role}
@@ -73,8 +80,8 @@ export default function InviteAcceptedEmail({
       </Section>
 
       <Text style={styles.paragraph}>
-        You can manage {memberName}'s permissions, assign them to jobs, and see their 
-        schedule from your dashboard.
+        You can assign {memberName} to jobs, manage their permissions, and track
+        their schedule from your dashboard.
       </Text>
 
       <Section style={{ textAlign: "center" as const, margin: "24px 0 0" }}>
@@ -86,7 +93,7 @@ export default function InviteAcceptedEmail({
       <Hr style={{ borderTop: `1px solid ${colors.cardBorder}`, margin: "28px 0 20px" }} />
 
       <Text style={styles.smallText}>
-        You're receiving this because you're an owner of {companyName} on iWorkr.
+        You&apos;re receiving this because you&apos;re an owner of {companyName} on iWorkr.
       </Text>
     </EmailLayout>
   );
@@ -96,11 +103,11 @@ const avatar: React.CSSProperties = {
   width: "42px",
   height: "42px",
   borderRadius: "12px",
-  backgroundColor: colors.accentBg,
-  color: colors.accentLight,
+  backgroundColor: colors.greenBg,
+  color: colors.green,
   fontSize: "16px",
   fontWeight: 600,
   lineHeight: "42px",
   textAlign: "center" as const,
-  border: `1px solid rgba(139,92,246,0.15)`,
+  border: `1px solid ${colors.greenBorder}`,
 };

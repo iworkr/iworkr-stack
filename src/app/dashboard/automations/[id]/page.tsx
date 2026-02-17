@@ -33,10 +33,10 @@ import { useToastStore } from "@/components/app/action-toast";
 /* ── Block config ─────────────────────────────────────── */
 
 const blockConfig: Record<BlockType, { icon: typeof Zap; color: string; bg: string; border: string; shape: string }> = {
-  trigger: { icon: Zap, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", shape: "diamond" },
+  trigger: { icon: Zap, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.3)]", shape: "diamond" },
   delay: { icon: Clock, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", shape: "pill" },
   action: { icon: Send, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", shape: "rectangle" },
-  condition: { icon: GitBranch, color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/30", shape: "split" },
+  condition: { icon: GitBranch, color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/30", shape: "split" },
 };
 
 const channelIcons: Record<string, typeof Mail> = {
@@ -209,7 +209,7 @@ export default function FlowEditorPage() {
                       initial={{ background: "rgba(255,255,255,0.06)" }}
                       animate={{
                         background: isTestActive
-                          ? "linear-gradient(180deg, rgba(59,130,246,0.8), rgba(59,130,246,0.3))"
+                          ? "linear-gradient(180deg, rgba(0,230,118,0.8), rgba(0,230,118,0.3))"
                           : "rgba(255,255,255,0.06)",
                       }}
                       transition={{ duration: 0.3 }}
@@ -228,23 +228,23 @@ export default function FlowEditorPage() {
                   {block.type === "trigger" && (
                     <div className="flex justify-center">
                       <motion.div
-                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(59,130,246,0)", "0 0 30px rgba(59,130,246,0.4)", "0 0 0px rgba(59,130,246,0)"] } : {}}
+                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(0,230,118,0)", "0 0 30px rgba(0,230,118,0.4)", "0 0 0px rgba(0,230,118,0)"] } : {}}
                         transition={isTestCurrent ? { duration: 1, repeat: Infinity } : {}}
                         className={`relative border ${config.border} ${config.bg} rounded-xl p-5 backdrop-blur-sm`}
                         style={{ transform: "rotate(0deg)" }}
                       >
                         {/* Diamond corners accent */}
-                        <div className="absolute -top-px -left-px h-3 w-3 border-t border-l border-blue-500/60 rounded-tl-xl" />
-                        <div className="absolute -top-px -right-px h-3 w-3 border-t border-r border-blue-500/60 rounded-tr-xl" />
-                        <div className="absolute -bottom-px -left-px h-3 w-3 border-b border-l border-blue-500/60 rounded-bl-xl" />
-                        <div className="absolute -bottom-px -right-px h-3 w-3 border-b border-r border-blue-500/60 rounded-br-xl" />
+                        <div className="absolute -top-px -left-px h-3 w-3 border-t border-l border-[rgba(0,230,118,0.6)] rounded-tl-xl" />
+                        <div className="absolute -top-px -right-px h-3 w-3 border-t border-r border-[rgba(0,230,118,0.6)] rounded-tr-xl" />
+                        <div className="absolute -bottom-px -left-px h-3 w-3 border-b border-l border-[rgba(0,230,118,0.6)] rounded-bl-xl" />
+                        <div className="absolute -bottom-px -right-px h-3 w-3 border-b border-r border-[rgba(0,230,118,0.6)] rounded-br-xl" />
 
                         <div className="flex items-center gap-3">
                           <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${config.bg}`}>
                             <Icon size={16} className={config.color} />
                           </div>
                           <div>
-                            <p className="text-[9px] font-medium uppercase tracking-wider text-blue-500">Trigger</p>
+                            <p className="text-[9px] font-medium uppercase tracking-wider text-[#00E676]">Trigger</p>
                             <p className="text-[12px] text-zinc-200">{block.label}</p>
                           </div>
                         </div>
@@ -308,11 +308,11 @@ export default function FlowEditorPage() {
                         className={`rounded-xl border ${config.border} ${config.bg} p-4 backdrop-blur-sm`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15">
-                            <GitBranch size={14} className="text-violet-400" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-500/15">
+                            <GitBranch size={14} className="text-zinc-400" />
                           </div>
                           <div>
-                            <p className="text-[9px] font-medium uppercase tracking-wider text-violet-500">Condition</p>
+                            <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-500">Condition</p>
                             <p className="text-[12px] text-zinc-200">{block.label}</p>
                           </div>
                         </div>

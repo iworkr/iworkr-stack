@@ -9,4 +9,6 @@ export {
   sendPaymentFailedEmail,
   sendMagicLinkEmail,
   sendJobAssignedEmail,
+  sendInvoiceSentEmail,
+  sendWeeklyDigestEmail,
 } from "./events";

@@ -26,9 +26,9 @@ import { useToastStore } from "@/components/app/action-toast";
 
 const activityIcons = {
   check_in: { icon: MapPin, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  job_complete: { icon: Briefcase, color: "text-blue-400", bg: "bg-blue-500/10" },
+  job_complete: { icon: Briefcase, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
   invoice_update: { icon: Star, color: "text-amber-400", bg: "bg-amber-500/10" },
-  form_signed: { icon: Shield, color: "text-violet-400", bg: "bg-violet-500/10" },
+  form_signed: { icon: Shield, color: "text-zinc-400", bg: "bg-zinc-500/10" },
   login: { icon: Globe, color: "text-zinc-400", bg: "bg-zinc-500/10" },
   role_change: { icon: RefreshCw, color: "text-pink-400", bg: "bg-pink-500/10" },
 };
@@ -37,8 +37,8 @@ const activityIcons = {
 
 const roleColorMap: Record<string, string> = {
   red: "bg-red-500/15 text-red-400 border-red-500/20",
-  purple: "bg-purple-500/15 text-purple-400 border-purple-500/20",
-  blue: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+  purple: "bg-[rgba(0,230,118,0.12)] text-[#00E676] border-[rgba(0,230,118,0.2)]",
+  blue: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20",
   cyan: "bg-cyan-500/15 text-cyan-400 border-cyan-500/20",
   emerald: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
   orange: "bg-orange-500/15 text-orange-400 border-orange-500/20",

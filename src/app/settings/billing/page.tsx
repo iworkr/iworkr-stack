@@ -29,8 +29,8 @@ function PlanBadge({ planKey }: { planKey: string }) {
   const name = getPlanDisplayName(planKey);
   const colors: Record<string, string> = {
     Free: "border-zinc-700 text-zinc-500",
-    Starter: "border-blue-500/30 text-blue-400 bg-blue-500/5",
-    Standard: "border-violet-500/30 text-violet-400 bg-violet-500/5",
+    Starter: "border-[rgba(0,230,118,0.3)] text-[#00E676] bg-[rgba(0,230,118,0.05)]",
+    Standard: "border-zinc-500/30 text-zinc-400 bg-zinc-500/5",
     Enterprise: "border-amber-500/30 text-amber-400 bg-amber-500/5",
   };
   return (
@@ -114,7 +114,7 @@ function PlanCard({
       }`}
     >
       {plan.highlighted && !isCurrentPlan && (
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(0,230,118,0.3)] to-transparent" />
       )}
       {isCurrentPlan && (
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
@@ -125,7 +125,7 @@ function PlanCard({
           <div className="flex items-center gap-2">
             <h3 className="text-[15px] font-medium text-zinc-100">{plan.name}</h3>
             {plan.badge && !isCurrentPlan && (
-              <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[9px] font-medium text-violet-400">
+              <span className="rounded-full bg-[rgba(0,230,118,0.08)] px-2 py-0.5 text-[9px] font-medium text-[#00E676]">
                 {plan.badge}
               </span>
             )}

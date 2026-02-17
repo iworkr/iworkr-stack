@@ -12,7 +12,7 @@ import type { WidgetSize } from "@/lib/dashboard-store";
 
 const statusConfig = {
   on_job: { color: "bg-emerald-500", ring: "ring-emerald-500/30", label: "On Job" },
-  en_route: { color: "bg-blue-500", ring: "ring-blue-500/30", label: "En Route" },
+  en_route: { color: "bg-[#00E676]", ring: "ring-[rgba(0,230,118,0.3)]", label: "En Route" },
   idle: { color: "bg-zinc-500", ring: "ring-zinc-500/30", label: "Idle" },
 };
 
@@ -101,7 +101,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
               <span className="h-1 w-1 rounded-full bg-emerald-500" />{onJobCount}
             </span>
             <span className="flex items-center gap-1 text-[8px] text-zinc-600">
-              <span className="h-1 w-1 rounded-full bg-blue-500" />{enRouteCount}
+              <span className="h-1 w-1 rounded-full bg-[#00E676]" />{enRouteCount}
             </span>
           </div>
         </div>
@@ -170,7 +170,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           <div className="absolute inset-x-0 bottom-0 z-20 h-8 bg-gradient-to-t from-[#0C0C0C] to-transparent" />
           <div className="absolute bottom-2 left-3 z-30 flex items-center gap-2">
             <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> On Job</span>
-            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-blue-500" /> En Route</span>
+            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-[#00E676]" /> En Route</span>
           </div>
         </div>
       </WidgetShell>
@@ -226,8 +226,8 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
             <div key={r} className="absolute rounded-full border border-zinc-800/60" style={{ width: r * 2, height: r * 2, left: `calc(50% - ${r}px)`, top: `calc(50% - ${r}px)` }} />
           ))}
           <motion.div className="absolute left-1/2 top-1/2" style={{ width: 0, height: 0 }} animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}>
-            <div className="absolute top-0 left-0 origin-left" style={{ width: 200, height: 2, marginTop: -1, background: "linear-gradient(90deg, rgba(99,102,241,0.6) 0%, rgba(99,102,241,0.1) 70%, transparent 100%)", borderRadius: 1 }} />
-            <div className="absolute top-0 left-0 origin-top-left" style={{ width: 200, height: 200, background: "conic-gradient(from 0deg at 0% 0%, rgba(99,102,241,0.08) 0deg, rgba(99,102,241,0.04) 20deg, transparent 50deg)" }} />
+            <div className="absolute top-0 left-0 origin-left" style={{ width: 200, height: 2, marginTop: -1, background: "linear-gradient(90deg, rgba(0,230,118,0.6) 0%, rgba(0,230,118,0.1) 70%, transparent 100%)", borderRadius: 1 }} />
+            <div className="absolute top-0 left-0 origin-top-left" style={{ width: 200, height: 200, background: "conic-gradient(from 0deg at 0% 0%, rgba(0,230,118,0.08) 0deg, rgba(0,230,118,0.04) 20deg, transparent 50deg)" }} />
           </motion.div>
         </div>
 
@@ -266,7 +266,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         <div className="absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-[#0C0C0C] to-transparent" />
         <div className="absolute bottom-3 left-3 z-30 flex items-center gap-3">
           <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> On Job</span>
-          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" /> En Route</span>
+          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-[#00E676]" /> En Route</span>
           <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-zinc-500" /> Idle</span>
         </div>
       </div>

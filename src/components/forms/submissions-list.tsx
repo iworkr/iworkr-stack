@@ -144,10 +144,10 @@ export function SubmissionsList({ submissions }: SubmissionsListProps) {
                       <MapPin size={8} className="text-emerald-500" />
                     </div>
                     <div className="flex h-4 w-4 items-center justify-center rounded bg-[rgba(255,255,255,0.04)]" title="Device Fingerprint">
-                      <Fingerprint size={8} className="text-blue-500" />
+                      <Fingerprint size={8} className="text-[#00E676]" />
                     </div>
                     <div className="flex h-4 w-4 items-center justify-center rounded bg-[rgba(255,255,255,0.04)]" title="SHA-256 Hashed">
-                      <Shield size={8} className="text-violet-500" />
+                      <Shield size={8} className="text-zinc-400" />
                     </div>
                   </>
                 )}

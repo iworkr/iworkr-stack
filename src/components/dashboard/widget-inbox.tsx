@@ -21,12 +21,12 @@ const typeIcons: Record<InboxItemType, typeof Bell> = {
 
 function getAvatarGrad(initials: string) {
   const grads = [
-    "from-blue-500 to-indigo-600",
-    "from-violet-500 to-purple-600",
-    "from-emerald-500 to-teal-600",
-    "from-amber-500 to-orange-600",
-    "from-rose-500 to-pink-600",
-    "from-cyan-500 to-blue-600",
+    "from-zinc-500 to-zinc-600",
+    "from-zinc-400 to-zinc-600",
+    "from-zinc-600 to-zinc-700",
+    "from-zinc-500 to-zinc-700",
+    "from-zinc-400 to-zinc-500",
+    "from-zinc-600 to-zinc-800",
   ];
   let hash = 0;
   for (let i = 0; i < initials.length; i++) hash = initials.charCodeAt(i) + ((hash << 5) - hash);
@@ -62,7 +62,7 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
           <div className="relative">
             <Inbox size={16} className="text-zinc-500" />
             {unreadCount > 0 && (
-              <span className="absolute -right-2 -top-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-blue-500 px-1 text-[8px] font-bold text-white">
+              <span className="absolute -right-2 -top-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#00E676] px-1 text-[8px] font-bold text-black">
                 {unreadCount}
               </span>
             )}
@@ -84,7 +84,7 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
           <Inbox size={14} className="text-zinc-500" />
           <span className="text-[13px] font-medium text-zinc-300">Triage</span>
           {unreadCount > 0 && (
-            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-500/20 px-1 text-[9px] font-medium text-blue-400">
+            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[rgba(0,230,118,0.12)] px-1 text-[9px] font-medium text-[#00E676]">
               {unreadCount}
             </span>
           )}
@@ -138,7 +138,7 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
               onMouseLeave={() => setHoveredId(null)}
               className="group flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.02]"
             >
-              <div className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full bg-blue-500" />
+              <div className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full bg-[#00E676]" />
               <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGrad(item.senderInitials)}`}>
                 <span className="text-[8px] font-semibold text-white">{item.senderInitials}</span>
               </div>
@@ -178,7 +178,7 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
             <div className="px-4 py-2 text-center">
               <button
                 onClick={() => router.push("/dashboard/inbox")}
-                className="text-[10px] text-blue-400 hover:text-blue-300"
+                className="text-[10px] text-[#00E676] hover:text-[#00E676]"
               >
                 +{unreadItems.length - maxItems} more
               </button>

@@ -34,10 +34,16 @@ const iconMap: Record<string, typeof Star> = {
 
 /* ── Category colors ──────────────────────────────────── */
 
-const categoryColors: Record<string, { border: string; glow: string; text: string; bg: string }> = {
-  marketing: { border: "border-violet-500/30", glow: "shadow-[0_0_20px_-4px_rgba(139,92,246,0.3)]", text: "text-violet-400", bg: "bg-violet-500/10" },
-  billing: { border: "border-amber-500/30", glow: "shadow-[0_0_20px_-4px_rgba(245,158,11,0.3)]", text: "text-amber-400", bg: "bg-amber-500/10" },
-  operations: { border: "border-cyan-500/30", glow: "shadow-[0_0_20px_-4px_rgba(6,182,212,0.3)]", text: "text-cyan-400", bg: "bg-cyan-500/10" },
+/* Category icon colors are subtle/muted — the card border & glow use brand green */
+const categoryIconColors: Record<string, { text: string; bg: string }> = {
+  marketing: { text: "text-violet-400/60", bg: "bg-violet-500/8" },
+  billing: { text: "text-amber-400/60", bg: "bg-amber-500/8" },
+  operations: { text: "text-zinc-400", bg: "bg-zinc-500/10" },
+};
+
+const activeCardStyle = {
+  border: "border-[rgba(0,230,118,0.3)]",
+  glow: "shadow-[0_0_20px_-4px_rgba(0,230,118,0.3)]",
 };
 
 /* ── Sparkline component ──────────────────────────────── */
@@ -90,7 +96,7 @@ export function FlowCard({ flow, index }: FlowCardProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const Icon = iconMap[flow.icon] || Zap;
-  const cat = categoryColors[flow.category] || categoryColors.operations;
+  const catIcon = categoryIconColors[flow.category] || categoryIconColors.operations;
   const isActive = flow.status === "active";
   const isPaused = flow.status === "paused";
   const isDraft = flow.status === "draft";
@@ -111,10 +117,10 @@ export function FlowCard({ flow, index }: FlowCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       onClick={() => router.push(`/dashboard/automations/${flow.id}`)}
-      className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-[#0C0C0C] transition-all duration-300 hover:shadow-lg ${
-        isActive ? `${cat.border} ${cat.glow}` : "border-[rgba(255,255,255,0.06)]"
+      className={`group relative cursor-pointer overflow-hidden rounded-xl border transition-all duration-300 hover:border-[rgba(0,230,118,0.25)] hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.2)] ${
+        isActive ? `${activeCardStyle.border} ${activeCardStyle.glow}` : "border-[rgba(255,255,255,0.06)]"
       } ${isPaused ? "opacity-60" : ""} ${isDraft ? "opacity-50" : ""}`}
-      style={{ aspectRatio: "3 / 2" }}
+      style={{ background: "var(--surface-1)", aspectRatio: "3 / 2" }}
       whileHover={{ y: -3 }}
     >
       {/* Active pulse border animation */}
@@ -131,8 +137,8 @@ export function FlowCard({ flow, index }: FlowCardProps) {
       <div className="flex h-full flex-col p-4">
         {/* Top row: icon + status */}
         <div className="flex items-start justify-between">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${cat.bg}`}>
-            <Icon size={20} strokeWidth={1.5} className={cat.text} />
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${catIcon.bg}`}>
+            <Icon size={20} strokeWidth={1.5} className={catIcon.text} />
           </div>
 
           <div className="flex items-center gap-2">
@@ -155,7 +161,7 @@ export function FlowCard({ flow, index }: FlowCardProps) {
               }}
               disabled={actionLoading}
               className={`relative h-5 w-9 rounded-full transition-colors ${
-                isActive ? "bg-emerald-500" : "bg-zinc-800"
+                isActive ? "bg-[#00E676]" : "bg-zinc-800"
               } ${actionLoading ? "opacity-50" : ""}`}
             >
               <motion.div
@@ -190,7 +196,7 @@ export function FlowCard({ flow, index }: FlowCardProps) {
 
         {/* Sparkline */}
         <div className="mt-2">
-          <Sparkline data={flow.sparkline} color={cat.text} />
+          <Sparkline data={flow.sparkline} color="text-[#00E676]" />
         </div>
       </div>
 

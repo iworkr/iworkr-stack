@@ -78,10 +78,10 @@ function SchedulerVisual() {
   ];
 
   const colorMap: Record<string, string> = {
-    blue: "bg-blue-500/10 border-blue-500/20 text-blue-300",
+    blue: "bg-[rgba(0,230,118,0.08)] border-[rgba(0,230,118,0.2)] text-[#00E676]",
     emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-300",
     amber: "bg-amber-500/10 border-amber-500/20 text-amber-300",
-    violet: "bg-violet-500/10 border-violet-500/20 text-violet-300",
+    violet: "bg-zinc-500/10 border-zinc-500/20 text-zinc-300",
     zinc: "bg-zinc-800/50 border-zinc-700/30 text-zinc-500 italic",
   };
 
@@ -180,7 +180,7 @@ function AIWaveformVisual() {
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.6 }}
-        className="ml-auto rounded-lg rounded-br-none bg-blue-500/10 px-3 py-2 text-xs text-blue-300"
+        className="ml-auto rounded-lg rounded-br-none bg-[rgba(0,230,118,0.08)] px-3 py-2 text-xs text-[#00E676]"
       >
         Booking set for Tuesday at 9:00 AM
       </motion.div>

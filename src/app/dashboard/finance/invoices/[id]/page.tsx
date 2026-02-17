@@ -33,7 +33,7 @@ import { getOrgSettings } from "@/app/actions/finance";
 
 const statusConfig: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
   draft: { label: "Draft", dot: "bg-zinc-500", text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-600/30" },
-  sent: { label: "Sent", dot: "bg-blue-400", text: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30" },
+  sent: { label: "Sent", dot: "bg-[#00E676]", text: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.3)]" },
   paid: { label: "Paid", dot: "bg-emerald-400", text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30" },
   overdue: { label: "Overdue", dot: "bg-red-400", text: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30" },
   voided: { label: "Voided", dot: "bg-zinc-600", text: "text-zinc-600", bg: "bg-zinc-600/10", border: "border-zinc-700/30" },
@@ -50,7 +50,7 @@ const eventIcons: Record<string, typeof Check> = {
 
 const eventColors: Record<string, string> = {
   created: "text-zinc-500",
-  sent: "text-blue-400",
+  sent: "text-[#00E676]",
   viewed: "text-amber-400",
   paid: "text-emerald-400",
   voided: "text-red-400",
@@ -246,7 +246,7 @@ export default function InvoiceDetailPage() {
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 onClick={handleSend}
-                className="flex items-center gap-1.5 rounded-md bg-[#5E6AD2] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#6E7AE2]"
+                className="flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#00C853]"
               >
                 <Send size={12} />
                 Send Invoice
@@ -596,7 +596,7 @@ export default function InvoiceDetailPage() {
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSend}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#5E6AD2] py-2.5 text-[12px] font-medium text-white transition-colors hover:bg-[#6E7AE2]"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#00E676] py-2.5 text-[12px] font-medium text-white transition-colors hover:bg-[#00C853]"
                 >
                   <Send size={12} />
                   Send Invoice

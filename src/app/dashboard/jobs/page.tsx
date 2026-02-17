@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -12,6 +12,7 @@ import {
   Copy,
   MapPin,
   Briefcase,
+  AlertTriangle,
 } from "lucide-react";
 import { PriorityIcon } from "@/components/app/priority-icon";
 import { StatusIcon } from "@/components/app/status-icon";
@@ -19,7 +20,8 @@ import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu
 import { BulkActionBar } from "@/components/app/bulk-action-bar";
 import { useToastStore } from "@/components/app/action-toast";
 import { useJobsStore } from "@/lib/jobs-store";
-import { useState } from "react";
+import { useShellStore } from "@/lib/shell-store";
+import type { Job } from "@/lib/data";
 
 /* ── Status helpers ──────────────────────────────────── */
 
@@ -66,6 +68,12 @@ export default function JobsPage() {
     updateJobStatus,
   } = useJobsStore();
   const { addToast } = useToastStore();
+  const { setCreateJobModalOpen } = useShellStore();
+
+  // Delete confirmation modal state
+  const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Status dropdown state
   const [statusDropdown, setStatusDropdown] = useState<{ jobId: string; x: number; y: number } | null>(null);
@@ -121,14 +129,42 @@ export default function JobsPage() {
   }, [statusDropdown]);
 
   async function handleStatusChange(jobId: string, newStatus: string) {
-    await updateJobStatus(jobId, newStatus);
+    const prevJob = jobsList.find((j) => j.id === jobId);
     setStatusDropdown(null);
-    addToast(`Status updated to ${formatStatus(newStatus)}`);
+    try {
+      await updateJobStatus(jobId, newStatus);
+      addToast(`Status updated to ${formatStatus(newStatus)}`);
+    } catch {
+      if (prevJob) {
+        updateJobStatus(jobId, prevJob.status);
+      }
+      addToast("Failed to update status");
+    }
   }
 
   function handleContextMenu(e: React.MouseEvent, jobId: string) {
     e.preventDefault();
     setCtxMenu({ open: true, x: e.clientX, y: e.clientY, jobId });
+  }
+
+  function handleDeleteClick(job: Job) {
+    setJobToDelete(job);
+    setIsDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!jobToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteJobServer(jobToDelete.id);
+      addToast(`Deleted ${jobToDelete.id}`);
+    } catch {
+      addToast("Failed to delete job");
+    } finally {
+      setIsDeleteModalOpen(false);
+      setJobToDelete(null);
+      setIsDeleting(false);
+    }
   }
 
   function handleContextAction(actionId: string) {
@@ -141,17 +177,20 @@ export default function JobsPage() {
       navigator.clipboard?.writeText(job.id);
       addToast(`${job.id} copied to clipboard`);
     } else if (actionId === "delete") {
-      deleteJobServer(job.id);
-      addToast(`${job.id} deleted`);
+      handleDeleteClick(job);
     }
   }
 
   function handleBulkDelete() {
     const deletedIds = new Set(selected);
     const deletedJobs = jobsList.filter((j) => deletedIds.has(j.id));
-    deletedJobs.forEach((j) => deleteJobServer(j.id));
-    clearSelection();
-    addToast(`${deletedIds.size} jobs deleted`);
+    if (deletedJobs.length === 1) {
+      handleDeleteClick(deletedJobs[0]);
+    } else {
+      deletedJobs.forEach((j) => deleteJobServer(j.id));
+      clearSelection();
+      addToast(`${deletedIds.size} jobs deleted`);
+    }
   }
 
   return (
@@ -186,7 +225,8 @@ export default function JobsPage() {
           </button>
           <motion.button
             whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200"
+            onClick={() => setCreateJobModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-2.5 py-1 text-[12px] font-semibold text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)]"
           >
             <Plus size={12} />
             New Job
@@ -257,11 +297,11 @@ export default function JobsPage() {
                   router.push(`/dashboard/jobs/${job.id}`);
                 }}
                 onContextMenu={(e) => handleContextMenu(e, job.id)}
-                className={`group flex cursor-pointer items-center border-b border-[rgba(255,255,255,0.04)] px-5 transition-colors ${
+                className={`group relative flex cursor-pointer items-center border-b border-[rgba(255,255,255,0.04)] px-5 transition-colors ${
                   isFocused
                     ? "bg-[rgba(255,255,255,0.04)]"
                     : "hover:bg-[rgba(255,255,255,0.02)]"
-                } ${isSelected ? "bg-violet-500/5" : ""}`}
+                } ${isSelected ? "bg-[rgba(0,230,118,0.05)] border-l-2 border-l-[#00E676]" : ""}`}
                 style={{ height: 48, overflow: "hidden" }}
               >
                 {/* Checkbox */}
@@ -270,7 +310,7 @@ export default function JobsPage() {
                     whileTap={{ scale: 0.9 }}
                     className={`flex h-3.5 w-3.5 items-center justify-center rounded border transition-all ${
                       isSelected
-                        ? "border-violet-500 bg-violet-500"
+                        ? "border-[#00E676] bg-[#00E676]"
                         : "border-[rgba(255,255,255,0.1)] opacity-0 group-hover:opacity-100"
                     }`}
                     onClick={(e) => {
@@ -445,6 +485,95 @@ export default function JobsPage() {
         onDelete={handleBulkDelete}
         onClear={clearSelection}
       />
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && jobToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              if (!isDeleting) {
+                setIsDeleteModalOpen(false);
+                setJobToDelete(null);
+              }
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[400px] rounded-xl border border-[rgba(255,255,255,0.1)] bg-zinc-900 p-0 shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10">
+                  <AlertTriangle size={18} className="text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-zinc-100">
+                    Delete Job
+                  </h3>
+                  <p className="text-[12px] text-zinc-500">
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-3">
+                <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[11px] text-zinc-500">
+                      {jobToDelete.id}
+                    </span>
+                    <span className="text-[11px] text-zinc-700">&middot;</span>
+                    <StatusIcon status={jobToDelete.status} size={11} />
+                    <span className="text-[11px] text-zinc-500">
+                      {formatStatus(jobToDelete.status)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[13px] font-medium text-zinc-200">
+                    {jobToDelete.title}
+                  </p>
+                  {jobToDelete.client && (
+                    <p className="mt-0.5 text-[12px] text-zinc-500">
+                      {jobToDelete.client}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-2 border-t border-[rgba(255,255,255,0.06)] px-5 py-3">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setJobToDelete(null);
+                  }}
+                  disabled={isDeleting}
+                  className="rounded-md px-3 py-1.5 text-[13px] text-zinc-400 transition-colors hover:bg-[rgba(255,255,255,0.05)] hover:text-zinc-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex items-center gap-1.5 rounded-md bg-red-500/15 px-3 py-1.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/25 disabled:opacity-50"
+                >
+                  <Trash2 size={13} />
+                  {isDeleting ? "Deleting…" : "Delete"}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

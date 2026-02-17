@@ -28,37 +28,37 @@ export default function SubscriptionCreatedEmail({
     <EmailLayout
       preview={
         isTrial
-          ? `Your ${trialDays}-day free trial of ${planName} has started`
-          : `${companyName} is now on the ${planName} plan`
+          ? `Your ${trialDays}-day free trial of ${planName} is live — let's go`
+          : `${companyName} just leveled up to ${planName}`
       }
     >
-      {/* Success accent */}
+      {/* Green accent line */}
       <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%", marginBottom: "28px" }}>
         <tr>
-          <td style={{ height: "2px", background: `linear-gradient(90deg, transparent, ${colors.success}, transparent)` }} />
+          <td style={styles.accentLine} />
         </tr>
       </table>
 
       <Section style={{ textAlign: "center" as const, marginBottom: "24px" }}>
         <span style={{
           ...styles.badge,
-          backgroundColor: colors.successBg,
-          color: colors.success,
-          border: `1px solid rgba(34,197,94,0.15)`,
+          backgroundColor: colors.greenBg,
+          color: colors.green,
+          border: `1px solid ${colors.greenBorder}`,
         }}>
-          {isTrial ? "Trial Started" : "Subscription Active"}
+          {isTrial ? "🚀 Trial Started" : "⚡ Subscription Active"}
         </span>
       </Section>
 
       <Text style={{ ...styles.heading, textAlign: "center" as const }}>
         {isTrial
           ? `Your free trial is live`
-          : `You're on the ${planName} plan`}
+          : `You're on ${planName}. Let's go.`}
       </Text>
       <Text style={{ ...styles.subheading, textAlign: "center" as const }}>
         {isTrial
-          ? `Hey ${name}, enjoy ${trialDays} days of full access to ${planName}.`
-          : `Hey ${name}, ${companyName} is now upgraded.`}
+          ? `Hey ${name}, enjoy ${trialDays} days of full access to everything ${planName} has to offer.`
+          : `Hey ${name}, ${companyName} just got an upgrade.`}
       </Text>
 
       {/* Plan details card */}
@@ -69,7 +69,7 @@ export default function SubscriptionCreatedEmail({
               <Text style={{ fontSize: "11px", fontWeight: 600, color: colors.muted, letterSpacing: "0.05em", textTransform: "uppercase" as const, margin: "0 0 8px" }}>
                 Your Plan
               </Text>
-              <Text style={{ fontSize: "28px", fontWeight: 600, color: colors.white, margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+              <Text style={{ fontSize: "28px", fontWeight: 700, color: colors.green, margin: "0 0 4px", letterSpacing: "-0.02em" }}>
                 {planName}
               </Text>
               <Text style={{ fontSize: "14px", color: colors.muted, margin: 0 }}>
@@ -116,8 +116,8 @@ export default function SubscriptionCreatedEmail({
 
       {isTrial && (
         <Text style={{ ...styles.paragraph, textAlign: "center" as const }}>
-          No charge today. Your card will be billed {price}/{billingCycle === "yearly" ? "yr" : "mo"} after the 
-          trial ends. Cancel anytime from your billing settings.
+          No charge today. Your card will be billed {price}/{billingCycle === "yearly" ? "yr" : "mo"} after the
+          trial ends. Cancel anytime from billing settings.
         </Text>
       )}
 
@@ -130,8 +130,7 @@ export default function SubscriptionCreatedEmail({
       <Hr style={{ borderTop: `1px solid ${colors.cardBorder}`, margin: "28px 0 20px" }} />
 
       <Text style={styles.smallText}>
-        You can manage your subscription, update payment methods, and view invoices 
-        from your{" "}
+        Manage your subscription, update payment methods, and view invoices from your{" "}
         <a href={`${BASE_URL}/settings/billing`} style={styles.link}>billing settings</a>.
       </Text>
     </EmailLayout>

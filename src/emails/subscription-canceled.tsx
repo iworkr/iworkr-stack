@@ -30,7 +30,7 @@ export default function SubscriptionCanceledEmail({
       {/* Warning accent */}
       <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%", marginBottom: "28px" }}>
         <tr>
-          <td style={{ height: "2px", background: `linear-gradient(90deg, transparent, ${colors.warning}, transparent)` }} />
+          <td style={{ height: "2px", border: "none", background: `linear-gradient(90deg, transparent, ${colors.warning}, transparent)` }} />
         </tr>
       </table>
 
@@ -41,12 +41,12 @@ export default function SubscriptionCanceledEmail({
           color: colors.warning,
           border: `1px solid rgba(245,158,11,0.15)`,
         }}>
-          Subscription {isImmediate ? "Canceled" : "Ending"}
+          {isImmediate ? "Subscription Canceled" : "Subscription Ending"}
         </span>
       </Section>
 
       <Text style={{ ...styles.heading, textAlign: "center" as const }}>
-        {isImmediate ? "We're sorry to see you go" : "Your plan is ending soon"}
+        {isImmediate ? "We'll miss you" : "Your plan is ending soon"}
       </Text>
       <Text style={{ ...styles.subheading, textAlign: "center" as const }}>
         {isImmediate
@@ -87,11 +87,11 @@ export default function SubscriptionCanceledEmail({
       </Section>
 
       <Text style={{ ...styles.paragraph, textAlign: "center" as const }}>
-        Changed your mind? You can resubscribe anytime to restore full access instantly.
+        Changed your mind? Resubscribe anytime to restore full access instantly.
       </Text>
 
       <Section style={{ textAlign: "center" as const, margin: "24px 0 0" }}>
-        <Button href={`${BASE_URL}/settings/billing`} style={styles.buttonAccent}>
+        <Button href={`${BASE_URL}/settings/billing`} style={styles.button}>
           Resubscribe →
         </Button>
       </Section>
@@ -99,8 +99,8 @@ export default function SubscriptionCanceledEmail({
       <Hr style={{ borderTop: `1px solid ${colors.cardBorder}`, margin: "28px 0 20px" }} />
 
       <Text style={styles.smallText}>
-        If you have feedback about why you canceled, we'd love to hear it — 
-        just reply to this email. Your input helps us build a better product.
+        If you have feedback about why you canceled, reply to this email.
+        Your input helps us build a better product.
       </Text>
     </EmailLayout>
   );
@@ -109,7 +109,7 @@ export default function SubscriptionCanceledEmail({
 const bulletCell: React.CSSProperties = {
   width: "20px",
   fontSize: "13px",
-  color: colors.muted,
+  color: colors.green,
   verticalAlign: "top",
   paddingTop: "1px",
 };

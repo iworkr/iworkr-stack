@@ -34,14 +34,14 @@ const categoryIcons: Record<AssetCategory, typeof Truck> = {
 };
 
 const categoryGradients: Record<AssetCategory, string> = {
-  vehicle: "from-blue-600/40 to-indigo-800/30",
+  vehicle: "from-zinc-600/40 to-zinc-800/30",
   tool: "from-amber-600/40 to-orange-800/30",
-  equipment: "from-violet-600/40 to-purple-800/30",
+  equipment: "from-zinc-500/40 to-zinc-700/30",
 };
 
 const statusConfig = {
   available: { color: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10", label: "Available" },
-  assigned: { color: "bg-blue-500", text: "text-blue-400", border: "border-blue-500/20", bg: "bg-blue-500/10", label: "Assigned" },
+  assigned: { color: "bg-[#00E676]", text: "text-[#00E676]", border: "border-[rgba(0,230,118,0.2)]", bg: "bg-[rgba(0,230,118,0.08)]", label: "Assigned" },
   maintenance: { color: "bg-red-500", text: "text-red-400", border: "border-red-500/20", bg: "bg-red-500/10", label: "Maintenance Required" },
 };
 
@@ -266,7 +266,7 @@ export default function AssetDetailPage() {
 
             {asset.assignee ? (
               <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-600/20 text-lg font-semibold text-blue-400">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-600/20 to-zinc-800/20 text-lg font-semibold text-[#00E676]">
                   {asset.assigneeInitials}
                 </div>
                 <div className="flex-1">
@@ -339,10 +339,10 @@ export default function AssetDetailPage() {
               <div className="space-y-0">
                 {assetAudit.map((entry, i) => {
                   const typeConfig: Record<string, { icon: typeof Wrench; color: string; bg: string; border: string }> = {
-                    transfer: { icon: ArrowRightLeft, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+                    transfer: { icon: ArrowRightLeft, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.2)]" },
                     service: { icon: Wrench, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
                     create: { icon: DollarSign, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-                    stock_adjust: { icon: Clock, color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
+                    stock_adjust: { icon: Clock, color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
                     retire: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
                   };
                   const cfg = typeConfig[entry.type] || typeConfig.service;

@@ -57,7 +57,7 @@ const skillIconMap: Record<string, typeof Wrench> = {
 const roleColorMap: Record<string, string> = {
   red: "bg-red-500/15 text-red-400 border-red-500/20",
   purple: "bg-purple-500/15 text-purple-400 border-purple-500/20",
-  blue: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+  blue: "bg-[rgba(0,230,118,0.1)] text-[#00E676] border-[rgba(0,230,118,0.2)]",
   cyan: "bg-cyan-500/15 text-cyan-400 border-cyan-500/20",
   emerald: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
   orange: "bg-orange-500/15 text-orange-400 border-orange-500/20",
@@ -203,7 +203,7 @@ export default function TeamPage() {
             {/* Invite */}
             <button
               onClick={() => setInviteModalOpen(true)}
-              className="flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 text-[12px] font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(59,130,246,0.4)]"
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00E676] to-[#00C853] px-4 text-[12px] font-semibold text-black shadow-[0_0_20px_-4px_rgba(0,230,118,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(0,230,118,0.4)]"
             >
               <UserPlus size={13} strokeWidth={2} />
               Invite People

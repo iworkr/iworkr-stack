@@ -1,20 +1,69 @@
 @import "tailwindcss";
 
+/* ── iWorkr Design System: "Signal Green" ────────────── */
+
 @theme inline {
   --font-sans: var(--font-inter);
   --font-mono: var(--font-mono);
 
-  --color-surface: rgba(255, 255, 255, 0.03);
-  --color-surface-hover: rgba(255, 255, 255, 0.05);
-  --color-border-subtle: rgba(255, 255, 255, 0.08);
-  --color-border-active: rgba(255, 255, 255, 0.15);
-  --color-text-primary: #ededed;
-  --color-text-secondary: #8a8f98;
+  /* Semantic surface tokens (resolved via CSS vars below) */
+  --color-surface: var(--surface-1);
+  --color-surface-hover: var(--surface-2);
+  --color-border-subtle: var(--border-base);
+  --color-border-active: var(--border-active);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-muted);
+
+  /* Brand Green — constant across themes */
+  --color-brand: #00E676;
+  --color-brand-dark: #00C853;
+  --color-brand-glow: rgba(0, 230, 118, 0.5);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Scrollbar */
+/* ── Dark Theme (Default) ────────────────────────────── */
+:root,
+.dark {
+  --background: #000000;
+  --surface-0: #000000;
+  --surface-1: #09090b;
+  --surface-2: #18181b;
+  --border-base: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(255, 255, 255, 0.15);
+  --text-primary: #ededed;
+  --text-muted: #a1a1aa;
+  --brand: #00E676;
+  --brand-hover: #00C853;
+  --brand-glow: 0 0 20px rgba(0, 230, 118, 0.4);
+  --brand-glow-subtle: 0 0 15px -5px rgba(0, 230, 118, 0.3);
+  --selection-bg: rgba(0, 230, 118, 0.15);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+  color-scheme: dark;
+}
+
+/* ── Light Theme ─────────────────────────────────────── */
+.light {
+  --background: #f9fafb;
+  --surface-0: #ffffff;
+  --surface-1: #f4f4f5;
+  --surface-2: #e4e4e7;
+  --border-base: rgba(0, 0, 0, 0.08);
+  --border-active: rgba(0, 0, 0, 0.15);
+  --text-primary: #18181b;
+  --text-muted: #71717a;
+  --brand: #00C853;
+  --brand-hover: #00A844;
+  --brand-glow: 0 0 15px rgba(0, 200, 83, 0.2);
+  --brand-glow-subtle: 0 0 10px -5px rgba(0, 200, 83, 0.15);
+  --selection-bg: rgba(0, 200, 83, 0.15);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.12);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
+  color-scheme: light;
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -24,21 +73,21 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scrollbar-thumb-hover);
 }
 
-/* Selection */
+/* ── Selection ───────────────────────────────────────── */
 ::selection {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--selection-bg);
+  color: var(--text-primary);
 }
 
-/* Interactive element cursors — Tailwind v4 reset removes pointer cursors */
+/* ── Interactive cursors ─────────────────────────────── */
 button,
 [role="button"],
 a,
@@ -46,52 +95,43 @@ a,
   cursor: pointer;
 }
 
-/* Smooth scroll */
+/* ── Smooth scroll ───────────────────────────────────── */
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background: #000;
+  background: var(--background);
+  color: var(--text-primary);
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
 }
 
-/* Prevent horizontal scroll on all app containers */
 #__next,
 main {
   max-width: 100vw;
   overflow-x: hidden;
 }
 
-/* Ensure images/media don't overflow */
 img, video, svg, canvas {
   max-width: 100%;
   height: auto;
 }
 
-/* Marquee animation */
+/* ── Animations ──────────────────────────────────────── */
+
 @keyframes marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .animate-marquee {
   animation: marquee 30s linear infinite;
 }
 
-/* Line draw animation */
 @keyframes line-draw {
-  0% {
-    stroke-dashoffset: 1000;
-  }
-  100% {
-    stroke-dashoffset: 0;
-  }
+  0% { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
 }
 
 .animate-line-draw {
@@ -100,34 +140,22 @@ img, video, svg, canvas {
   animation: line-draw 2s ease-out forwards;
 }
 
-/* Pulse for status dot */
 @keyframes pulse-dot {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .animate-pulse-dot {
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
-/* Shimmer for skeleton loading */
 @keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-/* ── Background Textures ──────────────────────────────── */
+/* ── Background Textures ─────────────────────────────── */
 
-/* Fine dot grid */
 .bg-dot-grid {
   background-image: radial-gradient(
     circle,
@@ -137,7 +165,14 @@ img, video, svg, canvas {
   background-size: 20px 20px;
 }
 
-/* Line grid */
+.light .bg-dot-grid {
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.08) 1px,
+    transparent 1px
+  );
+}
+
 .bg-line-grid {
   background-image: linear-gradient(
       rgba(255, 255, 255, 0.04) 1px,
@@ -147,11 +182,22 @@ img, video, svg, canvas {
   background-size: 48px 48px;
 }
 
-/* Fine noise grain overlay — use with low opacity */
 .bg-noise {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 200px 200px;
+}
+
+/* ── Brand Green Utilities ───────────────────────────── */
+
+.text-brand { color: var(--brand); }
+.bg-brand { background-color: var(--brand); }
+.border-brand { border-color: var(--brand); }
+.shadow-glow-green { box-shadow: var(--brand-glow); }
+.shadow-glow-green-subtle { box-shadow: var(--brand-glow-subtle); }
+
+.bg-brand-gradient {
+  background: linear-gradient(to bottom, #00E676, #00C853);
 }
 
 /* ── React Grid Layout ───────────────────────────────── */
@@ -193,19 +239,19 @@ img, video, svg, canvas {
   bottom: 4px;
   width: 8px;
   height: 8px;
-  border-right: 2px solid rgba(99, 102, 241, 0.5);
-  border-bottom: 2px solid rgba(99, 102, 241, 0.5);
+  border-right: 2px solid rgba(0, 230, 118, 0.5);
+  border-bottom: 2px solid rgba(0, 230, 118, 0.5);
   border-radius: 0 0 2px 0;
   transition: border-color 200ms;
 }
 
 .react-grid-item > .react-resizable-handle:hover::after {
-  border-color: rgba(99, 102, 241, 0.8);
+  border-color: rgba(0, 230, 118, 0.8);
 }
 
 .react-grid-placeholder {
-  background: rgba(99, 102, 241, 0.1) !important;
-  border: 2px dashed rgba(99, 102, 241, 0.3) !important;
+  background: rgba(0, 230, 118, 0.08) !important;
+  border: 2px dashed rgba(0, 230, 118, 0.3) !important;
   border-radius: 12px !important;
   opacity: 1 !important;
 }

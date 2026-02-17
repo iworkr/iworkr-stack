@@ -50,14 +50,14 @@ function InboxVisual() {
           transition={{ delay: i * 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="flex items-center gap-3 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
         >
-          <div className="h-2 w-2 rounded-full bg-blue-400" />
+          <div className="h-2 w-2 rounded-full bg-[#00E676]" />
           <div className="flex-1">
             <div className="text-xs font-medium text-zinc-300">{item.from}</div>
             <div className="text-[10px] text-zinc-600">{item.type}</div>
           </div>
           <span className="text-[10px] text-zinc-600">{item.time}</span>
           {item.count && (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/20 text-[9px] text-blue-400">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[rgba(0,230,118,0.12)] text-[9px] text-[#00E676]">
               {item.count}
             </span>
           )}
@@ -100,7 +100,7 @@ function MapVisual() {
           <motion.path
             d="M 60 180 C 100 180, 120 100, 160 90 S 240 60, 300 50"
             fill="none"
-            stroke="rgba(59,130,246,0.6)"
+            stroke="rgba(0,230,118,0.6)"
             strokeWidth="2"
             strokeDasharray="8 4"
             initial={{ pathLength: 0 }}
@@ -113,7 +113,7 @@ function MapVisual() {
         {/* Pins */}
         {[
           { x: "15%", y: "70%", label: "Current", color: "bg-emerald-500" },
-          { x: "42%", y: "35%", label: "Next Job", color: "bg-blue-500" },
+          { x: "42%", y: "35%", label: "Next Job", color: "bg-[#00E676]" },
           { x: "78%", y: "20%", label: "After", color: "bg-zinc-500" },
         ].map((pin, i) => (
           <motion.div

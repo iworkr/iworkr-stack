@@ -419,9 +419,10 @@ export async function getScheduleView(orgId: string, date: string) {
 }
 
 async function getScheduleBlocksFallback(orgId: string, date: string) {
-  const [blocksResult, techResult] = await Promise.all([
+  const [blocksResult, techResult, backlogResult] = await Promise.all([
     getScheduleBlocks(orgId, date),
     getOrgTechnicians(orgId),
+    getBacklogJobs(orgId),
   ]);
 
   const allBlocks: ScheduleBlock[] = [];
@@ -436,7 +437,7 @@ async function getScheduleBlocksFallback(orgId: string, date: string) {
       technicians: techResult.data || [],
       blocks: allBlocks,
       events: [],
-      backlog: [],
+      backlog: backlogResult.data || [],
     },
     error: null,
   };

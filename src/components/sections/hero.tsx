@@ -275,12 +275,12 @@ export function Hero() {
                             initial={{ opacity: 0, scaleX: 0 }}
                             animate={{ opacity: 1, scaleX: 1 }}
                             transition={{ delay: 2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="origin-left rounded-md border border-blue-500/20 bg-blue-500/10 px-2 py-1.5"
+                            className="origin-left rounded-md border border-[rgba(0,230,118,0.2)] bg-[rgba(0,230,118,0.08)] px-2 py-1.5"
                           >
-                            <div className="text-[10px] font-medium text-blue-300">
+                            <div className="text-[10px] font-medium text-[#00E676]">
                               Water heater install
                             </div>
-                            <div className="text-[9px] text-blue-400/60">
+                            <div className="text-[9px] text-[rgba(0,230,118,0.6)]">
                               Mike T. — 42 Oak Ave
                             </div>
                           </motion.div>
@@ -339,7 +339,7 @@ export function Hero() {
               </span>
               {[
                 { name: "Mike Thompson", status: "On job", color: "bg-emerald-500" },
-                { name: "Sarah Chen", status: "En route", color: "bg-blue-500" },
+                { name: "Sarah Chen", status: "En route", color: "bg-[#00E676]" },
                 { name: "James O'Brien", status: "Available", color: "bg-zinc-500" },
               ].map((person) => (
                 <div

@@ -16,7 +16,7 @@ const icons: Record<Priority, { color: string; path: string }> = {
     path: "M5 12h14", // dash
   },
   low: {
-    color: "text-blue-400/60",
+    color: "text-[rgba(0,230,118,0.6)]",
     path: "M12 5v14m0 0l-4-4m4 4l4-4", // arrow down
   },
   none: {

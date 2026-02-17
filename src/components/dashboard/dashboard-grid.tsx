@@ -129,14 +129,14 @@ export function DashboardGrid() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="mb-4 flex items-center justify-between rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-4 py-2.5 backdrop-blur-sm"
+            className="mb-4 flex items-center justify-between rounded-xl border border-[rgba(0,230,118,0.2)] bg-[rgba(0,230,118,0.05)] px-4 py-2.5 backdrop-blur-sm"
           >
             <div className="flex items-center gap-2">
-              <Pencil size={14} className="text-indigo-400" />
-              <span className="text-[13px] font-medium text-indigo-300">
+              <Pencil size={14} className="text-[#00E676]" />
+              <span className="text-[13px] font-medium text-[#00E676]">
                 Editing Layout
               </span>
-              <span className="text-[11px] text-indigo-400/60">
+              <span className="text-[11px] text-[rgba(0,230,118,0.6)]">
                 Drag to reorder, resize handles in corners
               </span>
             </div>
@@ -160,7 +160,7 @@ export function DashboardGrid() {
               </button>
               <button
                 onClick={() => setEditMode(false)}
-                className="flex items-center gap-1.5 rounded-md bg-indigo-500 px-3 py-1 text-[12px] font-medium text-white transition-colors hover:bg-indigo-400"
+                className="flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1 text-[12px] font-medium text-black transition-colors hover:bg-[#00C853]"
               >
                 <Check size={13} />
                 Done
@@ -197,7 +197,7 @@ export function DashboardGrid() {
             <div key={widgetId} className="relative">
               {/* Edit mode overlay */}
               {editMode && (
-                <div className="pointer-events-none absolute inset-0 z-20 rounded-xl ring-2 ring-indigo-500/30 ring-offset-1 ring-offset-black/50" />
+                <div className="pointer-events-none absolute inset-0 z-20 rounded-xl ring-2 ring-[rgba(0,230,118,0.3)] ring-offset-1 ring-offset-black/50" />
               )}
 
               {/* Drag handle + remove button (edit mode only) */}

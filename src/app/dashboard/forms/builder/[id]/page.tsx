@@ -310,7 +310,7 @@ export default function FormBuilderPage() {
                       animate={{ opacity: 1, y: 0 }}
                       className={`group relative rounded-xl border bg-[#0C0C0C] p-4 transition-colors ${
                         editingBlockId === block.id
-                          ? "border-blue-500/30"
+                          ? "border-[rgba(0,230,118,0.3)]"
                           : "border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)]"
                       }`}
                     >

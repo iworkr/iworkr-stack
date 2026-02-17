@@ -62,11 +62,11 @@ const catalogItems = [
 ];
 
 const gradients = [
-  "from-violet-600/30 to-indigo-800/30",
-  "from-emerald-600/30 to-teal-800/30",
-  "from-amber-600/30 to-orange-800/30",
-  "from-rose-600/30 to-pink-800/30",
-  "from-blue-600/30 to-cyan-800/30",
+  "from-zinc-600/30 to-zinc-800/30",
+  "from-zinc-500/30 to-zinc-700/30",
+  "from-zinc-700/30 to-zinc-900/30",
+  "from-zinc-600/30 to-zinc-800/30",
+  "from-zinc-500/30 to-zinc-700/30",
 ];
 
 function getGrad(initials: string) {
@@ -316,8 +316,8 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
             animate={sent ? { opacity: 0, scale: 0.92 } : { opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-[7.5%] left-1/2 z-50 flex w-full max-w-[1100px] -translate-x-1/2 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#121212]"
-            style={{ height: "85vh", boxShadow: "0 40px 80px -12px rgba(0,0,0,0.6)" }}
+            className="fixed top-[7.5%] left-1/2 z-50 flex w-full max-w-[1100px] -translate-x-1/2 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0C0C0C] backdrop-blur-md"
+            style={{ height: "85vh", boxShadow: "0 40px 80px -12px rgba(0,0,0,0.6), 0 0 40px -10px rgba(0,230,118,0.06)" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ═══════════════════════════════════════════════ */}
@@ -490,7 +490,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                       value={reference}
                       onChange={(e) => setReference(e.target.value)}
                       placeholder="PO number..."
-                      className="w-full rounded-md border border-[rgba(255,255,255,0.08)] bg-transparent px-2.5 py-1.5 text-[12px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#5E6AD2]"
+                      className="w-full rounded-md border border-[rgba(255,255,255,0.08)] bg-transparent px-2.5 py-1.5 text-[12px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
                     />
                   </div>
                 </div>
@@ -555,7 +555,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
                   {/* Add item input */}
                   <div className="relative">
-                    <div className="flex items-center gap-2 rounded-md border border-dashed border-[rgba(255,255,255,0.08)] px-3 py-2 transition-colors focus-within:border-[#5E6AD2]/40">
+                    <div className="flex items-center gap-2 rounded-md border border-dashed border-[rgba(255,255,255,0.08)] px-3 py-2 transition-colors focus-within:border-[#00E676]/40">
                       <Plus size={12} className="shrink-0 text-zinc-600" />
                       <input
                         ref={catalogInputRef}
@@ -623,7 +623,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="Payment instructions, terms..."
                       rows={2}
-                      className="w-full resize-none rounded-md border border-[rgba(255,255,255,0.08)] bg-transparent px-2.5 py-1.5 text-[12px] text-zinc-400 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#5E6AD2]"
+                      className="w-full resize-none rounded-md border border-[rgba(255,255,255,0.08)] bg-transparent px-2.5 py-1.5 text-[12px] text-zinc-400 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
                     />
                   </div>
                 </div>
@@ -635,7 +635,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                 <label className="flex items-center gap-2 text-[11px] text-zinc-600">
                   <button
                     onClick={() => setAttachPdf(!attachPdf)}
-                    className={`relative h-[16px] w-[28px] rounded-full transition-colors ${attachPdf ? "bg-[#5E6AD2]" : "bg-zinc-700"}`}
+                    className={`relative h-[16px] w-[28px] rounded-full transition-colors ${attachPdf ? "bg-[#00E676]" : "bg-zinc-700"}`}
                   >
                     <motion.div
                       layout
@@ -654,7 +654,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSubmit("send")}
                     disabled={!isValid}
-                    className="flex items-center gap-2 rounded-l-md bg-gradient-to-r from-[#5E6AD2] to-[#4F46E5] px-3.5 py-1.5 text-[12px] font-medium text-white transition-all hover:from-[#6E7AE2] hover:to-[#6366F1] disabled:opacity-30"
+                    className="flex items-center gap-2 rounded-l-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-3.5 py-1.5 text-[12px] font-medium text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] disabled:opacity-30"
                   >
                     {sent ? (
                       <motion.div
@@ -678,7 +678,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                   <button
                     onClick={() => setSplitMenuOpen(!splitMenuOpen)}
                     disabled={!isValid}
-                    className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(255,255,255,0.2)] bg-gradient-to-r from-[#5E6AD2] to-[#4F46E5] px-1.5 text-white transition-colors hover:from-[#6E7AE2] hover:to-[#6366F1] disabled:opacity-30"
+                    className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(0,0,0,0.15)] bg-gradient-to-b from-[#00E676] to-[#00C853] px-1.5 text-black transition-colors hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] disabled:opacity-30"
                   >
                     <ChevronDown size={11} />
                   </button>

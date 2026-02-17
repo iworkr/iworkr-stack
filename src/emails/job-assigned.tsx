@@ -29,34 +29,38 @@ export default function JobAssignedEmail({
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clientAddress)}`;
 
   return (
-    <EmailLayout preview={`New job: ${jobTitle} — ${clientName} on ${scheduledDate}`}>
-      {/* Blue accent for jobs */}
+    <EmailLayout preview={`New mission: ${jobTitle} — ${clientAddress} at ${scheduledTime}`}>
+      {/* Green accent line */}
       <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%", marginBottom: "28px" }}>
         <tr>
-          <td style={{ height: "2px", background: "linear-gradient(90deg, transparent, #3b82f6, transparent)" }} />
+          <td style={styles.accentLine} />
         </tr>
       </table>
 
+      {/* Badge */}
       <Section style={{ textAlign: "center" as const, marginBottom: "24px" }}>
         <span style={{
           ...styles.badge,
-          backgroundColor: "rgba(59,130,246,0.08)",
-          color: "#60a5fa",
-          border: "1px solid rgba(59,130,246,0.15)",
+          backgroundColor: colors.greenBg,
+          color: colors.green,
+          border: `1px solid ${colors.greenBorder}`,
         }}>
-          New Job Assigned
+          📍 New Mission
         </span>
       </Section>
 
       <Text style={{ ...styles.heading, textAlign: "center" as const }}>
-        {jobTitle}
+        {clientAddress.split(",")[0]}
       </Text>
       <Text style={{ ...styles.subheading, textAlign: "center" as const }}>
-        Hey {technicianName}, {assignedBy} assigned you a new job.
+        Hey {technicianName}, {assignedBy} just assigned you a job.
       </Text>
 
-      {/* Job details card */}
+      {/* Briefing card */}
       <Section style={styles.infoCard}>
+        <Text style={{ ...styles.paragraph, fontWeight: 600, color: colors.white, margin: "0 0 16px", fontSize: "13px", letterSpacing: "0.02em", textTransform: "uppercase" as const }}>
+          Mission Briefing
+        </Text>
         <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
           <tr>
             <td style={iconCell}>📋</td>
@@ -87,7 +91,7 @@ export default function JobAssignedEmail({
           <tr>
             <td style={iconCell}>⏰</td>
             <td style={labelCell}>Time</td>
-            <td style={valueCell}>{scheduledTime}</td>
+            <td style={{ ...valueCell, color: colors.green, fontWeight: 600 }}>{scheduledTime}</td>
           </tr>
           {notes && (
             <>
@@ -108,7 +112,7 @@ export default function JobAssignedEmail({
           <tr>
             <td style={{ paddingRight: "8px" }}>
               <Button href={`${BASE_URL}/dashboard/jobs/${jobId}`} style={styles.button}>
-                View Job →
+                View Mission Control →
               </Button>
             </td>
             <td style={{ paddingLeft: "8px" }}>
@@ -123,8 +127,9 @@ export default function JobAssignedEmail({
       <Hr style={{ borderTop: `1px solid ${colors.cardBorder}`, margin: "24px 0 20px" }} />
 
       <Text style={styles.smallText}>
-        You can view all your assigned jobs in the{" "}
+        All your missions live in the{" "}
         <a href={`${BASE_URL}/dashboard/schedule`} style={styles.link}>schedule</a>.
+        Stay sharp out there.
       </Text>
     </EmailLayout>
   );

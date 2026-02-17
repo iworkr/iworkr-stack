@@ -20,6 +20,8 @@ import {
   FileText,
   UsersRound,
   Workflow,
+  Sun,
+  Moon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -33,6 +35,7 @@ import { getTeamStatus, type TeamMemberStatus } from "@/app/actions/dashboard";
 import { useInboxStore } from "@/lib/inbox-store";
 import { useState } from "react";
 import { Shimmer, ShimmerTeamRow } from "@/components/ui/shimmer";
+import { useTheme } from "@/components/providers/theme-provider";
 
 /* ── Data ─────────────────────────────────────────────── */
 
@@ -97,7 +100,7 @@ function NavLink({
       onMouseLeave={handleMouseLeave}
       className={`group relative flex items-center gap-2.5 rounded-md px-2 py-[6px] transition-colors duration-100 ${
         active
-          ? "bg-[rgba(255,255,255,0.03)] text-zinc-100"
+          ? "bg-[rgba(0,230,118,0.06)] text-[#00E676]"
           : "text-zinc-500 hover:text-zinc-300"
       } ${collapsed ? "justify-center" : ""}`}
     >
@@ -113,7 +116,7 @@ function NavLink({
       {active && (
         <motion.div
           layoutId="sidebar-active"
-          className="absolute top-1/2 left-0 h-4 w-[2px] -translate-y-1/2 rounded-r bg-white"
+          className="absolute top-1/2 left-0 h-4 w-[2px] -translate-y-1/2 rounded-r bg-[#00E676]"
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
         />
       )}
@@ -158,6 +161,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
   const router = useRouter();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useShellStore();
   const { setInviteModalOpen } = useTeamStore();
+  const { theme, toggle: toggleTheme } = useTheme();
   const onboardingName = useOnboardingStore((s) => s.companyName);
   const { currentOrg } = useAuthStore();
   const { orgId } = useOrg();
@@ -214,10 +218,14 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
       <motion.aside
         layout
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className={`fixed top-0 left-0 z-50 flex h-screen flex-col border-r border-[rgba(255,255,255,0.08)] bg-[#080808] transition-transform duration-300 md:z-30 md:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 flex h-screen flex-col border-r transition-transform duration-300 md:z-30 md:translate-x-0 ${
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
-        style={{ width: sidebarCollapsed ? 64 : 240 }}
+        style={{
+          width: sidebarCollapsed ? 64 : 240,
+          background: "var(--surface-1)",
+          borderColor: "var(--border-base)",
+        }}
       >
       {/* ── Workspace Switcher ── */}
       <div className="flex h-12 items-center border-b border-[rgba(255,255,255,0.08)] px-3">
@@ -250,23 +258,23 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
       <div className="px-2 pt-2.5 pb-0.5">
         <button
           onClick={onCreateClick}
-          className={`flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.1)] bg-transparent transition-all duration-200 hover:border-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.03)] hover:shadow-[0_0_12px_rgba(255,255,255,0.03)] ${
+          className={`flex items-center gap-2 rounded-lg bg-gradient-to-b from-[#00E676] to-[#00C853] text-black font-semibold transition-all duration-200 hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] ${
             sidebarCollapsed
               ? "w-10 justify-center p-2"
               : "w-full px-2.5 py-[6px]"
           }`}
         >
-          <Pencil size={13} className="shrink-0 text-zinc-400" />
+          <Pencil size={13} className="shrink-0" />
           <AnimatePresence>
             {!sidebarCollapsed && (
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-1 items-center justify-between text-[13px] text-zinc-400"
+                className="flex flex-1 items-center justify-between text-[13px]"
               >
                 New Item
-                <kbd className="rounded border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-1.5 py-0.5 font-mono text-[9px] text-zinc-500">
+                <kbd className="rounded bg-black/15 px-1.5 py-0.5 font-mono text-[9px]">
                   C
                 </kbd>
               </motion.span>
@@ -338,11 +346,12 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                       <div className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-500">
                         {member.initials}
                         <div
-                          className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] border-[#080808] ${
+                          className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] ${
                             member.status === "online"
-                              ? "bg-emerald-500"
+                              ? "bg-[#00E676]"
                               : "bg-zinc-600"
                           }`}
+                          style={{ borderColor: "var(--surface-1)" }}
                         />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -386,20 +395,58 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                     </button>
                   );
                 }
+                if (item.href?.startsWith("mailto:") || item.href?.startsWith("http")) {
+                  return (
+                    <a
+                      key={item.label}
+                      href={item.href}
+                      className="flex items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-400"
+                    >
+                      <Icon size={14} strokeWidth={1.5} />
+                      <span>{item.label}</span>
+                    </a>
+                  );
+                }
                 return (
-                  <a
+                  <Link
                     key={item.label}
                     href={item.href || "#"}
                     className="flex items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-400"
                   >
                     <Icon size={14} strokeWidth={1.5} />
                     <span>{item.label}</span>
-                  </a>
+                  </Link>
                 );
               })}
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          className={`flex items-center gap-2 rounded-md px-2 py-[5px] text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-400 ${
+            sidebarCollapsed ? "w-full justify-center" : "w-full"
+          }`}
+        >
+          {theme === "dark" ? (
+            <Sun size={14} strokeWidth={1.5} />
+          ) : (
+            <Moon size={14} strokeWidth={1.5} />
+          )}
+          <AnimatePresence>
+            {!sidebarCollapsed && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-[13px]"
+              >
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
 
         {/* Collapse */}
         <button

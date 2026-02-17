@@ -195,7 +195,7 @@ export default function SubmissionDetailPage() {
               {/* Device Fingerprint */}
               <div className="bg-[#0C0C0C] p-4">
                 <div className="mb-2 flex items-center gap-1.5">
-                  <Fingerprint size={11} className="text-blue-500" />
+                  <Fingerprint size={11} className="text-[#00E676]" />
                   <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-600">
                     Device Fingerprint
                   </span>
@@ -223,7 +223,7 @@ export default function SubmissionDetailPage() {
               {/* Timestamp */}
               <div className="bg-[#0C0C0C] p-4">
                 <div className="mb-2 flex items-center gap-1.5">
-                  <Calendar size={11} className="text-violet-500" />
+                  <Calendar size={11} className="text-zinc-400" />
                   <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-600">
                     Signed Timestamp
                   </span>
@@ -239,7 +239,7 @@ export default function SubmissionDetailPage() {
               {/* Hash */}
               <div className="bg-[#0C0C0C] p-4">
                 <div className="mb-2 flex items-center gap-1.5">
-                  <Shield size={11} className="text-violet-500" />
+                  <Shield size={11} className="text-zinc-400" />
                   <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-600">
                     Document Hash (SHA-256)
                   </span>

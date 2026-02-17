@@ -26,9 +26,9 @@ import { useFormsStore } from "@/lib/forms-store";
 
 const categoryConfig: Record<string, { icon: typeof FileText; gradient: string; accent: string }> = {
   Safety: { icon: ShieldCheck, gradient: "from-amber-600/20 to-orange-700/10", accent: "text-amber-400" },
-  Compliance: { icon: ShieldCheck, gradient: "from-blue-600/20 to-indigo-700/10", accent: "text-blue-400" },
+  Compliance: { icon: ShieldCheck, gradient: "from-zinc-600/20 to-zinc-700/10", accent: "text-[#00E676]" },
   Handover: { icon: ClipboardList, gradient: "from-emerald-600/20 to-teal-700/10", accent: "text-emerald-400" },
-  Feedback: { icon: Star, gradient: "from-violet-600/20 to-purple-700/10", accent: "text-violet-400" },
+  Feedback: { icon: Star, gradient: "from-zinc-500/20 to-zinc-600/10", accent: "text-zinc-400" },
   Maintenance: { icon: FileText, gradient: "from-zinc-600/20 to-zinc-700/10", accent: "text-zinc-400" },
 };
 

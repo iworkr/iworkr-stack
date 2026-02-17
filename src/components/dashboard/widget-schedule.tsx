@@ -11,7 +11,7 @@ import { WidgetShell } from "./widget-shell";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const statusColors: Record<string, { bg: string; border: string; text: string; dot: string }> = {
-  scheduled: { bg: "bg-blue-500/8", border: "border-blue-500/20", text: "text-blue-400", dot: "bg-blue-500" },
+  scheduled: { bg: "bg-[rgba(0,230,118,0.06)]", border: "border-[rgba(0,230,118,0.2)]", text: "text-[#00E676]", dot: "bg-[#00E676]" },
   en_route: { bg: "bg-amber-500/8", border: "border-amber-500/20", text: "text-amber-400", dot: "bg-amber-500" },
   in_progress: { bg: "bg-emerald-500/8", border: "border-emerald-500/20", text: "text-emerald-400", dot: "bg-emerald-500" },
   complete: { bg: "bg-zinc-500/5", border: "border-zinc-600/20", text: "text-zinc-500", dot: "bg-zinc-500" },
@@ -121,8 +121,8 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
                 {nextBlock.title}
               </div>
               <div className="mt-0.5 flex items-center gap-1">
-                <Clock size={8} className="text-blue-400" />
-                <span className="text-[10px] text-blue-400">
+                <Clock size={8} className="text-[#00E676]" />
+                <span className="text-[10px] text-[#00E676]">
                   {formatHour(nextBlock.startHour)}
                 </span>
               </div>
@@ -180,7 +180,7 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
               transition={{ delay: 0.2 + i * 0.08, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => block.jobId && router.push(`/dashboard/jobs/${block.jobId}`)}
               className={`group relative flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition-all ${
-                isNext ? `${c.bg} ${c.border} shadow-[0_0_15px_rgba(94,106,210,0.15)]`
+                isNext ? `${c.bg} ${c.border} shadow-[0_0_15px_rgba(0,230,118,0.15)]`
                   : isComplete || isPast ? "border-transparent opacity-50" : `${c.bg} ${c.border}`
               } ${!isComplete ? "hover:brightness-125" : ""}`}
             >
@@ -203,7 +203,7 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
                 )}
                 {isNext && (
                   <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} transition={{ delay: 0.5 }}
-                    className="mt-1 inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-1.5 py-0.5 text-[8px] font-medium text-indigo-400">
+                    className="mt-1 inline-flex items-center gap-1 rounded-full bg-[rgba(0,230,118,0.1)] px-1.5 py-0.5 text-[8px] font-medium text-[#00E676]">
                     <Clock size={7} /> Next Up
                   </motion.div>
                 )}
