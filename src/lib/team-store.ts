@@ -15,6 +15,8 @@ import {
   getRoles,
   updateMemberRole as updateMemberRoleServer,
   updateMemberDetails as updateMemberDetailsServer,
+  suspendMember as suspendMemberAction,
+  reactivateMember as reactivateMemberAction,
   removeMember as removeMemberServer,
   inviteMember as inviteMemberServer,
   resendInvite as resendInviteServer,
@@ -458,7 +460,7 @@ export const useTeamStore = create<TeamState>()(
     if (!orgId) return { error: "No organization" };
 
     get().suspendMember(userId);
-    const res = await updateMemberDetailsServer(orgId, userId, { status: "suspended" });
+    const res = await suspendMemberAction(orgId, userId);
     if (res.error) get().refresh();
     return { error: res.error };
   },
@@ -468,7 +470,7 @@ export const useTeamStore = create<TeamState>()(
     if (!orgId) return { error: "No organization" };
 
     get().reactivateMember(userId);
-    const res = await updateMemberDetailsServer(orgId, userId, { status: "active" });
+    const res = await reactivateMemberAction(orgId, userId);
     if (res.error) get().refresh();
     return { error: res.error };
   },

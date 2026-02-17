@@ -24,30 +24,25 @@ import { useToastStore } from "@/components/app/action-toast";
 
 /* ── Activity icon config ─────────────────────────────── */
 
-const activityIcons = {
-  check_in: { icon: MapPin, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+const activityIcons: Record<string, { icon: typeof MapPin; color: string; bg: string }> = {
+  check_in: { icon: MapPin, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
   job_complete: { icon: Briefcase, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
   invoice_update: { icon: Star, color: "text-amber-400", bg: "bg-amber-500/10" },
   form_signed: { icon: Shield, color: "text-zinc-400", bg: "bg-zinc-500/10" },
   login: { icon: Globe, color: "text-zinc-400", bg: "bg-zinc-500/10" },
-  role_change: { icon: RefreshCw, color: "text-pink-400", bg: "bg-pink-500/10" },
+  role_change: { icon: RefreshCw, color: "text-zinc-400", bg: "bg-zinc-500/10" },
 };
 
-/* ── Role color map ───────────────────────────────────── */
+/* ── PRD Role Badge Styles (Anti-Rainbow) ─────────────── */
 
-const roleColorMap: Record<string, string> = {
-  red: "bg-red-500/15 text-red-400 border-red-500/20",
-  purple: "bg-[rgba(0,230,118,0.12)] text-[#00E676] border-[rgba(0,230,118,0.2)]",
-  blue: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20",
-  cyan: "bg-cyan-500/15 text-cyan-400 border-cyan-500/20",
-  emerald: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
-  orange: "bg-orange-500/15 text-orange-400 border-orange-500/20",
-  pink: "bg-pink-500/15 text-pink-400 border-pink-500/20",
-  zinc: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20",
+const roleBadgeStyles: Record<string, string> = {
+  owner: "border-red-500/50 text-red-400 bg-red-500/5",
+  admin: "border-[#00E676]/50 text-[#00E676] bg-[rgba(0,230,118,0.05)]",
+  tech: "border-zinc-700 text-zinc-300 bg-zinc-800",
 };
 
-const onlineColors = {
-  online: "bg-emerald-500",
+const onlineColors: Record<string, string> = {
+  online: "bg-[#00E676]",
   idle: "bg-amber-500",
   offline: "bg-zinc-600",
 };
@@ -57,18 +52,16 @@ export function MemberDrawer() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const { addToast } = useToastStore();
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const [actionMenuOpen, setActionMenuOpen] = useState(false);
 
   const member = selectedMemberId ? members.find((m) => m.id === selectedMemberId) : null;
   const isOpen = !!member;
 
-  const roleColor = member ? getRoleColor(member.role) : "zinc";
-  const rolePillClass = roleColorMap[roleColor] || roleColorMap.zinc;
+  const roleColor = member ? getRoleColor(member.role) : "tech";
+  const rolePillClass = roleBadgeStyles[roleColor] || roleBadgeStyles.tech;
 
   const handleClose = () => {
     setSelectedMemberId(null);
     setRoleDropdownOpen(false);
-    setActionMenuOpen(false);
   };
 
   return (
@@ -90,11 +83,10 @@ export function MemberDrawer() {
             animate={{ x: 0 }}
             exit={{ x: 420 }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-[400px] flex-col border-l border-[rgba(255,255,255,0.08)] bg-[#0A0A0A]"
+            className="fixed right-0 top-0 z-50 flex h-screen w-[400px] flex-col border-l border-white/[0.08] bg-[#050505]"
           >
-            {/* ── Header with map background ──────────── */}
+            {/* ── Header with grid background ──────────── */}
             <div className="relative h-36 shrink-0 bg-[#080808]">
-              {/* GPS map grid background */}
               <div
                 className="absolute inset-0 opacity-20"
                 style={{
@@ -102,14 +94,16 @@ export function MemberDrawer() {
                   backgroundSize: "24px 24px",
                 }}
               />
-              {/* GPS pin */}
+              {/* GPS pin with online pulse */}
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <motion.div
-                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className={`absolute inset-0 rounded-full ${onlineColors[member.onlineStatus]}`}
-                />
-                <div className={`h-3 w-3 rounded-full ${onlineColors[member.onlineStatus]} shadow-[0_0_12px_rgba(16,185,129,0.4)]`} />
+                {member.onlineStatus === "online" && (
+                  <motion.div
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="absolute inset-0 rounded-full bg-[#00E676]"
+                  />
+                )}
+                <div className={`h-3 w-3 rounded-full ${onlineColors[member.onlineStatus]} shadow-[0_0_12px_rgba(0,230,118,0.4)]`} />
               </div>
 
               {/* Close button */}
@@ -120,11 +114,11 @@ export function MemberDrawer() {
                 <X size={14} />
               </button>
 
-              {/* Avatar overlay at bottom */}
+              {/* Avatar overlay */}
               <div className="absolute -bottom-8 left-5">
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-[#0A0A0A] bg-gradient-to-br from-zinc-700 to-zinc-800 text-lg font-bold text-zinc-300 shadow-xl">
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-[#050505] bg-gradient-to-br from-zinc-700 to-zinc-800 text-lg font-bold text-zinc-300 shadow-xl">
                   {member.initials}
-                  <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#0A0A0A] ${onlineColors[member.onlineStatus]}`} />
+                  <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#050505] ${onlineColors[member.onlineStatus]}`} />
                 </div>
               </div>
             </div>
@@ -150,46 +144,49 @@ export function MemberDrawer() {
                   </button>
 
                   {/* Role dropdown */}
-                  {roleDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute left-0 top-8 z-20 w-48 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#161616] py-1 shadow-xl"
-                    >
-                      {roleDefinitions.filter((r) => r.id !== "owner").map((r) => {
-                        const rc = roleColorMap[r.color] || roleColorMap.zinc;
-                        return (
-                          <button
-                            key={r.id}
-                            onClick={async () => {
-                              setRoleDropdownOpen(false);
-                              const { error } = await updateMemberRoleServer(member.id, r.id);
-                              if (error) addToast(`Failed: ${error}`);
-                              else addToast(`${member.name} updated to ${r.label}`);
-                            }}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-zinc-400 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
-                          >
-                            <span className={`inline-block h-2 w-2 rounded-full ${rc.split(" ")[0]}`} />
-                            <span>{r.label}</span>
-                            {member.role === r.id && <CheckCircle size={10} className="ml-auto text-emerald-400" />}
-                          </button>
-                        );
-                      })}
-                    </motion.div>
-                  )}
+                  <AnimatePresence>
+                    {roleDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="absolute left-0 top-8 z-20 w-48 rounded-lg border border-white/[0.08] bg-[#161616] py-1 shadow-xl"
+                      >
+                        {roleDefinitions.filter((r) => r.id !== "owner").map((r) => {
+                          const rc = roleBadgeStyles[r.color] || roleBadgeStyles.tech;
+                          return (
+                            <button
+                              key={r.id}
+                              onClick={async () => {
+                                setRoleDropdownOpen(false);
+                                const { error } = await updateMemberRoleServer(member.id, r.id);
+                                if (error) addToast(`Failed: ${error}`);
+                                else addToast(`${member.name} updated to ${r.label}`);
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.04]"
+                            >
+                              <span className={`inline-block h-2 w-2 rounded-full ${rc.split(" ")[0]}`} />
+                              <span>{r.label}</span>
+                              {member.role === r.id && <CheckCircle size={10} className="ml-auto text-[#00E676]" />}
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                <span className="rounded-full bg-[rgba(255,255,255,0.04)] px-2.5 py-1 text-[10px] text-zinc-500">
+                <span className="rounded-full bg-white/[0.04] px-2.5 py-1 text-[10px] text-zinc-500">
                   {member.branch}
                 </span>
 
                 {member.status === "pending" && (
-                  <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-medium text-amber-400">
+                  <span className="rounded-full border border-dashed border-amber-500/40 bg-amber-500/5 px-2.5 py-1 text-[10px] font-medium text-amber-400">
                     Pending Invite
                   </span>
                 )}
                 {member.status === "suspended" && (
-                  <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-[10px] font-medium text-red-400">
+                  <span className="rounded-full border border-red-500/30 bg-red-500/5 px-2.5 py-1 text-[10px] font-medium text-red-400">
                     Suspended
                   </span>
                 )}
@@ -198,17 +195,17 @@ export function MemberDrawer() {
               {/* Stats */}
               {member.status === "active" && (
                 <div className="mb-5 grid grid-cols-3 gap-3">
-                  <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 text-center">
+                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
                     <p className="text-[16px] font-semibold text-zinc-200">{member.jobsCompleted}</p>
                     <p className="text-[9px] uppercase tracking-wider text-zinc-600">Jobs Done</p>
                   </div>
-                  <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 text-center">
+                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
                     <p className="text-[16px] font-semibold text-zinc-200">
                       {member.avgRating > 0 ? member.avgRating.toFixed(1) : "—"}
                     </p>
                     <p className="text-[9px] uppercase tracking-wider text-zinc-600">Avg Rating</p>
                   </div>
-                  <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 text-center">
+                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
                     <p className="text-[16px] font-semibold text-zinc-200">${member.hourlyRate}</p>
                     <p className="text-[9px] uppercase tracking-wider text-zinc-600">Per Hour</p>
                   </div>
@@ -216,13 +213,13 @@ export function MemberDrawer() {
               )}
 
               {/* Security */}
-              <div className="mb-5 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
+              <div className="mb-5 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
                 <h3 className="mb-2 text-[10px] font-medium uppercase tracking-wider text-zinc-600">Security</h3>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-zinc-500">Two-Factor Auth</span>
                     {member.twoFactorEnabled ? (
-                      <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+                      <span className="flex items-center gap-1 text-[10px] text-[#00E676]">
                         <CheckCircle size={10} /> Enabled
                       </span>
                     ) : (
@@ -250,7 +247,7 @@ export function MemberDrawer() {
                   </h3>
                   <div className="space-y-0">
                     {member.recentActivity.map((act, i) => {
-                      const config = activityIcons[act.type];
+                      const config = activityIcons[act.type] || activityIcons.login;
                       const Icon = config.icon;
                       return (
                         <motion.div
@@ -265,7 +262,7 @@ export function MemberDrawer() {
                               <Icon size={11} className={config.color} />
                             </div>
                             {i < member.recentActivity.length - 1 && (
-                              <div className="mt-1 w-px flex-1 bg-[rgba(255,255,255,0.04)]" />
+                              <div className="mt-1 w-px flex-1 bg-white/[0.04]" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1 pb-1">
@@ -287,7 +284,7 @@ export function MemberDrawer() {
                       resendInvite(member.id);
                       addToast(`Invite resent to ${member.email}`);
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(255,255,255,0.1)] bg-white/[0.04] py-2 text-[12px] font-medium text-zinc-300 transition-all hover:bg-white/[0.08]"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.1] bg-white/[0.04] py-2 text-[12px] font-medium text-zinc-300 transition-all hover:bg-white/[0.08]"
                   >
                     <RefreshCw size={13} /> Resend Invite
                   </button>
@@ -317,7 +314,7 @@ export function MemberDrawer() {
                       else addToast(`${member.name} has been reactivated`);
                     }}
                     disabled={actionLoading === "reactivate"}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 py-2 text-[12px] font-medium text-emerald-400 transition-all hover:bg-emerald-500/10 disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#00E676]/20 bg-[rgba(0,230,118,0.05)] py-2 text-[12px] font-medium text-[#00E676] transition-all hover:bg-[rgba(0,230,118,0.1)] disabled:opacity-50"
                   >
                     <Play size={13} /> {actionLoading === "reactivate" ? "Reactivating…" : "Reactivate"}
                   </button>

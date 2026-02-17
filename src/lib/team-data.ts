@@ -77,7 +77,7 @@ export const roleDefinitions: RoleDefinition[] = [
     id: "owner",
     label: "Owner",
     description: "Full access to everything. Cannot be removed.",
-    color: "red",
+    color: "owner",
     permissions: {
       jobs: ["view", "create", "edit", "delete", "export"],
       clients: ["view", "create", "edit", "delete", "export"],
@@ -95,7 +95,7 @@ export const roleDefinitions: RoleDefinition[] = [
     id: "manager",
     label: "Manager",
     description: "Manages operations, team, and finances.",
-    color: "purple",
+    color: "admin",
     permissions: {
       jobs: ["view", "create", "edit", "delete", "export"],
       clients: ["view", "create", "edit", "delete", "export"],
@@ -113,7 +113,7 @@ export const roleDefinitions: RoleDefinition[] = [
     id: "office_admin",
     label: "Office Admin",
     description: "Handles scheduling, invoicing, and client communication.",
-    color: "pink",
+    color: "admin",
     permissions: {
       jobs: ["view", "create", "edit"],
       clients: ["view", "create", "edit"],
@@ -131,7 +131,7 @@ export const roleDefinitions: RoleDefinition[] = [
     id: "senior_tech",
     label: "Senior Tech",
     description: "Experienced technician. Can manage their own jobs and mentees.",
-    color: "blue",
+    color: "tech",
     permissions: {
       jobs: ["view", "create", "edit"],
       clients: ["view"],
@@ -149,7 +149,7 @@ export const roleDefinitions: RoleDefinition[] = [
     id: "technician",
     label: "Technician",
     description: "Field tech. Views assigned jobs, tracks time, fills forms.",
-    color: "cyan",
+    color: "tech",
     permissions: {
       jobs: ["view", "edit"],
       clients: ["view"],
@@ -167,7 +167,7 @@ export const roleDefinitions: RoleDefinition[] = [
     id: "apprentice",
     label: "Apprentice",
     description: "Learning. Supervised access only.",
-    color: "emerald",
+    color: "tech",
     permissions: {
       jobs: ["view"],
       clients: ["view"],
@@ -185,7 +185,7 @@ export const roleDefinitions: RoleDefinition[] = [
     id: "subcontractor",
     label: "Subcontractor",
     description: "External contractor. Limited to assigned jobs only.",
-    color: "orange",
+    color: "tech",
     permissions: {
       jobs: ["view"],
       clients: [],

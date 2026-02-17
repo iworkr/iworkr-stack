@@ -120,6 +120,42 @@ export async function updateMemberDetails(
   }
 }
 
+export async function suspendMember(orgId: string, userId: string) {
+  try {
+    const supabase = (await createServerSupabaseClient()) as any;
+
+    const { error } = await supabase
+      .from("organization_members")
+      .update({ status: "suspended" })
+      .eq("organization_id", orgId)
+      .eq("user_id", userId);
+
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/dashboard/team");
+    return { data: { success: true }, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function reactivateMember(orgId: string, userId: string) {
+  try {
+    const supabase = (await createServerSupabaseClient()) as any;
+
+    const { error } = await supabase
+      .from("organization_members")
+      .update({ status: "active" })
+      .eq("organization_id", orgId)
+      .eq("user_id", userId);
+
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/dashboard/team");
+    return { data: { success: true }, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
 export async function removeMember(orgId: string, userId: string) {
   try {
     const supabase = (await createServerSupabaseClient()) as any;
@@ -379,6 +415,31 @@ export async function cancelInvite(inviteId: string) {
     return { data: { success: true }, error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
+  }
+}
+
+/* ── Permission Check ─────────────────────────────── */
+
+export async function checkPermission(
+  orgId: string,
+  module: string,
+  action: string
+): Promise<boolean> {
+  try {
+    const supabase = (await createServerSupabaseClient()) as any;
+    const { data, error } = await supabase.rpc("has_permission", {
+      p_org_id: orgId,
+      p_module: module,
+      p_action: action,
+    });
+    if (error) {
+      logger.error("checkPermission RPC error", error.message);
+      return false;
+    }
+    return !!data;
+  } catch (err: any) {
+    logger.error("checkPermission exception", err.message);
+    return false;
   }
 }
 
