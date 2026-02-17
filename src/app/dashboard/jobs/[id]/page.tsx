@@ -42,6 +42,7 @@ import {
   updateJobLineItem,
   type JobLineItem,
 } from "@/app/actions/jobs";
+import { JobChat } from "@/components/messenger/job-chat";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -788,6 +789,17 @@ export default function JobDetailPage() {
                     );
                   })}
                 </div>
+              </div>
+            </div>
+
+            {/* ── Job Chat ──────────────────────────────────── */}
+            <div className="mt-6">
+              <h3 className="mb-3 flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                <MessageSquare size={12} />
+                Chat
+              </h3>
+              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)] p-3">
+                <JobChat jobId={job.id} jobTitle={job.title} />
               </div>
             </div>
           </div>

@@ -41,7 +41,7 @@ import { useTheme } from "@/components/providers/theme-provider";
 
 const navItems = [
   { id: "nav_dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", shortcut: "D" },
-  { id: "nav_inbox", label: "Inbox", icon: Inbox, href: "/dashboard/inbox", shortcut: "I" },
+  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "I" },
   { id: "nav_jobs", label: "My Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "J" },
   { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "S" },
   { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "C" },

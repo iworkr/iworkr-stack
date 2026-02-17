@@ -12,6 +12,7 @@ import { useAssetsStore } from "@/lib/assets-store";
 import { useFormsStore } from "@/lib/forms-store";
 import { useTeamStore } from "@/lib/team-store";
 import { useIntegrationsStore } from "@/lib/integrations-store";
+import { useMessengerStore } from "@/lib/stores/messenger-store";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -41,6 +42,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     useFormsStore.getState().loadFromServer(orgId);
     useTeamStore.getState().loadFromServer(orgId);
     useIntegrationsStore.getState().loadFromServer(orgId);
+    useMessengerStore.getState().loadChannels(orgId);
   }, [orgId]);
 
   // Realtime subscription for notifications
