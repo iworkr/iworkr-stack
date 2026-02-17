@@ -16,6 +16,10 @@ import {
   RefreshCw,
   Ban,
   Play,
+  Key,
+  Eye,
+  EyeOff,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
 import { useTeamStore } from "@/lib/team-store";
@@ -53,6 +57,13 @@ export function MemberDrawer() {
   const { addToast } = useToastStore();
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
+  // Password state
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordValue, setPasswordValue] = useState("");
+  const [showPasswordText, setShowPasswordText] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
   const member = selectedMemberId ? members.find((m) => m.id === selectedMemberId) : null;
   const isOpen = !!member;
 
@@ -62,6 +73,37 @@ export function MemberDrawer() {
   const handleClose = () => {
     setSelectedMemberId(null);
     setRoleDropdownOpen(false);
+    setShowPasswordForm(false);
+    setPasswordValue("");
+    setPasswordSuccess(false);
+  };
+
+  const handleSetPassword = async () => {
+    if (!member || passwordValue.length < 6) {
+      addToast("Password must be at least 6 characters");
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const res = await fetch("/api/team/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: member.id, password: passwordValue }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        addToast(`Failed: ${data.error}`);
+      } else {
+        setPasswordSuccess(true);
+        setPasswordValue("");
+        addToast(`App password set for ${member.name}`);
+        setTimeout(() => setPasswordSuccess(false), 3000);
+      }
+    } catch {
+      addToast("Failed to set password");
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -229,6 +271,71 @@ export function MemberDrawer() {
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-zinc-500">Joined</span>
                     <span className="font-mono text-[10px] text-zinc-600">{member.joinedAt}</span>
+                  </div>
+
+                  {/* Set App Password */}
+                  <div className="mt-1 border-t border-white/[0.04] pt-2">
+                    {!showPasswordForm ? (
+                      <button
+                        onClick={() => setShowPasswordForm(true)}
+                        className="flex w-full items-center gap-2 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-[11px] text-zinc-400 transition-all hover:border-emerald-500/20 hover:bg-white/[0.04] hover:text-zinc-200"
+                      >
+                        <Key size={11} strokeWidth={1.5} />
+                        Set App Password
+                      </button>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        className="space-y-2"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Key size={10} className="shrink-0 text-zinc-600" />
+                          <span className="text-[10px] font-medium text-zinc-400">Set App Password</span>
+                        </div>
+                        <p className="text-[9px] leading-relaxed text-zinc-600">
+                          This password allows {member.name.split(" ")[0]} to sign in to the mobile app without a magic link.
+                        </p>
+                        <div className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-[#0C0C0C] px-2 py-1.5">
+                          <input
+                            type={showPasswordText ? "text" : "password"}
+                            value={passwordValue}
+                            onChange={(e) => setPasswordValue(e.target.value)}
+                            placeholder="Minimum 6 characters"
+                            className="w-full bg-transparent font-mono text-[12px] text-zinc-200 outline-none placeholder:text-zinc-700"
+                            onKeyDown={(e) => { if (e.key === "Enter") handleSetPassword(); }}
+                          />
+                          <button
+                            onClick={() => setShowPasswordText(!showPasswordText)}
+                            className="shrink-0 text-zinc-600 hover:text-zinc-400"
+                          >
+                            {showPasswordText ? <EyeOff size={12} /> : <Eye size={12} />}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleSetPassword}
+                            disabled={passwordLoading || passwordValue.length < 6}
+                            className="flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-1 text-[10px] font-medium text-emerald-400 transition-all hover:bg-emerald-500/10 disabled:opacity-40"
+                          >
+                            {passwordLoading ? (
+                              <Loader2 size={10} className="animate-spin" />
+                            ) : passwordSuccess ? (
+                              <CheckCircle size={10} />
+                            ) : (
+                              <Key size={10} />
+                            )}
+                            {passwordLoading ? "Setting…" : passwordSuccess ? "Password Set" : "Set Password"}
+                          </button>
+                          <button
+                            onClick={() => { setShowPasswordForm(false); setPasswordValue(""); }}
+                            className="text-[10px] text-zinc-600 hover:text-zinc-400"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 </div>
               </div>
