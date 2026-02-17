@@ -24,12 +24,12 @@ import {
 } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
 
-/* ── PRD Role Badge Styles (Anti-Rainbow) ─────────────── */
+/* ── Stealth Role Styles ─────────────────────────────── */
 
 const roleBadgeStyles: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  owner: { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/20", dot: "bg-red-500" },
-  admin: { bg: "bg-[rgba(0,230,118,0.08)]", text: "text-[#00E676]", border: "border-[rgba(0,230,118,0.2)]", dot: "bg-[#00E676]" },
-  tech: { bg: "bg-zinc-800/60", text: "text-zinc-300", border: "border-zinc-700", dot: "bg-zinc-500" },
+  owner: { bg: "bg-rose-500/[0.06]", text: "text-rose-400", border: "border-rose-500/20", dot: "bg-rose-500" },
+  admin: { bg: "bg-emerald-500/[0.06]", text: "text-emerald-400", border: "border-emerald-500/20", dot: "bg-emerald-500" },
+  tech: { bg: "bg-zinc-800/40", text: "text-zinc-400", border: "border-zinc-800", dot: "bg-zinc-500" },
 };
 
 /* ── Action icon map ──────────────────────────────────── */
@@ -42,7 +42,7 @@ const actionIcons: Record<PermissionAction, typeof Eye> = {
   export: Download,
 };
 
-/* ── Custom Switch Toggle Component ───────────────────── */
+/* ── Custom Switch Toggle ────────────────────────────── */
 
 function SwitchToggle({
   checked,
@@ -57,19 +57,17 @@ function SwitchToggle({
     <button
       onClick={onChange}
       disabled={disabled}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-all duration-200 ${
+      className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-all duration-200 ${
         disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer"
       } ${
-        checked
-          ? "bg-[#00E676] shadow-[0_0_8px_rgba(0,230,118,0.3)]"
-          : "bg-zinc-800"
+        checked ? "bg-emerald-500" : "bg-zinc-800"
       }`}
     >
       <motion.span
-        animate={{ x: checked ? 18 : 2 }}
+        animate={{ x: checked ? 16 : 2 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
-        className={`inline-block h-3.5 w-3.5 rounded-full transition-colors ${
-          checked ? "bg-white" : "bg-zinc-950"
+        className={`inline-block h-2.5 w-2.5 rounded-full transition-colors ${
+          checked ? "bg-white" : "bg-zinc-600"
         }`}
       />
     </button>
@@ -128,12 +126,12 @@ export default function RolesPage() {
   return (
     <div className="flex h-full flex-col bg-[#050505]">
       {/* ── Back Nav ──────────────────────────────────── */}
-      <div className="border-b border-white/[0.06] px-6 py-3">
+      <div className="border-b border-white/[0.05] px-5 py-2.5">
         <button
           onClick={() => router.push("/dashboard/team")}
-          className="flex items-center gap-2 text-[12px] text-zinc-500 transition-colors hover:text-zinc-300"
+          className="flex items-center gap-2 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300"
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={13} />
           <span>Command Roster</span>
           <span className="text-zinc-700">/</span>
           <span className="text-zinc-300">Roles & Permissions</span>
@@ -143,10 +141,10 @@ export default function RolesPage() {
       {/* ── Split View ────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Role List */}
-        <div className="w-[260px] shrink-0 border-r border-white/[0.06] bg-[#080808]">
-          <div className="border-b border-white/[0.06] px-4 py-3">
-            <h2 className="text-[13px] font-medium text-zinc-300">Roles</h2>
-            <p className="text-[10px] text-zinc-600">{roles.length} roles configured</p>
+        <div className="w-[240px] shrink-0 border-r border-white/[0.04] bg-[#080808]">
+          <div className="border-b border-white/[0.04] px-4 py-3">
+            <h2 className="text-[12px] font-medium text-zinc-300">Roles</h2>
+            <p className="text-[10px] text-zinc-600">{roles.length} configured</p>
           </div>
 
           <div className="p-2">
@@ -162,20 +160,20 @@ export default function RolesPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
                   onClick={() => setSelectedRoleId(role.id)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${
+                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-all ${
                     isSelected
                       ? `${rc.bg} border ${rc.border}`
-                      : "border border-transparent hover:bg-white/[0.03]"
+                      : "border border-transparent hover:bg-white/[0.02]"
                   }`}
                 >
-                  <div className={`h-2.5 w-2.5 rounded-full ${rc.dot}`} />
+                  <div className={`h-2 w-2 rounded-full ${rc.dot}`} />
                   <div className="flex-1 min-w-0">
-                    <p className={`text-[12px] font-medium ${isSelected ? rc.text : "text-zinc-300"}`}>
+                    <p className={`text-[11px] font-medium ${isSelected ? rc.text : "text-zinc-400"}`}>
                       {role.label}
                     </p>
-                    <p className="truncate text-[10px] text-zinc-600">{role.description}</p>
+                    <p className="truncate text-[9px] text-zinc-600">{role.description}</p>
                   </div>
-                  <span className="shrink-0 text-[10px] text-zinc-600">{count}</span>
+                  <span className="shrink-0 font-mono text-[9px] text-zinc-700">{count}</span>
                 </motion.button>
               );
             })}
@@ -185,68 +183,68 @@ export default function RolesPage() {
         {/* Right: Permission Grid */}
         <div className="flex-1 overflow-y-auto">
           {selectedRole && (
-            <div className="p-6">
+            <div className="p-5">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={selectedRoleId}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                 >
                   {/* Role header */}
-                  <div className="mb-6 flex items-center justify-between">
+                  <div className="mb-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${(roleBadgeStyles[selectedRole.color] || roleBadgeStyles.tech).bg}`}>
-                        <Shield size={18} className={(roleBadgeStyles[selectedRole.color] || roleBadgeStyles.tech).text} />
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${(roleBadgeStyles[selectedRole.color] || roleBadgeStyles.tech).bg}`}>
+                        <Shield size={16} className={(roleBadgeStyles[selectedRole.color] || roleBadgeStyles.tech).text} />
                       </div>
                       <div>
-                        <h2 className="text-[16px] font-semibold text-zinc-200">
+                        <h2 className="text-[15px] font-medium text-white">
                           {selectedRole.label}
                         </h2>
-                        <p className="text-[12px] text-zinc-500">{selectedRole.description}</p>
+                        <p className="text-[11px] text-zinc-500">{selectedRole.description}</p>
                       </div>
                     </div>
                     {isOwnerRole && (
-                      <div className="flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1 text-[10px] text-zinc-600">
-                        <Lock size={10} /> Owner role cannot be modified
+                      <div className="flex items-center gap-1.5 rounded-md bg-white/[0.03] px-2.5 py-1 text-[9px] text-zinc-600">
+                        <Lock size={9} /> Owner role cannot be modified
                       </div>
                     )}
                   </div>
 
                   {/* Scopes */}
-                  <div className="mb-6 grid grid-cols-3 gap-3">
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-                      <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-600">Job Visibility</p>
-                      <p className="mt-1 text-[12px] font-medium capitalize text-zinc-300">{selectedRole.scopes.jobVisibility} Jobs</p>
+                  <div className="mb-5 grid grid-cols-3 gap-2">
+                    <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
+                      <p className="text-[8px] font-medium uppercase tracking-wider text-zinc-600">Job Visibility</p>
+                      <p className="mt-1 font-mono text-[11px] font-medium capitalize text-zinc-300">{selectedRole.scopes.jobVisibility} Jobs</p>
                     </div>
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-                      <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-600">Invoice Approval</p>
-                      <p className="mt-1 text-[12px] font-medium text-zinc-300">
+                    <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
+                      <p className="text-[8px] font-medium uppercase tracking-wider text-zinc-600">Invoice Approval</p>
+                      <p className="mt-1 font-mono text-[11px] font-medium text-zinc-300">
                         {selectedRole.scopes.invoiceApproval ? "Can Approve" : "View Only"}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-                      <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-600">Team Management</p>
-                      <p className="mt-1 text-[12px] font-medium text-zinc-300">
+                    <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
+                      <p className="text-[8px] font-medium uppercase tracking-wider text-zinc-600">Team Management</p>
+                      <p className="mt-1 font-mono text-[11px] font-medium text-zinc-300">
                         {selectedRole.scopes.canManageTeam ? "Full Access" : "No Access"}
                       </p>
                     </div>
                   </div>
 
-                  {/* Permission Matrix with custom switch toggles */}
-                  <div className="overflow-hidden rounded-xl border border-white/[0.06]">
-                    {/* Header row — glassmorphism */}
-                    <div className="sticky top-0 z-10 grid grid-cols-6 gap-0 bg-[#050505]/80 backdrop-blur-md">
-                      <div className="border-b border-r border-white/[0.06] px-4 py-3">
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">Module</span>
+                  {/* Permission Matrix */}
+                  <div className="overflow-hidden rounded-lg border border-white/[0.04]">
+                    {/* Header row */}
+                    <div className="sticky top-0 z-10 grid grid-cols-6 gap-0 bg-[#0A0A0A]">
+                      <div className="border-b border-r border-white/[0.04] px-3 py-2.5">
+                        <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-600">Module</span>
                       </div>
                       {permissionActions.map((action) => {
                         const Icon = actionIcons[action];
                         return (
-                          <div key={action} className="flex items-center justify-center border-b border-white/[0.06] px-3 py-3">
-                            <div className="flex items-center gap-1.5">
-                              <Icon size={10} className="text-zinc-600" />
-                              <span className="text-[10px] font-medium capitalize text-zinc-600">{action}</span>
+                          <div key={action} className="flex items-center justify-center border-b border-white/[0.04] px-2 py-2.5">
+                            <div className="flex items-center gap-1">
+                              <Icon size={9} className="text-zinc-600" />
+                              <span className="text-[9px] font-medium capitalize text-zinc-600">{action}</span>
                             </div>
                           </div>
                         );
@@ -258,19 +256,16 @@ export default function RolesPage() {
                       <div
                         key={mod.id}
                         className={`grid grid-cols-6 gap-0 transition-colors hover:bg-white/[0.015] ${
-                          rowIdx < permissionModules.length - 1 ? "border-b border-white/[0.04]" : ""
+                          rowIdx < permissionModules.length - 1 ? "border-b border-white/[0.03]" : ""
                         }`}
                       >
-                        {/* Module name */}
-                        <div className="flex items-center border-r border-white/[0.06] px-4 py-3">
-                          <span className="text-[12px] font-medium text-zinc-300">{mod.label}</span>
+                        <div className="flex items-center border-r border-white/[0.04] px-3 py-2.5">
+                          <span className="text-[11px] font-medium text-zinc-400">{mod.label}</span>
                         </div>
-
-                        {/* Permission cells — Custom Switch Toggles per PRD */}
                         {permissionActions.map((action) => {
                           const hasPermission = selectedRole.permissions[mod.id]?.includes(action);
                           return (
-                            <div key={action} className="flex items-center justify-center px-3 py-3">
+                            <div key={action} className="flex items-center justify-center px-2 py-2.5">
                               <SwitchToggle
                                 checked={!!hasPermission}
                                 onChange={() => handleToggle(mod.id, action)}
@@ -284,12 +279,11 @@ export default function RolesPage() {
                   </div>
 
                   {/* Info */}
-                  <div className="mt-4 flex items-start gap-2 rounded-lg bg-white/[0.02] px-3 py-2.5">
-                    <Info size={12} className="mt-0.5 shrink-0 text-zinc-600" />
-                    <p className="text-[10px] leading-relaxed text-zinc-600">
-                      Toggle switches to grant or revoke permissions. Changes are saved to the database and enforced via RLS in real-time.
-                      The Owner role cannot be modified.
-                      {saving && <span className="ml-1 font-medium text-[#00E676]">Saving…</span>}
+                  <div className="mt-3 flex items-start gap-2 rounded-md bg-white/[0.015] px-3 py-2">
+                    <Info size={10} className="mt-0.5 shrink-0 text-zinc-700" />
+                    <p className="text-[9px] leading-relaxed text-zinc-600">
+                      Toggle switches to grant or revoke permissions. Changes are saved instantly.
+                      {saving && <span className="ml-1 font-medium text-emerald-400">Saving…</span>}
                     </p>
                   </div>
                 </motion.div>
