@@ -1,20 +1,21 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
-  SlidersHorizontal,
   Pencil,
   Trash2,
   ArrowRight,
   Copy,
-  MapPin,
   Briefcase,
   AlertTriangle,
   Search,
   Filter,
+  User,
+  X,
+  Check,
 } from "lucide-react";
 import { PriorityIcon } from "@/components/app/priority-icon";
 import { StatusIcon } from "@/components/app/status-icon";
@@ -23,7 +24,7 @@ import { BulkActionBar } from "@/components/app/bulk-action-bar";
 import { useToastStore } from "@/components/app/action-toast";
 import { useJobsStore } from "@/lib/jobs-store";
 import { useShellStore } from "@/lib/shell-store";
-import type { Job } from "@/lib/data";
+import type { Job, Priority, JobStatus } from "@/lib/data";
 
 /* ── Status helpers ──────────────────────────────────── */
 
@@ -33,6 +34,14 @@ const STATUS_OPTIONS = [
   { value: "in_progress", label: "In Progress" },
   { value: "done", label: "Done" },
 ] as const;
+
+const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
+  { value: "urgent", label: "Urgent" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+  { value: "none", label: "None" },
+];
 
 type ViewFilter = "all" | "active" | "backlog" | "done";
 
@@ -64,6 +73,253 @@ const contextItems: ContextMenuItem[] = [
   { id: "delete", label: "Delete", icon: <Trash2 size={13} />, danger: true },
 ];
 
+/* ── Confetti Burst ────────────────────────────────── */
+
+function ConfettiBurst({ x, y }: { x: number; y: number }) {
+  const particles = useMemo(() => {
+    const colors = ["#34d399", "#6ee7b7", "#a7f3d0", "#10b981", "#059669"];
+    return Array.from({ length: 12 }, (_, i) => {
+      const angle = (i / 12) * 360;
+      const distance = 20 + Math.random() * 30;
+      const rad = (angle * Math.PI) / 180;
+      return {
+        id: i,
+        color: colors[i % colors.length],
+        tx: Math.cos(rad) * distance,
+        ty: Math.sin(rad) * distance,
+        size: 3 + Math.random() * 3,
+        delay: Math.random() * 0.1,
+      };
+    });
+  }, []);
+
+  return (
+    <div className="pointer-events-none fixed z-[200]" style={{ left: x, top: y }}>
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+          animate={{ x: p.tx, y: p.ty, scale: 0, opacity: 0 }}
+          transition={{ duration: 0.5, delay: p.delay, ease: "easeOut" }}
+          className="absolute rounded-full"
+          style={{
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            marginLeft: -p.size / 2,
+            marginTop: -p.size / 2,
+          }}
+        />
+      ))}
+      <motion.div
+        initial={{ scale: 0, opacity: 0.6 }}
+        animate={{ scale: 2, opacity: 0 }}
+        transition={{ duration: 0.4 }}
+        className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400"
+      />
+    </div>
+  );
+}
+
+/* ── Filter Popover (Linear-style) ─────────────────── */
+
+interface FilterState {
+  priority: Priority | null;
+  status: JobStatus | null;
+}
+
+function FilterPopover({
+  open,
+  onClose,
+  filters,
+  onApply,
+  anchorRef,
+}: {
+  open: boolean;
+  onClose: () => void;
+  filters: FilterState;
+  onApply: (f: FilterState) => void;
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
+}) {
+  const [local, setLocal] = useState<FilterState>(filters);
+  const [section, setSection] = useState<"main" | "priority" | "status">("main");
+
+  useEffect(() => {
+    if (open) {
+      setLocal(filters);
+      setSection("main");
+    }
+  }, [open, filters]);
+
+  const hasActiveFilters = local.priority !== null || local.status !== null;
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-50" onClick={onClose} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed z-50 w-[220px] overflow-hidden rounded-lg border border-white/[0.08] bg-[#0A0A0A] shadow-2xl"
+            style={{
+              top: anchorRef.current ? anchorRef.current.getBoundingClientRect().bottom + 6 : 0,
+              right: anchorRef.current
+                ? window.innerWidth - anchorRef.current.getBoundingClientRect().right
+                : 0,
+            }}
+          >
+            <AnimatePresence mode="wait">
+              {section === "main" && (
+                <motion.div
+                  key="main"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.1 }}
+                  className="p-1"
+                >
+                  <div className="px-2 py-1.5 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">
+                    Filter by
+                  </div>
+                  <button
+                    onClick={() => setSection("priority")}
+                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+                  >
+                    <span className="flex items-center gap-2">
+                      <PriorityIcon priority="high" size={12} />
+                      Priority
+                    </span>
+                    {local.priority && (
+                      <span className="text-[10px] text-emerald-400">
+                        {PRIORITY_OPTIONS.find((p) => p.value === local.priority)?.label}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setSection("status")}
+                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+                  >
+                    <span className="flex items-center gap-2">
+                      <StatusIcon status="in_progress" size={12} />
+                      Status
+                    </span>
+                    {local.status && (
+                      <span className="text-[10px] text-emerald-400">
+                        {formatStatus(local.status)}
+                      </span>
+                    )}
+                  </button>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={() => {
+                        const cleared = { priority: null, status: null };
+                        setLocal(cleared);
+                        onApply(cleared);
+                        onClose();
+                      }}
+                      className="mt-1 flex w-full items-center gap-1.5 rounded-md border-t border-white/[0.04] px-2 py-1.5 text-[11px] text-zinc-500 transition-colors hover:text-red-400"
+                    >
+                      <X size={10} />
+                      Clear all filters
+                    </button>
+                  )}
+                </motion.div>
+              )}
+
+              {section === "priority" && (
+                <motion.div
+                  key="priority"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.1 }}
+                  className="p-1"
+                >
+                  <button
+                    onClick={() => setSection("main")}
+                    className="mb-1 flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[10px] text-zinc-500 transition-colors hover:text-zinc-300"
+                  >
+                    <ArrowRight size={10} className="rotate-180" />
+                    Back
+                  </button>
+                  {PRIORITY_OPTIONS.map((p) => (
+                    <button
+                      key={p.value}
+                      onClick={() => {
+                        const next: FilterState = {
+                          ...local,
+                          priority: local.priority === p.value ? null : p.value,
+                        };
+                        setLocal(next);
+                        onApply(next);
+                        onClose();
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors ${
+                        local.priority === p.value
+                          ? "bg-white/[0.04] text-zinc-200"
+                          : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+                      }`}
+                    >
+                      <PriorityIcon priority={p.value} size={12} />
+                      {p.label}
+                      {local.priority === p.value && <Check size={10} className="ml-auto text-emerald-400" />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+
+              {section === "status" && (
+                <motion.div
+                  key="status"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.1 }}
+                  className="p-1"
+                >
+                  <button
+                    onClick={() => setSection("main")}
+                    className="mb-1 flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[10px] text-zinc-500 transition-colors hover:text-zinc-300"
+                  >
+                    <ArrowRight size={10} className="rotate-180" />
+                    Back
+                  </button>
+                  {STATUS_OPTIONS.map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => {
+                        const next: FilterState = {
+                          ...local,
+                          status: local.status === s.value ? null : s.value,
+                        };
+                        setLocal(next);
+                        onApply(next);
+                        onClose();
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors ${
+                        local.status === s.value
+                          ? "bg-white/[0.04] text-zinc-200"
+                          : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+                      }`}
+                    >
+                      <StatusIcon status={s.value} size={12} />
+                      {s.label}
+                      {local.status === s.value && <Check size={10} className="ml-auto text-emerald-400" />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ── Lottie-style Empty State ──────────────────────────── */
 
 function EmptyState({ hasFilter }: { hasFilter: boolean }) {
@@ -71,13 +327,12 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="flex flex-col items-center justify-center py-24 text-center"
     >
       <div className="relative mb-5 flex h-16 w-16 items-center justify-center">
-        {/* Scanner sweep animation */}
         <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
         <div className="absolute inset-2 rounded-full border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.5s" }} />
-        {/* Orbiting dot */}
         <div className="absolute inset-0 animate-orbit" style={{ animationDuration: "6s" }}>
           <div className="absolute top-0 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-500/40" />
         </div>
@@ -119,29 +374,42 @@ export default function JobsPage() {
   const { addToast } = useToastStore();
   const { setCreateJobModalOpen } = useShellStore();
 
-  /* ── View filter ────────────────────────────────────── */
+  /* ── View + filter state ────────────────────────────── */
   const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterState>({ priority: null, status: null });
+  const [showFilterPopover, setShowFilterPopover] = useState(false);
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
 
-  const filteredJobs = jobsList.filter((job) => {
-    // View filter
-    if (viewFilter === "active" && (job.status === "backlog" || job.status === "done" || job.status === "cancelled")) return false;
-    if (viewFilter === "backlog" && job.status !== "backlog") return false;
-    if (viewFilter === "done" && job.status !== "done") return false;
+  /* ── Hover focus mode ───────────────────────────────── */
+  const [isHovering, setIsHovering] = useState(false);
 
-    // Search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        job.title.toLowerCase().includes(q) ||
-        job.id.toLowerCase().includes(q) ||
-        (job.client || "").toLowerCase().includes(q) ||
-        (job.location || "").toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  /* ── Confetti state ─────────────────────────────────── */
+  const [confetti, setConfetti] = useState<{ id: number; x: number; y: number } | null>(null);
+
+  const filteredJobs = useMemo(() => {
+    return jobsList.filter((job) => {
+      if (viewFilter === "active" && (job.status === "backlog" || job.status === "done" || job.status === "cancelled")) return false;
+      if (viewFilter === "backlog" && job.status !== "backlog") return false;
+      if (viewFilter === "done" && job.status !== "done") return false;
+      if (advancedFilters.priority && job.priority !== advancedFilters.priority) return false;
+      if (advancedFilters.status && job.status !== advancedFilters.status) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          job.title.toLowerCase().includes(q) ||
+          job.id.toLowerCase().includes(q) ||
+          (job.client || "").toLowerCase().includes(q) ||
+          (job.location || "").toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [jobsList, viewFilter, searchQuery, advancedFilters]);
+
+  const hasActiveFilters = viewFilter !== "all" || searchQuery.length > 0 || advancedFilters.priority !== null || advancedFilters.status !== null;
+  const activeFilterCount = (advancedFilters.priority ? 1 : 0) + (advancedFilters.status ? 1 : 0);
 
   /* ── Delete confirmation ────────────────────────────── */
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
@@ -154,6 +422,14 @@ export default function JobsPage() {
 
   /* ── Context menu ───────────────────────────────────── */
   const [ctxMenu, setCtxMenu] = useState<{
+    open: boolean;
+    x: number;
+    y: number;
+    jobId: string;
+  }>({ open: false, x: 0, y: 0, jobId: "" });
+
+  /* ── Context menu status sub-menu ───────────────────── */
+  const [ctxStatusMenu, setCtxStatusMenu] = useState<{
     open: boolean;
     x: number;
     y: number;
@@ -203,12 +479,22 @@ export default function JobsPage() {
     return () => window.removeEventListener("mousedown", handleClick);
   }, [statusDropdown]);
 
-  async function handleStatusChange(jobId: string, newStatus: string) {
+  async function handleStatusChange(jobId: string, newStatus: string, triggerEl?: HTMLElement) {
     const prevJob = jobsList.find((j) => j.id === jobId);
     setStatusDropdown(null);
+    setCtxStatusMenu((p) => ({ ...p, open: false }));
+
     try {
       await updateJobStatus(jobId, newStatus);
       addToast(`Status updated to ${formatStatus(newStatus)}`);
+
+      if (newStatus === "done" && prevJob?.status !== "done") {
+        const rect = triggerEl?.getBoundingClientRect();
+        if (rect) {
+          setConfetti({ id: Date.now(), x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+          setTimeout(() => setConfetti(null), 700);
+        }
+      }
     } catch {
       if (prevJob) updateJobStatus(jobId, prevJob.status);
       addToast("Failed to update status");
@@ -247,6 +533,8 @@ export default function JobsPage() {
     else if (actionId === "copy") {
       navigator.clipboard?.writeText(job.id);
       addToast(`${job.id} copied to clipboard`);
+    } else if (actionId === "status") {
+      setCtxStatusMenu({ open: true, x: ctxMenu.x + 160, y: ctxMenu.y, jobId: ctxMenu.jobId });
     } else if (actionId === "delete") handleDeleteClick(job);
   }
 
@@ -277,8 +565,8 @@ export default function JobsPage() {
 
   return (
     <div className="flex h-full flex-col bg-[#050505]">
-      {/* ── Control Bar Header ────────────────────────────── */}
-      <div className="flex items-center justify-between border-b border-white/[0.05] px-5 py-2.5">
+      {/* ── Control Bar Header (h-14) ─────────────────────── */}
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/[0.05] px-5">
         <div className="flex items-center gap-4">
           <h1 className="text-[15px] font-medium text-white">Jobs</h1>
 
@@ -293,7 +581,7 @@ export default function JobsPage() {
               <button
                 key={tab.key}
                 onClick={() => setViewFilter(tab.key)}
-                className={`relative rounded-md px-2.5 py-1 text-[12px] transition-all duration-150 ${
+                className={`relative rounded-md px-2.5 py-1.5 text-[12px] transition-all duration-150 ${
                   viewFilter === tab.key
                     ? "font-medium text-white"
                     : "text-zinc-500 hover:text-zinc-300"
@@ -337,6 +625,11 @@ export default function JobsPage() {
                     placeholder="Search jobs…"
                     className="w-full bg-transparent text-[12px] text-zinc-300 outline-none placeholder:text-zinc-600"
                   />
+                  {searchQuery && (
+                    <button onClick={() => { setSearchQuery(""); }} className="text-zinc-600 hover:text-zinc-400">
+                      <X size={10} />
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -346,17 +639,41 @@ export default function JobsPage() {
             <button
               onClick={() => setShowSearch(true)}
               className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-400"
+              title="Search (⌘/)"
             >
               <Search size={14} />
             </button>
           )}
 
-          <button className="flex items-center gap-1.5 rounded-md border border-white/[0.06] px-2.5 py-1 text-[12px] text-zinc-500 transition-colors duration-150 hover:border-white/[0.1] hover:text-zinc-300">
-            <Filter size={12} />
-            Filter
-          </button>
+          {/* Filter button + popover */}
+          <div className="relative">
+            <button
+              ref={filterBtnRef}
+              onClick={() => setShowFilterPopover(!showFilterPopover)}
+              className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] transition-colors duration-150 ${
+                activeFilterCount > 0
+                  ? "border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-400"
+                  : "border-white/[0.06] text-zinc-500 hover:border-white/[0.1] hover:text-zinc-300"
+              }`}
+            >
+              <Filter size={12} />
+              Filter
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/20 text-[9px] font-medium text-emerald-400">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            <FilterPopover
+              open={showFilterPopover}
+              onClose={() => setShowFilterPopover(false)}
+              filters={advancedFilters}
+              onApply={setAdvancedFilters}
+              anchorRef={filterBtnRef}
+            />
+          </div>
 
-          {/* New Job — Compact, high contrast, NOT neon green */}
+          {/* New Job — Compact ghost, NOT neon green */}
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={() => setCreateJobModalOpen(true)}
@@ -371,11 +688,11 @@ export default function JobsPage() {
       {/* ── Column Headers ────────────────────────────────── */}
       <div className="flex items-center border-b border-white/[0.04] bg-[#0A0A0A] px-5 py-1.5">
         <div className="w-8" />
-        <div className="w-8 px-1 text-[10px] font-medium tracking-wider text-zinc-600 uppercase" />
+        <div className="w-8 px-1" />
         <div className="w-[80px] px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">
           ID
         </div>
-        <div className="w-8 px-1 text-[10px] font-medium tracking-wider text-zinc-600 uppercase" />
+        <div className="w-8 px-1" />
         <div className="min-w-0 flex-1 px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">
           Title
         </div>
@@ -393,9 +710,13 @@ export default function JobsPage() {
       </div>
 
       {/* ── Rows ──────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto">
+      <div
+        className={`flex-1 overflow-y-auto ${isHovering ? "jobs-list-focus" : ""}`}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
         {filteredJobs.length === 0 && !loading && (
-          <EmptyState hasFilter={viewFilter !== "all" || searchQuery.length > 0} />
+          <EmptyState hasFilter={hasActiveFilters} />
         )}
 
         <AnimatePresence>
@@ -408,6 +729,8 @@ export default function JobsPage() {
               <motion.div
                 key={job.id}
                 layout
+                data-job-row
+                data-selected={isSelected}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, height: 0 }}
@@ -428,7 +751,10 @@ export default function JobsPage() {
               >
                 {/* Selected indicator */}
                 {isSelected && (
-                  <div className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500" />
+                  <motion.div
+                    layoutId={`sel-${job.id}`}
+                    className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+                  />
                 )}
 
                 {/* Checkbox */}
@@ -499,12 +825,7 @@ export default function JobsPage() {
                 {/* Client */}
                 <div className="w-32 px-2">
                   {job.client && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md bg-zinc-800 text-[7px] font-medium text-zinc-500">
-                        {job.assigneeInitials || job.client?.slice(0, 2).toUpperCase()}
-                      </div>
-                      <span className="truncate text-[12px] text-zinc-500">{job.client}</span>
-                    </div>
+                    <span className="truncate text-[12px] text-zinc-500">{job.client}</span>
                   )}
                 </div>
 
@@ -520,7 +841,7 @@ export default function JobsPage() {
                 {/* Assignee avatar */}
                 <div className="w-8 px-1">
                   {job.assigneeInitials && (
-                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-zinc-800 text-[7px] font-medium text-zinc-500">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-zinc-800 text-[7px] font-medium text-zinc-500 transition-colors duration-150 group-hover:bg-zinc-700 group-hover:text-zinc-400">
                       {job.assigneeInitials}
                     </div>
                   )}
@@ -552,6 +873,11 @@ export default function JobsPage() {
         </AnimatePresence>
       </div>
 
+      {/* Confetti burst */}
+      <AnimatePresence>
+        {confetti && <ConfettiBurst key={confetti.id} x={confetti.x} y={confetti.y} />}
+      </AnimatePresence>
+
       {/* Context Menu */}
       <ContextMenu
         open={ctxMenu.open}
@@ -562,7 +888,43 @@ export default function JobsPage() {
         onClose={() => setCtxMenu((p) => ({ ...p, open: false }))}
       />
 
-      {/* Status Dropdown */}
+      {/* Context Menu — Status Sub-Menu */}
+      <AnimatePresence>
+        {ctxStatusMenu.open && (
+          <>
+            <div className="fixed inset-0 z-50" onClick={() => setCtxStatusMenu((p) => ({ ...p, open: false }))} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, x: -4 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.95, x: -4 }}
+              transition={{ duration: 0.1 }}
+              className="fixed z-50 overflow-hidden rounded-lg border border-white/[0.08] bg-[#0A0A0A] p-1 shadow-xl"
+              style={{ left: ctxStatusMenu.x, top: ctxStatusMenu.y, width: 160 }}
+            >
+              {STATUS_OPTIONS.map((opt) => {
+                const currentJob = jobsList.find((j) => j.id === ctxStatusMenu.jobId);
+                const isActive = currentJob?.status === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={(e) => handleStatusChange(ctxStatusMenu.jobId, opt.value, e.currentTarget)}
+                    className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12px] transition-colors duration-150 ${
+                      isActive
+                        ? "bg-white/[0.04] text-zinc-200"
+                        : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+                    }`}
+                  >
+                    <StatusIcon status={opt.value} size={12} />
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Status Dropdown (from inline icon click) */}
       <AnimatePresence>
         {statusDropdown && (
           <motion.div
@@ -580,7 +942,7 @@ export default function JobsPage() {
               return (
                 <button
                   key={opt.value}
-                  onClick={() => handleStatusChange(statusDropdown.jobId, opt.value)}
+                  onClick={(e) => handleStatusChange(statusDropdown.jobId, opt.value, e.currentTarget)}
                   className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12px] transition-colors duration-150 ${
                     isActive
                       ? "bg-white/[0.04] text-zinc-200"

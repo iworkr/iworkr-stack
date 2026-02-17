@@ -397,3 +397,45 @@ img, video, svg, canvas {
 .tech-avatar-grayscale:hover {
   filter: grayscale(0%) brightness(1);
 }
+
+/* ── Jobs: "The Command List" ─────────────────────── */
+
+@keyframes confetti-burst {
+  0% { transform: scale(0); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes confetti-particle {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes status-fill {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-confetti-burst {
+  animation: confetti-burst 0.6s ease-out forwards;
+}
+
+.animate-status-fill {
+  animation: status-fill 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Hover focus: dim siblings when parent has [data-hovering] */
+.jobs-list-focus [data-job-row]:not(:hover) {
+  opacity: 0.55;
+  transition: opacity 200ms ease-out;
+}
+
+.jobs-list-focus [data-job-row]:hover {
+  opacity: 1;
+  transition: opacity 100ms ease-out;
+}
+
+.jobs-list-focus [data-job-row][data-selected="true"] {
+  opacity: 1;
+}
