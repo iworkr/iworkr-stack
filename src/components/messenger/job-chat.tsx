@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Send, SmilePlus } from "lucide-react";
+import { MessageSquare, Send, Check, CheckCheck } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useMessengerStore, type Message } from "@/lib/stores/messenger-store";
 import { getOrCreateJobChannel } from "@/app/actions/messenger";
@@ -26,7 +26,6 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
   const userId = user?.id;
   const messages = channelId ? (allMessages[channelId] || []) : [];
 
-  // Get or create the job channel
   useEffect(() => {
     if (!orgId || !jobId) return;
     setLoading(true);
@@ -39,7 +38,6 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
     });
   }, [orgId, jobId, jobTitle, loadMessages]);
 
-  // Real-time subscription for this channel
   useEffect(() => {
     if (!channelId || !userId) return;
     const supabase = createClient();
@@ -67,7 +65,6 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
     return () => { supabase.removeChannel(sub); };
   }, [channelId, userId, addRealtimeMessage]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
@@ -87,7 +84,10 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-700 border-t-[#00E676]" />
+        <div className="relative h-6 w-6">
+          <div className="absolute inset-0 rounded-full border border-zinc-700/50 animate-spin" style={{ animationDuration: "1.5s" }} />
+          <div className="absolute inset-1 rounded-full border border-zinc-600/30 animate-spin" style={{ animationDuration: "1s", animationDirection: "reverse" }} />
+        </div>
         <span className="mt-2 text-[11px] text-zinc-600">Loading chat…</span>
       </div>
     );
@@ -99,8 +99,8 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
       <div className="max-h-[300px] overflow-y-auto px-1 py-2">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center py-6 text-center">
-            <MessageSquare size={16} className="mb-2 text-zinc-700" />
-            <p className="text-[11px] text-zinc-600">No messages yet.</p>
+            <MessageSquare size={16} strokeWidth={1.5} className="mb-2 text-zinc-700" />
+            <p className="text-[11px] text-zinc-500">No messages yet.</p>
             <p className="text-[10px] text-zinc-700">Start a conversation about this job.</p>
           </div>
         ) : (
@@ -108,15 +108,21 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
             const isSelf = msg.sender_id === userId;
             const name = msg.profiles?.full_name || "Unknown";
             return (
-              <div key={msg.id} className="mb-2 flex gap-2">
-                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[8px] font-medium ${
-                  isSelf ? "bg-[rgba(0,230,118,0.12)] text-[#00E676]" : "bg-zinc-800 text-zinc-500"
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="mb-2 flex gap-2"
+              >
+                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[8px] font-medium ${
+                  isSelf ? "bg-zinc-800/60 text-zinc-400" : "bg-zinc-800/40 text-zinc-500"
                 }`}>
                   {name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className={`text-[11px] font-medium ${isSelf ? "text-[#00E676]" : "text-zinc-300"}`}>
+                    <span className="text-[11px] font-medium text-white">
                       {isSelf ? "You" : name}
                     </span>
                     <span className="text-[9px] text-zinc-700">
@@ -128,8 +134,18 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
                   }`}>
                     {msg.content}
                   </p>
+                  {/* Delivery */}
+                  {isSelf && msg.status !== "sending" && (
+                    <div className="mt-0.5">
+                      {(msg as any).read_at ? (
+                        <CheckCheck size={10} className="text-emerald-500" />
+                      ) : (
+                        <Check size={10} className="text-zinc-700" />
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
+              </motion.div>
             );
           })
         )}
@@ -137,23 +153,23 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
       </div>
 
       {/* Input */}
-      <div className="mt-2 flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
+      <div className="mt-2 flex items-center gap-2 rounded-md border border-white/[0.06] bg-[#0C0C0C] px-2 py-1.5 transition-colors focus-within:border-white/[0.1]">
         <input
           ref={inputRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
           placeholder="Message this job…"
-          className="flex-1 bg-transparent text-[12px] text-zinc-200 outline-none placeholder:text-zinc-700"
+          className="flex-1 bg-transparent text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600"
         />
         <button
           onClick={handleSend}
           disabled={!content.trim()}
-          className={`rounded p-1 transition-colors ${
-            content.trim() ? "bg-[#00E676] text-black" : "text-zinc-700"
+          className={`rounded p-1 transition-all duration-200 ${
+            content.trim() ? "text-emerald-500 hover:bg-emerald-500/10" : "text-zinc-700"
           }`}
         >
-          <Send size={12} />
+          <Send size={12} strokeWidth={1.5} />
         </button>
       </div>
     </div>

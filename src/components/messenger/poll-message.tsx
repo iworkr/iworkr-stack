@@ -20,9 +20,9 @@ export function PollMessage({ message, userId }: PollMessageProps) {
   )?.[0];
 
   return (
-    <div className="mt-1 max-w-sm rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-3">
-      <div className="mb-2 flex items-center gap-2 text-[12px] text-zinc-400">
-        <BarChart3 size={12} />
+    <div className="mt-1 max-w-sm rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+      <div className="mb-2 flex items-center gap-2 text-[12px] text-zinc-500">
+        <BarChart3 size={12} strokeWidth={1.5} />
         <span className="font-medium">Poll</span>
       </div>
       <p className="mb-3 text-[13px] font-medium text-zinc-200">{message.content}</p>
@@ -38,10 +38,10 @@ export function PollMessage({ message, userId }: PollMessageProps) {
             <button
               key={i}
               onClick={() => votePoll(message.id, i)}
-              className={`relative flex w-full items-center justify-between overflow-hidden rounded-md border px-3 py-2 text-[12px] transition-all ${
+              className={`relative flex w-full items-center justify-between overflow-hidden rounded-md border px-3 py-2 text-[12px] transition-all duration-200 ${
                 isSelected
-                  ? "border-[#00E676]/30 text-zinc-200"
-                  : "border-[rgba(255,255,255,0.06)] text-zinc-400 hover:border-[rgba(255,255,255,0.15)]"
+                  ? "border-emerald-500/20 text-zinc-200"
+                  : "border-white/[0.05] text-zinc-400 hover:border-white/[0.1]"
               }`}
             >
               {/* Progress bar */}
@@ -50,11 +50,11 @@ export function PollMessage({ message, userId }: PollMessageProps) {
                 animate={{ width: `${pct}%` }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 className={`absolute inset-y-0 left-0 ${
-                  isSelected ? "bg-[rgba(0,230,118,0.1)]" : "bg-[rgba(255,255,255,0.03)]"
+                  isSelected ? "bg-emerald-500/10" : "bg-white/[0.02]"
                 }`}
               />
               <span className="relative flex items-center gap-1.5">
-                {isSelected && <Check size={11} className="text-[#00E676]" />}
+                {isSelected && <Check size={11} className="text-emerald-500" />}
                 {opt}
               </span>
               <span className="relative text-zinc-600">

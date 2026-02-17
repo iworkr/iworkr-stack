@@ -212,6 +212,44 @@ img, video, svg, canvas {
   animation: checkmark-draw 0.6s ease-out 0.3s forwards;
 }
 
+/* ── Stealth Comms: Message animations ───────────────── */
+
+@keyframes slide-up-fade {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes signal-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.8); opacity: 0; }
+}
+
+.animate-slide-up-fade {
+  animation: slide-up-fade 0.2s ease-out forwards;
+}
+
+.animate-typing-dot {
+  animation: typing-bounce 1.4s ease-in-out infinite;
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep 4s linear infinite;
+}
+
+.animate-signal-pulse {
+  animation: signal-pulse 2s ease-out infinite;
+}
+
 /* ── Background Textures ─────────────────────────────── */
 
 .bg-dot-grid {

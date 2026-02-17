@@ -5,12 +5,13 @@ import {
   Inbox,
   AtSign,
   Hash,
-  MessageSquare,
   Plus,
   Users,
   Briefcase,
   Search,
+  PenSquare,
 } from "lucide-react";
+import { useState } from "react";
 import { useMessengerStore, type Channel } from "@/lib/stores/messenger-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { useTeamStore } from "@/lib/team-store";
@@ -29,6 +30,7 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
   } = useMessengerStore();
   const unreadInbox = useInboxStore((s) => s.items.filter((i) => !i.read && !i.archived).length);
   const members = useTeamStore((s) => s.members);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const groupChannels = channels.filter((c) => c.type === "group");
   const jobChannels = channels.filter((c) => c.type === "job_context");
@@ -45,36 +47,56 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
   }
 
   return (
-    <aside className="flex h-full w-[260px] shrink-0 flex-col overflow-y-auto border-r border-[rgba(255,255,255,0.08)] bg-[#050505]">
+    <aside className="flex h-full w-[260px] shrink-0 flex-col overflow-hidden border-r border-white/[0.05] bg-[#080808]">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-3">
-        <h2 className="text-[14px] font-semibold text-zinc-200">Messages</h2>
-        <button className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300">
-          <Search size={14} />
+      <div className="flex items-center justify-between px-4 py-3">
+        <h2 className="text-[14px] font-medium text-white">Messages</h2>
+        <button className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300">
+          <PenSquare size={14} strokeWidth={1.5} />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-2">
+      {/* Search */}
+      <div className="px-3 pb-2">
+        <div className="flex items-center gap-2 rounded-md border border-white/[0.05] bg-zinc-900/50 px-2.5 py-1.5 transition-colors focus-within:border-emerald-500/30">
+          <Search size={13} className="shrink-0 text-zinc-600" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search messages…"
+            className="flex-1 bg-transparent text-[12px] text-zinc-300 outline-none placeholder:text-zinc-700"
+          />
+        </div>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-2 py-1">
         {/* Triage / System inbox */}
-        <div className="mb-3">
+        <div className="mb-2">
           <button
             onClick={handleTriageClick}
-            className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-[6px] text-[13px] transition-colors ${
+            className={`group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] transition-all duration-150 ${
               activeView === "triage"
-                ? "bg-[rgba(0,230,118,0.06)] text-[#00E676]"
-                : "text-zinc-400 hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-200"
+                ? "bg-white/[0.04] text-zinc-100"
+                : "text-zinc-500 hover:bg-white/[0.02] hover:text-zinc-300"
             }`}
           >
-            <Inbox size={15} strokeWidth={1.5} />
+            {activeView === "triage" && (
+              <motion.div
+                layoutId="msg-sidebar-active"
+                className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-r bg-emerald-500"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            <Inbox size={15} strokeWidth={1.5} className="shrink-0" />
             <span className="flex-1 text-left">Triage</span>
             {unreadInbox > 0 && (
-              <span className="rounded-full bg-[rgba(0,230,118,0.15)] px-1.5 py-0.5 text-[10px] font-medium text-[#00E676]">
+              <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-500/10 px-1 text-[10px] font-medium text-emerald-500">
                 {unreadInbox}
               </span>
             )}
           </button>
           <button
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-[6px] text-[13px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-300"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] text-zinc-500 transition-colors duration-150 hover:bg-white/[0.02] hover:text-zinc-300"
           >
             <AtSign size={15} strokeWidth={1.5} />
             <span>Mentions</span>
@@ -82,12 +104,12 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
         </div>
 
         {/* Channels */}
-        <div className="mb-3">
-          <div className="mb-1 flex items-center justify-between px-2">
+        <div className="mb-2">
+          <div className="mb-1 flex items-center justify-between px-2.5">
             <span className="text-[10px] font-medium tracking-widest text-zinc-600 uppercase">
               Channels
             </span>
-            <button className="rounded p-0.5 text-zinc-600 transition-colors hover:text-zinc-400">
+            <button className="rounded p-0.5 text-zinc-700 transition-colors hover:text-zinc-400">
               <Plus size={12} />
             </button>
           </div>
@@ -95,12 +117,19 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
             <button
               key={ch.id}
               onClick={() => handleChannelClick(ch)}
-              className={`flex w-full items-center gap-2 rounded-md px-2.5 py-[5px] text-[13px] transition-colors ${
+              className={`group relative flex w-full items-center gap-2 rounded-md px-2.5 py-[6px] text-[13px] transition-all duration-150 ${
                 activeChannelId === ch.id
-                  ? "bg-[rgba(255,255,255,0.06)] text-zinc-100"
-                  : "text-zinc-500 hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-300"
+                  ? "bg-white/[0.04] text-zinc-100"
+                  : "text-zinc-500 hover:bg-white/[0.02] hover:text-zinc-300"
               }`}
             >
+              {activeChannelId === ch.id && activeView === "chat" && (
+                <motion.div
+                  layoutId="msg-sidebar-active"
+                  className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
               <Hash size={14} strokeWidth={1.5} className="shrink-0 text-zinc-600" />
               <span className="truncate">{ch.name}</span>
             </button>
@@ -109,8 +138,8 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
 
         {/* Job Threads */}
         {jobChannels.length > 0 && (
-          <div className="mb-3">
-            <div className="mb-1 px-2">
+          <div className="mb-2">
+            <div className="mb-1 px-2.5">
               <span className="text-[10px] font-medium tracking-widest text-zinc-600 uppercase">
                 Job Threads
               </span>
@@ -119,12 +148,19 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
               <button
                 key={ch.id}
                 onClick={() => handleChannelClick(ch)}
-                className={`flex w-full items-center gap-2 rounded-md px-2.5 py-[5px] text-[13px] transition-colors ${
+                className={`group relative flex w-full items-center gap-2 rounded-md px-2.5 py-[6px] text-[13px] transition-all duration-150 ${
                   activeChannelId === ch.id
-                    ? "bg-[rgba(255,255,255,0.06)] text-zinc-100"
-                    : "text-zinc-500 hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-300"
+                    ? "bg-white/[0.04] text-zinc-100"
+                    : "text-zinc-500 hover:bg-white/[0.02] hover:text-zinc-300"
                 }`}
               >
+                {activeChannelId === ch.id && activeView === "chat" && (
+                  <motion.div
+                    layoutId="msg-sidebar-active"
+                    className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
                 <Briefcase size={13} strokeWidth={1.5} className="shrink-0 text-zinc-600" />
                 <span className="truncate">{ch.name || "Job Thread"}</span>
               </button>
@@ -134,11 +170,11 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
 
         {/* Direct Messages */}
         <div>
-          <div className="mb-1 flex items-center justify-between px-2">
+          <div className="mb-1 flex items-center justify-between px-2.5">
             <span className="text-[10px] font-medium tracking-widest text-zinc-600 uppercase">
               Direct Messages
             </span>
-            <button className="rounded p-0.5 text-zinc-600 transition-colors hover:text-zinc-400">
+            <button className="rounded p-0.5 text-zinc-700 transition-colors hover:text-zinc-400">
               <Plus size={12} />
             </button>
           </div>
@@ -147,17 +183,25 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
                 <button
                   key={ch.id}
                   onClick={() => handleChannelClick(ch)}
-                  className={`flex w-full items-center gap-2 rounded-md px-2.5 py-[5px] text-[13px] transition-colors ${
+                  className={`group relative flex w-full items-center gap-2 rounded-md px-2.5 py-[6px] text-[13px] transition-all duration-150 ${
                     activeChannelId === ch.id
-                      ? "bg-[rgba(255,255,255,0.06)] text-zinc-100"
-                      : "text-zinc-500 hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-300"
+                      ? "bg-white/[0.04] text-zinc-100"
+                      : "text-zinc-500 hover:bg-white/[0.02] hover:text-zinc-300"
                   }`}
                 >
+                  {activeChannelId === ch.id && activeView === "chat" && (
+                    <motion.div
+                      layoutId="msg-sidebar-active"
+                      className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
                   <div className="relative">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-400">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-zinc-800 text-[8px] font-medium text-zinc-500">
                       DM
                     </div>
-                    <div className="absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full border border-[#050505] bg-[#00E676]" />
+                    {/* Online ring */}
+                    <div className="absolute -right-0.5 -bottom-0.5 h-[6px] w-[6px] rounded-full border-[1.5px] border-[#080808] bg-emerald-500" />
                   </div>
                   <span className="truncate">{ch.name || "Direct Message"}</span>
                 </button>
@@ -165,14 +209,14 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
             : members.slice(0, 5).map((m) => (
                 <button
                   key={m.id}
-                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-[5px] text-[13px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-300"
+                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-[6px] text-[13px] text-zinc-500 transition-colors duration-150 hover:bg-white/[0.02] hover:text-zinc-300"
                 >
                   <div className="relative">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-400">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-zinc-800 text-[8px] font-medium text-zinc-500">
                       {m.name?.split(" ").map((w) => w[0]).join("").slice(0, 2) || "??"}
                     </div>
-                    <div className={`absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full border border-[#050505] ${
-                      m.onlineStatus === "online" ? "bg-[#00E676]" : "bg-zinc-600"
+                    <div className={`absolute -right-0.5 -bottom-0.5 h-[6px] w-[6px] rounded-full border-[1.5px] border-[#080808] ${
+                      m.onlineStatus === "online" ? "bg-emerald-500" : "bg-zinc-700 ring-0"
                     }`} />
                   </div>
                   <span className="truncate">{m.name}</span>
