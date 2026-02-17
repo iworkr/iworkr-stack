@@ -57,7 +57,7 @@ type SidebarTeamMember = { name: string; initials: string; status: "online" | "a
 
 const systemItems = [
   { label: "Settings", icon: Settings, href: "/settings", action: null },
-  { label: "Help", icon: HelpCircle, href: "mailto:support@iworkr.com", action: null },
+  { label: "Help", icon: HelpCircle, href: "/dashboard/help", action: null },
   { label: "Invite Team", icon: UserPlus, href: null, action: "invite" },
 ];
 
