@@ -29,7 +29,7 @@ const footerLinks = [
       { label: "API Reference", href: "mailto:support@iworkr.com" },
       { label: "Changelog", href: "/#features" },
       { label: "Blog", href: "/#testimonials" },
-      { label: "Contact Us", href: "mailto:hello@iworkr.com" },
+      { label: "Contact Us", href: "/contact" },
     ],
   },
   {
@@ -38,7 +38,15 @@ const footerLinks = [
       { label: "About", href: "/#workflow" },
       { label: "Careers", href: "mailto:careers@iworkr.com" },
       { label: "Partners", href: "mailto:partners@iworkr.com" },
-      { label: "Contact Sales", href: "mailto:sales@iworkr.com" },
+      { label: "Contact Sales", href: "/contact" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Terms of Service", href: "/terms" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Cookie Policy", href: "/cookies" },
     ],
   },
   {
@@ -46,8 +54,6 @@ const footerLinks = [
     links: [
       { label: "Sign in", href: "/auth" },
       { label: "Start free trial", href: "/auth" },
-      { label: "Privacy Policy", href: "/privacy" },
-      { label: "Terms of Service", href: "/terms" },
     ],
   },
 ];
@@ -57,7 +63,7 @@ export function Footer() {
     <footer className="border-t border-[rgba(255,255,255,0.06)]">
       <div className="mx-auto max-w-[1200px] px-6 py-16 md:px-12">
         <FadeIn>
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-6">
             {footerLinks.map((group) => (
               <div key={group.title}>
                 <h4 className="mb-4 text-xs font-medium tracking-wider text-zinc-400 uppercase">
