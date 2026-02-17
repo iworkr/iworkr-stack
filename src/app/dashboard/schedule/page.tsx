@@ -19,28 +19,28 @@ import {
   ArrowLeftToLine,
   Copy,
   Calendar,
-  LayoutGrid,
   Rows3,
   Navigation,
   Grip,
+  GripVertical,
 } from "lucide-react";
 import { type ScheduleBlock, type Technician } from "@/lib/data";
 import { useScheduleStore, type ViewScale } from "@/lib/schedule-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import { useOrg } from "@/lib/hooks/use-org";
-import { assignJobToSchedule, type BacklogJob } from "@/app/actions/schedule";
+import { type BacklogJob } from "@/app/actions/schedule";
 
 /* ── Constants ────────────────────────────────────────────── */
 
-const DAY_START = 6;    // 6 AM
-const DAY_END = 19;     // 7 PM
-const WORK_START = 7;   // 7 AM
-const WORK_END = 17;    // 5 PM
+const DAY_START = 6;
+const DAY_END = 19;
+const WORK_START = 7;
+const WORK_END = 17;
 const TOTAL_HOURS = DAY_END - DAY_START;
 const RESOURCE_COL_W = 200;
 const ROW_H = 80;
-const HOUR_W = 120; // pixels per hour
+const HOUR_W = 120;
 
 const statusColorMap: Record<string, { bg: string; border: string; text: string; accent: string; dot: string }> = {
   scheduled: {
@@ -127,12 +127,23 @@ function hourToX(hour: number): number {
   return (hour - DAY_START) * HOUR_W;
 }
 
-function xToHour(x: number): number {
-  return DAY_START + x / HOUR_W;
+function snapToGrid(hour: number): number {
+  return Math.round(hour * 4) / 4;
 }
 
-function snapToGrid(hour: number): number {
-  return Math.round(hour * 4) / 4; // snap to 15-min
+/* ── Drag Types ──────────────────────────────────────────── */
+
+type DragSource = "block" | "backlog";
+
+interface DragState {
+  source: DragSource;
+  blockId?: string;
+  backlogJob?: BacklogJob;
+  startX: number;
+  startY: number;
+  origHour: number;
+  origTechId: string;
+  mode: "move" | "resize";
 }
 
 /* ── Page Component ───────────────────────────────────────── */
@@ -156,25 +167,23 @@ export default function SchedulePage() {
     resizeBlock,
     deleteBlock,
     restoreBlock,
+    unscheduleBlock,
+    assignBacklogJob,
     refresh,
   } = useScheduleStore();
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
 
-  // Use store technicians (live data) — no mock fallback
   const technicians = storeTechnicians;
 
   /* ── Drag state ─────────────────────────────────────────── */
-  const [dragState, setDragState] = useState<{
-    blockId: string;
-    startX: number;
-    startY: number;
-    origHour: number;
-    origTechId: string;
-    mode: "move" | "resize";
-  } | null>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [dragDelta, setDragDelta] = useState({ dx: 0, dy: 0 });
   const timelineRef = useRef<HTMLDivElement>(null);
+
+  /* ── Drop target highlight ──────────────────────────────── */
+  const [dropTarget, setDropTarget] = useState<{ techIdx: number; hour: number } | null>(null);
 
   /* ── Context menu ───────────────────────────────────────── */
   const [ctxMenu, setCtxMenu] = useState<{ open: boolean; x: number; y: number; blockId: string }>({
@@ -189,19 +198,12 @@ export default function SchedulePage() {
   /* ── Hours array ────────────────────────────────────────── */
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => DAY_START + i);
 
-  /* ── Backlog jobs (unscheduled) ─────────────────────────── */
-  const scheduledJobIds = new Set(blocks.map((b) => b.jobId));
-
   /* ── Keyboard shortcuts ─────────────────────────────────── */
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
-      if (e.key === "v" || e.key === "V") {
-        // Week/Month views disabled for this sprint — keep Day only
-        return;
-      }
       if (e.key === "u" || e.key === "U") {
         e.preventDefault();
         setUnscheduledDrawerOpen(!unscheduledDrawerOpen);
@@ -212,7 +214,7 @@ export default function SchedulePage() {
         else if (unscheduledDrawerOpen) setUnscheduledDrawerOpen(false);
       }
     },
-    [viewScale, setViewScale, peekBlockId, setPeekBlockId, unscheduledDrawerOpen, setUnscheduledDrawerOpen]
+    [peekBlockId, setPeekBlockId, unscheduledDrawerOpen, setUnscheduledDrawerOpen]
   );
 
   useEffect(() => {
@@ -220,8 +222,8 @@ export default function SchedulePage() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleKey]);
 
-  /* ── Drag handlers ──────────────────────────────────────── */
-  const handleDragStart = useCallback(
+  /* ── Block Drag handlers ────────────────────────────────── */
+  const handleBlockDragStart = useCallback(
     (e: React.MouseEvent, blockId: string, mode: "move" | "resize") => {
       e.preventDefault();
       e.stopPropagation();
@@ -229,6 +231,7 @@ export default function SchedulePage() {
       if (!block) return;
       setPeekBlockId(null);
       setDragState({
+        source: "block",
         blockId,
         startX: e.clientX,
         startY: e.clientY,
@@ -236,56 +239,121 @@ export default function SchedulePage() {
         origTechId: block.technicianId,
         mode,
       });
+      setMousePos({ x: e.clientX, y: e.clientY });
       setDragDelta({ dx: 0, dy: 0 });
     },
     [blocks, setPeekBlockId]
   );
 
+  /* ── Backlog Drag handlers ──────────────────────────────── */
+  const handleBacklogDragStart = useCallback(
+    (e: React.MouseEvent, job: BacklogJob) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragState({
+        source: "backlog",
+        backlogJob: job,
+        startX: e.clientX,
+        startY: e.clientY,
+        origHour: WORK_START,
+        origTechId: "",
+        mode: "move",
+      });
+      setMousePos({ x: e.clientX, y: e.clientY });
+      setDragDelta({ dx: 0, dy: 0 });
+    },
+    []
+  );
+
+  /* ── Compute drop target from mouse position ────────────── */
+  const computeDropTarget = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!timelineRef.current || technicians.length === 0) return null;
+
+      const rect = timelineRef.current.getBoundingClientRect();
+      const scrollTop = timelineRef.current.scrollTop;
+      const scrollLeft = timelineRef.current.scrollLeft;
+
+      const relX = clientX - rect.left + scrollLeft - RESOURCE_COL_W;
+      const relY = clientY - rect.top + scrollTop;
+
+      if (relX < 0) return null;
+
+      const techIdx = Math.max(0, Math.min(technicians.length - 1, Math.floor(relY / ROW_H)));
+      const rawHour = DAY_START + relX / HOUR_W;
+      const hour = snapToGrid(Math.max(DAY_START, Math.min(DAY_END - 0.25, rawHour)));
+
+      return { techIdx, hour };
+    },
+    [technicians]
+  );
+
+  /* ── Global mouse move/up for drag ──────────────────────── */
   useEffect(() => {
     if (!dragState) return;
 
     function onMove(e: MouseEvent) {
+      setMousePos({ x: e.clientX, y: e.clientY });
       setDragDelta({
         dx: e.clientX - dragState!.startX,
         dy: e.clientY - dragState!.startY,
       });
+
+      const target = computeDropTarget(e.clientX, e.clientY);
+      setDropTarget(target);
     }
 
     function onUp(e: MouseEvent) {
       const dx = e.clientX - dragState!.startX;
       const dy = e.clientY - dragState!.startY;
-      const block = blocks.find((b) => b.id === dragState!.blockId);
-      if (!block) { setDragState(null); return; }
 
-      if (dragState!.mode === "move") {
-        const hourDelta = dx / HOUR_W;
-        const newHour = snapToGrid(dragState!.origHour + hourDelta);
-        // Determine new technician by Y offset
-        const rowDelta = Math.round(dy / ROW_H);
-        const origIdx = technicians.findIndex((t) => t.id === dragState!.origTechId);
-        const newIdx = Math.max(0, Math.min(technicians.length - 1, origIdx + rowDelta));
-        const newTechId = technicians[newIdx].id;
+      if (dragState!.source === "block") {
+        // Existing block drag
+        const block = blocks.find((b) => b.id === dragState!.blockId);
+        if (!block) { resetDrag(); return; }
 
-        if (newHour !== block.startHour || newTechId !== block.technicianId) {
-          moveBlock(block.id, newHour, newTechId);
-          const techName = technicians[newIdx].name.split(" ")[0];
-          addToast(
-            `Rescheduled to ${formatHour(newHour)}${newTechId !== block.technicianId ? ` — ${techName}` : ""}`,
-            () => moveBlock(block.id, block.startHour, block.technicianId)
-          );
+        if (dragState!.mode === "move") {
+          const target = computeDropTarget(e.clientX, e.clientY);
+          if (target) {
+            const newHour = target.hour;
+            const newTechId = technicians[target.techIdx].id;
+
+            if (newHour !== block.startHour || newTechId !== block.technicianId) {
+              moveBlock(block.id, newHour, newTechId);
+              const techName = technicians[target.techIdx].name.split(" ")[0];
+              addToast(
+                `Rescheduled to ${formatHour(newHour)}${newTechId !== block.technicianId ? ` — ${techName}` : ""}`,
+                () => moveBlock(block.id, block.startHour, block.technicianId)
+              );
+            }
+          }
+        } else {
+          // Resize
+          const hourDelta = dx / HOUR_W;
+          const newDuration = snapToGrid(block.duration + hourDelta);
+          if (newDuration !== block.duration && newDuration >= 0.25) {
+            resizeBlock(block.id, newDuration);
+            addToast(`Duration: ${formatDuration(newDuration)}`);
+          }
         }
-      } else {
-        // Resize
-        const hourDelta = dx / HOUR_W;
-        const newDuration = snapToGrid(block.duration + hourDelta);
-        if (newDuration !== block.duration && newDuration >= 0.25) {
-          resizeBlock(block.id, newDuration);
-          addToast(`Duration: ${formatDuration(newDuration)}`);
+      } else if (dragState!.source === "backlog") {
+        // Backlog-to-schedule drop
+        const target = computeDropTarget(e.clientX, e.clientY);
+        if (target && dragState!.backlogJob) {
+          const techId = technicians[target.techIdx].id;
+          const techName = technicians[target.techIdx].name.split(" ")[0];
+          assignBacklogJob(dragState!.backlogJob, techId, target.hour);
+          addToast(`${dragState!.backlogJob.title} → ${techName} at ${formatHour(target.hour)}`);
         }
       }
 
+      resetDrag();
+    }
+
+    function resetDrag() {
       setDragState(null);
       setDragDelta({ dx: 0, dy: 0 });
+      setDropTarget(null);
     }
 
     window.addEventListener("mousemove", onMove);
@@ -294,7 +362,7 @@ export default function SchedulePage() {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [dragState, blocks, moveBlock, resizeBlock, addToast]);
+  }, [dragState, blocks, technicians, moveBlock, resizeBlock, addToast, assignBacklogJob, computeDropTarget]);
 
   /* ── Context menu handler ───────────────────────────────── */
   function handleContextAction(actionId: string) {
@@ -306,20 +374,25 @@ export default function SchedulePage() {
     } else if (actionId === "copy") {
       navigator.clipboard?.writeText(block.jobId);
       addToast(`${block.jobId} copied`);
-    } else if (actionId === "unschedule" || actionId === "delete") {
+    } else if (actionId === "unschedule") {
+      unscheduleBlock(block.id);
+      addToast(`${block.title} moved to backlog`);
+    } else if (actionId === "delete") {
       const deleted = block;
       deleteBlock(block.id);
-      addToast(
-        actionId === "unschedule"
-          ? `${block.title} moved to backlog`
-          : `${block.title} deleted`,
-        () => restoreBlock(deleted)
-      );
+      addToast(`${block.title} deleted`, () => restoreBlock(deleted));
     }
   }
 
   /* ── Conflict count ─────────────────────────────────────── */
   const conflictCount = blocks.filter((b) => b.conflict).length;
+
+  /* ── Ghost dimensions for backlog drag ──────────────────── */
+  const ghostDuration = dragState?.source === "backlog"
+    ? ((dragState.backlogJob?.estimated_duration_minutes || 60) / 60)
+    : dragState?.source === "block"
+      ? (blocks.find((b) => b.id === dragState.blockId)?.duration || 1)
+      : 1;
 
   /* ── Render ─────────────────────────────────────────────── */
   const totalWidth = TOTAL_HOURS * HOUR_W;
@@ -331,7 +404,6 @@ export default function SchedulePage() {
         <div className="flex items-center gap-4">
           <h1 className="text-[15px] font-medium text-zinc-200">Schedule</h1>
 
-          {/* Date navigation */}
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
@@ -381,7 +453,6 @@ export default function SchedulePage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Conflict indicator */}
           {conflictCount > 0 && (
             <span className="flex items-center gap-1.5 text-[11px] text-zinc-500">
               <motion.span
@@ -393,7 +464,6 @@ export default function SchedulePage() {
             </span>
           )}
 
-          {/* View scale toggle */}
           <div className="flex items-center rounded-md border border-[rgba(255,255,255,0.08)]">
             {(["day", "week", "month"] as ViewScale[]).map((scale) => {
               const isDisabled = scale !== "day";
@@ -417,7 +487,6 @@ export default function SchedulePage() {
             })}
           </div>
 
-          {/* Unscheduled drawer toggle */}
           <button
             onClick={() => setUnscheduledDrawerOpen(!unscheduledDrawerOpen)}
             className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition-colors ${
@@ -428,6 +497,11 @@ export default function SchedulePage() {
           >
             <Rows3 size={12} />
             Backlog
+            {backlogJobs.length > 0 && (
+              <span className="rounded-full bg-[rgba(0,230,118,0.15)] px-1.5 py-0.5 text-[9px] font-medium text-[#00E676]">
+                {backlogJobs.length}
+              </span>
+            )}
             <kbd className="ml-1 rounded bg-[rgba(255,255,255,0.06)] px-1 py-0.5 font-mono text-[8px] text-zinc-600">
               U
             </kbd>
@@ -460,7 +534,6 @@ export default function SchedulePage() {
 
           {/* Technician rows */}
           <div ref={timelineRef} className="flex-1 overflow-auto">
-            {/* Empty state */}
             {technicians.length === 0 && !loading && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -472,26 +545,29 @@ export default function SchedulePage() {
                 </div>
                 <h3 className="text-[15px] font-medium text-zinc-300">No schedule data</h3>
                 <p className="mt-1 text-[12px] text-zinc-600">Assign technicians and jobs to see the dispatch board.</p>
-                <p className="mt-0.5 text-[11px] text-zinc-700">Schedule blocks will appear here once created.</p>
               </motion.div>
             )}
 
             {technicians.map((tech, techIdx) => {
               const techBlocks = blocks.filter((b) => b.technicianId === tech.id);
               const capacityPct = (tech.hoursBooked / tech.hoursAvailable) * 100;
+              const isDropRow = dropTarget?.techIdx === techIdx && dragState !== null;
 
               return (
-                <div key={tech.id} className="flex border-b border-[rgba(255,255,255,0.04)]">
+                <div
+                  key={tech.id}
+                  className={`flex border-b transition-colors ${
+                    isDropRow
+                      ? "border-[rgba(0,230,118,0.15)] bg-[rgba(0,230,118,0.02)]"
+                      : "border-[rgba(255,255,255,0.04)]"
+                  }`}
+                >
                   {/* ── Resource column (sticky left) ──────── */}
-                  <div
-                    className="sticky left-0 z-10 box-border flex h-[80px] w-[200px] shrink-0 items-center gap-3 border-r border-[rgba(255,255,255,0.06)] bg-[#050505] px-4"
-                  >
-                    {/* Avatar */}
+                  <div className="sticky left-0 z-10 box-border flex h-[80px] w-[200px] shrink-0 items-center gap-3 border-r border-[rgba(255,255,255,0.06)] bg-[#050505] px-4">
                     <div className="relative">
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400">
                         {tech.initials}
                       </div>
-                      {/* Status dot */}
                       <div
                         className={`absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full ring-2 ring-[#050505] ${
                           tech.status === "online"
@@ -502,12 +578,10 @@ export default function SchedulePage() {
                         }`}
                       />
                     </div>
-
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[12px] font-medium text-zinc-300">
                         {tech.name}
                       </div>
-                      {/* Capacity bar */}
                       <div className="mt-1 flex items-center gap-1.5">
                         <div className="h-1 flex-1 overflow-hidden rounded-full bg-[rgba(255,255,255,0.06)]">
                           <motion.div
@@ -523,9 +597,7 @@ export default function SchedulePage() {
                             }`}
                           />
                         </div>
-                        <span className="text-[9px] text-zinc-600">
-                          {tech.hoursBooked}h
-                        </span>
+                        <span className="text-[9px] text-zinc-600">{tech.hoursBooked}h</span>
                       </div>
                     </div>
                   </div>
@@ -543,7 +615,6 @@ export default function SchedulePage() {
                       ))}
 
                       {/* Non-working hours shading */}
-                      {/* Before work */}
                       <div
                         className="absolute top-0 h-full bg-[rgba(255,255,255,0.015)]"
                         style={{
@@ -553,7 +624,6 @@ export default function SchedulePage() {
                             "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.02) 4px, rgba(255,255,255,0.02) 5px)",
                         }}
                       />
-                      {/* After work */}
                       <div
                         className="absolute top-0 h-full bg-[rgba(255,255,255,0.015)]"
                         style={{
@@ -565,13 +635,29 @@ export default function SchedulePage() {
                       />
 
                       {/* Now line */}
-                      {techIdx === 0 ? null : null}
-                      <div
-                        className="absolute top-0 z-20 h-full"
-                        style={{ left: nowX }}
-                      >
+                      <div className="absolute top-0 z-20 h-full" style={{ left: nowX }}>
                         <div className="h-full w-px bg-red-500/50" />
                       </div>
+
+                      {/* Drop target highlight (snap guide) */}
+                      {isDropRow && dropTarget && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute top-1 z-[15] rounded-md border-2 border-dashed border-[#00E676]/40 bg-[rgba(0,230,118,0.06)]"
+                          style={{
+                            left: hourToX(dropTarget.hour),
+                            width: ghostDuration * HOUR_W,
+                            height: ROW_H - 8,
+                          }}
+                        >
+                          <div className="flex h-full items-center justify-center">
+                            <span className="text-[10px] font-medium text-[#00E676]/60">
+                              {formatHour(dropTarget.hour)}
+                            </span>
+                          </div>
+                        </motion.div>
+                      )}
 
                       {/* Schedule Events (breaks/meetings) */}
                       {scheduleEvents
@@ -603,9 +689,7 @@ export default function SchedulePage() {
                               }}
                             >
                               <div className="flex h-full items-center justify-center truncate px-2">
-                                <span className="truncate text-[9px] text-zinc-500">
-                                  {evt.title}
-                                </span>
+                                <span className="truncate text-[9px] text-zinc-500">{evt.title}</span>
                               </div>
                             </motion.div>
                           );
@@ -615,30 +699,23 @@ export default function SchedulePage() {
                       {/* Job Blocks */}
                       {techBlocks.map((block, i) => {
                         const colors = statusColorMap[block.status] || statusColorMap.scheduled;
-                        const isDragging = dragState?.blockId === block.id;
+                        const isDragging = dragState?.source === "block" && dragState?.blockId === block.id;
                         const isPeeking = peekBlockId === block.id;
 
                         let blockLeft = hourToX(block.startHour);
                         let blockWidth = block.duration * HOUR_W;
 
-                        // Apply drag offset
                         if (isDragging && dragState) {
-                          if (dragState.mode === "move") {
-                            blockLeft += dragDelta.dx;
-                          } else {
+                          if (dragState.mode === "resize") {
                             blockWidth += dragDelta.dx;
                             blockWidth = Math.max(HOUR_W * 0.25, blockWidth);
                           }
                         }
 
-                        // Travel time ghost
-                        const travelW = block.travelTime
-                          ? (block.travelTime / 60) * HOUR_W
-                          : 0;
+                        const travelW = block.travelTime ? (block.travelTime / 60) * HOUR_W : 0;
 
                         return (
                           <div key={block.id}>
-                            {/* Travel time ghost block */}
                             {travelW > 0 && !isDragging && (
                               <motion.div
                                 initial={{ opacity: 0 }}
@@ -656,14 +733,12 @@ export default function SchedulePage() {
                               </motion.div>
                             )}
 
-                            {/* Main block */}
                             <motion.div
                               initial={{ opacity: 0, scaleX: 0 }}
                               animate={{
-                                opacity: 1,
+                                opacity: isDragging ? 0.3 : 1,
                                 scaleX: 1,
-                                scale: isDragging ? 1.03 : 1,
-                                zIndex: isDragging ? 30 : isPeeking ? 25 : 10,
+                                zIndex: isPeeking ? 25 : 10,
                               }}
                               transition={{
                                 delay: isDragging ? 0 : techIdx * 0.05 + i * 0.03,
@@ -671,21 +746,12 @@ export default function SchedulePage() {
                                 ease: [0.16, 1, 0.3, 1],
                               }}
                               className={`absolute top-2 origin-left cursor-grab rounded-md border-r border-t border-b transition-shadow ${colors.bg} ${
-                                block.conflict
-                                  ? "border-red-500/60"
-                                  : colors.border
-                              } ${
-                                isDragging ? "shadow-xl shadow-black/40" : ""
-                              } ${
-                                isPeeking ? "ring-1 ring-white/20" : ""
-                              }`}
+                                block.conflict ? "border-red-500/60" : colors.border
+                              } ${isPeeking ? "ring-1 ring-white/20" : ""}`}
                               style={{
                                 left: blockLeft,
                                 width: Math.max(24, blockWidth),
                                 height: ROW_H - 16,
-                                transform: isDragging && dragState?.mode === "move"
-                                  ? `translateY(${dragDelta.dy}px)`
-                                  : undefined,
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -697,39 +763,27 @@ export default function SchedulePage() {
                                 setCtxMenu({ open: true, x: e.clientX, y: e.clientY, blockId: block.id });
                               }}
                               onMouseDown={(e) => {
-                                if (e.button === 0) handleDragStart(e, block.id, "move");
+                                if (e.button === 0) handleBlockDragStart(e, block.id, "move");
                               }}
                             >
-                              {/* Left accent border */}
                               <div className={`absolute left-0 top-0 h-full w-[3px] rounded-l-md ${colors.accent}`} />
-
-                              {/* Content */}
                               <div className="flex h-full flex-col justify-center truncate pl-2.5 pr-2">
                                 <div className="flex items-center gap-1">
-                                  <span className="font-mono text-[8px] text-zinc-600">
-                                    {block.jobId}
-                                  </span>
-                                  <span className={`truncate text-[10px] font-medium ${colors.text}`}>
-                                    {block.client}
-                                  </span>
+                                  <span className="font-mono text-[8px] text-zinc-600">{block.jobId}</span>
+                                  <span className={`truncate text-[10px] font-medium ${colors.text}`}>{block.client}</span>
                                 </div>
                                 <div className="flex items-center gap-1 truncate">
                                   <Wrench size={8} className="shrink-0 text-zinc-600" />
-                                  <span className="truncate text-[9px] text-zinc-500">
-                                    {block.title}
-                                  </span>
+                                  <span className="truncate text-[9px] text-zinc-500">{block.title}</span>
                                 </div>
                                 {blockWidth > 80 && (
                                   <div className="flex items-center gap-1 truncate">
                                     <MapPin size={7} className="shrink-0 text-zinc-700" />
-                                    <span className="truncate text-[8px] text-zinc-600">
-                                      {block.location}
-                                    </span>
+                                    <span className="truncate text-[8px] text-zinc-600">{block.location}</span>
                                   </div>
                                 )}
                               </div>
 
-                              {/* Conflict badge */}
                               {block.conflict && (
                                 <motion.div
                                   animate={{ scale: [1, 1.3, 1] }}
@@ -738,12 +792,11 @@ export default function SchedulePage() {
                                 />
                               )}
 
-                              {/* Resize handle */}
                               <div
                                 className="absolute top-0 right-0 h-full w-2 cursor-ew-resize opacity-0 transition-opacity hover:opacity-100"
                                 onMouseDown={(e) => {
                                   e.stopPropagation();
-                                  handleDragStart(e, block.id, "resize");
+                                  handleBlockDragStart(e, block.id, "resize");
                                 }}
                               >
                                 <div className="flex h-full items-center justify-center">
@@ -751,7 +804,6 @@ export default function SchedulePage() {
                                 </div>
                               </div>
 
-                              {/* ── Peek Popover ───────────── */}
                               <AnimatePresence>
                                 {isPeeking && !isDragging && (
                                   <JobPeekCard
@@ -773,12 +825,6 @@ export default function SchedulePage() {
                 </div>
               );
             })}
-
-            {/* Now line label at top */}
-            <div
-              className="pointer-events-none fixed z-30"
-              style={{ left: RESOURCE_COL_W + nowX - 12 }}
-            />
           </div>
         </div>
 
@@ -793,13 +839,11 @@ export default function SchedulePage() {
               className="shrink-0 overflow-hidden border-l border-[rgba(255,255,255,0.06)] bg-[#050505]"
             >
               <div className="flex h-full w-[280px] flex-col">
-                {/* Drawer header */}
                 <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <Rows3 size={13} className="text-zinc-500" />
-                    <span className="text-[13px] font-medium text-zinc-300">
-                      Backlog
-                    </span>
+                    <span className="text-[13px] font-medium text-zinc-300">Backlog</span>
+                    <span className="text-[10px] text-zinc-600">{backlogJobs.length}</span>
                   </div>
                   <button
                     onClick={() => setUnscheduledDrawerOpen(false)}
@@ -809,62 +853,66 @@ export default function SchedulePage() {
                   </button>
                 </div>
 
-                {/* Backlog items */}
                 <div className="flex-1 overflow-y-auto p-3">
+                  <p className="mb-2 text-[10px] text-zinc-700">
+                    Drag a job onto the timeline to assign it
+                  </p>
                   <div className="space-y-2">
                     {backlogJobs.length > 0 ? (
-                      backlogJobs.map((item: BacklogJob) => (
-                        <motion.div
-                          key={item.id}
-                          layout
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="cursor-grab rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 transition-colors hover:border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.04)]"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-mono text-[9px] text-zinc-600">
-                                  {item.display_id}
-                                </span>
-                                <span
-                                  className={`h-1.5 w-1.5 rounded-full ${
-                                    item.priority === "urgent"
-                                      ? "bg-red-400"
-                                      : item.priority === "high"
-                                        ? "bg-orange-400"
-                                        : item.priority === "medium"
-                                          ? "bg-yellow-500"
-                                          : "bg-[#00E676]"
-                                  }`}
-                                />
+                      backlogJobs.map((item: BacklogJob) => {
+                        const isBeingDragged = dragState?.source === "backlog" && dragState?.backlogJob?.id === item.id;
+                        return (
+                          <motion.div
+                            key={item.id}
+                            layout
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: isBeingDragged ? 0.3 : 1, x: 0 }}
+                            className="cursor-grab select-none rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 transition-colors hover:border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.04)] active:cursor-grabbing"
+                            onMouseDown={(e) => handleBacklogDragStart(e, item)}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono text-[9px] text-zinc-600">{item.display_id}</span>
+                                  <span
+                                    className={`h-1.5 w-1.5 rounded-full ${
+                                      item.priority === "urgent"
+                                        ? "bg-red-400"
+                                        : item.priority === "high"
+                                          ? "bg-orange-400"
+                                          : item.priority === "medium"
+                                            ? "bg-yellow-500"
+                                            : "bg-[#00E676]"
+                                    }`}
+                                  />
+                                </div>
+                                <div className="mt-1 truncate text-[12px] font-medium text-zinc-300">
+                                  {item.title}
+                                </div>
+                                {item.client_name && (
+                                  <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
+                                    <User size={8} />
+                                    {item.client_name}
+                                  </div>
+                                )}
+                                {item.location && (
+                                  <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
+                                    <MapPin size={8} />
+                                    {item.location}
+                                  </div>
+                                )}
+                                {item.estimated_duration_minutes && (
+                                  <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
+                                    <Clock size={8} />
+                                    {item.estimated_duration_minutes}m est.
+                                  </div>
+                                )}
                               </div>
-                              <div className="mt-1 truncate text-[12px] font-medium text-zinc-300">
-                                {item.title}
-                              </div>
-                              {item.client_name && (
-                                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
-                                  <User size={8} />
-                                  {item.client_name}
-                                </div>
-                              )}
-                              {item.location && (
-                                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
-                                  <MapPin size={8} />
-                                  {item.location}
-                                </div>
-                              )}
-                              {item.estimated_duration_minutes && (
-                                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
-                                  <Clock size={8} />
-                                  {item.estimated_duration_minutes}m est.
-                                </div>
-                              )}
+                              <GripVertical size={14} className="shrink-0 text-zinc-700" />
                             </div>
-                            <Grip size={12} className="shrink-0 text-zinc-700" />
-                          </div>
-                        </motion.div>
-                      ))
+                          </motion.div>
+                        );
+                      })
                     ) : (
                       <div className="flex flex-col items-center py-8 text-center">
                         <Calendar size={20} className="mb-2 text-zinc-700" />
@@ -881,6 +929,62 @@ export default function SchedulePage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ── Drag Ghost Overlay (Portal at z-9999) ──────────── */}
+      {dragState && dragState.mode === "move" && (
+        <div
+          className="pointer-events-none fixed inset-0 z-[9999]"
+          style={{ cursor: "grabbing" }}
+        >
+          <div
+            className="absolute rounded-lg border-2 border-[#00E676] shadow-[0_10px_30px_-10px_rgba(0,230,118,0.5)]"
+            style={{
+              left: mousePos.x - 80,
+              top: mousePos.y - 24,
+              width: Math.max(120, ghostDuration * HOUR_W),
+              height: ROW_H - 16,
+              background: "rgba(0, 230, 118, 0.15)",
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            <div className="absolute left-0 top-0 h-full w-[3px] rounded-l-md bg-[#00E676]" />
+            <div className="flex h-full flex-col justify-center truncate pl-3 pr-2">
+              {dragState.source === "backlog" && dragState.backlogJob ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono text-[8px] text-[#00E676]/60">
+                      {dragState.backlogJob.display_id}
+                    </span>
+                  </div>
+                  <span className="truncate text-[11px] font-medium text-[#00E676]">
+                    {dragState.backlogJob.title}
+                  </span>
+                  <span className="text-[9px] text-zinc-400">
+                    {formatDuration((dragState.backlogJob.estimated_duration_minutes || 60) / 60)}
+                  </span>
+                </>
+              ) : dragState.source === "block" ? (
+                (() => {
+                  const block = blocks.find((b) => b.id === dragState.blockId);
+                  if (!block) return null;
+                  return (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono text-[8px] text-[#00E676]/60">{block.jobId}</span>
+                        <span className="truncate text-[10px] font-medium text-[#00E676]">{block.client}</span>
+                      </div>
+                      <div className="flex items-center gap-1 truncate">
+                        <Wrench size={8} className="shrink-0 text-[#00E676]/50" />
+                        <span className="truncate text-[9px] text-zinc-400">{block.title}</span>
+                      </div>
+                    </>
+                  );
+                })()
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Context Menu */}
       <ContextMenu
@@ -919,7 +1023,6 @@ function JobPeekCard({
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-2.5">
         <button
           onClick={onOpenFull}
@@ -949,27 +1052,16 @@ function JobPeekCard({
         </div>
       </div>
 
-      {/* Mini Map */}
       <div className="relative h-[100px] bg-[#080808]">
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Grid effect */}
           <div className="absolute inset-0 opacity-[0.03]">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={`h-${i}`}
-                className="absolute left-0 right-0 border-t border-white"
-                style={{ top: `${i * 20}%` }}
-              />
+              <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-white" style={{ top: `${i * 20}%` }} />
             ))}
             {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={`v-${i}`}
-                className="absolute top-0 bottom-0 border-l border-white"
-                style={{ left: `${i * 10}%` }}
-              />
+              <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l border-white" style={{ left: `${i * 10}%` }} />
             ))}
           </div>
-          {/* Pin */}
           <motion.div
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -986,7 +1078,6 @@ function JobPeekCard({
             />
           </motion.div>
         </div>
-        {/* Directions button */}
         <button
           onClick={() => {
             if (!block.location) { addToast("No location set for this job"); return; }
@@ -997,13 +1088,11 @@ function JobPeekCard({
           <Navigation size={9} />
           Directions
         </button>
-        {/* Address */}
         <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-500 backdrop-blur-sm">
           {block.location}
         </div>
       </div>
 
-      {/* Data Grid */}
       <div className="space-y-0 border-t border-[rgba(255,255,255,0.06)] p-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -1012,9 +1101,7 @@ function JobPeekCard({
               <Clock size={10} className="text-zinc-500" />
               {formatHour(block.startHour)} — {formatHour(block.startHour + block.duration)}
             </div>
-            <div className="text-[10px] text-zinc-600">
-              {formatDuration(block.duration)}
-            </div>
+            <div className="text-[10px] text-zinc-600">{formatDuration(block.duration)}</div>
           </div>
           <div>
             <div className="text-[9px] tracking-wider text-zinc-600 uppercase">Client</div>
@@ -1039,7 +1126,6 @@ function JobPeekCard({
         )}
       </div>
 
-      {/* Footer Actions */}
       <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.06)] px-4 py-2.5">
         <motion.button
           whileHover={{ scale: 1.01 }}

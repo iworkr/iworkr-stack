@@ -521,7 +521,8 @@ export async function resizeScheduleBlockServer(blockId: string, endTime: string
 }
 
 /**
- * Assign a backlog job to the schedule via RPC
+ * Assign a backlog job to the schedule via RPC.
+ * Also triggers a notification to the technician and creates a job_context messenger channel.
  */
 export async function assignJobToSchedule(
   orgId: string,
@@ -549,12 +550,122 @@ export async function assignJobToSchedule(
       return { data: null, error: error.message };
     }
 
+    // ── Side effects (fire-and-forget) ──────────────────────
+    // 1. Get job title for the notification
+    const { data: job } = await supabase
+      .from("jobs")
+      .select("title, display_id")
+      .eq("id", jobId)
+      .single();
+
+    const jobLabel = job?.display_id || "Job";
+    const jobTitle = job?.title || "New Job";
+
+    // 2. Send notification to the assigned technician
+    await supabase.from("notifications").insert({
+      organization_id: orgId,
+      user_id: technicianId,
+      type: "job_assigned",
+      title: "New Job Assigned",
+      body: `${jobLabel}: ${jobTitle} has been added to your schedule.`,
+      sender_id: user.id,
+      sender_name: user.user_metadata?.full_name || "Dispatch",
+      related_job_id: jobId,
+      action_link: `/dashboard/jobs/${jobId}`,
+      action_type: "view",
+    }).then(({ error: nErr }: any) => {
+      if (nErr) logger.error("Failed to create assignment notification", "schedule", undefined, { error: nErr.message });
+    });
+
+    // 3. Create a job_context messenger channel (idempotent)
+    const { data: existingChannel } = await supabase
+      .from("channels")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("type", "job_context")
+      .eq("context_id", jobId)
+      .maybeSingle();
+
+    if (!existingChannel) {
+      const { data: newChannel } = await supabase
+        .from("channels")
+        .insert({
+          organization_id: orgId,
+          type: "job_context",
+          name: jobTitle,
+          context_id: jobId,
+          context_type: "job",
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (newChannel) {
+        // Add assigner + assignee as members
+        const memberIds = new Set([user.id, technicianId]);
+        await supabase.from("channel_members").insert(
+          Array.from(memberIds).map((uid) => ({
+            channel_id: newChannel.id,
+            user_id: uid,
+          }))
+        );
+      }
+    } else {
+      // Ensure the technician is a member of the existing channel
+      await supabase.from("channel_members").upsert(
+        { channel_id: existingChannel.id, user_id: technicianId },
+        { onConflict: "channel_id,user_id" }
+      );
+    }
+
     revalidatePath("/dashboard/schedule");
     revalidatePath("/dashboard/jobs");
     return { data, error: null };
   } catch (error: any) {
     logger.error("Failed to assign job to schedule", "schedule", error);
     return { data: null, error: error.message || "Failed to assign job" };
+  }
+}
+
+/**
+ * Unschedule a job: delete the schedule_block and reset the job's assignee + status
+ */
+export async function unscheduleJob(blockId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    // Get the block to find the linked job
+    const { data: block, error: fetchErr } = await supabase
+      .from("schedule_blocks")
+      .select("job_id")
+      .eq("id", blockId)
+      .single();
+
+    if (fetchErr) return { data: null, error: fetchErr.message };
+
+    // Delete the schedule block
+    const { error: delErr } = await supabase
+      .from("schedule_blocks")
+      .delete()
+      .eq("id", blockId);
+
+    if (delErr) return { data: null, error: delErr.message };
+
+    // Reset the job to backlog
+    if (block?.job_id) {
+      await supabase
+        .from("jobs")
+        .update({ assignee_id: null, status: "backlog" })
+        .eq("id", block.job_id);
+    }
+
+    revalidatePath("/dashboard/schedule");
+    revalidatePath("/dashboard/jobs");
+    return { data: { success: true }, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to unschedule" };
   }
 }
 

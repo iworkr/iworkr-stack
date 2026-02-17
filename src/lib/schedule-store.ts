@@ -14,6 +14,8 @@ import {
   resizeScheduleBlockServer,
   deleteScheduleBlock as deleteBlockServer,
   updateScheduleBlock as updateBlockServer,
+  assignJobToSchedule as assignJobServer,
+  unscheduleJob as unscheduleJobServer,
   type BacklogJob,
   type ScheduleEvent,
 } from "@/app/actions/schedule";
@@ -83,6 +85,11 @@ interface ScheduleState {
   restoreBlock: (block: ScheduleBlock) => void;
   addBlock: (block: ScheduleBlock) => void;
   updateBlockStatus: (blockId: string, status: ScheduleBlockStatus) => void;
+
+  /** Assign a backlog job to the schedule (drag-to-assign) */
+  assignBacklogJob: (job: BacklogJob, technicianId: string, startHour: number) => Promise<void>;
+  /** Unschedule a block — returns job to backlog */
+  unscheduleBlock: (blockId: string) => void;
 
   _stale: boolean;
   _lastFetchedAt: number | null;
@@ -314,6 +321,73 @@ export const useScheduleStore = create<ScheduleState>()(
           blocks: s.blocks.map((b) =>
             b.id === blockId ? { ...b, status: prevBlock.status } : b
           ),
+        }));
+      }
+    });
+  },
+
+  assignBacklogJob: async (job: BacklogJob, technicianId: string, startHour: number) => {
+    const { orgId, selectedDate, backlogJobs } = get();
+    if (!orgId) return;
+
+    const duration = (job.estimated_duration_minutes || 60) / 60;
+    const snappedHour = Math.round(startHour * 4) / 4;
+
+    const startISO = decimalHourToISO(selectedDate, snappedHour);
+    const endISO = decimalHourToISO(selectedDate, snappedHour + duration);
+
+    // Optimistic: create a temp block and remove from backlog
+    const tempBlock: ScheduleBlock = {
+      id: `temp-${job.id}`,
+      jobId: job.display_id,
+      technicianId,
+      title: job.title,
+      client: job.client_name || "",
+      location: job.location || "",
+      startHour: snappedHour,
+      duration,
+      status: "scheduled",
+      travelTime: undefined,
+      conflict: false,
+    };
+
+    set((s) => ({
+      blocks: [...s.blocks, tempBlock].sort((a, b) => a.startHour - b.startHour),
+      backlogJobs: s.backlogJobs.filter((j) => j.id !== job.id),
+    }));
+
+    // Persist to server
+    const result = await assignJobServer(orgId, job.id, technicianId, startISO, endISO);
+
+    if (result.error) {
+      // Rollback
+      set((s) => ({
+        blocks: s.blocks.filter((b) => b.id !== tempBlock.id),
+        backlogJobs: [...s.backlogJobs, job],
+      }));
+      return;
+    }
+
+    // Refresh to get the real block_id from the server
+    get().refresh();
+  },
+
+  unscheduleBlock: (blockId: string) => {
+    const block = get().blocks.find((b) => b.id === blockId);
+    // Optimistic: remove block from schedule
+    set((s) => ({
+      blocks: s.blocks.filter((b) => b.id !== blockId),
+    }));
+
+    // Persist to server
+    unscheduleJobServer(blockId).then(() => {
+      get().refresh();
+    }).catch((err) => {
+      console.error("Failed to unschedule:", err);
+      // Restore on failure
+      if (block) {
+        set((s) => ({
+          blocks: [...s.blocks, block].sort((a, b) => a.startHour - b.startHour),
         }));
       }
     });

@@ -135,6 +135,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
   }, [orgId]);
 
+  // Realtime subscription for jobs (backlog sync for schedule)
+  useEffect(() => {
+    if (!orgId) return;
+
+    const supabase = createClient();
+
+    const jobsChannel = supabase
+      .channel(`jobs-backlog:${orgId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+          filter: `organization_id=eq.${orgId}`,
+        },
+        () => {
+          // Refresh schedule store to pick up backlog changes
+          useScheduleStore.getState().handleRealtimeUpdate();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(jobsChannel);
+    };
+  }, [orgId]);
+
   // Realtime subscription for invoices (finance live updates)
   useEffect(() => {
     if (!orgId) return;
