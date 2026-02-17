@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useFinanceStore } from "@/lib/finance-store";
@@ -101,13 +101,14 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
   const hoverPoint = hoverIndex !== null ? points[hoverIndex] : null;
   const hoverData = hoverIndex !== null ? dailyRevenue[hoverIndex] : null;
 
+  /* ── Loading Skeleton ──────────────────────────────── */
   if (!financeLoaded && dailyRevenue.length === 0) {
     return (
       <WidgetShell delay={0}>
         <div className="p-5">
-          <div className="h-4 w-24 rounded bg-zinc-800/80 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
-          <div className="mt-3 h-8 w-32 rounded bg-zinc-800/80 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
-          {size !== "small" && <div className="mt-4 h-[55px] w-full rounded bg-zinc-800/60 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>}
+          <div className="h-3 w-20 rounded-md bg-zinc-800/50 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" /></div>
+          <div className="mt-4 h-8 w-32 rounded-md bg-zinc-800/40 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" /></div>
+          {size !== "small" && <div className="mt-5 h-[55px] w-full rounded-md bg-zinc-800/25 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" /></div>}
         </div>
       </WidgetShell>
     );
@@ -121,20 +122,20 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
           className="flex h-full cursor-pointer flex-col items-center justify-center p-3"
           onClick={() => router.push("/dashboard/finance")}
         >
-          <DollarSign size={14} className="mb-1 text-emerald-500/60" />
-          <div className="flex items-baseline gap-0.5">
+          <span className="text-[9px] font-medium uppercase tracking-widest text-zinc-600">Revenue</span>
+          <div className="mt-1 flex items-baseline gap-0.5">
             <span className="text-[10px] text-zinc-600">$</span>
-            <span className="text-[20px] font-medium tracking-tight text-zinc-100">
+            <span className="text-[22px] font-medium tracking-tight text-white">
               {Math.floor(revenueMTD / 1000)}k
             </span>
           </div>
-          <div className="mt-0.5 flex items-center gap-1">
+          <div className="mt-1 flex items-center gap-1">
             {isPositiveGrowth ? (
-              <TrendingUp size={9} className="text-emerald-400" />
+              <TrendingUp size={9} className="text-emerald-500" />
             ) : (
               <TrendingDown size={9} className="text-red-400" />
             )}
-            <span className={`text-[9px] font-medium ${isPositiveGrowth ? "text-emerald-400" : "text-red-400"}`}>
+            <span className={`text-[9px] font-medium ${isPositiveGrowth ? "text-emerald-500" : "text-red-400"}`}>
               {isPositiveGrowth ? "+" : ""}{growthPct}%
             </span>
           </div>
@@ -143,8 +144,7 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
     );
   }
 
-  /* ── MEDIUM: Sparkline + KPI ────────────────────────── */
-  /* ── LARGE: Full detailed area chart with crosshair ─── */
+  /* ── MEDIUM / LARGE: Sparkline + KPI ─────────────────── */
   const showCrosshair = size === "large";
   const chartHeight = size === "large" ? "h-[65%]" : "h-[55%]";
 
@@ -154,6 +154,7 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
         className="relative h-full cursor-pointer p-5"
         onClick={() => router.push("/dashboard/finance")}
       >
+        {/* Background sparkline */}
         <svg
           ref={chartRef}
           viewBox={`0 0 ${W} ${H}`}
@@ -164,36 +165,40 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
         >
           <defs>
             <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
+              <stop offset="0%" stopColor="#10B981" stopOpacity="0.15" />
               <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
             </linearGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="blur" />
-              <feFlood floodColor="#10B981" floodOpacity="0.5" />
-              <feComposite in2="blur" operator="in" />
-              <feMerge>
-                <feMergeNode />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
           </defs>
-          <motion.path d={areaPath} fill="url(#revenueGrad)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.6 }} />
-          <motion.path d={linePath} fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" filter="url(#glow)" style={{ strokeDasharray: 2000, strokeDashoffset: lineLen }} />
+          <motion.path
+            d={areaPath}
+            fill="url(#revenueGrad)"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
+          />
+          <motion.path
+            d={linePath}
+            fill="none"
+            stroke="#10B981"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            style={{ strokeDasharray: 2000, strokeDashoffset: lineLen }}
+          />
 
           {showCrosshair && hoverPoint && (
             <>
-              <line x1={hoverPoint.x} y1={0} x2={hoverPoint.x} y2={H} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3 3" />
-              <circle cx={hoverPoint.x} cy={hoverPoint.y} r="12" fill="transparent" />
-              <circle cx={hoverPoint.x} cy={hoverPoint.y} r="4" fill="#10B981" stroke="#0C0C0C" strokeWidth="2" />
+              <line x1={hoverPoint.x} y1={0} x2={hoverPoint.x} y2={H} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 3" />
+              <circle cx={hoverPoint.x} cy={hoverPoint.y} r="3.5" fill="#10B981" stroke="#0A0A0A" strokeWidth="2" />
             </>
           )}
         </svg>
 
+        {/* Hover tooltip */}
         {showCrosshair && hoverData && hoverPoint && (
           <motion.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute z-20 rounded-md border border-[rgba(255,255,255,0.1)] bg-zinc-900/95 px-2.5 py-1.5 shadow-lg backdrop-blur-sm"
+            className="absolute z-20 rounded-lg border border-white/[0.08] bg-[#0A0A0A]/95 px-3 py-2 shadow-xl backdrop-blur-sm"
             style={{
               left: `${Math.min(Math.max((hoverPoint.x / W) * 100, 10), 80)}%`,
               bottom: "60%",
@@ -201,50 +206,49 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
             }}
           >
             <div className="text-[10px] text-zinc-500">{hoverData.date}</div>
-            <div className="text-[12px] font-medium text-zinc-200">
+            <div className="text-[13px] font-medium text-white">
               ${hoverData.amount.toLocaleString()}
             </div>
           </motion.div>
         )}
 
+        {/* KPI text overlay */}
         <div className="relative z-10">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-              Revenue MTD
-            </span>
-          </div>
+          <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+            Revenue MTD
+          </span>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xs text-zinc-500">$</span>
-            <motion.span className="text-[32px] font-medium tracking-tight text-zinc-100">
+            <span className="text-xs text-zinc-600">$</span>
+            <motion.span className="text-[32px] font-medium tracking-tight text-white">
               {rounded}
             </motion.span>
           </div>
-          <div className="mt-1 flex items-center gap-1.5">
-            {isPositiveGrowth ? (
-              <TrendingUp size={12} className="text-emerald-400" />
-            ) : (
-              <TrendingDown size={12} className="text-red-400" />
-            )}
-            <span className={`text-[11px] font-medium ${isPositiveGrowth ? "text-emerald-400" : "text-red-400"}`}>
+          <div className="mt-1.5 flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+              isPositiveGrowth
+                ? "bg-emerald-500/10 text-emerald-500"
+                : "bg-red-500/10 text-red-400"
+            }`}>
+              {isPositiveGrowth ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
               {isPositiveGrowth ? "+" : ""}{growthPct}%
             </span>
             <span className="text-[11px] text-zinc-600">vs last month</span>
           </div>
 
-          {/* Large: show daily breakdown summary */}
+          {/* Large: additional stats */}
           {size === "large" && stats && (
-            <div className="mt-3 flex items-center gap-4 border-t border-[rgba(255,255,255,0.06)] pt-3">
+            <div className="mt-4 flex items-center gap-5 border-t border-white/[0.04] pt-3">
               <div>
-                <div className="text-[9px] uppercase tracking-wider text-zinc-600">Prev Month</div>
-                <div className="text-[13px] font-medium text-zinc-400">${stats.revenue_previous.toLocaleString()}</div>
+                <div className="text-[9px] font-medium uppercase tracking-widest text-zinc-600">Prev Month</div>
+                <div className="mt-0.5 text-[14px] font-medium text-zinc-400">${stats.revenue_previous.toLocaleString()}</div>
               </div>
               <div>
-                <div className="text-[9px] uppercase tracking-wider text-zinc-600">Active Jobs</div>
-                <div className="text-[13px] font-medium text-zinc-400">{stats.active_jobs_count}</div>
+                <div className="text-[9px] font-medium uppercase tracking-widest text-zinc-600">Active Jobs</div>
+                <div className="mt-0.5 text-[14px] font-medium text-zinc-400">{stats.active_jobs_count}</div>
               </div>
               <div>
-                <div className="text-[9px] uppercase tracking-wider text-zinc-600">Unassigned</div>
-                <div className="text-[13px] font-medium text-zinc-400">{stats.unassigned_jobs_count}</div>
+                <div className="text-[9px] font-medium uppercase tracking-widest text-zinc-600">Unassigned</div>
+                <div className="mt-0.5 text-[14px] font-medium text-zinc-400">{stats.unassigned_jobs_count}</div>
               </div>
             </div>
           )}

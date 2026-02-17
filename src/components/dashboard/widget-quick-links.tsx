@@ -55,7 +55,7 @@ export function WidgetQuickLinks({ size = "medium" }: { size?: WidgetSize }) {
             <button
               key={`${link.href}-${i}`}
               onClick={() => router.push(link.href)}
-              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-left text-[12px] text-zinc-400 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-200"
+              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-left text-[12px] text-zinc-500 transition-colors duration-150 hover:bg-white/[0.03] hover:text-zinc-200"
             >
               <Icon size={14} strokeWidth={1.5} className="shrink-0 text-zinc-600" />
               {link.label}

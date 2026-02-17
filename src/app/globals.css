@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ── iWorkr Design System: "Signal Green" ────────────── */
+/* ── iWorkr Design System: "Stealth Mode" ────────────── */
 
 @theme inline {
   --font-sans: var(--font-inter);
@@ -14,10 +14,10 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-muted);
 
-  /* Brand Green — constant across themes */
-  --color-brand: #00E676;
-  --color-brand-dark: #00C853;
-  --color-brand-glow: rgba(0, 230, 118, 0.5);
+  /* Brand: Signal Green (refined Emerald, not neon) */
+  --color-brand: #10B981;
+  --color-brand-dark: #059669;
+  --color-brand-glow: rgba(16, 185, 129, 0.4);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -25,21 +25,21 @@
 /* ── Dark Theme (Default) ────────────────────────────── */
 :root,
 .dark {
-  --background: #000000;
-  --surface-0: #000000;
-  --surface-1: #09090b;
-  --surface-2: #18181b;
-  --border-base: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(255, 255, 255, 0.15);
+  --background: #050505;
+  --surface-0: #050505;
+  --surface-1: #0A0A0A;
+  --surface-2: #141414;
+  --border-base: rgba(255, 255, 255, 0.05);
+  --border-active: rgba(255, 255, 255, 0.12);
   --text-primary: #ededed;
-  --text-muted: #a1a1aa;
-  --brand: #00E676;
-  --brand-hover: #00C853;
-  --brand-glow: 0 0 20px rgba(0, 230, 118, 0.4);
-  --brand-glow-subtle: 0 0 15px -5px rgba(0, 230, 118, 0.3);
-  --selection-bg: rgba(0, 230, 118, 0.15);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+  --text-muted: #71717a;
+  --brand: #10B981;
+  --brand-hover: #059669;
+  --brand-glow: 0 0 20px rgba(16, 185, 129, 0.3);
+  --brand-glow-subtle: 0 0 12px -5px rgba(16, 185, 129, 0.2);
+  --selection-bg: rgba(16, 185, 129, 0.15);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.12);
   color-scheme: dark;
 }
 
@@ -154,6 +154,64 @@ img, video, svg, canvas {
   100% { transform: translateX(100%); }
 }
 
+/* ── Stealth Mode: Lottie-style CSS Animations ───────── */
+
+@keyframes zen-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes zen-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes orbit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes orbit-reverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes float-up {
+  0% { transform: translateY(4px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes checkmark-draw {
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.animate-zen-breathe {
+  animation: zen-breathe 3s ease-in-out infinite;
+}
+
+.animate-zen-ring {
+  animation: zen-ring 2s ease-out infinite;
+}
+
+.animate-orbit {
+  animation: orbit 8s linear infinite;
+}
+
+.animate-orbit-reverse {
+  animation: orbit-reverse 6s linear infinite;
+}
+
+.animate-float-up {
+  animation: float-up 0.5s ease-out both;
+}
+
+.animate-checkmark {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: checkmark-draw 0.6s ease-out 0.3s forwards;
+}
+
 /* ── Background Textures ─────────────────────────────── */
 
 .bg-dot-grid {
@@ -197,7 +255,13 @@ img, video, svg, canvas {
 .shadow-glow-green-subtle { box-shadow: var(--brand-glow-subtle); }
 
 .bg-brand-gradient {
-  background: linear-gradient(to bottom, #00E676, #00C853);
+  background: linear-gradient(to bottom, #10B981, #059669);
+}
+
+/* ── Stealth Widget Glass ────────────────────────────── */
+.widget-glass {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.05);
 }
 
 /* ── React Grid Layout ───────────────────────────────── */
@@ -239,19 +303,19 @@ img, video, svg, canvas {
   bottom: 4px;
   width: 8px;
   height: 8px;
-  border-right: 2px solid rgba(0, 230, 118, 0.5);
-  border-bottom: 2px solid rgba(0, 230, 118, 0.5);
+  border-right: 2px solid rgba(16, 185, 129, 0.3);
+  border-bottom: 2px solid rgba(16, 185, 129, 0.3);
   border-radius: 0 0 2px 0;
   transition: border-color 200ms;
 }
 
 .react-grid-item > .react-resizable-handle:hover::after {
-  border-color: rgba(0, 230, 118, 0.8);
+  border-color: rgba(16, 185, 129, 0.5);
 }
 
 .react-grid-placeholder {
-  background: rgba(0, 230, 118, 0.08) !important;
-  border: 2px dashed rgba(0, 230, 118, 0.3) !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+  border: 2px dashed rgba(16, 185, 129, 0.2) !important;
   border-radius: 12px !important;
   opacity: 1 !important;
 }

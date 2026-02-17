@@ -106,10 +106,10 @@ function NavLink({
       href={item.href}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`group relative flex items-center gap-2.5 rounded-md px-2 py-[6px] transition-colors duration-100 ${
+      className={`group relative flex items-center gap-2.5 rounded-md px-2 py-[6px] transition-colors duration-150 ${
         active
-          ? "bg-[rgba(0,230,118,0.06)] text-[#00E676]"
-          : "text-zinc-500 hover:text-zinc-300"
+          ? "bg-white/[0.04] text-zinc-100"
+          : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
       } ${collapsed ? "justify-center" : ""}`}
     >
       {/* Spotlight hover gradient */}
@@ -124,7 +124,7 @@ function NavLink({
       {active && (
         <motion.div
           layoutId="sidebar-active"
-          className="absolute top-1/2 left-0 h-4 w-[2px] -translate-y-1/2 rounded-r bg-[#00E676]"
+          className="absolute top-1/2 left-0 h-4 w-[2px] -translate-y-1/2 rounded-r bg-emerald-500"
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
         />
       )}
@@ -276,17 +276,17 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
         </button>
       </div>
 
-      {/* ── New Item Button ── */}
+      {/* ── New Item Button (Ghost / Outline — Stealth Mode) ── */}
       <div className="px-2 pt-2.5 pb-0.5">
         <button
           onClick={onCreateClick}
-          className={`flex items-center gap-2 rounded-lg bg-gradient-to-b from-[#00E676] to-[#00C853] text-black font-semibold transition-all duration-200 hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] ${
+          className={`group/create flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] text-zinc-400 font-medium transition-all duration-200 hover:border-emerald-500/30 hover:text-emerald-400 hover:bg-emerald-500/[0.04] hover:shadow-[0_0_20px_-8px_rgba(16,185,129,0.25)] ${
             sidebarCollapsed
               ? "w-10 justify-center p-2"
               : "w-full px-2.5 py-[6px]"
           }`}
         >
-          <Pencil size={13} className="shrink-0" />
+          <Pencil size={13} className="shrink-0 transition-colors duration-200 group-hover/create:text-emerald-400" />
           <AnimatePresence>
             {!sidebarCollapsed && (
               <motion.span
@@ -296,7 +296,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                 className="flex flex-1 items-center justify-between text-[13px]"
               >
                 New Item
-                <kbd className="rounded bg-black/15 px-1.5 py-0.5 font-mono text-[9px]">
+                <kbd className="rounded border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
                   C
                 </kbd>
               </motion.span>
@@ -371,7 +371,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                         <div
                           className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] ${
                             member.status === "online"
-                              ? "bg-[#00E676]"
+                              ? "bg-emerald-500"
                               : "bg-zinc-600"
                           }`}
                           style={{ borderColor: "var(--surface-1)" }}
