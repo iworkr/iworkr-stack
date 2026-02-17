@@ -153,3 +153,59 @@ img, video, svg, canvas {
   background-repeat: repeat;
   background-size: 200px 200px;
 }
+
+/* ── React Grid Layout ───────────────────────────────── */
+
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.react-grid-item.resizing {
+  z-index: 1;
+  will-change: width, height;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 3;
+  will-change: transform;
+}
+
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  z-index: 40;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(99, 102, 241, 0.5);
+  border-bottom: 2px solid rgba(99, 102, 241, 0.5);
+  border-radius: 0 0 2px 0;
+  transition: border-color 200ms;
+}
+
+.react-grid-item > .react-resizable-handle:hover::after {
+  border-color: rgba(99, 102, 241, 0.8);
+}
+
+.react-grid-placeholder {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border: 2px dashed rgba(99, 102, 241, 0.3) !important;
+  border-radius: 12px !important;
+  opacity: 1 !important;
+}

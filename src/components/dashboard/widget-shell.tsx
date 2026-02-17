@@ -41,7 +41,7 @@ export function WidgetShell({
         ease: [0.16, 1, 0.3, 1],
       }}
       onMouseMove={handleMouseMove}
-      className={`group/widget relative overflow-hidden rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0C0C0C] transition-all duration-300 hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-8px_rgba(255,255,255,0.04)] ${className}`}
+      className={`group/widget relative flex h-full flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0C0C0C] transition-all duration-300 hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-8px_rgba(255,255,255,0.04)] ${className}`}
       style={{ borderRadius: 12 }}
     >
       {/* Cursor spotlight */}
@@ -56,7 +56,7 @@ export function WidgetShell({
           {action}
         </div>
       )}
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 flex-1 overflow-auto">{children}</div>
     </motion.div>
   );
 }

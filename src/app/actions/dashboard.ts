@@ -181,6 +181,68 @@ export async function getTeamStatus(orgId: string) {
   }
 }
 
+/* ── Aggregated Dashboard Snapshot ───────────────────── */
+
+export async function getDashboardSnapshot(orgId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data, error } = await supabase.rpc("get_dashboard_snapshot", {
+      p_org_id: orgId,
+    });
+
+    if (error) {
+      logger.error("Failed to fetch dashboard snapshot", "dashboard", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    return { data: data as any, error: null };
+  } catch (error: any) {
+    logger.error("Dashboard snapshot error", "dashboard", error);
+    return { data: null, error: error.message || "Failed to fetch dashboard snapshot" };
+  }
+}
+
+/* ── Dashboard Layout Persistence ───────────────────── */
+
+export async function saveDashboardLayout(layout: any) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { error } = await supabase.rpc("save_dashboard_layout", {
+      p_layout: layout,
+    });
+
+    if (error) {
+      logger.error("Failed to save layout", "dashboard", undefined, { error: error.message });
+      return { error: error.message };
+    }
+
+    return { error: null };
+  } catch (error: any) {
+    logger.error("Save layout error", "dashboard", error);
+    return { error: error.message || "Failed to save dashboard layout" };
+  }
+}
+
+export async function loadDashboardLayout() {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data, error } = await supabase.rpc("get_dashboard_layout");
+
+    if (error) {
+      logger.error("Failed to load layout", "dashboard", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (error: any) {
+    logger.error("Load layout error", "dashboard", error);
+    return { data: null, error: error.message || "Failed to load dashboard layout" };
+  }
+}
+
 /* ── Live Dispatch ───────────────────────────────────── */
 
 export async function getLiveDispatch(orgId: string) {
