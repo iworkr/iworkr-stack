@@ -3,19 +3,19 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Check, Sparkles, PartyPopper } from "lucide-react";
+import { Check, PartyPopper } from "lucide-react";
 import { useBillingStore } from "@/lib/billing-store";
 import { useAuthStore } from "@/lib/auth-store";
 
-/* ── Confetti particles ────────────────────────────────── */
+/* ── Confetti particles (Emerald-only per PRD) ─────────── */
 
 function ConfettiParticle({ delay, left }: { delay: number; left: number }) {
   const color = useMemo(() => {
-    const colors = ["#00E676", "#FFFFFF", "#00C853", "#A5D6A7", "#69F0AE"];
+    const colors = ["#10B981", "#FFFFFF", "#34D399", "#6EE7B7", "#A7F3D0"];
     return colors[Math.floor(Math.random() * colors.length)];
   }, []);
 
-  const size = useMemo(() => 4 + Math.random() * 6, []);
+  const size = useMemo(() => 3 + Math.random() * 5, []);
   const rotation = useMemo(() => Math.random() * 360, []);
 
   return (
@@ -58,11 +58,9 @@ export function UpgradeCelebration() {
   useEffect(() => {
     if (searchParams.get("upgrade") === "success") {
       setShow(true);
-      // Refresh billing data
       if (currentOrg?.id) {
         loadBilling(currentOrg.id);
       }
-      // Clean up URL
       const timer = setTimeout(() => {
         const url = new URL(window.location.href);
         url.searchParams.delete("upgrade");
@@ -113,24 +111,24 @@ export function UpgradeCelebration() {
             transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
             className="pointer-events-auto absolute bottom-8 left-1/2 -translate-x-1/2"
           >
-            <div className="flex items-center gap-3 rounded-2xl border border-[#00E676]/20 bg-black/90 px-5 py-3 shadow-[0_0_40px_-10px_rgba(0,230,118,0.3)] backdrop-blur-lg">
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-500/15 bg-[#0A0A0A]/95 px-5 py-3 shadow-[0_0_30px_-10px_rgba(16,185,129,0.15)] backdrop-blur-lg">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.5 }}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#00E676] shadow-[0_0_20px_-3px_rgba(0,230,118,0.5)]"
+                className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500"
               >
-                <Check size={16} className="text-black" />
+                <Check size={14} className="text-black" />
               </motion.div>
               <div>
-                <p className="text-[13px] font-medium text-white">
-                  Upgrade successful!
+                <p className="text-[12px] font-medium text-white">
+                  Upgrade successful
                 </p>
-                <p className="text-[11px] text-zinc-500">
+                <p className="font-mono text-[10px] text-zinc-500">
                   All premium features are now unlocked
                 </p>
               </div>
-              <PartyPopper size={18} className="ml-2 text-[#00E676]" />
+              <PartyPopper size={16} className="ml-2 text-emerald-400" />
             </div>
           </motion.div>
         </motion.div>
