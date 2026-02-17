@@ -426,7 +426,7 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="flex h-12 shrink-0 items-center border-b border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.5)] px-3 backdrop-blur-xl md:px-4">
+    <header className="relative z-30 flex h-12 shrink-0 items-center border-b border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.5)] px-3 backdrop-blur-xl md:px-4">
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileSidebarOpen(true)}
