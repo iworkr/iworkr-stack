@@ -361,6 +361,11 @@ export const useIntegrationsStore = create<IntegrationsState>()(
     }),
     {
       name: "iworkr-integrations",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.integrations && state.integrations.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         integrations: state.integrations,
         events: state.events,

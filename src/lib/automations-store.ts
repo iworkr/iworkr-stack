@@ -309,6 +309,11 @@ export const useAutomationsStore = create<AutomationsState>()(
     }),
     {
       name: "iworkr-automations",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.flows && state.flows.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         flows: state.flows,
         logs: state.logs,

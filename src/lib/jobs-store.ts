@@ -300,6 +300,11 @@ export const useJobsStore = create<JobsState>()(
     }),
     {
       name: "iworkr-jobs",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.jobs && state.jobs.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         jobs: state.jobs,
         orgId: state.orgId,

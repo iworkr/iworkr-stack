@@ -104,14 +104,14 @@ export function WidgetRevenue() {
   const hoverPoint = hoverIndex !== null ? points[hoverIndex] : null;
   const hoverData = hoverIndex !== null ? dailyRevenue[hoverIndex] : null;
 
-  // Show skeleton while loading
+  // Show skeleton while loading (only on true cold start — no cache at all)
   if (!financeLoaded && dailyRevenue.length === 0) {
     return (
       <WidgetShell delay={0}>
         <div className="p-5">
-          <div className="h-4 w-24 animate-pulse rounded bg-zinc-900" />
-          <div className="mt-3 h-8 w-32 animate-pulse rounded bg-zinc-900" />
-          <div className="mt-4 h-[55px] w-full animate-pulse rounded bg-zinc-900" />
+          <div className="h-4 w-24 rounded bg-zinc-800/80 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
+          <div className="mt-3 h-8 w-32 rounded bg-zinc-800/80 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
+          <div className="mt-4 h-[55px] w-full rounded bg-zinc-800/60 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
         </div>
       </WidgetShell>
     );

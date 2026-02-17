@@ -6,9 +6,17 @@ import { createClient } from "@/lib/supabase/client";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { initialize, initialized, reset } = useAuthStore();
+  const hasCache = useAuthStore((s) => !!s.currentOrg);
 
   useEffect(() => {
     if (!initialized) {
+      if (hasCache) {
+        // We have cached auth data — mark initialized immediately so
+        // the UI can render instantly. Network call still runs to
+        // revalidate but doesn't block rendering.
+        useAuthStore.setState({ initialized: true, loading: false });
+      }
+      // Always call initialize to revalidate with the server
       initialize();
     }
 
@@ -21,7 +29,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (event === "SIGNED_OUT") {
           reset();
         } else if (event === "TOKEN_REFRESHED") {
-          // Re-initialize to keep state fresh
           initialize();
         }
       }
@@ -30,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [initialize, initialized, reset]);
+  }, [initialize, initialized, reset, hasCache]);
 
   return <>{children}</>;
 }

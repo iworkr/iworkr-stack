@@ -368,6 +368,11 @@ export const useAssetsStore = create<AssetsState>()(
     }),
     {
       name: "iworkr-assets",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.assets && state.assets.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         assets: state.assets,
         stock: state.stock,

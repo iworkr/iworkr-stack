@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
+import { HydrationGate } from "@/components/app/hydration-gate";
 
 export default function SettingsLayout({
   children,
@@ -27,6 +28,7 @@ export default function SettingsLayout({
   }, [router]);
 
   return (
+    <HydrationGate>
     <div className="flex h-screen overflow-hidden bg-black">
       {/* Noise grain */}
       <div
@@ -57,5 +59,6 @@ export default function SettingsLayout({
         </AnimatePresence>
       </main>
     </div>
+    </HydrationGate>
   );
 }

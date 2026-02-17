@@ -212,6 +212,11 @@ export const useClientsStore = create<ClientsState>()(
     }),
     {
       name: "iworkr-clients",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.clients && state.clients.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         clients: state.clients,
         orgId: state.orgId,

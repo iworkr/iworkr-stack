@@ -489,6 +489,11 @@ export const useFinanceStore = create<FinanceState>()(
     }),
     {
       name: "iworkr-finance",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.invoices && state.invoices.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         invoices: state.invoices,
         payouts: state.payouts,

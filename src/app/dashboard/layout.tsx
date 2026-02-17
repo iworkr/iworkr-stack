@@ -9,6 +9,7 @@ import { Topbar } from "@/components/shell/topbar";
 import { SlideOver } from "@/components/shell/slide-over";
 import { ActionToastContainer } from "@/components/app/action-toast";
 import { DataProvider } from "@/components/app/data-provider";
+import { HydrationGate } from "@/components/app/hydration-gate";
 import { useShellStore } from "@/lib/shell-store";
 
 // Lazy-load modals and overlays (only rendered when opened)
@@ -150,6 +151,7 @@ export default function DashboardLayout({
   const mainMarginLeft = isMobile ? 0 : sidebarCollapsed ? 64 : 240;
 
   return (
+    <HydrationGate>
     <div className="flex h-screen overflow-hidden bg-black">
       {/* Noise grain */}
       <div
@@ -222,5 +224,6 @@ export default function DashboardLayout({
       />
       <ActionToastContainer />
     </div>
+    </HydrationGate>
   );
 }

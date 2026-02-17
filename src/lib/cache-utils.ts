@@ -3,8 +3,10 @@
  * Used by all data stores to implement stale-while-revalidate (SWR).
  */
 
-/** Data older than this is considered stale and will be refetched */
-export const STALE_MS = 30_000; // 30 seconds
+/** Data older than this is considered stale and will be refetched in the background.
+ *  5 minutes is aggressive enough to stay current but avoids
+ *  hammering the server on every navigation / refresh.            */
+export const STALE_MS = 5 * 60 * 1000; // 5 minutes
 
 /** Returns true if the last fetch is recent enough to skip a refetch */
 export function isFresh(lastFetchedAt: number | null): boolean {

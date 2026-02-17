@@ -389,6 +389,11 @@ export const useFormsStore = create<FormsState>()(
     }),
     {
       name: "iworkr-forms",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.templates && state.templates.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         templates: state.templates,
         submissions: state.submissions,

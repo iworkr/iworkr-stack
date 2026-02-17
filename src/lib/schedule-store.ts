@@ -325,6 +325,11 @@ export const useScheduleStore = create<ScheduleState>()(
     }),
     {
       name: "iworkr-schedule",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.blocks && state.blocks.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         blocks: state.blocks,
         technicians: state.technicians,

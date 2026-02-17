@@ -104,18 +104,18 @@ export function WidgetSchedule() {
     return next?.id;
   }, [myBlocks]);
 
-  // Skeleton loading state
-  if (!rpcLoaded && !scheduleLoaded) {
+  // Skeleton loading state (only on true cold start — no cache at all)
+  if (!rpcLoaded && !scheduleLoaded && storeBlocks.length === 0) {
     return (
       <WidgetShell delay={0.15}>
         <div className="px-4 py-3 space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-900 p-2.5">
-              <div className="h-3 w-12 animate-pulse rounded bg-zinc-900" />
-              <div className="h-2 w-2 animate-pulse rounded-full bg-zinc-900" />
-              <div className="flex-1 space-y-1">
-                <div className="h-3 w-24 animate-pulse rounded bg-zinc-900" />
-                <div className="h-2 w-16 animate-pulse rounded bg-zinc-900" />
+            <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-900/50 p-2.5">
+              <div className="h-3 w-12 rounded bg-zinc-800/80 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
+              <div className="h-2 w-2 rounded-full bg-zinc-800/80" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-24 rounded bg-zinc-800/80 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
+                <div className="h-2 w-16 rounded bg-zinc-800/60 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
               </div>
             </div>
           ))}

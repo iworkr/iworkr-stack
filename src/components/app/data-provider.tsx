@@ -22,14 +22,15 @@ import { createClient } from "@/lib/supabase/client";
  * Place this inside the dashboard layout to trigger on mount.
  */
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const { orgId, userId, loading: orgLoading } = useOrg();
+  const { orgId, userId } = useOrg();
 
   const addRealtimeItem = useInboxStore((s) => s.addRealtimeItem);
 
-  // Always trigger loadFromServer — stores internally skip if data is fresh
+  // Fire as soon as orgId is available (instant from cache, or after network)
   useEffect(() => {
-    if (orgLoading || !orgId) return;
+    if (!orgId) return;
 
+    // Fire all stores in parallel — each one skips the fetch if data is fresh
     useJobsStore.getState().loadFromServer(orgId);
     useClientsStore.getState().loadFromServer(orgId);
     useFinanceStore.getState().loadFromServer(orgId);
@@ -40,7 +41,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     useFormsStore.getState().loadFromServer(orgId);
     useTeamStore.getState().loadFromServer(orgId);
     useIntegrationsStore.getState().loadFromServer(orgId);
-  }, [orgId, orgLoading]);
+  }, [orgId]);
 
   // Realtime subscription for notifications
   useEffect(() => {

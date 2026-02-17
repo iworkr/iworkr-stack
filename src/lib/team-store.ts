@@ -491,6 +491,11 @@ export const useTeamStore = create<TeamState>()(
     }),
     {
       name: "iworkr-team",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.members && state.members.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         members: state.members,
         roles: state.roles,

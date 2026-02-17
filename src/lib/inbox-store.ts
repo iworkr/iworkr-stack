@@ -338,6 +338,11 @@ export const useInboxStore = create<InboxStore>()(
     }),
     {
       name: "iworkr-inbox",
+      onRehydrateStorage: () => (state) => {
+        if (state && state.items && state.items.length > 0) {
+          state.loaded = true;
+        }
+      },
       partialize: (state) => ({
         items: state.items,
         _lastFetchedAt: state._lastFetchedAt,
