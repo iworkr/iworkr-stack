@@ -10,13 +10,18 @@ import {
   Search,
   DollarSign,
   AlertTriangle,
-  Radio,
+  Wrench,
   Loader2,
-  Inbox,
   Plus,
   ScanBarcode,
+  TrendingUp,
+  ArrowRight,
+  X,
+  Cog,
+  MapPin,
+  Box,
 } from "lucide-react";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAssetsStore, type AssetsTab, type ViewMode } from "@/lib/assets-store";
 import { useAuthStore } from "@/lib/auth-store";
@@ -33,8 +38,141 @@ import { scanLookup } from "@/app/actions/assets";
 const tabs: { id: AssetsTab; label: string; icon: typeof Truck }[] = [
   { id: "fleet", label: "Fleet & Tools", icon: Truck },
   { id: "inventory", label: "Inventory", icon: Package },
-  { id: "audits", label: "Audits", icon: ClipboardList },
+  { id: "audits", label: "ClipboardList", icon: ClipboardList },
 ];
+
+/* ── Mini Sparkline ──────────────────────────────────── */
+
+function Sparkline({ data, color = "#10B981", width = 64, height = 20 }: { data: number[]; color?: string; width?: number; height?: number }) {
+  if (data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * (height - 4) - 2;
+    return `${x},${y}`;
+  });
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <defs>
+        <linearGradient id={`spark-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.12" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <motion.polyline
+        points={pts.join(" ")}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      />
+      <polygon
+        points={`0,${height} ${pts.join(" ")} ${width},${height}`}
+        fill={`url(#spark-${color.replace("#", "")})`}
+      />
+    </svg>
+  );
+}
+
+/* ── Lottie-style Empty State ────────────────────────── */
+
+function DepotEmptyState({
+  icon: Icon,
+  title,
+  subtitle,
+  cta,
+  onCta,
+}: {
+  icon: typeof Truck;
+  title: string;
+  subtitle: string;
+  cta?: string;
+  onCta?: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="flex flex-col items-center justify-center py-20 text-center"
+    >
+      <div className="relative mb-5 flex h-16 w-16 items-center justify-center">
+        {/* Wireframe crate rings */}
+        <div className="absolute inset-0 rounded-2xl border border-white/[0.04] animate-signal-pulse" />
+        <div className="absolute inset-2 rounded-xl border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.6s" }} />
+        {/* Scanning line */}
+        <motion.div
+          className="absolute inset-x-2 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"
+          animate={{ top: ["20%", "80%", "20%"] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Orbit particle */}
+        <div className="absolute inset-0 animate-orbit" style={{ animationDuration: "6s" }}>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 flex h-2 w-2 items-center justify-center rounded-full bg-emerald-500/30">
+            <div className="h-1 w-1 rounded-full bg-emerald-500" />
+          </div>
+        </div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+          <Icon size={16} strokeWidth={1.5} className="text-zinc-600" />
+        </div>
+      </div>
+      <h3 className="text-[14px] font-medium text-zinc-300">{title}</h3>
+      <p className="mt-1 max-w-[260px] text-[12px] text-zinc-600">{subtitle}</p>
+      {cta && onCta && (
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={onCta}
+          className="mt-4 flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-white transition-all duration-150 hover:border-emerald-500/30 hover:text-emerald-400"
+        >
+          <Plus size={12} />
+          {cta}
+        </motion.button>
+      )}
+    </motion.div>
+  );
+}
+
+/* ── Scanning Loader ─────────────────────────────────── */
+
+function ScanningLoader() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20">
+      <div className="relative mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+        <Box size={20} strokeWidth={1} className="text-zinc-700" />
+        <motion.div
+          className="absolute inset-x-1 h-px bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent"
+          animate={{ top: ["15%", "85%", "15%"] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+      <p className="text-[12px] text-zinc-600">Scanning depot…</p>
+    </div>
+  );
+}
+
+/* ── Category Icons ──────────────────────────────────── */
+
+const categoryIconMap: Record<string, typeof Truck> = {
+  vehicle: Truck,
+  tool: Wrench,
+  equipment: Cog,
+};
+
+/* ── Status Config ───────────────────────────────────── */
+
+const statusConfig = {
+  available: { dot: "bg-emerald-500", label: "Available", text: "text-zinc-500" },
+  assigned: { dot: "bg-emerald-400", label: "Assigned", text: "text-zinc-500" },
+  maintenance: { dot: "bg-rose-500", label: "Maintenance", text: "text-rose-400" },
+};
+
+/* ── Page ─────────────────────────────────────────────── */
 
 export default function AssetsPage() {
   const router = useRouter();
@@ -44,6 +182,7 @@ export default function AssetsPage() {
     assets,
     stock,
     auditLog,
+    overview,
     activeTab,
     viewMode,
     searchQuery,
@@ -61,6 +200,7 @@ export default function AssetsPage() {
   const [prefillSerial, setPrefillSerial] = useState("");
   const [prefillBarcode, setPrefillBarcode] = useState("");
   const [prefillName, setPrefillName] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   const handleNewItem = () => {
     if (activeTab === "inventory") {
@@ -108,8 +248,8 @@ export default function AssetsPage() {
     () => stock.filter((s) => s.currentQty <= s.minLevel).length,
     [stock]
   );
-  const vehiclesActive = useMemo(
-    () => assets.filter((a) => a.category === "vehicle" && a.status === "assigned").length,
+  const maintenanceCount = useMemo(
+    () => assets.filter((a) => a.status === "maintenance").length,
     [assets]
   );
 
@@ -148,47 +288,88 @@ export default function AssetsPage() {
     );
   }, [auditLog, searchQuery]);
 
+  /* ── Sparkline mock data ────────────────────────────── */
+  const valueSparkData = useMemo(() => [180, 195, 200, 210, 215, 220, totalValue / 1000], [totalValue]);
+
+  /* ── Tab transition direction ───────────────────────── */
+  const tabOrder: AssetsTab[] = ["fleet", "inventory", "audits"];
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-[#050505]">
       {/* ── Header ───────────────────────────────────── */}
-      <div className="border-b border-[rgba(255,255,255,0.06)] px-4 pb-0 pt-4 md:px-6 md:pt-5">
+      <div className="border-b border-white/[0.05]">
         {/* Title row */}
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-[15px] font-medium text-zinc-200">Assets & Inventory</h1>
-            <p className="mt-0.5 text-[12px] text-zinc-600">Track equipment, vehicles, and stock levels.</p>
+        <div className="flex h-14 shrink-0 items-center justify-between px-5">
+          <div className="flex items-center gap-3">
+            <h1 className="text-[15px] font-medium text-white">Assets & Inventory</h1>
+            <span className="rounded-full bg-white/[0.03] px-2 py-0.5 text-[11px] text-zinc-500">
+              {assets.length} assets
+            </span>
+            {lowStockCount > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-400">
+                <AlertTriangle size={9} />
+                {lowStockCount} low stock
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Search */}
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search assets..."
-                className="h-8 w-48 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] pl-8 pr-3 text-[12px] text-zinc-300 placeholder-zinc-600 outline-none transition-colors focus:border-[rgba(255,255,255,0.2)]"
-              />
-            </div>
+            {/* Search toggle */}
+            <AnimatePresence>
+              {showSearch && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 200, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-zinc-900/50 px-2 py-1">
+                    <Search size={12} className="shrink-0 text-zinc-600" />
+                    <input
+                      autoFocus
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onBlur={() => { if (!searchQuery) setShowSearch(false); }}
+                      onKeyDown={(e) => { if (e.key === "Escape") { setSearchQuery(""); setShowSearch(false); } }}
+                      placeholder="Search assets…"
+                      className="w-full bg-transparent text-[12px] text-zinc-300 outline-none placeholder:text-zinc-600"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery("")} className="text-zinc-600 hover:text-zinc-400">
+                        <X size={10} />
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {!showSearch && (
+              <button
+                onClick={() => setShowSearch(true)}
+                className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-400"
+              >
+                <Search size={14} />
+              </button>
+            )}
 
             {/* Scan button */}
             <button
               onClick={() => handleScanOpen(activeTab === "inventory" ? "stock" : "asset")}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-3 text-[11px] text-zinc-400 transition-colors hover:border-[#00E676]/20 hover:text-[#00E676]"
+              className="flex h-7 items-center gap-1.5 rounded-md border border-white/[0.06] bg-zinc-900/50 px-2.5 text-[11px] text-zinc-500 transition-all duration-150 hover:border-emerald-500/20 hover:text-emerald-400"
             >
               <ScanBarcode size={13} />
               <span className="hidden sm:inline">Scan</span>
             </button>
 
-            {/* View toggle (only for fleet tab) */}
+            {/* View toggle (fleet only) */}
             {activeTab === "fleet" && (
-              <div className="flex rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
+              <div className="flex rounded-md border border-white/[0.06] bg-zinc-900/30">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`flex items-center gap-1 rounded-l-lg px-2.5 py-1.5 text-[11px] transition-colors ${
+                  className={`rounded-l-md px-2 py-1 transition-colors duration-150 ${
                     viewMode === "grid"
-                      ? "bg-[rgba(255,255,255,0.06)] text-zinc-200"
+                      ? "bg-white/[0.06] text-zinc-200"
                       : "text-zinc-600 hover:text-zinc-400"
                   }`}
                 >
@@ -196,9 +377,9 @@ export default function AssetsPage() {
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`flex items-center gap-1 rounded-r-lg px-2.5 py-1.5 text-[11px] transition-colors ${
+                  className={`rounded-r-md px-2 py-1 transition-colors duration-150 ${
                     viewMode === "list"
-                      ? "bg-[rgba(255,255,255,0.06)] text-zinc-200"
+                      ? "bg-white/[0.06] text-zinc-200"
                       : "text-zinc-600 hover:text-zinc-400"
                   }`}
                 >
@@ -207,44 +388,88 @@ export default function AssetsPage() {
               </div>
             )}
 
-            {/* New Item button */}
-            <button
+            {/* New Item — Ghost button */}
+            <motion.button
+              whileTap={{ scale: 0.98 }}
               onClick={handleNewItem}
-              className="flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00E676] to-[#00C853] px-4 text-[11px] font-medium text-black shadow-[0_0_20px_-6px_rgba(0,230,118,0.4)] transition-all hover:shadow-[0_0_30px_-6px_rgba(0,230,118,0.6)]"
+              className="flex h-7 items-center gap-1.5 rounded-md border border-white/[0.08] bg-zinc-900 px-3 text-[11px] font-medium text-white transition-all duration-150 hover:border-emerald-500/30 hover:text-emerald-400"
             >
               <Plus size={13} strokeWidth={2.5} />
               New Item
-            </button>
+            </motion.button>
           </div>
         </div>
 
-        {/* Stats ticker */}
-        <div className="mb-4 flex flex-wrap items-center gap-4 md:gap-6">
-          <div className="flex items-center gap-2">
-            <DollarSign size={13} className="text-emerald-500" />
-            <span className="text-[11px] text-zinc-500">Total Asset Value</span>
-            <span className="font-mono text-[12px] font-medium text-zinc-200">
-              ${(totalValue / 1000).toFixed(0)}k
-            </span>
-          </div>
-          <div className="h-3 w-px bg-zinc-800" />
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={13} className={lowStockCount > 0 ? "text-amber-500" : "text-zinc-600"} />
-            <span className="text-[11px] text-zinc-500">Low Stock Alerts</span>
-            <span className={`font-mono text-[12px] font-medium ${lowStockCount > 0 ? "text-amber-400" : "text-zinc-400"}`}>
-              {lowStockCount}
-            </span>
-          </div>
-          <div className="h-3 w-px bg-zinc-800" />
-          <div className="flex items-center gap-2">
-            <Radio size={13} className="text-[#00E676]" />
-            <span className="text-[11px] text-zinc-500">Vehicles Active</span>
-            <span className="font-mono text-[12px] font-medium text-zinc-200">{vehiclesActive}</span>
-          </div>
+        {/* ── Header Metrics: Glass Cards ──────────────── */}
+        <div className="grid grid-cols-3 gap-3 px-5 pb-4">
+          {/* Total Value */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, duration: 0.3 }}
+            className="group flex items-center gap-3 rounded-lg border border-white/[0.05] bg-zinc-900/40 px-4 py-2.5"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02]">
+              <DollarSign size={13} className="text-zinc-500 transition-colors group-hover:text-emerald-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] font-medium tracking-wider text-zinc-600 uppercase">Total Value</div>
+              <div className="text-[16px] font-semibold tracking-tight text-white">
+                ${(totalValue / 1000).toFixed(0)}k
+              </div>
+            </div>
+            <Sparkline data={valueSparkData} color="#10B981" width={52} height={18} />
+          </motion.div>
+
+          {/* Low Stock */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
+            className="group flex items-center gap-3 rounded-lg border border-white/[0.05] bg-zinc-900/40 px-4 py-2.5"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02]">
+              <AlertTriangle size={13} className={`transition-colors ${lowStockCount > 0 ? "text-rose-400" : "text-zinc-600"}`} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] font-medium tracking-wider text-zinc-600 uppercase">Low Stock</div>
+              <div className={`text-[16px] font-semibold tracking-tight ${lowStockCount > 0 ? "text-rose-400" : "text-zinc-400"}`}>
+                {lowStockCount}
+              </div>
+            </div>
+            {lowStockCount > 0 && (
+              <span className="rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[8px] font-medium text-rose-400">
+                Alert
+              </span>
+            )}
+          </motion.div>
+
+          {/* In Maintenance */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.3 }}
+            className="group flex items-center gap-3 rounded-lg border border-white/[0.05] bg-zinc-900/40 px-4 py-2.5"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02]">
+              <Wrench size={13} className={`transition-colors ${maintenanceCount > 0 ? "text-amber-400" : "text-zinc-600"}`} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] font-medium tracking-wider text-zinc-600 uppercase">Maintenance</div>
+              <div className={`text-[16px] font-semibold tracking-tight ${maintenanceCount > 0 ? "text-emerald-400" : "text-zinc-400"}`}>
+                {maintenanceCount}
+              </div>
+            </div>
+            {maintenanceCount > 0 && (
+              <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-medium text-amber-400">
+                Active
+              </span>
+            )}
+          </motion.div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-0">
+        {/* ── Tabs (Emerald underline) ─────────────────── */}
+        <div className="flex gap-0.5 px-5">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -252,16 +477,16 @@ export default function AssetsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-1.5 px-4 pb-2.5 pt-1 text-[12px] font-medium transition-colors ${
-                  isActive ? "text-zinc-200" : "text-zinc-600 hover:text-zinc-400"
+                className={`relative flex items-center gap-1.5 px-4 py-2 text-[12px] transition-colors duration-150 ${
+                  isActive ? "font-medium text-white" : "text-zinc-500 hover:text-zinc-300"
                 }`}
               >
-                <Icon size={14} strokeWidth={1.5} />
-                {tab.label}
+                <Icon size={13} strokeWidth={1.5} />
+                {tab.id === "audits" ? "Audits" : tab.label}
                 {isActive && (
                   <motion.div
                     layoutId="assets-tab-indicator"
-                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-white"
+                    className="absolute inset-x-2 -bottom-px h-[2px] rounded-full bg-emerald-500"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -272,30 +497,29 @@ export default function AssetsPage() {
       </div>
 
       {/* ── Content ──────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 size={24} className="animate-spin text-zinc-600" />
-            <p className="mt-3 text-[12px] text-zinc-600">Loading assets…</p>
-          </div>
+          <ScanningLoader />
         ) : (
           <AnimatePresence mode="wait">
+            {/* ── FLEET TAB ──────────────────────────────── */}
             {activeTab === "fleet" && (
               <motion.div
                 key="fleet"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="p-5"
               >
                 {filteredAssets.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <Truck size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
-                    <p className="text-[13px] font-medium text-zinc-500">No assets found</p>
-                    <p className="mt-1 text-[11px] text-zinc-600">
-                      {searchQuery ? "Try adjusting your search." : "Assets will appear here once added."}
-                    </p>
-                  </div>
+                  <DepotEmptyState
+                    icon={Truck}
+                    title="The depot is empty"
+                    subtitle={searchQuery ? "No assets match your search." : "Assets will appear here once added."}
+                    cta={!searchQuery ? "Add First Asset" : undefined}
+                    onCta={!searchQuery ? () => setAssetDrawerOpen(true) : undefined}
+                  />
                 ) : viewMode === "grid" ? (
                   <FleetGrid assets={filteredAssets} />
                 ) : (
@@ -304,42 +528,46 @@ export default function AssetsPage() {
               </motion.div>
             )}
 
+            {/* ── INVENTORY TAB ──────────────────────────── */}
             {activeTab === "inventory" && (
               <motion.div
                 key="inventory"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="p-5"
               >
                 {filteredStock.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <Package size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
-                    <p className="text-[13px] font-medium text-zinc-500">No inventory items</p>
-                    <p className="mt-1 text-[11px] text-zinc-600">
-                      {searchQuery ? "Try adjusting your search." : "Inventory will appear here once added."}
-                    </p>
-                  </div>
+                  <DepotEmptyState
+                    icon={Package}
+                    title="Inventory is clear"
+                    subtitle={searchQuery ? "No items match your search." : "Stock items will appear here once added."}
+                    cta={!searchQuery ? "Add First Item" : undefined}
+                    onCta={!searchQuery ? () => setStockModalOpen(true) : undefined}
+                  />
                 ) : (
                   <InventoryTable items={filteredStock} />
                 )}
               </motion.div>
             )}
 
+            {/* ── AUDITS TAB ────────────────────────────── */}
             {activeTab === "audits" && (
               <motion.div
                 key="audits"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="p-5"
               >
                 {filteredAudit.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <ClipboardList size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
-                    <p className="text-[13px] font-medium text-zinc-500">No audit entries</p>
-                    <p className="mt-1 text-[11px] text-zinc-600">Activity will be logged here.</p>
-                  </div>
+                  <DepotEmptyState
+                    icon={ClipboardList}
+                    title="No audit entries"
+                    subtitle="Activity will be logged automatically."
+                  />
                 ) : (
                   <AuditLog entries={filteredAudit} />
                 )}
@@ -372,60 +600,93 @@ export default function AssetsPage() {
   );
 }
 
-/* ── Fleet List View (Dense) ─────────────────────────── */
+/* ── Fleet List View (High-Density Table) ────────────── */
 
 import { type Asset } from "@/lib/assets-data";
 
 function FleetListView({ assets }: { assets: Asset[] }) {
   const router = useRouter();
 
-  const statusConfig = {
-    available: { color: "bg-emerald-500", label: "Available" },
-    assigned: { color: "bg-[#00E676]", label: "Assigned" },
-    maintenance: { color: "bg-red-500", label: "Maintenance" },
-  };
-
   return (
-    <div className="overflow-hidden rounded-xl border border-[rgba(255,255,255,0.06)]">
-      <div className="grid grid-cols-[80px_1fr_100px_120px_140px_80px] gap-3 border-b border-[rgba(255,255,255,0.06)] bg-[#0A0A0A] px-4 py-2">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">Tag</span>
-        <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">Name</span>
-        <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">Category</span>
-        <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">Status</span>
-        <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">Assignee</span>
-        <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">Service</span>
+    <div>
+      {/* Column headers */}
+      <div className="flex items-center border-b border-white/[0.04] bg-[#0A0A0A] px-4 py-1.5 rounded-t-lg">
+        <div className="w-8" />
+        <div className="w-20 px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">Tag</div>
+        <div className="min-w-0 flex-1 px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">Name</div>
+        <div className="w-20 px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">Status</div>
+        <div className="w-28 px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">Assignee</div>
+        <div className="w-28 px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">Location</div>
+        <div className="w-16 px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">Service</div>
+        <div className="w-8" />
       </div>
-      <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+
+      {/* Rows */}
+      <div>
         {assets.map((asset, i) => {
           const status = statusConfig[asset.status];
+          const CatIcon = categoryIconMap[asset.category] || Cog;
+
           return (
-            <motion.button
+            <motion.div
               key={asset.id}
-              initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.03, duration: 0.3 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => router.push(`/dashboard/assets/${asset.id}`)}
-              className="grid w-full grid-cols-[80px_1fr_100px_120px_140px_80px] items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.02]"
+              className="group flex cursor-pointer items-center border-b border-white/[0.03] px-4 transition-colors duration-100 hover:bg-white/[0.02]"
+              style={{ height: 40 }}
             >
-              <span className="font-mono text-[10px] text-zinc-600">{asset.tag}</span>
-              <span className="truncate text-[12px] text-zinc-300">{asset.name}</span>
-              <span className="text-[10px] capitalize text-zinc-500">{asset.category}</span>
-              <div className="flex items-center gap-1.5">
-                <div className={`h-1.5 w-1.5 rounded-full ${status.color}`} />
-                <span className="text-[10px] text-zinc-500">{status.label}</span>
+              {/* Category Icon */}
+              <div className="w-8">
+                <CatIcon size={14} strokeWidth={1.2} className="text-zinc-700 transition-colors group-hover:text-zinc-500" />
               </div>
-              <span className="truncate text-[10px] text-zinc-500">{asset.assignee || "—"}</span>
-              <div className="h-[3px] rounded-full bg-zinc-900">
-                <div
-                  className={`h-full rounded-full ${
-                    asset.serviceDuePercent >= 90 ? "bg-red-500" :
-                    asset.serviceDuePercent >= 70 ? "bg-amber-500" :
-                    "bg-emerald-500/60"
-                  }`}
-                  style={{ width: `${asset.serviceDuePercent}%` }}
-                />
+              {/* Tag */}
+              <div className="w-20 px-2 font-mono text-[10px] text-zinc-600">{asset.tag}</div>
+              {/* Name */}
+              <div className="min-w-0 flex-1 px-2 truncate text-[12px] font-medium text-zinc-300 transition-colors group-hover:text-white">
+                {asset.name}
               </div>
-            </motion.button>
+              {/* Status pip */}
+              <div className="w-20 px-2 flex items-center gap-1.5">
+                <span className={`inline-block h-[6px] w-[6px] rounded-full ${status.dot}`} />
+                <span className={`text-[10px] ${status.text}`}>{status.label}</span>
+              </div>
+              {/* Assignee */}
+              <div className="w-28 px-2 flex items-center gap-1.5">
+                {asset.assignee ? (
+                  <>
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-semibold text-zinc-400">
+                      {asset.assigneeInitials || "?"}
+                    </div>
+                    <span className="truncate text-[10px] text-zinc-500">{asset.assignee.split(" ")[0]}</span>
+                  </>
+                ) : (
+                  <span className="text-[10px] text-zinc-700">—</span>
+                )}
+              </div>
+              {/* Location */}
+              <div className="w-28 px-2 truncate text-[10px] text-zinc-600">
+                {asset.location || "—"}
+              </div>
+              {/* Service bar */}
+              <div className="w-16 px-2">
+                <div className="h-[3px] rounded-full bg-white/[0.04]">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      asset.serviceDuePercent >= 90 ? "bg-rose-500" :
+                      asset.serviceDuePercent >= 70 ? "bg-amber-500" :
+                      "bg-emerald-500/60"
+                    }`}
+                    style={{ width: `${asset.serviceDuePercent}%` }}
+                  />
+                </div>
+              </div>
+              {/* Arrow */}
+              <div className="w-8 text-right">
+                <ArrowRight size={11} className="text-zinc-700 opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+            </motion.div>
           );
         })}
       </div>

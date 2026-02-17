@@ -186,7 +186,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
             {/* Progress bar */}
             <div className="h-[2px] bg-zinc-900">
               <motion.div
-                className="h-full bg-[#00E676]"
+                className="h-full bg-emerald-500"
                 animate={{ width: `${((step + 1) / steps.length) * 100}%` }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
               />
@@ -215,7 +215,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                             onClick={() => setCategory(cat.id)}
                             className={`group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${
                               selected
-                                ? "border-[#00E676]/40 bg-[#00E676]/[0.04] shadow-[0_0_20px_-8px_rgba(0,230,118,0.3)]"
+                                ? "border-emerald-500/30 bg-emerald-500/[0.04] shadow-[0_0_20px_-8px_rgba(16,185,129,0.2)]"
                                 : "border-white/[0.06] bg-white/[0.01] hover:border-white/[0.12]"
                             }`}
                           >
@@ -223,7 +223,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                               <Icon size={22} strokeWidth={1.5} />
                             </div>
                             <div className="flex-1">
-                              <p className={`text-[13px] font-medium ${selected ? "text-[#00E676]" : "text-zinc-200"}`}>
+                              <p className={`text-[13px] font-medium ${selected ? "text-emerald-400" : "text-zinc-200"}`}>
                                 {cat.label}
                               </p>
                               <p className="text-[11px] text-zinc-600">{cat.desc}</p>
@@ -232,7 +232,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                               <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                className="flex h-6 w-6 items-center justify-center rounded-full bg-[#00E676]"
+                                className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500"
                               >
                                 <CheckCircle2 size={14} className="text-black" />
                               </motion.div>
@@ -297,7 +297,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                             onScanRequest ? (
                               <button
                                 onClick={onScanRequest}
-                                className="rounded p-1 text-[#00E676] transition-colors hover:bg-[#00E676]/10"
+                                className="rounded p-1 text-emerald-400 transition-colors hover:bg-emerald-500/10"
                               >
                                 <Camera size={14} />
                               </button>
@@ -333,7 +333,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                       ) : (
                         <button
                           onClick={() => fileInputRef.current?.click()}
-                          className="flex h-32 w-full items-center justify-center rounded-lg border border-dashed border-white/[0.08] bg-white/[0.01] transition-colors hover:border-[#00E676]/30 hover:bg-[#00E676]/[0.02]"
+                          className="flex h-32 w-full items-center justify-center rounded-lg border border-dashed border-white/[0.08] bg-white/[0.01] transition-colors hover:border-emerald-500/20 hover:bg-emerald-500/[0.02]"
                         >
                           <div className="flex flex-col items-center gap-2">
                             <div className="rounded-full bg-white/[0.04] p-2">
@@ -396,7 +396,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                         <select
                           value={serviceInterval}
                           onChange={(e) => setServiceInterval(e.target.value)}
-                          className="h-10 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 text-[12px] text-zinc-300 outline-none transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.3)]"
+                          className="h-10 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 text-[12px] text-zinc-300 outline-none transition-all focus:border-emerald-500/30 focus:shadow-[0_0_12px_-4px_rgba(16,185,129,0.2)]"
                         >
                           <option value="1">Every 1 month</option>
                           <option value="3">Every 3 months</option>
@@ -424,7 +424,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Optional notes..."
                         rows={3}
-                        className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.3)]"
+                        className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-emerald-500/30 focus:shadow-[0_0_12px_-4px_rgba(16,185,129,0.2)]"
                       />
                     </div>
                   </motion.div>
@@ -476,14 +476,14 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", damping: 15, stiffness: 300, delay: 0.1 }}
-                      className="flex h-20 w-20 items-center justify-center rounded-full bg-[#00E676]/10"
+                      className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10"
                     >
                       <motion.div
                         initial={{ scale: 0, rotate: -45 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{ type: "spring", damping: 15, stiffness: 300, delay: 0.3 }}
                       >
-                        <CheckCircle2 size={40} className="text-[#00E676]" />
+                        <CheckCircle2 size={40} className="text-emerald-400" />
                       </motion.div>
                     </motion.div>
                     <motion.p
@@ -522,7 +522,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                   <button
                     onClick={() => setStep(step + 1)}
                     disabled={!canNext()}
-                    className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#00E676] to-[#00C853] px-5 py-2 text-[12px] font-medium text-black shadow-[0_0_20px_-6px_rgba(0,230,118,0.4)] transition-all hover:shadow-[0_0_30px_-6px_rgba(0,230,118,0.6)] disabled:opacity-30 disabled:shadow-none"
+                    className="flex items-center gap-1 rounded-lg bg-emerald-500 px-5 py-2 text-[12px] font-medium text-black shadow-[0_0_20px_-6px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_30px_-6px_rgba(16,185,129,0.4)] disabled:opacity-30 disabled:shadow-none"
                   >
                     Next
                     <ChevronRight size={14} />
@@ -531,7 +531,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00E676] to-[#00C853] px-5 py-2 text-[12px] font-medium text-black shadow-[0_0_20px_-6px_rgba(0,230,118,0.4)] transition-all hover:shadow-[0_0_30px_-6px_rgba(0,230,118,0.6)] disabled:opacity-60"
+                    className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-[12px] font-medium text-black shadow-[0_0_20px_-6px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_30px_-6px_rgba(16,185,129,0.4)] disabled:opacity-60"
                   >
                     {saving ? (
                       <>
@@ -579,7 +579,7 @@ function GhostInput({
     <div>
       <label className="mb-1.5 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-zinc-600">
         {label}
-        {required && <span className="text-[#00E676]">*</span>}
+        {required && <span className="text-emerald-400">*</span>}
       </label>
       <div className="relative">
         {icon && (
@@ -595,7 +595,7 @@ function GhostInput({
           placeholder={placeholder}
           className={`h-10 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] ${
             icon ? "pl-9" : "pl-3"
-          } ${trailing ? "pr-10" : "pr-3"} text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.3)]`}
+          } ${trailing ? "pr-10" : "pr-3"} text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-emerald-500/30 focus:shadow-[0_0_12px_-4px_rgba(16,185,129,0.2)]`}
         />
         {trailing && (
           <span className="absolute right-2 top-1/2 -translate-y-1/2">

@@ -5,7 +5,7 @@ import { ArrowRightLeft, Wrench, PlusCircle, Trash2, Package } from "lucide-reac
 import { type AssetAuditEntry } from "@/lib/assets-data";
 
 const typeConfig = {
-  transfer: { icon: ArrowRightLeft, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.2)]", label: "Transfer" },
+  transfer: { icon: ArrowRightLeft, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Transfer" },
   service: { icon: Wrench, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", label: "Service" },
   create: { icon: PlusCircle, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Created" },
   retire: { icon: Trash2, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", label: "Retired" },

@@ -24,8 +24,8 @@ const categoryColors: Record<AssetCategory, string> = {
 
 const statusConfig = {
   available: { color: "bg-emerald-500", ring: "ring-emerald-500/30", label: "Available" },
-  assigned: { color: "bg-[#00E676]", ring: "ring-[rgba(0,230,118,0.3)]", label: "Assigned" },
-  maintenance: { color: "bg-red-500", ring: "ring-red-500/30", label: "Maintenance" },
+  assigned: { color: "bg-emerald-400", ring: "ring-emerald-400/30", label: "Assigned" },
+  maintenance: { color: "bg-rose-500", ring: "ring-rose-500/30", label: "Maintenance" },
 };
 
 interface FleetGridProps {
@@ -64,7 +64,7 @@ function AssetCard({ asset, index }: { asset: Asset; index: number }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => router.push(`/dashboard/assets/${asset.id}`)}
-      className="group relative cursor-pointer overflow-hidden rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0C0C0C] transition-all duration-300 hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-8px_rgba(255,255,255,0.04)]"
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-white/[0.05] bg-zinc-900/40 transition-all duration-300 hover:border-white/[0.1] hover:shadow-[0_0_30px_-8px_rgba(255,255,255,0.03)]"
       whileHover={{ scale: 1.02 }}
     >
       {/* Image placeholder / category background */}
@@ -125,8 +125,8 @@ function AssetCard({ asset, index }: { asset: Asset; index: number }) {
           <span className="font-mono text-[10px] text-zinc-600">{asset.tag}</span>
           <span className={`text-[9px] font-medium ${
             asset.status === "available" ? "text-emerald-400" :
-            asset.status === "assigned" ? "text-[#00E676]" :
-            "text-red-400"
+            asset.status === "assigned" ? "text-emerald-400" :
+            "text-rose-400"
           }`}>
             {status.label}
           </span>
@@ -154,7 +154,7 @@ function AssetCard({ asset, index }: { asset: Asset; index: number }) {
               animate={{ width: `${asset.serviceDuePercent}%` }}
               transition={{ delay: 0.3 + index * 0.04, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className={`h-full rounded-full ${
-                asset.serviceDuePercent >= 90 ? "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.4)]" :
+                asset.serviceDuePercent >= 90 ? "bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.3)]" :
                 asset.serviceDuePercent >= 70 ? "bg-amber-500" :
                 "bg-emerald-500/60"
               }`}

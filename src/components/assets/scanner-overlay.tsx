@@ -120,7 +120,7 @@ export function ScannerOverlay({ open, onClose, onScan }: ScannerOverlayProps) {
           {/* Header */}
           <div className="relative z-10 flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
-              <ScanBarcode size={18} className="text-[#00E676]" />
+              <ScanBarcode size={18} className="text-emerald-400" />
               <span className="text-[14px] font-medium text-white">Scanner</span>
             </div>
             <div className="flex items-center gap-2">
@@ -164,13 +164,13 @@ export function ScannerOverlay({ open, onClose, onScan }: ScannerOverlayProps) {
                     onChange={(e) => setManualCode(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleManualSubmit()}
                     placeholder="Enter code..."
-                    className="h-12 w-full rounded-xl border border-[#00E676]/30 bg-white/[0.03] px-4 text-center font-mono text-[16px] text-white placeholder-zinc-700 outline-none shadow-[0_0_20px_-8px_rgba(0,230,118,0.3)] focus:border-[#00E676]/60"
+                    className="h-12 w-full rounded-xl border border-emerald-500/20 bg-white/[0.03] px-4 text-center font-mono text-[16px] text-white placeholder-zinc-700 outline-none shadow-[0_0_20px_-8px_rgba(16,185,129,0.2)] focus:border-emerald-500/40"
                   />
                 </div>
                 <button
                   onClick={handleManualSubmit}
                   disabled={!manualCode.trim()}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] py-3 text-[13px] font-medium text-black shadow-[0_0_20px_-6px_rgba(0,230,118,0.4)] transition-all disabled:opacity-30"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3 text-[13px] font-medium text-black shadow-[0_0_20px_-6px_rgba(16,185,129,0.3)] transition-all disabled:opacity-30"
                 >
                   <Zap size={14} />
                   Look Up
@@ -193,16 +193,16 @@ export function ScannerOverlay({ open, onClose, onScan }: ScannerOverlayProps) {
                   {/* Viewfinder box */}
                   <div className="relative z-10 h-56 w-56 sm:h-64 sm:w-64">
                     {/* Corner brackets */}
-                    <div className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-[#00E676]" />
-                    <div className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-[#00E676]" />
-                    <div className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-[#00E676]" />
-                    <div className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-[#00E676]" />
+                    <div className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-emerald-500" />
+                    <div className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-emerald-500" />
+                    <div className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-emerald-500" />
+                    <div className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-emerald-500" />
 
                     {/* Scanning line */}
                     <motion.div
                       animate={{ y: [0, 200, 0] }}
                       transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-                      className="absolute left-2 right-2 h-[2px] bg-gradient-to-r from-transparent via-[#00E676] to-transparent opacity-60"
+                      className="absolute left-2 right-2 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-60"
                     />
                   </div>
                 </div>
@@ -213,8 +213,8 @@ export function ScannerOverlay({ open, onClose, onScan }: ScannerOverlayProps) {
                     <p className="text-[12px] text-red-400">{error}</p>
                   ) : scanning ? (
                     <div className="flex items-center justify-center gap-2">
-                      <Loader2 size={14} className="animate-spin text-[#00E676]" />
-                      <p className="text-[12px] text-[#00E676]">Code detected!</p>
+                      <Loader2 size={14} className="animate-spin text-emerald-400" />
+                      <p className="text-[12px] text-emerald-400">Code detected!</p>
                     </div>
                   ) : (
                     <motion.p

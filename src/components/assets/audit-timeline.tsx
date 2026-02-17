@@ -22,7 +22,7 @@ interface AuditTimelineProps {
 const actionConfig: Record<string, { icon: typeof PlusCircle; color: string; bg: string; border: string; label: string }> = {
   created: { icon: PlusCircle, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Created" },
   updated: { icon: ClipboardCheck, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", label: "Updated" },
-  check_out: { icon: ArrowRightLeft, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.2)]", label: "Checked Out" },
+  check_out: { icon: ArrowRightLeft, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Checked Out" },
   check_in: { icon: ArrowRightLeft, color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20", label: "Checked In" },
   service: { icon: Wrench, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", label: "Service" },
   consumed: { icon: Package, color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", label: "Consumed" },

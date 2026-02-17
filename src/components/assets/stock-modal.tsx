@@ -124,7 +124,7 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#050505] shadow-[0_0_60px_-20px_rgba(0,230,118,0.15)]"
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#050505] shadow-[0_0_60px_-20px_rgba(16,185,129,0.1)]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
@@ -159,9 +159,9 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", damping: 15, stiffness: 300 }}
-                      className="flex h-16 w-16 items-center justify-center rounded-full bg-[#00E676]/10"
+                      className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10"
                     >
-                      <CheckCircle2 size={32} className="text-[#00E676]" />
+                      <CheckCircle2 size={32} className="text-emerald-400" />
                     </motion.div>
                     <p className="mt-3 text-[14px] font-medium text-zinc-200">Stock Added!</p>
                     <p className="mt-1 text-[11px] text-zinc-600">{name} — Qty: {quantity}</p>
@@ -182,12 +182,12 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                             value={sku}
                             onChange={(e) => { setSku(e.target.value); if (!barcode) setBarcode(e.target.value); }}
                             placeholder="Scan or type"
-                            className="h-10 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] pl-9 pr-9 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.3)]"
+                            className="h-10 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] pl-9 pr-9 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-emerald-500/30 focus:shadow-[0_0_12px_-4px_rgba(16,185,129,0.2)]"
                           />
                           {onScanRequest && (
                             <button
                               onClick={onScanRequest}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#00E676] hover:bg-[#00E676]/10"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-emerald-400 hover:bg-emerald-500/10"
                             >
                               <Camera size={14} />
                             </button>
@@ -196,14 +196,14 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                       </div>
                       <div>
                         <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-zinc-600">
-                          Name <span className="text-[#00E676]">*</span>
+                          Name <span className="text-emerald-400">*</span>
                         </label>
                         <input
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="Item name"
-                          className="h-10 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.3)]"
+                          className="h-10 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-emerald-500/30 focus:shadow-[0_0_12px_-4px_rgba(16,185,129,0.2)]"
                         />
                       </div>
                     </div>
@@ -225,7 +225,7 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                             type="number"
                             value={quantity}
                             onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="h-12 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] text-center font-mono text-[20px] font-medium text-zinc-200 outline-none transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.3)]"
+                            className="h-12 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] text-center font-mono text-[20px] font-medium text-zinc-200 outline-none transition-all focus:border-emerald-500/30 focus:shadow-[0_0_12px_-4px_rgba(16,185,129,0.2)]"
                           />
                         </div>
                         <button
@@ -262,7 +262,7 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                             value={unitCost}
                             onChange={(e) => setUnitCost(e.target.value)}
                             placeholder="0.00"
-                            className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] pl-7 pr-2 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-[#00E676]/40"
+                            className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] pl-7 pr-2 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-emerald-500/30"
                           />
                         </div>
                       </div>
@@ -277,7 +277,7 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                             value={binLocation}
                             onChange={(e) => setBinLocation(e.target.value)}
                             placeholder="A1-S2"
-                            className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] pl-7 pr-2 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-[#00E676]/40"
+                            className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] pl-7 pr-2 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-emerald-500/30"
                           />
                         </div>
                       </div>
@@ -290,7 +290,7 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
                           placeholder="Pipe, Fitting..."
-                          className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-[#00E676]/40"
+                          className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-emerald-500/30"
                         />
                       </div>
                     </div>
@@ -305,7 +305,7 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                         value={supplier}
                         onChange={(e) => setSupplier(e.target.value)}
                         placeholder="e.g. Reece Plumbing"
-                        className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.3)]"
+                        className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 text-[12px] text-zinc-300 placeholder-zinc-700 outline-none transition-all focus:border-emerald-500/30 focus:shadow-[0_0_12px_-4px_rgba(16,185,129,0.2)]"
                       />
                     </div>
                   </motion.div>
@@ -325,7 +325,7 @@ export function StockModal({ open, onClose, onScanRequest, prefillBarcode, prefi
                 <button
                   onClick={handleSave}
                   disabled={saving || !name.trim()}
-                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00E676] to-[#00C853] px-5 py-2 text-[12px] font-medium text-black shadow-[0_0_20px_-6px_rgba(0,230,118,0.4)] transition-all hover:shadow-[0_0_30px_-6px_rgba(0,230,118,0.6)] disabled:opacity-30 disabled:shadow-none"
+                  className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-[12px] font-medium text-black shadow-[0_0_20px_-6px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_30px_-6px_rgba(16,185,129,0.4)] disabled:opacity-30 disabled:shadow-none"
                 >
                   {saving ? (
                     <>
