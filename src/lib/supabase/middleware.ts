@@ -56,5 +56,22 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // If signed in and visiting /dashboard, check if user has an org
+  // Redirect to /setup if they haven't completed onboarding (no org membership)
+  if (user && pathname.startsWith("/dashboard")) {
+    const { data: membership } = await (supabase as any)
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (!membership) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/setup";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }
