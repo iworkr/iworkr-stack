@@ -23,8 +23,11 @@ import {
   Camera,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useFormsStore } from "@/lib/forms-store";
+import { useOrg } from "@/lib/hooks/use-org";
+import { getOrgSettings } from "@/app/actions/finance";
+import { downloadFormPDF } from "@/lib/pdf/generate-form-pdf";
 
 /* ── Status Config ────────────────────────────────────── */
 
@@ -38,7 +41,17 @@ export default function SubmissionDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { submissions } = useFormsStore();
+  const { orgId } = useOrg();
   const [hashCopied, setHashCopied] = useState(false);
+  const [orgSettings, setOrgSettings] = useState<any>(null);
+
+  useEffect(() => {
+    if (orgId) {
+      getOrgSettings(orgId).then((res) => {
+        if (res) setOrgSettings(res);
+      });
+    }
+  }, [orgId]);
 
   const submission = useMemo(
     () => submissions.find((s) => s.id === params.id),
@@ -115,7 +128,13 @@ export default function SubmissionDetailPage() {
                 </div>
               </div>
 
-              <button className="flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-zinc-200">
+              <button
+                onClick={() => downloadFormPDF(submission, {
+                  name: orgSettings?.name,
+                  tax_id: orgSettings?.settings?.tax_id,
+                })}
+                className="flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-zinc-200"
+              >
                 <Download size={12} />
                 Download Official PDF
               </button>
@@ -317,8 +336,12 @@ export default function SubmissionDetailPage() {
                     <span className="text-[7px] font-bold text-black">iW</span>
                   </div>
                   <div>
-                    <p className="text-[11px] font-medium text-zinc-300">Apex Plumbing</p>
-                    <p className="text-[9px] text-zinc-700">ABN 12 345 678 901</p>
+                    <p className="text-[11px] font-medium text-zinc-300">{orgSettings?.name || "iWorkr"}</p>
+                    <p className="text-[9px] text-zinc-700">
+                      {orgSettings?.settings?.tax_id
+                        ? `ABN ${orgSettings.settings.tax_id}`
+                        : "Add Tax ID in Settings"}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">

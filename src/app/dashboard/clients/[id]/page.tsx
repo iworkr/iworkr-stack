@@ -30,10 +30,10 @@ import {
   ExternalLink,
   DollarSign,
 } from "lucide-react";
-import { clients as mockClients, type Client, type ClientActivity } from "@/lib/data";
+import { type Client, type ClientActivity } from "@/lib/data";
 import { useToastStore } from "@/components/app/action-toast";
 import { useClientsStore } from "@/lib/clients-store";
-import { getClientDetails, updateClient as updateClientAction, deleteClient as deleteClientAction } from "@/app/actions/clients";
+import { getClientDetails } from "@/app/actions/clients";
 import { useOrg } from "@/lib/hooks/use-org";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 
@@ -87,6 +87,20 @@ const headerContextItems: ContextMenuItem[] = [
   { id: "archive", label: "Archive Client", icon: <Trash2 size={13} />, danger: true },
 ];
 
+/* ── Haversine distance (km) ───────────────────────────────── */
+function haversineKm(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 /* ── Page Component ───────────────────────────────────────── */
 
 export default function ClientDossierPage() {
@@ -96,10 +110,9 @@ export default function ClientDossierPage() {
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
 
-  // Try store first, fall back to mock data
+  // Resolve client from store
   const storeClients = useClientsStore((s) => s.clients);
   const storeClient = storeClients.find((c) => c.id === clientId);
-  const mockClient = mockClients.find((c) => c.id === clientId);
 
   // Server-fetched detail data (contacts, activity, spend)
   const [serverDetail, setServerDetail] = useState<any>(null);
@@ -138,7 +151,7 @@ export default function ClientDossierPage() {
           amount: Number(inv.total || 0),
         })) || storeClient.spendHistory,
       }
-    : mockClient;
+    : undefined;
 
   /* ── Editable state ─────────────────────────────────────── */
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -146,6 +159,9 @@ export default function ClientDossierPage() {
   const [localEmail, setLocalEmail] = useState("");
   const [localNotes, setLocalNotes] = useState("");
   const [savedField, setSavedField] = useState<string | null>(null);
+  const [addingTag, setAddingTag] = useState(false);
+  const [newTagValue, setNewTagValue] = useState("");
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
   const [ctxMenu, setCtxMenu] = useState<{ open: boolean; x: number; y: number }>({
     open: false, x: 0, y: 0,
@@ -188,8 +204,7 @@ export default function ClientDossierPage() {
       navigator.clipboard?.writeText(client.phone);
       addToast("Phone copied");
     } else if (actionId === "archive") {
-      deleteClientAction(clientId);
-      useClientsStore.getState().archiveClient(clientId);
+      useClientsStore.getState().archiveClientServer(clientId);
       addToast(`${client.name} archived`);
       router.push("/dashboard/clients");
     }
@@ -260,8 +275,8 @@ export default function ClientDossierPage() {
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => {
-                navigator.clipboard?.writeText(client.email);
-                addToast("Email copied");
+                if (!client.email) { addToast("No email configured"); return; }
+                window.location.href = `mailto:${client.email}`;
               }}
               className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
               title="Email"
@@ -269,12 +284,20 @@ export default function ClientDossierPage() {
               <Mail size={14} />
             </button>
             <button
+              onClick={() => {
+                if (!client.phone) { addToast("No phone number configured"); return; }
+                window.location.href = `tel:${client.phone}`;
+              }}
               className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
               title="Call"
             >
               <Phone size={14} />
             </button>
             <button
+              onClick={() => {
+                if (!client.phone) { addToast("No phone number configured"); return; }
+                window.location.href = `sms:${client.phone}`;
+              }}
               className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
               title="Message"
             >
@@ -289,7 +312,7 @@ export default function ClientDossierPage() {
             <motion.button
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              onClick={() => router.push("/dashboard/jobs")}
+              onClick={() => router.push(`/dashboard/jobs?clientId=${client.id}&clientName=${encodeURIComponent(client.name)}`)}
               className="ml-2 flex items-center gap-1.5 rounded-md bg-[#5E6AD2] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#6E7AE2]"
             >
               <Plus size={12} />
@@ -571,7 +594,9 @@ export default function ClientDossierPage() {
                       </motion.div>
                     </div>
                     <div className="absolute right-2 bottom-2 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm">
-                      15 mins from HQ
+                      {client.addressCoords
+                        ? `${haversineKm(client.addressCoords.lat, client.addressCoords.lng, -33.8688, 151.2093).toFixed(1)} km from HQ`
+                        : "Distance unknown"}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[11px] text-zinc-500">
@@ -616,6 +641,11 @@ export default function ClientDossierPage() {
                         <Mail size={10} />
                       </button>
                       <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!contact.phone) { addToast("No phone number configured"); return; }
+                          window.location.href = `tel:${contact.phone}`;
+                        }}
                         className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
                         title="Call"
                       >
@@ -645,7 +675,7 @@ export default function ClientDossierPage() {
                   onSave={() => {
                     setEditingField(null);
                     flashSaved("email");
-                    updateClientAction(clientId, { email: localEmail });
+                    useClientsStore.getState().updateClientServer(clientId, { email: localEmail });
                     addToast("Email updated");
                   }}
                 />
@@ -661,7 +691,7 @@ export default function ClientDossierPage() {
                   onSave={() => {
                     setEditingField(null);
                     flashSaved("phone");
-                    updateClientAction(clientId, { phone: localPhone });
+                    useClientsStore.getState().updateClientServer(clientId, { phone: localPhone });
                     addToast("Phone updated");
                   }}
                 />
@@ -701,10 +731,38 @@ export default function ClientDossierPage() {
                     {tag}
                   </span>
                 ))}
-                <button className="inline-flex items-center gap-1 rounded-full border border-dashed border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[11px] text-zinc-600 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-400">
-                  <Plus size={9} />
-                  Add
-                </button>
+                {addingTag ? (
+                  <input
+                    ref={tagInputRef}
+                    autoFocus
+                    value={newTagValue}
+                    onChange={(e) => setNewTagValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newTagValue.trim()) {
+                        const tag = newTagValue.trim();
+                        const updatedTags = [...(client.tags || []), tag];
+                        useClientsStore.getState().updateClientServer(clientId, { tags: updatedTags });
+                        addToast(`Tag "${tag}" added`);
+                        setNewTagValue("");
+                        setAddingTag(false);
+                      } else if (e.key === "Escape") {
+                        setNewTagValue("");
+                        setAddingTag(false);
+                      }
+                    }}
+                    onBlur={() => { setNewTagValue(""); setAddingTag(false); }}
+                    placeholder="Tag name..."
+                    className="inline-flex w-20 rounded-full border border-[#5E6AD2]/40 bg-[rgba(255,255,255,0.03)] px-2.5 py-1 text-[11px] text-zinc-300 outline-none placeholder:text-zinc-600"
+                  />
+                ) : (
+                  <button
+                    onClick={() => setAddingTag(true)}
+                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[11px] text-zinc-600 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-400"
+                  >
+                    <Plus size={9} />
+                    Add
+                  </button>
+                )}
               </div>
             </div>
           </div>

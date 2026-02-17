@@ -15,13 +15,11 @@ const typeConfig = {
   success: { icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10" },
 };
 
-const fallbackInsight: AIInsight = {
-  type: "warning",
-  title: "3 jobs unassigned for tomorrow morning",
-  body: "Friday has 3 open jobs with no technician assigned. James is available 7 AM — 1 PM. Consider batch-assigning to reduce gap time.",
-  action: "Fix Schedule",
-  action_route: "/dashboard/schedule",
-  priority: 1,
+const emptyInsight: AIInsight = {
+  type: "success",
+  title: "No active insights",
+  body: "Schedule is optimized. We\u2019ll surface recommendations here when action is needed.",
+  priority: 0,
 };
 
 export function WidgetInsights() {
@@ -38,8 +36,8 @@ export function WidgetInsights() {
     });
   }, [orgId]);
 
-  // Show the highest priority insight
-  const insight = insights.length > 0 ? insights[0] : fallbackInsight;
+  // Show the highest priority insight, or a clean empty state
+  const insight = insights.length > 0 ? insights[0] : emptyInsight;
   const config = typeConfig[insight.type] || typeConfig.warning;
   const Icon = config.icon;
 

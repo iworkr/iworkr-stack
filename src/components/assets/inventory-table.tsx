@@ -34,24 +34,15 @@ export function InventoryTable({ items }: InventoryTableProps) {
 }
 
 function StockRow({ item, index }: { item: StockItem; index: number }) {
-  const { adjustStock, addAuditEntry } = useAssetsStore();
+  const { adjustStockServer } = useAssetsStore();
   const [hovered, setHovered] = useState(false);
   const alertLevel = getStockAlertLevel(item);
   const fillPercent = (item.currentQty / item.maxQty) * 100;
   const reorderPercent = (item.minLevel / item.maxQty) * 100;
   const isLow = alertLevel === "low" || alertLevel === "critical";
 
-  const handleAdjust = (delta: number) => {
-    adjustStock(item.id, delta);
-    addAuditEntry({
-      assetId: item.id,
-      assetTag: item.sku,
-      assetName: item.name,
-      type: "stock_adjust",
-      description: `Stock adjusted ${delta > 0 ? "+" : ""}${delta} (manual)`,
-      user: "Mike Thompson",
-      time: "Just now",
-    });
+  const handleAdjust = async (delta: number) => {
+    await adjustStockServer(item.id, delta);
   };
 
   return (

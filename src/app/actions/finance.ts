@@ -125,6 +125,25 @@ export interface FinanceOverview {
 }
 
 /**
+ * Get organization settings (name, tax_id, address, email)
+ */
+export async function getOrgSettings(orgId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+    const { data, error } = await supabase
+      .from("organizations")
+      .select("name, settings")
+      .eq("id", orgId)
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    return { data: { name: data.name, settings: data.settings || {} }, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to fetch org settings" };
+  }
+}
+
+/**
  * Get all invoices for an organization with line items count
  */
 export async function getInvoices(orgId: string) {
@@ -551,6 +570,57 @@ export async function addLineItem(invoiceId: string, item: AddLineItemParams) {
     return { data: lineItem, error: null };
   } catch (error: any) {
     return { data: null, error: error.message || "Failed to add line item" };
+  }
+}
+
+/**
+ * Update a line item and recalculate invoice totals
+ */
+export async function updateLineItem(
+  lineItemId: string,
+  updates: { description?: string; quantity?: number; unit_price?: number }
+) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: "Unauthorized" };
+    }
+
+    const { data: lineItem, error: updateError } = await supabase
+      .from("invoice_line_items")
+      .update(updates)
+      .eq("id", lineItemId)
+      .select("*, invoice_id")
+      .single();
+
+    if (updateError) {
+      return { data: null, error: updateError.message };
+    }
+
+    // Recalculate invoice totals
+    const { data: invoice, error: invoiceError } = await supabase
+      .from("invoices")
+      .select("tax_rate, invoice_line_items (quantity, unit_price)")
+      .eq("id", lineItem.invoice_id)
+      .single();
+
+    if (!invoiceError && invoice) {
+      const { subtotal, tax, total } = calculateTotals(
+        invoice.invoice_line_items || [],
+        invoice.tax_rate
+      );
+      await supabase
+        .from("invoices")
+        .update({ subtotal, tax, total })
+        .eq("id", lineItem.invoice_id);
+    }
+
+    revalidatePath("/dashboard/finance");
+    return { data: lineItem, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to update line item" };
   }
 }
 

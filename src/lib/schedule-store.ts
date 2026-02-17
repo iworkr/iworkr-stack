@@ -1,7 +1,5 @@
 import { create } from "zustand";
 import {
-  scheduleBlocks as initialBlocks,
-  technicians as initialTechnicians,
   type ScheduleBlock,
   type ScheduleBlockStatus,
   type Technician,
@@ -13,6 +11,7 @@ import {
   moveScheduleBlockServer,
   resizeScheduleBlockServer,
   deleteScheduleBlock as deleteBlockServer,
+  updateScheduleBlock as updateBlockServer,
   type BacklogJob,
   type ScheduleEvent,
 } from "@/app/actions/schedule";
@@ -117,8 +116,8 @@ function mapServerTechnician(t: any): Technician {
 }
 
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
-  blocks: initialBlocks,
-  technicians: initialTechnicians,
+  blocks: [],
+  technicians: [],
   backlogJobs: [],
   scheduleEvents: [],
   loaded: false,
@@ -141,8 +140,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         const mappedTechs = (data.technicians || []).map(mapServerTechnician);
 
         set({
-          blocks: mappedBlocks.length > 0 ? mappedBlocks : initialBlocks,
-          technicians: mappedTechs.length > 0 ? mappedTechs : initialTechnicians,
+          blocks: mappedBlocks,
+          technicians: mappedTechs,
           backlogJobs: data.backlog || [],
           scheduleEvents: data.events || [],
           loaded: true,
@@ -167,14 +166,14 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       const mappedTechs = (techniciansResult.data || []).map(mapServerTechnician);
 
       set({
-        blocks: mappedBlocks.length > 0 ? mappedBlocks : initialBlocks,
-        technicians: mappedTechs.length > 0 ? mappedTechs : initialTechnicians,
+        blocks: mappedBlocks,
+        technicians: mappedTechs,
         loaded: true,
         loading: false,
       });
     } catch (error) {
       console.error("Failed to load schedule data:", error);
-      set({ loading: false });
+      set({ loaded: true, loading: false });
     }
   },
 
@@ -187,8 +186,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         const mappedBlocks = (data.blocks || []).map(mapServerBlock);
         const mappedTechs = (data.technicians || []).map(mapServerTechnician);
         set({
-          blocks: mappedBlocks.length > 0 ? mappedBlocks : get().blocks,
-          technicians: mappedTechs.length > 0 ? mappedTechs : get().technicians,
+          blocks: mappedBlocks,
+          technicians: mappedTechs,
           backlogJobs: data.backlog || [],
           scheduleEvents: data.events || [],
         });
@@ -279,12 +278,26 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       blocks: [...s.blocks, block].sort((a, b) => a.startHour - b.startHour),
     })),
 
-  updateBlockStatus: (blockId, status) =>
+  updateBlockStatus: (blockId, status) => {
+    const prevBlock = get().blocks.find((b) => b.id === blockId);
+    // Optimistic update
     set((s) => ({
       blocks: s.blocks.map((b) =>
         b.id === blockId ? { ...b, status } : b
       ),
-    })),
+    }));
+    // Server sync with rollback on failure
+    updateBlockServer(blockId, { status }).catch((err) => {
+      console.error("Failed to persist status update:", err);
+      if (prevBlock) {
+        set((s) => ({
+          blocks: s.blocks.map((b) =>
+            b.id === blockId ? { ...b, status: prevBlock.status } : b
+          ),
+        }));
+      }
+    });
+  },
 
   handleRealtimeUpdate: () => {
     get().refresh();

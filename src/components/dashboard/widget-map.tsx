@@ -44,13 +44,7 @@ interface Pin {
   y: string;
 }
 
-// Fallback pins for when no live data is available
-const fallbackPins: Pin[] = [
-  { id: "1", name: "Mike T.", task: "Boiler Repair", status: "on_job", x: "28%", y: "35%" },
-  { id: "2", name: "Sarah C.", task: "Pipe Inspection", status: "on_job", x: "55%", y: "55%" },
-  { id: "3", name: "James O.", task: "Emergency Call", status: "en_route", x: "72%", y: "28%" },
-  { id: "4", name: "Tom L.", task: "Maintenance", status: "idle", x: "40%", y: "70%" },
-];
+// No fallback pins — show clean empty state when no data
 
 export function WidgetMap() {
   const router = useRouter();
@@ -93,9 +87,9 @@ export function WidgetMap() {
     };
   }, [orgId]);
 
-  // Map dispatch data to pins
+  // Map dispatch data to pins — no fallback, show empty state if no data
   const pins: Pin[] = useMemo(() => {
-    if (dispatchData.length === 0) return fallbackPins;
+    if (dispatchData.length === 0) return [];
 
     return dispatchData.map(d => {
       const pos = coordsToPosition(d.location_lat, d.location_lng, dispatchData);
@@ -151,14 +145,14 @@ export function WidgetMap() {
           }}
         />
 
-        {/* Road-like lines */}
-        <svg className="absolute inset-0 h-full w-full opacity-[0.06]">
-          <line x1="20%" y1="0" x2="20%" y2="100%" stroke="white" strokeWidth="2" />
-          <line x1="60%" y1="0" x2="60%" y2="100%" stroke="white" strokeWidth="2" />
-          <line x1="0" y1="40%" x2="100%" y2="40%" stroke="white" strokeWidth="2" />
-          <line x1="0" y1="75%" x2="100%" y2="75%" stroke="white" strokeWidth="1" />
-          <path d="M 10% 20% Q 35% 50%, 70% 30%" fill="none" stroke="white" strokeWidth="3" />
-          <path d="M 5% 60% Q 45% 40%, 85% 65%" fill="none" stroke="white" strokeWidth="1.5" />
+        {/* Road-like lines — using viewBox-relative coords to avoid invalid SVG % in paths */}
+        <svg className="absolute inset-0 h-full w-full opacity-[0.06]" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <line x1="20" y1="0" x2="20" y2="100" stroke="white" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+          <line x1="60" y1="0" x2="60" y2="100" stroke="white" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+          <line x1="0" y1="40" x2="100" y2="40" stroke="white" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+          <line x1="0" y1="75" x2="100" y2="75" stroke="white" strokeWidth="0.3" vectorEffect="non-scaling-stroke" />
+          <path d="M 10 20 Q 35 50, 70 30" fill="none" stroke="white" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
+          <path d="M 5 60 Q 45 40, 85 65" fill="none" stroke="white" strokeWidth="0.4" vectorEffect="non-scaling-stroke" />
         </svg>
 
         {/* Radar sweep from HQ */}
@@ -205,6 +199,17 @@ export function WidgetMap() {
           </motion.div>
         </div>
 
+        {/* Empty state when no techs active */}
+        {loaded && pins.length === 0 && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center">
+            <div className="text-center">
+              <MapPin size={20} strokeWidth={1} className="mx-auto mb-1.5 text-zinc-700" />
+              <p className="text-[11px] text-zinc-600">No active dispatches</p>
+              <p className="mt-0.5 text-[9px] text-zinc-700">Technicians will appear here when jobs are in progress.</p>
+            </div>
+          </div>
+        )}
+
         {/* Technician pins */}
         {pins.map((pin) => {
           const cfg = statusConfig[pin.status];
@@ -247,8 +252,11 @@ export function WidgetMap() {
           );
         })}
 
-        {/* Legend */}
-        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-3">
+        {/* Bottom gradient */}
+        <div className="absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-[#0C0C0C] to-transparent" />
+
+        {/* Legend — above gradient */}
+        <div className="absolute bottom-3 left-3 z-30 flex items-center gap-3">
           <span className="flex items-center gap-1 text-[9px] text-zinc-600">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> On Job
           </span>
@@ -259,9 +267,6 @@ export function WidgetMap() {
             <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" /> Idle
           </span>
         </div>
-
-        {/* Bottom gradient */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0C0C0C] to-transparent" />
       </div>
     </WidgetShell>
   );

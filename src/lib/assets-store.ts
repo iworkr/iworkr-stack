@@ -1,8 +1,5 @@
 import { create } from "zustand";
 import {
-  assets as initialAssets,
-  stockItems as initialStock,
-  auditLog as initialAudit,
   type Asset,
   type StockItem,
   type AssetAuditEntry,
@@ -17,6 +14,7 @@ import {
   consumeInventory as consumeInventoryServer,
   logAssetService,
   updateInventoryItem,
+  updateAsset as updateAssetAction,
   type AssetsOverview,
 } from "@/app/actions/assets";
 
@@ -135,6 +133,7 @@ interface AssetsState {
 
   /* Asset CRUD */
   updateAssetStatus: (id: string, status: AssetStatus) => void;
+  updateAssetStatusServer: (id: string, status: AssetStatus) => Promise<void>;
   assignAsset: (id: string, assignee: string, initials: string) => void;
   unassignAsset: (id: string) => void;
 
@@ -158,9 +157,9 @@ interface AssetsState {
 }
 
 export const useAssetsStore = create<AssetsState>((set, get) => ({
-  assets: initialAssets,
-  stock: initialStock,
-  auditLog: initialAudit,
+  assets: [],
+  stock: [],
+  auditLog: [],
   overview: null,
   activeTab: "fleet",
   viewMode: "grid",
@@ -180,17 +179,17 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
         getAssetsOverview(orgId),
       ]);
 
-      const mappedAssets = assetsResult.data && assetsResult.data.length > 0
+      const mappedAssets = assetsResult.data
         ? (assetsResult.data as any[]).map(mapServerAsset)
-        : initialAssets;
+        : [];
 
-      const mappedStock = stockResult.data && stockResult.data.length > 0
+      const mappedStock = stockResult.data
         ? (stockResult.data as any[]).map(mapServerStock)
-        : initialStock;
+        : [];
 
-      const mappedAudits = auditsResult.data && auditsResult.data.length > 0
+      const mappedAudits = auditsResult.data
         ? (auditsResult.data as any[]).map(mapServerAudit)
-        : initialAudit;
+        : [];
 
       set({
         assets: mappedAssets,
@@ -201,7 +200,7 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
         loading: false,
       });
     } catch {
-      set({ loading: false });
+      set({ loaded: true, loading: false });
     }
   },
 
@@ -217,11 +216,11 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
       ]);
 
       set({
-        assets: assetsResult.data && assetsResult.data.length > 0
+        assets: assetsResult.data
           ? (assetsResult.data as any[]).map(mapServerAsset) : get().assets,
-        stock: stockResult.data && stockResult.data.length > 0
+        stock: stockResult.data
           ? (stockResult.data as any[]).map(mapServerStock) : get().stock,
-        auditLog: auditsResult.data && auditsResult.data.length > 0
+        auditLog: auditsResult.data
           ? (auditsResult.data as any[]).map(mapServerAudit) : get().auditLog,
         overview: overviewResult.data || get().overview,
       });
@@ -242,6 +241,21 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
     set((s) => ({
       assets: s.assets.map((a) => (a.id === id ? { ...a, status } : a)),
     })),
+
+  /** Optimistic status update + server persist */
+  updateAssetStatusServer: async (id, status) => {
+    // Optimistic
+    set((s) => ({
+      assets: s.assets.map((a) => (a.id === id ? { ...a, status } : a)),
+    }));
+    // Server sync
+    try {
+      await updateAssetAction(id, { status });
+      await get().refresh();
+    } catch (err) {
+      console.error("Failed to persist asset status update:", err);
+    }
+  },
 
   assignAsset: (id, assignee, initials) =>
     set((s) => ({
@@ -295,6 +309,7 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
     const item = get().stock.find((s) => s.id === id);
     if (item) {
       await updateInventoryItem(id, { quantity: item.currentQty });
+      await get().refresh();
     }
   },
 

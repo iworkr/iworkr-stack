@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -15,11 +15,14 @@ import {
   Copy,
   Pencil,
   SlidersHorizontal,
+  Users,
+  X,
+  Check,
 } from "lucide-react";
 import { useToastStore } from "@/components/app/action-toast";
 import { useShellStore } from "@/lib/shell-store";
 import { useClientsStore } from "@/lib/clients-store";
-import { deleteClient as deleteClientAction } from "@/app/actions/clients";
+// deleteClientAction is now called inside archiveClientServer in the store
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 
 /* ── Status config ────────────────────────────────────────── */
@@ -62,20 +65,47 @@ export default function ClientsPage() {
   const router = useRouter();
   const { addToast } = useToastStore();
   const { setCreateClientModalOpen } = useShellStore();
-  const { clients: clientsList, archiveClient, restoreClient } = useClientsStore();
+  const {
+    clients: clientsList,
+    loading,
+    archiveClientServer,
+    restoreClient,
+    filterStatus,
+    filterType,
+    setFilterStatus,
+    setFilterType,
+  } = useClientsStore();
   const [search, setSearch] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   const [ctxMenu, setCtxMenu] = useState<{ open: boolean; x: number; y: number; clientId: string }>({
     open: false, x: 0, y: 0, clientId: "",
   });
 
-  const filtered = clientsList.filter(
-    (c) =>
+  // Close filter popover on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    if (filterOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [filterOpen]);
+
+  const filtered = clientsList.filter((c) => {
+    const matchesSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       (c.email || "").toLowerCase().includes(search.toLowerCase()) ||
-      (c.tags || []).some((t) => t.toLowerCase().includes(search.toLowerCase()))
-  );
+      (c.tags || []).some((t) => t.toLowerCase().includes(search.toLowerCase()));
+    const matchesStatus = !filterStatus || c.status === filterStatus;
+    const matchesType = !filterType || c.type === filterType;
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const hasActiveFilters = !!filterStatus || !!filterType;
 
   /* ── Keyboard ───────────────────────────────────────────── */
   const handleKey = useCallback(
@@ -110,16 +140,24 @@ export default function ClientsPage() {
 
     if (actionId === "open") {
       router.push(`/dashboard/clients/${client.id}`);
+    } else if (actionId === "email") {
+      if (!client.email) {
+        addToast("No email configured");
+        return;
+      }
+      window.location.href = `mailto:${client.email}`;
+    } else if (actionId === "call") {
+      if (!client.phone) {
+        addToast("No phone number configured");
+        return;
+      }
+      window.location.href = `tel:${client.phone}`;
     } else if (actionId === "copy") {
       navigator.clipboard?.writeText(client.email);
       addToast("Email copied to clipboard");
     } else if (actionId === "archive") {
-      const archived = client;
-      archiveClient(client.id);
-      deleteClientAction(client.id);
-      addToast(`${client.name} archived`, () => {
-        restoreClient(archived);
-      });
+      archiveClientServer(client.id);
+      addToast(`${client.name} archived`);
     }
   }
 
@@ -154,10 +192,100 @@ export default function ClientsPage() {
               className="w-40 bg-transparent text-[12px] text-zinc-300 outline-none placeholder:text-zinc-600"
             />
           </div>
-          <button className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-500 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300">
-            <SlidersHorizontal size={12} />
-            Filter
-          </button>
+          <div className="relative" ref={filterRef}>
+            <button
+              onClick={() => setFilterOpen((v) => !v)}
+              className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] transition-colors ${
+                hasActiveFilters
+                  ? "border-[#5E6AD2]/40 text-[#5E6AD2] hover:border-[#5E6AD2]/60"
+                  : "border-[rgba(255,255,255,0.08)] text-zinc-500 hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+              }`}
+            >
+              <SlidersHorizontal size={12} />
+              Filter
+              {hasActiveFilters && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#5E6AD2] text-[9px] font-medium text-white">
+                  {(filterStatus ? 1 : 0) + (filterType ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
+            {/* Filter Popover */}
+            <AnimatePresence>
+              {filterOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full z-50 mt-1.5 w-56 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#0a0a0a] p-3 shadow-2xl"
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-[11px] font-medium tracking-wider text-zinc-500 uppercase">Filters</span>
+                    {hasActiveFilters && (
+                      <button
+                        onClick={() => { setFilterStatus(null); setFilterType(null); }}
+                        className="text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Status */}
+                  <div className="mb-3">
+                    <span className="mb-1.5 block text-[10px] font-medium text-zinc-600">Status</span>
+                    <div className="flex flex-wrap gap-1">
+                      {(["active", "lead", "churned", "inactive"] as const).map((s) => {
+                        const cfg = statusConfig[s];
+                        const isActive = filterStatus === s;
+                        return (
+                          <button
+                            key={s}
+                            onClick={() => setFilterStatus(isActive ? null : s)}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] transition-colors ${
+                              isActive
+                                ? "border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] text-zinc-200"
+                                : "border-[rgba(255,255,255,0.06)] text-zinc-500 hover:border-[rgba(255,255,255,0.12)] hover:text-zinc-300"
+                            }`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                            {cfg.label}
+                            {isActive && <Check size={8} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Type */}
+                  <div>
+                    <span className="mb-1.5 block text-[10px] font-medium text-zinc-600">Type</span>
+                    <div className="flex gap-1">
+                      {([{ value: "residential", label: "Residential", icon: <User size={9} /> }, { value: "commercial", label: "Commercial", icon: <Building2 size={9} /> }] as const).map(({ value, label, icon }) => {
+                        const isActive = filterType === value;
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => setFilterType(isActive ? null : value)}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] transition-colors ${
+                              isActive
+                                ? "border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] text-zinc-200"
+                                : "border-[rgba(255,255,255,0.06)] text-zinc-500 hover:border-[rgba(255,255,255,0.12)] hover:text-zinc-300"
+                            }`}
+                          >
+                            {icon}
+                            {label}
+                            {isActive && <Check size={8} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={() => setCreateClientModalOpen(true)}
@@ -182,6 +310,33 @@ export default function ClientsPage() {
 
       {/* ── Rows ───────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
+        {/* Empty state */}
+        {filtered.length === 0 && !loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-24 text-center"
+          >
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+              <Users size={22} strokeWidth={1} className="text-zinc-700" />
+            </div>
+            <h3 className="text-[15px] font-medium text-zinc-300">No clients found</h3>
+            <p className="mt-1 text-[12px] text-zinc-600">
+              {hasActiveFilters || search
+                ? "Try adjusting your filters or search terms."
+                : "Add your first client to get started."}
+            </p>
+            {(hasActiveFilters || search) && (
+              <button
+                onClick={() => { setSearch(""); setFilterStatus(null); setFilterType(null); }}
+                className="mt-3 rounded-md border border-[rgba(255,255,255,0.08)] px-3 py-1 text-[11px] text-zinc-500 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+              >
+                Clear filters
+              </button>
+            )}
+          </motion.div>
+        )}
+
         <AnimatePresence>
           {filtered.map((client, i) => {
             const isFocused = i === focusedIndex;

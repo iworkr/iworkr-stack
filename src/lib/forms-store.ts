@@ -1,7 +1,5 @@
 import { create } from "zustand";
 import {
-  formTemplates as mockTemplates,
-  formSubmissions as mockSubmissions,
   type FormTemplate,
   type FormSubmission,
   type FormBlock,
@@ -200,8 +198,8 @@ interface FormsState {
 }
 
 export const useFormsStore = create<FormsState>((set, get) => ({
-  templates: mockTemplates,
-  submissions: mockSubmissions,
+  templates: [],
+  submissions: [],
   overview: null,
   activeTab: "my_forms",
   searchQuery: "",
@@ -225,15 +223,13 @@ export const useFormsStore = create<FormsState>((set, get) => ({
         getFormsOverview(orgId),
       ]);
 
-      const serverTemplates =
-        formsRes.data && formsRes.data.length > 0
-          ? formsRes.data.map(mapServerTemplate)
-          : mockTemplates;
+      const serverTemplates = formsRes.data
+        ? formsRes.data.map(mapServerTemplate)
+        : [];
 
-      const serverSubmissions =
-        subsRes.data && subsRes.data.length > 0
-          ? subsRes.data.map(mapServerSubmission)
-          : mockSubmissions;
+      const serverSubmissions = subsRes.data
+        ? subsRes.data.map(mapServerSubmission)
+        : [];
 
       set({
         templates: serverTemplates,
@@ -243,7 +239,7 @@ export const useFormsStore = create<FormsState>((set, get) => ({
         loading: false,
       });
     } catch {
-      set({ templates: mockTemplates, submissions: mockSubmissions, loaded: true, loading: false });
+      set({ loaded: true, loading: false });
     }
   },
 

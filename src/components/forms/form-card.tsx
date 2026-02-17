@@ -18,6 +18,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { type FormTemplate, type BlockType } from "@/lib/forms-data";
 import { useFormsStore } from "@/lib/forms-store";
 
@@ -47,6 +48,7 @@ interface FormCardProps {
 }
 
 export function FormCard({ template, index }: FormCardProps) {
+  const router = useRouter();
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -151,12 +153,18 @@ export function FormCard({ template, index }: FormCardProps) {
             animate={{ opacity: 1 }}
             className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 backdrop-blur-sm"
           >
-            <button className="flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.08)] px-3.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[rgba(255,255,255,0.15)]">
+            <button
+              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/forms/fill/${template.id}`); }}
+              className="flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.08)] px-3.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[rgba(255,255,255,0.15)]"
+            >
               <Eye size={12} />
               Use
             </button>
             {template.source === "custom" && (
-              <button className="flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.08)] px-3.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[rgba(255,255,255,0.15)]">
+              <button
+                onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/forms/builder/${template.id}`); }}
+                className="flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.08)] px-3.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[rgba(255,255,255,0.15)]"
+              >
                 <Edit3 size={12} />
                 Edit
               </button>
@@ -223,6 +231,7 @@ export function FormCard({ template, index }: FormCardProps) {
               onClick={(e) => {
                 e.stopPropagation();
                 setMenuOpen(false);
+                router.push(`/dashboard/forms/builder/${template.id}`);
               }}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-zinc-400 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-200"
             >

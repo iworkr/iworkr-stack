@@ -1,8 +1,5 @@
 import { create } from "zustand";
 import {
-  invoices as initialInvoices,
-  payouts as initialPayouts,
-  dailyRevenue as initialDailyRevenue,
   type Invoice,
   type InvoiceStatus,
   type LineItem,
@@ -17,6 +14,9 @@ import {
   getFinanceOverview,
   createInvoiceFull,
   updateInvoiceStatus as updateInvoiceStatusServer,
+  addLineItem as addLineItemServer,
+  removeLineItem as removeLineItemServer,
+  updateLineItem as updateLineItemServer,
   type CreateInvoiceParams,
   type FinanceOverview,
 } from "@/app/actions/finance";
@@ -63,12 +63,15 @@ interface FinanceState {
 
   /* Recalculate totals from line items */
   recalcInvoice: (id: string) => void;
+
+  /** Sync a single line-item edit to the server */
+  syncLineItemToServer: (invoiceId: string, lineItemId: string, patch: Partial<LineItem>) => Promise<void>;
 }
 
 export const useFinanceStore = create<FinanceState>((set, get) => ({
-  invoices: initialInvoices,
-  payouts: initialPayouts,
-  dailyRevenue: initialDailyRevenue,
+  invoices: [],
+  payouts: [],
+  dailyRevenue: [],
   overview: null,
   loaded: false,
   loading: false,
@@ -97,6 +100,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             const fullInvoice = result.data;
             mappedInvoices.push({
               id: fullInvoice.display_id || fullInvoice.id,
+              dbId: fullInvoice.id,
               clientId: fullInvoice.client_id || "",
               clientName: fullInvoice.client_name || "",
               clientEmail: fullInvoice.client_email || "",
@@ -186,16 +190,16 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       }
 
       set({
-        invoices: mappedInvoices.length > 0 ? mappedInvoices : initialInvoices,
-        payouts: mappedPayouts.length > 0 ? mappedPayouts : initialPayouts,
-        dailyRevenue: mappedRevenue.length > 0 ? mappedRevenue : initialDailyRevenue,
+        invoices: mappedInvoices,
+        payouts: mappedPayouts,
+        dailyRevenue: mappedRevenue,
         overview: overviewResult.data || null,
         loaded: true,
         loading: false,
       });
     } catch (error) {
       console.error("Failed to load finance data:", error);
-      set({ loading: false });
+      set({ loaded: true, loading: false });
     }
   },
 
@@ -218,6 +222,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             const fi = result.data;
             mappedInvoices.push({
               id: fi.display_id || fi.id,
+              dbId: fi.id,
               clientId: fi.client_id || "",
               clientName: fi.client_name || "",
               clientEmail: fi.client_email || "",
@@ -248,8 +253,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       }));
 
       set({
-        invoices: mappedInvoices.length > 0 ? mappedInvoices : get().invoices,
-        payouts: mappedPayouts.length > 0 ? mappedPayouts : get().payouts,
+        invoices: mappedInvoices,
+        payouts: mappedPayouts,
         overview: overviewResult.data || get().overview,
       });
     } catch {
@@ -267,7 +272,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       ),
     })),
 
-  updateLineItem: (invoiceId, lineItemId, patch) =>
+  updateLineItem: (invoiceId, lineItemId, patch) => {
+    // Optimistic update
     set((s) => ({
       invoices: s.invoices.map((inv) =>
         inv.id === invoiceId
@@ -279,25 +285,72 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             }
           : inv
       ),
-    })),
+    }));
+    // Server sync deferred to recalcInvoice via saveEdit flow
+  },
 
-  addLineItem: (invoiceId, item) =>
+  addLineItem: async (invoiceId, item) => {
+    // Optimistic update
     set((s) => ({
       invoices: s.invoices.map((inv) =>
         inv.id === invoiceId
           ? { ...inv, lineItems: [...inv.lineItems, item] }
           : inv
       ),
-    })),
+    }));
 
-  removeLineItem: (invoiceId, lineItemId) =>
+    // Server sync
+    const inv = get().invoices.find((i) => i.id === invoiceId);
+    if (inv?.dbId) {
+      try {
+        const result = await addLineItemServer(inv.dbId, {
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+        });
+        if (result.data) {
+          // Update the line item with the real server ID
+          set((s) => ({
+            invoices: s.invoices.map((i) =>
+              i.id === invoiceId
+                ? {
+                    ...i,
+                    lineItems: i.lineItems.map((li) =>
+                      li.id === item.id ? { ...li, id: result.data.id } : li
+                    ),
+                  }
+                : i
+            ),
+          }));
+        }
+        // Refresh to get accurate totals from server
+        get().refresh();
+      } catch (err) {
+        console.error("Failed to add line item to server:", err);
+      }
+    }
+  },
+
+  removeLineItem: async (invoiceId, lineItemId) => {
+    // Optimistic update
     set((s) => ({
       invoices: s.invoices.map((inv) =>
         inv.id === invoiceId
           ? { ...inv, lineItems: inv.lineItems.filter((li) => li.id !== lineItemId) }
           : inv
       ),
-    })),
+    }));
+
+    // Server sync — lineItemId is a real UUID from the DB
+    if (lineItemId && !lineItemId.startsWith("li-")) {
+      try {
+        await removeLineItemServer(lineItemId);
+        get().refresh();
+      } catch (err) {
+        console.error("Failed to remove line item from server:", err);
+      }
+    }
+  },
 
   updateInvoiceStatus: (id, status) =>
     set((s) => ({
@@ -338,7 +391,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   restoreInvoice: (invoice) =>
     set((s) => ({ invoices: [invoice, ...s.invoices].sort((a, b) => b.id.localeCompare(a.id)) })),
 
-  recalcInvoice: (id) =>
+  recalcInvoice: (id) => {
     set((s) => ({
       invoices: s.invoices.map((inv) => {
         if (inv.id !== id) return inv;
@@ -349,7 +402,31 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         const tax = Math.round(subtotal * 0.1);
         return { ...inv, subtotal, tax, total: subtotal + tax };
       }),
-    })),
+    }));
+    // Persist recalculated totals — refresh from server after a short debounce
+    const inv = get().invoices.find((i) => i.id === id);
+    if (inv?.dbId) {
+      get().refresh().catch(() => {});
+    }
+  },
+
+  /** Sync a single line-item edit to the server (call after recalcInvoice) */
+  syncLineItemToServer: async (invoiceId: string, lineItemId: string, patch: Partial<LineItem>) => {
+    const inv = get().invoices.find((i) => i.id === invoiceId);
+    if (!inv?.dbId) return;
+    if (!lineItemId || lineItemId.startsWith("li-")) return;
+
+    const serverPatch: Record<string, unknown> = {};
+    if (patch.description !== undefined) serverPatch.description = patch.description;
+    if (patch.quantity !== undefined) serverPatch.quantity = patch.quantity;
+    if (patch.unitPrice !== undefined) serverPatch.unit_price = patch.unitPrice;
+
+    try {
+      await updateLineItemServer(lineItemId, serverPatch as any);
+    } catch (err) {
+      console.error("Failed to sync line item to server:", err);
+    }
+  },
 
   createInvoiceServer: async (params: CreateInvoiceParams) => {
     try {

@@ -25,7 +25,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import { dailyRevenue as mockDailyRevenue, payouts as mockPayouts, type Invoice, type Payout } from "@/lib/data";
+import { type Invoice, type Payout } from "@/lib/data";
 import { useFinanceStore, type FinanceTab } from "@/lib/finance-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
@@ -81,7 +81,7 @@ function AnimatedNumber({ value, prefix = "$" }: { value: number; prefix?: strin
 
 export default function FinancePage() {
   const router = useRouter();
-  const { invoices, payouts: storePayouts, dailyRevenue: storeDailyRevenue, overview, activeTab, setActiveTab, focusedIndex, setFocusedIndex, updateInvoiceStatus, deleteInvoice, restoreInvoice } = useFinanceStore();
+  const { invoices, payouts: storePayouts, dailyRevenue: storeDailyRevenue, overview, loading, loaded, activeTab, setActiveTab, focusedIndex, setFocusedIndex, updateInvoiceStatusServer, deleteInvoice, restoreInvoice } = useFinanceStore();
   const { addToast } = useToastStore();
   const { setCreateInvoiceModalOpen } = useShellStore();
 
@@ -92,8 +92,8 @@ export default function FinancePage() {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [expandedPayout, setExpandedPayout] = useState<string | null>(null);
 
-  const dailyRevenue = storeDailyRevenue.length > 0 ? storeDailyRevenue : mockDailyRevenue;
-  const payouts = storePayouts.length > 0 ? storePayouts : mockPayouts;
+  const dailyRevenue = storeDailyRevenue;
+  const payouts = storePayouts;
 
   /* ── Computed ────────────────────────────────────────────── */
   const totalRevenueMTD = overview?.revenue_mtd ?? dailyRevenue.reduce((sum, d) => sum + d.amount, 0);
@@ -113,7 +113,7 @@ export default function FinancePage() {
   const chartW = 900;
   const chartH = 180;
   const pad = 20;
-  const maxAmount = Math.max(...dailyRevenue.map((d) => d.amount), 1);
+  const maxAmount = dailyRevenue.length > 0 ? Math.max(...dailyRevenue.map((d) => d.amount), 1) : 1;
 
   const chartPoints = dailyRevenue.map((d, i) => ({
     x: pad + (i / Math.max(dailyRevenue.length - 1, 1)) * (chartW - pad * 2),
@@ -137,7 +137,9 @@ export default function FinancePage() {
   const linePath = bezierPath(chartPoints);
   const last = chartPoints[chartPoints.length - 1];
   const first = chartPoints[0];
-  const areaPath = `${linePath} L ${last?.x || 0} ${chartH} L ${first?.x || 0} ${chartH} Z`;
+  const areaPath = chartPoints.length >= 2
+    ? `${linePath} L ${last.x} ${chartH} L ${first.x} ${chartH} Z`
+    : "";
 
   /* ── Keyboard ───────────────────────────────────────────── */
   const handleKey = useCallback(
@@ -171,16 +173,14 @@ export default function FinancePage() {
     if (actionId === "open") {
       router.push(`/dashboard/finance/invoices/${inv.id}`);
     } else if (actionId === "send") {
-      updateInvoiceStatus(inv.id, "sent");
+      updateInvoiceStatusServer(inv.id, inv.dbId || inv.id, "sent");
       addToast(`${inv.id} sent to ${inv.clientEmail}`);
     } else if (actionId === "copy" && inv.paymentLink) {
       navigator.clipboard?.writeText(inv.paymentLink);
       addToast("Payment link copied");
     } else if (actionId === "void") {
-      updateInvoiceStatus(inv.id, "voided");
-      addToast(`${inv.id} voided`, () => {
-        updateInvoiceStatus(inv.id, inv.status);
-      });
+      updateInvoiceStatusServer(inv.id, inv.dbId || inv.id, "voided");
+      addToast(`${inv.id} voided`);
     }
   }
 
@@ -267,10 +267,17 @@ export default function FinancePage() {
                   <span className="text-[48px] font-semibold tracking-tighter text-zinc-100">
                     <AnimatedNumber value={totalRevenueMTD} />
                   </span>
-                  <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
-                    <TrendingUp size={10} />
-                    ▲ 18% vs last month
-                  </span>
+                  {(() => {
+                    const growthPct = overview?.revenue_growth ?? null;
+                    if (growthPct === null) return null;
+                    const isUp = growthPct >= 0;
+                    return (
+                      <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${isUp ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                        {isUp ? <TrendingUp size={10} /> : <ArrowDownRight size={10} />}
+                        {isUp ? "▲" : "▼"} {Math.abs(Math.round(growthPct))}% vs last month
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Chart */}
@@ -287,25 +294,29 @@ export default function FinancePage() {
                       </linearGradient>
                     </defs>
                     {/* Area */}
-                    <motion.path
-                      d={areaPath}
-                      fill="url(#rev-grad)"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
-                    />
+                    {areaPath && (
+                      <motion.path
+                        d={areaPath}
+                        fill="url(#rev-grad)"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                      />
+                    )}
                     {/* Line */}
-                    <motion.path
-                      d={linePath}
-                      fill="none"
-                      stroke="#22C55E"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: 1 }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                    />
+                    {linePath && (
+                      <motion.path
+                        d={linePath}
+                        fill="none"
+                        stroke="#22C55E"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 1.5, ease: "easeOut" }}
+                      />
+                    )}
                     {/* Hover zones + dots */}
                     {chartPoints.map((p, i) => (
                       <g key={i}>
@@ -395,7 +406,19 @@ export default function FinancePage() {
                   <div className="mb-2 text-[24px] font-semibold tracking-tight text-zinc-100">
                     ${stripeBalance.toLocaleString()}
                   </div>
-                  <div className="mb-3 text-[11px] text-zinc-600">Arriving Tuesday</div>
+                  <div className="mb-3 text-[11px] text-zinc-600">
+                    {(() => {
+                      const pending = payouts.find((p) => p.status === "pending" || p.status === "processing");
+                      if (!pending?.date) return "No pending payouts";
+                      const arrival = new Date(pending.date);
+                      const today = new Date();
+                      const diffDays = Math.ceil((arrival.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                      if (diffDays <= 0) return "Arriving today";
+                      if (diffDays === 1) return "Arriving tomorrow";
+                      const dayName = arrival.toLocaleDateString("en-US", { weekday: "long" });
+                      return `Arriving ${dayName}`;
+                    })()}
+                  </div>
                   {/* Progress bar */}
                   <div className="h-1.5 overflow-hidden rounded-full bg-zinc-900">
                     <motion.div
@@ -462,10 +485,12 @@ export default function FinancePage() {
                     {avgPayoutDays}
                   </div>
                   <div className="text-[12px] text-zinc-600">Days to payment</div>
-                  <div className="mt-3 flex items-center gap-1 text-[11px] text-emerald-400">
-                    <TrendingUp size={10} />
-                    0.3 days faster than average
-                  </div>
+                  {avgPayoutDays > 0 && (
+                    <div className={`mt-3 flex items-center gap-1 text-[11px] ${avgPayoutDays <= 3 ? "text-emerald-400" : "text-amber-400"}`}>
+                      <TrendingUp size={10} />
+                      {avgPayoutDays <= 3 ? "Faster than industry average" : "On par with industry average"}
+                    </div>
+                  )}
                 </motion.div>
               </div>
 
@@ -535,6 +560,31 @@ export default function FinancePage() {
 
               {/* Rows */}
               <div className="flex-1">
+                {filteredInvoices.length === 0 && !loading ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center justify-center py-20"
+                  >
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)]">
+                      <FileText size={20} className="text-zinc-600" />
+                    </div>
+                    <h3 className="mb-1 text-[14px] font-medium text-zinc-400">No invoices found</h3>
+                    <p className="mb-4 text-[12px] text-zinc-600">
+                      {search ? "Try a different search term" : "Create your first invoice to get started"}
+                    </p>
+                    {!search && (
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setCreateInvoiceModalOpen(true)}
+                        className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200"
+                      >
+                        <Plus size={12} />
+                        New Invoice
+                      </motion.button>
+                    )}
+                  </motion.div>
+                ) : (
                 <AnimatePresence>
                   {filteredInvoices.map((inv, i) => {
                     const sc = statusConfig[inv.status];
@@ -580,6 +630,7 @@ export default function FinancePage() {
                     );
                   })}
                 </AnimatePresence>
+                )}
               </div>
             </motion.div>
           )}
@@ -601,6 +652,19 @@ export default function FinancePage() {
                 Bank Transfers
               </div>
               <div className="space-y-2">
+                {payouts.length === 0 && !loading && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center justify-center py-16"
+                  >
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)]">
+                      <Banknote size={20} className="text-zinc-600" />
+                    </div>
+                    <h3 className="mb-1 text-[14px] font-medium text-zinc-400">No payouts yet</h3>
+                    <p className="text-[12px] text-zinc-600">Payouts will appear here once invoices are paid</p>
+                  </motion.div>
+                )}
                 {payouts.map((payout, i) => {
                   const isExpanded = expandedPayout === payout.id;
                   const linkedInvoices = invoices.filter((inv) =>

@@ -9,17 +9,28 @@ import { useToastStore } from "@/components/app/action-toast";
 type StripeStage = "intro" | "connecting" | "success";
 
 export function StripeConnectModal() {
-  const { stripeModalOpen, setStripeModalOpen, connect } = useIntegrationsStore();
+  const { stripeModalOpen, setStripeModalOpen, connectServer } = useIntegrationsStore();
   const { addToast } = useToastStore();
   const [stage, setStage] = useState<StripeStage>("intro");
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     setStage("connecting");
-    // Simulate OAuth flow (popup would open)
-    setTimeout(() => {
-      setStage("success");
-      connect("int-stripe");
-    }, 2500);
+    try {
+      const stripeInt = useIntegrationsStore.getState().integrations.find(
+        (i) => i.name?.toLowerCase() === "stripe" || i.id === "int-stripe"
+      );
+      const integrationId = stripeInt?.id || "int-stripe";
+      const { error } = await connectServer(integrationId);
+      if (error) {
+        addToast(`Stripe connection failed: ${error}`);
+        setStage("intro");
+      } else {
+        setStage("success");
+      }
+    } catch {
+      addToast("Stripe connection failed");
+      setStage("intro");
+    }
   };
 
   const handleClose = () => {
@@ -27,7 +38,6 @@ export function StripeConnectModal() {
     if (stage === "success") {
       addToast("Stripe connected successfully!");
     }
-    // Reset stage after close animation
     setTimeout(() => setStage("intro"), 300);
   };
 

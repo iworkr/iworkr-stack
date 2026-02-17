@@ -25,6 +25,9 @@ import {
 import { useFinanceStore } from "@/lib/finance-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
+import { downloadInvoicePDF } from "@/lib/pdf/generate-invoice";
+import { useOrg } from "@/lib/hooks/use-org";
+import { getOrgSettings } from "@/app/actions/finance";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -68,8 +71,19 @@ export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const invoiceId = params.id as string;
-  const { invoices, updateInvoice, updateLineItem, addLineItem, removeLineItem, updateInvoiceStatus, recalcInvoice } = useFinanceStore();
+  const { invoices, updateInvoice, updateLineItem, addLineItem, removeLineItem, updateInvoiceStatusServer, recalcInvoice, syncLineItemToServer } = useFinanceStore();
   const { addToast } = useToastStore();
+  const { orgId } = useOrg();
+
+  const [orgSettings, setOrgSettings] = useState<{ name: string; settings: Record<string, any> } | null>(null);
+
+  useEffect(() => {
+    if (orgId) {
+      getOrgSettings(orgId).then((res) => {
+        if (res.data) setOrgSettings(res.data);
+      });
+    }
+  }, [orgId]);
 
   const invoice = invoices.find((i) => i.id === invoiceId);
 
@@ -116,21 +130,26 @@ export default function InvoiceDetailPage() {
       navigator.clipboard?.writeText(invoice.paymentLink);
       addToast("Payment link copied");
     } else if (actionId === "download") {
-      addToast("PDF download started");
+      downloadInvoicePDF(
+        invoice,
+        orgSettings?.name || "iWorkr",
+        orgSettings?.settings?.tax_id,
+        orgSettings?.settings?.address || "",
+        orgSettings?.settings?.email || ""
+      );
+      addToast("PDF downloaded");
     } else if (actionId === "print") {
       window.print();
     } else if (actionId === "void") {
-      updateInvoiceStatus(invoice.id, "voided");
-      addToast(`${invoice.id} voided`, () => {
-        updateInvoiceStatus(invoice.id, invoice.status);
-      });
+      updateInvoiceStatusServer(invoice.id, invoice.dbId || invoice.id, "voided");
+      addToast(`${invoice.id} voided`);
     }
   }
 
   /* ── Mark paid ──────────────────────────────────────────── */
   function handleMarkPaid() {
     if (!invoice) return;
-    updateInvoiceStatus(invoice.id, "paid");
+    updateInvoiceStatusServer(invoice.id, invoice.dbId || invoice.id, "paid");
     setShowStamp(true);
     setTimeout(() => setShowStamp(false), 2500);
     addToast(`${invoice.id} marked as paid`);
@@ -139,7 +158,7 @@ export default function InvoiceDetailPage() {
   /* ── Send invoice ───────────────────────────────────────── */
   function handleSend() {
     if (!invoice) return;
-    updateInvoiceStatus(invoice.id, "sent");
+    updateInvoiceStatusServer(invoice.id, invoice.dbId || invoice.id, "sent");
     addToast(`${invoice.id} sent to ${invoice.clientEmail}`);
   }
 
@@ -151,14 +170,17 @@ export default function InvoiceDetailPage() {
   }
 
   function saveEdit(invoiceId: string, lineItemId: string, field: string) {
+    let patch: Partial<{ description: string; quantity: number; unitPrice: number }> = {};
     if (field === "description") {
-      updateLineItem(invoiceId, lineItemId, { description: editValue });
+      patch = { description: editValue };
     } else if (field === "quantity") {
-      updateLineItem(invoiceId, lineItemId, { quantity: Number(editValue) || 1 });
+      patch = { quantity: Number(editValue) || 1 };
     } else if (field === "unitPrice") {
-      updateLineItem(invoiceId, lineItemId, { unitPrice: Number(editValue) || 0 });
+      patch = { unitPrice: Number(editValue) || 0 };
     }
+    updateLineItem(invoiceId, lineItemId, patch);
     recalcInvoice(invoiceId);
+    syncLineItemToServer(invoiceId, lineItemId, patch);
     setEditingCell(null);
     flashSaved(lineItemId + field);
   }
@@ -294,12 +316,22 @@ export default function InvoiceDetailPage() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[12px] font-bold text-black">
                       iW
                     </div>
-                    <span className="text-[14px] font-semibold text-zinc-200">Apex Plumbing</span>
+                    <span className="text-[14px] font-semibold text-zinc-200">{orgSettings?.name || "iWorkr"}</span>
                   </div>
                   <div className="text-[10px] leading-relaxed text-zinc-600">
-                    ABN: 12 345 678 901<br />
-                    14 Creek Rd, Brisbane CBD 4000<br />
-                    admin@apexplumbing.com.au
+                    {(() => {
+                      const s = orgSettings?.settings;
+                      const taxId = s?.tax_id;
+                      const addr = s?.address;
+                      const email = s?.email;
+                      return (
+                        <>
+                          {taxId ? <>{taxId}<br /></> : <span className="text-zinc-700 italic">Add Tax ID in Settings<br /></span>}
+                          {addr && <>{addr}<br /></>}
+                          {email && <>{email}</>}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="text-right">
@@ -594,7 +626,17 @@ export default function InvoiceDetailPage() {
               )}
 
               <button
-                onClick={() => addToast("PDF download started")}
+                onClick={() => {
+                  if (!invoice) return;
+                  downloadInvoicePDF(
+                    invoice,
+                    orgSettings?.name || "iWorkr",
+                    orgSettings?.settings?.tax_id,
+                    orgSettings?.settings?.address || "",
+                    orgSettings?.settings?.email || ""
+                  );
+                  addToast("PDF downloaded");
+                }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(255,255,255,0.06)] py-2.5 text-[12px] text-zinc-500 transition-colors hover:border-[rgba(255,255,255,0.1)] hover:text-zinc-400"
               >
                 <Download size={12} />
@@ -604,10 +646,8 @@ export default function InvoiceDetailPage() {
               {!isVoided && !isPaid && (
                 <button
                   onClick={() => {
-                    updateInvoiceStatus(invoice.id, "voided");
-                    addToast(`${invoice.id} voided`, () => {
-                      updateInvoiceStatus(invoice.id, invoice.status);
-                    });
+                    updateInvoiceStatusServer(invoice.id, invoice.dbId || invoice.id, "voided");
+                    addToast(`${invoice.id} voided`);
                   }}
                   className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-[12px] text-zinc-600 transition-colors hover:text-red-400"
                 >

@@ -298,6 +298,37 @@ export async function createNotification(params: CreateNotificationParams) {
   }
 }
 
+/* ── Reply to notification ────────────────────────────── */
+
+export async function sendReplyAction(notificationId: string, body: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await supabase
+      .from("notification_replies")
+      .insert({
+        notification_id: notificationId,
+        user_id: user.id,
+        body: body.trim(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error("Reply insert error", "inbox", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    revalidatePath(INBOX_PATH);
+    return { data, error: null };
+  } catch (error: any) {
+    logger.error("Send reply error", "inbox", error);
+    return { data: null, error: error.message || "Failed to send reply" };
+  }
+}
+
 /* ── Get unread count ────────────────────────────────── */
 
 export async function getUnreadCount() {

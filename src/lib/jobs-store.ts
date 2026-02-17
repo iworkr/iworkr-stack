@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { jobs as mockJobs, type Job, type SubTask } from "./data";
+import { type Job, type JobStatus, type SubTask } from "./data";
 import {
   getJobs,
   updateJob as updateJobAction,
@@ -24,7 +24,10 @@ interface JobsState {
   selectAll: () => void;
 
   updateJob: (id: string, patch: Partial<Job>) => void;
+  updateJobServer: (id: string, patch: Partial<Job>) => Promise<void>;
+  updateJobStatus: (id: string, status: string) => Promise<void>;
   deleteJob: (id: string) => void;
+  deleteJobServer: (id: string) => Promise<void>;
   restoreJobs: (jobs: Job[]) => void;
   addJob: (job: Job) => void;
 
@@ -32,6 +35,7 @@ interface JobsState {
   createJobServer: (params: CreateJobParams) => Promise<{ success: boolean; displayId?: string; error?: string }>;
 
   toggleSubtask: (jobId: string, subtaskId: string) => void;
+  toggleSubtaskServer: (jobId: string, subtaskId: string) => Promise<void>;
 
   loadFromServer: (orgId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -97,7 +101,7 @@ function formatRelativeDate(dateStr: string): string {
 }
 
 export const useJobsStore = create<JobsState>((set, get) => ({
-  jobs: mockJobs,
+  jobs: [],
   focusedIndex: 0,
   selected: new Set(),
   loaded: false,
@@ -123,6 +127,35 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     }));
   },
 
+  /** Optimistic update + server persist */
+  updateJobServer: async (id, patch) => {
+    // Optimistic
+    set((s) => ({
+      jobs: s.jobs.map((j) => (j.id === id ? { ...j, ...patch } : j)),
+    }));
+    // Build server-compatible patch
+    const serverPatch: Record<string, unknown> = {};
+    if (patch.title !== undefined) serverPatch.title = patch.title;
+    if (patch.description !== undefined) serverPatch.description = patch.description;
+    if (patch.status !== undefined) serverPatch.status = patch.status;
+    if (patch.priority !== undefined) serverPatch.priority = patch.priority;
+    // Server sync (fire-and-forget with error logging)
+    updateJobAction(id, serverPatch as any).catch((err) => {
+      console.error("Failed to persist job update:", err);
+    });
+  },
+
+  /** Update status with server persistence */
+  updateJobStatus: async (id: string, status: string) => {
+    // Optimistic update
+    const typedStatus = status as JobStatus;
+    set((s) => ({
+      jobs: s.jobs.map((j) => (j.id === id ? { ...j, status: typedStatus } : j)),
+    }));
+    // Server sync
+    updateJobAction(id, { status: typedStatus }).catch(console.error);
+  },
+
   deleteJob: (id) =>
     set((s) => ({
       jobs: s.jobs.filter((j) => j.id !== id),
@@ -132,6 +165,23 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         return next;
       })(),
     })),
+
+  /** Optimistic delete + server persist */
+  deleteJobServer: async (id) => {
+    // Optimistic
+    set((s) => ({
+      jobs: s.jobs.filter((j) => j.id !== id),
+      selected: (() => {
+        const next = new Set(s.selected);
+        next.delete(id);
+        return next;
+      })(),
+    }));
+    // Server sync
+    deleteJobAction(id).catch((err) => {
+      console.error("Failed to persist job deletion:", err);
+    });
+  },
 
   restoreJobs: (restoredJobs) =>
     set((s) => ({
@@ -169,19 +219,44 @@ export const useJobsStore = create<JobsState>((set, get) => ({
       ),
     })),
 
+  /** Optimistic toggle + server persist */
+  toggleSubtaskServer: async (jobId, subtaskId) => {
+    // Find current completion state before toggling
+    const job = get().jobs.find((j) => j.id === jobId);
+    const subtask = job?.subtasks?.find((st) => st.id === subtaskId);
+    const newCompleted = subtask ? !subtask.completed : true;
+    // Optimistic
+    set((s) => ({
+      jobs: s.jobs.map((j) =>
+        j.id === jobId
+          ? {
+              ...j,
+              subtasks: j.subtasks?.map((st) =>
+                st.id === subtaskId ? { ...st, completed: newCompleted } : st
+              ),
+            }
+          : j
+      ),
+    }));
+    // Server sync
+    toggleSubtaskAction(subtaskId, newCompleted).catch((err) => {
+      console.error("Failed to persist subtask toggle:", err);
+    });
+  },
+
   loadFromServer: async (orgId: string) => {
     if (get().loaded || get().loading) return;
     set({ loading: true, orgId });
     try {
       const { data, error } = await getJobs(orgId);
-      if (data && !error) {
-        const mapped = data.map(mapServerJob);
-        set({ jobs: mapped.length > 0 ? mapped : mockJobs, loaded: true, loading: false });
+      if (!error) {
+        const mapped = (data || []).map(mapServerJob);
+        set({ jobs: mapped, loaded: true, loading: false });
       } else {
-        set({ loading: false });
+        set({ loaded: true, loading: false });
       }
     } catch {
-      set({ loading: false });
+      set({ loaded: true, loading: false });
     }
   },
 
@@ -190,9 +265,9 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     if (!orgId) return;
     try {
       const { data, error } = await getJobs(orgId);
-      if (data && !error) {
-        const mapped = data.map(mapServerJob);
-        set({ jobs: mapped.length > 0 ? mapped : get().jobs });
+      if (!error) {
+        const mapped = (data || []).map(mapServerJob);
+        set({ jobs: mapped });
       }
     } catch {
       // silently fail refresh

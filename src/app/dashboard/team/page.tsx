@@ -86,8 +86,8 @@ export default function TeamPage() {
     setFilterSkill,
     setSelectedMemberId,
     setInviteModalOpen,
-    suspendMember,
-    archiveMember,
+    suspendMemberServer,
+    removeMemberServer,
     resendInvite,
   } = useTeamStore();
   const { addToast } = useToastStore();
@@ -394,11 +394,12 @@ export default function TeamPage() {
                       )}
                       {member.status === "active" && member.role !== "owner" && (
                         <button
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            suspendMember(member.id);
-                            addToast(`${member.name} suspended`);
                             setContextMenuId(null);
+                            const { error } = await suspendMemberServer(member.id);
+                            if (error) addToast(`Failed: ${error}`);
+                            else addToast(`${member.name} suspended`);
                           }}
                           className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-amber-400 transition-colors hover:bg-amber-500/10"
                         >
@@ -409,11 +410,12 @@ export default function TeamPage() {
                         <>
                           <div className="my-1 h-px bg-[rgba(255,255,255,0.06)]" />
                           <button
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
-                              archiveMember(member.id);
-                              addToast(`${member.name} removed`);
                               setContextMenuId(null);
+                              const { error } = await removeMemberServer(member.id);
+                              if (error) addToast(`Failed: ${error}`);
+                              else addToast(`${member.name} removed`);
                             }}
                             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-red-400 transition-colors hover:bg-red-500/10"
                           >

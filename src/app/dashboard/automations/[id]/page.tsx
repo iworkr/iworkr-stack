@@ -53,10 +53,11 @@ const flowIconMap: Record<string, typeof Star> = {
 export default function FlowEditorPage() {
   const router = useRouter();
   const params = useParams();
-  const { flows, toggleFlowStatus } = useAutomationsStore();
+  const { flows, toggleFlowStatusServer, testFlowServer } = useAutomationsStore();
   const { addToast } = useToastStore();
   const [testRunning, setTestRunning] = useState(false);
   const [testStep, setTestStep] = useState(-1);
+  const [toggleLoading, setToggleLoading] = useState(false);
 
   const flow = useMemo(
     () => flows.find((f) => f.id === params.id),
@@ -86,14 +87,27 @@ export default function FlowEditorPage() {
   const handleTest = async () => {
     setTestRunning(true);
     setTestStep(0);
-    for (let i = 0; i < flow.blocks.length; i++) {
-      await new Promise((r) => setTimeout(r, 800));
-      setTestStep(i);
+    try {
+      const { data, error } = await testFlowServer(flow.id);
+      if (error) {
+        addToast(`Test failed: ${error}`);
+      } else {
+        for (let i = 0; i < flow.blocks.length; i++) {
+          setTestStep(i);
+          await new Promise((r) => setTimeout(r, 300));
+        }
+        addToast(
+          data?.executed
+            ? `Test completed — ${data.executed} action${data.executed > 1 ? "s" : ""} executed`
+            : "Test completed successfully — all blocks passed"
+        );
+      }
+    } catch {
+      addToast("Execution error — check server logs");
+    } finally {
+      setTestRunning(false);
+      setTestStep(-1);
     }
-    await new Promise((r) => setTimeout(r, 600));
-    setTestRunning(false);
-    setTestStep(-1);
-    addToast("Test completed successfully — all blocks passed");
   };
 
   return (
@@ -132,17 +146,23 @@ export default function FlowEditorPage() {
 
           {/* Status toggle */}
           <button
-            onClick={() => {
-              toggleFlowStatus(flow.id);
-              addToast(isActive ? `${flow.title} paused` : `${flow.title} activated`);
+            onClick={async () => {
+              if (toggleLoading) return;
+              setToggleLoading(true);
+              const was = isActive;
+              const { error } = await toggleFlowStatusServer(flow.id);
+              if (error) addToast(`Failed: ${error}`);
+              else addToast(was ? `${flow.title} paused` : `${flow.title} activated`);
+              setToggleLoading(false);
             }}
+            disabled={toggleLoading}
             className={`flex h-8 items-center gap-1.5 rounded-lg px-4 text-[11px] font-semibold transition-all ${
               isActive
                 ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/20"
                 : "bg-amber-500/15 text-amber-400 hover:bg-amber-500/20"
-            }`}
+            } ${toggleLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {isActive ? <><Pause size={11} /> Active</> : <><Play size={11} /> Paused</>}
+            {toggleLoading ? "Saving..." : isActive ? <><Pause size={11} /> Active</> : <><Play size={11} /> Paused</>}
           </button>
         </div>
       </div>

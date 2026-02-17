@@ -19,9 +19,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAssetsStore } from "@/lib/assets-store";
 import { type AssetCategory } from "@/lib/assets-data";
+import { CustodyModal } from "@/components/assets/custody-modal";
+import { ServiceLogModal } from "@/components/assets/service-log-modal";
 
 /* ── Icons ────────────────────────────────────────────── */
 
@@ -46,7 +48,10 @@ const statusConfig = {
 export default function AssetDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { assets, auditLog, unassignAsset, updateAssetStatus } = useAssetsStore();
+  const { assets, auditLog, toggleCustodyServer, updateAssetStatusServer } = useAssetsStore();
+  const [custodyOpen, setCustodyOpen] = useState(false);
+  const [serviceLogOpen, setServiceLogOpen] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
 
   const asset = useMemo(
     () => assets.find((a) => a.id === params.id),
@@ -270,12 +275,20 @@ export default function AssetDetailPage() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => unassignAsset(asset.id)}
+                    onClick={async () => {
+                      setCheckingIn(true);
+                      await toggleCustodyServer(asset.id, null, "Checked in");
+                      setCheckingIn(false);
+                    }}
+                    disabled={checkingIn}
+                    className="rounded-lg border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-200 disabled:opacity-40"
+                  >
+                    {checkingIn ? "Checking in…" : "Check In"}
+                  </button>
+                  <button
+                    onClick={() => setCustodyOpen(true)}
                     className="rounded-lg border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-200"
                   >
-                    Check In
-                  </button>
-                  <button className="rounded-lg border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-200">
                     <ArrowRightLeft size={12} className="mr-1 inline" />
                     Re-Assign
                   </button>
@@ -290,19 +303,28 @@ export default function AssetDetailPage() {
                   <p className="text-[13px] text-zinc-500">No one assigned</p>
                   <p className="text-[10px] text-zinc-700">Asset is at {asset.location}</p>
                 </div>
-                <button className="rounded-lg bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.08] hover:text-zinc-200">
+                <button
+                  onClick={() => setCustodyOpen(true)}
+                  className="rounded-lg bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.08] hover:text-zinc-200"
+                >
                   <UserCheck size={12} className="mr-1 inline" />
                   Assign
                 </button>
               </div>
             )}
+
+            {/* Custody Modal */}
+            <CustodyModal asset={asset} isOpen={custodyOpen} onClose={() => setCustodyOpen(false)} />
           </div>
 
           {/* Service Log / Activity Timeline */}
           <div className="flex-1 p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[12px] font-medium text-zinc-400">Activity & Service Log</h2>
-              <button className="rounded-lg border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[10px] font-medium text-zinc-500 transition-colors hover:bg-white/[0.03] hover:text-zinc-300">
+              <button
+                onClick={() => setServiceLogOpen(true)}
+                className="rounded-lg border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[10px] font-medium text-zinc-500 transition-colors hover:bg-white/[0.03] hover:text-zinc-300"
+              >
                 <Wrench size={10} className="mr-1 inline" />
                 Log Service
               </button>
@@ -353,6 +375,9 @@ export default function AssetDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Service Log Modal */}
+      <ServiceLogModal asset={asset} isOpen={serviceLogOpen} onClose={() => setServiceLogOpen(false)} />
     </div>
   );
 }

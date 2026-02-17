@@ -24,6 +24,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { type AutomationFlow } from "@/lib/automations-data";
 import { useAutomationsStore } from "@/lib/automations-store";
+import { useToastStore } from "@/components/app/action-toast";
 
 /* ── Icon map ─────────────────────────────────────────── */
 
@@ -82,8 +83,10 @@ interface FlowCardProps {
 
 export function FlowCard({ flow, index }: FlowCardProps) {
   const router = useRouter();
-  const { toggleFlowStatus, archiveFlow, duplicateFlow } = useAutomationsStore();
+  const { toggleFlowStatusServer, archiveFlowServer, duplicateFlowServer } = useAutomationsStore();
+  const { addToast } = useToastStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const Icon = iconMap[flow.icon] || Zap;
@@ -141,13 +144,19 @@ export function FlowCard({ flow, index }: FlowCardProps) {
 
             {/* Toggle */}
             <button
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
-                toggleFlowStatus(flow.id);
+                if (actionLoading) return;
+                setActionLoading(true);
+                const { error } = await toggleFlowStatusServer(flow.id);
+                if (error) addToast(`Failed to toggle: ${error}`);
+                else addToast(isActive ? `${flow.title} paused` : `${flow.title} activated`);
+                setActionLoading(false);
               }}
+              disabled={actionLoading}
               className={`relative h-5 w-9 rounded-full transition-colors ${
                 isActive ? "bg-emerald-500" : "bg-zinc-800"
-              }`}
+              } ${actionLoading ? "opacity-50" : ""}`}
             >
               <motion.div
                 animate={{ x: isActive ? 16 : 2 }}
@@ -206,20 +215,32 @@ export function FlowCard({ flow, index }: FlowCardProps) {
             className="absolute right-0 top-8 z-50 w-36 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#161616] py-1 shadow-xl"
           >
             <button
-              onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(false); router.push(`/dashboard/automations/${flow.id}`); }}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-zinc-400 hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-200"
             >
               <Edit3 size={11} /> Edit Flow
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); duplicateFlow(flow.id); setMenuOpen(false); }}
+              onClick={async (e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                const { error } = await duplicateFlowServer(flow.id);
+                if (error) addToast(`Failed to duplicate: ${error}`);
+                else addToast(`${flow.title} duplicated`);
+              }}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-zinc-400 hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-200"
             >
               <Copy size={11} /> Duplicate
             </button>
             <div className="my-1 h-px bg-[rgba(255,255,255,0.06)]" />
             <button
-              onClick={(e) => { e.stopPropagation(); archiveFlow(flow.id); setMenuOpen(false); }}
+              onClick={async (e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                const { error } = await archiveFlowServer(flow.id);
+                if (error) addToast(`Failed to archive: ${error}`);
+                else addToast(`${flow.title} archived`);
+              }}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-red-400 hover:bg-red-500/10"
             >
               <Archive size={11} /> Archive

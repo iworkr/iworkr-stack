@@ -11,10 +11,11 @@ import {
   DollarSign,
   AlertTriangle,
   Radio,
+  Loader2,
+  Inbox,
 } from "lucide-react";
 import { useMemo } from "react";
 import { useAssetsStore, type AssetsTab, type ViewMode } from "@/lib/assets-store";
-import { getTotalAssetValue, getLowStockCount, getActiveVehicleCount } from "@/lib/assets-data";
 import { FleetGrid } from "@/components/assets/fleet-grid";
 import { InventoryTable } from "@/components/assets/inventory-table";
 import { AuditLog } from "@/components/assets/audit-log";
@@ -35,17 +36,25 @@ export default function AssetsPage() {
     activeTab,
     viewMode,
     searchQuery,
+    loading,
     setActiveTab,
     setViewMode,
     setSearchQuery,
   } = useAssetsStore();
 
-  /* ── Stats ──────────────────────────────────────────── */
-  const totalValue = useMemo(() => getTotalAssetValue(), []);
-  const lowStockCount = useMemo(() => {
-    return stock.filter((s) => s.currentQty <= s.minLevel).length;
-  }, [stock]);
-  const vehiclesActive = useMemo(() => getActiveVehicleCount(), []);
+  /* ── Stats (Dynamic from DB) ────────────────────────── */
+  const totalValue = useMemo(
+    () => assets.reduce((sum, a) => sum + (a.purchasePrice || 0), 0),
+    [assets]
+  );
+  const lowStockCount = useMemo(
+    () => stock.filter((s) => s.currentQty <= s.minLevel).length,
+    [stock]
+  );
+  const vehiclesActive = useMemo(
+    () => assets.filter((a) => a.category === "vehicle" && a.status === "assigned").length,
+    [assets]
+  );
 
   /* ── Filtering ──────────────────────────────────────── */
   const filteredAssets = useMemo(() => {
@@ -189,47 +198,80 @@ export default function AssetsPage() {
 
       {/* ── Content ──────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-6 py-5">
-        <AnimatePresence mode="wait">
-          {activeTab === "fleet" && (
-            <motion.div
-              key="fleet"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              {viewMode === "grid" ? (
-                <FleetGrid assets={filteredAssets} />
-              ) : (
-                <FleetListView assets={filteredAssets} />
-              )}
-            </motion.div>
-          )}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 size={24} className="animate-spin text-zinc-600" />
+            <p className="mt-3 text-[12px] text-zinc-600">Loading assets…</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {activeTab === "fleet" && (
+              <motion.div
+                key="fleet"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                {filteredAssets.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <Truck size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
+                    <p className="text-[13px] font-medium text-zinc-500">No assets found</p>
+                    <p className="mt-1 text-[11px] text-zinc-600">
+                      {searchQuery ? "Try adjusting your search." : "Assets will appear here once added."}
+                    </p>
+                  </div>
+                ) : viewMode === "grid" ? (
+                  <FleetGrid assets={filteredAssets} />
+                ) : (
+                  <FleetListView assets={filteredAssets} />
+                )}
+              </motion.div>
+            )}
 
-          {activeTab === "inventory" && (
-            <motion.div
-              key="inventory"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <InventoryTable items={filteredStock} />
-            </motion.div>
-          )}
+            {activeTab === "inventory" && (
+              <motion.div
+                key="inventory"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                {filteredStock.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <Package size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
+                    <p className="text-[13px] font-medium text-zinc-500">No inventory items</p>
+                    <p className="mt-1 text-[11px] text-zinc-600">
+                      {searchQuery ? "Try adjusting your search." : "Inventory will appear here once added."}
+                    </p>
+                  </div>
+                ) : (
+                  <InventoryTable items={filteredStock} />
+                )}
+              </motion.div>
+            )}
 
-          {activeTab === "audits" && (
-            <motion.div
-              key="audits"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <AuditLog entries={filteredAudit} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {activeTab === "audits" && (
+              <motion.div
+                key="audits"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                {filteredAudit.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <ClipboardList size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
+                    <p className="text-[13px] font-medium text-zinc-500">No audit entries</p>
+                    <p className="mt-1 text-[11px] text-zinc-600">Activity will be logged here.</p>
+                  </div>
+                ) : (
+                  <AuditLog entries={filteredAudit} />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );

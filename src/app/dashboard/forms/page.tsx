@@ -13,6 +13,7 @@ import {
   Layers,
 } from "lucide-react";
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useFormsStore, type FormsTab } from "@/lib/forms-store";
 import { FormCard } from "@/components/forms/form-card";
 import { SubmissionsList } from "@/components/forms/submissions-list";
@@ -26,11 +27,13 @@ const tabs: { id: FormsTab; label: string; icon: typeof FileText }[] = [
 ];
 
 export default function FormsPage() {
+  const router = useRouter();
   const {
     templates,
     submissions,
     activeTab,
     searchQuery,
+    loading,
     setActiveTab,
     setSearchQuery,
   } = useFormsStore();
@@ -142,7 +145,10 @@ export default function FormsPage() {
             </div>
 
             {/* New Form button */}
-            <button className="flex h-8 items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] bg-white/[0.05] px-3 text-[12px] font-medium text-zinc-300 transition-all hover:border-[rgba(255,255,255,0.2)] hover:bg-white/[0.08]">
+            <button
+              onClick={() => router.push("/dashboard/forms/builder/new")}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] bg-white/[0.05] px-3 text-[12px] font-medium text-zinc-300 transition-all hover:border-[rgba(255,255,255,0.2)] hover:bg-white/[0.08]"
+            >
               <Plus size={13} strokeWidth={2} />
               New Form
             </button>
@@ -209,7 +215,10 @@ export default function FormsPage() {
                     : "Try adjusting your search."}
                 </p>
                 {activeTab === "my_forms" && (
-                  <button className="mt-4 flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] bg-white/[0.05] px-4 py-2 text-[12px] font-medium text-zinc-300 transition-all hover:border-[rgba(255,255,255,0.2)] hover:bg-white/[0.08]">
+                  <button
+                    onClick={() => router.push("/dashboard/forms/builder/new")}
+                    className="mt-4 flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] bg-white/[0.05] px-4 py-2 text-[12px] font-medium text-zinc-300 transition-all hover:border-[rgba(255,255,255,0.2)] hover:bg-white/[0.08]"
+                  >
                     <Plus size={13} />
                     New Form
                   </button>

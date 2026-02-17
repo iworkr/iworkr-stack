@@ -22,14 +22,16 @@ export function ConfigPanel() {
     integrations,
     configPanelId,
     closeConfigPanel,
-    toggleSyncSetting,
-    updateAccountMapping,
-    syncNow,
-    disconnect,
+    syncNowServer,
+    disconnectServer,
+    connectServer,
+    updateSyncSettingsServer,
+    updateAccountMappingServer,
   } = useIntegrationsStore();
 
   const { addToast } = useToastStore();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const integration = configPanelId
     ? integrations.find((i) => i.id === configPanelId)
@@ -39,23 +41,31 @@ export function ConfigPanel() {
   const isConnected = integration?.status === "connected" || integration?.status === "syncing";
   const isSyncing = integration?.status === "syncing";
 
-  const handleSyncNow = () => {
-    if (!integration) return;
-    syncNow(integration.id);
+  const handleSyncNow = async () => {
+    if (!integration || actionLoading) return;
+    setActionLoading(true);
     addToast(`Syncing ${integration.name}...`);
+    const { error } = await syncNowServer(integration.id);
+    if (error) addToast(`Sync failed: ${error}`);
+    else addToast(`${integration.name} synced successfully`);
+    setActionLoading(false);
   };
 
-  const handleDisconnect = () => {
-    if (!integration) return;
-    disconnect(integration.id);
-    addToast(`${integration.name} disconnected`);
+  const handleDisconnect = async () => {
+    if (!integration || actionLoading) return;
+    setActionLoading(true);
+    const { error } = await disconnectServer(integration.id);
+    if (error) addToast(`Failed to disconnect: ${error}`);
+    else addToast(`${integration.name} disconnected`);
     setConfirmDisconnect(false);
+    setActionLoading(false);
   };
 
-  const handleToggle = (settingId: string) => {
+  const handleToggle = async (settingId: string) => {
     if (!integration) return;
-    toggleSyncSetting(integration.id, settingId);
-    addToast(`${integration.name} settings updated`);
+    const { error } = await updateSyncSettingsServer(integration.id, settingId);
+    if (error) addToast(`Failed to save: ${error}`);
+    else addToast(`${integration.name} settings saved`);
   };
 
   return (
@@ -110,10 +120,14 @@ export function ConfigPanel() {
                     <p className="text-[12px] font-medium text-red-400">Connection Error</p>
                     <p className="mt-0.5 text-[11px] text-zinc-500">{integration.error}</p>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (integration) {
-                          useIntegrationsStore.getState().connect(integration.id);
-                          closeConfigPanel();
+                          const { error } = await connectServer(integration.id);
+                          if (error) addToast(`Re-authentication failed: ${error}`);
+                          else {
+                            addToast(`${integration.name} re-authenticated`);
+                            closeConfigPanel();
+                          }
                         }
                       }}
                       className="mt-2 rounded-md bg-red-500/10 px-3 py-1.5 text-[10px] font-medium text-red-400 transition-colors hover:bg-red-500/20"
@@ -203,7 +217,11 @@ export function ConfigPanel() {
                         <div className="relative">
                           <select
                             value={mapping.value}
-                            onChange={(e) => updateAccountMapping(integration.id, mapping.id, e.target.value)}
+                            onChange={async (e) => {
+                            const { error } = await updateAccountMappingServer(integration.id, mapping.id, e.target.value);
+                            if (error) addToast(`Failed to save mapping: ${error}`);
+                            else addToast(`Account mapping saved`);
+                          }}
                             className="h-9 w-full appearance-none rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 pr-8 text-[12px] text-zinc-300 outline-none transition-colors focus:border-[rgba(255,255,255,0.2)]"
                           >
                             {mapping.options.map((opt) => (

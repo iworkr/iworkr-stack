@@ -1,7 +1,5 @@
 import { create } from "zustand";
 import {
-  integrations as initialIntegrations,
-  integrationEvents as initialEvents,
   type Integration,
   type IntegrationEvent,
   type IntegrationCategory,
@@ -95,11 +93,13 @@ interface IntegrationsState {
   connectServer: (id: string, connectionId?: string) => Promise<{ error: string | null }>;
   disconnectServer: (id: string) => Promise<{ error: string | null }>;
   syncNowServer: (id: string) => Promise<{ error: string | null }>;
+  updateSyncSettingsServer: (integrationId: string, settingId: string) => Promise<{ error: string | null }>;
+  updateAccountMappingServer: (integrationId: string, mappingId: string, value: string) => Promise<{ error: string | null }>;
 }
 
 export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
-  integrations: initialIntegrations,
-  events: initialEvents,
+  integrations: [],
+  events: [],
   overview: null,
   activeTab: "all",
   searchQuery: "",
@@ -127,29 +127,12 @@ export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
         getIntegrationsOverview(orgId),
       ]);
 
-      if (integrationsRes.data && integrationsRes.data.length > 0) {
-        const providerMap = new Map(
-          initialIntegrations.map((i) => [i.name.toLowerCase(), i])
-        );
-
-        const merged = integrationsRes.data.map((s: any) =>
-          mapServerIntegration(s, providerMap.get(s.provider?.toLowerCase()))
-        );
-
-        // Add mock integrations that don't exist in DB yet
-        const serverProviders = new Set(
-          integrationsRes.data.map((s: any) => s.provider?.toLowerCase())
-        );
-        for (const mock of initialIntegrations) {
-          if (!serverProviders.has(mock.name.toLowerCase())) {
-            merged.push(mock);
-          }
-        }
-
-        set({ integrations: merged });
-      }
+      const serverIntegrations = integrationsRes.data
+        ? (integrationsRes.data as any[]).map((s: any) => mapServerIntegration(s, undefined))
+        : [];
 
       set({
+        integrations: serverIntegrations,
         overview: overviewRes.data || null,
         loaded: true,
         loading: false,
@@ -169,22 +152,8 @@ export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
         getIntegrationsOverview(orgId),
       ]);
 
-      if (integrationsRes.data && integrationsRes.data.length > 0) {
-        const providerMap = new Map(
-          initialIntegrations.map((i) => [i.name.toLowerCase(), i])
-        );
-        const merged = integrationsRes.data.map((s: any) =>
-          mapServerIntegration(s, providerMap.get(s.provider?.toLowerCase()))
-        );
-        const serverProviders = new Set(
-          integrationsRes.data.map((s: any) => s.provider?.toLowerCase())
-        );
-        for (const mock of initialIntegrations) {
-          if (!serverProviders.has(mock.name.toLowerCase())) {
-            merged.push(mock);
-          }
-        }
-        set({ integrations: merged });
+      if (integrationsRes.data) {
+        set({ integrations: (integrationsRes.data as any[]).map((s: any) => mapServerIntegration(s, undefined)) });
       }
 
       if (overviewRes.data) set({ overview: overviewRes.data });
@@ -327,6 +296,50 @@ export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
       });
     } else {
       get().refresh();
+    }
+    return { error: res.error };
+  },
+
+  updateSyncSettingsServer: async (integrationId, settingId) => {
+    // Optimistic toggle
+    get().toggleSyncSetting(integrationId, settingId);
+
+    // Build settings object from current state
+    const integration = get().integrations.find((i) => i.id === integrationId);
+    if (!integration?.syncSettings) return { error: null };
+
+    const settingsObj: Record<string, boolean> = {};
+    for (const ss of integration.syncSettings) {
+      settingsObj[ss.id] = ss.enabled;
+    }
+
+    const res = await updateSettingsServer(integrationId, { sync: settingsObj });
+    if (res.error) {
+      // Rollback
+      get().toggleSyncSetting(integrationId, settingId);
+    }
+    return { error: res.error };
+  },
+
+  updateAccountMappingServer: async (integrationId, mappingId, value) => {
+    // Optimistic update
+    const prev = get().integrations.find((i) => i.id === integrationId)
+      ?.accountMappings?.find((am) => am.id === mappingId)?.value;
+    get().updateAccountMapping(integrationId, mappingId, value);
+
+    // Build mappings object from current state
+    const integration = get().integrations.find((i) => i.id === integrationId);
+    if (!integration?.accountMappings) return { error: null };
+
+    const mappingsObj: Record<string, string> = {};
+    for (const am of integration.accountMappings) {
+      mappingsObj[am.id] = am.value;
+    }
+
+    const res = await updateSettingsServer(integrationId, { mappings: mappingsObj });
+    if (res.error && prev !== undefined) {
+      // Rollback
+      get().updateAccountMapping(integrationId, mappingId, prev);
     }
     return { error: res.error };
   },

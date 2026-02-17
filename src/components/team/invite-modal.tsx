@@ -28,7 +28,7 @@ const roleColorMap: Record<string, string> = {
 };
 
 export function InviteModal() {
-  const { inviteModalOpen, setInviteModalOpen, addPendingMember } = useTeamStore();
+  const { inviteModalOpen, setInviteModalOpen, inviteMemberServer } = useTeamStore();
   const { addToast } = useToastStore();
 
   const [emails, setEmails] = useState<string[]>([]);
@@ -90,18 +90,31 @@ export function InviteModal() {
   const handleSend = async () => {
     if (emails.length === 0) return;
     setSending(true);
-    // Simulate sending
-    await new Promise((r) => setTimeout(r, 1200));
-    emails.forEach((email) => {
-      const name = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-      addPendingMember(name, email, selectedRole, selectedBranches[0] || "Brisbane HQ");
-    });
+
+    let successCount = 0;
+    let lastError: string | null = null;
+
+    for (const email of emails) {
+      const { error } = await inviteMemberServer({
+        email,
+        role: selectedRole,
+        branch: selectedBranches[0] || "HQ",
+      });
+      if (error) lastError = error;
+      else successCount++;
+    }
+
     setSending(false);
-    setSent(true);
-    addToast(`${emails.length} invite${emails.length > 1 ? "s" : ""} sent successfully`);
-    setTimeout(() => {
-      setInviteModalOpen(false);
-    }, 1500);
+
+    if (successCount > 0) {
+      setSent(true);
+      addToast(`${successCount} invite${successCount > 1 ? "s" : ""} sent successfully`);
+      setTimeout(() => {
+        setInviteModalOpen(false);
+      }, 1500);
+    } else {
+      addToast(`Failed to send invites: ${lastError}`);
+    }
   };
 
   const selectedRoleDef = roleDefinitions.find((r) => r.id === selectedRole);

@@ -14,7 +14,7 @@ import {
   Info,
   Lock,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTeamStore } from "@/lib/team-store";
 import {
@@ -50,9 +50,37 @@ const actionIcons: Record<PermissionAction, typeof Eye> = {
 
 export default function RolesPage() {
   const router = useRouter();
-  const { roles, togglePermission, members } = useTeamStore();
+  const { roles, togglePermission, saveRolePermissionsServer, members } = useTeamStore();
   const { addToast } = useToastStore();
   const [selectedRoleId, setSelectedRoleId] = useState<RoleId>("owner");
+  const [saving, setSaving] = useState(false);
+
+  const handleToggle = useCallback(async (mod: PermissionModule, action: PermissionAction) => {
+    if (selectedRoleId === "owner") return;
+    const hasPermission = roles.find(r => r.id === selectedRoleId)?.permissions[mod]?.includes(action);
+
+    togglePermission(selectedRoleId, mod, action);
+
+    setSaving(true);
+    const updatedRole = useTeamStore.getState().roles.find(r => r.id === selectedRoleId);
+    if (updatedRole) {
+      const permObj: Record<string, Record<string, boolean>> = {};
+      for (const [m, acts] of Object.entries(updatedRole.permissions)) {
+        permObj[m] = {};
+        for (const a of ["view", "create", "edit", "delete", "export"]) {
+          permObj[m][a] = (acts as string[]).includes(a);
+        }
+      }
+      const { error } = await saveRolePermissionsServer(selectedRoleId, permObj, updatedRole.scopes);
+      if (error) {
+        togglePermission(selectedRoleId, mod, action);
+        addToast(`Failed to save: ${error}`);
+      } else {
+        addToast(`${hasPermission ? "Removed" : "Added"} ${action} ${mod} for ${updatedRole.label}`);
+      }
+    }
+    setSaving(false);
+  }, [selectedRoleId, roles, togglePermission, saveRolePermissionsServer, addToast]);
 
   const selectedRole = useMemo(
     () => roles.find((r) => r.id === selectedRoleId),
@@ -215,14 +243,8 @@ export default function RolesPage() {
                         return (
                           <div key={action} className="flex items-center justify-center px-3 py-3">
                             <button
-                              onClick={() => {
-                                if (isOwnerRole) return;
-                                togglePermission(selectedRoleId, mod.id, action);
-                                addToast(
-                                  `${hasPermission ? "Removed" : "Added"} ${action} ${mod.label} for ${selectedRole.label}`
-                                );
-                              }}
-                              disabled={isOwnerRole}
+                              onClick={() => handleToggle(mod.id, action)}
+                              disabled={isOwnerRole || saving}
                               className={`flex h-7 w-7 items-center justify-center rounded-md transition-all duration-200 ${
                                 isOwnerRole ? "cursor-not-allowed" : "cursor-pointer"
                               } ${
@@ -254,8 +276,9 @@ export default function RolesPage() {
                 <div className="mt-4 flex items-start gap-2 rounded-lg bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
                   <Info size={12} className="mt-0.5 shrink-0 text-zinc-600" />
                   <p className="text-[10px] leading-relaxed text-zinc-600">
-                    Click any cell to toggle a permission. Changes take effect immediately and are pushed to active sessions in real-time.
+                    Click any cell to toggle a permission. Changes are saved to the database and pushed to active sessions in real-time.
                     The Owner role cannot be modified.
+                    {saving && <span className="ml-1 font-medium text-amber-400">Saving…</span>}
                   </p>
                 </div>
               </motion.div>

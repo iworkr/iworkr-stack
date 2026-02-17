@@ -1,9 +1,11 @@
 import { create } from "zustand";
-import { clients as mockClients, type Client } from "./data";
+import { type Client } from "./data";
 import {
   getClients,
   getClientsWithStats,
   createClientFull,
+  updateClient as updateClientAction,
+  deleteClient as deleteClientAction,
   type CreateClientParams,
 } from "@/app/actions/clients";
 
@@ -64,11 +66,17 @@ interface ClientsState {
   loaded: boolean;
   loading: boolean;
   orgId: string | null;
+  filterStatus: string | null;
+  filterType: string | null;
 
   setFocusedIndex: (i: number) => void;
+  setFilterStatus: (status: string | null) => void;
+  setFilterType: (type: string | null) => void;
   addClient: (client: Client) => void;
   updateClient: (id: string, patch: Partial<Client>) => void;
+  updateClientServer: (id: string, patch: Partial<Client>) => Promise<void>;
   archiveClient: (id: string) => void;
+  archiveClientServer: (id: string) => Promise<void>;
   restoreClient: (client: Client) => void;
   loadFromServer: (orgId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -78,13 +86,17 @@ interface ClientsState {
 }
 
 export const useClientsStore = create<ClientsState>((set, get) => ({
-  clients: mockClients,
+  clients: [],
   focusedIndex: 0,
   loaded: false,
   loading: false,
   orgId: null,
+  filterStatus: null,
+  filterType: null,
 
   setFocusedIndex: (i) => set({ focusedIndex: i }),
+  setFilterStatus: (status) => set({ filterStatus: status }),
+  setFilterType: (type) => set({ filterType: type }),
 
   addClient: (client) =>
     set((s) => ({ clients: [client, ...s.clients] })),
@@ -94,10 +106,44 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
       clients: s.clients.map((c) => (c.id === id ? { ...c, ...patch } : c)),
     })),
 
+  /** Optimistic update + server persist */
+  updateClientServer: async (id, patch) => {
+    // Optimistic
+    set((s) => ({
+      clients: s.clients.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
+    // Build server-compatible patch
+    const serverPatch: Record<string, unknown> = {};
+    if (patch.tags !== undefined) serverPatch.tags = patch.tags;
+    if (patch.notes !== undefined) serverPatch.notes = patch.notes;
+    if (patch.status !== undefined) serverPatch.status = patch.status;
+    if (patch.name !== undefined) serverPatch.name = patch.name;
+    if (patch.email !== undefined) serverPatch.email = patch.email;
+    if (patch.phone !== undefined) serverPatch.phone = patch.phone;
+    if (patch.address !== undefined) serverPatch.address = patch.address;
+    if (patch.type !== undefined) serverPatch.type = patch.type;
+    // Server sync
+    updateClientAction(id, serverPatch as any).catch((err) => {
+      console.error("Failed to persist client update:", err);
+    });
+  },
+
   archiveClient: (id) =>
     set((s) => ({
       clients: s.clients.filter((c) => c.id !== id),
     })),
+
+  /** Optimistic archive + server persist */
+  archiveClientServer: async (id) => {
+    // Optimistic
+    set((s) => ({
+      clients: s.clients.filter((c) => c.id !== id),
+    }));
+    // Server sync
+    deleteClientAction(id).catch((err) => {
+      console.error("Failed to persist client archive:", err);
+    });
+  },
 
   restoreClient: (client) =>
     set((s) => ({
@@ -112,12 +158,12 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
       const { data, error } = await getClientsWithStats(orgId);
       if (data && !error) {
         const mapped = (data as any[]).map(mapServerClient);
-        set({ clients: mapped.length > 0 ? mapped : mockClients, loaded: true, loading: false });
+        set({ clients: mapped, loaded: true, loading: false });
       } else {
-        set({ loading: false });
+        set({ loaded: true, loading: false });
       }
     } catch {
-      set({ loading: false });
+      set({ loaded: true, loading: false });
     }
   },
 
@@ -128,7 +174,7 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
       const { data, error } = await getClientsWithStats(orgId);
       if (data && !error) {
         const mapped = (data as any[]).map(mapServerClient);
-        set({ clients: mapped.length > 0 ? mapped : get().clients });
+        set({ clients: mapped });
       }
     } catch {
       // silent refresh failure

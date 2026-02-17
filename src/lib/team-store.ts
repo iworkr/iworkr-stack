@@ -1,7 +1,5 @@
 import { create } from "zustand";
 import {
-  teamMembers as mockMembers,
-  roleDefinitions as mockRoles,
   type TeamMember,
   type RoleDefinition,
   type RoleId,
@@ -194,6 +192,7 @@ interface TeamState {
   ) => Promise<{ error: string | null }>;
 
   suspendMemberServer: (userId: string) => Promise<{ error: string | null }>;
+  reactivateMemberServer: (userId: string) => Promise<{ error: string | null }>;
   removeMemberServer: (userId: string) => Promise<{ error: string | null }>;
 
   saveRolePermissionsServer: (
@@ -204,8 +203,8 @@ interface TeamState {
 }
 
 export const useTeamStore = create<TeamState>((set, get) => ({
-  members: mockMembers,
-  roles: mockRoles,
+  members: [],
+  roles: [],
   overview: null,
   searchQuery: "",
   filterBranch: "all",
@@ -238,15 +237,13 @@ export const useTeamStore = create<TeamState>((set, get) => ({
         getTeamInvites(orgId),
       ]);
 
-      const serverMembers =
-        membersRes.data && membersRes.data.length > 0
-          ? membersRes.data.map(mapServerMember)
-          : mockMembers;
+      const serverMembers = membersRes.data
+        ? membersRes.data.map(mapServerMember)
+        : [];
 
-      const serverRoles =
-        rolesRes.data && rolesRes.data.length > 0
-          ? rolesRes.data.map(mapServerRole)
-          : mockRoles;
+      const serverRoles = rolesRes.data
+        ? rolesRes.data.map(mapServerRole)
+        : [];
 
       // Add pending invites as pending members
       if (invitesRes.data) {
@@ -284,7 +281,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
         loading: false,
       });
     } catch {
-      set({ members: mockMembers, roles: mockRoles, loaded: true, loading: false });
+      set({ loaded: true, loading: false });
     }
   },
 
@@ -447,6 +444,16 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
     get().suspendMember(userId);
     const res = await updateMemberDetailsServer(orgId, userId, { status: "suspended" });
+    if (res.error) get().refresh();
+    return { error: res.error };
+  },
+
+  reactivateMemberServer: async (userId) => {
+    const orgId = get().orgId;
+    if (!orgId) return { error: "No organization" };
+
+    get().reactivateMember(userId);
+    const res = await updateMemberDetailsServer(orgId, userId, { status: "active" });
     if (res.error) get().refresh();
     return { error: res.error };
   },

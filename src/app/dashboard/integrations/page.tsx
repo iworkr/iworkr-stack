@@ -18,7 +18,7 @@ import {
   useIntegrationsStore,
   type IntegrationsTab,
 } from "@/lib/integrations-store";
-import { type IntegrationCategory, getConnectedCount, getErrorCount } from "@/lib/integrations-data";
+import { type IntegrationCategory } from "@/lib/integrations-data";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { ConfigPanel } from "@/components/integrations/config-panel";
 import { StripeConnectModal } from "@/components/integrations/stripe-modal";

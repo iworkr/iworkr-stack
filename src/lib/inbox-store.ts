@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { inboxItems, type InboxItem } from "./data";
+import { type InboxItem } from "./data";
 import {
   getNotifications,
   markRead,
@@ -7,6 +7,7 @@ import {
   unarchiveNotification,
   snoozeNotification,
   unsnoozeNotification,
+  sendReplyAction,
 } from "@/app/actions/notifications";
 
 /* ── Inbox tab types ─────────────────────────────────── */
@@ -48,6 +49,9 @@ function mapNotification(n: any): InboxItem {
   };
 }
 
+/* ── Filter mode type ────────────────────────────────── */
+export type InboxFilter = "all" | "mentions";
+
 /* ── Store interface ─────────────────────────────────── */
 interface InboxStore {
   items: InboxItem[];
@@ -56,6 +60,7 @@ interface InboxStore {
   selectedId: string | null;
   focusedIndex: number;
   activeTab: InboxTab;
+  filter: InboxFilter;
   replyText: string;
 
   loadFromServer: (orgId: string) => Promise<void>;
@@ -72,6 +77,7 @@ interface InboxStore {
   setFocusedIndex: (index: number) => void;
   setActiveTab: (tab: InboxTab) => void;
   setReplyText: (text: string) => void;
+  toggleFilter: () => void;
 
   /* Triage — now server-synced */
   markAsRead: (id: string) => void;
@@ -90,12 +96,13 @@ interface InboxStore {
 }
 
 export const useInboxStore = create<InboxStore>((set, get) => ({
-  items: inboxItems.map((item) => ({ ...item, archived: false, snoozedUntil: null })),
+  items: [],
   loaded: false,
   loading: false,
-  selectedId: inboxItems[0]?.id || null,
+  selectedId: null,
   focusedIndex: 0,
   activeTab: "all",
+  filter: "all",
   replyText: "",
 
   loadFromServer: async (_orgId: string) => {
@@ -112,11 +119,12 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
           selectedId: mappedItems[0]?.id || null,
         });
       } else {
+        // Empty server response = no notifications — show clean empty state
         set({
-          items: inboxItems.map((item) => ({ ...item, archived: false, snoozedUntil: null })),
+          items: [],
           loaded: true,
           loading: false,
-          selectedId: inboxItems[0]?.id || null,
+          selectedId: null,
         });
       }
     } catch (error) {
@@ -150,15 +158,22 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
 
   /* ── Derived ───────────────────────────────────────── */
   getFilteredItems: () => {
-    const { items, activeTab } = get();
+    const { items, activeTab, filter } = get();
+    let result: InboxItem[];
     switch (activeTab) {
       case "unread":
-        return items.filter((i) => !i.read && !i.archived && !i.snoozedUntil);
+        result = items.filter((i) => !i.read && !i.archived && !i.snoozedUntil);
+        break;
       case "snoozed":
-        return items.filter((i) => !!i.snoozedUntil && !i.archived);
+        result = items.filter((i) => !!i.snoozedUntil && !i.archived);
+        break;
       default:
-        return items.filter((i) => !i.archived && !i.snoozedUntil);
+        result = items.filter((i) => !i.archived && !i.snoozedUntil);
     }
+    if (filter === "mentions") {
+      result = result.filter((i) => i.type === "mention");
+    }
+    return result;
   },
 
   getSelectedItem: () => {
@@ -180,6 +195,12 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
     set({ selectedId: filtered[0]?.id || null });
   },
   setReplyText: (text) => set({ replyText: text }),
+  toggleFilter: () => {
+    const next = get().filter === "all" ? "mentions" : "all";
+    set({ filter: next, focusedIndex: 0 });
+    const filtered = get().getFilteredItems();
+    set({ selectedId: filtered[0]?.id || null });
+  },
 
   /* ── Triage actions — optimistic + server sync ─────── */
   markAsRead: (id) => {
@@ -266,6 +287,8 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
       items: s.items.map((i) => (i.id === id ? { ...i, read: true } : i)),
       replyText: "",
     }));
+    // Persist reply to server
+    sendReplyAction(id, text).catch(console.error);
     markRead(id).catch(console.error);
   },
 

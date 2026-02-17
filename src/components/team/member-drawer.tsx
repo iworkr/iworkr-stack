@@ -53,7 +53,8 @@ const onlineColors = {
 };
 
 export function MemberDrawer() {
-  const { members, selectedMemberId, setSelectedMemberId, updateMemberRole, suspendMember, reactivateMember, archiveMember, resendInvite } = useTeamStore();
+  const { members, selectedMemberId, setSelectedMemberId, updateMemberRoleServer, suspendMemberServer, reactivateMemberServer, removeMemberServer, resendInvite } = useTeamStore();
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const { addToast } = useToastStore();
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
@@ -160,10 +161,11 @@ export function MemberDrawer() {
                         return (
                           <button
                             key={r.id}
-                            onClick={() => {
-                              updateMemberRole(member.id, r.id);
+                            onClick={async () => {
                               setRoleDropdownOpen(false);
-                              addToast(`${member.name} updated to ${r.label}`);
+                              const { error } = await updateMemberRoleServer(member.id, r.id);
+                              if (error) addToast(`Failed: ${error}`);
+                              else addToast(`${member.name} updated to ${r.label}`);
                             }}
                             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-zinc-400 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
                           >
@@ -292,36 +294,50 @@ export function MemberDrawer() {
                 )}
                 {member.status === "active" && member.role !== "owner" && (
                   <button
-                    onClick={() => {
-                      suspendMember(member.id);
-                      addToast(`${member.name} has been suspended`);
+                    onClick={async () => {
+                      setActionLoading("suspend");
+                      const { error } = await suspendMemberServer(member.id);
+                      setActionLoading(null);
+                      if (error) addToast(`Failed: ${error}`);
+                      else addToast(`${member.name} has been suspended`);
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 py-2 text-[12px] font-medium text-amber-400 transition-all hover:bg-amber-500/10"
+                    disabled={actionLoading === "suspend"}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 py-2 text-[12px] font-medium text-amber-400 transition-all hover:bg-amber-500/10 disabled:opacity-50"
                   >
-                    <Ban size={13} /> Suspend Access
+                    <Ban size={13} /> {actionLoading === "suspend" ? "Suspending…" : "Suspend Access"}
                   </button>
                 )}
                 {member.status === "suspended" && (
                   <button
-                    onClick={() => {
-                      reactivateMember(member.id);
-                      addToast(`${member.name} has been reactivated`);
+                    onClick={async () => {
+                      setActionLoading("reactivate");
+                      const { error } = await reactivateMemberServer(member.id);
+                      setActionLoading(null);
+                      if (error) addToast(`Failed: ${error}`);
+                      else addToast(`${member.name} has been reactivated`);
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 py-2 text-[12px] font-medium text-emerald-400 transition-all hover:bg-emerald-500/10"
+                    disabled={actionLoading === "reactivate"}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 py-2 text-[12px] font-medium text-emerald-400 transition-all hover:bg-emerald-500/10 disabled:opacity-50"
                   >
-                    <Play size={13} /> Reactivate
+                    <Play size={13} /> {actionLoading === "reactivate" ? "Reactivating…" : "Reactivate"}
                   </button>
                 )}
                 {member.role !== "owner" && member.status !== "archived" && (
                   <button
-                    onClick={() => {
-                      archiveMember(member.id);
-                      addToast(`${member.name} removed from workspace`);
-                      handleClose();
+                    onClick={async () => {
+                      setActionLoading("remove");
+                      const { error } = await removeMemberServer(member.id);
+                      setActionLoading(null);
+                      if (error) addToast(`Failed: ${error}`);
+                      else {
+                        addToast(`${member.name} removed from workspace`);
+                        handleClose();
+                      }
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 py-2 text-[12px] font-medium text-red-400 transition-all hover:bg-red-500/10"
+                    disabled={actionLoading === "remove"}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 py-2 text-[12px] font-medium text-red-400 transition-all hover:bg-red-500/10 disabled:opacity-50"
                   >
-                    <UserMinus size={13} /> Remove from Workspace
+                    <UserMinus size={13} /> {actionLoading === "remove" ? "Removing…" : "Remove from Workspace"}
                   </button>
                 )}
               </div>

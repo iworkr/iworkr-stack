@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   Terminal,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   useAutomationsStore,
   type AutomationsTab,
@@ -39,6 +40,7 @@ const execStatusConfig = {
 };
 
 export default function AutomationsPage() {
+  const router = useRouter();
   const {
     flows,
     logs,
@@ -47,10 +49,39 @@ export default function AutomationsPage() {
     masterPaused,
     setActiveTab,
     setSearchQuery,
-    toggleMasterPause,
+    toggleMasterPauseServer,
+    createFlowServer,
   } = useAutomationsStore();
   const { addToast } = useToastStore();
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [masterPauseLoading, setMasterPauseLoading] = useState(false);
+  const [creatingFlow, setCreatingFlow] = useState(false);
+
+  const handleMasterPause = useCallback(async () => {
+    if (masterPauseLoading) return;
+    setMasterPauseLoading(true);
+    const wasP = masterPaused;
+    const { error } = await toggleMasterPauseServer();
+    if (error) addToast(`Failed: ${error}`);
+    else addToast(wasP ? "All flows resumed" : "All flows paused");
+    setMasterPauseLoading(false);
+  }, [masterPaused, masterPauseLoading, toggleMasterPauseServer, addToast]);
+
+  const handleNewFlow = useCallback(async () => {
+    if (creatingFlow) return;
+    setCreatingFlow(true);
+    const { data, error } = await createFlowServer({
+      name: "Untitled Flow",
+      category: "operations",
+    });
+    if (error) {
+      addToast(`Failed to create flow: ${error}`);
+    } else if (data) {
+      addToast("New flow created");
+      router.push(`/dashboard/automations/${data.id}`);
+    }
+    setCreatingFlow(false);
+  }, [creatingFlow, createFlowServer, addToast, router]);
 
   /* ── Stats ──────────────────────────────────────────── */
   const activeCount = useMemo(
@@ -133,18 +164,16 @@ export default function AutomationsPage() {
 
             {/* Master Pause Toggle */}
             <button
-              onClick={() => {
-                toggleMasterPause();
-                addToast(masterPaused ? "All flows resumed" : "All flows paused");
-              }}
+              onClick={handleMasterPause}
+              disabled={masterPauseLoading}
               className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[11px] font-medium transition-all ${
                 masterPaused
                   ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
                   : "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/15"
-              }`}
+              } ${masterPauseLoading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {masterPaused ? <Play size={12} /> : <Pause size={12} />}
-              {masterPaused ? "Resume All" : "Pause All"}
+              {masterPauseLoading ? "Saving..." : masterPaused ? "Resume All" : "Pause All"}
             </button>
 
             {/* Search */}
@@ -160,9 +189,13 @@ export default function AutomationsPage() {
             </div>
 
             {/* New Flow */}
-            <button className="flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 text-[12px] font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(59,130,246,0.4)]">
+            <button
+              onClick={handleNewFlow}
+              disabled={creatingFlow}
+              className={`flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 text-[12px] font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(59,130,246,0.4)] ${creatingFlow ? "opacity-60 cursor-not-allowed" : ""}`}
+            >
               <Plus size={13} strokeWidth={2} />
-              New Flow
+              {creatingFlow ? "Creating..." : "New Flow"}
             </button>
           </div>
         </div>
@@ -226,6 +259,24 @@ export default function AutomationsPage() {
                 </div>
               </div>
             ))
+          ) : flows.length === 0 && !searchQuery ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/10 to-violet-500/10 ring-1 ring-white/5">
+                <Zap size={28} strokeWidth={1} className="text-blue-400" />
+              </div>
+              <h3 className="text-[14px] font-medium text-zinc-300">No Automations Yet</h3>
+              <p className="mt-1 max-w-[280px] text-[11px] leading-relaxed text-zinc-600">
+                Create your first automation to put your business on autopilot. Start from a template or build from scratch.
+              </p>
+              <button
+                onClick={handleNewFlow}
+                disabled={creatingFlow}
+                className="mt-5 flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2 text-[12px] font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.3)] transition-all hover:shadow-[0_0_30px_-4px_rgba(59,130,246,0.4)]"
+              >
+                <Plus size={13} strokeWidth={2} />
+                {creatingFlow ? "Creating..." : "Create First Flow"}
+              </button>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Zap size={28} strokeWidth={0.8} className="mb-3 text-zinc-800" />

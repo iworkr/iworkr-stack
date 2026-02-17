@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   X,
@@ -26,7 +27,7 @@ import { useToastStore } from "./action-toast";
 import { useJobsStore } from "@/lib/jobs-store";
 import { useClientsStore } from "@/lib/clients-store";
 import { useOrg } from "@/lib/hooks/use-org";
-import { clients as mockClients, team, type Client, type Priority, type JobStatus, type Job } from "@/lib/data";
+import { team, type Client, type Priority, type JobStatus, type Job } from "@/lib/data";
 
 /* ── Types & Config ───────────────────────────────────────── */
 
@@ -115,9 +116,10 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   const storeClients = useClientsStore((s) => s.clients);
   const { orgId } = useOrg();
   const [saving, setSaving] = useState(false);
+  const searchParams = useSearchParams();
 
   /* ── Derived ────────────────────────────────────────────── */
-  const allClients = storeClients.length > 0 ? storeClients : mockClients;
+  const allClients = storeClients;
   const filteredClients = useMemo(
     () =>
       clientQuery.length > 0
@@ -187,9 +189,21 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
       setLineItems([]);
       setCatalogQuery("");
       setShowCatalog(false);
+
+      // Pre-fill client from URL search params (e.g. from Client detail → Create Job)
+      const urlClientId = searchParams.get("clientId");
+      if (urlClientId) {
+        const preClient = storeClients.find((c) => c.id === urlClientId);
+        if (preClient) {
+          setSelectedClient(preClient);
+          setTimeout(() => titleRef.current?.focus(), 120);
+          return;
+        }
+      }
+
       setTimeout(() => clientInputRef.current?.focus(), 120);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Client selection ───────────────────────────────────── */
   function selectClient(client: Client) {

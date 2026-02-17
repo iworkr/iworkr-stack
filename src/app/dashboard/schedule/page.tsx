@@ -24,7 +24,7 @@ import {
   Navigation,
   Grip,
 } from "lucide-react";
-import { technicians as mockTechnicians, type ScheduleBlock, type Technician } from "@/lib/data";
+import { type ScheduleBlock, type Technician } from "@/lib/data";
 import { useScheduleStore, type ViewScale } from "@/lib/schedule-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
@@ -144,6 +144,7 @@ export default function SchedulePage() {
     technicians: storeTechnicians,
     backlogJobs,
     scheduleEvents,
+    loading,
     viewScale,
     peekBlockId,
     unscheduledDrawerOpen,
@@ -160,8 +161,8 @@ export default function SchedulePage() {
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
 
-  // Use store technicians (live data) or fallback to mock
-  const technicians = storeTechnicians.length > 0 ? storeTechnicians : mockTechnicians;
+  // Use store technicians (live data) — no mock fallback
+  const technicians = storeTechnicians;
 
   /* ── Drag state ─────────────────────────────────────────── */
   const [dragState, setDragState] = useState<{
@@ -198,10 +199,7 @@ export default function SchedulePage() {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
       if (e.key === "v" || e.key === "V") {
-        e.preventDefault();
-        const scales: ViewScale[] = ["day", "week", "month"];
-        const idx = scales.indexOf(viewScale);
-        setViewScale(scales[(idx + 1) % scales.length]);
+        // Week/Month views disabled for this sprint — keep Day only
         return;
       }
       if (e.key === "u" || e.key === "U") {
@@ -397,19 +395,26 @@ export default function SchedulePage() {
 
           {/* View scale toggle */}
           <div className="flex items-center rounded-md border border-[rgba(255,255,255,0.08)]">
-            {(["day", "week", "month"] as ViewScale[]).map((scale) => (
-              <button
-                key={scale}
-                onClick={() => setViewScale(scale)}
-                className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                  viewScale === scale
-                    ? "bg-[rgba(255,255,255,0.06)] text-zinc-200"
-                    : "text-zinc-600 hover:text-zinc-400"
-                }`}
-              >
-                {viewScaleLabels[scale]}
-              </button>
-            ))}
+            {(["day", "week", "month"] as ViewScale[]).map((scale) => {
+              const isDisabled = scale !== "day";
+              return (
+                <button
+                  key={scale}
+                  onClick={() => !isDisabled && setViewScale(scale)}
+                  disabled={isDisabled}
+                  title={isDisabled ? "Coming soon" : viewScaleLabels[scale]}
+                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    isDisabled
+                      ? "cursor-not-allowed text-zinc-700"
+                      : viewScale === scale
+                        ? "bg-[rgba(255,255,255,0.06)] text-zinc-200"
+                        : "text-zinc-600 hover:text-zinc-400"
+                  }`}
+                >
+                  {viewScaleLabels[scale]}
+                </button>
+              );
+            })}
           </div>
 
           {/* Unscheduled drawer toggle */}
@@ -455,6 +460,22 @@ export default function SchedulePage() {
 
           {/* Technician rows */}
           <div ref={timelineRef} className="flex-1 overflow-auto">
+            {/* Empty state */}
+            {technicians.length === 0 && !loading && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-24 text-center"
+              >
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+                  <Calendar size={22} strokeWidth={1} className="text-zinc-700" />
+                </div>
+                <h3 className="text-[15px] font-medium text-zinc-300">No schedule data</h3>
+                <p className="mt-1 text-[12px] text-zinc-600">Assign technicians and jobs to see the dispatch board.</p>
+                <p className="mt-0.5 text-[11px] text-zinc-700">Schedule blocks will appear here once created.</p>
+              </motion.div>
+            )}
+
             {technicians.map((tech, techIdx) => {
               const techBlocks = blocks.filter((b) => b.technicianId === tech.id);
               const capacityPct = (tech.hoursBooked / tech.hoursAvailable) * 100;
@@ -463,8 +484,7 @@ export default function SchedulePage() {
                 <div key={tech.id} className="flex border-b border-[rgba(255,255,255,0.04)]">
                   {/* ── Resource column (sticky left) ──────── */}
                   <div
-                    className="sticky left-0 z-10 flex w-[200px] shrink-0 items-center gap-3 border-r border-[rgba(255,255,255,0.06)] bg-[#050505] px-4"
-                    style={{ height: ROW_H }}
+                    className="sticky left-0 z-10 box-border flex h-[80px] w-[200px] shrink-0 items-center gap-3 border-r border-[rgba(255,255,255,0.06)] bg-[#050505] px-4"
                   >
                     {/* Avatar */}
                     <div className="relative">
@@ -967,7 +987,13 @@ function JobPeekCard({
           </motion.div>
         </div>
         {/* Directions button */}
-        <button className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-zinc-200">
+        <button
+          onClick={() => {
+            if (!block.location) { addToast("No location set for this job"); return; }
+            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}`, "_blank");
+          }}
+          className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-zinc-200"
+        >
           <Navigation size={9} />
           Directions
         </button>
@@ -1026,12 +1052,14 @@ function JobPeekCard({
         </motion.button>
         <div className="flex items-center gap-1">
           <button
+            onClick={() => addToast("No phone number configured")}
             className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
             title="Call"
           >
             <Phone size={12} />
           </button>
           <button
+            onClick={() => addToast("No phone number configured")}
             className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
             title="Message"
           >
@@ -1046,6 +1074,16 @@ function JobPeekCard({
             title="Copy link"
           >
             <Link2 size={12} />
+          </button>
+          <button
+            onClick={() => {
+              if (!block.location) { addToast("No location set for this job"); return; }
+              window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}`, "_blank");
+            }}
+            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+            title="Directions"
+          >
+            <Navigation size={12} />
           </button>
         </div>
       </div>

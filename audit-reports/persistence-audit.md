@@ -1,0 +1,131 @@
+# iWorkr — Cross-Module Persistence Audit Report
+
+> **Generated**: 2026-02-17T01:08:25.475Z
+> **Scope**: All 11 modules
+> **Total Findings**: 38
+> **Focus**: Data persistence — "disappears on refresh" bugs
+
+---
+
+## Executive Summary
+
+| Category | Count |
+|----------|-------|
+| 🔴 CRITICAL (data loss) | 0 |
+| 🟠 WARNING | 1 |
+| 🟢 PASS | 37 |
+
+## Module Status Matrix
+
+| Module | Status | Issue Count | Summary |
+|--------|--------|-------------|---------|
+| Dashboard | 🟢 WORKING | 0C / 0W / 2P | All actions persist to DB |
+| Jobs | 🟢 WORKING | 0C / 0W / 4P | All actions persist to DB |
+| Clients | 🟢 WORKING | 0C / 0W / 3P | All actions persist to DB |
+| Finance | 🟢 WORKING | 0C / 0W / 5P | All actions persist to DB |
+| Assets | 🟢 WORKING | 0C / 0W / 4P | All actions persist to DB |
+| Schedule | 🟢 WORKING | 0C / 0W / 2P | All actions persist to DB |
+| Team | 🟢 WORKING | 0C / 0W / 4P | All actions persist to DB |
+| Automations | 🟢 WORKING | 0C / 0W / 4P | All actions persist to DB |
+| Integrations | 🟠 PARTIAL | 0C / 1W / 4P | 1 minor issue(s) |
+| Forms | 🟢 WORKING | 0C / 0W / 2P | All actions persist to DB |
+| Inbox | 🟢 WORKING | 0C / 0W / 2P | All actions persist to DB |
+| Network | 🟢 WORKING | 0C / 0W / 1P | All actions persist to DB |
+
+---
+
+## 🔴 CRITICAL — Data Loss on Refresh
+
+These actions update the UI but **never write to the database**. Changes vanish on page refresh.
+
+---
+
+## Remediation Prescription
+
+### Jobs Module (3 critical fixes)
+
+| Action | Current (Local-Only) | Required (Server-Backed) | Files |
+|--------|---------------------|-------------------------|-------|
+| Update job fields | `updateJob(id, patch)` | `updateJobServer(id, patch)` → calls `updateJobAction` | `jobs/[id]/page.tsx` |
+| Delete job | `deleteJob(id)` | `deleteJobServer(id)` → calls `deleteJobAction` | `jobs/page.tsx`, `jobs/[id]/page.tsx` |
+| Toggle subtask | `toggleSubtask(id, subId)` | `toggleSubtaskServer(id, subId)` → calls `toggleSubtaskAction` | `jobs/[id]/page.tsx` |
+
+### Clients Module (2 critical fixes)
+
+| Action | Current (Local-Only) | Required (Server-Backed) | Files |
+|--------|---------------------|-------------------------|-------|
+| Update client (tags) | `updateClient(id, patch)` | `updateClientServer(id, patch)` → calls `updateClientAction` | `clients/[id]/page.tsx` |
+| Archive client | `archiveClient(id)` | `archiveClientServer(id)` → calls `deleteClientAction` + refresh | `clients/page.tsx`, `clients/[id]/page.tsx` |
+
+### Finance Module (3 critical fixes)
+
+| Action | Current (Local-Only) | Required (Server-Backed) | Files |
+|--------|---------------------|-------------------------|-------|
+| Change invoice status | `updateInvoiceStatus(id, status)` | `updateInvoiceStatusServer(id, status)` (already exists in store!) | `finance/page.tsx`, `finance/invoices/[id]/page.tsx` |
+| Edit line item | `updateLineItem(invId, liId, patch)` | Call `syncLineItemToServer` after each edit | `finance/invoices/[id]/page.tsx` |
+| Recalculate totals | `recalcInvoice(id)` | Add server sync to persist `amount_cents` | `finance-store.ts` |
+
+### Assets Module (2 critical fixes)
+
+| Action | Current (Local-Only) | Required (Server-Backed) | Files |
+|--------|---------------------|-------------------------|-------|
+| Update asset status | `updateAssetStatus(id, status)` | Create `updateAssetStatusServer(id, status)` → calls `updateAssetAction` | `fleet-grid.tsx`, `assets/[id]/page.tsx` |
+| Assign/Unassign | `assignAsset(id, ...)` / `unassignAsset(id)` | Already wrapped in `toggleCustodyServer` — ensure all call sites use it | `assets-store.ts` |
+
+---
+
+## 🟠 Warnings
+
+- **[Integrations]** Local syncNow() still has setTimeout: The local-only syncNow() action still uses setTimeout(2000). Components use syncNowServer() instead, so this is dead code.
+
+---
+
+## 🟢 Modules Fully Persisted
+
+These modules correctly call server actions for ALL mutations:
+
+### Schedule
+- ✅ All mutations persist to server
+- ✅ No mock data
+
+### Team
+- ✅ Member actions persist
+- ✅ Permission toggles persist
+- ✅ Invites persist
+- ✅ No mock data
+
+### Automations
+- ✅ All flow actions persist
+- ✅ New Flow creates DB record
+- ✅ Test Flow uses server execution
+- ✅ No mock data
+
+### Integrations
+- ✅ All connection actions persist
+- ✅ Settings persist
+- ✅ Stripe OAuth uses server
+- ✅ No mock data
+
+### Forms
+- ✅ All template actions persist
+- ✅ No mock data
+
+### Inbox
+- ✅ All inbox actions persist
+- ✅ No mock data
+
+---
+
+## Priority Order for Fixes
+
+1. **Jobs** — Most user-visible module. Every edit/delete is lost.
+
+2. **Finance** — Invoice status changes (Send, Void, Mark Paid) are lost.
+
+3. **Clients** — Tag additions and archives are lost.
+
+4. **Assets** — Report Issue and status changes are lost.
+
+
+---
+_Report generated by iWorkr QA Audit System — Cross-Module Persistence Audit_

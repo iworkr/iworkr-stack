@@ -36,9 +36,8 @@ export function useOrg(): OrgData {
         .from("organization_members")
         .select("organization_id")
         .eq("user_id", user.id)
-        .eq("status", "active")
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const orgId = membership?.organization_id ?? null;
       if (orgId) {

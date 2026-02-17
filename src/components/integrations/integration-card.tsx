@@ -2,8 +2,10 @@
 
 import { motion } from "framer-motion";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { type Integration } from "@/lib/integrations-data";
 import { useIntegrationsStore } from "@/lib/integrations-store";
+import { useToastStore } from "@/components/app/action-toast";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -11,18 +13,25 @@ interface IntegrationCardProps {
 }
 
 export function IntegrationCard({ integration: int, index }: IntegrationCardProps) {
-  const { openConfigPanel, connect, setStripeModalOpen } = useIntegrationsStore();
+  const { openConfigPanel, connectServer, setStripeModalOpen } = useIntegrationsStore();
+  const { addToast } = useToastStore();
   const isConnected = int.status === "connected" || int.status === "syncing";
   const isError = int.status === "error";
   const isSyncing = int.status === "syncing";
+  const [connecting, setConnecting] = useState(false);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (isConnected || isError) {
       openConfigPanel(int.id);
-    } else if (int.id === "int-stripe") {
+    } else if (int.id === "int-stripe" || int.name?.toLowerCase() === "stripe") {
       setStripeModalOpen(true);
     } else {
-      connect(int.id);
+      if (connecting) return;
+      setConnecting(true);
+      const { error } = await connectServer(int.id);
+      if (error) addToast(`Failed to connect ${int.name}: ${error}`);
+      else addToast(`${int.name} connected`);
+      setConnecting(false);
     }
   };
 

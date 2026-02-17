@@ -148,7 +148,8 @@ export function WidgetSchedule() {
         {myBlocks.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <CalendarDays size={24} className="mb-2 text-zinc-700" />
-            <p className="text-[12px] text-zinc-600">No upcoming schedule blocks</p>
+            <p className="text-[12px] text-zinc-600">No jobs scheduled for today</p>
+            <p className="mt-0.5 text-[9px] text-zinc-700">Your schedule will appear here when jobs are assigned.</p>
           </div>
         )}
         {myBlocks.map((block, i) => {

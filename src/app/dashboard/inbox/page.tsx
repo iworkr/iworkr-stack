@@ -25,7 +25,8 @@ import {
 import { useRouter } from "next/navigation";
 import { type InboxItem, type InboxItemType } from "@/lib/data";
 import { useToastStore } from "@/components/app/action-toast";
-import { useInboxStore, type InboxTab } from "@/lib/inbox-store";
+import { useInboxStore, type InboxTab, type InboxFilter } from "@/lib/inbox-store";
+import { useAuthStore } from "@/lib/auth-store";
 
 /* ── Type config ──────────────────────────────────────── */
 
@@ -177,11 +178,13 @@ export default function InboxPage() {
     selectedId,
     focusedIndex,
     activeTab,
+    filter,
     replyText,
     setSelectedId,
     setFocusedIndex,
     setActiveTab,
     setReplyText,
+    toggleFilter,
     markAsRead,
     archive,
     unarchive,
@@ -194,18 +197,26 @@ export default function InboxPage() {
   } = useInboxStore();
 
   const { addToast } = useToastStore();
+  const profile = useAuthStore((s) => s.profile);
 
   /* ── Compute derived state reactively ────────────── */
   const filteredItems = useMemo(() => {
+    let result: InboxItem[];
     switch (activeTab) {
       case "unread":
-        return items.filter((i) => !i.read && !i.archived && !i.snoozedUntil);
+        result = items.filter((i) => !i.read && !i.archived && !i.snoozedUntil);
+        break;
       case "snoozed":
-        return items.filter((i) => !!i.snoozedUntil && !i.archived);
+        result = items.filter((i) => !!i.snoozedUntil && !i.archived);
+        break;
       default:
-        return items.filter((i) => !i.archived && !i.snoozedUntil);
+        result = items.filter((i) => !i.archived && !i.snoozedUntil);
     }
-  }, [items, activeTab]);
+    if (filter === "mentions") {
+      result = result.filter((i) => i.type === "mention");
+    }
+    return result;
+  }, [items, activeTab, filter]);
 
   const selectedItem = useMemo(
     () => items.find((i) => i.id === selectedId),
@@ -217,7 +228,7 @@ export default function InboxPage() {
     [items]
   );
 
-  const allCleared = items.every((i) => i.archived);
+  const allCleared = items.length > 0 && items.every((i) => i.archived);
 
   const [showSnoozePopover, setShowSnoozePopover] = useState(false);
   const replyInputRef = useRef<HTMLInputElement>(null);
@@ -455,7 +466,15 @@ export default function InboxPage() {
               </motion.span>
             )}
           </div>
-          <button className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/5 hover:text-zinc-400">
+          <button
+            onClick={toggleFilter}
+            title={filter === "mentions" ? "Showing mentions only — click for all" : "Filter: Mentions only"}
+            className={`rounded-md p-1.5 transition-colors hover:bg-white/5 ${
+              filter === "mentions"
+                ? "bg-violet-500/10 text-violet-400"
+                : "text-zinc-600 hover:text-zinc-400"
+            }`}
+          >
             <Filter size={14} strokeWidth={1.5} />
           </button>
         </div>
@@ -764,10 +783,12 @@ export default function InboxPage() {
                 <div className="relative mt-6 flex items-center gap-2">
                   <button
                     onClick={() => {
-                      const item = archive(selectedId!);
+                      if (!selectedId) return;
+                      const item = archive(selectedId);
                       if (item) addToast(`"${item.title}" archived`, () => unarchive(item));
                     }}
-                    className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200"
+                    disabled={!selectedId}
+                    className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Archive size={12} />
                     Mark Done
@@ -776,11 +797,12 @@ export default function InboxPage() {
                     </kbd>
                   </button>
 
-                  {/* Snooze button + popover */}
+                  {/* Snooze button + popover — always rendered, disabled when no selection */}
                   <div className="relative">
                     <button
-                      onClick={() => setShowSnoozePopover((v) => !v)}
-                      className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04]"
+                      onClick={() => selectedId && setShowSnoozePopover((v) => !v)}
+                      disabled={!selectedId}
+                      className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <AlarmClock size={12} />
                       Snooze
@@ -790,7 +812,7 @@ export default function InboxPage() {
                     </button>
 
                     <AnimatePresence>
-                      {showSnoozePopover && (
+                      {showSnoozePopover && selectedId && (
                         <motion.div
                           initial={{ opacity: 0, y: 4, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -819,7 +841,11 @@ export default function InboxPage() {
               <div className="shrink-0 border-t border-[rgba(255,255,255,0.06)] bg-black/40 px-6 py-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600">
-                    <span className="text-[9px] font-semibold text-white">MT</span>
+                    <span className="text-[9px] font-semibold text-white">
+                      {profile?.full_name
+                        ? profile.full_name.split(/\s+/).map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+                        : "Me"}
+                    </span>
                   </div>
                   <div className="relative flex-1">
                     <input

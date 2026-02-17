@@ -542,6 +542,7 @@ export interface InvoiceEvent {
 
 export interface Invoice {
   id: string;
+  dbId?: string;
   clientId: string;
   clientName: string;
   clientEmail: string;

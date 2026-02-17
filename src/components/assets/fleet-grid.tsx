@@ -5,6 +5,8 @@ import { Truck, Wrench, Cog, UserCheck, AlertTriangle, ChevronRight } from "luci
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { type Asset, type AssetCategory } from "@/lib/assets-data";
+import { useAssetsStore } from "@/lib/assets-store";
+import { CustodyModal } from "./custody-modal";
 
 /* ── Icons ────────────────────────────────────────────── */
 
@@ -44,7 +46,9 @@ export function FleetGrid({ assets }: FleetGridProps) {
 
 function AssetCard({ asset, index }: { asset: Asset; index: number }) {
   const router = useRouter();
+  const { updateAssetStatusServer } = useAssetsStore();
   const [hovered, setHovered] = useState(false);
+  const [custodyOpen, setCustodyOpen] = useState(false);
   const CatIcon = categoryIcons[asset.category];
   const status = statusConfig[asset.status];
 
@@ -97,7 +101,7 @@ function AssetCard({ asset, index }: { asset: Asset; index: number }) {
           >
             {asset.status === "available" && (
               <button
-                onClick={(e) => { e.stopPropagation(); }}
+                onClick={(e) => { e.stopPropagation(); setCustodyOpen(true); }}
                 className="rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[rgba(255,255,255,0.15)]"
               >
                 <UserCheck size={12} className="mr-1 inline" />
@@ -105,7 +109,7 @@ function AssetCard({ asset, index }: { asset: Asset; index: number }) {
               </button>
             )}
             <button
-              onClick={(e) => { e.stopPropagation(); }}
+              onClick={(e) => { e.stopPropagation(); updateAssetStatusServer(asset.id, "maintenance"); }}
               className="rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[rgba(255,255,255,0.15)]"
             >
               <AlertTriangle size={12} className="mr-1 inline" />
@@ -158,6 +162,9 @@ function AssetCard({ asset, index }: { asset: Asset; index: number }) {
           </div>
         </div>
       </div>
+
+      {/* Custody Modal */}
+      <CustodyModal asset={asset} isOpen={custodyOpen} onClose={() => setCustodyOpen(false)} />
     </motion.div>
   );
 }

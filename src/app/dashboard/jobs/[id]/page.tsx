@@ -92,7 +92,7 @@ export default function JobDetailPage() {
   const router = useRouter();
   const jobId = params.id as string;
 
-  const { jobs, updateJob, deleteJob, restoreJobs, toggleSubtask } = useJobsStore();
+  const { jobs, updateJobServer, deleteJobServer, restoreJobs, toggleSubtaskServer } = useJobsStore();
   const { addToast } = useToastStore();
 
   const job = jobs.find((j) => j.id === jobId);
@@ -154,7 +154,7 @@ export default function JobDetailPage() {
     if (!job) return;
     setEditingTitle(false);
     if (localTitle.trim() && localTitle !== job.title) {
-      updateJob(job.id, { title: localTitle.trim() });
+      updateJobServer(job.id, { title: localTitle.trim() });
       flashSaved("title");
       addToast("Title updated");
     } else {
@@ -167,7 +167,7 @@ export default function JobDetailPage() {
     if (!job) return;
     setEditingDesc(false);
     if (localDesc !== (job.description || "")) {
-      updateJob(job.id, { description: localDesc });
+      updateJobServer(job.id, { description: localDesc });
       flashSaved("description");
       addToast("Saved");
     }
@@ -198,9 +198,8 @@ export default function JobDetailPage() {
       navigator.clipboard?.writeText(job.id);
       addToast(`${job.id} copied to clipboard`);
     } else if (actionId === "delete") {
-      const deleted = job;
-      deleteJob(job.id);
-      addToast(`${job.id} deleted`, () => restoreJobs([deleted]));
+      deleteJobServer(job.id);
+      addToast(`${job.id} deleted`);
       router.push("/dashboard/jobs");
     } else if (actionId === "share") {
       navigator.clipboard?.writeText(`${window.location.origin}/dashboard/jobs/${job.id}`);
@@ -313,7 +312,7 @@ export default function JobDetailPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
-                  updateJob(job.id, { status: "done" });
+                  updateJobServer(job.id, { status: "done" });
                   addToast("Job marked as complete");
                 }}
                 className="relative ml-2 overflow-hidden rounded-md bg-emerald-600 px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-emerald-500"
@@ -617,7 +616,7 @@ export default function JobDetailPage() {
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03, duration: 0.2 }}
-                      onClick={() => toggleSubtask(job.id, st.id)}
+                      onClick={() => toggleSubtaskServer(job.id, st.id)}
                       className="group flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-[rgba(255,255,255,0.03)]"
                     >
                       <div
@@ -841,8 +840,8 @@ export default function JobDetailPage() {
                     icon: <StatusIcon status={s.value} size={13} />,
                   }))}
                   selected={job.status}
-                  onSelect={(v) => {
-                    updateJob(job.id, { status: v });
+                    onSelect={(v) => {
+                    updateJobServer(job.id, { status: v });
                     addToast(
                       `Status changed to ${statusOptions.find((s) => s.value === v)?.label}`
                     );
@@ -985,7 +984,7 @@ export default function JobDetailPage() {
                     }))}
                     selected={job.priority}
                     onSelect={(v) => {
-                      updateJob(job.id, { priority: v });
+                      updateJobServer(job.id, { priority: v });
                       addToast(
                         `Priority changed to ${priorityOptions.find((p) => p.value === v)?.label}`
                       );
@@ -1023,7 +1022,7 @@ export default function JobDetailPage() {
                     selected={job.assignee}
                     onSelect={(v) => {
                       const initials = v === "Unassigned" ? "??" : v.split(" ").map((n) => n[0]).join("");
-                      updateJob(job.id, {
+                      updateJobServer(job.id, {
                         assignee: v,
                         assigneeInitials: initials,
                       });

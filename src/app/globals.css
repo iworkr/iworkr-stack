@@ -38,6 +38,14 @@
   color: #fff;
 }
 
+/* Interactive element cursors — Tailwind v4 reset removes pointer cursors */
+button,
+[role="button"],
+a,
+.clickable {
+  cursor: pointer;
+}
+
 /* Smooth scroll */
 html {
   scroll-behavior: smooth;

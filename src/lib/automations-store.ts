@@ -1,7 +1,5 @@
 import { create } from "zustand";
 import {
-  automationFlows as initialFlows,
-  executionLogs as initialLogs,
   type AutomationFlow,
   type ExecutionLog,
   type FlowStatus,
@@ -14,6 +12,8 @@ import {
   setAllFlowsStatusRpc,
   archiveAutomationFlow as archiveFlowServer,
   duplicateAutomationFlow as duplicateFlowServer,
+  createAutomationFlow as createFlowServer,
+  testAutomationFlow as testFlowServer,
   type AutomationStats,
 } from "@/app/actions/automations";
 
@@ -50,6 +50,8 @@ interface AutomationsState {
   toggleMasterPauseServer: () => Promise<{ error: string | null }>;
   archiveFlowServer: (id: string) => Promise<{ error: string | null }>;
   duplicateFlowServer: (id: string) => Promise<{ error: string | null }>;
+  createFlowServer: (params: { name: string; description?: string; category?: string; blocks?: any[] }) => Promise<{ data: any; error: string | null }>;
+  testFlowServer: (id: string) => Promise<{ data: any; error: string | null }>;
 }
 
 function mapServerFlow(sf: any): AutomationFlow {
@@ -113,8 +115,8 @@ function formatTimestamp(dateStr: string): string {
 }
 
 export const useAutomationsStore = create<AutomationsState>((set, get) => ({
-  flows: initialFlows,
-  logs: initialLogs,
+  flows: [],
+  logs: [],
   stats: null,
   activeTab: "flows",
   searchQuery: "",
@@ -190,8 +192,8 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
       const serverLogs = logsResult.data ? (logsResult.data as any[]).map(mapServerLog) : [];
 
       set({
-        flows: serverFlows.length > 0 ? serverFlows : initialFlows,
-        logs: serverLogs.length > 0 ? serverLogs : initialLogs,
+        flows: serverFlows,
+        logs: serverLogs,
         stats: statsResult.data || null,
         loaded: true,
         loading: false,
@@ -213,12 +215,10 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
       ]);
 
       if (flowsResult.data) {
-        const mapped = (flowsResult.data as any[]).map(mapServerFlow);
-        if (mapped.length > 0) set({ flows: mapped });
+        set({ flows: (flowsResult.data as any[]).map(mapServerFlow) });
       }
       if (logsResult.data) {
-        const mapped = (logsResult.data as any[]).map(mapServerLog);
-        if (mapped.length > 0) set({ logs: mapped });
+        set({ logs: (logsResult.data as any[]).map(mapServerLog) });
       }
       if (statsResult.data) set({ stats: statsResult.data });
     } catch {
@@ -266,5 +266,29 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
     const res = await duplicateFlowServer(id);
     if (!res.error) get().refresh();
     return { error: res.error };
+  },
+
+  createFlowServer: async (params) => {
+    const orgId = get().orgId;
+    if (!orgId) return { data: null, error: "No organization" };
+
+    const res = await createFlowServer({
+      organization_id: orgId,
+      name: params.name,
+      description: params.description,
+      category: params.category,
+      blocks: params.blocks,
+    });
+
+    if (!res.error && res.data) {
+      await get().refresh();
+    }
+    return { data: res.data, error: res.error };
+  },
+
+  testFlowServer: async (id) => {
+    const res = await testFlowServer(id);
+    if (!res.error) get().refresh();
+    return { data: res.data, error: res.error };
   },
 }));

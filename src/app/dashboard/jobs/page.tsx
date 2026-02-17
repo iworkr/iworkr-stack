@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Copy,
   MapPin,
+  Briefcase,
 } from "lucide-react";
 import { PriorityIcon } from "@/components/app/priority-icon";
 import { StatusIcon } from "@/components/app/status-icon";
@@ -19,6 +20,27 @@ import { BulkActionBar } from "@/components/app/bulk-action-bar";
 import { useToastStore } from "@/components/app/action-toast";
 import { useJobsStore } from "@/lib/jobs-store";
 import { useState } from "react";
+
+/* ── Status helpers ──────────────────────────────────── */
+
+const STATUS_OPTIONS = [
+  { value: "backlog", label: "Backlog" },
+  { value: "todo", label: "To Do" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "done", label: "Done" },
+] as const;
+
+function formatStatus(status: string): string {
+  const map: Record<string, string> = {
+    in_progress: "In Progress",
+    todo: "To Do",
+    done: "Done",
+    backlog: "Backlog",
+    cancelled: "Cancelled",
+    on_hold: "On Hold",
+  };
+  return map[status] || status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+}
 
 const contextItems: ContextMenuItem[] = [
   { id: "open", label: "Open", icon: <Pencil size={13} />, shortcut: "↵" },
@@ -34,13 +56,20 @@ export default function JobsPage() {
     jobs: jobsList,
     focusedIndex,
     selected,
+    loaded,
+    loading,
     setFocusedIndex,
     toggleSelect,
     clearSelection,
-    deleteJob,
+    deleteJobServer,
     restoreJobs,
+    updateJobStatus,
   } = useJobsStore();
   const { addToast } = useToastStore();
+
+  // Status dropdown state
+  const [statusDropdown, setStatusDropdown] = useState<{ jobId: string; x: number; y: number } | null>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
 
   // Context menu state
   const [ctxMenu, setCtxMenu] = useState<{
@@ -79,6 +108,24 @@ export default function JobsPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  // Close status dropdown on click outside
+  useEffect(() => {
+    if (!statusDropdown) return;
+    function handleClick(e: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setStatusDropdown(null);
+      }
+    }
+    window.addEventListener("mousedown", handleClick);
+    return () => window.removeEventListener("mousedown", handleClick);
+  }, [statusDropdown]);
+
+  async function handleStatusChange(jobId: string, newStatus: string) {
+    await updateJobStatus(jobId, newStatus);
+    setStatusDropdown(null);
+    addToast(`Status updated to ${formatStatus(newStatus)}`);
+  }
+
   function handleContextMenu(e: React.MouseEvent, jobId: string) {
     e.preventDefault();
     setCtxMenu({ open: true, x: e.clientX, y: e.clientY, jobId });
@@ -94,22 +141,17 @@ export default function JobsPage() {
       navigator.clipboard?.writeText(job.id);
       addToast(`${job.id} copied to clipboard`);
     } else if (actionId === "delete") {
-      const deleted = job;
-      deleteJob(job.id);
-      addToast(`${job.id} deleted`, () => {
-        restoreJobs([deleted]);
-      });
+      deleteJobServer(job.id);
+      addToast(`${job.id} deleted`);
     }
   }
 
   function handleBulkDelete() {
     const deletedIds = new Set(selected);
     const deletedJobs = jobsList.filter((j) => deletedIds.has(j.id));
-    deletedJobs.forEach((j) => deleteJob(j.id));
+    deletedJobs.forEach((j) => deleteJobServer(j.id));
     clearSelection();
-    addToast(`${deletedIds.size} jobs deleted`, () => {
-      restoreJobs(deletedJobs);
-    });
+    addToast(`${deletedIds.size} jobs deleted`);
   }
 
   return (
@@ -181,6 +223,22 @@ export default function JobsPage() {
 
       {/* Rows */}
       <div className="flex-1 overflow-y-auto">
+        {/* Empty state — show when no jobs and not actively loading */}
+        {jobsList.length === 0 && !loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-24 text-center"
+          >
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+              <Briefcase size={22} strokeWidth={1} className="text-zinc-700" />
+            </div>
+            <h3 className="text-[15px] font-medium text-zinc-300">No jobs found</h3>
+            <p className="mt-1 text-[12px] text-zinc-600">Create your first job to get started.</p>
+            <p className="mt-0.5 text-[11px] text-zinc-700">Jobs will appear here once created.</p>
+          </motion.div>
+        )}
+
         <AnimatePresence>
           {jobsList.map((job, i) => {
             const isFocused = i === focusedIndex;
@@ -278,16 +336,21 @@ export default function JobsPage() {
                   )}
                 </div>
 
-                {/* Status */}
+                {/* Status — clickable dropdown */}
                 <div className="w-28 px-2">
-                  <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setStatusDropdown({ jobId: job.id, x: rect.left, y: rect.bottom + 4 });
+                    }}
+                    className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/[0.06]"
+                  >
                     <StatusIcon status={job.status} size={13} />
                     <span className="text-[12px] text-zinc-500">
-                      {job.status
-                        .replace("_", " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      {formatStatus(job.status)}
                     </span>
-                  </div>
+                  </button>
                 </div>
 
                 {/* Assignee */}
@@ -339,6 +402,40 @@ export default function JobsPage() {
         onSelect={handleContextAction}
         onClose={() => setCtxMenu((p) => ({ ...p, open: false }))}
       />
+
+      {/* Status Dropdown */}
+      <AnimatePresence>
+        {statusDropdown && (
+          <motion.div
+            ref={statusDropdownRef}
+            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+            transition={{ duration: 0.12 }}
+            className="fixed z-50 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+            style={{ left: statusDropdown.x, top: statusDropdown.y, width: 160 }}
+          >
+            {STATUS_OPTIONS.map((opt) => {
+              const currentJob = jobsList.find((j) => j.id === statusDropdown.jobId);
+              const isActive = currentJob?.status === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => handleStatusChange(statusDropdown.jobId, opt.value)}
+                  className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12px] transition-colors ${
+                    isActive
+                      ? "bg-white/5 text-zinc-200"
+                      : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                  }`}
+                >
+                  <StatusIcon status={opt.value} size={12} />
+                  {opt.label}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bulk Action Bar */}
       <BulkActionBar
