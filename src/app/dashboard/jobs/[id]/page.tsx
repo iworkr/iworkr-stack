@@ -26,6 +26,7 @@ import {
   DollarSign,
   Plus,
   Receipt,
+  Briefcase,
 } from "lucide-react";
 import { useJobsStore } from "@/lib/jobs-store";
 import { useToastStore } from "@/components/app/action-toast";
@@ -211,19 +212,29 @@ export default function JobDetailPage() {
 
   if (!job) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <h2 className="mb-2 text-lg font-medium text-zinc-300">Job not found</h2>
-          <p className="mb-4 text-[13px] text-zinc-600">
+      <div className="flex h-full items-center justify-center bg-[#050505]">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+              <Briefcase size={16} strokeWidth={1.5} className="text-zinc-600" />
+            </div>
+          </div>
+          <h2 className="mb-1 text-[15px] font-medium text-zinc-300">Job not found</h2>
+          <p className="mb-4 text-[12px] text-zinc-600">
             This job may have been deleted or doesn&apos;t exist.
           </p>
           <button
             onClick={() => router.push("/dashboard/jobs")}
-            className="text-[13px] text-zinc-500 transition-colors hover:text-zinc-300"
+            className="text-[12px] text-zinc-500 transition-colors duration-150 hover:text-zinc-300"
           >
             Back to Jobs
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -245,16 +256,16 @@ export default function JobDetailPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-      className="flex h-full flex-col"
+      className="flex h-full flex-col bg-[#050505]"
     >
       {/* ── Sticky Header ────────────────────────────────── */}
-      <div className="sticky top-0 z-10 border-b border-[rgba(255,255,255,0.06)] bg-black/80 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 border-b border-white/[0.05] bg-[#050505]/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 py-3">
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => router.push("/dashboard/jobs")}
-              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-300"
+              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] text-zinc-500 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
             >
               <ArrowLeft size={12} />
               Jobs
@@ -286,13 +297,13 @@ export default function JobDetailPage() {
                 );
                 addToast("Link copied");
               }}
-              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
               title="Share"
             >
               <Share2 size={14} />
             </button>
             <button
-              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
               title="Print"
             >
               <Printer size={14} />
@@ -301,37 +312,23 @@ export default function JobDetailPage() {
               onClick={(e) =>
                 setCtxMenu({ open: true, x: e.clientX, y: e.clientY })
               }
-              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
             >
               <MoreHorizontal size={14} />
             </button>
 
-            {/* Complete Job CTA */}
+            {/* Complete Job CTA — Ghost style, not neon */}
             {job.status !== "done" && (
               <motion.button
-                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   updateJobServer(job.id, { status: "done" });
                   addToast("Job marked as complete");
                 }}
-                className="relative ml-2 overflow-hidden rounded-md bg-emerald-600 px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-emerald-500"
+                className="ml-2 flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-1.5 text-[12px] font-medium text-emerald-400 transition-all duration-150 hover:border-emerald-500/30 hover:bg-emerald-500/10"
               >
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 opacity-20">
-                  <div
-                    className="h-full w-full"
-                    style={{
-                      background:
-                        "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)",
-                      animation: "shimmer 2s infinite",
-                    }}
-                  />
-                </div>
-                <span className="relative flex items-center gap-1.5">
-                  <Check size={13} />
-                  Complete Job
-                </span>
+                <Check size={13} />
+                Complete Job
               </motion.button>
             )}
           </div>
@@ -383,7 +380,7 @@ export default function JobDetailPage() {
               {job.labels.map((label) => (
                 <span
                   key={label}
-                  className="rounded border border-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[11px] text-zinc-500"
+                  className="rounded border border-white/[0.06] px-2 py-0.5 text-[11px] text-zinc-500"
                 >
                   {label}
                 </span>
@@ -402,7 +399,7 @@ export default function JobDetailPage() {
                   value={localDesc}
                   onChange={(e) => setLocalDesc(e.target.value)}
                   onBlur={saveDesc}
-                  className="w-full resize-none rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-4 text-[13px] leading-relaxed text-zinc-300 outline-none focus:border-[rgba(255,255,255,0.15)]"
+                  className="w-full resize-none rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-zinc-300 outline-none focus:border-white/[0.12]"
                   rows={5}
                 />
               ) : (
@@ -620,10 +617,10 @@ export default function JobDetailPage() {
                       className="group flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-[rgba(255,255,255,0.03)]"
                     >
                       <div
-                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all ${
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all duration-150 ${
                           st.completed
                             ? "border-emerald-500 bg-emerald-500"
-                            : "border-[rgba(255,255,255,0.15)] group-hover:border-[rgba(255,255,255,0.25)]"
+                            : "border-white/[0.1] group-hover:border-white/[0.2]"
                         }`}
                       >
                         {st.completed && (
@@ -699,10 +696,10 @@ export default function JobDetailPage() {
                           }}
                           className="relative z-10 flex flex-col items-center"
                         >
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
                             <MapPin size={14} className="text-white" />
                           </div>
-                          <div className="mt-0.5 h-2 w-2 rounded-full bg-[#00E676]/40" />
+                          <div className="mt-0.5 h-2 w-2 rounded-full bg-emerald-500/40" />
                           {/* Pulse ring */}
                           <motion.div
                             animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
@@ -711,7 +708,7 @@ export default function JobDetailPage() {
                               repeat: Infinity,
                               ease: "easeOut",
                             }}
-                            className="absolute top-0 h-8 w-8 rounded-full border border-[#00E676]"
+                            className="absolute top-0 h-8 w-8 rounded-full border border-emerald-500"
                           />
                         </motion.div>
                       </div>
@@ -806,7 +803,7 @@ export default function JobDetailPage() {
         </div>
 
         {/* ── HUD (Right 30%) ───────────────────────────────── */}
-        <div className="w-[320px] shrink-0 overflow-y-auto border-l border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]">
+        <div className="w-[320px] shrink-0 overflow-y-auto border-l border-white/[0.05] bg-[#080808]">
           <div className="p-5">
             {/* ── Status Pill ────────────────────────────────── */}
             <div className="relative mb-6">
@@ -816,14 +813,14 @@ export default function JobDetailPage() {
                 onClick={() =>
                   setActivePopover(activePopover === "status" ? null : "status")
                 }
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-2.5 transition-colors ${
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-2.5 transition-colors duration-150 ${
                   job.status === "done"
-                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    ? "border-emerald-500/20 bg-emerald-500/[0.04]"
                     : job.status === "in_progress"
-                      ? "border-yellow-500/20 bg-yellow-500/5"
+                      ? "border-amber-500/15 bg-amber-500/[0.03]"
                       : job.priority === "urgent"
-                        ? "border-red-500/20 bg-red-500/5"
-                        : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]"
+                        ? "border-red-500/15 bg-red-500/[0.03]"
+                        : "border-white/[0.06] bg-white/[0.02]"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -864,7 +861,7 @@ export default function JobDetailPage() {
             </div>
 
             {/* ── Financial Pulse ────────────────────────────── */}
-            <div className="mb-6 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-4">
+            <div className="mb-6 rounded-lg border border-white/[0.05] bg-white/[0.02] p-4">
               <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
                 Financial Pulse
               </h4>
@@ -933,7 +930,7 @@ export default function JobDetailPage() {
               </div>
 
               {/* Cost breakdown */}
-              <div className="mt-3 flex items-center justify-between border-t border-[rgba(255,255,255,0.06)] pt-3">
+              <div className="mt-3 flex items-center justify-between border-t border-white/[0.04] pt-3">
                 <div className="text-[11px] text-zinc-600">
                   Cost:{" "}
                   <span className="text-zinc-400">
@@ -1127,9 +1124,9 @@ function PropertyRow({
   return (
     <div
       onClick={onClick}
-      className={`flex items-center justify-between rounded-md px-3 py-2 transition-colors ${
+      className={`flex items-center justify-between rounded-md px-3 py-2 transition-colors duration-150 ${
         onClick
-          ? "cursor-pointer hover:bg-[rgba(255,255,255,0.03)]"
+          ? "cursor-pointer hover:bg-white/[0.03]"
           : ""
       }`}
     >

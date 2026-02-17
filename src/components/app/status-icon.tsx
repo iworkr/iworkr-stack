@@ -3,10 +3,10 @@
 import type { JobStatus } from "@/lib/data";
 
 const config: Record<JobStatus, { label: string; color: string; fill: number }> = {
-  backlog: { label: "Backlog", color: "text-zinc-500", fill: 0 },
+  backlog: { label: "Backlog", color: "text-zinc-600", fill: 0 },
   todo: { label: "Todo", color: "text-zinc-400", fill: 0 },
-  in_progress: { label: "In Progress", color: "text-yellow-400", fill: 0.5 },
-  done: { label: "Done", color: "text-violet-400", fill: 1 },
+  in_progress: { label: "In Progress", color: "text-amber-400", fill: 0.5 },
+  done: { label: "Done", color: "text-emerald-400", fill: 1 },
   cancelled: { label: "Cancelled", color: "text-zinc-600", fill: 0 },
 };
 
