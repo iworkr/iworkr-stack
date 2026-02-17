@@ -361,6 +361,34 @@ export async function createInvoice(params: CreateInvoiceParams) {
 }
 
 /**
+ * Soft-delete an invoice (sets deleted_at timestamp)
+ */
+export async function deleteInvoice(invoiceId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: "Unauthorized" };
+    }
+
+    const { error } = await supabase
+      .from("invoices")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", invoiceId);
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    revalidatePath("/dashboard/finance");
+    return { data: { success: true }, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+/**
  * Update invoice fields
  */
 export async function updateInvoice(invoiceId: string, updates: UpdateInvoiceParams) {

@@ -15,7 +15,11 @@ import {
   logAssetService,
   updateInventoryItem,
   updateAsset as updateAssetAction,
+  createAsset as createAssetAction,
+  createInventoryItem as createInventoryItemAction,
   type AssetsOverview,
+  type CreateAssetParams,
+  type CreateInventoryItemParams,
 } from "@/app/actions/assets";
 
 /* ── Types ────────────────────────────────────────────── */
@@ -151,6 +155,10 @@ interface AssetsState {
 
   /* Server-backed consume on job */
   consumeOnJob: (inventoryId: string, qty: number, jobId?: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
+
+  /* Server-backed create */
+  createAssetServer: (params: CreateAssetParams) => Promise<{ data: any; error: string | null }>;
+  createInventoryItemServer: (params: CreateInventoryItemParams) => Promise<{ data: any; error: string | null }>;
 
   /* Audit */
   addAuditEntry: (entry: Omit<AssetAuditEntry, "id">) => void;
@@ -323,6 +331,18 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
       return { success: false, error };
     }
     return { success: true };
+  },
+
+  createAssetServer: async (params) => {
+    const res = await createAssetAction(params);
+    if (!res.error) await get().refresh();
+    return { data: res.data, error: res.error };
+  },
+
+  createInventoryItemServer: async (params) => {
+    const res = await createInventoryItemAction(params);
+    if (!res.error) await get().refresh();
+    return { data: res.data, error: res.error };
   },
 
   addAuditEntry: (entry) =>

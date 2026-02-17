@@ -110,7 +110,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   const catalogInputRef = useRef<HTMLInputElement>(null);
 
   const { addToast } = useToastStore();
-  const { addInvoice, createInvoiceServer } = useFinanceStore();
+  const { createInvoiceServer } = useFinanceStore();
   const { orgId } = useOrg();
   const storeClients = useClientsStore((s) => s.clients);
   const allClients = storeClients.length > 0 ? storeClients : mockClients;
@@ -263,66 +263,11 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
       return;
     }
 
-    // Fallback: local only (no org)
-    const invNum = 1250 + Math.floor(Math.random() * 200);
-    const invId = `INV-${invNum}`;
-
-    const invoiceLineItems: LineItem[] = lineItems.map((li, i) => ({
-      id: `li-${i + 1}`,
-      description: li.description,
-      quantity: li.qty,
-      unitPrice: li.rate,
-    }));
-
-    const events: InvoiceEvent[] = [
-      {
-        id: `ev-${Date.now()}`,
-        type: "created",
-        text: "Invoice created",
-        time: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
-      },
-    ];
-
-    if (mode === "send") {
-      events.push({
-        id: `ev-${Date.now() + 1}`,
-        type: "sent",
-        text: `Sent to ${selectedClient!.email}`,
-        time: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
-      });
-    }
-
-    const newInvoice: Invoice = {
-      id: invId,
-      clientId: selectedClient!.id,
-      clientName: selectedClient!.name,
-      clientEmail: selectedClient!.email,
-      clientAddress: selectedClient!.address || "",
-      status: mode === "send" ? "sent" : "draft",
-      issueDate: formatDate(issueDate),
-      dueDate: formatDate(dueDate),
-      lineItems: invoiceLineItems,
-      subtotal,
-      tax,
-      total,
-      paymentLink: `https://pay.iworkr.app/${invId.toLowerCase()}`,
-      events,
-      notes: notes || undefined,
-    };
-
-    addInvoice(newInvoice);
-    setSent(true);
-
-    if (mode === "send") {
-      addToast(`${invId} sent to ${selectedClient!.email} — $${total.toLocaleString()}`);
-    } else if (mode === "draft") {
-      addToast(`${invId} saved as draft`);
-    } else if (mode === "link") {
-      navigator.clipboard?.writeText(newInvoice.paymentLink!);
-      addToast(`${invId} created — Payment link copied`);
-    }
-
-    setTimeout(() => onClose(), 400);
+    // No org available — cannot persist invoice
+    console.error("Cannot create invoice: no organization context");
+    addToast("Unable to save — please refresh and try again");
+    setSaving(false);
+    return;
   }
 
   /* ── Keys ───────────────────────────────────────────────── */

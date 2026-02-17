@@ -112,7 +112,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   const catalogInputRef = useRef<HTMLInputElement>(null);
 
   const { addToast } = useToastStore();
-  const { createJobServer, addJob } = useJobsStore();
+  const { createJobServer } = useJobsStore();
   const storeClients = useClientsStore((s) => s.clients);
   const { orgId } = useOrg();
   const [saving, setSaving] = useState(false);
@@ -300,32 +300,11 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
         setSaving(false);
       }
     } else {
-      // Fallback: local-only mode
-      const jobId = `JOB-${400 + Math.floor(Math.random() * 200)}`;
-      const newJob: Job = {
-        id: jobId,
-        dbId: jobId,
-        title: title.trim(),
-        description: description.trim() || undefined,
-        priority,
-        status: estimateMode ? "backlog" : status,
-        assignee: assignee === "Unassigned" ? "" : assignee,
-        assigneeInitials: assignee === "Unassigned" ? "" : (team.find((t) => t.name === assignee)?.initials || ""),
-        client: selectedClient?.name || "",
-        due: targetDate || "—",
-        labels: [],
-        created: "Just now",
-        location: selectedClient?.address,
-        locationCoords: selectedClient?.addressCoords,
-        revenue: estimateMode && quoteTotal > 0 ? quoteTotal : undefined,
-      };
-      addJob(newJob);
-
-      if (estimateMode && quoteTotal > 0) {
-        addToast(`${jobId} created — Quote $${quoteTotal.toLocaleString()} sent`);
-      } else {
-        addToast(`${jobId} created`);
-      }
+      // No org available — cannot persist job
+      console.error("Cannot create job: no organization context");
+      addToast("Unable to save — please refresh and try again");
+      setSaving(false);
+      return;
     }
 
     if (createMore) {

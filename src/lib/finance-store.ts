@@ -17,6 +17,7 @@ import {
   addLineItem as addLineItemServer,
   removeLineItem as removeLineItemServer,
   updateLineItem as updateLineItemServer,
+  deleteInvoice as deleteInvoiceAction,
   type CreateInvoiceParams,
   type FinanceOverview,
 } from "@/app/actions/finance";
@@ -57,6 +58,9 @@ interface FinanceState {
 
   /** Server-synced status update — persists to DB */
   updateInvoiceStatusServer: (invoiceId: string, dbId: string, status: InvoiceStatus) => Promise<void>;
+
+  /** Server-synced delete — soft-deletes in DB */
+  deleteInvoiceServer: (invoiceId: string, dbId: string) => Promise<void>;
 
   /** Handle realtime update */
   handleRealtimeUpdate: () => void;
@@ -387,6 +391,18 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteInvoice: (id) =>
     set((s) => ({ invoices: s.invoices.filter((inv) => inv.id !== id) })),
+
+  deleteInvoiceServer: async (invoiceId: string, dbId: string) => {
+    // Optimistic removal from local state
+    set((s) => ({ invoices: s.invoices.filter((inv) => inv.id !== invoiceId) }));
+    // Server soft-delete
+    try {
+      await deleteInvoiceAction(dbId);
+    } catch (err) {
+      console.error("Failed to delete invoice on server:", err);
+      await get().refresh();
+    }
+  },
 
   restoreInvoice: (invoice) =>
     set((s) => ({ invoices: [invoice, ...s.invoices].sort((a, b) => b.id.localeCompare(a.id)) })),

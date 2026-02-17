@@ -118,7 +118,7 @@ export function CreateClientModal({
   const enrichTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { addToast } = useToastStore();
-  const { addClient, createClientServer } = useClientsStore();
+  const { createClientServer } = useClientsStore();
   const { orgId } = useOrg();
   const [saving, setSaving] = useState(false);
 
@@ -257,58 +257,11 @@ export function CreateClientModal({
       return;
     }
 
-    // Fallback: local only (no org)
-    const id = `c${Date.now()}`;
-    const billingTag = billingTerms.find((b) => b.value === billingTerm)?.label || "";
-
-    const newClient: Client = {
-      id,
-      name: clientName.trim(),
-      email: contactEmail || "",
-      phone: contactPhone || "",
-      initials,
-      totalJobs: 0,
-      lifetimeValue: "$0",
-      lifetimeValueNum: 0,
-      lastJob: "—",
-      status: "active" as ClientStatus,
-      type: clientType,
-      address: address || undefined,
-      addressCoords: addressCoords || undefined,
-      tags: [...tags, billingTag].filter(Boolean),
-      contacts: contactName
-        ? [
-            {
-              id: `cc-${Date.now()}`,
-              name: contactName,
-              initials: makeInitials(contactName),
-              role: contactRole || "Primary Contact",
-              email: contactEmail || "",
-              phone: contactPhone || "",
-            },
-          ]
-        : [],
-      spendHistory: [],
-      activity: [],
-      since: new Date().toLocaleDateString("en-AU", { month: "short", year: "numeric" }),
-    };
-
-    addClient(newClient);
-
-    setSaved(true);
-    const toastMsg = sendWelcome && contactEmail
-      ? `${clientName} created — Welcome email sent`
-      : `${clientName} created`;
-    addToast(toastMsg);
-
-    setTimeout(() => {
-      onClose();
-      if (mode === "save_and_job" && onCreateAndJob) {
-        onCreateAndJob(id);
-      } else if (mode === "save_and_quote" && onCreateAndQuote) {
-        onCreateAndQuote(id);
-      }
-    }, 400);
+    // No org available — cannot persist client
+    console.error("Cannot create client: no organization context");
+    addToast("Unable to save — please refresh and try again");
+    setSaving(false);
+    return;
   }
 
   /* ── Keys ───────────────────────────────────────────────── */
