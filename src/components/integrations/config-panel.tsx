@@ -12,10 +12,17 @@ import {
   Zap,
   Settings,
   Shield,
+  Activity,
+  Key,
+  ArrowUpDown,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useIntegrationsStore } from "@/lib/integrations-store";
 import { useToastStore } from "@/components/app/action-toast";
+import { getSyncLog } from "@/app/actions/integration-oauth";
+import { triggerSync } from "@/app/actions/integration-sync";
+import { connectWithApiKey, updateProviderSettings } from "@/app/actions/integration-oauth";
 
 export function ConfigPanel() {
   const {
@@ -32,6 +39,9 @@ export function ConfigPanel() {
   const { addToast } = useToastStore();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [syncLog, setSyncLog] = useState<any[]>([]);
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [showSyncLog, setShowSyncLog] = useState(false);
 
   const integration = configPanelId
     ? integrations.find((i) => i.id === configPanelId)
@@ -41,13 +51,53 @@ export function ConfigPanel() {
   const isConnected = integration?.status === "connected" || integration?.status === "syncing";
   const isSyncing = integration?.status === "syncing";
 
+  // Load sync log when panel opens
+  useEffect(() => {
+    if (integration?.id && isConnected) {
+      getSyncLog(integration.id).then((res) => {
+        if (res.data) setSyncLog(res.data);
+      });
+    }
+    return () => {
+      setSyncLog([]);
+      setShowSyncLog(false);
+      setApiKeyInput("");
+    };
+  }, [integration?.id, isConnected]);
+
   const handleSyncNow = async () => {
     if (!integration || actionLoading) return;
     setActionLoading(true);
     addToast(`Syncing ${integration.name}...`);
-    const { error } = await syncNowServer(integration.id);
-    if (error) addToast(`Sync failed: ${error}`);
-    else addToast(`${integration.name} synced successfully`);
+
+    // Use the real sync engine
+    const result = await triggerSync(integration.id);
+    if (result.error) {
+      addToast(`Sync failed: ${result.error}`);
+    } else {
+      addToast(`${integration.name} synced — ${result.synced || 0} items`);
+      // Refresh sync log
+      const logRes = await getSyncLog(integration.id);
+      if (logRes.data) setSyncLog(logRes.data);
+    }
+
+    // Also call the store's sync for local state
+    await syncNowServer(integration.id);
+    setActionLoading(false);
+  };
+
+  const handleApiKeyConnect = async () => {
+    if (!integration || !apiKeyInput.trim()) return;
+    setActionLoading(true);
+    const { error } = await connectWithApiKey(integration.id, apiKeyInput.trim(), {
+      connectedAs: "API Key",
+    });
+    if (error) addToast(`Failed: ${error}`);
+    else {
+      addToast(`${integration.name} connected via API key`);
+      await connectServer(integration.id);
+      setApiKeyInput("");
+    }
     setActionLoading(false);
   };
 
@@ -256,6 +306,90 @@ export function ConfigPanel() {
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* API Key Entry (for disconnected API-key providers) */}
+              {!isConnected && integration.status !== "error" && (
+                integration.name === "GoHighLevel" || integration.name === "Twilio" || integration.name === "Google Maps"
+              ) && (
+                <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Key size={12} className="text-zinc-600" />
+                    <h3 className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">API Key</h3>
+                  </div>
+                  <p className="mb-3 text-[10px] text-zinc-600">
+                    {integration.name === "GoHighLevel"
+                      ? "Paste your Location API Key from GoHighLevel Settings > Business Profile."
+                      : integration.name === "Twilio"
+                        ? "Enter your Twilio Auth Token from the Twilio Console."
+                        : "Enter your Google Maps API Key from the Google Cloud Console."}
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                      placeholder="Paste API key..."
+                      className="h-9 flex-1 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 text-[12px] text-zinc-300 outline-none transition-colors focus:border-[#00E676]/30"
+                    />
+                    <button
+                      onClick={handleApiKeyConnect}
+                      disabled={!apiKeyInput.trim() || actionLoading}
+                      className="flex items-center gap-1.5 rounded-lg bg-[#00E676] px-4 py-2 text-[11px] font-medium text-black transition-colors hover:bg-[#00C853] disabled:opacity-50"
+                    >
+                      {actionLoading ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+                      Connect
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Sync Log */}
+              {isConnected && (
+                <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
+                  <button
+                    onClick={() => setShowSyncLog(!showSyncLog)}
+                    className="mb-2 flex w-full items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Activity size={12} className="text-zinc-600" />
+                      <h3 className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Sync Log</h3>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
+                      {syncLog.length} events
+                      <ChevronDown size={10} className={`transition-transform ${showSyncLog ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
+                  {showSyncLog && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      className="max-h-48 space-y-1 overflow-y-auto"
+                    >
+                      {syncLog.length === 0 ? (
+                        <p className="py-3 text-center text-[10px] text-zinc-700">No sync events yet</p>
+                      ) : (
+                        syncLog.map((log) => (
+                          <div
+                            key={log.id}
+                            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-[10px]"
+                          >
+                            <ArrowUpDown size={9} className={log.direction === "push" ? "text-sky-400" : "text-amber-400"} />
+                            <span className="text-zinc-400">{log.entity_type}</span>
+                            <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-medium ${
+                              log.status === "success" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                            }`}>
+                              {log.status}
+                            </span>
+                            <span className="ml-auto text-zinc-700">
+                              {new Date(log.created_at).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </motion.div>
+                  )}
                 </div>
               )}
 

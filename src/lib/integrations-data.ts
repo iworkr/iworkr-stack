@@ -1,6 +1,6 @@
 /* ── Integrations & Ecosystem Data ──────────────────── */
 
-export type IntegrationCategory = "financial" | "communication" | "storage" | "calendar" | "maps";
+export type IntegrationCategory = "financial" | "communication" | "storage" | "calendar" | "maps" | "marketing";
 export type IntegrationStatus = "connected" | "disconnected" | "error" | "syncing";
 
 export interface SyncSetting {
@@ -241,6 +241,38 @@ export const integrations: Integration[] = [
     ],
     features: ["Geocoding", "Routing", "Live Tracking", "Distance Matrix"],
   },
+  {
+    id: "int-ghl",
+    name: "GoHighLevel",
+    description: "Lead ingestion and automated review requests.",
+    category: "marketing",
+    status: "disconnected",
+    brandColor: "#FF6B35",
+    iconBg: "from-[#FF6B35] to-[#E85D26]",
+    logoType: "letter",
+    logoContent: "GHL",
+    syncSettings: [
+      { id: "ss-17", label: "Sync Leads", description: "Import leads from GHL pipelines into iWorkr clients", enabled: true },
+      { id: "ss-18", label: "Review Trigger", description: "Send review request via GHL when a job is completed", enabled: true },
+    ],
+    accountMappings: [
+      { id: "am-4", label: "Pipeline", value: "Default Pipeline", options: ["Default Pipeline", "Sales Pipeline", "Service Pipeline"] },
+      { id: "am-5", label: "Lead Status Mapping", value: "Won → Active", options: ["Won → Active", "Lost → Archived", "New → Lead"] },
+    ],
+    features: ["Lead Import", "Review Requests", "Pipeline Sync", "Contact Merge"],
+  },
+  {
+    id: "int-ocal",
+    name: "Outlook Calendar",
+    description: "Sync jobs to Microsoft 365 Calendar.",
+    category: "calendar",
+    status: "disconnected",
+    brandColor: "#0078D4",
+    iconBg: "from-[#0078D4] to-[#005A9E]",
+    logoType: "letter",
+    logoContent: "OC",
+    features: ["Job Sync", "Busy Blocks", "Event Creation"],
+  },
 ];
 
 /* ── Mock Event Log ────────────────────────────────── */
@@ -273,6 +305,7 @@ export function getCategoryLabel(cat: IntegrationCategory): string {
     storage: "Storage",
     calendar: "Calendar",
     maps: "Maps & Location",
+    marketing: "Marketing & Automation",
   };
   return labels[cat];
 }

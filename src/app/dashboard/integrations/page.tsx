@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Plug,
@@ -12,8 +12,11 @@ import {
   Zap,
   AlertTriangle,
   Check,
+  Megaphone,
+  PartyPopper,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   useIntegrationsStore,
   type IntegrationsTab,
@@ -29,6 +32,7 @@ const tabs: { id: IntegrationsTab; label: string; icon: typeof Plug }[] = [
   { id: "all", label: "All", icon: Plug },
   { id: "financial", label: "Financial", icon: Banknote },
   { id: "communication", label: "Communication", icon: MessageSquare },
+  { id: "marketing", label: "Marketing", icon: Megaphone },
   { id: "storage", label: "Storage", icon: HardDrive },
   { id: "calendar", label: "Calendar", icon: Calendar },
   { id: "maps", label: "Maps", icon: MapPin },
@@ -41,7 +45,38 @@ export default function IntegrationsPage() {
     searchQuery,
     setActiveTab,
     setSearchQuery,
+    openConfigPanel,
+    refresh,
   } = useIntegrationsStore();
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [successProvider, setSuccessProvider] = useState<string | null>(null);
+
+  // Handle OAuth callback success/error
+  useEffect(() => {
+    const connection = searchParams.get("connection");
+    const provider = searchParams.get("provider");
+    const id = searchParams.get("id");
+
+    if (connection === "success" && provider) {
+      setSuccessProvider(provider);
+      setShowConfetti(true);
+      // Refresh store to pick up new connection
+      refresh();
+      // Open config panel for the new connection
+      if (id) setTimeout(() => openConfigPanel(id), 1000);
+      // Clean up URL
+      setTimeout(() => {
+        setShowConfetti(false);
+        setSuccessProvider(null);
+        router.replace("/dashboard/integrations", { scroll: false });
+      }, 3500);
+    } else if (connection === "error") {
+      router.replace("/dashboard/integrations", { scroll: false });
+    }
+  }, [searchParams, router, refresh, openConfigPanel]);
 
   /* ── Stats ──────────────────────────────────────────── */
   const connectedCount = useMemo(
@@ -90,6 +125,60 @@ export default function IntegrationsPage() {
 
   return (
     <div className="flex h-full flex-col">
+      {/* ── OAuth Success Confetti ───────────────────── */}
+      <AnimatePresence>
+        {showConfetti && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="pointer-events-none fixed inset-0 z-[100] overflow-hidden"
+          >
+            {Array.from({ length: 40 }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ y: -20, opacity: 1 }}
+                animate={{
+                  y: [0, 500],
+                  x: [(Math.random() - 0.5) * 300],
+                  opacity: [1, 1, 0],
+                  rotate: [0, Math.random() * 720],
+                }}
+                transition={{ duration: 2.5 + Math.random(), delay: Math.random() * 0.5 }}
+                style={{
+                  position: "absolute",
+                  left: `${Math.random() * 100}%`,
+                  top: 0,
+                  width: 5 + Math.random() * 5,
+                  height: 5 + Math.random() * 5,
+                  backgroundColor: ["#00E676", "#fff", "#4285F4", "#13B5EA", "#FF6B35"][Math.floor(Math.random() * 5)],
+                  borderRadius: Math.random() > 0.5 ? "50%" : "2px",
+                }}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Connection success banner ─────────────────── */}
+      <AnimatePresence>
+        {successProvider && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden border-b border-[rgba(0,230,118,0.15)] bg-[rgba(0,230,118,0.04)]"
+          >
+            <div className="flex items-center justify-center gap-2 px-6 py-2.5">
+              <PartyPopper size={14} className="text-[#00E676]" />
+              <span className="text-[12px] text-[#00E676]">
+                {successProvider.charAt(0).toUpperCase() + successProvider.slice(1)} connected successfully!
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Header ───────────────────────────────────── */}
       <div className="border-b border-[rgba(255,255,255,0.06)] px-4 pb-0 pt-4 md:px-6 md:pt-5">
         {/* Title row */}
@@ -170,6 +259,7 @@ export default function IntegrationsPage() {
             const catLabel: Record<string, string> = {
               financial: "Financial & Accounting",
               communication: "Communication & Messaging",
+              marketing: "Marketing & Automation",
               storage: "File Storage",
               calendar: "Calendar & Scheduling",
               maps: "Maps & Location",

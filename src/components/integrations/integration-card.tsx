@@ -6,6 +6,11 @@ import { useState } from "react";
 import { type Integration } from "@/lib/integrations-data";
 import { useIntegrationsStore } from "@/lib/integrations-store";
 import { useToastStore } from "@/components/app/action-toast";
+import { getOAuthUrl } from "@/app/actions/integration-oauth";
+
+/* ── OAuth providers that need popup flow ─────────────── */
+const OAUTH_PROVIDERS = new Set(["xero", "quickbooks", "gmail", "outlook", "google_calendar", "outlook_calendar", "google_drive", "slack"]);
+const API_KEY_PROVIDERS = new Set(["twilio", "gohighlevel", "google_maps"]);
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -20,11 +25,34 @@ export function IntegrationCard({ integration: int, index }: IntegrationCardProp
   const isSyncing = int.status === "syncing";
   const [connecting, setConnecting] = useState(false);
 
+  // Derive provider slug from the integration data
+  const providerSlug = (int as any).provider ||
+    int.id.replace("int-", "").replace("gcal", "google_calendar").replace("ocal", "outlook_calendar").replace("gdrive", "google_drive").replace("gmaps", "google_maps").replace("ghl", "gohighlevel");
+
   const handleClick = async () => {
     if (isConnected || isError) {
       openConfigPanel(int.id);
     } else if (int.id === "int-stripe" || int.name?.toLowerCase() === "stripe") {
       setStripeModalOpen(true);
+    } else if (OAUTH_PROVIDERS.has(providerSlug)) {
+      // OAuth flow — get URL and redirect
+      if (connecting) return;
+      setConnecting(true);
+      const { url, error } = await getOAuthUrl(int.id, providerSlug);
+      if (url) {
+        // Open OAuth popup
+        window.open(url, `oauth-${providerSlug}`, "width=600,height=700,scrollbars=yes");
+        addToast(`Connecting to ${int.name}...`);
+      } else if (error) {
+        // OAuth not configured — fall back to direct connect for demo
+        const { error: connectError } = await connectServer(int.id);
+        if (connectError) addToast(`Failed to connect ${int.name}: ${connectError}`);
+        else addToast(`${int.name} connected`);
+      }
+      setConnecting(false);
+    } else if (API_KEY_PROVIDERS.has(providerSlug)) {
+      // API key providers — open config panel for key entry
+      openConfigPanel(int.id);
     } else {
       if (connecting) return;
       setConnecting(true);
