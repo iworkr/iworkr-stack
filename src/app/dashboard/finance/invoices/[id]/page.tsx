@@ -313,9 +313,11 @@ export default function InvoiceDetailPage() {
               <div className="mb-8 flex items-start justify-between">
                 <div>
                   <div className="mb-1 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[12px] font-bold text-black">
-                      iW
-                    </div>
+                    <img
+                      src="/logos/logo-dark-streamline.png"
+                      alt="iWorkr"
+                      className="h-8 w-8 object-contain"
+                    />
                     <span className="text-[14px] font-semibold text-zinc-200">{orgSettings?.name || "iWorkr"}</span>
                   </div>
                   <div className="text-[10px] leading-relaxed text-zinc-600">

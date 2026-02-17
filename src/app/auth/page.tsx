@@ -150,13 +150,13 @@ function AuthPageInner() {
                     stiffness: 300,
                     damping: 20,
                   }}
-                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-white"
+                  className="flex h-14 w-14 items-center justify-center rounded-xl"
                 >
-                  <span className="text-xl font-bold text-black">iW</span>
+                  <img src="/logos/logo-dark-streamline.png" alt="iWorkr" className="h-12 w-12 object-contain" />
                 </motion.div>
                 <div className="text-center">
                   <h1 className="text-xl font-medium tracking-tight text-zinc-100">
-                    Sign in to iWorkr
+                    Sign in to <span className="font-semibold">iWorkr</span>
                   </h1>
                   <p className="mt-1.5 text-sm text-zinc-500">
                     The operating system for service work.

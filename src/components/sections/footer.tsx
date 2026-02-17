@@ -83,16 +83,16 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-[rgba(255,255,255,0.06)] pt-8 sm:flex-row">
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <Image
-              src="/logos/logo-mark.png"
+              src="/logos/logo-dark-full.png"
               alt="iWorkr"
-              width={24}
+              width={96}
               height={24}
-              className="h-6 w-6 object-contain"
+              className="h-5 w-auto object-contain"
             />
             <span className="text-sm text-zinc-500">
-              &copy; {new Date().getFullYear()} iWorkr. All rights reserved.
+              &copy; {new Date().getFullYear()} All rights reserved.
             </span>
           </div>
 

@@ -57,12 +57,11 @@ export function OnboardingLayout({
 
       {/* Logo */}
       <div className="fixed top-6 left-6 z-40 flex items-center gap-2.5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white">
-          <span className="text-sm font-semibold text-black">iW</span>
-        </div>
-        <span className="text-sm font-medium tracking-tight text-zinc-400">
-          iWorkr
-        </span>
+        <img
+          src="/logos/logo-dark-full.png"
+          alt="iWorkr"
+          className="h-7 w-auto object-contain"
+        />
       </div>
 
       {/* Step counter */}

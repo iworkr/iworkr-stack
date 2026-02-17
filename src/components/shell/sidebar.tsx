@@ -223,11 +223,11 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
       {/* ── Workspace Switcher ── */}
       <div className="flex h-12 items-center border-b border-[rgba(255,255,255,0.08)] px-3">
         <button className="flex w-full items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-[rgba(255,255,255,0.04)]">
-          <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[5px] bg-white">
-            <span className="text-[8px] font-bold leading-none text-black">
-              iW
-            </span>
-          </div>
+          <img
+            src="/logos/logo-dark-streamline.png"
+            alt="iWorkr"
+            className="h-[22px] w-[22px] shrink-0 object-contain"
+          />
           <AnimatePresence>
             {!sidebarCollapsed && (
               <motion.div

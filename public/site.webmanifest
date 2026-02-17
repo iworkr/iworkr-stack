@@ -1,0 +1,27 @@
+{
+  "name": "iWorkr - Job & Workforce Management",
+  "short_name": "iWorkr",
+  "description": "Streamline your service business operations with iWorkr. Manage jobs, teams, scheduling, invoicing and more.",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}

@@ -18,7 +18,6 @@ import {
   CreditCard,
   Keyboard,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -100,11 +99,9 @@ function WorkspaceDropdown({
         onClick={onToggle}
         className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
       >
-        <Image
-          src="/logos/logo-mark.png"
+        <img
+          src="/logos/logo-dark-streamline.png"
           alt="iWorkr"
-          width={18}
-          height={18}
           className="h-[18px] w-[18px] object-contain"
         />
         <span className="hidden text-[13px] font-medium text-zinc-300 sm:inline">
@@ -124,11 +121,9 @@ function WorkspaceDropdown({
           >
             {/* Active workspace */}
             <div className="mx-1 mb-1 flex items-center gap-2 rounded-md bg-[rgba(255,255,255,0.04)] px-2.5 py-2">
-              <Image
-                src="/logos/logo-mark.png"
+              <img
+                src="/logos/logo-dark-streamline.png"
                 alt="iWorkr"
-                width={16}
-                height={16}
                 className="h-4 w-4 object-contain"
               />
               <span className="flex-1 truncate text-[12px] font-medium text-zinc-200">

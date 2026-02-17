@@ -44,9 +44,9 @@ export function EmailLayout({ preview, children }: EmailLayoutProps) {
               <tr>
                 <td style={{ paddingTop: "32px", paddingBottom: "24px", textAlign: "center" as const }}>
                   <Img
-                    src={`${BASE_URL}/logo-email.png`}
-                    width="36"
-                    height="36"
+                    src={`${BASE_URL}/logos/logo-dark-streamline.png`}
+                    width="40"
+                    height="40"
                     alt="iWorkr"
                     style={logoImage}
                   />

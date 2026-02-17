@@ -39,18 +39,15 @@ export function Navbar() {
 
         <nav className="relative mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4 md:px-12">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2.5">
             <Image
-              src="/logos/logo-mark.png"
+              src="/logos/logo-dark-full.png"
               alt="iWorkr"
-              width={28}
-              height={28}
-              className="h-7 w-7 object-contain"
+              width={120}
+              height={32}
+              className="h-7 w-auto object-contain"
               priority
             />
-            <span className="text-sm font-medium tracking-tight text-zinc-100">
-              iWorkr
-            </span>
             <span className="hidden rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 sm:inline-block">
               v2.0
             </span>

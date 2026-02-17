@@ -1,0 +1,39 @@
+{
+  "cookies": [
+    {
+      "name": "sb-iaroashargzwsuuciqox-auth-token",
+      "value": "base64-eyJhY2Nlc3NfdG9rZW4iOiJleUpoYkdjaU9pSkZVekkxTmlJc0ltdHBaQ0k2SWpBNVlXVm1PRGMwTFdRek56Y3RORGd5WkMxaE16QTBMV0U1TW1ZNE5EQXlOVEZoWkNJc0luUjVjQ0k2SWtwWFZDSjkuZXlKcGMzTWlPaUpvZEhSd2N6b3ZMMmxoY205aGMyaGhjbWQ2ZDNOMWRXTnBjVzk0TG5OMWNHRmlZWE5sTG1OdkwyRjFkR2d2ZGpFaUxDSnpkV0lpT2lKa1pqWmpPVEV5Tmkwd09HTTRMVFJsTVRBdFlXTTROaTB4WlRnMk5tUXpNMkk0T1RRaUxDSmhkV1FpT2lKaGRYUm9aVzUwYVdOaGRHVmtJaXdpWlhod0lqb3hOemN4TWprME9UazFMQ0pwWVhRaU9qRTNOekV5T1RFek9UVXNJbVZ0WVdsc0lqb2ljV0V0ZEdWemRFQnBkMjl5YTNKaGNIQXVZMjl0SWl3aWNHaHZibVVpT2lJaUxDSmhjSEJmYldWMFlXUmhkR0VpT25zaWNISnZkbWxrWlhJaU9pSmxiV0ZwYkNJc0luQnliM1pwWkdWeWN5STZXeUpsYldGcGJDSmRmU3dpZFhObGNsOXRaWFJoWkdGMFlTSTZleUpsYldGcGJGOTJaWEpwWm1sbFpDSTZkSEoxWlgwc0luSnZiR1VpT2lKaGRYUm9aVzUwYVdOaGRHVmtJaXdpWVdGc0lqb2lZV0ZzTVNJc0ltRnRjaUk2VzNzaWJXVjBhRzlrSWpvaWNHRnpjM2R2Y21RaUxDSjBhVzFsYzNSaGJYQWlPakUzTnpFeU9URXpPVFY5WFN3aWMyVnpjMmx2Ymw5cFpDSTZJalk1TW1OaU1qWmxMV0U0WTJZdE5HUmlNUzFpT1RVMUxXRTBOakptTldZMU1qSTJNeUlzSW1selgyRnViMjU1Ylc5MWN5STZabUZzYzJWOS5TMVBPZmRfX1hWekhVOEd6OWdicERFd3RqWlNJVjNCbmg0VUFjNzduWTVIbTluaE4xYlQwNi1XMEVDS0tfblNNejNwdnptem1sSlQ2OV9jLWJpZFp6QSIsInJlZnJlc2hfdG9rZW4iOiJzeXB4eWI3N3IzbGUiLCJleHBpcmVzX2F0IjoxNzcxMjk0OTk1LCJleHBpcmVzX2luIjozNjAwLCJ0b2tlbl90eXBlIjoiYmVhcmVyIiwidXNlciI6eyJpZCI6ImRmNmM5MTI2LTA4YzgtNGUxMC1hYzg2LTFlODY2ZDMzYjg5NCIsImF1ZCI6ImF1dGhlbnRpY2F0ZWQiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoicWEtdGVzdEBpd29ya3JhcHAuY29tIiwiZW1haWxfY29uZmlybWVkX2F0IjoiMjAyNi0wMi0xNlQxMToyNzoxNC44MzE4NjdaIiwicGhvbmUiOiIiLCJjb25maXJtZWRfYXQiOiIyMDI2LTAyLTE2VDExOjI3OjE0LjgzMTg2N1oiLCJsYXN0X3NpZ25faW5fYXQiOiIyMDI2LTAyLTE3VDAxOjIzOjE1LjQzNTk3NzI3OFoiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6dHJ1ZX0sImlkZW50aXRpZXMiOlt7ImlkZW50aXR5X2lkIjoiZjdmOTg4MjMtN2E0MC00ZTA1LTgxZTUtYzhjYTNjZWUwNzk0IiwiaWQiOiJkZjZjOTEyNi0wOGM4LTRlMTAtYWM4Ni0xZTg2NmQzM2I4OTQiLCJ1c2VyX2lkIjoiZGY2YzkxMjYtMDhjOC00ZTEwLWFjODYtMWU4NjZkMzNiODk0IiwiaWRlbnRpdHlfZGF0YSI6eyJlbWFpbCI6InFhLXRlc3RAaXdvcmtyYXBwLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJzdWIiOiJkZjZjOTEyNi0wOGM4LTRlMTAtYWM4Ni0xZTg2NmQzM2I4OTQifSwicHJvdmlkZXIiOiJlbWFpbCIsImxhc3Rfc2lnbl9pbl9hdCI6IjIwMjYtMDItMTZUMTE6Mjc6MTQuODI2OTFaIiwiY3JlYXRlZF9hdCI6IjIwMjYtMDItMTZUMTE6Mjc6MTQuODI2OTYzWiIsInVwZGF0ZWRfYXQiOiIyMDI2LTAyLTE2VDExOjI3OjE0LjgyNjk2M1oiLCJlbWFpbCI6InFhLXRlc3RAaXdvcmtyYXBwLmNvbSJ9XSwiY3JlYXRlZF9hdCI6IjIwMjYtMDItMTZUMTE6Mjc6MTQuNzk4NTQyWiIsInVwZGF0ZWRfYXQiOiIyMDI2LTAyLTE3VDAxOjIzOjE1LjQ1NTQ0MVoiLCJpc19hbm9ueW1vdXMiOmZhbHNlfX0=",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "sb-iaroashargzwsuuciqox-auth-token.0",
+      "value": "eyJhY2Nlc3NfdG9rZW4iOiJleUpoYkdjaU9pSkZVekkxTmlJc0ltdHBaQ0k2SWpBNVlXVm1PRGMwTFdRek56Y3RORGd5WkMxaE16QTBMV0U1TW1ZNE5EQXlOVEZoWkNJc0luUjVjQ0k2SWtwWFZDSjkuZXlKcGMzTWlPaUpvZEhSd2N6b3ZMMmxoY205aGMyaGhjbWQ2ZDNOMWRXTnBjVzk0TG5OMWNHRmlZWE5sTG1OdkwyRjFkR2d2ZGpFaUxDSnpkV0lpT2lKa1pqWmpPVEV5Tmkwd09HTTRMVFJsTVRBdFlXTTROaTB4WlRnMk5tUXpNMkk0T1RRaUxDSmhkV1FpT2lKaGRYUm9aVzUwYVdOaGRHVmtJaXdpWlhod0lqb3hOemN4TWprME9UazFMQ0pwWVhRaU9qRTNOekV5T1RFek9UVXNJbVZ0WVdsc0lqb2ljV0V0ZEdWemRFQnBkMjl5YTNKaGNIQXVZMjl0SWl3aWNHaHZibVVpT2lJaUxDSmhjSEJmYldWMFlXUmhkR0VpT25zaWNISnZkbWxrWlhJaU9pSmxiV0ZwYkNJc0luQnliM1pwWkdWeWN5STZXeUpsYldGcGJDSmRmU3dpZFhObGNsOXRaWFJoWkdGMFlTSTZleUpsYldGcGJGOTJaWEpwWm1sbFpDSTZkSEoxWlgwc0luSnZiR1VpT2lKaGRYUm9aVzUwYVdOaGRHVmtJaXdpWVdGc0lqb2lZV0ZzTVNJc0ltRnRjaUk2VzNzaWJXVjBhRzlrSWpvaWNHRnpjM2R2Y21RaUxDSjBhVzFsYzNSaGJYQWlPakUzTnpFeU9URXpPVFY5WFN3aWMyVnpjMmx2Ymw5cFpDSTZJalk1TW1OaU1qWmxMV0U0WTJZdE5HUmlNUzFpT1RVMUxXRTBOakptTldZMU1qSTJNeUlzSW1selgyRnViMjU1Ylc5MWN5STZabUZzYzJWOS5TMVBPZmRfX1hWekhVOEd6OWdicERFd3RqWlNJVjNCbmg0VUFjNzduWTVIbTluaE4xYlQwNi1XMEVDS0tfblNNejNwdnptem1sSlQ2OV9jLWJpZFp6QSIsInJlZnJlc2hfdG9rZW4iOiJzeXB4eWI3N3IzbGUiLCJleHBpcmVzX2F0IjoxNzcxMjk0OTk1LCJleHBpcmVzX2luIjozNjAwLCJ0b2tlbl90eXBlIjoiYmVhcmVyIn0=",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "iworkr-shell",
+          "value": "{\"state\":{\"sidebarCollapsed\":false,\"mobileSidebarOpen\":false,\"commandMenuOpen\":false,\"slideOverOpen\":false,\"slideOverContent\":null,\"activeNavItem\":\"nav_dashboard\",\"createClientModalOpen\":false,\"createJobModalOpen\":false,\"createInvoiceModalOpen\":false},\"version\":0}"
+        },
+        {
+          "name": "sb-iaroashargzwsuuciqox-auth-token",
+          "value": "{\"access_token\":\"eyJhbGciOiJFUzI1NiIsImtpZCI6IjA5YWVmODc0LWQzNzctNDgyZC1hMzA0LWE5MmY4NDAyNTFhZCIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2lhcm9hc2hhcmd6d3N1dWNpcW94LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJkZjZjOTEyNi0wOGM4LTRlMTAtYWM4Ni0xZTg2NmQzM2I4OTQiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzcxMjk0OTk1LCJpYXQiOjE3NzEyOTEzOTUsImVtYWlsIjoicWEtdGVzdEBpd29ya3JhcHAuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6dHJ1ZX0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NzEyOTEzOTV9XSwic2Vzc2lvbl9pZCI6IjY5MmNiMjZlLWE4Y2YtNGRiMS1iOTU1LWE0NjJmNWY1MjI2MyIsImlzX2Fub255bW91cyI6ZmFsc2V9.S1POfd__XVzHU8Gz9gbpDEwtjZSIV3Bnh4UAc77nY5Hm9nhN1bT06-W0ECKK_nSMz3pvzmzmlJT69_c-bidZzA\",\"refresh_token\":\"sypxyb77r3le\",\"expires_at\":1771294995,\"expires_in\":3600,\"token_type\":\"bearer\",\"user\":{\"id\":\"df6c9126-08c8-4e10-ac86-1e866d33b894\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"email\":\"qa-test@iworkrapp.com\",\"email_confirmed_at\":\"2026-02-16T11:27:14.831867Z\",\"phone\":\"\",\"confirmed_at\":\"2026-02-16T11:27:14.831867Z\",\"last_sign_in_at\":\"2026-02-17T01:23:15.435977278Z\",\"app_metadata\":{\"provider\":\"email\",\"providers\":[\"email\"]},\"user_metadata\":{\"email_verified\":true},\"identities\":[{\"identity_id\":\"f7f98823-7a40-4e05-81e5-c8ca3cee0794\",\"id\":\"df6c9126-08c8-4e10-ac86-1e866d33b894\",\"user_id\":\"df6c9126-08c8-4e10-ac86-1e866d33b894\",\"identity_data\":{\"email\":\"qa-test@iworkrapp.com\",\"email_verified\":false,\"phone_verified\":false,\"sub\":\"df6c9126-08c8-4e10-ac86-1e866d33b894\"},\"provider\":\"email\",\"last_sign_in_at\":\"2026-02-16T11:27:14.82691Z\",\"created_at\":\"2026-02-16T11:27:14.826963Z\",\"updated_at\":\"2026-02-16T11:27:14.826963Z\",\"email\":\"qa-test@iworkrapp.com\"}],\"created_at\":\"2026-02-16T11:27:14.798542Z\",\"updated_at\":\"2026-02-17T01:23:15.455441Z\",\"is_anonymous\":false}}"
+        }
+      ]
+    }
+  ]
+}

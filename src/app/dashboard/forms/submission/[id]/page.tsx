@@ -332,9 +332,11 @@ export default function SubmissionDetailPage() {
               {/* Brand header */}
               <div className="mb-8 flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-6">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white">
-                    <span className="text-[7px] font-bold text-black">iW</span>
-                  </div>
+                  <img
+                    src="/logos/logo-dark-streamline.png"
+                    alt="iWorkr"
+                    className="h-7 w-7 object-contain"
+                  />
                   <div>
                     <p className="text-[11px] font-medium text-zinc-300">{orgSettings?.name || "iWorkr"}</p>
                     <p className="text-[9px] text-zinc-700">
