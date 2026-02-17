@@ -44,6 +44,7 @@ interface JobsState {
 function mapServerJob(sj: any): Job {
   return {
     id: sj.display_id || sj.id,
+    dbId: sj.id,
     title: sj.title,
     priority: sj.priority || "none",
     status: sj.status || "backlog",
@@ -129,6 +130,9 @@ export const useJobsStore = create<JobsState>((set, get) => ({
 
   /** Optimistic update + server persist */
   updateJobServer: async (id, patch) => {
+    // Find the real DB UUID for this job
+    const job = get().jobs.find((j) => j.id === id);
+    const dbId = job?.dbId || id;
     // Optimistic
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, ...patch } : j)),
@@ -139,21 +143,24 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     if (patch.description !== undefined) serverPatch.description = patch.description;
     if (patch.status !== undefined) serverPatch.status = patch.status;
     if (patch.priority !== undefined) serverPatch.priority = patch.priority;
-    // Server sync (fire-and-forget with error logging)
-    updateJobAction(id, serverPatch as any).catch((err) => {
+    // Server sync using the real UUID
+    updateJobAction(dbId, serverPatch as any).catch((err) => {
       console.error("Failed to persist job update:", err);
     });
   },
 
   /** Update status with server persistence */
   updateJobStatus: async (id: string, status: string) => {
+    // Find the real DB UUID for this job
+    const job = get().jobs.find((j) => j.id === id);
+    const dbId = job?.dbId || id;
     // Optimistic update
     const typedStatus = status as JobStatus;
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, status: typedStatus } : j)),
     }));
-    // Server sync
-    updateJobAction(id, { status: typedStatus }).catch(console.error);
+    // Server sync using the real UUID
+    updateJobAction(dbId, { status: typedStatus }).catch(console.error);
   },
 
   deleteJob: (id) =>
@@ -168,6 +175,9 @@ export const useJobsStore = create<JobsState>((set, get) => ({
 
   /** Optimistic delete + server persist */
   deleteJobServer: async (id) => {
+    // Find the real DB UUID for this job
+    const job = get().jobs.find((j) => j.id === id);
+    const dbId = job?.dbId || id;
     // Optimistic
     set((s) => ({
       jobs: s.jobs.filter((j) => j.id !== id),
@@ -177,8 +187,8 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         return next;
       })(),
     }));
-    // Server sync
-    deleteJobAction(id).catch((err) => {
+    // Server sync using the real UUID
+    deleteJobAction(dbId).catch((err) => {
       console.error("Failed to persist job deletion:", err);
     });
   },

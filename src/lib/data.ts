@@ -21,6 +21,7 @@ export interface ActivityEntry {
 
 export interface Job {
   id: string;
+  dbId: string;
   title: string;
   priority: Priority;
   status: JobStatus;
@@ -119,7 +120,7 @@ export interface TeamMember {
 
 export const jobs: Job[] = [
   {
-    id: "JOB-401", title: "Water heater installation — 50L Rheem", priority: "high", status: "in_progress",
+    id: "JOB-401", dbId: "JOB-401", title: "Water heater installation — 50L Rheem", priority: "high", status: "in_progress",
     assignee: "Mike Thompson", assigneeInitials: "MT", client: "David Park", due: "Today", labels: ["Install"], created: "2d ago",
     location: "42 Creek Rd, Brisbane CBD", locationCoords: { lat: -27.4698, lng: 153.0251 },
     description: "Install new 50L Rheem Stellar hot water system to replace existing unit. Customer requested same-day completion. Existing unit is electric — converting to gas. Requires new gas line from meter.",
@@ -141,7 +142,7 @@ export const jobs: Job[] = [
     revenue: 2850, cost: 1420, estimatedHours: 6, actualHours: 3.5,
   },
   {
-    id: "JOB-402", title: "Kitchen repipe — copper to PEX conversion", priority: "urgent", status: "todo",
+    id: "JOB-402", dbId: "JOB-402", title: "Kitchen repipe — copper to PEX conversion", priority: "urgent", status: "todo",
     assignee: "Sarah Chen", assigneeInitials: "SC", client: "Sarah Mitchell", due: "Today", labels: ["Plumbing", "Urgent"], created: "1d ago",
     location: "54 High St, Fortitude Valley", locationCoords: { lat: -27.4575, lng: 153.0355 },
     description: "Full kitchen repipe from copper to PEX. Multiple leak points detected in existing copper work. Customer experiencing low pressure and discoloured water. Approved quote for full replacement.",
@@ -159,7 +160,7 @@ export const jobs: Job[] = [
     revenue: 4850, cost: 1890, estimatedHours: 8, actualHours: 0,
   },
   {
-    id: "JOB-403", title: "Blocked drain investigation — ground floor", priority: "medium", status: "in_progress",
+    id: "JOB-403", dbId: "JOB-403", title: "Blocked drain investigation — ground floor", priority: "medium", status: "in_progress",
     assignee: "Mike Thompson", assigneeInitials: "MT", client: "Lisa Chen", due: "Tomorrow", labels: ["Drainage"], created: "3d ago",
     location: "18 Stanley St, South Brisbane", locationCoords: { lat: -27.4785, lng: 153.0190 },
     description: "Investigate and clear blockage in ground floor main drain. Customer reports slow drainage in kitchen and bathroom. CCTV inspection may be required if jet blasting does not resolve.",
@@ -177,7 +178,7 @@ export const jobs: Job[] = [
     revenue: 680, cost: 120, estimatedHours: 3, actualHours: 1.5,
   },
   {
-    id: "JOB-404", title: "Gas compliance certificate renewal", priority: "high", status: "todo",
+    id: "JOB-404", dbId: "JOB-404", title: "Gas compliance certificate renewal", priority: "high", status: "todo",
     assignee: "James O'Brien", assigneeInitials: "JO", client: "Tom Andrews", due: "Feb 18", labels: ["Gas", "Compliance"], created: "5d ago",
     location: "7 Albert St, Brisbane CBD", locationCoords: { lat: -27.4710, lng: 153.0260 },
     description: "Annual gas compliance inspection and certificate renewal for commercial property. 4 gas appliances to inspect including commercial cooktop, 2x water heaters, and space heater.",
@@ -193,7 +194,7 @@ export const jobs: Job[] = [
     revenue: 450, cost: 60, estimatedHours: 2, actualHours: 0,
   },
   {
-    id: "JOB-405", title: "Boiler service — annual maintenance", priority: "medium", status: "backlog",
+    id: "JOB-405", dbId: "JOB-405", title: "Boiler service — annual maintenance", priority: "medium", status: "backlog",
     assignee: "Sarah Chen", assigneeInitials: "SC", client: "Rachel Kim", due: "Feb 20", labels: ["Maintenance"], created: "1w ago",
     location: "33 Grey St, South Bank", locationCoords: { lat: -27.4795, lng: 153.0210 },
     description: "Annual boiler service and maintenance. Check heat exchanger, descale if necessary, test safety valves and thermostat calibration.",
@@ -209,7 +210,7 @@ export const jobs: Job[] = [
     revenue: 380, cost: 45, estimatedHours: 1.5, actualHours: 0,
   },
   {
-    id: "JOB-406", title: "Emergency burst pipe — bathroom", priority: "urgent", status: "in_progress",
+    id: "JOB-406", dbId: "JOB-406", title: "Emergency burst pipe — bathroom", priority: "urgent", status: "in_progress",
     assignee: "Mike Thompson", assigneeInitials: "MT", client: "John Harris", due: "Today", labels: ["Emergency", "Plumbing"], created: "2h ago",
     location: "12 Edward St, Brisbane CBD", locationCoords: { lat: -27.4688, lng: 153.0240 },
     description: "Emergency call — burst pipe in bathroom wall. Water is actively leaking. Customer has isolated mains. Need to locate burst, repair, and test before re-opening mains.",
@@ -229,7 +230,7 @@ export const jobs: Job[] = [
     revenue: 1200, cost: 280, estimatedHours: 3, actualHours: 1,
   },
   {
-    id: "JOB-407", title: "Tap replacement — kitchen mixer", priority: "low", status: "todo",
+    id: "JOB-407", dbId: "JOB-407", title: "Tap replacement — kitchen mixer", priority: "low", status: "todo",
     assignee: "James O'Brien", assigneeInitials: "JO", client: "Emma Wilson", due: "Feb 22", labels: ["Install"], created: "3d ago",
     location: "88 Wickham St, Fortitude Valley", locationCoords: { lat: -27.4560, lng: 153.0380 },
     description: "Replace existing kitchen mixer tap with customer-supplied Methven Aio tap. Standard installation — no modifications to pipework expected.",
@@ -244,7 +245,7 @@ export const jobs: Job[] = [
     revenue: 220, cost: 30, estimatedHours: 1, actualHours: 0,
   },
   {
-    id: "JOB-408", title: "Hot water system inspection", priority: "medium", status: "done",
+    id: "JOB-408", dbId: "JOB-408", title: "Hot water system inspection", priority: "medium", status: "done",
     assignee: "Mike Thompson", assigneeInitials: "MT", client: "David Park", due: "Feb 14", labels: ["Inspection"], created: "1w ago",
     location: "42 Creek Rd, Brisbane CBD", locationCoords: { lat: -27.4698, lng: 153.0251 },
     description: "Pre-purchase plumbing inspection for hot water system. Report on condition, remaining lifespan, and any immediate concerns.",
@@ -263,7 +264,7 @@ export const jobs: Job[] = [
     revenue: 180, cost: 0, estimatedHours: 1, actualHours: 0.75,
   },
   {
-    id: "JOB-409", title: "Toilet replacement — ensuite", priority: "low", status: "backlog",
+    id: "JOB-409", dbId: "JOB-409", title: "Toilet replacement — ensuite", priority: "low", status: "backlog",
     assignee: "Unassigned", assigneeInitials: "??", client: "Lisa Chen", due: "Feb 25", labels: ["Install"], created: "4d ago",
     location: "18 Stanley St, South Brisbane", locationCoords: { lat: -27.4785, lng: 153.0190 },
     description: "Remove existing toilet and install customer-supplied Caroma Luna. Includes new flexi connector and cistern fitting.",
@@ -279,7 +280,7 @@ export const jobs: Job[] = [
     revenue: 350, cost: 40, estimatedHours: 1.5, actualHours: 0,
   },
   {
-    id: "JOB-410", title: "Stormwater drainage — driveway regrading", priority: "high", status: "todo",
+    id: "JOB-410", dbId: "JOB-410", title: "Stormwater drainage — driveway regrading", priority: "high", status: "todo",
     assignee: "Sarah Chen", assigneeInitials: "SC", client: "Tom Andrews", due: "Feb 19", labels: ["Drainage", "Outdoor"], created: "2d ago",
     location: "7 Albert St, Brisbane CBD", locationCoords: { lat: -27.4710, lng: 153.0260 },
     description: "Regrade stormwater drainage at driveway entrance. Water pooling causing damage to concrete. Install new grated channel drain and connect to existing stormwater system.",

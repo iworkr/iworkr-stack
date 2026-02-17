@@ -304,6 +304,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
       const jobId = `JOB-${400 + Math.floor(Math.random() * 200)}`;
       const newJob: Job = {
         id: jobId,
+        dbId: jobId,
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
