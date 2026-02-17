@@ -1,22 +1,22 @@
 "use client";
 
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useFinanceStore } from "@/lib/finance-store";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getDashboardStats, type DashboardStats } from "@/app/actions/dashboard";
 import { WidgetShell } from "./widget-shell";
+import type { WidgetSize } from "@/lib/dashboard-store";
 
-export function WidgetRevenue() {
+export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
   const dailyRevenue = useFinanceStore((s) => s.dailyRevenue);
   const financeLoaded = useFinanceStore((s) => s.loaded);
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
-  // Fetch dashboard stats from RPC
   useEffect(() => {
     if (!orgId) return;
     getDashboardStats(orgId).then(({ data }) => {
@@ -24,7 +24,6 @@ export function WidgetRevenue() {
     });
   }, [orgId]);
 
-  // Calculate revenue from store data (fallback if RPC unavailable)
   const revenueMTD = useMemo(() => {
     if (stats?.revenue_current) return stats.revenue_current;
     return dailyRevenue.reduce((sum, d) => sum + d.amount, 0);
@@ -75,14 +74,12 @@ export function WidgetRevenue() {
     [linePath]
   );
 
-  /* ── Draw animation ───────────────────────────────── */
   const lineLen = useMotionValue(2000);
   useEffect(() => {
     const ctrl = animate(lineLen, 0, { duration: 1.5, ease: [0.16, 1, 0.3, 1] });
     return ctrl.stop;
   }, [lineLen]);
 
-  /* ── Scrub crosshair ──────────────────────────────── */
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
@@ -104,33 +101,66 @@ export function WidgetRevenue() {
   const hoverPoint = hoverIndex !== null ? points[hoverIndex] : null;
   const hoverData = hoverIndex !== null ? dailyRevenue[hoverIndex] : null;
 
-  // Show skeleton while loading (only on true cold start — no cache at all)
   if (!financeLoaded && dailyRevenue.length === 0) {
     return (
       <WidgetShell delay={0}>
         <div className="p-5">
           <div className="h-4 w-24 rounded bg-zinc-800/80 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
           <div className="mt-3 h-8 w-32 rounded bg-zinc-800/80 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
-          <div className="mt-4 h-[55px] w-full rounded bg-zinc-800/60 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>
+          {size !== "small" && <div className="mt-4 h-[55px] w-full rounded bg-zinc-800/60 relative overflow-hidden"><span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" /></div>}
         </div>
       </WidgetShell>
     );
   }
 
+  /* ── SMALL: Simple KPI Number ───────────────────────── */
+  if (size === "small") {
+    return (
+      <WidgetShell delay={0}>
+        <div
+          className="flex h-full cursor-pointer flex-col items-center justify-center p-3"
+          onClick={() => router.push("/dashboard/finance")}
+        >
+          <DollarSign size={14} className="mb-1 text-emerald-500/60" />
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-[10px] text-zinc-600">$</span>
+            <span className="text-[20px] font-medium tracking-tight text-zinc-100">
+              {Math.floor(revenueMTD / 1000)}k
+            </span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-1">
+            {isPositiveGrowth ? (
+              <TrendingUp size={9} className="text-emerald-400" />
+            ) : (
+              <TrendingDown size={9} className="text-red-400" />
+            )}
+            <span className={`text-[9px] font-medium ${isPositiveGrowth ? "text-emerald-400" : "text-red-400"}`}>
+              {isPositiveGrowth ? "+" : ""}{growthPct}%
+            </span>
+          </div>
+        </div>
+      </WidgetShell>
+    );
+  }
+
+  /* ── MEDIUM: Sparkline + KPI ────────────────────────── */
+  /* ── LARGE: Full detailed area chart with crosshair ─── */
+  const showCrosshair = size === "large";
+  const chartHeight = size === "large" ? "h-[65%]" : "h-[55%]";
+
   return (
     <WidgetShell delay={0}>
       <div
-        className="relative cursor-pointer p-5"
+        className="relative h-full cursor-pointer p-5"
         onClick={() => router.push("/dashboard/finance")}
       >
-        {/* Area chart fills the card */}
         <svg
           ref={chartRef}
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
-          className="absolute inset-x-0 bottom-0 h-[55%] w-full"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHoverIndex(null)}
+          className={`absolute inset-x-0 bottom-0 ${chartHeight} w-full`}
+          onMouseMove={showCrosshair ? handleMouseMove : undefined}
+          onMouseLeave={showCrosshair ? () => setHoverIndex(null) : undefined}
         >
           <defs>
             <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
@@ -147,56 +177,19 @@ export function WidgetRevenue() {
               </feMerge>
             </filter>
           </defs>
-          {/* Filled area */}
-          <motion.path
-            d={areaPath}
-            fill="url(#revenueGrad)"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.6 }}
-          />
-          {/* Line stroke with draw animation */}
-          <motion.path
-            d={linePath}
-            fill="none"
-            stroke="#10B981"
-            strokeWidth="2"
-            strokeLinecap="round"
-            filter="url(#glow)"
-            style={{ strokeDasharray: 2000, strokeDashoffset: lineLen }}
-          />
-          {/* Crosshair */}
-          {hoverPoint && (
+          <motion.path d={areaPath} fill="url(#revenueGrad)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.6 }} />
+          <motion.path d={linePath} fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" filter="url(#glow)" style={{ strokeDasharray: 2000, strokeDashoffset: lineLen }} />
+
+          {showCrosshair && hoverPoint && (
             <>
-              <line
-                x1={hoverPoint.x}
-                y1={0}
-                x2={hoverPoint.x}
-                y2={H}
-                stroke="rgba(255,255,255,0.15)"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-              />
-              <circle
-                cx={hoverPoint.x}
-                cy={hoverPoint.y}
-                r="12"
-                fill="transparent"
-              />
-              <circle
-                cx={hoverPoint.x}
-                cy={hoverPoint.y}
-                r="4"
-                fill="#10B981"
-                stroke="#0C0C0C"
-                strokeWidth="2"
-              />
+              <line x1={hoverPoint.x} y1={0} x2={hoverPoint.x} y2={H} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3 3" />
+              <circle cx={hoverPoint.x} cy={hoverPoint.y} r="12" fill="transparent" />
+              <circle cx={hoverPoint.x} cy={hoverPoint.y} r="4" fill="#10B981" stroke="#0C0C0C" strokeWidth="2" />
             </>
           )}
         </svg>
 
-        {/* Tooltip */}
-        {hoverData && hoverPoint && (
+        {showCrosshair && hoverData && hoverPoint && (
           <motion.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -214,7 +207,6 @@ export function WidgetRevenue() {
           </motion.div>
         )}
 
-        {/* Content overlay */}
         <div className="relative z-10">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
@@ -238,6 +230,24 @@ export function WidgetRevenue() {
             </span>
             <span className="text-[11px] text-zinc-600">vs last month</span>
           </div>
+
+          {/* Large: show daily breakdown summary */}
+          {size === "large" && stats && (
+            <div className="mt-3 flex items-center gap-4 border-t border-[rgba(255,255,255,0.06)] pt-3">
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-zinc-600">Prev Month</div>
+                <div className="text-[13px] font-medium text-zinc-400">${stats.revenue_previous.toLocaleString()}</div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-zinc-600">Active Jobs</div>
+                <div className="text-[13px] font-medium text-zinc-400">{stats.active_jobs_count}</div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-zinc-600">Unassigned</div>
+                <div className="text-[13px] font-medium text-zinc-400">{stats.unassigned_jobs_count}</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </WidgetShell>

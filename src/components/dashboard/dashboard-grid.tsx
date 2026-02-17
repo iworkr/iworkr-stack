@@ -10,7 +10,7 @@ import {
 } from "react-grid-layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, GripVertical, Pencil, RotateCcw, Plus, Check } from "lucide-react";
-import { useDashboardStore } from "@/lib/dashboard-store";
+import { useDashboardStore, type WidgetSize } from "@/lib/dashboard-store";
 import { saveDashboardLayout } from "@/app/actions/dashboard";
 import { useOrg } from "@/lib/hooks/use-org";
 
@@ -29,8 +29,6 @@ import "react-grid-layout/css/styles.css";
 
 /* ── Widget Size Classification ─────────────────────── */
 
-type WidgetSize = "small" | "medium" | "large";
-
 function classifySize(w: number, h: number): WidgetSize {
   const area = w * h;
   if (area <= 1) return "small";
@@ -41,18 +39,16 @@ function classifySize(w: number, h: number): WidgetSize {
 /* ── Widget Renderer ────────────────────────────────── */
 
 function renderWidget(id: string, size: WidgetSize) {
-  const compact = size === "small";
-
   switch (id) {
-    case "revenue":   return <WidgetRevenue />;
-    case "dispatch":  return <WidgetMap />;
-    case "inbox":     return <WidgetInbox />;
-    case "schedule":  return <WidgetSchedule />;
-    case "actions":   return <WidgetActions />;
-    case "insights":  return <WidgetInsights />;
-    case "team":      return <WidgetTeamStatus compact={compact} />;
-    case "links":     return <WidgetQuickLinks />;
-    case "notepad":   return <WidgetNotepad />;
+    case "revenue":   return <WidgetRevenue size={size} />;
+    case "dispatch":  return <WidgetMap size={size} />;
+    case "inbox":     return <WidgetInbox size={size} />;
+    case "schedule":  return <WidgetSchedule size={size} />;
+    case "actions":   return <WidgetActions size={size} />;
+    case "insights":  return <WidgetInsights size={size} />;
+    case "team":      return <WidgetTeamStatus size={size} />;
+    case "links":     return <WidgetQuickLinks size={size} />;
+    case "notepad":   return <WidgetNotepad size={size} />;
     default:          return <div className="p-4 text-zinc-600 text-[12px]">Unknown widget</div>;
   }
 }

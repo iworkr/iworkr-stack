@@ -4,21 +4,24 @@ import { Users } from "lucide-react";
 import { useTeamStore } from "@/lib/team-store";
 import { WidgetShell } from "./widget-shell";
 import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
+import type { WidgetSize } from "@/lib/dashboard-store";
 
-export function WidgetTeamStatus({ compact }: { compact?: boolean }) {
+export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
   const members = useTeamStore((s) => s.members);
   const loaded = useTeamStore((s) => s.loaded);
 
   const onlineMembers = members.filter(
     (m) => m.onlineStatus === "online" || m.onlineStatus === "idle"
   );
-  const display = compact ? onlineMembers.slice(0, 3) : onlineMembers.slice(0, 8);
+
+  const maxDisplay = size === "small" ? 0 : size === "medium" ? 5 : 12;
+  const display = onlineMembers.slice(0, maxDisplay);
 
   if (!loaded && members.length === 0) {
     return (
       <WidgetShell delay={0}>
         <div className="p-4 space-y-2">
-          {[1, 2, 3].map((i) => (
+          {Array.from({ length: size === "small" ? 1 : 3 }).map((_, i) => (
             <div key={i} className="flex items-center gap-2">
               <ShimmerCircle className="h-6 w-6" />
               <Shimmer className="h-3 w-20" />
@@ -29,20 +32,20 @@ export function WidgetTeamStatus({ compact }: { compact?: boolean }) {
     );
   }
 
-  if (compact) {
+  /* ── SMALL: Just online count ───────────────────────── */
+  if (size === "small") {
     return (
       <WidgetShell delay={0}>
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2">
-            <Users size={14} className="text-zinc-500" />
-            <span className="text-[13px] font-medium text-zinc-300">Team</span>
-          </div>
+        <div className="flex h-full flex-col items-center justify-center p-3">
+          <Users size={14} className="mb-1.5 text-zinc-500" />
           <span className="text-[20px] font-medium text-zinc-100">{onlineMembers.length}</span>
+          <span className="text-[9px] text-zinc-600">Online</span>
         </div>
       </WidgetShell>
     );
   }
 
+  /* ── MEDIUM / LARGE: Member list ────────────────────── */
   return (
     <WidgetShell
       delay={0}
@@ -78,9 +81,22 @@ export function WidgetTeamStatus({ compact }: { compact?: boolean }) {
                 <span className="ml-auto text-[10px] text-zinc-600">
                   {m.onlineStatus === "online" ? "Active" : "Idle"}
                 </span>
+                {/* Large: show role */}
+                {size === "large" && m.role && (
+                  <span className="text-[9px] text-zinc-700">
+                    {String(m.role).replace(/_/g, " ")}
+                  </span>
+                )}
               </div>
             );
           })
+        )}
+
+        {/* Large: show remaining count */}
+        {size === "large" && onlineMembers.length > maxDisplay && (
+          <div className="px-4 py-2 text-center text-[10px] text-zinc-600">
+            +{onlineMembers.length - maxDisplay} more
+          </div>
         )}
       </div>
     </WidgetShell>

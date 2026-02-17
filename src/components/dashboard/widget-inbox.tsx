@@ -9,6 +9,7 @@ import { useInboxStore } from "@/lib/inbox-store";
 import { type InboxItemType } from "@/lib/data";
 import { WidgetShell } from "./widget-shell";
 import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
+import type { WidgetSize } from "@/lib/dashboard-store";
 
 const typeIcons: Record<InboxItemType, typeof Bell> = {
   job_assigned: Bell,
@@ -32,21 +33,49 @@ function getAvatarGrad(initials: string) {
   return grads[Math.abs(hash) % grads.length];
 }
 
-export function WidgetInbox() {
+export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { openSlideOver } = useShellStore();
   const { items, markAsRead, archive } = useInboxStore();
   const inboxLoaded = useInboxStore((s) => s.loaded);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  // Get 5 most recent unread items (or all if fewer)
   const unreadItems = useMemo(
-    () => items.filter((i) => !i.read && !i.archived && !i.snoozedUntil).slice(0, 5),
+    () => items.filter((i) => !i.read && !i.archived && !i.snoozedUntil),
     [items]
   );
-
   const unreadCount = unreadItems.length;
 
+  // Control how many items to show based on size
+  const maxItems = size === "small" ? 0 : size === "medium" ? 3 : 8;
+  const displayItems = unreadItems.slice(0, maxItems);
+  const showActions = size === "large";
+
+  /* ── SMALL: Unread count badge ──────────────────────── */
+  if (size === "small") {
+    return (
+      <WidgetShell delay={0.1}>
+        <div
+          className="flex h-full cursor-pointer flex-col items-center justify-center p-3"
+          onClick={() => router.push("/dashboard/inbox")}
+        >
+          <div className="relative">
+            <Inbox size={16} className="text-zinc-500" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-2 -top-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-blue-500 px-1 text-[8px] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+          <span className="mt-2 text-[10px] text-zinc-600">
+            {unreadCount > 0 ? `${unreadCount} unread` : "All read"}
+          </span>
+        </div>
+      </WidgetShell>
+    );
+  }
+
+  /* ── MEDIUM / LARGE ─────────────────────────────────── */
   return (
     <WidgetShell
       delay={0.1}
@@ -70,10 +99,9 @@ export function WidgetInbox() {
         </button>
       }
     >
-      {/* Loading shimmer */}
       {!inboxLoaded && items.length === 0 ? (
         <div className="divide-y divide-[rgba(255,255,255,0.04)]">
-          {Array.from({ length: 3 }).map((_, i) => (
+          {Array.from({ length: maxItems || 3 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5 px-4 py-2.5">
               <div className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full bg-zinc-800" />
               <ShimmerCircle className="mt-0.5 h-6 w-6" />
@@ -84,7 +112,7 @@ export function WidgetInbox() {
             </div>
           ))}
         </div>
-      ) : unreadItems.length === 0 ? (
+      ) : displayItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -99,35 +127,21 @@ export function WidgetInbox() {
         </div>
       ) : (
         <div className="divide-y divide-[rgba(255,255,255,0.04)]">
-          {unreadItems.map((item, i) => (
+          {displayItems.map((item, i) => (
             <motion.button
               key={item.id}
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{
-                delay: 0.15 + i * 0.05,
-                duration: 0.3,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              onClick={() => {
-                markAsRead(item.id);
-                router.push("/dashboard/inbox");
-              }}
+              transition={{ delay: 0.15 + i * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              onClick={() => { markAsRead(item.id); router.push("/dashboard/inbox"); }}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
               className="group flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.02]"
             >
-              {/* Blue dot */}
               <div className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full bg-blue-500" />
-
-              {/* Avatar */}
-              <div
-                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGrad(item.senderInitials)}`}
-              >
+              <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGrad(item.senderInitials)}`}>
                 <span className="text-[8px] font-semibold text-white">{item.senderInitials}</span>
               </div>
-
-              {/* Content */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-[11px] font-medium text-zinc-300 group-hover:text-zinc-100">
@@ -136,10 +150,13 @@ export function WidgetInbox() {
                   <span className="shrink-0 text-[9px] text-zinc-700">{item.time}</span>
                 </div>
                 <p className="truncate text-[10px] text-zinc-600">{item.body}</p>
+                {/* Large: show full body preview */}
+                {showActions && item.body && (
+                  <p className="mt-0.5 line-clamp-2 text-[9px] leading-relaxed text-zinc-700">{item.body}</p>
+                )}
               </div>
 
-              {/* Quick actions on hover */}
-              {hoveredId === item.id && (
+              {(showActions || hoveredId === item.id) && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -155,6 +172,18 @@ export function WidgetInbox() {
               )}
             </motion.button>
           ))}
+
+          {/* Large: show remaining count */}
+          {size === "large" && unreadItems.length > maxItems && (
+            <div className="px-4 py-2 text-center">
+              <button
+                onClick={() => router.push("/dashboard/inbox")}
+                className="text-[10px] text-blue-400 hover:text-blue-300"
+              >
+                +{unreadItems.length - maxItems} more
+              </button>
+            </div>
+          )}
         </div>
       )}
     </WidgetShell>

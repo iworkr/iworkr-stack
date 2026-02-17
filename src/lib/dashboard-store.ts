@@ -31,6 +31,10 @@ export const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "notepad",   label: "Notepad",        description: "Scratch notes and reminders",          icon: "FileText",      defaultW: 1, defaultH: 2, minW: 1, minH: 1 },
 ];
 
+/* ── Widget Size (for responsive rendering) ─────────────── */
+
+export type WidgetSize = "small" | "medium" | "large";
+
 /* ── Default Layout ─────────────────────────────────────── */
 
 export const DEFAULT_LAYOUT: LayoutItem[] = [
