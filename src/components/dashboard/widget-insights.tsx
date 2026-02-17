@@ -20,6 +20,8 @@ const emptyInsight: AIInsight = {
   title: "No active insights",
   body: "Schedule is optimized. We\u2019ll surface recommendations here when action is needed.",
   priority: 0,
+  action: "",
+  action_route: "",
 };
 
 export function WidgetInsights() {
