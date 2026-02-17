@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import { type Client } from "./data";
 import {
   getClients,
@@ -78,6 +80,9 @@ interface ClientsState {
   archiveClient: (id: string) => void;
   archiveClientServer: (id: string) => Promise<void>;
   restoreClient: (client: Client) => void;
+  _stale: boolean;
+  _lastFetchedAt: number | null;
+
   loadFromServer: (orgId: string) => Promise<void>;
   refresh: () => Promise<void>;
 
@@ -85,7 +90,9 @@ interface ClientsState {
   createClientServer: (params: CreateClientParams) => Promise<{ success: boolean; clientId?: string; error?: string }>;
 }
 
-export const useClientsStore = create<ClientsState>((set, get) => ({
+export const useClientsStore = create<ClientsState>()(
+  persist(
+    (set, get) => ({
   clients: [],
   focusedIndex: 0,
   loaded: false,
@@ -93,6 +100,8 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
   orgId: null,
   filterStatus: null,
   filterType: null,
+  _stale: true,
+  _lastFetchedAt: null,
 
   setFocusedIndex: (i) => set({ focusedIndex: i }),
   setFilterStatus: (status) => set({ filterStatus: status }),
@@ -151,14 +160,18 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
     })),
 
   loadFromServer: async (orgId: string) => {
-    if (get().loaded || get().loading) return;
-    set({ loading: true, orgId });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
+
+    const hasCache = state.clients.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId });
+
     try {
-      // Use RPC for efficient aggregation
       const { data, error } = await getClientsWithStats(orgId);
       if (data && !error) {
         const mapped = (data as any[]).map(mapServerClient);
-        set({ clients: mapped, loaded: true, loading: false });
+        set({ clients: mapped, loaded: true, loading: false, _stale: false, _lastFetchedAt: Date.now() });
       } else {
         set({ loaded: true, loading: false });
       }
@@ -174,7 +187,7 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
       const { data, error } = await getClientsWithStats(orgId);
       if (data && !error) {
         const mapped = (data as any[]).map(mapServerClient);
-        set({ clients: mapped });
+        set({ clients: mapped, _lastFetchedAt: Date.now(), _stale: false });
       }
     } catch {
       // silent refresh failure
@@ -196,4 +209,14 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
       return { success: false, error: err.message || "Unexpected error" };
     }
   },
-}));
+    }),
+    {
+      name: "iworkr-clients",
+      partialize: (state) => ({
+        clients: state.clients,
+        orgId: state.orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

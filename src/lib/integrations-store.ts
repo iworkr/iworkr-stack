@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import {
   type Integration,
   type IntegrationEvent,
@@ -72,6 +74,8 @@ interface IntegrationsState {
   loaded: boolean;
   loading: boolean;
   orgId: string | null;
+  _stale: boolean;
+  _lastFetchedAt: number | null;
 
   setActiveTab: (tab: IntegrationsTab) => void;
   setSearchQuery: (q: string) => void;
@@ -97,7 +101,9 @@ interface IntegrationsState {
   updateAccountMappingServer: (integrationId: string, mappingId: string, value: string) => Promise<{ error: string | null }>;
 }
 
-export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
+export const useIntegrationsStore = create<IntegrationsState>()(
+  persist(
+    (set, get) => ({
   integrations: [],
   events: [],
   overview: null,
@@ -108,6 +114,8 @@ export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
   loaded: false,
   loading: false,
   orgId: null,
+  _stale: true,
+  _lastFetchedAt: null,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSearchQuery: (q) => set({ searchQuery: q }),
@@ -118,8 +126,12 @@ export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
   /* ── Server sync ───────────────────────────── */
 
   loadFromServer: async (orgId: string) => {
-    if (get().loading) return;
-    set({ loading: true, orgId });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
+
+    const hasCache = state.integrations.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId });
 
     try {
       const [integrationsRes, overviewRes] = await Promise.all([
@@ -136,6 +148,8 @@ export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
         overview: overviewRes.data || null,
         loaded: true,
         loading: false,
+        _stale: false,
+        _lastFetchedAt: Date.now(),
       });
     } catch {
       set({ loaded: true, loading: false });
@@ -157,6 +171,7 @@ export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
       }
 
       if (overviewRes.data) set({ overview: overviewRes.data });
+      set({ _lastFetchedAt: Date.now(), _stale: false });
     } catch {
       // Silently fail
     }
@@ -343,4 +358,16 @@ export const useIntegrationsStore = create<IntegrationsState>((set, get) => ({
     }
     return { error: res.error };
   },
-}));
+    }),
+    {
+      name: "iworkr-integrations",
+      partialize: (state) => ({
+        integrations: state.integrations,
+        events: state.events,
+        overview: state.overview,
+        orgId: state.orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import {
   type Invoice,
   type InvoiceStatus,
@@ -39,6 +41,9 @@ interface FinanceState {
   focusedIndex: number;
   orgId: string | null;
 
+  _stale: boolean;
+  _lastFetchedAt: number | null;
+
   loadFromServer: (orgId: string) => Promise<void>;
   refresh: () => Promise<void>;
   setActiveTab: (tab: FinanceTab) => void;
@@ -72,7 +77,9 @@ interface FinanceState {
   syncLineItemToServer: (invoiceId: string, lineItemId: string, patch: Partial<LineItem>) => Promise<void>;
 }
 
-export const useFinanceStore = create<FinanceState>((set, get) => ({
+export const useFinanceStore = create<FinanceState>()(
+  persist(
+    (set, get) => ({
   invoices: [],
   payouts: [],
   dailyRevenue: [],
@@ -82,9 +89,16 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   activeTab: "overview",
   focusedIndex: 0,
   orgId: null,
+  _stale: true,
+  _lastFetchedAt: null,
 
   loadFromServer: async (orgId: string) => {
-    set({ loading: true, orgId });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
+
+    const hasCache = state.invoices.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId });
     try {
       const [invoicesResult, payoutsResult, revenueResult, overviewResult] = await Promise.all([
         getInvoices(orgId),
@@ -200,6 +214,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         overview: overviewResult.data || null,
         loaded: true,
         loading: false,
+        _stale: false,
+        _lastFetchedAt: Date.now(),
       });
     } catch (error) {
       console.error("Failed to load finance data:", error);
@@ -260,6 +276,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         invoices: mappedInvoices,
         payouts: mappedPayouts,
         overview: overviewResult.data || get().overview,
+        _lastFetchedAt: Date.now(),
+        _stale: false,
       });
     } catch {
       // silent refresh failure
@@ -468,4 +486,17 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   handleRealtimeUpdate: () => {
     get().refresh();
   },
-}));
+    }),
+    {
+      name: "iworkr-finance",
+      partialize: (state) => ({
+        invoices: state.invoices,
+        payouts: state.payouts,
+        dailyRevenue: state.dailyRevenue,
+        overview: state.overview,
+        orgId: state.orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

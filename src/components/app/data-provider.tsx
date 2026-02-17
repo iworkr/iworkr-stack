@@ -16,82 +16,31 @@ import { createClient } from "@/lib/supabase/client";
 
 /**
  * Loads data from Supabase into Zustand stores when the user is authenticated.
+ * Stores self-manage staleness via SWR — this always calls loadFromServer and
+ * lets each store decide whether to fetch (based on _lastFetchedAt freshness).
  * Also manages Realtime subscriptions for live notifications.
  * Place this inside the dashboard layout to trigger on mount.
  */
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { orgId, userId, loading: orgLoading } = useOrg();
 
-  const loadJobs = useJobsStore((s) => s.loadFromServer);
-  const jobsLoaded = useJobsStore((s) => s.loaded);
-
-  const loadClients = useClientsStore((s) => s.loadFromServer);
-  const clientsLoaded = useClientsStore((s) => s.loaded);
-
-  const loadFinance = useFinanceStore((s) => s.loadFromServer);
-  const financeLoaded = useFinanceStore((s) => s.loaded);
-
-  const loadInbox = useInboxStore((s) => s.loadFromServer);
-  const inboxLoaded = useInboxStore((s) => s.loaded);
-
-  const loadSchedule = useScheduleStore((s) => s.loadFromServer);
-  const scheduleLoaded = useScheduleStore((s) => s.loaded);
-
-  const loadAutomations = useAutomationsStore((s) => s.loadFromServer);
-  const automationsLoaded = useAutomationsStore((s) => s.loaded);
-
-  const loadAssets = useAssetsStore((s) => s.loadFromServer);
-  const assetsLoaded = useAssetsStore((s) => s.loaded);
-
-  const loadForms = useFormsStore((s) => s.loadFromServer);
-  const formsLoaded = useFormsStore((s) => s.loaded);
-
-  const loadTeam = useTeamStore((s) => s.loadFromServer);
-  const teamLoaded = useTeamStore((s) => s.loaded);
-
-  const loadIntegrations = useIntegrationsStore((s) => s.loadFromServer);
-  const integrationsLoaded = useIntegrationsStore((s) => s.loaded);
-
   const addRealtimeItem = useInboxStore((s) => s.addRealtimeItem);
 
-  // Load store data
+  // Always trigger loadFromServer — stores internally skip if data is fresh
   useEffect(() => {
     if (orgLoading || !orgId) return;
 
-    if (!jobsLoaded) loadJobs(orgId);
-    if (!clientsLoaded) loadClients(orgId);
-    if (!financeLoaded) loadFinance(orgId);
-    if (!inboxLoaded) loadInbox(orgId);
-    if (!scheduleLoaded) loadSchedule(orgId, new Date().toISOString().split("T")[0]);
-    if (!automationsLoaded) loadAutomations(orgId);
-    if (!assetsLoaded) loadAssets(orgId);
-    if (!formsLoaded) loadForms(orgId);
-    if (!teamLoaded) loadTeam(orgId);
-    if (!integrationsLoaded) loadIntegrations(orgId);
-  }, [
-    orgId,
-    orgLoading,
-    jobsLoaded,
-    clientsLoaded,
-    financeLoaded,
-    inboxLoaded,
-    scheduleLoaded,
-    automationsLoaded,
-    assetsLoaded,
-    formsLoaded,
-    teamLoaded,
-    integrationsLoaded,
-    loadJobs,
-    loadClients,
-    loadFinance,
-    loadInbox,
-    loadSchedule,
-    loadAutomations,
-    loadAssets,
-    loadForms,
-    loadTeam,
-    loadIntegrations,
-  ]);
+    useJobsStore.getState().loadFromServer(orgId);
+    useClientsStore.getState().loadFromServer(orgId);
+    useFinanceStore.getState().loadFromServer(orgId);
+    useInboxStore.getState().loadFromServer(orgId);
+    useScheduleStore.getState().loadFromServer(orgId, new Date().toISOString().split("T")[0]);
+    useAutomationsStore.getState().loadFromServer(orgId);
+    useAssetsStore.getState().loadFromServer(orgId);
+    useFormsStore.getState().loadFromServer(orgId);
+    useTeamStore.getState().loadFromServer(orgId);
+    useIntegrationsStore.getState().loadFromServer(orgId);
+  }, [orgId, orgLoading]);
 
   // Realtime subscription for notifications
   useEffect(() => {

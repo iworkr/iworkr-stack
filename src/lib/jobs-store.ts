@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import { type Job, type JobStatus, type SubTask } from "./data";
 import {
   getJobs,
@@ -36,6 +38,9 @@ interface JobsState {
 
   toggleSubtask: (jobId: string, subtaskId: string) => void;
   toggleSubtaskServer: (jobId: string, subtaskId: string) => Promise<void>;
+
+  _stale: boolean;
+  _lastFetchedAt: number | null;
 
   loadFromServer: (orgId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -101,13 +106,17 @@ function formatRelativeDate(dateStr: string): string {
   return d.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
 }
 
-export const useJobsStore = create<JobsState>((set, get) => ({
+export const useJobsStore = create<JobsState>()(
+  persist(
+    (set, get) => ({
   jobs: [],
   focusedIndex: 0,
   selected: new Set(),
   loaded: false,
   loading: false,
   orgId: null,
+  _stale: true,
+  _lastFetchedAt: null,
 
   setFocusedIndex: (i) => set({ focusedIndex: i }),
 
@@ -255,13 +264,18 @@ export const useJobsStore = create<JobsState>((set, get) => ({
   },
 
   loadFromServer: async (orgId: string) => {
-    if (get().loaded || get().loading) return;
-    set({ loading: true, orgId });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
+
+    const hasCache = state.jobs.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId });
+
     try {
       const { data, error } = await getJobs(orgId);
       if (!error) {
         const mapped = (data || []).map(mapServerJob);
-        set({ jobs: mapped, loaded: true, loading: false });
+        set({ jobs: mapped, loaded: true, loading: false, _stale: false, _lastFetchedAt: Date.now() });
       } else {
         set({ loaded: true, loading: false });
       }
@@ -277,10 +291,20 @@ export const useJobsStore = create<JobsState>((set, get) => ({
       const { data, error } = await getJobs(orgId);
       if (!error) {
         const mapped = (data || []).map(mapServerJob);
-        set({ jobs: mapped });
+        set({ jobs: mapped, _lastFetchedAt: Date.now(), _stale: false });
       }
     } catch {
       // silently fail refresh
     }
   },
-}));
+    }),
+    {
+      name: "iworkr-jobs",
+      partialize: (state) => ({
+        jobs: state.jobs,
+        orgId: state.orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

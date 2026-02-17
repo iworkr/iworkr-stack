@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import {
   type TeamMember,
   type RoleDefinition,
@@ -158,6 +160,8 @@ interface TeamState {
   loaded: boolean;
   loading: boolean;
   orgId: string | null;
+  _stale: boolean;
+  _lastFetchedAt: number | null;
 
   setSearchQuery: (q: string) => void;
   setFilterBranch: (b: string) => void;
@@ -202,7 +206,9 @@ interface TeamState {
   ) => Promise<{ error: string | null }>;
 }
 
-export const useTeamStore = create<TeamState>((set, get) => ({
+export const useTeamStore = create<TeamState>()(
+  persist(
+    (set, get) => ({
   members: [],
   roles: [],
   overview: null,
@@ -215,6 +221,8 @@ export const useTeamStore = create<TeamState>((set, get) => ({
   loaded: false,
   loading: false,
   orgId: null,
+  _stale: true,
+  _lastFetchedAt: null,
 
   setSearchQuery: (q) => set({ searchQuery: q }),
   setFilterBranch: (b) => set({ filterBranch: b }),
@@ -226,8 +234,12 @@ export const useTeamStore = create<TeamState>((set, get) => ({
   /* ── Load from server ──────────────────────── */
 
   loadFromServer: async (orgId: string) => {
-    if (get().loading) return;
-    set({ loading: true, orgId });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
+
+    const hasCache = state.members.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId });
 
     try {
       const [membersRes, rolesRes, overviewRes, invitesRes] = await Promise.all([
@@ -279,6 +291,8 @@ export const useTeamStore = create<TeamState>((set, get) => ({
         overview: overviewRes.data || null,
         loaded: true,
         loading: false,
+        _stale: false,
+        _lastFetchedAt: Date.now(),
       });
     } catch {
       set({ loaded: true, loading: false });
@@ -299,6 +313,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
       if (membersRes.data) set({ members: membersRes.data.map(mapServerMember) });
       if (rolesRes.data) set({ roles: rolesRes.data.map(mapServerRole) });
       if (overviewRes.data) set({ overview: overviewRes.data });
+      set({ _lastFetchedAt: Date.now(), _stale: false });
     } catch {
       // Silently fail on refresh
     }
@@ -473,4 +488,16 @@ export const useTeamStore = create<TeamState>((set, get) => ({
     if (!res.error) get().refresh();
     return { error: res.error };
   },
-}));
+    }),
+    {
+      name: "iworkr-team",
+      partialize: (state) => ({
+        members: state.members,
+        roles: state.roles,
+        overview: state.overview,
+        orgId: state.orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

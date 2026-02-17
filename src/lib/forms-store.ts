@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import {
   type FormTemplate,
   type FormSubmission,
@@ -145,6 +147,8 @@ interface FormsState {
   loaded: boolean;
   loading: boolean;
   orgId: string | null;
+  _stale: boolean;
+  _lastFetchedAt: number | null;
 
   setActiveTab: (tab: FormsTab) => void;
   setSearchQuery: (q: string) => void;
@@ -197,7 +201,9 @@ interface FormsState {
   ) => Promise<{ data: any; error: string | null; missingFields?: string[] }>;
 }
 
-export const useFormsStore = create<FormsState>((set, get) => ({
+export const useFormsStore = create<FormsState>()(
+  persist(
+    (set, get) => ({
   templates: [],
   submissions: [],
   overview: null,
@@ -206,6 +212,8 @@ export const useFormsStore = create<FormsState>((set, get) => ({
   loaded: false,
   loading: false,
   orgId: null,
+  _stale: true,
+  _lastFetchedAt: null,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSearchQuery: (q) => set({ searchQuery: q }),
@@ -213,8 +221,12 @@ export const useFormsStore = create<FormsState>((set, get) => ({
   /* ── Load from server ──────────────────────── */
 
   loadFromServer: async (orgId: string) => {
-    if (get().loading) return;
-    set({ loading: true, orgId });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
+
+    const hasCache = state.templates.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId });
 
     try {
       const [formsRes, subsRes, overviewRes] = await Promise.all([
@@ -237,6 +249,8 @@ export const useFormsStore = create<FormsState>((set, get) => ({
         overview: overviewRes.data || null,
         loaded: true,
         loading: false,
+        _stale: false,
+        _lastFetchedAt: Date.now(),
       });
     } catch {
       set({ loaded: true, loading: false });
@@ -257,6 +271,7 @@ export const useFormsStore = create<FormsState>((set, get) => ({
       if (formsRes.data) set({ templates: formsRes.data.map(mapServerTemplate) });
       if (subsRes.data) set({ submissions: subsRes.data.map(mapServerSubmission) });
       if (overviewRes.data) set({ overview: overviewRes.data });
+      set({ _lastFetchedAt: Date.now(), _stale: false });
     } catch {
       // Silently fail on refresh
     }
@@ -371,4 +386,16 @@ export const useFormsStore = create<FormsState>((set, get) => ({
       missingFields: (res as any).missingFields,
     };
   },
-}));
+    }),
+    {
+      name: "iworkr-forms",
+      partialize: (state) => ({
+        templates: state.templates,
+        submissions: state.submissions,
+        overview: state.overview,
+        orgId: state.orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

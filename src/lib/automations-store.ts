@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import {
   type AutomationFlow,
   type ExecutionLog,
@@ -33,6 +35,8 @@ interface AutomationsState {
   loaded: boolean;
   loading: boolean;
   orgId: string | null;
+  _stale: boolean;
+  _lastFetchedAt: number | null;
 
   setActiveTab: (tab: AutomationsTab) => void;
   setSearchQuery: (q: string) => void;
@@ -114,7 +118,9 @@ function formatTimestamp(dateStr: string): string {
   });
 }
 
-export const useAutomationsStore = create<AutomationsState>((set, get) => ({
+export const useAutomationsStore = create<AutomationsState>()(
+  persist(
+    (set, get) => ({
   flows: [],
   logs: [],
   stats: null,
@@ -124,6 +130,8 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
   loaded: false,
   loading: false,
   orgId: null,
+  _stale: true,
+  _lastFetchedAt: null,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSearchQuery: (q) => set({ searchQuery: q }),
@@ -179,8 +187,12 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
   /* ── Server sync ───────────────────────────── */
 
   loadFromServer: async (orgId: string) => {
-    if (get().loaded || get().loading) return;
-    set({ loading: true, orgId });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
+
+    const hasCache = state.flows.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId });
     try {
       const [flowsResult, logsResult, statsResult] = await Promise.all([
         getAutomationFlows(orgId),
@@ -197,6 +209,8 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
         stats: statsResult.data || null,
         loaded: true,
         loading: false,
+        _stale: false,
+        _lastFetchedAt: Date.now(),
       });
     } catch {
       set({ loaded: true, loading: false });
@@ -221,6 +235,7 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
         set({ logs: (logsResult.data as any[]).map(mapServerLog) });
       }
       if (statsResult.data) set({ stats: statsResult.data });
+      set({ _lastFetchedAt: Date.now(), _stale: false });
     } catch {
       // Silently fail on refresh
     }
@@ -291,4 +306,16 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
     if (!res.error) get().refresh();
     return { data: res.data, error: res.error };
   },
-}));
+    }),
+    {
+      name: "iworkr-automations",
+      partialize: (state) => ({
+        flows: state.flows,
+        logs: state.logs,
+        stats: state.stats,
+        orgId: state.orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import {
   type ScheduleBlock,
   type ScheduleBlockStatus,
@@ -82,6 +84,9 @@ interface ScheduleState {
   addBlock: (block: ScheduleBlock) => void;
   updateBlockStatus: (blockId: string, status: ScheduleBlockStatus) => void;
 
+  _stale: boolean;
+  _lastFetchedAt: number | null;
+
   /** Called by realtime when a schedule_block changes */
   handleRealtimeUpdate: () => void;
 }
@@ -115,7 +120,9 @@ function mapServerTechnician(t: any): Technician {
   };
 }
 
-export const useScheduleStore = create<ScheduleState>((set, get) => ({
+export const useScheduleStore = create<ScheduleState>()(
+  persist(
+    (set, get) => ({
   blocks: [],
   technicians: [],
   backlogJobs: [],
@@ -128,9 +135,16 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   draggingBlockId: null,
   peekBlockId: null,
   unscheduledDrawerOpen: false,
+  _stale: true,
+  _lastFetchedAt: null,
 
   loadFromServer: async (orgId: string, date: string) => {
-    set({ loading: true, orgId, selectedDate: date });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId && state.selectedDate === date) return;
+
+    const hasCache = state.blocks.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId, selectedDate: date });
     try {
       // Try unified RPC first
       const { data } = await getScheduleView(orgId, date);
@@ -146,6 +160,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
           scheduleEvents: data.events || [],
           loaded: true,
           loading: false,
+          _stale: false,
+          _lastFetchedAt: Date.now(),
         });
         return;
       }
@@ -162,14 +178,16 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
           if (Array.isArray(techBlocks)) allBlocks.push(...techBlocks);
         });
       }
-      const mappedBlocks = allBlocks.map(mapServerBlock);
-      const mappedTechs = (techniciansResult.data || []).map(mapServerTechnician);
+      const mappedBlocks2 = allBlocks.map(mapServerBlock);
+      const mappedTechs2 = (techniciansResult.data || []).map(mapServerTechnician);
 
       set({
-        blocks: mappedBlocks,
-        technicians: mappedTechs,
+        blocks: mappedBlocks2,
+        technicians: mappedTechs2,
         loaded: true,
         loading: false,
+        _stale: false,
+        _lastFetchedAt: Date.now(),
       });
     } catch (error) {
       console.error("Failed to load schedule data:", error);
@@ -190,6 +208,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
           technicians: mappedTechs,
           backlogJobs: data.backlog || [],
           scheduleEvents: data.events || [],
+          _lastFetchedAt: Date.now(),
+          _stale: false,
         });
       }
     } catch {
@@ -302,4 +322,18 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   handleRealtimeUpdate: () => {
     get().refresh();
   },
-}));
+    }),
+    {
+      name: "iworkr-schedule",
+      partialize: (state) => ({
+        blocks: state.blocks,
+        technicians: state.technicians,
+        scheduleEvents: state.scheduleEvents,
+        backlogJobs: state.backlogJobs,
+        orgId: state.orgId,
+        selectedDate: state.selectedDate,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

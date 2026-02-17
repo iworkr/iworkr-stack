@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { clearAllCaches } from "./cache-utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/types";
 import type { User } from "@supabase/supabase-js";
@@ -25,7 +27,9 @@ export interface AuthState {
   reset: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
   user: null,
   profile: null,
   organizations: [],
@@ -140,10 +144,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    clearAllCaches();
     get().reset();
   },
 
-  reset: () =>
+  reset: () => {
+    clearAllCaches();
     set({
       user: null,
       profile: null,
@@ -152,5 +158,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       currentMembership: null,
       loading: false,
       initialized: false,
+    });
+  },
     }),
-}));
+    {
+      name: "iworkr-auth",
+      partialize: (state) => ({
+        profile: state.profile,
+        organizations: state.organizations,
+        currentOrg: state.currentOrg,
+        currentMembership: state.currentMembership,
+      }),
+    }
+  )
+);

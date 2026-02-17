@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import { type InboxItem } from "./data";
 import {
   getNotifications,
@@ -63,6 +65,9 @@ interface InboxStore {
   filter: InboxFilter;
   replyText: string;
 
+  _stale: boolean;
+  _lastFetchedAt: number | null;
+
   loadFromServer: (orgId: string) => Promise<void>;
   refresh: () => Promise<void>;
   addRealtimeItem: (payload: any) => void;
@@ -95,7 +100,9 @@ interface InboxStore {
   selectFocused: () => void;
 }
 
-export const useInboxStore = create<InboxStore>((set, get) => ({
+export const useInboxStore = create<InboxStore>()(
+  persist(
+    (set, get) => ({
   items: [],
   loaded: false,
   loading: false,
@@ -104,9 +111,17 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
   activeTab: "all",
   filter: "all",
   replyText: "",
+  _stale: true,
+  _lastFetchedAt: null,
 
   loadFromServer: async (_orgId: string) => {
-    set({ loading: true });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt)) return;
+
+    const hasCache = state.items.length > 0;
+    set({ loading: !hasCache });
+
     try {
       const result = await getNotifications();
 
@@ -116,15 +131,18 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
           items: mappedItems,
           loaded: true,
           loading: false,
-          selectedId: mappedItems[0]?.id || null,
+          selectedId: get().selectedId || mappedItems[0]?.id || null,
+          _stale: false,
+          _lastFetchedAt: Date.now(),
         });
       } else {
-        // Empty server response = no notifications — show clean empty state
         set({
           items: [],
           loaded: true,
           loading: false,
           selectedId: null,
+          _stale: false,
+          _lastFetchedAt: Date.now(),
         });
       }
     } catch (error) {
@@ -142,6 +160,8 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
         set({
           items: mappedItems,
           selectedId: mappedItems.find(i => i.id === selectedId) ? selectedId : mappedItems[0]?.id || null,
+          _lastFetchedAt: Date.now(),
+          _stale: false,
         });
       }
     } catch (error) {
@@ -315,7 +335,16 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
       get().markAsRead(item.id);
     }
   },
-}));
+    }),
+    {
+      name: "iworkr-inbox",
+      partialize: (state) => ({
+        items: state.items,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);
 
 /* ── Snooze time resolver ────────────────────────────── */
 function resolveSnoozeTime(value: string): string {

@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { isFresh } from "./cache-utils";
 import {
   type Asset,
   type StockItem,
@@ -126,6 +128,8 @@ interface AssetsState {
   loaded: boolean;
   loading: boolean;
   orgId: string | null;
+  _stale: boolean;
+  _lastFetchedAt: number | null;
 
   loadFromServer: (orgId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -164,7 +168,9 @@ interface AssetsState {
   addAuditEntry: (entry: Omit<AssetAuditEntry, "id">) => void;
 }
 
-export const useAssetsStore = create<AssetsState>((set, get) => ({
+export const useAssetsStore = create<AssetsState>()(
+  persist(
+    (set, get) => ({
   assets: [],
   stock: [],
   auditLog: [],
@@ -175,10 +181,16 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
   loaded: false,
   loading: false,
   orgId: null,
+  _stale: true,
+  _lastFetchedAt: null,
 
   loadFromServer: async (orgId: string) => {
-    if (get().loaded || get().loading) return;
-    set({ loading: true, orgId });
+    const state = get();
+    if (state.loading) return;
+    if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
+
+    const hasCache = state.assets.length > 0 && state.orgId === orgId;
+    set({ loading: !hasCache, orgId });
     try {
       const [assetsResult, stockResult, auditsResult, overviewResult] = await Promise.all([
         getAssets(orgId),
@@ -206,6 +218,8 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
         overview: overviewResult.data || null,
         loaded: true,
         loading: false,
+        _stale: false,
+        _lastFetchedAt: Date.now(),
       });
     } catch {
       set({ loaded: true, loading: false });
@@ -231,6 +245,8 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
         auditLog: auditsResult.data
           ? (auditsResult.data as any[]).map(mapServerAudit) : get().auditLog,
         overview: overviewResult.data || get().overview,
+        _lastFetchedAt: Date.now(),
+        _stale: false,
       });
     } catch {
       // silent refresh
@@ -349,4 +365,16 @@ export const useAssetsStore = create<AssetsState>((set, get) => ({
     set((s) => ({
       auditLog: [{ ...entry, id: `aud-${Date.now()}` }, ...s.auditLog],
     })),
-}));
+    }),
+    {
+      name: "iworkr-assets",
+      partialize: (state) => ({
+        assets: state.assets,
+        stock: state.stock,
+        overview: state.overview,
+        orgId: state.orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);
