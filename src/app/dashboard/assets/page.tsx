@@ -13,12 +13,20 @@ import {
   Radio,
   Loader2,
   Inbox,
+  Plus,
+  ScanBarcode,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAssetsStore, type AssetsTab, type ViewMode } from "@/lib/assets-store";
+import { useAuthStore } from "@/lib/auth-store";
 import { FleetGrid } from "@/components/assets/fleet-grid";
 import { InventoryTable } from "@/components/assets/inventory-table";
 import { AuditLog } from "@/components/assets/audit-log";
+import { AssetDrawer } from "@/components/assets/asset-drawer";
+import { StockModal } from "@/components/assets/stock-modal";
+import { ScannerOverlay } from "@/components/assets/scanner-overlay";
+import { scanLookup } from "@/app/actions/assets";
 
 /* ── Tab Config ───────────────────────────────────────── */
 
@@ -29,6 +37,9 @@ const tabs: { id: AssetsTab; label: string; icon: typeof Truck }[] = [
 ];
 
 export default function AssetsPage() {
+  const router = useRouter();
+  const { currentOrg } = useAuthStore();
+  const orgId = currentOrg?.id;
   const {
     assets,
     stock,
@@ -41,6 +52,52 @@ export default function AssetsPage() {
     setViewMode,
     setSearchQuery,
   } = useAssetsStore();
+
+  /* ── Drawer / Modal / Scanner State ──────────────────── */
+  const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
+  const [stockModalOpen, setStockModalOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanTarget, setScanTarget] = useState<"asset" | "stock" | null>(null);
+  const [prefillSerial, setPrefillSerial] = useState("");
+  const [prefillBarcode, setPrefillBarcode] = useState("");
+  const [prefillName, setPrefillName] = useState("");
+
+  const handleNewItem = () => {
+    if (activeTab === "inventory") {
+      setStockModalOpen(true);
+    } else {
+      setAssetDrawerOpen(true);
+    }
+  };
+
+  const handleScanOpen = (target: "asset" | "stock") => {
+    setScanTarget(target);
+    setScannerOpen(true);
+  };
+
+  const handleScanResult = useCallback(async (code: string) => {
+    setScannerOpen(false);
+    if (!orgId) return;
+
+    const result = await scanLookup(orgId, code);
+    if (result.data) {
+      if (result.data.type === "asset") {
+        router.push(`/dashboard/assets/${result.data.item.id}`);
+      } else if (result.data.type === "stock") {
+        setActiveTab("inventory");
+        setSearchQuery(result.data.item.name || code);
+      } else {
+        if (scanTarget === "stock" || activeTab === "inventory") {
+          setPrefillBarcode(code);
+          setPrefillName("");
+          setStockModalOpen(true);
+        } else {
+          setPrefillSerial(code);
+          setAssetDrawerOpen(true);
+        }
+      }
+    }
+  }, [orgId, scanTarget, activeTab, router, setActiveTab, setSearchQuery]);
 
   /* ── Stats (Dynamic from DB) ────────────────────────── */
   const totalValue = useMemo(
@@ -115,6 +172,15 @@ export default function AssetsPage() {
               />
             </div>
 
+            {/* Scan button */}
+            <button
+              onClick={() => handleScanOpen(activeTab === "inventory" ? "stock" : "asset")}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-3 text-[11px] text-zinc-400 transition-colors hover:border-[#00E676]/20 hover:text-[#00E676]"
+            >
+              <ScanBarcode size={13} />
+              <span className="hidden sm:inline">Scan</span>
+            </button>
+
             {/* View toggle (only for fleet tab) */}
             {activeTab === "fleet" && (
               <div className="flex rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
@@ -140,6 +206,15 @@ export default function AssetsPage() {
                 </button>
               </div>
             )}
+
+            {/* New Item button */}
+            <button
+              onClick={handleNewItem}
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00E676] to-[#00C853] px-4 text-[11px] font-medium text-black shadow-[0_0_20px_-6px_rgba(0,230,118,0.4)] transition-all hover:shadow-[0_0_30px_-6px_rgba(0,230,118,0.6)]"
+            >
+              <Plus size={13} strokeWidth={2.5} />
+              New Item
+            </button>
           </div>
         </div>
 
@@ -273,13 +348,32 @@ export default function AssetsPage() {
           </AnimatePresence>
         )}
       </div>
+
+      {/* ── Drawers / Modals / Scanner ─────────────────── */}
+      <AssetDrawer
+        open={assetDrawerOpen}
+        onClose={() => { setAssetDrawerOpen(false); setPrefillSerial(""); }}
+        onScanRequest={() => handleScanOpen("asset")}
+        prefillSerial={prefillSerial}
+      />
+      <StockModal
+        open={stockModalOpen}
+        onClose={() => { setStockModalOpen(false); setPrefillBarcode(""); setPrefillName(""); }}
+        onScanRequest={() => handleScanOpen("stock")}
+        prefillBarcode={prefillBarcode}
+        prefillName={prefillName}
+      />
+      <ScannerOverlay
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={handleScanResult}
+      />
     </div>
   );
 }
 
 /* ── Fleet List View (Dense) ─────────────────────────── */
 
-import { useRouter } from "next/navigation";
 import { type Asset } from "@/lib/assets-data";
 
 function FleetListView({ assets }: { assets: Asset[] }) {

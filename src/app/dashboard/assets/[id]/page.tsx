@@ -24,6 +24,7 @@ import { useAssetsStore } from "@/lib/assets-store";
 import { type AssetCategory } from "@/lib/assets-data";
 import { CustodyModal } from "@/components/assets/custody-modal";
 import { ServiceLogModal } from "@/components/assets/service-log-modal";
+import { AuditTimeline } from "@/components/assets/audit-timeline";
 
 /* ── Icons ────────────────────────────────────────────── */
 
@@ -48,7 +49,7 @@ const statusConfig = {
 export default function AssetDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { assets, auditLog, toggleCustodyServer, updateAssetStatusServer } = useAssetsStore();
+  const { assets, toggleCustodyServer, updateAssetStatusServer } = useAssetsStore();
   const [custodyOpen, setCustodyOpen] = useState(false);
   const [serviceLogOpen, setServiceLogOpen] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
@@ -56,11 +57,6 @@ export default function AssetDetailPage() {
   const asset = useMemo(
     () => assets.find((a) => a.id === params.id),
     [assets, params.id]
-  );
-
-  const assetAudit = useMemo(
-    () => auditLog.filter((e) => e.assetId === asset?.id),
-    [auditLog, asset?.id]
   );
 
   if (!asset) {
@@ -330,48 +326,7 @@ export default function AssetDetailPage() {
               </button>
             </div>
 
-            {assetAudit.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <Clock size={24} strokeWidth={0.8} className="mb-2 text-zinc-800" />
-                <p className="text-[11px] text-zinc-600">No activity logged yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-0">
-                {assetAudit.map((entry, i) => {
-                  const typeConfig: Record<string, { icon: typeof Wrench; color: string; bg: string; border: string }> = {
-                    transfer: { icon: ArrowRightLeft, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.2)]" },
-                    service: { icon: Wrench, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-                    create: { icon: DollarSign, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-                    stock_adjust: { icon: Clock, color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
-                    retire: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
-                  };
-                  const cfg = typeConfig[entry.type] || typeConfig.service;
-                  const Icon = cfg.icon;
-
-                  return (
-                    <motion.div
-                      key={entry.id}
-                      initial={{ opacity: 0, x: -6 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + i * 0.05, duration: 0.3 }}
-                      className="flex items-start gap-3 border-b border-[rgba(255,255,255,0.04)] py-3 last:border-0"
-                    >
-                      <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${cfg.bg} ${cfg.border}`}>
-                        <Icon size={11} className={cfg.color} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] text-zinc-300">{entry.description}</p>
-                        <div className="mt-0.5 flex items-center gap-2 text-[9px] text-zinc-600">
-                          <span>{entry.user}</span>
-                          <span>·</span>
-                          <span>{entry.time}</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
+            <AuditTimeline entityId={asset.id} entityType="asset" />
           </div>
         </div>
       </div>

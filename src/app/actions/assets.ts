@@ -69,6 +69,7 @@ export interface CreateAssetParams {
   status?: "available" | "assigned" | "maintenance" | "retired";
   assigned_to?: string | null;
   serial_number?: string | null;
+  barcode?: string | null;
   make?: string | null;
   model?: string | null;
   year?: number | null;
@@ -77,10 +78,13 @@ export interface CreateAssetParams {
   location_lng?: number | null;
   purchase_date?: string | null;
   purchase_cost?: number | null;
+  warranty_expiry?: string | null;
   last_service?: string | null;
   next_service?: string | null;
   notes?: string | null;
+  image_url?: string | null;
   metadata?: Record<string, any> | null;
+  ingestion_method?: "manual" | "scan";
 }
 
 export interface UpdateAssetParams {
@@ -89,6 +93,7 @@ export interface UpdateAssetParams {
   status?: "available" | "assigned" | "maintenance" | "retired";
   assigned_to?: string | null;
   serial_number?: string | null;
+  barcode?: string | null;
   make?: string | null;
   model?: string | null;
   year?: number | null;
@@ -97,9 +102,11 @@ export interface UpdateAssetParams {
   location_lng?: number | null;
   purchase_date?: string | null;
   purchase_cost?: number | null;
+  warranty_expiry?: string | null;
   last_service?: string | null;
   next_service?: string | null;
   notes?: string | null;
+  image_url?: string | null;
   metadata?: Record<string, any> | null;
 }
 
@@ -107,23 +114,28 @@ export interface CreateInventoryItemParams {
   organization_id: string;
   name: string;
   sku?: string | null;
+  barcode?: string | null;
   category?: string | null;
   quantity?: number;
   min_quantity?: number;
   unit_cost?: number | null;
   location?: string | null;
+  bin_location?: string | null;
   supplier?: string | null;
   metadata?: Record<string, any> | null;
+  ingestion_method?: "manual" | "scan";
 }
 
 export interface UpdateInventoryItemParams {
   name?: string;
   sku?: string | null;
+  barcode?: string | null;
   category?: string | null;
   quantity?: number;
   min_quantity?: number;
   unit_cost?: number | null;
   location?: string | null;
+  bin_location?: string | null;
   supplier?: string | null;
   metadata?: Record<string, any> | null;
 }
@@ -185,6 +197,7 @@ export async function createAsset(params: CreateAssetParams) {
       status: params.status || "available",
       assigned_to: params.assigned_to || null,
       serial_number: params.serial_number || null,
+      barcode: params.barcode || null,
       make: params.make || null,
       model: params.model || null,
       year: params.year || null,
@@ -193,9 +206,11 @@ export async function createAsset(params: CreateAssetParams) {
       location_lng: params.location_lng || null,
       purchase_date: params.purchase_date || null,
       purchase_cost: params.purchase_cost || null,
+      warranty_expiry: params.warranty_expiry || null,
       last_service: params.last_service || null,
       next_service: params.next_service || null,
       notes: params.notes || null,
+      image_url: params.image_url || null,
       metadata: params.metadata || null,
     };
 
@@ -209,7 +224,7 @@ export async function createAsset(params: CreateAssetParams) {
       return { data: null, error: assetError.message };
     }
 
-    // Create audit entry
+    const method = params.ingestion_method || "manual";
     const userName = user?.user_metadata?.full_name || user?.email || "Unknown";
     await supabase
       .from("asset_audits")
@@ -218,10 +233,10 @@ export async function createAsset(params: CreateAssetParams) {
         asset_id: asset.id,
         inventory_id: null,
         action: "created",
-        notes: `Asset "${params.name}" was created`,
+        notes: `Asset "${params.name}" was created via ${method} ingestion`,
         user_id: user.id,
         user_name: userName,
-        metadata: { asset_name: params.name },
+        metadata: { asset_name: params.name, method },
       });
 
     revalidatePath("/dashboard/assets");
@@ -264,6 +279,7 @@ export async function updateAsset(assetId: string, updates: UpdateAssetParams) {
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.assigned_to !== undefined) updateData.assigned_to = updates.assigned_to;
     if (updates.serial_number !== undefined) updateData.serial_number = updates.serial_number;
+    if (updates.barcode !== undefined) updateData.barcode = updates.barcode;
     if (updates.make !== undefined) updateData.make = updates.make;
     if (updates.model !== undefined) updateData.model = updates.model;
     if (updates.year !== undefined) updateData.year = updates.year;
@@ -272,9 +288,11 @@ export async function updateAsset(assetId: string, updates: UpdateAssetParams) {
     if (updates.location_lng !== undefined) updateData.location_lng = updates.location_lng;
     if (updates.purchase_date !== undefined) updateData.purchase_date = updates.purchase_date;
     if (updates.purchase_cost !== undefined) updateData.purchase_cost = updates.purchase_cost;
+    if (updates.warranty_expiry !== undefined) updateData.warranty_expiry = updates.warranty_expiry;
     if (updates.last_service !== undefined) updateData.last_service = updates.last_service;
     if (updates.next_service !== undefined) updateData.next_service = updates.next_service;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
+    if (updates.image_url !== undefined) updateData.image_url = updates.image_url;
     if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
 
     updateData.updated_at = new Date().toISOString();
@@ -379,11 +397,13 @@ export async function updateInventoryItem(itemId: string, updates: UpdateInvento
     const updateData: any = {};
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.sku !== undefined) updateData.sku = updates.sku;
+    if (updates.barcode !== undefined) updateData.barcode = updates.barcode;
     if (updates.category !== undefined) updateData.category = updates.category;
     if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
     if (updates.min_quantity !== undefined) updateData.min_quantity = updates.min_quantity;
     if (updates.unit_cost !== undefined) updateData.unit_cost = updates.unit_cost;
     if (updates.location !== undefined) updateData.location = updates.location;
+    if (updates.bin_location !== undefined) updateData.bin_location = updates.bin_location;
     if (updates.supplier !== undefined) updateData.supplier = updates.supplier;
     if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
 
@@ -466,11 +486,13 @@ export async function createInventoryItem(params: CreateInventoryItemParams) {
       organization_id: params.organization_id,
       name: params.name,
       sku: params.sku || null,
+      barcode: params.barcode || null,
       category: params.category || null,
       quantity,
       min_quantity: minQuantity,
       unit_cost: params.unit_cost || null,
       location: params.location || null,
+      bin_location: params.bin_location || null,
       stock_level: stockLevel,
       supplier: params.supplier || null,
       metadata: params.metadata || null,
@@ -485,6 +507,21 @@ export async function createInventoryItem(params: CreateInventoryItemParams) {
     if (itemError) {
       return { data: null, error: itemError.message };
     }
+
+    const method = params.ingestion_method || "manual";
+    const userName = user?.user_metadata?.full_name || user?.email || "Unknown";
+    await supabase
+      .from("asset_audits")
+      .insert({
+        organization_id: params.organization_id,
+        asset_id: null,
+        inventory_id: item.id,
+        action: "created",
+        notes: `Stock item "${params.name}" (qty: ${quantity}) added via ${method}`,
+        user_id: user.id,
+        user_name: userName,
+        metadata: { item_name: params.name, quantity, method },
+      });
 
     revalidatePath("/dashboard/assets");
     return { data: item, error: null };
@@ -647,6 +684,66 @@ export async function consumeInventory(
     return { data, error: null };
   } catch (error: any) {
     return { data: null, error: error.message || "Failed to consume inventory" };
+  }
+}
+
+/**
+ * Scan lookup — resolve barcode/QR to an existing asset or inventory item
+ */
+export async function scanLookup(orgId: string, barcode: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    // Check assets first
+    const { data: asset } = await supabase
+      .from("assets")
+      .select("id, name, category, status, serial_number, barcode")
+      .eq("organization_id", orgId)
+      .or(`barcode.eq.${barcode},serial_number.eq.${barcode}`)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (asset) {
+      return { data: { type: "asset" as const, item: asset }, error: null };
+    }
+
+    // Check inventory
+    const { data: stock } = await supabase
+      .from("inventory_items")
+      .select("id, name, sku, barcode, quantity, min_quantity")
+      .eq("organization_id", orgId)
+      .or(`barcode.eq.${barcode},sku.eq.${barcode}`)
+      .maybeSingle();
+
+    if (stock) {
+      return { data: { type: "stock" as const, item: stock }, error: null };
+    }
+
+    return { data: { type: "not_found" as const, barcode }, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Scan lookup failed" };
+  }
+}
+
+/**
+ * Get audit trail for a specific entity (asset or inventory item)
+ */
+export async function getEntityAudits(entityId: string, entityType: "asset" | "inventory") {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+    const column = entityType === "asset" ? "asset_id" : "inventory_id";
+
+    const { data: audits, error } = await supabase
+      .from("asset_audits")
+      .select("*")
+      .eq(column, entityId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) return { data: null, error: error.message };
+    return { data: audits || [], error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message || "Failed to fetch entity audits" };
   }
 }
 
