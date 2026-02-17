@@ -357,3 +357,43 @@ img, video, svg, canvas {
   border-radius: 12px !important;
   opacity: 1 !important;
 }
+
+/* ── Schedule: "Tactical Timeline" ─────────────────── */
+
+@keyframes laser-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(16, 185, 129, 0.4), 0 0 12px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.3); }
+}
+
+@keyframes backlog-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-laser-pulse {
+  animation: laser-pulse 2s ease-in-out infinite;
+}
+
+.animate-backlog-idle {
+  animation: backlog-idle 3s ease-in-out infinite;
+}
+
+.schedule-block-hover {
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out, z-index 0ms;
+}
+
+.schedule-block-hover:hover {
+  transform: scale(1.02);
+  z-index: 30 !important;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.tech-avatar-grayscale {
+  filter: grayscale(100%) brightness(0.7);
+  transition: filter 200ms ease-out;
+}
+
+.group:hover .tech-avatar-grayscale,
+.tech-avatar-grayscale:hover {
+  filter: grayscale(0%) brightness(1);
+}

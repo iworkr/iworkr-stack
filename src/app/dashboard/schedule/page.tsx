@@ -23,6 +23,7 @@ import {
   Navigation,
   Grip,
   GripVertical,
+  Inbox,
 } from "lucide-react";
 import { type ScheduleBlock, type Technician } from "@/lib/data";
 import { useScheduleStore, type ViewScale } from "@/lib/schedule-store";
@@ -42,34 +43,32 @@ const RESOURCE_COL_W = 200;
 const ROW_H = 80;
 const HOUR_W = 120;
 
-const statusColorMap: Record<string, { bg: string; border: string; text: string; accent: string; dot: string }> = {
+/* ── Glass & Spine Status Palette ──────────────────────────── */
+
+const statusColorMap: Record<string, { spine: string; dot: string; label: string; text: string }> = {
   scheduled: {
-    bg: "bg-[rgba(0,230,118,0.06)]",
-    border: "border-[rgba(0,230,118,0.2)]",
-    text: "text-[#00E676]",
-    accent: "bg-[#00E676]",
-    dot: "bg-[#00E676]",
+    spine: "bg-sky-500",
+    dot: "bg-sky-400",
+    label: "text-sky-400",
+    text: "text-sky-300",
   },
   en_route: {
-    bg: "bg-amber-500/8",
-    border: "border-amber-500/25",
-    text: "text-amber-200",
-    accent: "bg-amber-500",
+    spine: "bg-amber-500",
     dot: "bg-amber-400",
+    label: "text-amber-400",
+    text: "text-amber-300",
   },
   in_progress: {
-    bg: "bg-emerald-500/8",
-    border: "border-emerald-500/25",
-    text: "text-emerald-200",
-    accent: "bg-emerald-500",
+    spine: "bg-emerald-500",
     dot: "bg-emerald-400",
+    label: "text-emerald-400",
+    text: "text-emerald-300",
   },
   complete: {
-    bg: "bg-zinc-500/8",
-    border: "border-zinc-600/25",
+    spine: "bg-zinc-600",
+    dot: "bg-zinc-500",
+    label: "text-zinc-500",
     text: "text-zinc-400",
-    accent: "bg-zinc-500",
-    dot: "bg-zinc-400",
   },
 };
 
@@ -304,11 +303,7 @@ export default function SchedulePage() {
     }
 
     function onUp(e: MouseEvent) {
-      const dx = e.clientX - dragState!.startX;
-      const dy = e.clientY - dragState!.startY;
-
       if (dragState!.source === "block") {
-        // Existing block drag
         const block = blocks.find((b) => b.id === dragState!.blockId);
         if (!block) { resetDrag(); return; }
 
@@ -328,7 +323,7 @@ export default function SchedulePage() {
             }
           }
         } else {
-          // Resize
+          const dx = e.clientX - dragState!.startX;
           const hourDelta = dx / HOUR_W;
           const newDuration = snapToGrid(block.duration + hourDelta);
           if (newDuration !== block.duration && newDuration >= 0.25) {
@@ -337,7 +332,6 @@ export default function SchedulePage() {
           }
         }
       } else if (dragState!.source === "backlog") {
-        // Backlog-to-schedule drop
         const target = computeDropTarget(e.clientX, e.clientY);
         if (target && dragState!.backlogJob) {
           const techId = technicians[target.techIdx].id;
@@ -398,13 +392,14 @@ export default function SchedulePage() {
   const totalWidth = TOTAL_HOURS * HOUR_W;
 
   return (
-    <div className="flex h-full flex-col">
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-2.5">
+    <div className="flex h-full flex-col bg-[#050505]">
+      {/* ── Control Deck Header ──────────────────────────────── */}
+      <div className="flex items-center justify-between border-b border-white/[0.05] px-5 py-2.5">
         <div className="flex items-center gap-4">
-          <h1 className="text-[15px] font-medium text-zinc-200">Schedule</h1>
+          <h1 className="text-[15px] font-medium text-white">Schedule</h1>
 
-          <div className="flex items-center gap-1">
+          {/* Date Navigator: < [ Today, Feb 17 ] > */}
+          <div className="flex items-center gap-0.5">
             <button
               onClick={() => {
                 const d = new Date(selectedDate);
@@ -413,17 +408,17 @@ export default function SchedulePage() {
                 useScheduleStore.getState().setSelectedDate(newDate);
                 if (orgId) useScheduleStore.getState().loadFromServer(orgId, newDate);
               }}
-              className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-400"
+              className="rounded-md p-1.5 text-zinc-500 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white"
             >
               <ChevronLeft size={14} />
             </button>
-            <span className="min-w-[100px] text-center text-[13px] font-medium text-zinc-300">
+            <span className="min-w-[110px] text-center text-[13px] font-medium text-white">
               {(() => {
                 const d = new Date(selectedDate + "T12:00:00");
                 const today = new Date();
                 const isToday = d.toDateString() === today.toDateString();
                 const label = d.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
-                return isToday ? `Today — ${label}` : label;
+                return isToday ? `Today, ${label}` : label;
               })()}
             </span>
             <button
@@ -434,7 +429,7 @@ export default function SchedulePage() {
                 useScheduleStore.getState().setSelectedDate(newDate);
                 if (orgId) useScheduleStore.getState().loadFromServer(orgId, newDate);
               }}
-              className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-400"
+              className="rounded-md p-1.5 text-zinc-500 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white"
             >
               <ChevronRight size={14} />
             </button>
@@ -446,7 +441,7 @@ export default function SchedulePage() {
               useScheduleStore.getState().setSelectedDate(today);
               if (orgId) useScheduleStore.getState().loadFromServer(orgId, today);
             }}
-            className="rounded-md border border-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[11px] text-zinc-500 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+            className="rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-white/[0.1] hover:text-white"
           >
             Today
           </button>
@@ -464,21 +459,23 @@ export default function SchedulePage() {
             </span>
           )}
 
-          <div className="flex items-center rounded-md border border-[rgba(255,255,255,0.08)]">
+          {/* View Switcher — Segmented pill */}
+          <div className="flex items-center rounded-lg bg-zinc-900 p-1">
             {(["day", "week", "month"] as ViewScale[]).map((scale) => {
               const isDisabled = scale !== "day";
+              const isActive = viewScale === scale;
               return (
                 <button
                   key={scale}
                   onClick={() => !isDisabled && setViewScale(scale)}
                   disabled={isDisabled}
                   title={isDisabled ? "Coming soon" : viewScaleLabels[scale]}
-                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  className={`rounded-md px-3 py-1 text-[11px] font-medium transition-all duration-150 ${
                     isDisabled
                       ? "cursor-not-allowed text-zinc-700"
-                      : viewScale === scale
-                        ? "bg-[rgba(255,255,255,0.06)] text-zinc-200"
-                        : "text-zinc-600 hover:text-zinc-400"
+                      : isActive
+                        ? "bg-zinc-800 text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-300"
                   }`}
                 >
                   {viewScaleLabels[scale]}
@@ -487,22 +484,23 @@ export default function SchedulePage() {
             })}
           </div>
 
+          {/* Backlog toggle */}
           <button
             onClick={() => setUnscheduledDrawerOpen(!unscheduledDrawerOpen)}
-            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition-colors ${
+            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition-all duration-150 ${
               unscheduledDrawerOpen
-                ? "border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.04)] text-zinc-300"
-                : "border-[rgba(255,255,255,0.08)] text-zinc-500 hover:text-zinc-300"
+                ? "border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-400"
+                : "border-white/[0.06] text-zinc-500 hover:border-white/[0.1] hover:text-zinc-300"
             }`}
           >
             <Rows3 size={12} />
             Backlog
             {backlogJobs.length > 0 && (
-              <span className="rounded-full bg-[rgba(0,230,118,0.15)] px-1.5 py-0.5 text-[9px] font-medium text-[#00E676]">
+              <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-medium text-emerald-500">
                 {backlogJobs.length}
               </span>
             )}
-            <kbd className="ml-1 rounded bg-[rgba(255,255,255,0.06)] px-1 py-0.5 font-mono text-[8px] text-zinc-600">
+            <kbd className="ml-1 rounded bg-white/[0.04] px-1 py-0.5 font-mono text-[8px] text-zinc-600">
               U
             </kbd>
           </button>
@@ -514,16 +512,16 @@ export default function SchedulePage() {
         {/* ── Timeline area ────────────────────────────────── */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Hour headers */}
-          <div className="flex border-b border-[rgba(255,255,255,0.06)]" style={{ paddingLeft: RESOURCE_COL_W }}>
+          <div className="flex border-b border-white/[0.04]" style={{ paddingLeft: RESOURCE_COL_W }}>
             <div className="overflow-hidden" style={{ width: `calc(100% - 0px)` }}>
               <div className="flex" style={{ width: totalWidth }}>
                 {hours.map((h) => (
                   <div
                     key={h}
-                    className="flex-shrink-0 border-l border-[rgba(255,255,255,0.04)] py-2 text-center"
+                    className="flex-shrink-0 border-l border-white/[0.06] py-2 text-center"
                     style={{ width: HOUR_W }}
                   >
-                    <span className="font-mono text-[10px] text-zinc-600">
+                    <span className="font-mono text-[10px] text-zinc-500">
                       {formatHour(h)}
                     </span>
                   </div>
@@ -540,10 +538,15 @@ export default function SchedulePage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center justify-center py-24 text-center"
               >
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
-                  <Calendar size={22} strokeWidth={1} className="text-zinc-700" />
+                {/* Lottie-style empty state */}
+                <div className="relative mb-5 flex h-16 w-16 items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
+                  <div className="absolute inset-2 rounded-full border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.6s" }} />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                    <Calendar size={18} strokeWidth={1.5} className="text-zinc-600" />
+                  </div>
                 </div>
-                <h3 className="text-[15px] font-medium text-zinc-300">No schedule data</h3>
+                <h3 className="text-[14px] font-medium text-zinc-300">No schedule data</h3>
                 <p className="mt-1 text-[12px] text-zinc-600">Assign technicians and jobs to see the dispatch board.</p>
               </motion.div>
             )}
@@ -554,46 +557,49 @@ export default function SchedulePage() {
               const isDropRow = dropTarget?.techIdx === techIdx && dragState !== null;
 
               return (
-                <div
+                <motion.div
                   key={tech.id}
-                  className={`flex border-b transition-colors ${
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: techIdx * 0.03, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className={`group flex border-b transition-colors duration-150 ${
                     isDropRow
-                      ? "border-[rgba(0,230,118,0.15)] bg-[rgba(0,230,118,0.02)]"
-                      : "border-[rgba(255,255,255,0.04)]"
+                      ? "border-emerald-500/15 bg-emerald-500/[0.02]"
+                      : "border-white/[0.03]"
                   }`}
                 >
                   {/* ── Resource column (sticky left) ──────── */}
-                  <div className="sticky left-0 z-10 box-border flex h-[80px] w-[200px] shrink-0 items-center gap-3 border-r border-[rgba(255,255,255,0.06)] bg-[#050505] px-4">
+                  <div className="sticky left-0 z-10 box-border flex h-[80px] w-[200px] shrink-0 items-center gap-3 border-r border-white/[0.05] bg-[#050505] px-4">
                     <div className="relative">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400">
+                      <div className="tech-avatar-grayscale flex h-7 w-7 items-center justify-center rounded-md bg-zinc-800 text-[9px] font-medium text-zinc-400">
                         {tech.initials}
                       </div>
                       <div
-                        className={`absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full ring-2 ring-[#050505] ${
+                        className={`absolute -right-0.5 -bottom-0.5 h-[6px] w-[6px] rounded-full ring-[1.5px] ring-[#050505] ${
                           tech.status === "online"
-                            ? "bg-emerald-400"
+                            ? "bg-emerald-500"
                             : tech.status === "away"
-                              ? "bg-amber-400"
+                              ? "bg-amber-500"
                               : "bg-zinc-600"
                         }`}
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[12px] font-medium text-zinc-300">
+                      <div className="truncate text-[12px] font-medium text-zinc-300 transition-colors duration-150 group-hover:text-white">
                         {tech.name}
                       </div>
                       <div className="mt-1 flex items-center gap-1.5">
-                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-[rgba(255,255,255,0.06)]">
+                        <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/[0.04]">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${Math.min(100, capacityPct)}%` }}
-                            transition={{ duration: 0.6, delay: techIdx * 0.1, ease: "easeOut" }}
+                            transition={{ duration: 0.6, delay: techIdx * 0.08, ease: "easeOut" }}
                             className={`h-full rounded-full ${
                               capacityPct > 90
-                                ? "bg-red-500/60"
+                                ? "bg-red-500/50"
                                 : capacityPct > 70
-                                  ? "bg-amber-500/50"
-                                  : "bg-emerald-500/40"
+                                  ? "bg-amber-500/40"
+                                  : "bg-emerald-500/30"
                             }`}
                           />
                         </div>
@@ -605,38 +611,54 @@ export default function SchedulePage() {
                   {/* ── Timeline track ─────────────────────── */}
                   <div className="relative flex-1 overflow-hidden" style={{ height: ROW_H }}>
                     <div className="relative h-full" style={{ width: totalWidth }}>
-                      {/* Grid lines */}
+                      {/* Hour grid lines */}
                       {hours.map((h) => (
                         <div
                           key={h}
-                          className="absolute top-0 h-full w-px bg-[rgba(255,255,255,0.03)]"
+                          className="absolute top-0 h-full w-px bg-white/[0.06]"
                           style={{ left: hourToX(h) }}
                         />
                       ))}
+                      {/* 15-min sub-lines */}
+                      {hours.map((h) =>
+                        [0.25, 0.5, 0.75].map((q) => (
+                          <div
+                            key={`${h}-${q}`}
+                            className="absolute top-0 h-full w-px bg-white/[0.02]"
+                            style={{ left: hourToX(h + q) }}
+                          />
+                        ))
+                      )}
 
                       {/* Non-working hours shading */}
                       <div
-                        className="absolute top-0 h-full bg-[rgba(255,255,255,0.015)]"
+                        className="absolute top-0 h-full bg-white/[0.01]"
                         style={{
                           left: 0,
                           width: hourToX(WORK_START),
                           backgroundImage:
-                            "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.02) 4px, rgba(255,255,255,0.02) 5px)",
+                            "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.015) 4px, rgba(255,255,255,0.015) 5px)",
                         }}
                       />
                       <div
-                        className="absolute top-0 h-full bg-[rgba(255,255,255,0.015)]"
+                        className="absolute top-0 h-full bg-white/[0.01]"
                         style={{
                           left: hourToX(WORK_END),
                           width: totalWidth - hourToX(WORK_END),
                           backgroundImage:
-                            "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.02) 4px, rgba(255,255,255,0.02) 5px)",
+                            "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.015) 4px, rgba(255,255,255,0.015) 5px)",
                         }}
                       />
 
-                      {/* Now line */}
+                      {/* ── "Laser" Now Line ─────────────────── */}
                       <div className="absolute top-0 z-20 h-full" style={{ left: nowX }}>
-                        <div className="h-full w-px bg-red-500/50" />
+                        <div className="h-full w-px bg-emerald-500/60 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                        {/* Glowing head */}
+                        {techIdx === 0 && (
+                          <div
+                            className="absolute -top-1.5 -left-[4px] h-[9px] w-[9px] rounded-full bg-emerald-500 animate-laser-pulse"
+                          />
+                        )}
                       </div>
 
                       {/* Drop target highlight (snap guide) */}
@@ -644,7 +666,7 @@ export default function SchedulePage() {
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="absolute top-1 z-[15] rounded-md border-2 border-dashed border-[#00E676]/40 bg-[rgba(0,230,118,0.06)]"
+                          className="absolute top-1 z-[15] rounded-md border-2 border-dashed border-emerald-500/30 bg-emerald-500/[0.04]"
                           style={{
                             left: hourToX(dropTarget.hour),
                             width: ghostDuration * HOUR_W,
@@ -652,7 +674,7 @@ export default function SchedulePage() {
                           }}
                         >
                           <div className="flex h-full items-center justify-center">
-                            <span className="text-[10px] font-medium text-[#00E676]/60">
+                            <span className="text-[10px] font-medium text-emerald-500/50">
                               {formatHour(dropTarget.hour)}
                             </span>
                           </div>
@@ -668,12 +690,12 @@ export default function SchedulePage() {
                           const evtLeft = hourToX(evtStart);
                           const evtWidth = evtDuration * HOUR_W;
                           const typeColor = evt.type === "break"
-                            ? "bg-zinc-500/10 border-zinc-600/30"
+                            ? "bg-zinc-500/8 border-zinc-700/30"
                             : evt.type === "meeting"
-                              ? "bg-[rgba(0,230,118,0.08)] border-[rgba(0,230,118,0.2)]"
+                              ? "bg-emerald-500/6 border-emerald-500/15"
                               : evt.type === "personal"
-                                ? "bg-teal-500/10 border-teal-500/25"
-                                : "bg-red-500/10 border-red-500/25";
+                                ? "bg-teal-500/6 border-teal-500/15"
+                                : "bg-red-500/6 border-red-500/15";
 
                           return (
                             <motion.div
@@ -689,14 +711,14 @@ export default function SchedulePage() {
                               }}
                             >
                               <div className="flex h-full items-center justify-center truncate px-2">
-                                <span className="truncate text-[9px] text-zinc-500">{evt.title}</span>
+                                <span className="truncate text-[9px] text-zinc-600">{evt.title}</span>
                               </div>
                             </motion.div>
                           );
                         })
                       }
 
-                      {/* Job Blocks */}
+                      {/* ── Job Blocks (Glass & Spine) ────────── */}
                       {techBlocks.map((block, i) => {
                         const colors = statusColorMap[block.status] || statusColorMap.scheduled;
                         const isDragging = dragState?.source === "block" && dragState?.blockId === block.id;
@@ -716,12 +738,13 @@ export default function SchedulePage() {
 
                         return (
                           <div key={block.id}>
+                            {/* Travel time block */}
                             {travelW > 0 && !isDragging && (
                               <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                transition={{ delay: techIdx * 0.05 + i * 0.03 + 0.1 }}
-                                className="absolute top-3 h-[calc(100%-24px)] rounded-md border border-dashed border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]"
+                                transition={{ delay: techIdx * 0.04 + i * 0.03 + 0.1 }}
+                                className="absolute top-3 h-[calc(100%-24px)] rounded-md border border-dashed border-white/[0.04] bg-white/[0.01]"
                                 style={{
                                   left: hourToX(block.startHour) - travelW,
                                   width: travelW,
@@ -733,6 +756,7 @@ export default function SchedulePage() {
                               </motion.div>
                             )}
 
+                            {/* The Block — Glass & Spine */}
                             <motion.div
                               initial={{ opacity: 0, scaleX: 0 }}
                               animate={{
@@ -741,13 +765,13 @@ export default function SchedulePage() {
                                 zIndex: isPeeking ? 25 : 10,
                               }}
                               transition={{
-                                delay: isDragging ? 0 : techIdx * 0.05 + i * 0.03,
+                                delay: isDragging ? 0 : techIdx * 0.04 + i * 0.03,
                                 duration: 0.3,
                                 ease: [0.16, 1, 0.3, 1],
                               }}
-                              className={`absolute top-2 origin-left cursor-grab rounded-md border-r border-t border-b transition-shadow ${colors.bg} ${
-                                block.conflict ? "border-red-500/60" : colors.border
-                              } ${isPeeking ? "ring-1 ring-white/20" : ""}`}
+                              className={`schedule-block-hover absolute top-2 origin-left cursor-grab overflow-hidden rounded-md border border-white/[0.06] bg-[#1A1A1A] ${
+                                block.conflict ? "border-red-500/40" : ""
+                              } ${isPeeking ? "ring-1 ring-white/15" : ""}`}
                               style={{
                                 left: blockLeft,
                                 width: Math.max(24, blockWidth),
@@ -766,24 +790,24 @@ export default function SchedulePage() {
                                 if (e.button === 0) handleBlockDragStart(e, block.id, "move");
                               }}
                             >
-                              <div className={`absolute left-0 top-0 h-full w-[3px] rounded-l-md ${colors.accent}`} />
-                              <div className="flex h-full flex-col justify-center truncate pl-2.5 pr-2">
-                                <div className="flex items-center gap-1">
-                                  <span className="font-mono text-[8px] text-zinc-600">{block.jobId}</span>
-                                  <span className={`truncate text-[10px] font-medium ${colors.text}`}>{block.client}</span>
-                                </div>
-                                <div className="flex items-center gap-1 truncate">
-                                  <Wrench size={8} className="shrink-0 text-zinc-600" />
-                                  <span className="truncate text-[9px] text-zinc-500">{block.title}</span>
-                                </div>
+                              {/* Status Spine — 3px left bar */}
+                              <div className={`absolute left-0 top-0 h-full w-[3px] ${colors.spine}`} />
+                              <div className="flex h-full flex-col justify-center truncate pl-3 pr-2">
+                                {blockWidth > 60 && (
+                                  <span className="font-mono text-[9px] text-zinc-500">
+                                    {formatHour(block.startHour)} — {formatHour(block.startHour + block.duration)}
+                                  </span>
+                                )}
+                                <span className="truncate text-[11px] font-medium text-white">{block.title}</span>
                                 {blockWidth > 80 && (
-                                  <div className="flex items-center gap-1 truncate">
-                                    <MapPin size={7} className="shrink-0 text-zinc-700" />
-                                    <span className="truncate text-[8px] text-zinc-600">{block.location}</span>
-                                  </div>
+                                  <span className="truncate text-[10px] text-zinc-400">{block.client}</span>
+                                )}
+                                {blockWidth > 120 && block.location && (
+                                  <span className="truncate text-[9px] text-zinc-600">{block.location}</span>
                                 )}
                               </div>
 
+                              {/* Conflict indicator */}
                               {block.conflict && (
                                 <motion.div
                                   animate={{ scale: [1, 1.3, 1] }}
@@ -792,6 +816,7 @@ export default function SchedulePage() {
                                 />
                               )}
 
+                              {/* Resize handle */}
                               <div
                                 className="absolute top-0 right-0 h-full w-2 cursor-ew-resize opacity-0 transition-opacity hover:opacity-100"
                                 onMouseDown={(e) => {
@@ -804,6 +829,7 @@ export default function SchedulePage() {
                                 </div>
                               </div>
 
+                              {/* Peek Card */}
                               <AnimatePresence>
                                 {isPeeking && !isDragging && (
                                   <JobPeekCard
@@ -822,13 +848,13 @@ export default function SchedulePage() {
                       })}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
         </div>
 
-        {/* ── Unscheduled Drawer ────────────────────────────── */}
+        {/* ── Backlog Drawer (from right) ────────────────────── */}
         <AnimatePresence>
           {unscheduledDrawerOpen && (
             <motion.div
@@ -836,18 +862,18 @@ export default function SchedulePage() {
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 35 }}
-              className="shrink-0 overflow-hidden border-l border-[rgba(255,255,255,0.06)] bg-[#050505]"
+              className="shrink-0 overflow-hidden border-l border-white/[0.05] bg-[#080808]"
             >
               <div className="flex h-full w-[280px] flex-col">
-                <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-2.5">
+                <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-2.5">
                   <div className="flex items-center gap-2">
-                    <Rows3 size={13} className="text-zinc-500" />
-                    <span className="text-[13px] font-medium text-zinc-300">Backlog</span>
+                    <Rows3 size={13} strokeWidth={1.5} className="text-zinc-500" />
+                    <span className="text-[13px] font-medium text-zinc-300">Unassigned Jobs</span>
                     <span className="text-[10px] text-zinc-600">{backlogJobs.length}</span>
                   </div>
                   <button
                     onClick={() => setUnscheduledDrawerOpen(false)}
-                    className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-400"
+                    className="rounded-md p-1 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-400"
                   >
                     <X size={13} />
                   </button>
@@ -859,7 +885,7 @@ export default function SchedulePage() {
                   </p>
                   <div className="space-y-2">
                     {backlogJobs.length > 0 ? (
-                      backlogJobs.map((item: BacklogJob) => {
+                      backlogJobs.map((item: BacklogJob, idx) => {
                         const isBeingDragged = dragState?.source === "backlog" && dragState?.backlogJob?.id === item.id;
                         return (
                           <motion.div
@@ -867,7 +893,8 @@ export default function SchedulePage() {
                             layout
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: isBeingDragged ? 0.3 : 1, x: 0 }}
-                            className="cursor-grab select-none rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 transition-colors hover:border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.04)] active:cursor-grabbing"
+                            transition={{ delay: idx * 0.03, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                            className="cursor-grab select-none rounded-lg border border-white/[0.05] bg-white/[0.02] p-3 transition-all duration-150 hover:border-white/[0.08] hover:bg-white/[0.03] active:cursor-grabbing"
                             onMouseDown={(e) => handleBacklogDragStart(e, item)}
                           >
                             <div className="flex items-start justify-between">
@@ -882,7 +909,7 @@ export default function SchedulePage() {
                                           ? "bg-orange-400"
                                           : item.priority === "medium"
                                             ? "bg-yellow-500"
-                                            : "bg-[#00E676]"
+                                            : "bg-emerald-500"
                                     }`}
                                   />
                                 </div>
@@ -914,10 +941,20 @@ export default function SchedulePage() {
                         );
                       })
                     ) : (
-                      <div className="flex flex-col items-center py-8 text-center">
-                        <Calendar size={20} className="mb-2 text-zinc-700" />
-                        <p className="text-[12px] text-zinc-600">No unscheduled jobs</p>
-                        <p className="mt-0.5 text-[10px] text-zinc-700">
+                      /* Lottie-style empty backlog */
+                      <div className="flex flex-col items-center py-10 text-center">
+                        <div className="relative mb-4 flex h-12 w-12 items-center justify-center">
+                          {/* Floating idle animation */}
+                          <div className="animate-backlog-idle">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                              <Inbox size={16} strokeWidth={1.5} className="text-zinc-600" />
+                            </div>
+                          </div>
+                          {/* Subtle rings */}
+                          <div className="absolute inset-0 rounded-full border border-white/[0.03] animate-signal-pulse" />
+                        </div>
+                        <p className="text-[12px] font-medium text-zinc-400">All jobs assigned</p>
+                        <p className="mt-0.5 text-[10px] text-zinc-600">
                           Create a job to see it here
                         </p>
                       </div>
@@ -930,36 +967,35 @@ export default function SchedulePage() {
         </AnimatePresence>
       </div>
 
-      {/* ── Drag Ghost Overlay (Portal at z-9999) ──────────── */}
+      {/* ── Drag Ghost Overlay ────────────────────────────────── */}
       {dragState && dragState.mode === "move" && (
         <div
           className="pointer-events-none fixed inset-0 z-[9999]"
           style={{ cursor: "grabbing" }}
         >
           <div
-            className="absolute rounded-lg border-2 border-[#00E676] shadow-[0_10px_30px_-10px_rgba(0,230,118,0.5)]"
+            className="absolute rounded-md border border-emerald-500/40 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.4)]"
             style={{
               left: mousePos.x - 80,
               top: mousePos.y - 24,
               width: Math.max(120, ghostDuration * HOUR_W),
               height: ROW_H - 16,
-              background: "rgba(0, 230, 118, 0.15)",
+              background: "rgba(16, 185, 129, 0.08)",
               backdropFilter: "blur(4px)",
             }}
           >
-            <div className="absolute left-0 top-0 h-full w-[3px] rounded-l-md bg-[#00E676]" />
+            {/* Spine */}
+            <div className="absolute left-0 top-0 h-full w-[3px] rounded-l-md bg-emerald-500" />
             <div className="flex h-full flex-col justify-center truncate pl-3 pr-2">
               {dragState.source === "backlog" && dragState.backlogJob ? (
                 <>
-                  <div className="flex items-center gap-1">
-                    <span className="font-mono text-[8px] text-[#00E676]/60">
-                      {dragState.backlogJob.display_id}
-                    </span>
-                  </div>
-                  <span className="truncate text-[11px] font-medium text-[#00E676]">
+                  <span className="font-mono text-[8px] text-emerald-500/50">
+                    {dragState.backlogJob.display_id}
+                  </span>
+                  <span className="truncate text-[11px] font-medium text-white">
                     {dragState.backlogJob.title}
                   </span>
-                  <span className="text-[9px] text-zinc-400">
+                  <span className="text-[9px] text-zinc-500">
                     {formatDuration((dragState.backlogJob.estimated_duration_minutes || 60) / 60)}
                   </span>
                 </>
@@ -969,14 +1005,8 @@ export default function SchedulePage() {
                   if (!block) return null;
                   return (
                     <>
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono text-[8px] text-[#00E676]/60">{block.jobId}</span>
-                        <span className="truncate text-[10px] font-medium text-[#00E676]">{block.client}</span>
-                      </div>
-                      <div className="flex items-center gap-1 truncate">
-                        <Wrench size={8} className="shrink-0 text-[#00E676]/50" />
-                        <span className="truncate text-[9px] text-zinc-400">{block.title}</span>
-                      </div>
+                      <span className="truncate text-[11px] font-medium text-white">{block.title}</span>
+                      <span className="truncate text-[9px] text-zinc-500">{block.client}</span>
                     </>
                   );
                 })()
@@ -999,7 +1029,7 @@ export default function SchedulePage() {
   );
 }
 
-/* ── Job Peek Card Component ──────────────────────────────── */
+/* ── Job Peek Card Component (Linear-style Popover) ────────── */
 
 function JobPeekCard({
   block,
@@ -1015,23 +1045,24 @@ function JobPeekCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9, y: -8 }}
+      initial={{ opacity: 0, scale: 0.95, y: -8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9, y: -8 }}
+      exit={{ opacity: 0, scale: 0.95, y: -8 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      className="absolute top-full left-0 z-50 mt-2 w-[320px] overflow-hidden rounded-xl border border-[rgba(255,255,255,0.1)] bg-zinc-950/90 shadow-2xl backdrop-blur-xl"
+      className="absolute top-full left-0 z-50 mt-2 w-[320px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0A0A0A] shadow-2xl backdrop-blur-xl"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-2.5">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-2.5">
         <button
           onClick={onOpenFull}
-          className="font-mono text-[12px] text-zinc-400 transition-colors hover:text-zinc-200"
+          className="font-mono text-[12px] text-zinc-400 transition-colors hover:text-white"
         >
           {block.jobId}
         </button>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-full border border-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[10px]">
+          <span className="flex items-center gap-1.5 rounded-full border border-white/[0.06] px-2 py-0.5 text-[10px]">
             <motion.span
               animate={
                 block.status === "in_progress" || block.status === "en_route"
@@ -1041,7 +1072,7 @@ function JobPeekCard({
               transition={{ duration: 1.5, repeat: Infinity }}
               className={`h-1.5 w-1.5 rounded-full ${colors.dot}`}
             />
-            <span className={colors.text}>{statusLabels[block.status]}</span>
+            <span className={colors.label}>{statusLabels[block.status]}</span>
           </span>
           <button
             onClick={onClose}
@@ -1052,9 +1083,10 @@ function JobPeekCard({
         </div>
       </div>
 
+      {/* Mini map */}
       <div className="relative h-[100px] bg-[#080808]">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="absolute inset-0 opacity-[0.03]">
+          <div className="absolute inset-0 opacity-[0.02]">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-white" style={{ top: `${i * 20}%` }} />
             ))}
@@ -1068,13 +1100,13 @@ function JobPeekCard({
             transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 15 }}
             className="relative z-10"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
               <MapPin size={10} className="text-white" />
             </div>
             <motion.div
               animate={{ scale: [1, 2, 1], opacity: [0.3, 0, 0.3] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="absolute inset-0 rounded-full border border-[#00E676]"
+              className="absolute inset-0 rounded-full border border-emerald-500"
             />
           </motion.div>
         </div>
@@ -1083,7 +1115,7 @@ function JobPeekCard({
             if (!block.location) { addToast("No location set for this job"); return; }
             window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}`, "_blank");
           }}
-          className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-zinc-200"
+          className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-white"
         >
           <Navigation size={9} />
           Directions
@@ -1093,7 +1125,8 @@ function JobPeekCard({
         </div>
       </div>
 
-      <div className="space-y-0 border-t border-[rgba(255,255,255,0.06)] p-4">
+      {/* Details */}
+      <div className="space-y-0 border-t border-white/[0.04] p-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <div className="text-[9px] tracking-wider text-zinc-600 uppercase">Time</div>
@@ -1126,12 +1159,13 @@ function JobPeekCard({
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.06)] px-4 py-2.5">
+      {/* Actions */}
+      <div className="flex items-center justify-between border-t border-white/[0.04] px-4 py-2.5">
         <motion.button
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={onOpenFull}
-          className="flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[#00C853]"
+          className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20"
         >
           <ExternalLink size={11} />
           Open Mission Control
@@ -1139,14 +1173,14 @@ function JobPeekCard({
         <div className="flex items-center gap-1">
           <button
             onClick={() => addToast("No phone number configured")}
-            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
             title="Call"
           >
             <Phone size={12} />
           </button>
           <button
             onClick={() => addToast("No phone number configured")}
-            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
             title="Message"
           >
             <MessageSquare size={12} />
@@ -1156,7 +1190,7 @@ function JobPeekCard({
               navigator.clipboard?.writeText(block.jobId);
               addToast(`${block.jobId} copied`);
             }}
-            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
             title="Copy link"
           >
             <Link2 size={12} />
@@ -1166,7 +1200,7 @@ function JobPeekCard({
               if (!block.location) { addToast("No location set for this job"); return; }
               window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}`, "_blank");
             }}
-            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
             title="Directions"
           >
             <Navigation size={12} />
