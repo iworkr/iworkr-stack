@@ -30,6 +30,8 @@ import { useFinanceStore, type FinanceTab } from "@/lib/finance-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import { useShellStore } from "@/lib/shell-store";
+import { getQuotes, sendQuote, type Quote } from "@/app/actions/quotes";
+import { useOrg } from "@/lib/hooks/use-org";
 
 /* ── Status config ────────────────────────────────────────── */
 
@@ -44,6 +46,7 @@ const statusConfig: Record<string, { label: string; dot: string; text: string; b
 const tabs: { id: FinanceTab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "invoices", label: "Invoices" },
+  { id: "quotes", label: "Quotes" },
   { id: "payouts", label: "Payouts" },
 ];
 
@@ -85,12 +88,25 @@ export default function FinancePage() {
   const { addToast } = useToastStore();
   const { setCreateInvoiceModalOpen } = useShellStore();
 
+  const { orgId } = useOrg();
   const [search, setSearch] = useState("");
   const [ctxMenu, setCtxMenu] = useState<{ open: boolean; x: number; y: number; invoiceId: string }>({
     open: false, x: 0, y: 0, invoiceId: "",
   });
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [expandedPayout, setExpandedPayout] = useState<string | null>(null);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "quotes" && orgId && quotes.length === 0) {
+      setQuotesLoading(true);
+      getQuotes(orgId).then((res) => {
+        if (res.data) setQuotes(res.data);
+        setQuotesLoading(false);
+      });
+    }
+  }, [activeTab, orgId, quotes.length]);
 
   const dailyRevenue = storeDailyRevenue;
   const payouts = storePayouts;
@@ -214,14 +230,25 @@ export default function FinancePage() {
                 />
               </div>
             )}
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setCreateInvoiceModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200"
-            >
-              <Plus size={12} />
-              New Invoice
-            </motion.button>
+            {activeTab === "quotes" ? (
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => router.push("/dashboard/finance/quotes/new")}
+                className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-[#00E676] to-emerald-600 px-2.5 py-1 text-[12px] font-medium text-black shadow-[0_0_20px_-5px_rgba(0,230,118,0.3)]"
+              >
+                <Plus size={12} />
+                New Quote
+              </motion.button>
+            ) : (
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setCreateInvoiceModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200"
+              >
+                <Plus size={12} />
+                New Invoice
+              </motion.button>
+            )}
           </div>
         </div>
 
@@ -630,6 +657,100 @@ export default function FinancePage() {
                     );
                   })}
                 </AnimatePresence>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ════════════════════════════════════════════════ */}
+          {/* QUOTES TAB                                       */}
+          {/* ════════════════════════════════════════════════ */}
+          {activeTab === "quotes" && (
+            <motion.div
+              key="quotes"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Column headers */}
+              <div className="flex items-center border-b border-[rgba(255,255,255,0.06)] px-5 py-2">
+                <div className="w-24 px-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">Quote</div>
+                <div className="w-24 px-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">Status</div>
+                <div className="min-w-0 flex-1 px-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">Client</div>
+                <div className="w-32 px-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">Valid Until</div>
+                <div className="w-28 px-2 text-right text-[11px] font-medium tracking-wider text-zinc-600 uppercase">Amount</div>
+                <div className="w-8" />
+              </div>
+
+              {/* Rows */}
+              <div className="flex-1">
+                {quotes.length === 0 && !quotesLoading ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center justify-center py-20"
+                  >
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)]">
+                      <FileText size={20} className="text-zinc-600" />
+                    </div>
+                    <h3 className="mb-1 text-[14px] font-medium text-zinc-400">No quotes yet</h3>
+                    <p className="mb-4 text-[12px] text-zinc-600">Create your first quote to start the sales pipeline</p>
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => router.push("/dashboard/finance/quotes/new")}
+                      className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-[#00E676] to-emerald-600 px-3 py-1.5 text-[12px] font-medium text-black shadow-[0_0_20px_-5px_rgba(0,230,118,0.3)]"
+                    >
+                      <Plus size={12} />
+                      New Quote
+                    </motion.button>
+                  </motion.div>
+                ) : (
+                  <AnimatePresence>
+                    {quotes.map((q, i) => {
+                      const qStatusConfig: Record<string, { label: string; dot: string; text: string; bg: string }> = {
+                        draft: { label: "Draft", dot: "bg-zinc-500", text: "text-zinc-400", bg: "bg-zinc-500/10" },
+                        sent: { label: "Sent", dot: "bg-sky-400", text: "text-sky-400", bg: "bg-sky-500/10" },
+                        viewed: { label: "Viewed", dot: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-500/10" },
+                        accepted: { label: "Approved", dot: "bg-[#00E676]", text: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
+                        rejected: { label: "Declined", dot: "bg-red-400", text: "text-red-400", bg: "bg-red-500/10" },
+                        expired: { label: "Expired", dot: "bg-zinc-600", text: "text-zinc-600", bg: "bg-zinc-600/10" },
+                      };
+                      const sc = qStatusConfig[q.status] || qStatusConfig.draft;
+
+                      return (
+                        <motion.div
+                          key={q.id}
+                          layout
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ delay: i * 0.015, duration: 0.2 }}
+                          onClick={() => router.push(`/dashboard/finance/quotes/${q.id}`)}
+                          className="group flex cursor-pointer items-center border-b border-[rgba(255,255,255,0.04)] px-5 transition-colors hover:bg-[rgba(255,255,255,0.02)]"
+                          style={{ height: 48 }}
+                        >
+                          <div className="w-24 px-2 font-mono text-[11px] text-zinc-500">{q.display_id}</div>
+                          <div className="w-24 px-2">
+                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] ${sc.bg} ${sc.text}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
+                              {sc.label}
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1 px-2 text-[12px] text-zinc-400">{q.client_name || "—"}</div>
+                          <div className="w-32 px-2 text-[11px] text-zinc-600">
+                            {q.valid_until ? new Date(q.valid_until).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                          </div>
+                          <div className="w-28 px-2 text-right text-[12px] font-medium text-zinc-300">
+                            ${Number(q.total).toLocaleString()}
+                          </div>
+                          <div className="w-8 text-right">
+                            <ArrowRight size={12} className="text-zinc-700 opacity-0 transition-opacity group-hover:opacity-100" />
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
                 )}
               </div>
             </motion.div>

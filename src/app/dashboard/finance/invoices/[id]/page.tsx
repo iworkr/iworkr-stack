@@ -28,6 +28,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu
 import { downloadInvoicePDF } from "@/lib/pdf/generate-invoice";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getOrgSettings } from "@/app/actions/finance";
+import { ForensicTimeline } from "@/components/finance/forensic-timeline";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -545,6 +546,14 @@ export default function InvoiceDetailPage() {
                   })}
                 </div>
               </div>
+            </div>
+
+            {/* Forensic Audit Trail */}
+            <div className="mb-6">
+              <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                Audit Trail
+              </h4>
+              <ForensicTimeline docType="invoice" docId={invoice.dbId || invoice.id} />
             </div>
 
             {/* Payment Link */}
