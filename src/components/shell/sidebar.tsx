@@ -36,6 +36,8 @@ import { useInboxStore } from "@/lib/inbox-store";
 import { useState } from "react";
 import { Shimmer, ShimmerTeamRow } from "@/components/ui/shimmer";
 import { useTheme } from "@/components/providers/theme-provider";
+import { useBillingStore } from "@/lib/billing-store";
+import { ProBadge } from "@/components/monetization/pro-badge";
 
 /* ── Data ─────────────────────────────────────────────── */
 
@@ -68,11 +70,13 @@ function NavLink({
   active,
   collapsed,
   badge,
+  proBadge,
 }: {
   item: (typeof navItems)[0];
   active: boolean;
   collapsed: boolean;
   badge?: number;
+  proBadge?: boolean;
 }) {
   const Icon = item.icon;
   const ref = useRef<HTMLAnchorElement>(null);
@@ -134,14 +138,17 @@ function NavLink({
           >
             <span>{item.label}</span>
             <span className="flex items-center gap-1.5">
+              {proBadge && <ProBadge size="xs" />}
               {badge && badge > 0 && (
                 <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500/15 px-1 text-[9px] font-medium text-red-400">
                   {badge}
                 </span>
               )}
-              <kbd className="hidden rounded border border-[rgba(255,255,255,0.06)] px-1 py-0.5 font-mono text-[9px] text-zinc-600 group-hover:inline-block">
-                {item.shortcut}
-              </kbd>
+              {!proBadge && (
+                <kbd className="hidden rounded border border-[rgba(255,255,255,0.06)] px-1 py-0.5 font-mono text-[9px] text-zinc-600 group-hover:inline-block">
+                  {item.shortcut}
+                </kbd>
+              )}
             </span>
           </motion.span>
         )}
@@ -166,6 +173,17 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
   const { currentOrg } = useAuthStore();
   const { orgId } = useOrg();
   const companyName = currentOrg?.name || onboardingName || "";
+  const { subscription, loadBilling } = useBillingStore();
+  const planKey = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || "free";
+  const isFree = planKey === "free";
+
+  // Load billing on org change
+  useEffect(() => {
+    if (orgId) loadBilling(orgId);
+  }, [orgId, loadBilling]);
+
+  // Nav items that require a paid plan — show PRO badge when on free tier
+  const gatedNavIds = new Set(["nav_automations", "nav_integrations"]);
 
   // Live unread count for inbox badge
   const unreadCount = useInboxStore((s) => s.items.filter(i => !i.read && !i.archived).length);
@@ -309,6 +327,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
               active={isActive(item.href)}
               collapsed={sidebarCollapsed}
               badge={item.id === "nav_inbox" ? unreadCount : undefined}
+              proBadge={isFree && gatedNavIds.has(item.id)}
             />
           ))}
         </div>

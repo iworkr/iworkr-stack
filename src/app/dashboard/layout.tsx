@@ -18,6 +18,7 @@ const CreateJobModal = dynamic(() => import("@/components/app/create-job-modal")
 const CreateClientModal = dynamic(() => import("@/components/app/create-client-modal").then((m) => m.CreateClientModal), { ssr: false });
 const CreateInvoiceModal = dynamic(() => import("@/components/app/create-invoice-modal").then((m) => m.CreateInvoiceModal), { ssr: false });
 const KeyboardShortcuts = dynamic(() => import("@/components/app/keyboard-shortcuts").then((m) => m.KeyboardShortcuts), { ssr: false });
+const UpgradeCelebration = dynamic(() => import("@/components/monetization/upgrade-celebration").then((m) => m.UpgradeCelebration), { ssr: false });
 
 export default function DashboardLayout({
   children,
@@ -223,6 +224,7 @@ export default function DashboardLayout({
         onClose={() => setShortcutsOpen(false)}
       />
       <ActionToastContainer />
+      <UpgradeCelebration />
     </div>
     </HydrationGate>
   );
