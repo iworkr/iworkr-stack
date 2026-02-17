@@ -1,14 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Camera } from "lucide-react";
 import { SaveToast, useSaveToast } from "@/components/settings/save-toast";
+import { useAuthStore } from "@/lib/auth-store";
+import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
 
 export default function ProfilePage() {
   const { visible, showSaved } = useSaveToast();
-  const [name, setName] = useState("Mike Thompson");
-  const [username, setUsername] = useState("mike");
-  const [email] = useState("mike@apexplumbing.com.au");
+  const { profile, currentOrg, currentMembership } = useAuthStore();
+
+  const fullName = profile?.full_name || "";
+  const userEmail = profile?.email || "";
+  const orgName = currentOrg?.name || "";
+  const roleName = currentMembership?.role
+    ? currentMembership.role.charAt(0).toUpperCase() + currentMembership.role.slice(1)
+    : "";
+
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    if (fullName && !name) {
+      setName(fullName);
+      setUsername(fullName.split(" ")[0]?.toLowerCase() || "");
+    }
+  }, [fullName, name]);
+
+  const initials = fullName
+    ? fullName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    : "";
 
   return (
     <>
@@ -19,16 +40,24 @@ export default function ProfilePage() {
       {/* Avatar */}
       <div className="mb-8 flex items-center gap-5">
         <div className="relative">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-lg font-medium text-zinc-300">
-            MT
-          </div>
+          {initials ? (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-lg font-medium text-zinc-300">
+              {initials}
+            </div>
+          ) : (
+            <ShimmerCircle className="h-16 w-16" />
+          )}
           <button className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.15)] bg-[#141414] text-zinc-400 transition-colors hover:text-zinc-200">
             <Camera size={11} />
           </button>
         </div>
         <div>
-          <div className="text-[14px] font-medium text-zinc-200">Mike Thompson</div>
-          <div className="text-[12px] text-zinc-600">Admin · Apex Plumbing</div>
+          <div className="text-[14px] font-medium text-zinc-200">
+            {fullName || <Shimmer className="h-4 w-32" />}
+          </div>
+          <div className="text-[12px] text-zinc-600">
+            {roleName && orgName ? `${roleName} · ${orgName}` : <Shimmer className="h-3 w-28" />}
+          </div>
         </div>
       </div>
 
@@ -65,7 +94,7 @@ export default function ProfilePage() {
             Email
           </label>
           <div className="flex max-w-sm items-center rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[13px] text-zinc-500">
-            {email}
+            {userEmail || <Shimmer className="h-3 w-40" />}
           </div>
           <p className="mt-1 text-[11px] text-zinc-600">
             Contact an admin to change your email address.

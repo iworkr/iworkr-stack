@@ -8,6 +8,7 @@ import { useShellStore } from "@/lib/shell-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { type InboxItemType } from "@/lib/data";
 import { WidgetShell } from "./widget-shell";
+import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
 
 const typeIcons: Record<InboxItemType, typeof Bell> = {
   job_assigned: Bell,
@@ -35,6 +36,7 @@ export function WidgetInbox() {
   const router = useRouter();
   const { openSlideOver } = useShellStore();
   const { items, markAsRead, archive } = useInboxStore();
+  const inboxLoaded = useInboxStore((s) => s.loaded);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Get 5 most recent unread items (or all if fewer)
@@ -68,8 +70,21 @@ export function WidgetInbox() {
         </button>
       }
     >
-      {/* Empty state */}
-      {unreadItems.length === 0 ? (
+      {/* Loading shimmer */}
+      {!inboxLoaded && items.length === 0 ? (
+        <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-2.5 px-4 py-2.5">
+              <div className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full bg-zinc-800" />
+              <ShimmerCircle className="mt-0.5 h-6 w-6" />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <Shimmer className="h-3 w-24" />
+                <Shimmer className="h-2 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : unreadItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}

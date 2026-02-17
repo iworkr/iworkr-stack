@@ -106,6 +106,28 @@ export function WidgetMap() {
 
   const activeCount = pins.filter((p) => p.status !== "idle").length;
 
+  // Shimmer loading state
+  if (!loaded) {
+    return (
+      <WidgetShell delay={0.05}>
+        <div className="relative h-[260px] overflow-hidden p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-3 w-3 rounded bg-zinc-800/80 animate-pulse" />
+            <div className="h-3 w-24 rounded bg-zinc-800/80 relative overflow-hidden">
+              <span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" />
+            </div>
+          </div>
+          <div className="absolute inset-0 mt-10 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+          <div className="flex flex-wrap justify-center gap-4 pt-16">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-6 w-6 rounded-full bg-zinc-800/60 animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
+            ))}
+          </div>
+        </div>
+      </WidgetShell>
+    );
+  }
+
   return (
     <WidgetShell
       delay={0.05}

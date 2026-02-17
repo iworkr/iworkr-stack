@@ -2,9 +2,31 @@
 
 import { motion } from "framer-motion";
 import { Plus, MoreHorizontal } from "lucide-react";
-import { team } from "@/lib/data";
+import { useTeamStore } from "@/lib/team-store";
+import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
+
+function ShimmerRow() {
+  return (
+    <div className="flex items-center border-b border-[rgba(255,255,255,0.04)] px-4 py-3">
+      <div className="flex flex-1 items-center gap-3">
+        <ShimmerCircle className="h-8 w-8" />
+        <div className="space-y-1.5">
+          <Shimmer className="h-3 w-28" />
+          <Shimmer className="h-2 w-36" />
+        </div>
+      </div>
+      <div className="w-24"><Shimmer className="h-3 w-12" /></div>
+      <div className="w-28"><Shimmer className="h-3 w-14" /></div>
+      <div className="w-28"><Shimmer className="h-3 w-16" /></div>
+      <div className="w-10" />
+    </div>
+  );
+}
 
 export default function MembersPage() {
+  const members = useTeamStore((s) => s.members);
+  const loaded = useTeamStore((s) => s.loaded);
+
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
@@ -20,12 +42,6 @@ export default function MembersPage() {
         </button>
       </div>
 
-      {/* Pending invites */}
-      <div className="mb-6 rounded-lg border border-amber-500/10 bg-amber-500/5 px-4 py-3">
-        <span className="text-[12px] text-amber-400/80">1 pending invite</span>
-        <span className="ml-2 text-[12px] text-zinc-600">tom@apexplumbing.com.au — sent 2 days ago</span>
-      </div>
-
       {/* Members table */}
       <div className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)]">
         {/* Header */}
@@ -37,56 +53,81 @@ export default function MembersPage() {
           <div className="w-10" />
         </div>
 
+        {/* Loading state */}
+        {!loaded && members.length === 0 && (
+          <>
+            <ShimmerRow />
+            <ShimmerRow />
+            <ShimmerRow />
+          </>
+        )}
+
+        {/* Empty state */}
+        {loaded && members.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-[13px] text-zinc-500">No team members yet</p>
+            <p className="mt-1 text-[11px] text-zinc-700">Invite your team to get started.</p>
+          </div>
+        )}
+
         {/* Rows */}
-        {team.map((member, i) => (
-          <motion.div
-            key={member.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: i * 0.04 }}
-            className="flex items-center border-b border-[rgba(255,255,255,0.04)] px-4 py-3 transition-colors hover:bg-[rgba(255,255,255,0.02)]"
-          >
-            <div className="flex flex-1 items-center gap-3">
-              <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-medium text-zinc-400">
-                {member.initials}
-                <div className={`absolute -right-0.5 -bottom-0.5 h-[9px] w-[9px] rounded-full border-[1.5px] border-black ${
-                  member.status === "online" ? "bg-emerald-500" : member.status === "away" ? "bg-amber-500" : "bg-zinc-600"
-                }`} />
+        {members.map((member, i) => {
+          const initials = member.name
+            ? member.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+            : "??";
+          const onlineStatus = member.onlineStatus || "offline";
+          const role = member.role || "member";
+
+          return (
+            <motion.div
+              key={member.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.04 }}
+              className="flex items-center border-b border-[rgba(255,255,255,0.04)] px-4 py-3 transition-colors hover:bg-[rgba(255,255,255,0.02)]"
+            >
+              <div className="flex flex-1 items-center gap-3">
+                <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-medium text-zinc-400">
+                  {initials}
+                  <div className={`absolute -right-0.5 -bottom-0.5 h-[9px] w-[9px] rounded-full border-[1.5px] border-black ${
+                    onlineStatus === "online" ? "bg-emerald-500" : onlineStatus === "idle" ? "bg-amber-500" : "bg-zinc-600"
+                  }`} />
+                </div>
+                <div>
+                  <div className="text-[13px] font-medium text-zinc-200">{member.name}</div>
+                  <div className="text-[11px] text-zinc-600">{member.email}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-[13px] font-medium text-zinc-200">{member.name}</div>
-                <div className="text-[11px] text-zinc-600">{member.email}</div>
+              <div className="w-24">
+                <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
+                  role === "owner" || role === "manager"
+                    ? "border-violet-500/30 bg-violet-500/10 text-violet-400"
+                    : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-zinc-500"
+                }`}>
+                  {role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+                </span>
               </div>
-            </div>
-            <div className="w-24">
-              <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
-                member.role === "admin"
-                  ? "border-violet-500/30 bg-violet-500/10 text-violet-400"
-                  : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-zinc-500"
-              }`}>
-                {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-              </span>
-            </div>
-            <div className="w-28">
-              <span className={`flex items-center gap-1.5 text-[12px] ${
-                member.status === "online" ? "text-emerald-400/70" : member.status === "away" ? "text-amber-400/70" : "text-zinc-600"
-              }`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${
-                  member.status === "online" ? "bg-emerald-500" : member.status === "away" ? "bg-amber-500" : "bg-zinc-600"
-                }`} />
-                {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-              </span>
-            </div>
-            <div className="w-28 text-[12px] text-zinc-600">
-              {i === 0 ? "Jan 2024" : i === 1 ? "Mar 2024" : i === 2 ? "Jun 2024" : "Jan 2025"}
-            </div>
-            <div className="w-10 text-right">
-              <button className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400">
-                <MoreHorizontal size={14} />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+              <div className="w-28">
+                <span className={`flex items-center gap-1.5 text-[12px] ${
+                  onlineStatus === "online" ? "text-emerald-400/70" : onlineStatus === "idle" ? "text-amber-400/70" : "text-zinc-600"
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${
+                    onlineStatus === "online" ? "bg-emerald-500" : onlineStatus === "idle" ? "bg-amber-500" : "bg-zinc-600"
+                  }`} />
+                  {onlineStatus.charAt(0).toUpperCase() + onlineStatus.slice(1)}
+                </span>
+              </div>
+              <div className="w-28 text-[12px] text-zinc-600">
+                {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—"}
+              </div>
+              <div className="w-10 text-right">
+                <button className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400">
+                  <MoreHorizontal size={14} />
+                </button>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
     </>
   );

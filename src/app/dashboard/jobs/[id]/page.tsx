@@ -34,6 +34,7 @@ import { PriorityIcon } from "@/components/app/priority-icon";
 import { PopoverMenu } from "@/components/app/popover-menu";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import type { JobStatus, Priority } from "@/lib/data";
+import { useTeamStore } from "@/lib/team-store";
 import {
   getJobLineItems,
   addJobLineItem,
@@ -60,13 +61,7 @@ const priorityOptions: { value: Priority; label: string }[] = [
   { value: "none", label: "None" },
 ];
 
-const assigneeOptions = [
-  "Mike Thompson",
-  "Sarah Chen",
-  "James O'Brien",
-  "Tom Liu",
-  "Unassigned",
-];
+// Assignee options are populated from the team store at runtime (see component body)
 
 const activityIcons: Record<string, typeof MessageSquare> = {
   status_change: CheckCircle2,
@@ -94,6 +89,10 @@ export default function JobDetailPage() {
 
   const { jobs, updateJobServer, deleteJobServer, restoreJobs, toggleSubtaskServer } = useJobsStore();
   const { addToast } = useToastStore();
+  const teamMembers = useTeamStore((s) => s.members);
+  const assigneeOptions = teamMembers.length > 0
+    ? [...teamMembers.map((m) => m.name || "Team Member"), "Unassigned"]
+    : ["Unassigned"];
 
   const job = jobs.find((j) => j.id === jobId);
 

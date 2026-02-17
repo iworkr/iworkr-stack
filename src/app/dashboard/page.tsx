@@ -44,7 +44,7 @@ export default function DashboardPage() {
           <h1 className="text-[15px] font-medium text-zinc-200">Dashboard</h1>
           <p className="mt-0.5 text-[12px] text-zinc-600">
             {dayName}, {monthDay}
-            {displayCount !== null && ` — ${displayCount} active job${displayCount !== 1 ? "s" : ""}`}
+            {displayCount !== null ? ` — ${displayCount} active job${displayCount !== 1 ? "s" : ""}` : ""}
           </p>
         </div>
         <div className="flex items-center gap-1.5">

@@ -43,6 +43,36 @@ export function WidgetInsights() {
   const config = typeConfig[insight.type] || typeConfig.warning;
   const Icon = config.icon;
 
+  // Shimmer loading state
+  if (!loaded) {
+    return (
+      <WidgetShell delay={0.25}>
+        <div className="p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-3.5 w-3.5 rounded bg-zinc-800/80 animate-pulse" />
+            <div className="h-2.5 w-16 rounded bg-zinc-800/80 relative overflow-hidden">
+              <span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" />
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="h-7 w-7 rounded-lg bg-zinc-800/60 animate-pulse" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3.5 w-32 rounded bg-zinc-800/80 relative overflow-hidden">
+                <span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" />
+              </div>
+              <div className="h-2.5 w-full rounded bg-zinc-800/60 relative overflow-hidden">
+                <span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" />
+              </div>
+              <div className="h-2.5 w-3/4 rounded bg-zinc-800/60 relative overflow-hidden">
+                <span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </WidgetShell>
+    );
+  }
+
   return (
     <WidgetShell delay={0.25}>
       <div className="relative overflow-hidden p-5">

@@ -18,6 +18,7 @@ import {
 import { useToastStore } from "./action-toast";
 import { useFinanceStore } from "@/lib/finance-store";
 import { useClientsStore } from "@/lib/clients-store";
+import { useAuthStore } from "@/lib/auth-store";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
   clients as mockClients,
@@ -105,6 +106,9 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   const [attachPdf, setAttachPdf] = useState(true);
   const [splitMenuOpen, setSplitMenuOpen] = useState(false);
   const [sent, setSent] = useState(false);
+
+  const { currentOrg } = useAuthStore();
+  const invoiceOrgName = currentOrg?.name || "Your Company";
 
   const clientInputRef = useRef<HTMLInputElement>(null);
   const catalogInputRef = useRef<HTMLInputElement>(null);
@@ -733,12 +737,10 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                       <div className="flex h-8 w-8 items-center justify-center rounded-md bg-black text-[10px] font-bold text-white">
                         iW
                       </div>
-                      <span className="text-[14px] font-semibold text-zinc-900">Apex Plumbing</span>
+                      <span className="text-[14px] font-semibold text-zinc-900">{invoiceOrgName}</span>
                     </div>
                     <div className="text-[10px] leading-relaxed text-zinc-500">
-                      ABN 12 345 678 901<br />
-                      15 River Terrace, Brisbane 4000<br />
-                      hello@apexplumbing.com.au
+                      {invoiceOrgName}
                     </div>
                   </div>
                   <div className="text-right">
@@ -877,7 +879,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
                 {/* ── Footer ────────────────────────────────── */}
                 <div className="mt-8 border-t border-zinc-200 pt-3 text-center text-[8px] text-zinc-400">
-                  Thank you for your business — Apex Plumbing Pty Ltd
+                  Thank you for your business — {invoiceOrgName}
                 </div>
               </motion.div>
             </div>

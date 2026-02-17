@@ -32,6 +32,7 @@ import { useOrg } from "@/lib/hooks/use-org";
 import { getTeamStatus, type TeamMemberStatus } from "@/app/actions/dashboard";
 import { useInboxStore } from "@/lib/inbox-store";
 import { useState } from "react";
+import { Shimmer, ShimmerTeamRow } from "@/components/ui/shimmer";
 
 /* ── Data ─────────────────────────────────────────────── */
 
@@ -49,11 +50,7 @@ const navItems = [
   { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations" },
 ];
 
-const fallbackTeamMembers = [
-  { name: "Mike Thompson", initials: "MT", status: "online" as const, role: "On Job" },
-  { name: "Sarah Chen", initials: "SC", status: "online" as const, role: "En Route" },
-  { name: "James O'Brien", initials: "JO", status: "away" as const, role: "Break" },
-];
+type SidebarTeamMember = { name: string; initials: string; status: "online" | "away"; role: string };
 
 const systemItems = [
   { label: "Settings", icon: Settings, href: "/settings", action: null },
@@ -164,13 +161,14 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
   const onboardingName = useOnboardingStore((s) => s.companyName);
   const { currentOrg } = useAuthStore();
   const { orgId } = useOrg();
-  const companyName = currentOrg?.name || onboardingName || "Apex Plumbing";
+  const companyName = currentOrg?.name || onboardingName || "";
 
   // Live unread count for inbox badge
   const unreadCount = useInboxStore((s) => s.items.filter(i => !i.read && !i.archived).length);
 
-  // Live team status
-  const [teamMembers, setTeamMembers] = useState(fallbackTeamMembers);
+  // Live team status — starts empty (shimmer shown until real data loads)
+  const [teamMembers, setTeamMembers] = useState<SidebarTeamMember[]>([]);
+  const [teamLoading, setTeamLoading] = useState(true);
 
   useEffect(() => {
     if (!orgId) return;
@@ -183,7 +181,8 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
           role: m.status === "on_job" ? "On Job" : m.status === "en_route" ? "En Route" : "Idle",
         })));
       }
-    });
+      setTeamLoading(false);
+    }).catch(() => setTeamLoading(false));
   }, [orgId]);
 
   const isActive = (href: string) => {
@@ -238,7 +237,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                 className="flex flex-1 items-center justify-between overflow-hidden"
               >
                 <span className="truncate text-[13px] font-medium text-zinc-200">
-                  {companyName}
+                  {companyName || <Shimmer className="h-3 w-24" />}
                 </span>
                 <Command size={11} className="shrink-0 text-zinc-600" />
               </motion.div>
@@ -321,32 +320,42 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                 </span>
               </div>
               <div className="space-y-px">
-                {teamMembers.map((member) => (
-                  <button
-                    key={member.name}
-                    onClick={() => router.push("/dashboard/team")}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
-                  >
-                    <div className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-500">
-                      {member.initials}
-                      <div
-                        className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] border-[#080808] ${
-                          member.status === "online"
-                            ? "bg-emerald-500"
-                            : "bg-zinc-600"
-                        }`}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] text-zinc-400">
-                        {member.name}
+                {teamLoading && teamMembers.length === 0 ? (
+                  <>
+                    <ShimmerTeamRow />
+                    <ShimmerTeamRow />
+                    <ShimmerTeamRow />
+                  </>
+                ) : teamMembers.length === 0 ? (
+                  <p className="px-2 py-2 text-[11px] text-zinc-700">No team members online</p>
+                ) : (
+                  teamMembers.map((member) => (
+                    <button
+                      key={member.name}
+                      onClick={() => router.push("/dashboard/team")}
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+                    >
+                      <div className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-500">
+                        {member.initials}
+                        <div
+                          className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] border-[#080808] ${
+                            member.status === "online"
+                              ? "bg-emerald-500"
+                              : "bg-zinc-600"
+                          }`}
+                        />
                       </div>
-                    </div>
-                    <span className="text-[10px] text-zinc-600">
-                      {member.role}
-                    </span>
-                  </button>
-                ))}
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] text-zinc-400">
+                          {member.name}
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-zinc-600">
+                        {member.role}
+                      </span>
+                    </button>
+                  ))
+                )}
               </div>
             </motion.div>
           )}

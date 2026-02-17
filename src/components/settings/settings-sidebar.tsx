@@ -21,6 +21,8 @@ import {
   Import,
   Plus,
 } from "lucide-react";
+import { useAuthStore } from "@/lib/auth-store";
+import { Shimmer } from "@/components/ui/shimmer";
 
 interface NavItem {
   id: string;
@@ -70,12 +72,10 @@ const sections: NavSection[] = [
   },
 ];
 
-const teams = [
-  { name: "Apex Plumbing", color: "bg-emerald-500" },
-];
-
 export function SettingsSidebar() {
   const pathname = usePathname();
+  const { currentOrg } = useAuthStore();
+  const teamName = currentOrg?.name || "";
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col overflow-y-auto border-r border-[rgba(255,255,255,0.08)] bg-[#050505]">
@@ -134,16 +134,13 @@ export function SettingsSidebar() {
             </span>
           </div>
           <div className="space-y-px">
-            {teams.map((team) => (
-              <Link
-                key={team.name}
-                href="/settings/workspace"
-                className="flex items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-300"
-              >
-                <span className={`h-2.5 w-2.5 rounded-sm ${team.color}`} />
-                <span>{team.name}</span>
-              </Link>
-            ))}
+            <Link
+              href="/settings/workspace"
+              className="flex items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-300"
+            >
+              <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" />
+              <span>{teamName || <Shimmer className="h-3 w-24" />}</span>
+            </Link>
             <button className="flex items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-400">
               <Plus size={13} strokeWidth={1.5} />
               Create a team

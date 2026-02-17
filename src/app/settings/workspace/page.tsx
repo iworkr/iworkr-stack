@@ -1,13 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Camera } from "lucide-react";
 import { SaveToast, useSaveToast } from "@/components/settings/save-toast";
+import { useAuthStore } from "@/lib/auth-store";
+import { useTeamStore } from "@/lib/team-store";
+import { Shimmer } from "@/components/ui/shimmer";
 
 export default function WorkspacePage() {
   const { visible, showSaved } = useSaveToast();
-  const [name, setName] = useState("Apex Plumbing");
-  const [slug, setSlug] = useState("apex-plumbing");
+  const { currentOrg } = useAuthStore();
+  const memberCount = useTeamStore((s) => s.members.length);
+  const orgName = currentOrg?.name || "";
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+
+  useEffect(() => {
+    if (orgName && !name) {
+      setName(orgName);
+      setSlug(orgName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
+    }
+  }, [orgName, name]);
 
   return (
     <>
@@ -18,16 +31,22 @@ export default function WorkspacePage() {
       {/* Logo + name */}
       <div className="mb-8 flex items-center gap-5">
         <div className="relative">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-800 text-lg font-bold text-zinc-300">
-            iW
-          </div>
+          <img
+            src="/logos/logo-dark-streamline.png"
+            alt="iWorkr"
+            className="h-14 w-14 rounded-xl object-contain"
+          />
           <button className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.15)] bg-[#141414] text-zinc-400 transition-colors hover:text-zinc-200">
             <Camera size={11} />
           </button>
         </div>
         <div>
-          <div className="text-[14px] font-medium text-zinc-200">Apex Plumbing</div>
-          <div className="text-[12px] text-zinc-600">Free plan · 4 members</div>
+          <div className="text-[14px] font-medium text-zinc-200">
+            {orgName || <Shimmer className="h-4 w-32" />}
+          </div>
+          <div className="text-[12px] text-zinc-600">
+            Free plan · {memberCount > 0 ? `${memberCount} members` : <Shimmer className="inline-block h-3 w-16" />}
+          </div>
         </div>
       </div>
 

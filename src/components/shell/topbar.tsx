@@ -25,10 +25,13 @@ import { useShellStore } from "@/lib/shell-store";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useInboxStore } from "@/lib/inbox-store";
+import { Shimmer } from "@/components/ui/shimmer";
 
 function getBreadcrumbs(pathname: string, companyName: string) {
   const segments = pathname.split("/").filter(Boolean);
-  const crumbs = [{ label: companyName, href: "/dashboard" }];
+  const crumbs = companyName
+    ? [{ label: companyName, href: "/dashboard" }]
+    : [];
 
   const labelMap: Record<string, string> = {
     dashboard: "Dashboard",
@@ -105,7 +108,7 @@ function WorkspaceDropdown({
           className="h-[18px] w-[18px] object-contain"
         />
         <span className="hidden text-[13px] font-medium text-zinc-300 sm:inline">
-          {companyName}
+          {companyName || <Shimmer className="h-3 w-20" />}
         </span>
         <ChevronDown size={11} className="text-zinc-600" />
       </button>
@@ -127,7 +130,7 @@ function WorkspaceDropdown({
                 className="h-4 w-4 object-contain"
               />
               <span className="flex-1 truncate text-[12px] font-medium text-zinc-200">
-                {companyName}
+                {companyName || <Shimmer className="h-3 w-24" />}
               </span>
               <Check size={12} className="text-emerald-400" />
             </div>
@@ -305,16 +308,11 @@ function ProfileMenu({
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { profile, signOut } = useAuthStore();
-  const companyName =
-    useOnboardingStore((s) => s.companyName) || "Apex Plumbing";
-  const displayName = profile?.full_name || "Mike Thompson";
-  const displayEmail = profile?.email || `mike@${companyName.toLowerCase().replace(/\s/g, "")}.com`;
+  const displayName = profile?.full_name || "";
+  const displayEmail = profile?.email || "";
   const initials = displayName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "MT";
+    ? displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    : "";
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -340,7 +338,7 @@ function ProfileMenu({
         onClick={onToggle}
         className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-[rgba(255,255,255,0.08)] transition-all duration-150 hover:ring-[rgba(255,255,255,0.2)]"
       >
-        {initials}
+        {initials || <Shimmer className="h-3 w-3 rounded-full" />}
       </button>
 
       <AnimatePresence>
@@ -355,10 +353,10 @@ function ProfileMenu({
             {/* User info */}
             <div className="border-b border-[rgba(255,255,255,0.06)] px-3 py-2.5">
               <p className="text-[12px] font-medium text-zinc-200">
-                {displayName}
+                {displayName || <Shimmer className="h-3 w-24" />}
               </p>
-              <p className="text-[10px] text-zinc-600">
-                {displayEmail}
+              <p className="mt-0.5 text-[10px] text-zinc-600">
+                {displayEmail || <Shimmer className="h-2 w-32" />}
               </p>
             </div>
 
@@ -412,7 +410,7 @@ export function Topbar() {
   const { setCommandMenuOpen, setMobileSidebarOpen } = useShellStore();
   const onboardingName = useOnboardingStore((s) => s.companyName);
   const { currentOrg } = useAuthStore();
-  const companyName = currentOrg?.name || onboardingName || "Apex Plumbing";
+  const companyName = currentOrg?.name || onboardingName || "";
   const breadcrumbs = getBreadcrumbs(pathname, companyName);
 
   const [wsOpen, setWsOpen] = useState(false);
@@ -449,13 +447,13 @@ export function Topbar() {
 
       {/* Breadcrumbs */}
       <nav className="ml-1 flex min-w-0 items-center gap-1 text-[13px]">
-        {breadcrumbs.slice(1).map((crumb, i) => (
+        {breadcrumbs.map((crumb, i) => (
           <span key={crumb.href + i} className="flex items-center gap-1">
-            <ChevronRight size={11} className="text-zinc-700" />
+            {i > 0 && <ChevronRight size={11} className="text-zinc-700" />}
             <Link
               href={crumb.href}
               className={`transition-colors duration-150 ${
-                i === breadcrumbs.length - 2
+                i === breadcrumbs.length - 1
                   ? "font-medium text-zinc-300"
                   : "text-zinc-600 hover:text-zinc-400"
               }`}

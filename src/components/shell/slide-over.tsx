@@ -5,7 +5,8 @@ import { X, Maximize2, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useShellStore } from "@/lib/shell-store";
-import { jobs } from "@/lib/data";
+import { useJobsStore } from "@/lib/jobs-store";
+import { useTeamStore } from "@/lib/team-store";
 import { StatusIcon } from "@/components/app/status-icon";
 import { PriorityIcon } from "@/components/app/priority-icon";
 import { PopoverMenu } from "@/components/app/popover-menu";
@@ -28,20 +29,24 @@ const priorityOptions: { value: Priority; label: string }[] = [
   { value: "none", label: "None" },
 ];
 
-const assigneeOptions = ["Mike Thompson", "Sarah Chen", "James O'Brien", "Tom Liu"];
-
 export function SlideOver() {
   const { slideOverOpen, slideOverContent, closeSlideOver } = useShellStore();
   const { addToast } = useToastStore();
   const router = useRouter();
 
-  const job = slideOverContent ? jobs.find((j) => j.id === slideOverContent.id) : null;
+  const storeJobs = useJobsStore((s) => s.jobs);
+  const teamMembers = useTeamStore((s) => s.members);
+  const assigneeOptions = teamMembers.length > 0
+    ? teamMembers.map((m) => m.name || "Team Member")
+    : [];
+
+  const job = slideOverContent ? storeJobs.find((j) => j.id === slideOverContent.id) : null;
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [localTitle, setLocalTitle] = useState("");
   const [localStatus, setLocalStatus] = useState<JobStatus>("todo");
   const [localPriority, setLocalPriority] = useState<Priority>("medium");
-  const [localAssignee, setLocalAssignee] = useState("Mike Thompson");
+  const [localAssignee, setLocalAssignee] = useState("");
   const [activePopover, setActivePopover] = useState<string | null>(null);
   const [description, setDescription] = useState("");
 
@@ -163,8 +168,8 @@ export function SlideOver() {
                   </h4>
                   <div className="space-y-3">
                     {[
-                      { text: "Mike Thompson changed status to In Progress", time: "2h ago" },
-                      { text: "Sarah Chen added label Emergency", time: "3h ago" },
+                      { text: "Status changed to In Progress", time: "2h ago" },
+                      { text: "Label Emergency added", time: "3h ago" },
                       { text: "Job created by system", time: "1d ago" },
                     ].map((entry, i) => (
                       <div key={i} className="flex items-start gap-2">
