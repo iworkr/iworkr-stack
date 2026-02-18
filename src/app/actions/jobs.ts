@@ -13,7 +13,7 @@ export interface Job {
   display_id: string;
   title: string;
   description: string | null;
-  status: "backlog" | "todo" | "in_progress" | "done" | "cancelled";
+  status: "backlog" | "todo" | "in_progress" | "done" | "cancelled" | "urgent";
   priority: "urgent" | "high" | "medium" | "low" | "none";
   client_id: string | null;
   assignee_id: string | null;
@@ -77,7 +77,7 @@ export interface CreateJobParams {
   organization_id: string;
   title: string;
   description?: string | null;
-  status?: "backlog" | "todo" | "in_progress" | "done" | "cancelled";
+  status?: "backlog" | "todo" | "in_progress" | "done" | "cancelled" | "urgent";
   priority?: "urgent" | "high" | "medium" | "low" | "none";
   client_id?: string | null;
   assignee_id?: string | null;
@@ -97,7 +97,7 @@ export interface CreateJobParams {
 export interface UpdateJobParams {
   title?: string;
   description?: string | null;
-  status?: "backlog" | "todo" | "in_progress" | "done" | "cancelled";
+  status?: "backlog" | "todo" | "in_progress" | "done" | "cancelled" | "urgent";
   priority?: "urgent" | "high" | "medium" | "low" | "none";
   client_id?: string | null;
   assignee_id?: string | null;

@@ -1,7 +1,7 @@
 /* ── Mock data for iWorkr modules ───────────────────── */
 
 export type Priority = "urgent" | "high" | "medium" | "low" | "none";
-export type JobStatus = "backlog" | "todo" | "in_progress" | "done" | "cancelled";
+export type JobStatus = "backlog" | "todo" | "in_progress" | "done" | "cancelled" | "urgent";
 export type InboxItemType = "job_assigned" | "quote_approved" | "mention" | "system" | "review";
 
 export interface SubTask {

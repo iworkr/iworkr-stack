@@ -8,6 +8,7 @@ const config: Record<JobStatus, { label: string; color: string; fill: number }> 
   in_progress: { label: "In Progress", color: "text-amber-400", fill: 0.5 },
   done: { label: "Done", color: "text-emerald-400", fill: 1 },
   cancelled: { label: "Cancelled", color: "text-zinc-600", fill: 0 },
+  urgent: { label: "Urgent", color: "text-rose-400", fill: 0.25 },
 };
 
 export function StatusIcon({ status, size = 14 }: { status: JobStatus; size?: number }) {
