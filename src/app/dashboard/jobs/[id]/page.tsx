@@ -213,24 +213,28 @@ export default function JobDetailPage() {
   if (!job) {
     return (
       <div className="flex h-full items-center justify-center bg-[#050505]">
+        <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.012]" />
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center"
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 text-center"
         >
-          <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center">
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[160px] w-[160px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.02] blur-[60px]" />
+          <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center">
             <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
-              <Briefcase size={16} strokeWidth={1.5} className="text-zinc-600" />
+            <div className="absolute inset-2 rounded-full border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.5s" }} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+              <Briefcase size={18} strokeWidth={1.5} className="text-zinc-600" />
             </div>
           </div>
-          <h2 className="mb-1 text-[15px] font-medium text-zinc-300">Job not found</h2>
-          <p className="mb-4 text-[12px] text-zinc-600">
+          <h2 className="mb-1.5 text-[16px] font-semibold tracking-tight text-zinc-200">Job not found</h2>
+          <p className="mb-5 text-[13px] text-zinc-600">
             This job may have been deleted or doesn&apos;t exist.
           </p>
           <button
             onClick={() => router.push("/dashboard/jobs")}
-            className="text-[12px] text-zinc-500 transition-colors duration-150 hover:text-zinc-300"
+            className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-[12px] font-medium text-zinc-400 transition-all duration-200 hover:border-white/[0.1] hover:text-zinc-200"
           >
             Back to Jobs
           </button>
@@ -258,27 +262,27 @@ export default function JobDetailPage() {
       transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
       className="flex h-full flex-col bg-[#050505]"
     >
-      {/* ── Sticky Header ────────────────────────────────── */}
-      <div className="sticky top-0 z-10 border-b border-white/[0.05] bg-[#050505]/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-6 py-3">
+      {/* ── Sticky Header — Glassmorphism ─────────────────── */}
+      <div className="sticky top-0 z-10 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-6 py-2.5">
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => router.push("/dashboard/jobs")}
-              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] text-zinc-500 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] text-zinc-500 transition-all duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
             >
               <ArrowLeft size={12} />
               Jobs
             </button>
-            <ChevronRight size={12} className="text-zinc-700" />
+            <ChevronRight size={10} className="text-zinc-700" />
             <span className="text-[12px] text-zinc-500">
               {job.status
                 .replace("_", " ")
                 .replace(/\b\w/g, (l) => l.toUpperCase())}
             </span>
-            <ChevronRight size={12} className="text-zinc-700" />
+            <ChevronRight size={10} className="text-zinc-700" />
             <span
-              className="cursor-pointer font-mono text-[12px] text-zinc-400 transition-colors hover:text-zinc-200"
+              className="cursor-pointer font-mono text-[12px] font-medium text-zinc-400 transition-colors hover:text-zinc-200"
               onContextMenu={(e) => {
                 e.preventDefault();
                 setCtxMenu({ open: true, x: e.clientX, y: e.clientY });
@@ -297,13 +301,13 @@ export default function JobDetailPage() {
                 );
                 addToast("Link copied");
               }}
-              className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
+              className="rounded-lg p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
               title="Share"
             >
               <Share2 size={14} />
             </button>
             <button
-              className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
+              className="rounded-lg p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
               title="Print"
             >
               <Printer size={14} />
@@ -312,20 +316,21 @@ export default function JobDetailPage() {
               onClick={(e) =>
                 setCtxMenu({ open: true, x: e.clientX, y: e.clientY })
               }
-              className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
+              className="rounded-lg p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
             >
               <MoreHorizontal size={14} />
             </button>
 
-            {/* Complete Job CTA — Ghost style, not neon */}
+            {/* Complete Job CTA — Solid Emerald */}
             {job.status !== "done" && (
               <motion.button
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   updateJobServer(job.id, { status: "done" });
                   addToast("Job marked as complete");
                 }}
-                className="ml-2 flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-1.5 text-[12px] font-medium text-emerald-400 transition-all duration-150 hover:border-emerald-500/30 hover:bg-emerald-500/10"
+                className="ml-2 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-lg shadow-emerald-900/30 transition-all duration-200 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-900/40"
               >
                 <Check size={13} />
                 Complete Job
@@ -380,12 +385,12 @@ export default function JobDetailPage() {
               {job.labels.map((label) => (
                 <span
                   key={label}
-                  className="rounded border border-white/[0.06] px-2 py-0.5 text-[11px] text-zinc-500"
+                  className="rounded-md border border-white/[0.04] bg-white/[0.02] px-2 py-0.5 text-[11px] font-medium text-zinc-500"
                 >
                   {label}
                 </span>
               ))}
-              <span className="text-[11px] text-zinc-700">{job.created}</span>
+              <span className="font-mono text-[11px] text-zinc-700">{job.created}</span>
             </div>
 
             {/* ── Description ────────────────────────────────── */}
