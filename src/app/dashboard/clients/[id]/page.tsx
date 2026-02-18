@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   ArrowLeft,
   ChevronRight,
@@ -29,6 +29,9 @@ import {
   X,
   ExternalLink,
   DollarSign,
+  Activity,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 import { type Client, type ClientActivity } from "@/lib/data";
 import { useToastStore } from "@/components/app/action-toast";
@@ -39,12 +42,21 @@ import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu
 
 /* ── Constants ────────────────────────────────────────────── */
 
-const statusConfig: Record<string, { label: string; dot: string; border: string; bg: string }> = {
-  active: { label: "Active", dot: "bg-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/5" },
-  lead: { label: "Lead", dot: "bg-[#00E676]", border: "border-[rgba(0,230,118,0.3)]", bg: "bg-[rgba(0,230,118,0.04)]" },
-  churned: { label: "Churned", dot: "bg-red-400", border: "border-red-500/30", bg: "bg-red-500/5" },
-  inactive: { label: "Inactive", dot: "bg-zinc-500", border: "border-zinc-600/30", bg: "bg-zinc-500/5" },
+const statusConfig: Record<string, { label: string; dot: string; border: string; bg: string; text: string }> = {
+  active: { label: "Active", dot: "bg-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10", text: "text-emerald-400" },
+  lead: { label: "Lead", dot: "bg-sky-400", border: "border-sky-500/20", bg: "bg-sky-500/10", text: "text-sky-400" },
+  churned: { label: "Churned", dot: "bg-rose-400", border: "border-rose-500/20", bg: "bg-rose-500/10", text: "text-rose-400" },
+  inactive: { label: "Inactive", dot: "bg-zinc-500", border: "border-zinc-600/20", bg: "bg-zinc-500/10", text: "text-zinc-400" },
 };
+
+type DossierTab = "jobs" | "invoices" | "notes" | "activity";
+
+const dossierTabs: { id: DossierTab; label: string; icon: typeof Briefcase }[] = [
+  { id: "activity", label: "Activity", icon: Activity },
+  { id: "jobs", label: "Jobs", icon: Briefcase },
+  { id: "invoices", label: "Invoices", icon: Receipt },
+  { id: "notes", label: "Notes", icon: StickyNote },
+];
 
 const activityIcons: Record<string, typeof Briefcase> = {
   job_completed: Check,
@@ -60,10 +72,10 @@ const activityColors: Record<string, string> = {
   job_completed: "text-emerald-400",
   invoice_paid: "text-emerald-400",
   invoice_sent: "text-amber-400",
-  quote_sent: "text-[#00E676]",
+  quote_sent: "text-sky-400",
   note: "text-yellow-400",
   job_created: "text-zinc-400",
-  call: "text-[#00E676]",
+  call: "text-emerald-400",
 };
 
 const gradients = [
@@ -72,7 +84,7 @@ const gradients = [
   "from-amber-600/40 to-orange-800/40",
   "from-rose-600/40 to-pink-800/40",
   "from-zinc-500/40 to-zinc-700/40",
-  "from-zinc-700/40 to-zinc-900/40",
+  "from-sky-600/40 to-indigo-800/40",
 ];
 
 function getGradient(initials: string): string {
@@ -87,11 +99,7 @@ const headerContextItems: ContextMenuItem[] = [
   { id: "archive", label: "Archive Client", icon: <Trash2 size={13} />, danger: true },
 ];
 
-/* ── Haversine distance (km) ───────────────────────────────── */
-function haversineKm(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number,
-): number {
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
@@ -99,6 +107,31 @@ function haversineKm(
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* ── Count-Up Hook ────────────────────────────────────────── */
+
+function useCountUp(target: number, duration = 600) {
+  const [value, setValue] = useState(0);
+  const prevTarget = useRef(0);
+
+  useEffect(() => {
+    if (target === prevTarget.current) return;
+    prevTarget.current = target;
+    const startTime = performance.now();
+
+    function animate(now: number) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(target * eased));
+      if (progress < 1) requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  }, [target, duration]);
+
+  return value;
 }
 
 /* ── Page Component ───────────────────────────────────────── */
@@ -110,13 +143,12 @@ export default function ClientDossierPage() {
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
 
-  // Resolve client from store
   const storeClients = useClientsStore((s) => s.clients);
   const storeClient = storeClients.find((c) => c.id === clientId);
 
-  // Server-fetched detail data (contacts, activity, spend)
   const [serverDetail, setServerDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<DossierTab>("activity");
 
   useEffect(() => {
     if (!clientId || detailLoading || serverDetail) return;
@@ -127,7 +159,6 @@ export default function ClientDossierPage() {
     }).catch(() => setDetailLoading(false));
   }, [clientId, detailLoading, serverDetail]);
 
-  // Merge: store client (list-level) + server detail (contacts/activity/spend)
   const client: Client | undefined = storeClient
     ? {
         ...storeClient,
@@ -142,8 +173,8 @@ export default function ClientDossierPage() {
         activity: serverDetail?.recent_activity?.map((a: any) => ({
           id: a.id,
           type: a.action_type || "note",
-          description: a.metadata?.description || a.action_type || "",
-          date: a.created_at ? new Date(a.created_at).toLocaleDateString("en-AU", { month: "short", day: "numeric" }) : "",
+          text: a.metadata?.description || a.action_type || "",
+          time: a.created_at ? new Date(a.created_at).toLocaleDateString("en-AU", { month: "short", day: "numeric" }) : "",
           user: a.user_name || "System",
         })) || storeClient.activity,
         spendHistory: serverDetail?.spend_history?.map((inv: any) => ({
@@ -210,20 +241,28 @@ export default function ClientDossierPage() {
     }
   }
 
-  /* ── Not found ──────────────────────────────────────────── */
   if (!client) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex h-full items-center justify-center bg-[#050505]"
+      >
         <div className="text-center">
-          <h2 className="mb-2 text-lg font-medium text-zinc-300">Client not found</h2>
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+            <User size={20} className="text-zinc-700" />
+          </div>
+          <h2 className="mb-1 text-[15px] font-medium text-zinc-300">Client not found</h2>
+          <p className="mb-4 text-[12px] text-zinc-600">This client may have been archived.</p>
           <button
             onClick={() => router.push("/dashboard/clients")}
-            className="text-[13px] text-zinc-500 transition-colors hover:text-zinc-300"
+            className="flex items-center gap-1.5 rounded-md border border-white/[0.06] px-3 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-300"
           >
+            <ArrowLeft size={12} />
             Back to Clients
           </button>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -232,12 +271,13 @@ export default function ClientDossierPage() {
   const spendData = client.spendHistory || [];
   const maxSpend = Math.max(...spendData.map((d) => d.amount), 1);
   const totalSpend = spendData.reduce((sum, d) => sum + d.amount, 0);
-  const isHighLTV = (client.lifetimeValueNum || 0) >= 10000;
+  const isVIP = (client.lifetimeValueNum || 0) >= 10000;
+  const outstandingBalance = 0; // Would come from unpaid invoices
 
   /* ── SVG path for spend chart ───────────────────────────── */
-  const chartW = 560;
-  const chartH = 120;
-  const padding = 4;
+  const chartW = 480;
+  const chartH = 100;
+  const padding = 8;
 
   const points = spendData.map((d, i) => ({
     x: padding + (i / Math.max(spendData.length - 1, 1)) * (chartW - padding * 2),
@@ -247,73 +287,69 @@ export default function ClientDossierPage() {
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
   const areaPath = `${linePath} L ${points[points.length - 1]?.x || 0} ${chartH} L ${points[0]?.x || 0} ${chartH} Z`;
 
-  /* ── Render ─────────────────────────────────────────────── */
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-      className="flex h-full flex-col"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className="flex h-full flex-col bg-[#050505]"
     >
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 border-b border-[rgba(255,255,255,0.06)] bg-black/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-6 py-3">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-1.5">
+      <div className="sticky top-0 z-10 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-6 py-2.5">
+          <div className="flex items-center gap-1.5 text-[12px]">
             <button
               onClick={() => router.push("/dashboard/clients")}
-              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-300"
+              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-zinc-500 transition-colors hover:bg-white/[0.03] hover:text-zinc-300"
             >
               <ArrowLeft size={12} />
               Clients
             </button>
-            <ChevronRight size={12} className="text-zinc-700" />
-            <span className="text-[12px] text-zinc-400">{client.name}</span>
+            <ChevronRight size={10} className="text-zinc-700" />
+            <span className="font-medium text-zinc-300">{client.name}</span>
           </div>
 
-          {/* Action bar */}
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => {
                 if (!client.email) { addToast("No email configured"); return; }
                 window.location.href = `mailto:${client.email}`;
               }}
-              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
               title="Email"
             >
               <Mail size={14} />
             </button>
             <button
               onClick={() => {
-                if (!client.phone) { addToast("No phone number configured"); return; }
+                if (!client.phone) { addToast("No phone number"); return; }
                 window.location.href = `tel:${client.phone}`;
               }}
-              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
               title="Call"
             >
               <Phone size={14} />
             </button>
             <button
               onClick={() => {
-                if (!client.phone) { addToast("No phone number configured"); return; }
+                if (!client.phone) { addToast("No phone number"); return; }
                 window.location.href = `sms:${client.phone}`;
               }}
-              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
               title="Message"
             >
               <MessageSquare size={14} />
             </button>
             <button
               onClick={(e) => setCtxMenu({ open: true, x: e.clientX, y: e.clientY })}
-              className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+              className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
             >
               <MoreHorizontal size={14} />
             </button>
             <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => router.push(`/dashboard/jobs?clientId=${client.id}&clientName=${encodeURIComponent(client.name)}`)}
-              className="ml-2 flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#00C853]"
+              className="ml-2 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-500"
             >
               <Plus size={12} />
               Create Job
@@ -323,38 +359,41 @@ export default function ClientDossierPage() {
 
         {/* Identity row */}
         <div className="flex items-center gap-4 px-6 pb-4">
-          <div
-            className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-[18px] font-bold text-zinc-200 ${getGradient(client.initials)}`}
-          >
-            {client.initials}
+          <div className="relative">
+            <div
+              className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-[18px] font-bold text-zinc-200 ${getGradient(client.initials)}`}
+            >
+              {client.initials}
+            </div>
+            {isVIP && (
+              <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 ring-2 ring-[#050505]">
+                <span className="text-[8px] font-bold text-black">★</span>
+              </div>
+            )}
           </div>
           <div>
-            <h1 className="text-[26px] font-semibold tracking-tight text-zinc-100">
+            <h1 className={`text-[24px] font-semibold tracking-tight ${isVIP ? "text-amber-100" : "text-zinc-100"}`}>
               {client.name}
             </h1>
-            <div className="flex items-center gap-2">
-              {/* Status pill */}
-              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] ${sc.border} ${sc.bg}`}>
+            <div className="mt-1 flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-[10px] font-medium ${sc.border} ${sc.bg} ${sc.text}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
                 {sc.label}
               </span>
-              {/* Badges */}
-              {isHighLTV && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/5 px-2 py-0.5 text-[10px] text-amber-400">
+              {isVIP && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
                   <Sparkles size={8} />
-                  Premium
+                  VIP
                 </span>
               )}
               {client.type === "commercial" && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(0,230,118,0.2)] bg-[rgba(0,230,118,0.04)] px-2 py-0.5 text-[10px] text-[#00E676]">
+                <span className="inline-flex items-center gap-1 rounded-md border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] text-sky-400">
                   <Building2 size={8} />
                   Commercial
                 </span>
               )}
               {client.since && (
-                <span className="text-[10px] text-zinc-600">
-                  Client since {client.since}
-                </span>
+                <span className="text-[10px] text-zinc-600">Since {client.since}</span>
               )}
             </div>
           </div>
@@ -363,41 +402,55 @@ export default function ClientDossierPage() {
 
       {/* ── 2-Column Body ──────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* ── Canvas (Left 65%) ─────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-6 pr-0">
-          <div className="max-w-3xl">
-            {/* ── Spend Pulse Graph ────────────────────────── */}
-            <div className="mb-8 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
-                    Spend History
-                  </h3>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-[24px] font-semibold tracking-tight text-zinc-100">
-                      ${totalSpend.toLocaleString()}
-                    </span>
-                    <span className="text-[11px] text-zinc-600">last 12 months</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[13px] font-medium text-zinc-300">
-                    {client.lifetimeValue}
-                  </div>
-                  <div className="text-[10px] text-zinc-600">Lifetime</div>
-                </div>
+        {/* ── Canvas (Left ~65%) ─────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto scrollbar-none">
+          {/* ── Financial Stats Strip ────────────────────────── */}
+          <div className="grid grid-cols-3 gap-3 border-b border-white/[0.03] px-6 py-5">
+            <StatCard
+              label="Total Spent"
+              icon={<DollarSign size={10} />}
+              value={`$${totalSpend.toLocaleString()}`}
+              subtext="last 12 months"
+              accent="emerald"
+            />
+            <StatCard
+              label="Outstanding"
+              icon={<AlertCircle size={10} />}
+              value={outstandingBalance > 0 ? `$${outstandingBalance.toLocaleString()}` : "$0"}
+              subtext={outstandingBalance > 0 ? "unpaid" : "all clear"}
+              accent={outstandingBalance > 0 ? "rose" : "zinc"}
+            />
+            <StatCard
+              label="Total Jobs"
+              icon={<Briefcase size={10} />}
+              value={String(client.totalJobs)}
+              subtext={client.lastJob !== "Never" ? `Last: ${client.lastJob}` : "No jobs yet"}
+              accent="zinc"
+            />
+          </div>
+
+          {/* ── Spend Pulse Graph ────────────────────────────── */}
+          {spendData.length > 0 && (
+            <div className="border-b border-white/[0.03] px-6 py-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+                  <TrendingUp size={10} />
+                  Revenue Trend
+                </h3>
+                <span className="font-mono text-[13px] font-medium text-emerald-400">
+                  {client.lifetimeValue}
+                  <span className="ml-1 text-[9px] text-zinc-600">lifetime</span>
+                </span>
               </div>
 
-              {/* SVG Chart */}
-              <div className="relative">
-                <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full">
+              <div className="relative overflow-hidden rounded-lg border border-white/[0.03] bg-white/[0.01] p-3">
+                <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ height: 100 }}>
                   <defs>
                     <linearGradient id={`spend-grad-${client.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#34d399" stopOpacity="0.2" />
+                      <stop offset="0%" stopColor="#34d399" stopOpacity="0.15" />
                       <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
                     </linearGradient>
                   </defs>
-                  {/* Area fill */}
                   <motion.path
                     d={areaPath}
                     fill={`url(#spend-grad-${client.id})`}
@@ -405,7 +458,6 @@ export default function ClientDossierPage() {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.8, delay: 0.3 }}
                   />
-                  {/* Line */}
                   <motion.path
                     d={linePath}
                     fill="none"
@@ -415,9 +467,8 @@ export default function ClientDossierPage() {
                     strokeLinejoin="round"
                     initial={{ pathLength: 0 }}
                     animate={{ pathLength: 1 }}
-                    transition={{ duration: 2, ease: "easeOut" }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
                   />
-                  {/* Data points */}
                   {points.map((p, i) => (
                     <motion.circle
                       key={i}
@@ -429,144 +480,141 @@ export default function ClientDossierPage() {
                       strokeWidth="1.5"
                       initial={{ opacity: 0, scale: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3 + i * 0.08, duration: 0.2 }}
+                      transition={{ delay: 0.3 + i * 0.06, duration: 0.2 }}
                     />
                   ))}
                 </svg>
-                {/* Month labels */}
                 <div className="mt-1 flex justify-between px-1">
                   {spendData.map((d) => (
-                    <span key={d.month} className="text-[8px] text-zinc-700">
-                      {d.month}
-                    </span>
+                    <span key={d.month} className="text-[8px] text-zinc-700">{d.month}</span>
                   ))}
                 </div>
               </div>
             </div>
+          )}
 
-            {/* ── Activity Timeline ────────────────────────── */}
-            <div>
-              <h3 className="mb-4 flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
-                <Clock size={12} />
-                Activity
-              </h3>
-              <div className="relative pl-6">
-                {/* Timeline line */}
-                <div className="absolute top-2 bottom-2 left-[7px] w-px bg-[rgba(255,255,255,0.06)]" />
-
-                <div className="space-y-4">
-                  {(client.activity || []).map((entry, i) => {
-                    const Icon = activityIcons[entry.type] || Briefcase;
-                    const iconColor = activityColors[entry.type] || "text-zinc-500";
-                    const isNote = entry.type === "note";
-                    const isInvoice = entry.type === "invoice_paid" || entry.type === "invoice_sent";
-
-                    return (
+          {/* ── Dossier Tabs ────────────────────────────────── */}
+          <div className="border-b border-white/[0.03] px-6">
+            <div className="flex items-center gap-0.5 pt-1">
+              {dossierTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative flex items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-medium transition-colors ${
+                      isActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    <Icon size={12} />
+                    {tab.label}
+                    {isActive && (
                       <motion.div
-                        key={entry.id}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05, duration: 0.25 }}
-                        className="relative flex gap-3"
-                      >
-                        {/* Dot */}
-                        <div className={`absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[rgba(255,255,255,0.1)] bg-[#0a0a0a]`}>
-                          <Icon size={8} className={iconColor} />
-                        </div>
-
-                        <div
-                          className={`flex-1 rounded-lg p-3 ${
-                            isNote
-                              ? "border border-yellow-500/10 bg-yellow-500/[0.03]"
-                              : "border border-[rgba(255,255,255,0.04)] bg-[rgba(255,255,255,0.015)]"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="text-[12px] text-zinc-400">
-                              {entry.text}
-                            </div>
-                            {isInvoice && entry.amount && (
-                              <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                entry.type === "invoice_paid"
-                                  ? "bg-emerald-500/10 text-emerald-400"
-                                  : "bg-amber-500/10 text-amber-400"
-                              }`}>
-                                {entry.type === "invoice_paid" ? "Paid" : "Sent"} {entry.amount}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-1 flex items-center gap-2">
-                            <span className="text-[10px] text-zinc-700">{entry.time}</span>
-                            {entry.jobRef && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(`/dashboard/jobs/${entry.jobRef}`);
-                                }}
-                                className="flex items-center gap-0.5 text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
-                              >
-                                <ExternalLink size={8} />
-                                {entry.jobRef}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
+                        layoutId="dossier-tab-indicator"
+                        className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-emerald-500"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
+          </div>
+
+          {/* ── Tab Content ─────────────────────────────────── */}
+          <div className="px-6 py-5">
+            <AnimatePresence mode="wait">
+              {activeTab === "activity" && (
+                <motion.div
+                  key="activity"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ActivityTimeline activity={client.activity || []} router={router} />
+                </motion.div>
+              )}
+              {activeTab === "jobs" && (
+                <motion.div
+                  key="jobs"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-center py-12"
+                >
+                  <Briefcase size={24} className="mx-auto mb-3 text-zinc-700" />
+                  <p className="text-[13px] text-zinc-500">{client.totalJobs} total jobs</p>
+                  <button
+                    onClick={() => router.push(`/dashboard/jobs?clientId=${client.id}`)}
+                    className="mt-3 text-[11px] text-emerald-500 transition-colors hover:text-emerald-400"
+                  >
+                    View all jobs →
+                  </button>
+                </motion.div>
+              )}
+              {activeTab === "invoices" && (
+                <motion.div
+                  key="invoices"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-center py-12"
+                >
+                  <Receipt size={24} className="mx-auto mb-3 text-zinc-700" />
+                  <p className="text-[13px] text-zinc-500">{spendData.length} invoices</p>
+                  <p className="mt-1 text-[11px] text-zinc-600">
+                    ${totalSpend.toLocaleString()} total
+                  </p>
+                </motion.div>
+              )}
+              {activeTab === "notes" && (
+                <motion.div
+                  key="notes"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <textarea
+                    value={localNotes}
+                    onChange={(e) => setLocalNotes(e.target.value)}
+                    onBlur={() => {
+                      useClientsStore.getState().updateClientServer(clientId, { notes: localNotes });
+                      addToast("Notes saved");
+                    }}
+                    placeholder="Add notes about this client..."
+                    className="h-48 w-full resize-none rounded-lg border border-white/[0.04] bg-white/[0.01] p-4 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500/30"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* ── HUD (Right 35%) ───────────────────────────────── */}
-        <div className="w-[320px] shrink-0 overflow-y-auto border-l border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]">
+        {/* ── HUD Panel (Right ~35%) ──────────────────────────── */}
+        <div className="w-[320px] shrink-0 overflow-y-auto border-l border-white/[0.04] bg-white/[0.01] scrollbar-none">
           <div className="p-5">
-            {/* ── Quick Stats ────────────────────────────────── */}
-            <div className="mb-6 grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
-                <div className="mb-1 flex items-center gap-1 text-[9px] tracking-wider text-zinc-600 uppercase">
-                  <Briefcase size={9} />
-                  Jobs
-                </div>
-                <div className="text-[18px] font-semibold text-zinc-200">
-                  {client.totalJobs}
-                </div>
+            {/* ── LTV Spotlight ──────────────────────────────── */}
+            <div className="mb-6 rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
+              <div className="mb-1 flex items-center gap-1 text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+                <DollarSign size={9} />
+                Lifetime Value
               </div>
-              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
-                <div className="mb-1 flex items-center gap-1 text-[9px] tracking-wider text-zinc-600 uppercase">
-                  <DollarSign size={9} />
-                  LTV
-                </div>
-                <div
-                  className="text-[18px] font-semibold text-zinc-200"
-                  style={
-                    isHighLTV
-                      ? {
-                          background: "linear-gradient(90deg, #f59e0b, #fbbf24, #f59e0b)",
-                          backgroundSize: "200% 100%",
-                          WebkitBackgroundClip: "text",
-                          WebkitTextFillColor: "transparent",
-                          animation: "shimmer 3s infinite",
-                        }
-                      : undefined
-                  }
-                >
-                  {client.lifetimeValue}
-                </div>
-              </div>
+              <AnimatedLTV value={client.lifetimeValueNum || 0} isVIP={isVIP} />
             </div>
 
             {/* ── Location Intel ──────────────────────────────── */}
             {client.address && (
               <div className="mb-6">
-                <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                <h4 className="mb-3 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
                   Location
                 </h4>
-                <div className="overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)]">
-                  <div className="relative h-[140px] bg-[#0a0a0a]">
-                    {/* Grid */}
+                <div className="overflow-hidden rounded-xl border border-white/[0.06]">
+                  <div className="relative h-[130px] bg-[#080808]">
                     <div className="absolute inset-0 opacity-[0.03]">
                       {Array.from({ length: 6 }).map((_, i) => (
                         <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-white" style={{ top: `${i * 20}%` }} />
@@ -575,7 +623,6 @@ export default function ClientDossierPage() {
                         <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l border-white" style={{ left: `${i * 12.5}%` }} />
                       ))}
                     </div>
-                    {/* Pin */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <motion.div
                         initial={{ y: -15, opacity: 0 }}
@@ -583,25 +630,25 @@ export default function ClientDossierPage() {
                         transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.3 }}
                         className="relative"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
-                          <MapPin size={12} className="text-white" />
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
+                          <MapPin size={10} className="text-white" />
                         </div>
                         <motion.div
                           animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
                           transition={{ duration: 2, repeat: Infinity }}
-                          className="absolute inset-0 rounded-full border border-[#00E676]"
+                          className="absolute inset-0 rounded-full border border-emerald-500"
                         />
                       </motion.div>
                     </div>
-                    <div className="absolute right-2 bottom-2 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm">
-                      {client.addressCoords
-                        ? `${haversineKm(client.addressCoords.lat, client.addressCoords.lng, -33.8688, 151.2093).toFixed(1)} km from HQ`
-                        : "Distance unknown"}
-                    </div>
+                    {client.addressCoords && (
+                      <div className="absolute right-2 bottom-2 rounded-md bg-black/60 px-2 py-1 text-[9px] text-zinc-400 backdrop-blur-sm">
+                        {haversineKm(client.addressCoords.lat, client.addressCoords.lng, -33.8688, 151.2093).toFixed(1)} km from HQ
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1.5 bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[11px] text-zinc-500">
-                    <MapPin size={10} className="text-zinc-600" />
-                    {client.address}
+                  <div className="flex items-center gap-1.5 bg-white/[0.02] px-3 py-2 text-[11px] text-zinc-500">
+                    <MapPin size={9} className="shrink-0 text-zinc-600" />
+                    <span className="truncate">{client.address}</span>
                   </div>
                 </div>
               </div>
@@ -609,25 +656,25 @@ export default function ClientDossierPage() {
 
             {/* ── Contact Grid ────────────────────────────────── */}
             <div className="mb-6">
-              <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+              <h4 className="mb-3 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
                 Contacts
               </h4>
               <div className="space-y-1">
-                {(client.contacts || []).map((contact) => (
-                  <div
+                {(client.contacts || []).map((contact, i) => (
+                  <motion.div
                     key={contact.id}
-                    className="group flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="group flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-white/[0.03]"
                   >
                     <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[9px] font-medium text-zinc-300 ${getGradient(contact.initials)}`}>
                       {contact.initials}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[12px] font-medium text-zinc-300">
-                        {contact.name}
-                      </div>
+                      <div className="truncate text-[12px] font-medium text-zinc-300">{contact.name}</div>
                       <div className="text-[10px] text-zinc-600">{contact.role}</div>
                     </div>
-                    {/* Hover actions */}
                     <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         onClick={(e) => {
@@ -635,35 +682,35 @@ export default function ClientDossierPage() {
                           navigator.clipboard?.writeText(contact.email);
                           addToast("Email copied");
                         }}
-                        className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
-                        title="Copy email"
+                        className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
                       >
                         <Mail size={10} />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (!contact.phone) { addToast("No phone number configured"); return; }
+                          if (!contact.phone) { addToast("No phone number"); return; }
                           window.location.href = `tel:${contact.phone}`;
                         }}
-                        className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
-                        title="Call"
+                        className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
                       >
                         <Phone size={10} />
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
+                {(!client.contacts || client.contacts.length === 0) && (
+                  <p className="py-3 text-center text-[11px] text-zinc-700">No contacts yet</p>
+                )}
               </div>
             </div>
 
-            {/* ── Contact Details (Editable) ──────────────────── */}
+            {/* ── Details (Editable) ──────────────────────────── */}
             <div className="mb-6">
-              <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+              <h4 className="mb-3 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
                 Details
               </h4>
-              <div className="space-y-1">
-                {/* Email */}
+              <div className="space-y-0.5">
                 <EditableRow
                   label="Email"
                   value={localEmail}
@@ -679,7 +726,6 @@ export default function ClientDossierPage() {
                     addToast("Email updated");
                   }}
                 />
-                {/* Phone */}
                 <EditableRow
                   label="Phone"
                   value={localPhone}
@@ -695,7 +741,6 @@ export default function ClientDossierPage() {
                     addToast("Phone updated");
                   }}
                 />
-                {/* Type */}
                 <div className="flex items-center justify-between rounded-md px-3 py-2">
                   <span className="text-[11px] text-zinc-600">Type</span>
                   <div className="flex items-center gap-1.5">
@@ -705,7 +750,6 @@ export default function ClientDossierPage() {
                     </span>
                   </div>
                 </div>
-                {/* Since */}
                 <div className="flex items-center justify-between rounded-md px-3 py-2">
                   <span className="text-[11px] text-zinc-600">Since</span>
                   <div className="flex items-center gap-1.5">
@@ -717,17 +761,17 @@ export default function ClientDossierPage() {
             </div>
 
             {/* ── Tags ────────────────────────────────────────── */}
-            <div>
-              <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+            <div className="mb-6">
+              <h4 className="mb-3 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
                 Tags
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {(client.tags || []).map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-2.5 py-1 text-[11px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)]"
+                    className="inline-flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 text-[10px] text-zinc-400 transition-colors hover:border-white/[0.12]"
                   >
-                    <Tag size={9} className="text-zinc-600" />
+                    <Tag size={8} className="text-zinc-600" />
                     {tag}
                   </span>
                 ))}
@@ -752,24 +796,44 @@ export default function ClientDossierPage() {
                     }}
                     onBlur={() => { setNewTagValue(""); setAddingTag(false); }}
                     placeholder="Tag name..."
-                    className="inline-flex w-20 rounded-full border border-[#00E676]/40 bg-[rgba(255,255,255,0.03)] px-2.5 py-1 text-[11px] text-zinc-300 outline-none placeholder:text-zinc-600"
+                    className="inline-flex w-20 rounded-md border border-emerald-500/30 bg-white/[0.02] px-2.5 py-1 text-[10px] text-zinc-300 outline-none placeholder:text-zinc-700"
                   />
                 ) : (
                   <button
                     onClick={() => setAddingTag(true)}
-                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[11px] text-zinc-600 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-400"
+                    className="inline-flex items-center gap-1 rounded-md border border-dashed border-white/[0.06] px-2.5 py-1 text-[10px] text-zinc-600 transition-colors hover:border-white/[0.12] hover:text-zinc-400"
                   >
-                    <Plus size={9} />
+                    <Plus size={8} />
                     Add
                   </button>
                 )}
               </div>
             </div>
           </div>
+
+          {/* ── Sticky Footer Actions ─────────────────────────── */}
+          <div className="sticky bottom-0 border-t border-white/[0.04] bg-[#080808]/90 px-5 py-3 backdrop-blur-xl">
+            <div className="flex items-center gap-2">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => router.push(`/dashboard/jobs?clientId=${client.id}&clientName=${encodeURIComponent(client.name)}`)}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 py-2 text-[12px] font-medium text-white transition-all hover:bg-emerald-500"
+              >
+                <Briefcase size={12} />
+                Create Job
+              </motion.button>
+              <button
+                onClick={() => addToast("Statement generation coming soon")}
+                className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-3 py-2 text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-300"
+              >
+                <FileText size={12} />
+                Statement
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Context Menu */}
       <ContextMenu
         open={ctxMenu.open}
         x={ctxMenu.x}
@@ -779,6 +843,131 @@ export default function ClientDossierPage() {
         onClose={() => setCtxMenu((p) => ({ ...p, open: false }))}
       />
     </motion.div>
+  );
+}
+
+/* ── Stat Card Component ──────────────────────────────────── */
+
+function StatCard({ label, icon, value, subtext, accent }: {
+  label: string;
+  icon: React.ReactNode;
+  value: string;
+  subtext: string;
+  accent: "emerald" | "rose" | "zinc";
+}) {
+  const accentClasses = {
+    emerald: "text-emerald-400",
+    rose: "text-rose-400",
+    zinc: "text-zinc-300",
+  };
+
+  return (
+    <div className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-4">
+      <div className="mb-2 flex items-center gap-1 text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+        {icon}
+        {label}
+      </div>
+      <div className={`font-mono text-[20px] font-semibold ${accentClasses[accent]}`}>
+        {value}
+      </div>
+      <div className="mt-0.5 text-[10px] text-zinc-600">{subtext}</div>
+    </div>
+  );
+}
+
+/* ── Activity Timeline Component ──────────────────────────── */
+
+function ActivityTimeline({ activity, router }: { activity: ClientActivity[]; router: any }) {
+  if (activity.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <Clock size={24} className="mx-auto mb-3 text-zinc-700" />
+        <p className="text-[13px] text-zinc-500">No activity yet</p>
+        <p className="mt-1 text-[11px] text-zinc-600">Activity will appear here when jobs, invoices, or notes are created.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative pl-6">
+      <div className="absolute top-2 bottom-2 left-[7px] w-px bg-white/[0.04]" />
+      <div className="space-y-3">
+        {activity.map((entry, i) => {
+          const Icon = activityIcons[entry.type] || Briefcase;
+          const iconColor = activityColors[entry.type] || "text-zinc-500";
+          const isNote = entry.type === "note";
+          const isInvoice = entry.type === "invoice_paid" || entry.type === "invoice_sent";
+
+          return (
+            <motion.div
+              key={entry.id || i}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.04, duration: 0.2 }}
+              className="relative flex gap-3"
+            >
+              <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/[0.06] bg-[#080808]">
+                <Icon size={8} className={iconColor} />
+              </div>
+              <div
+                className={`flex-1 rounded-lg p-3 ${
+                  isNote
+                    ? "border border-yellow-500/10 bg-yellow-500/[0.03]"
+                    : "border border-white/[0.03] bg-white/[0.01]"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="text-[12px] text-zinc-400">{entry.text}</div>
+                  {isInvoice && entry.amount && (
+                    <span className={`ml-2 shrink-0 rounded-md px-2 py-0.5 text-[10px] font-medium ${
+                      entry.type === "invoice_paid"
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-amber-500/10 text-amber-400"
+                    }`}>
+                      {entry.type === "invoice_paid" ? "Paid" : "Sent"} {entry.amount}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-700">{entry.time}</span>
+                  {entry.jobRef && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/dashboard/jobs/${entry.jobRef}`);
+                      }}
+                      className="flex items-center gap-0.5 text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
+                    >
+                      <ExternalLink size={8} />
+                      {entry.jobRef}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Animated LTV Display ─────────────────────────────────── */
+
+function AnimatedLTV({ value, isVIP }: { value: number; isVIP: boolean }) {
+  const displayed = useCountUp(value, 700);
+
+  return (
+    <div
+      className={`font-mono text-[26px] font-bold tracking-tight ${isVIP ? "text-emerald-400" : "text-zinc-200"}`}
+      style={
+        isVIP
+          ? { textShadow: "0 0 20px rgba(16, 185, 129, 0.35)" }
+          : undefined
+      }
+    >
+      ${displayed.toLocaleString()}
+    </div>
   );
 }
 
@@ -810,7 +999,7 @@ function EditableRow({
   }, [editing]);
 
   return (
-    <div className="relative flex items-center justify-between rounded-md px-3 py-2 transition-colors hover:bg-[rgba(255,255,255,0.02)]">
+    <div className="relative flex items-center justify-between rounded-md px-3 py-2 transition-colors hover:bg-white/[0.02]">
       <span className="text-[11px] text-zinc-600">{label}</span>
       <div className="flex items-center gap-1.5">
         {icon}
@@ -828,7 +1017,7 @@ function EditableRow({
             onClick={onStartEdit}
             className="cursor-text text-[12px] text-zinc-400 transition-colors hover:text-zinc-300"
           >
-            {value}
+            {value || "—"}
           </span>
         )}
         <AnimatePresence>

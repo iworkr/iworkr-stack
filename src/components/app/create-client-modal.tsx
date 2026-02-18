@@ -41,9 +41,9 @@ const billingTerms: { value: BillingTerm; label: string }[] = [
   { value: "net_60", label: "Net 60" },
 ];
 
-const clientTypes: { value: "residential" | "commercial"; label: string; icon: typeof Home }[] = [
-  { value: "residential", label: "Residential", icon: Home },
-  { value: "commercial", label: "Commercial", icon: Building2 },
+const clientTypes: { value: "residential" | "commercial"; label: string; icon: typeof Home; desc: string }[] = [
+  { value: "residential", label: "Residential", icon: Home, desc: "Individual or household" },
+  { value: "commercial", label: "Business", icon: Building2, desc: "Company or organization" },
 ];
 
 const gradients = [
@@ -310,8 +310,8 @@ export function CreateClientModal({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "circOut" }}
             layout
-            className="fixed top-[10%] left-1/2 z-50 flex w-full max-w-[800px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0C0C0C] backdrop-blur-md"
-            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5), 0 0 40px -10px rgba(0,230,118,0.06)", maxHeight: "80vh" }}
+            className="fixed top-[10%] left-1/2 z-50 flex w-full max-w-[800px] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A0A0A]/95 backdrop-blur-xl"
+            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.6), 0 0 50px -15px rgba(16,185,129,0.06)", maxHeight: "80vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ── Header ────────────────────────────────────── */}
@@ -480,24 +480,43 @@ export function CreateClientModal({
                     {/* ZONE 3: Contact & Billing Details          */}
                     {/* ══════════════════════════════════════════ */}
                     <div className="border-t border-[rgba(255,255,255,0.06)] px-6 py-4">
-                      {/* Client type selector */}
-                      <div className="mb-4 flex gap-2">
+                      {/* Client type selector — Big toggle cards */}
+                      <div className="mb-5 grid grid-cols-2 gap-3">
                         {clientTypes.map((ct) => {
                           const Icon = ct.icon;
                           const active = clientType === ct.value;
                           return (
-                            <button
+                            <motion.button
                               key={ct.value}
+                              whileTap={{ scale: 0.98 }}
                               onClick={() => setClientType(ct.value)}
-                              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12px] transition-all ${
+                              className={`relative flex flex-col items-center gap-2 rounded-xl border px-4 py-4 text-center transition-all duration-200 ${
                                 active
-                                  ? "border-[#00E676]/40 bg-[#00E676]/10 text-[#00E676]"
-                                  : "border-[rgba(255,255,255,0.08)] text-zinc-500 hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-400"
+                                  ? "border-emerald-500/40 bg-emerald-500/[0.06]"
+                                  : "border-white/[0.06] bg-white/[0.01] hover:border-white/[0.12] hover:bg-white/[0.02]"
                               }`}
                             >
-                              <Icon size={12} />
-                              {ct.label}
-                            </button>
+                              <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                                active ? "bg-emerald-500/15 text-emerald-400" : "bg-white/[0.04] text-zinc-500"
+                              }`}>
+                                <Icon size={20} />
+                              </div>
+                              <div>
+                                <div className={`text-[13px] font-medium ${active ? "text-white" : "text-zinc-400"}`}>
+                                  {ct.label}
+                                </div>
+                                <div className="mt-0.5 text-[10px] text-zinc-600">{ct.desc}</div>
+                              </div>
+                              {active && (
+                                <motion.div
+                                  layoutId="entity-type-check"
+                                  className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500"
+                                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                >
+                                  <Check size={10} className="text-white" />
+                                </motion.div>
+                              )}
+                            </motion.button>
                           );
                         })}
                       </div>
