@@ -82,7 +82,7 @@ export default function DevelopersPage() {
       <div className="mb-8">
         <h1 className="text-[18px] font-semibold text-zinc-100">Developer API</h1>
         <p className="mt-1 text-[13px] text-zinc-500">
-          Manage API keys to integrate iWorkr with your custom systems.
+          Manage API keys to integrate the platform with your custom systems.
         </p>
       </div>
 

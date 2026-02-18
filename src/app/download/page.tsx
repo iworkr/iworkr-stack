@@ -101,7 +101,7 @@ export default function DownloadPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#00E676] to-[#00C853]">
               <span className="text-sm font-bold text-black">W</span>
             </div>
-            <span className="text-[15px] font-semibold text-zinc-200">iWorkr</span>
+            <span className="text-[15px] font-semibold text-zinc-200">Workspace</span>
           </a>
           <a
             href="/auth"
@@ -125,7 +125,7 @@ export default function DownloadPage() {
           </div>
 
           <h1 className="text-[42px] font-bold leading-tight tracking-tight text-zinc-100">
-            iWorkr for Desktop
+            Desktop App
           </h1>
           <p className="mx-auto mt-4 max-w-lg text-[16px] leading-relaxed text-zinc-500">
             A dedicated command center. No browser distractions.
@@ -228,7 +228,7 @@ export default function DownloadPage() {
                 <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
                 <div className="h-3 w-3 rounded-full bg-[#28c840]" />
               </div>
-              <span className="ml-4 text-[11px] text-zinc-600">iWorkr</span>
+              <span className="ml-4 text-[11px] text-zinc-600">Workspace</span>
             </div>
             {/* Content area */}
             <div className="flex h-[340px]">
@@ -286,7 +286,7 @@ export default function DownloadPage() {
           viewport={{ once: true }}
           className="mb-12 text-center text-[24px] font-bold text-zinc-200"
         >
-          Built for operators who live in iWorkr.
+          Built for operators who live in their workspace.
         </motion.p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

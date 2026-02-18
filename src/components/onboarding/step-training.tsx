@@ -117,7 +117,7 @@ export function StepTraining() {
             </h2>
             <p className="mb-8 max-w-sm text-sm text-zinc-500">
               The command menu gives you instant access to every action in
-              iWorkr. Try it now.
+              the platform. Try it now.
             </p>
 
             {/* Keyboard shortcut hint — tap to try on mobile */}

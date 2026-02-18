@@ -6,7 +6,7 @@ export default function ImportExportPage() {
   return (
     <>
       <h1 className="mb-2 text-2xl font-medium tracking-tight text-zinc-100">Import / Export</h1>
-      <p className="mb-6 text-[13px] text-zinc-600">Import data from other platforms or export your iWorkr data.</p>
+      <p className="mb-6 text-[13px] text-zinc-600">Import data from other platforms or export your workspace data.</p>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-5">

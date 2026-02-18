@@ -59,7 +59,7 @@ export function OnboardingLayout({
       <div className="fixed top-6 left-6 z-40 flex items-center gap-2.5">
         <img
           src="/logos/logo-dark-full.png"
-          alt="iWorkr"
+          alt="Logo"
           className="h-7 w-auto object-contain"
         />
       </div>

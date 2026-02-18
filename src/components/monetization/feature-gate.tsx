@@ -40,7 +40,7 @@ export const FEATURE_CONFIG: Record<GatedFeature, FeatureConfig> = {
   },
   integrations: {
     label: "Integrations",
-    description: "Connect iWorkr to your favourite tools — Stripe, Xero, and more.",
+    description: "Connect your workspace to your favourite tools — Stripe, Xero, and more.",
     requiredPlan: "starter",
     benefits: [
       "Stripe payment sync",
@@ -84,7 +84,7 @@ export const FEATURE_CONFIG: Record<GatedFeature, FeatureConfig> = {
   },
   api_access: {
     label: "API Access",
-    description: "Build custom integrations with the iWorkr REST API.",
+    description: "Build custom integrations with the REST API.",
     requiredPlan: "pro",
     benefits: [
       "Full REST API",

@@ -103,7 +103,7 @@ export function StepIdentity() {
           transition={{ delay: 0.2, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="text-sm text-zinc-500"
         >
-          This becomes your workspace identity across iWorkr.
+          This becomes your workspace identity across the platform.
         </motion.p>
       </div>
 

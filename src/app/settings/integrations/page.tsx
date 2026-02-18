@@ -20,7 +20,7 @@ const integrations: Integration[] = [
   { id: "outlook", name: "Outlook Calendar", description: "Sync schedules with Microsoft Outlook.", category: "Scheduling", connected: false },
   { id: "slack", name: "Slack", description: "Get job updates and notifications in Slack channels.", category: "Communication", connected: false },
   { id: "twilio", name: "Twilio", description: "SMS notifications for clients and team members.", category: "Communication", connected: false },
-  { id: "zapier", name: "Zapier", description: "Connect iWorkr to 5,000+ apps via automated workflows.", category: "Automation", connected: false },
+  { id: "zapier", name: "Zapier", description: "Connect your workspace to 5,000+ apps via automated workflows.", category: "Automation", connected: false },
 ];
 
 export default function IntegrationsPage() {
@@ -39,7 +39,7 @@ export default function IntegrationsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-medium tracking-tight text-zinc-100">Integrations</h1>
         <p className="mt-1 text-[13px] text-zinc-600">
-          Connect iWorkr with your existing tools and services.
+          Connect your workspace with your existing tools and services.
         </p>
       </div>
 

@@ -120,7 +120,7 @@ export function StepComplete() {
 
         <p className="mx-auto max-w-sm text-sm text-zinc-500">
           All systems are calibrated. Your workspace is provisioned and
-          operational. Welcome to iWorkr.
+          operational. Welcome to your workspace.
         </p>
       </motion.div>
 

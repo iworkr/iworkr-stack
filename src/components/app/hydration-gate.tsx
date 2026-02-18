@@ -79,7 +79,7 @@ export function HydrationGate({ children }: { children: ReactNode }) {
             >
               <img
                 src="/logos/logo-dark-streamline.png"
-                alt="iWorkr"
+                alt="Logo"
                 className="h-10 w-10 object-contain"
               />
               {/* Animated ring */}

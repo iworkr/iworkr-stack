@@ -67,7 +67,7 @@ export default function DesktopLoginPage() {
           Desktop Sign In
         </h1>
         <p className="mt-2 text-[13px] text-zinc-500">
-          Connecting your account to the iWorkr desktop app.
+          Connecting your account to the desktop app.
         </p>
 
         <div className="mt-8">
@@ -80,7 +80,7 @@ export default function DesktopLoginPage() {
             <div className="flex flex-col items-center gap-3">
               <CheckCircle size={24} className="text-[#00E676]" />
               <p className="text-[12px] text-zinc-400">
-                Authenticated! Returning to iWorkr Desktop…
+                Authenticated! Returning to Desktop…
               </p>
               <p className="text-[11px] text-zinc-600">
                 You can close this browser tab.

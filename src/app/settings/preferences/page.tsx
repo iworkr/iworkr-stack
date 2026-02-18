@@ -52,7 +52,7 @@ export default function PreferencesPage() {
       <SettingSection title="General">
         <SettingRow
           label="Default home view"
-          description="Select which view to display when launching iWorkr"
+          description="Select which view to display when launching the app"
         >
           <Select
             value={homeView}
@@ -66,7 +66,7 @@ export default function PreferencesPage() {
         </SettingRow>
         <SettingRow
           label="Display names"
-          description="Select how names are displayed in the iWorkr interface"
+          description="Select how names are displayed in the interface"
         >
           <Select
             value={displayNames}
@@ -153,7 +153,7 @@ export default function PreferencesPage() {
       <SettingSection title="Desktop application">
         <SettingRow
           label="App notification badge"
-          description="Show a badge on iWorkr's icon to indicate unread notifications"
+          description="Show a badge on the app icon to indicate unread notifications"
         >
           <Select
             value={notifBadge}

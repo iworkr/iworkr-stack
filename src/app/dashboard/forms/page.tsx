@@ -24,7 +24,7 @@ import { SubmissionsList } from "@/components/forms/submissions-list";
 
 const tabs: { id: FormsTab; label: string; icon: typeof FileText }[] = [
   { id: "my_forms", label: "My Forms", icon: FileText },
-  { id: "library", label: "iWorkr Library", icon: BookOpen },
+  { id: "library", label: "Template Library", icon: BookOpen },
   { id: "submissions", label: "Submissions", icon: ClipboardCheck },
 ];
 

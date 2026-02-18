@@ -105,7 +105,7 @@ function WorkspaceDropdown({
       >
         <img
           src="/logos/logo-dark-streamline.png"
-          alt="iWorkr"
+          alt="Logo"
           className="h-[18px] w-[18px] object-contain"
         />
         <span className="hidden text-[13px] font-medium text-zinc-300 sm:inline">
@@ -127,7 +127,7 @@ function WorkspaceDropdown({
             <div className="mx-1 mb-1 flex items-center gap-2 rounded-md bg-[rgba(255,255,255,0.04)] px-2.5 py-2">
               <img
                 src="/logos/logo-dark-streamline.png"
-                alt="iWorkr"
+                alt="Logo"
                 className="h-4 w-4 object-contain"
               />
               <span className="flex-1 truncate text-[12px] font-medium text-zinc-200">

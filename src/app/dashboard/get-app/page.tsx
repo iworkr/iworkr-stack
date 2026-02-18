@@ -50,7 +50,7 @@ export default function GetAppPage() {
           </div>
           <div>
             <h1 className="text-[15px] font-medium text-zinc-200">Get the App</h1>
-            <p className="text-[11px] text-zinc-600">Download iWorkr for your field technicians</p>
+            <p className="text-[11px] text-zinc-600">Download the app for your field technicians</p>
           </div>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function GetAppPage() {
             className="mb-10 text-center"
           >
             <h2 className="text-[28px] font-bold tracking-tight text-zinc-100">
-              iWorkr in your pocket.
+              Your workspace in your pocket.
             </h2>
             <p className="mt-2 text-[14px] text-zinc-500">
               Dispatch jobs, track crews, and capture photos — all from the field.

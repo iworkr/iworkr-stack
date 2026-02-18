@@ -153,7 +153,7 @@ function AuthPageInner() {
           className="flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-300"
         >
           <ArrowLeft size={13} />
-          Back to iWorkr
+          Back
         </Link>
       </div>
 
@@ -182,13 +182,13 @@ function AuthPageInner() {
                   }}
                   className="flex h-14 w-14 items-center justify-center rounded-xl"
                 >
-                  <img src="/logos/logo-dark-streamline.png" alt="iWorkr" className="h-12 w-12 object-contain" />
+                  <img src="/logos/logo-dark-streamline.png" alt="Logo" className="h-12 w-12 object-contain" />
                 </motion.div>
                 <div className="text-center">
                   <h1 className="text-xl font-medium tracking-tight text-zinc-100">
-                    Sign in to <span className="font-semibold">iWorkr</span>
+                    Sign in to your workspace
                   </h1>
-                  <p className="mt-1.5 text-sm text-zinc-500">
+                  <p className="mt-1.5 text-[13px] text-zinc-600">
                     The operating system for service work.
                   </p>
                 </div>
@@ -305,14 +305,14 @@ function AuthPageInner() {
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder="you@company.com"
-                    className="w-full border-b border-[rgba(255,255,255,0.1)] bg-transparent py-3 text-base text-zinc-100 outline-none transition-colors placeholder:text-zinc-700 focus:border-white"
+                    className="w-full border-b border-white/[0.08] bg-transparent py-3 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
                     autoComplete="email"
                   />
                   {error && (
                     <motion.p
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-2 text-xs text-red-400/80"
+                      className="mt-2 text-xs text-rose-400/80"
                     >
                       {error}
                     </motion.p>
@@ -321,9 +321,9 @@ function AuthPageInner() {
 
                 <motion.button
                   whileHover={{ scale: 1.01, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={handleEmailSubmit}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-500 hover:shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)]"
                 >
                   Continue
                   <ArrowRight size={14} />
@@ -364,7 +364,7 @@ function AuthPageInner() {
                   onChange={(e) => { setEmail(e.target.value); setError(null); }}
                   onKeyDown={handleKeyDown}
                   placeholder="you@company.com"
-                  className="w-full border-b border-[rgba(255,255,255,0.1)] bg-transparent py-3 text-base text-zinc-100 outline-none transition-colors placeholder:text-zinc-700 focus:border-white"
+                  className="w-full border-b border-white/[0.08] bg-transparent py-3 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
                   autoComplete="email"
                 />
 
@@ -375,7 +375,7 @@ function AuthPageInner() {
                     onChange={(e) => { setPassword(e.target.value); setError(null); }}
                     onKeyDown={handleKeyDown}
                     placeholder="Password"
-                    className="w-full border-b border-[rgba(255,255,255,0.1)] bg-transparent py-3 pr-10 text-base text-zinc-100 outline-none transition-colors placeholder:text-zinc-700 focus:border-white"
+                    className="w-full border-b border-white/[0.08] bg-transparent py-3 pr-10 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
                     autoComplete="current-password"
                   />
                   <button
@@ -392,7 +392,7 @@ function AuthPageInner() {
                   <motion.p
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-xs text-red-400/80"
+                    className="text-xs text-rose-400/80"
                   >
                     {error}
                   </motion.p>
@@ -400,9 +400,9 @@ function AuthPageInner() {
 
                 <motion.button
                   whileHover={{ scale: 1.01, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={handlePasswordSubmit}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-500 hover:shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)]"
                 >
                   Sign In
                   <ArrowRight size={14} />

@@ -248,7 +248,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
           >
             <img
               src="/logos/logo-dark-streamline.png"
-              alt="iWorkr"
+              alt="Logo"
               className="h-[22px] w-[22px] shrink-0 object-contain brightness-150"
             />
             <AnimatePresence>
