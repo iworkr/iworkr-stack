@@ -1,0 +1,30 @@
+{
+  "name": "iworkr-desktop",
+  "version": "1.0.0",
+  "description": "iWorkr Desktop — The Obsidian Monolith",
+  "author": "iWorkr <engineering@iworkr.com>",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "dist/main/main.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "pack": "tsc && electron-builder --dir",
+    "dist:mac": "tsc && electron-builder --mac",
+    "dist:win": "tsc && electron-builder --win",
+    "dist:all": "tsc && electron-builder --mac --win",
+    "clean": "rm -rf dist out"
+  },
+  "dependencies": {
+    "electron-log": "^5.3.0",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.7.3"
+  },
+  "build": {}
+}

@@ -1,0 +1,89 @@
+appId: com.iworkr.desktop
+productName: iWorkr
+copyright: Copyright © 2026 iWorkr
+
+directories:
+  output: out
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - renderer/**/*
+  - resources/**/*
+  - "!**/*.ts"
+  - "!**/*.map"
+
+extraMetadata:
+  main: dist/main/main.js
+
+# ── Auto-Update (Supabase Storage) ──────────────────────
+publish:
+  provider: generic
+  url: https://iaroashargzwsuuciqox.supabase.co/storage/v1/object/public/releases/
+  channel: latest
+
+# ── macOS ────────────────────────────────────────────────
+mac:
+  category: public.app-category.business
+  icon: resources/icon.icns
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.inherit.plist
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+    - target: zip
+      arch:
+        - arm64
+        - x64
+
+dmg:
+  background: resources/dmg-background.png
+  iconSize: 80
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+afterSign: scripts/notarize.js
+
+# ── Windows ──────────────────────────────────────────────
+win:
+  icon: resources/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - arm64
+  signingHashAlgorithms:
+    - sha256
+  publisherName: iWorkr
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+
+# ── Linux (future) ───────────────────────────────────────
+linux:
+  icon: resources/icons
+  category: Office
+  target:
+    - AppImage
+    - deb
+
+# ── Protocol Handler ────────────────────────────────────
+protocols:
+  - name: iWorkr
+    schemes:
+      - iworkr

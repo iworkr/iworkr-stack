@@ -12,6 +12,8 @@ import { DataProvider } from "@/components/app/data-provider";
 import { HydrationGate } from "@/components/app/hydration-gate";
 import { useShellStore } from "@/lib/shell-store";
 
+const DesktopBridge = dynamic(() => import("@/lib/desktop/desktop-bridge").then((m) => m.DesktopBridge), { ssr: false });
+
 // Lazy-load modals and overlays (only rendered when opened)
 const CommandMenu = dynamic(() => import("@/components/shell/command-menu").then((m) => m.CommandMenu), { ssr: false });
 const CreateJobModal = dynamic(() => import("@/components/app/create-job-modal").then((m) => m.CreateJobModal), { ssr: false });
@@ -228,6 +230,7 @@ export default function DashboardLayout({
       />
       <ActionToastContainer />
       <UpgradeCelebration />
+      <DesktopBridge />
     </div>
     </HydrationGate>
   );

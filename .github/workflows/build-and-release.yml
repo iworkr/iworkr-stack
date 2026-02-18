@@ -1,0 +1,200 @@
+name: "Build & Release Desktop"
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g., 1.0.0)"
+        required: false
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: "22"
+  ELECTRON_DIR: "electron"
+
+jobs:
+  # ── Build macOS (Apple Silicon + Intel) ─────────────────
+  build-mac:
+    name: Build macOS
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "${{ env.ELECTRON_DIR }}/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ${{ env.ELECTRON_DIR }}
+        run: npm ci
+
+      - name: Import Apple certificates
+        if: env.CSC_LINK != ''
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          echo -n "$CSC_LINK" | base64 --decode -o $CERTIFICATE_PATH
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          security import $CERTIFICATE_PATH -P "$CSC_KEY_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Build & Sign macOS
+        working-directory: ${{ env.ELECTRON_DIR }}
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run dist:mac
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-builds
+          path: |
+            ${{ env.ELECTRON_DIR }}/out/*.dmg
+            ${{ env.ELECTRON_DIR }}/out/*.zip
+            ${{ env.ELECTRON_DIR }}/out/latest-mac.yml
+          retention-days: 30
+
+  # ── Build Windows (x64) ────────────────────────────────
+  build-win:
+    name: Build Windows
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "${{ env.ELECTRON_DIR }}/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ${{ env.ELECTRON_DIR }}
+        run: npm ci
+
+      - name: Build & Sign Windows
+        working-directory: ${{ env.ELECTRON_DIR }}
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: npm run dist:win
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-builds
+          path: |
+            ${{ env.ELECTRON_DIR }}/out/*.exe
+            ${{ env.ELECTRON_DIR }}/out/latest.yml
+          retention-days: 30
+
+  # ── Upload to Supabase Storage ─────────────────────────
+  publish:
+    name: Publish to Supabase
+    needs: [build-mac, build-win]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-builds
+          path: artifacts/mac
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: win-builds
+          path: artifacts/win
+
+      - name: List artifacts
+        run: find artifacts -type f | head -20
+
+      - name: Upload to Supabase Storage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          upload_file() {
+            local file_path="$1"
+            local storage_path="$2"
+            local content_type="$3"
+
+            echo "Uploading $file_path -> $storage_path"
+            curl -s -X POST \
+              "${SUPABASE_URL}/storage/v1/object/releases/${storage_path}" \
+              -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+              -H "Content-Type: ${content_type}" \
+              -H "x-upsert: true" \
+              --data-binary "@${file_path}" \
+              -o /dev/null -w "%{http_code}" | grep -q "200\|201" && echo " ✓" || echo " ✗ FAILED"
+          }
+
+          # Upload macOS artifacts
+          for f in artifacts/mac/*.dmg; do
+            [ -f "$f" ] && upload_file "$f" "mac/$(basename $f)" "application/octet-stream"
+          done
+          for f in artifacts/mac/*.zip; do
+            [ -f "$f" ] && upload_file "$f" "mac/$(basename $f)" "application/zip"
+          done
+          [ -f "artifacts/mac/latest-mac.yml" ] && upload_file "artifacts/mac/latest-mac.yml" "mac/latest-mac.yml" "text/yaml"
+
+          # Upload Windows artifacts
+          for f in artifacts/win/*.exe; do
+            [ -f "$f" ] && upload_file "$f" "win/$(basename $f)" "application/octet-stream"
+          done
+          [ -f "artifacts/win/latest.yml" ] && upload_file "artifacts/win/latest.yml" "win/latest.yml" "text/yaml"
+
+          echo ""
+          echo "✅ All artifacts published to Supabase Storage"
+
+  # ── Create GitHub Release ──────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: [publish]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/mac-builds/*.dmg
+            artifacts/mac-builds/*.zip
+            artifacts/win-builds/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

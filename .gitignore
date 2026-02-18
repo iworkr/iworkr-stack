@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+/test-output.log
+e2e/.auth/
+*.png.diff.png
 
 # next.js
 /.next/
@@ -39,3 +44,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ── Electron / Desktop ────────────────────────────────
+electron/dist/
+electron/out/
+electron/node_modules/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.snap

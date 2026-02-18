@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   Smartphone,
   Apple,
+  Monitor,
   QrCode,
   Send,
   Check,
@@ -200,6 +201,34 @@ export default function GetAppPage() {
                 </div>
               </div>
             </div>
+          </motion.div>
+
+          {/* Desktop App */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-10"
+          >
+            <h3 className="mb-4 text-center text-[11px] font-medium uppercase tracking-wider text-zinc-600">
+              Desktop App
+            </h3>
+            <a
+              href="/download"
+              className="group flex items-center gap-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-6 transition-all hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-10px_rgba(0,230,118,0.15)]"
+            >
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+                <Monitor size={28} className="text-zinc-300" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] uppercase tracking-wider text-zinc-600">Available for</p>
+                <p className="text-[18px] font-semibold text-zinc-200">macOS & Windows</p>
+                <p className="mt-0.5 text-[11px] text-zinc-600">
+                  Native desktop app for dispatchers & managers
+                </p>
+              </div>
+              <Download size={16} className="text-zinc-600 transition-colors group-hover:text-[#00E676]" />
+            </a>
           </motion.div>
 
           {/* Features */}
