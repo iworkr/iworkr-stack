@@ -83,8 +83,10 @@ class Job {
 enum JobStatus {
   backlog,
   todo,
+  scheduled,
   inProgress,
   done,
+  invoiced,
   cancelled;
 
   static JobStatus fromString(String s) {
@@ -93,8 +95,12 @@ enum JobStatus {
         return JobStatus.inProgress;
       case 'todo':
         return JobStatus.todo;
+      case 'scheduled':
+        return JobStatus.scheduled;
       case 'done':
         return JobStatus.done;
+      case 'invoiced':
+        return JobStatus.invoiced;
       case 'cancelled':
         return JobStatus.cancelled;
       default:
@@ -114,17 +120,45 @@ enum JobStatus {
   String get label {
     switch (this) {
       case JobStatus.backlog:
-        return 'Backlog';
+        return 'Draft';
       case JobStatus.todo:
         return 'To Do';
+      case JobStatus.scheduled:
+        return 'Scheduled';
       case JobStatus.inProgress:
         return 'In Progress';
       case JobStatus.done:
-        return 'Done';
+        return 'Completed';
+      case JobStatus.invoiced:
+        return 'Invoiced';
       case JobStatus.cancelled:
         return 'Cancelled';
     }
   }
+
+  /// The stage index in the Lead-to-Cash pipeline (0-based).
+  /// Returns -1 for terminal states like cancelled.
+  int get pipelineStage {
+    switch (this) {
+      case JobStatus.backlog:
+        return 0;
+      case JobStatus.todo:
+        return 1;
+      case JobStatus.scheduled:
+        return 2;
+      case JobStatus.inProgress:
+        return 3;
+      case JobStatus.done:
+        return 4;
+      case JobStatus.invoiced:
+        return 5;
+      case JobStatus.cancelled:
+        return -1;
+    }
+  }
+
+  bool get isTerminal => this == done || this == invoiced || this == cancelled;
+  bool get isActive => this == inProgress || this == scheduled;
 }
 
 enum JobPriority {

@@ -57,7 +57,11 @@ final jobActivityProvider = FutureProvider.family<List<Map<String, dynamic>>, St
 /// Active jobs count (for dashboard)
 final activeJobsCountProvider = FutureProvider<int>((ref) async {
   final jobs = await ref.watch(jobsProvider.future);
-  return jobs.where((j) => j.status == JobStatus.inProgress || j.status == JobStatus.todo).length;
+  return jobs.where((j) =>
+    j.status == JobStatus.inProgress ||
+    j.status == JobStatus.todo ||
+    j.status == JobStatus.scheduled,
+  ).length;
 });
 
 /// Revenue stats (for dashboard)

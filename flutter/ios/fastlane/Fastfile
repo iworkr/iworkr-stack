@@ -1,0 +1,95 @@
+default_platform(:ios)
+
+platform :ios do
+  # ──────────────────────────────────────────────────────────────────
+  # Lane: setup_app
+  # Creates the App ID + App Store Connect entry if it doesn't exist.
+  # Usage: fastlane ios setup_app
+  # ──────────────────────────────────────────────────────────────────
+  desc "Register the app on Apple Developer Portal and App Store Connect"
+  lane :setup_app do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_CONTENT"],
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    produce(
+      app_identifier: "com.iworkr.app",
+      app_name: "iWorkr",
+      language: "English",
+      app_version: "1.0.0",
+      sku: "com.iworkr.app.ios",
+      platform: "ios",
+      api_key: api_key
+    )
+  end
+
+  # ──────────────────────────────────────────────────────────────────
+  # Lane: deploy_ios
+  # Builds the Flutter app, increments the build number, and uploads
+  # the binary to TestFlight.
+  # Usage: fastlane ios deploy_ios
+  # ──────────────────────────────────────────────────────────────────
+  desc "Build and upload to TestFlight"
+  lane :deploy_ios do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_CONTENT"],
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    # 1. Build Flutter first (produces the Runner.app / .xcarchive artifacts)
+    sh("cd ../.. && flutter build ios --release --no-codesign")
+
+    # 2. Increment build number (auto-increment based on latest TestFlight build)
+    latest = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: "com.iworkr.app"
+    )
+    increment_build_number(
+      build_number: latest + 1,
+      xcodeproj: "Runner.xcodeproj"
+    )
+
+    # 3. Build the signed IPA
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      output_directory: "../build/ios/ipa",
+      output_name: "iWorkr.ipa"
+    )
+
+    # 4. Upload to TestFlight
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      skip_submission: false
+    )
+
+    UI.success("iWorkr uploaded to TestFlight!")
+  end
+
+  # ──────────────────────────────────────────────────────────────────
+  # Lane: build_only
+  # Builds the IPA without uploading. Useful for local testing.
+  # Usage: fastlane ios build_only
+  # ──────────────────────────────────────────────────────────────────
+  desc "Build IPA without uploading"
+  lane :build_only do
+    sh("cd ../.. && flutter build ios --release --no-codesign")
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      output_directory: "../build/ios/ipa",
+      output_name: "iWorkr.ipa"
+    )
+  end
+end

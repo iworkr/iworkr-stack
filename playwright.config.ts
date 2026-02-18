@@ -4,13 +4,32 @@ import path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 
+const AUTH_STATE = "e2e/.auth/user.json";
+
+const auditModules = [
+  "dashboard", "inbox", "jobs", "schedule", "clients",
+  "finance", "assets", "forms", "team", "automations",
+  "integrations",
+];
+
+const chromeAuditProjects = auditModules.map((mod) => ({
+  name: `${mod}-audit`,
+  testMatch: new RegExp(`${mod}\\.spec\\.ts`),
+  use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+  dependencies: ["setup"],
+}));
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: [["html", { open: "never" }], ["list"]],
+  reporter: [
+    ["html", { open: process.env.CI ? "never" : "on-failure", outputFolder: "playwright-report" }],
+    ["list"],
+    ["json", { outputFile: "playwright-report/results.json" }],
+  ],
   timeout: 60_000,
   expect: { timeout: 10_000 },
 
@@ -24,96 +43,55 @@ export default defineConfig({
   },
 
   projects: [
+    // Auth setup (runs first)
+    { name: "setup", testMatch: /global-setup\.ts/ },
+
+    // Audit projects (Chrome)
+    ...chromeAuditProjects,
+
+    // Smoke + auth + functional + visual (Chrome)
     {
-      name: "setup",
-      testMatch: /global-setup\.ts/,
-    },
-    {
-      name: "dashboard-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
+      name: "smoke",
+      testMatch: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
     {
-      name: "inbox-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
+      name: "auth-flow",
+      testMatch: /auth\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
       dependencies: ["setup"],
     },
     {
-      name: "jobs-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
+      name: "functional",
+      testMatch: /functional\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
     {
-      name: "schedule-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
+      name: "settings-audit",
+      testMatch: /settings\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
     {
-      name: "clients-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
+      name: "visual",
+      testMatch: /visual\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+
+    // Cross-browser smoke (Firefox + WebKit)
+    {
+      name: "smoke-firefox",
+      testMatch: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Firefox"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
     {
-      name: "finance-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
-      dependencies: ["setup"],
-    },
-    {
-      name: "assets-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
-      dependencies: ["setup"],
-    },
-    {
-      name: "forms-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
-      dependencies: ["setup"],
-    },
-    {
-      name: "team-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
-      dependencies: ["setup"],
-    },
-    {
-      name: "automations-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
-      dependencies: ["setup"],
-    },
-    {
-      name: "integrations-audit",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/user.json",
-      },
+      name: "smoke-webkit",
+      testMatch: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Safari"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
   ],
@@ -125,3 +103,4 @@ export default defineConfig({
     timeout: 30_000,
   },
 });
+

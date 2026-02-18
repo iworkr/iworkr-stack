@@ -7,9 +7,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
-import 'package:iworkr_mobile/core/widgets/empty_state.dart';
+import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
 import 'package:iworkr_mobile/core/widgets/status_pip.dart';
+import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
 import 'package:iworkr_mobile/models/job.dart';
 
 /// The current filter state for jobs
@@ -53,7 +54,9 @@ class JobsScreen extends ConsumerWidget {
                   const Spacer(),
                   // Ghost "New" button — web spec: bg-white/[0.02], border-white/[0.08]
                   GestureDetector(
-                    onTap: () => HapticFeedback.lightImpact(),
+                    onTap: () {
+                      showCreateJobSheet(context);
+                    },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
@@ -63,7 +66,7 @@ class JobsScreen extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(PhosphorIconsRegular.plus, size: 14, color: ObsidianTheme.textSecondary),
+                          const Icon(PhosphorIconsLight.plus, size: 14, color: ObsidianTheme.textSecondary),
                           const SizedBox(width: 6),
                           Text(
                             'New',
@@ -92,9 +95,11 @@ class JobsScreen extends ConsumerWidget {
                 children: [
                   _FilterPill(label: 'All', isActive: filter == null, onTap: () => ref.read(jobFilterProvider.notifier).state = null),
                   _FilterPill(label: 'Active', isActive: filter == JobStatus.inProgress, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.inProgress),
+                  _FilterPill(label: 'Scheduled', isActive: filter == JobStatus.scheduled, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.scheduled),
                   _FilterPill(label: 'To Do', isActive: filter == JobStatus.todo, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.todo),
                   _FilterPill(label: 'Done', isActive: filter == JobStatus.done, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.done),
-                  _FilterPill(label: 'Backlog', isActive: filter == JobStatus.backlog, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.backlog),
+                  _FilterPill(label: 'Invoiced', isActive: filter == JobStatus.invoiced, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.invoiced),
+                  _FilterPill(label: 'Draft', isActive: filter == JobStatus.backlog, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.backlog),
                 ],
               ),
             ).animate().fadeIn(delay: 80.ms, duration: 300.ms),
@@ -129,8 +134,8 @@ class JobsScreen extends ConsumerWidget {
                   final filtered = filter == null ? jobs : jobs.where((j) => j.status == filter).toList();
 
                   if (filtered.isEmpty) {
-                    return const EmptyState(
-                      icon: PhosphorIconsRegular.briefcase,
+                    return const AnimatedEmptyState(
+                      type: EmptyStateType.briefcase,
                       title: 'No jobs found',
                       subtitle: 'Enjoy the silence.',
                     );

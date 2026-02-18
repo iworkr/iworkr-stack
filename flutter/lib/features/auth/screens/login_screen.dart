@@ -69,9 +69,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       _showSuccess = true;
       _mode = _AuthMode.success;
     });
-    // Zoom transition to dashboard after brief success display
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) context.go('/');
+
+    Future.delayed(const Duration(milliseconds: 800), () async {
+      if (!mounted) return;
+      // Check if user needs onboarding
+      final profile = await ref.read(profileProvider.future);
+      if (!mounted) return;
+      if (profile != null && !profile.onboardingCompleted) {
+        final orgData = await ref.read(organizationProvider.future);
+        if (!mounted) return;
+        if (orgData == null) {
+          context.go('/onboarding');
+          return;
+        }
+      }
+      context.go('/');
     });
   }
 
@@ -258,6 +270,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 384),
@@ -395,7 +408,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                _tab == _AuthTab.email ? PhosphorIconsRegular.envelope : PhosphorIconsRegular.phone,
+                _tab == _AuthTab.email ? PhosphorIconsLight.envelope : PhosphorIconsLight.phone,
                 size: 16, color: ObsidianTheme.textSecondary,
               ),
               const SizedBox(width: 12),
@@ -506,7 +519,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             hintStyle: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textDisabled, fontSize: 14),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Icon(PhosphorIconsRegular.envelope, size: 16, color: ObsidianTheme.textTertiary),
+              child: Icon(PhosphorIconsLight.envelope, size: 16, color: ObsidianTheme.textTertiary),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
           ),
@@ -525,13 +538,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             hintStyle: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textDisabled, fontSize: 14),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Icon(PhosphorIconsRegular.lock, size: 16, color: ObsidianTheme.textTertiary),
+              child: Icon(PhosphorIconsLight.lock, size: 16, color: ObsidianTheme.textTertiary),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
             suffixIcon: GestureDetector(
               onTap: () => setState(() => _obscurePassword = !_obscurePassword),
               child: Icon(
-                _obscurePassword ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
+                _obscurePassword ? PhosphorIconsLight.eye : PhosphorIconsLight.eyeSlash,
                 size: 16,
                 color: ObsidianTheme.textTertiary,
               ),
@@ -624,7 +637,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             hintStyle: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textDisabled, fontSize: 14),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Icon(PhosphorIconsRegular.phone, size: 16, color: ObsidianTheme.textTertiary),
+              child: Icon(PhosphorIconsLight.phone, size: 16, color: ObsidianTheme.textTertiary),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
           ),
@@ -772,7 +785,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   color: ObsidianTheme.emeraldDim,
                   border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
                 ),
-                child: const Icon(PhosphorIconsRegular.paperPlaneTilt, size: 26, color: ObsidianTheme.emerald),
+                child: const Icon(PhosphorIconsLight.paperPlaneTilt, size: 26, color: ObsidianTheme.emerald),
               ),
             ],
           ),
@@ -977,7 +990,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
         child: Row(
           children: [
-            const Icon(PhosphorIconsRegular.warning, size: 14, color: ObsidianTheme.rose),
+            const Icon(PhosphorIconsLight.warning, size: 14, color: ObsidianTheme.rose),
             const SizedBox(width: 8),
             Expanded(child: Text(_error!, style: GoogleFonts.inter(color: ObsidianTheme.rose, fontSize: 12))),
           ],
@@ -995,7 +1008,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(PhosphorIconsRegular.arrowLeft, size: 14, color: ObsidianTheme.textTertiary),
+          const Icon(PhosphorIconsLight.arrowLeft, size: 14, color: ObsidianTheme.textTertiary),
           const SizedBox(width: 6),
           Text('All sign in options', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary)),
         ],

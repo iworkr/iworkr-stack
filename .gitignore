@@ -54,3 +54,13 @@ electron/node_modules/
 *.AppImage
 *.deb
 *.snap
+
+# ── Fastlane ──────────────────────────────────────────
+flutter/ios/fastlane/.env
+flutter/ios/fastlane/report.xml
+flutter/ios/fastlane/README.md
+flutter/ios/fastlane/test_output/
+*.p8
+*.cer
+*.mobileprovision
+*.ipa

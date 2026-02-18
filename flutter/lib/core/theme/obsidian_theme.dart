@@ -74,6 +74,18 @@ class ObsidianTheme {
   static const Color blue = Color(0xFF3B82F6);
   static const Color blueDim = Color(0x1A3B82F6);
 
+  /// #6366F1 — AI / intelligence / cortex
+  static const Color indigo = Color(0xFF6366F1);
+  static const Color indigoDim = Color(0x1A6366F1);
+
+  /// #EAB308 — gold / revenue / opportunity / scout
+  static const Color gold = Color(0xFFEAB308);
+  static const Color goldDim = Color(0x1AEAB308);
+
+  /// #8B5CF6 — violet / premium / high-margin / market-index
+  static const Color violet = Color(0xFF8B5CF6);
+  static const Color violetDim = Color(0x1A8B5CF6);
+
   // ── Text ────────────────────────────────────────────
   /// #EDEDED — primary text (web: --text-primary)
   static const Color textPrimary = Color(0xFFEDEDED);
@@ -230,18 +242,16 @@ class ObsidianTheme {
       ),
       dividerTheme: const DividerThemeData(color: border, thickness: 1, space: 0),
       inputDecorationTheme: InputDecorationTheme(
-        filled: false,
+        filled: true,
+        fillColor: Colors.transparent,
         hintStyle: GoogleFonts.inter(color: textDisabled, fontSize: 14),
         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
-        border: const UnderlineInputBorder(
-          borderSide: BorderSide(color: borderMedium),
-        ),
-        enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: borderMedium),
-        ),
-        focusedBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: emerald),
-        ),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
       ),
       colorScheme: const ColorScheme.dark(
         primary: emerald,

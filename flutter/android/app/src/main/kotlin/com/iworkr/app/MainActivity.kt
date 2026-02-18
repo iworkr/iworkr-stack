@@ -1,4 +1,4 @@
-package com.iworkr.iworkr_mobile
+package com.iworkr.app
 
 import io.flutter.embedding.android.FlutterActivity
 

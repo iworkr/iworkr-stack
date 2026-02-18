@@ -28,6 +28,10 @@ class StatusPip extends StatelessWidget {
         return const StatusPip(color: ObsidianTheme.emerald);
       case JobStatus.todo:
         return const StatusPip(color: ObsidianTheme.blue);
+      case JobStatus.scheduled:
+        return const StatusPip(color: ObsidianTheme.amber, pulse: true);
+      case JobStatus.invoiced:
+        return const StatusPip(color: Color(0xFFA78BFA));
       case JobStatus.cancelled:
         return const StatusPip(color: ObsidianTheme.rose);
       case JobStatus.backlog:

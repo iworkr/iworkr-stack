@@ -1,0 +1,29 @@
+flutter_launcher_icons:
+  image_path: "assets/brand/app_icon_master.png"
+
+  # iOS
+  ios: true
+  remove_alpha_ios: true
+  ios_content_mode: "scaleAspectFit"
+  # Background color behind the icon when alpha is removed
+  background_color_ios: "#050505"
+
+  # Android
+  android: true
+  adaptive_icon_foreground: "assets/brand/app_icon_master.png"
+  adaptive_icon_background: "#050505"
+  adaptive_icon_monochrome: "assets/brand/app_icon_master.png"
+  min_sdk_android: 21
+
+  # Web (favicon)
+  web:
+    generate: false
+
+  # macOS
+  macos:
+    generate: true
+
+  # Windows
+  windows:
+    generate: true
+    icon_size: 48

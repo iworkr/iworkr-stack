@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iworkr_mobile/core/router/app_router.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/widgets/auth_curtain.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,17 @@ class IWorkrApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: ObsidianTheme.darkTheme,
       routerConfig: router,
+      builder: (context, child) {
+        // Global tap-to-dismiss keyboard — tapping outside any text field
+        // unfocuses it and closes the keyboard on every screen.
+        return AuthCurtain(
+          child: GestureDetector(
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            behavior: HitTestBehavior.translucent,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
     );
   }
 }

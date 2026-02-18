@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
-import 'package:iworkr_mobile/core/widgets/empty_state.dart';
+import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/models/schedule_block.dart';
 
 /// Dashboard schedule preview — glass blocks with status spine.
@@ -34,8 +33,8 @@ class SchedulePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (blocks.isEmpty) {
-      return const EmptyState(
-        icon: PhosphorIconsRegular.calendarBlank,
+      return const AnimatedEmptyState(
+        type: EmptyStateType.calendar,
         title: 'Clear schedule today',
         subtitle: 'No jobs scheduled. Enjoy the downtime.',
       );

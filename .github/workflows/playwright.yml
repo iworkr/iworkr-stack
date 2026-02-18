@@ -1,0 +1,156 @@
+name: iWorkr Playwright E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - "flutter/**"
+      - "*.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "flutter/**"
+      - "*.md"
+  workflow_dispatch:
+
+concurrency:
+  group: playwright-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  playwright:
+    name: Playwright Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Next.js app
+        run: npm run build
+
+      - name: Run Playwright tests
+        run: |
+          npx playwright test \
+            --project=setup \
+            --project=smoke \
+            --project=auth-flow \
+            --project=functional \
+            --project=settings-audit \
+            --project=visual \
+            --project=dashboard-audit \
+            --project=jobs-audit \
+            --project=inbox-audit \
+            --project=schedule-audit \
+            --project=clients-audit \
+            --project=finance-audit \
+            --project=assets-audit \
+            --project=forms-audit \
+            --project=team-audit \
+            --project=automations-audit \
+            --project=integrations-audit \
+            --reporter=html,list \
+            2>&1 | tee test-output.log
+        env:
+          CI: true
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            test-output.log
+            audit-reports/
+          retention-days: 14
+
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
+
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## Playwright E2E Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f playwright-report/results.json ]; then
+            SUITES=$(cat playwright-report/results.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('suites',[])))" 2>/dev/null || echo "?")
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Test Suites | $SUITES |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cross-browser:
+    name: Cross-Browser Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: playwright
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install all browsers
+        run: npx playwright install --with-deps
+
+      - name: Build Next.js app
+        run: npm run build
+
+      - name: Run cross-browser smoke
+        run: |
+          npx playwright test \
+            --project=setup \
+            --project=smoke-firefox \
+            --project=smoke-webkit \
+            --reporter=html,list
+        env:
+          CI: true
+
+      - name: Upload cross-browser report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-browser-report
+          path: playwright-report/
+          retention-days: 14

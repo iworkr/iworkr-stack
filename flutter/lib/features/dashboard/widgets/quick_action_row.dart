@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
+import 'package:iworkr_mobile/features/scan/screens/scanner_screen.dart';
+import 'package:iworkr_mobile/features/search/screens/command_palette_screen.dart';
 
 /// Quick action buttons — ghost/outline style matching web "New Item" button.
 ///
@@ -20,24 +23,74 @@ class QuickActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final actions = [
       _QuickAction(
-        icon: PhosphorIconsRegular.plus,
+        icon: PhosphorIconsLight.plus,
         label: 'New Job',
-        onTap: () => context.go('/jobs'),
+        onTap: () => showCreateJobSheet(context),
       ),
       _QuickAction(
-        icon: PhosphorIconsRegular.calendarPlus,
+        icon: PhosphorIconsLight.calendarPlus,
         label: 'Schedule',
         onTap: () => context.go('/schedule'),
       ),
       _QuickAction(
-        icon: PhosphorIconsRegular.magnifyingGlass,
+        icon: PhosphorIconsLight.magnifyingGlass,
         label: 'Search',
-        onTap: () {},
+        onTap: () => showCommandPalette(context),
       ),
       _QuickAction(
-        icon: PhosphorIconsRegular.barcode,
+        icon: PhosphorIconsLight.barcode,
         label: 'Scan',
-        onTap: () {},
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScannerScreen())),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.currencyDollar,
+        label: 'Finance',
+        onTap: () => context.push('/finance'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.books,
+        label: 'Archive',
+        onTap: () => context.push('/knowledge'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.path,
+        label: 'Route',
+        onTap: () => context.push('/route'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.package,
+        label: 'Inventory',
+        onTap: () => context.push('/inventory'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.van,
+        label: 'Fleet',
+        onTap: () => context.push('/fleet'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.pulse,
+        label: 'IoT',
+        onTap: () => context.push('/iot'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.ruler,
+        label: 'Measure',
+        onTap: () => context.push('/ar'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.eye,
+        label: 'Scout',
+        onTap: () => context.push('/scout'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.chartLineUp,
+        label: 'Index',
+        onTap: () => context.push('/market'),
+      ),
+      _QuickAction(
+        icon: PhosphorIconsLight.gauge,
+        label: 'Admin',
+        onTap: () => context.push('/admin'),
       ),
     ];
 
