@@ -1,6 +1,7 @@
 import { autoUpdater, UpdateCheckResult } from "electron-updater";
 import { BrowserWindow, ipcMain } from "electron";
 import log from "electron-log/main";
+import { trackEvent } from "./analytics";
 
 autoUpdater.logger = log;
 autoUpdater.autoDownload = true;
@@ -36,6 +37,7 @@ export function initUpdater(win: BrowserWindow): void {
 
   autoUpdater.on("update-downloaded", (info) => {
     log.info("Update downloaded:", info.version);
+    trackEvent("update_downloaded", { version: info.version });
     win.webContents.send("update:downloaded", {
       version: info.version,
       releaseDate: info.releaseDate,
@@ -55,6 +57,7 @@ export function initUpdater(win: BrowserWindow): void {
 
   ipcMain.on("update:install", () => {
     log.info("User requested immediate update install");
+    trackEvent("update_installed");
     autoUpdater.quitAndInstall(false, true);
   });
 

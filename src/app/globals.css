@@ -439,3 +439,13 @@ img, video, svg, canvas {
 .jobs-list-focus [data-job-row][data-selected="true"] {
   opacity: 1;
 }
+
+/* ── Desktop Ghost Mode (Offline) ─────────────────────── */
+body.desktop-ghost-mode {
+  filter: saturate(0%) brightness(0.85);
+  transition: filter 0.6s ease;
+}
+
+body.desktop-ghost-mode * {
+  pointer-events: auto;
+}

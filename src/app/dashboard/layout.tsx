@@ -13,6 +13,8 @@ import { HydrationGate } from "@/components/app/hydration-gate";
 import { useShellStore } from "@/lib/shell-store";
 
 const DesktopBridge = dynamic(() => import("@/lib/desktop/desktop-bridge").then((m) => m.DesktopBridge), { ssr: false });
+const DesktopBadge = dynamic(() => import("@/lib/desktop/desktop-badge").then((m) => m.DesktopBadge), { ssr: false });
+const DesktopOfflineBanner = dynamic(() => import("@/lib/desktop/desktop-offline").then((m) => m.DesktopOfflineBanner), { ssr: false });
 
 // Lazy-load modals and overlays (only rendered when opened)
 const CommandMenu = dynamic(() => import("@/components/shell/command-menu").then((m) => m.CommandMenu), { ssr: false });
@@ -231,6 +233,8 @@ export default function DashboardLayout({
       <ActionToastContainer />
       <UpgradeCelebration />
       <DesktopBridge />
+      <DesktopBadge />
+      <DesktopOfflineBanner />
     </div>
     </HydrationGate>
   );

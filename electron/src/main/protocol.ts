@@ -64,7 +64,11 @@ function handleAuthCallback(parsed: URL): void {
     win.show();
     win.focus();
     win.webContents.send("auth:authenticated", { token, refreshToken });
-    win.loadURL("https://iworkrapp.com/dashboard").catch((err) => {
+    const { app } = require("electron");
+    const dashboardUrl = app.isPackaged
+      ? "https://iworkr-stack-aiva-io.vercel.app/dashboard"
+      : "http://localhost:3000/dashboard";
+    win.loadURL(dashboardUrl).catch((err: Error) => {
       log.error("Failed to reload after auth:", err);
     });
   }

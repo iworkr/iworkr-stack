@@ -130,6 +130,12 @@ const api = {
   network: {
     reportStatus: (isOnline: boolean) => ipcRenderer.send("network:status", isOnline),
   },
+
+  // ── Analytics ──────────────────────────────────────────
+  analytics: {
+    track: (event: string, properties?: Record<string, unknown>) =>
+      ipcRenderer.send("analytics:track", event, properties),
+  },
 };
 
 contextBridge.exposeInMainWorld("iworkr", api);

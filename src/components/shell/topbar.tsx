@@ -26,6 +26,7 @@ import { useOnboardingStore } from "@/lib/onboarding-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { Shimmer } from "@/components/ui/shimmer";
+import { DesktopUpdateIndicator } from "@/lib/desktop/desktop-update-indicator";
 
 function getBreadcrumbs(pathname: string, companyName: string) {
   const segments = pathname.split("/").filter(Boolean);
@@ -463,6 +464,11 @@ export function Topbar() {
           </span>
         ))}
       </nav>
+
+      {/* Desktop update indicator */}
+      {typeof window !== "undefined" && (window as any).iworkr && (
+        <DesktopUpdateIndicator />
+      )}
 
       {/* Spacer */}
       <div className="flex-1" />

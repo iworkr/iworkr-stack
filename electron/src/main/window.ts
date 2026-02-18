@@ -48,21 +48,19 @@ export function createMainWindow(appUrl: string): BrowserWindow {
     },
   });
 
+  let hasNavigatedToApp = false;
+
   mainWindow.loadFile(SHELL_PATH);
 
-  mainWindow.webContents.on("did-finish-load", () => {
-    mainWindow?.webContents.send("shell:loading", { url: appUrl });
+  mainWindow.webContents.once("did-finish-load", () => {
+    if (hasNavigatedToApp) return;
+    hasNavigatedToApp = true;
 
-    setTimeout(() => {
-      mainWindow?.loadURL(appUrl).catch((err) => {
-        log.warn("Failed to load remote URL, staying on local shell:", err.message);
-        mainWindow?.webContents.send("shell:offline");
-      });
-    }, 100);
-  });
-
-  mainWindow.webContents.on("did-navigate", () => {
-    mainWindow?.webContents.send("shell:ready");
+    log.info(`Shell loaded, navigating to ${appUrl}`);
+    mainWindow?.loadURL(appUrl).catch((err) => {
+      log.warn("Failed to load remote URL, staying on local shell:", err.message);
+      mainWindow?.webContents.send("shell:offline");
+    });
   });
 
   mainWindow.once("ready-to-show", () => {
@@ -84,9 +82,11 @@ export function createMainWindow(appUrl: string): BrowserWindow {
   });
 
   mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
-    if (errorCode === -3) return; // Aborted navigations (expected during redirect)
+    if (errorCode === -3) return;
     log.warn(`Page failed to load: ${errorCode} ${errorDescription}`);
-    mainWindow?.webContents.send("shell:offline");
+    if (!hasNavigatedToApp) {
+      mainWindow?.webContents.send("shell:offline");
+    }
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

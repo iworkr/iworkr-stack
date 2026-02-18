@@ -247,8 +247,14 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
           width: sidebarCollapsed ? 64 : 240,
           background: "var(--surface-1)",
           borderColor: "var(--border-base)",
+          paddingTop: typeof window !== "undefined" && (window as any).iworkr ? 6 : 0,
         }}
       >
+      {/* macOS traffic light spacer — pushes content below the inset Close/Min/Max buttons */}
+      {typeof window !== "undefined" && (window as any).iworkr && navigator.platform?.includes("Mac") && (
+        <div className="h-[30px] w-full shrink-0" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
+      )}
+
       {/* ── Workspace Switcher ── */}
       <div className="flex h-12 items-center border-b border-[rgba(255,255,255,0.08)] px-3">
         <button className="flex w-full items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-[rgba(255,255,255,0.04)]">

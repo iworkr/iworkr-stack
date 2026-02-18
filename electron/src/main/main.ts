@@ -7,12 +7,17 @@ import { initTray, destroyTray } from "./tray";
 import { initUpdater } from "./updater";
 import { registerProtocol, handleProtocolUrl } from "./protocol";
 import { initMenu } from "./menu";
+import { initAnalytics, trackEvent } from "./analytics";
+import { initSentry } from "./sentry";
 import Store from "electron-store";
 
-const APP_URL = "https://iworkrapp.com/dashboard";
+const PROD_URL = "https://iworkr-stack-aiva-io.vercel.app/dashboard";
+const DEV_URL = "http://localhost:3000/dashboard";
 const IS_DEV = !app.isPackaged;
+const APP_URL = IS_DEV ? DEV_URL : PROD_URL;
 
 log.initialize();
+initSentry();
 log.info("iWorkr Desktop starting…", { version: app.getVersion() });
 
 export const store = new Store<{
@@ -83,6 +88,7 @@ app.whenReady().then(async () => {
   registerIpcHandlers(win);
   initMenu(win);
   initTray(win);
+  initAnalytics();
 
   if (!IS_DEV) {
     initUpdater(win);

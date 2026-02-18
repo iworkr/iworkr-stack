@@ -1,6 +1,7 @@
 import { Tray, Menu, BrowserWindow, app, nativeImage } from "electron";
 import path from "path";
 import log from "electron-log/main";
+import { trackEvent } from "./analytics";
 
 let tray: Tray | null = null;
 
@@ -29,6 +30,7 @@ export function initTray(win: BrowserWindow): void {
     {
       label: "Open iWorkr",
       click: () => {
+        trackEvent("tray_action", { action: "open" });
         win.show();
         win.focus();
       },
@@ -36,6 +38,7 @@ export function initTray(win: BrowserWindow): void {
     {
       label: "New Job",
       click: () => {
+        trackEvent("tray_action", { action: "new_job" });
         win.show();
         win.focus();
         win.webContents.send("navigate", "/dashboard/jobs?action=new");
