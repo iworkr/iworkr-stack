@@ -444,7 +444,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            title={collapsed ? (theme === "dark" ? "Light Mode" : "Dark Mode") : undefined}
+            title={sidebarCollapsed ? (theme === "dark" ? "Light Mode" : "Dark Mode") : undefined}
             className={`flex items-center gap-2 rounded-lg px-2 py-[5px] text-zinc-600 transition-colors hover:bg-white/[0.03] hover:text-zinc-400 ${
               sidebarCollapsed ? "w-full justify-center" : "w-full"
             }`}
