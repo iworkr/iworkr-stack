@@ -8,6 +8,7 @@ import { useJobsStore } from "@/lib/jobs-store";
 import { useDashboardStore } from "@/lib/dashboard-store";
 import { getDashboardSnapshot, loadDashboardLayout } from "@/app/actions/dashboard";
 import type { DashboardSnapshot } from "@/lib/dashboard-store";
+import { motion } from "framer-motion";
 
 export default function DashboardPage() {
   const now = new Date();
@@ -26,23 +27,18 @@ export default function DashboardPage() {
   const setLayouts = useDashboardStore((s) => s.setLayouts);
   const setActiveWidgets = useDashboardStore((s) => s.setActiveWidgets);
 
-  // Aggregated data fetch — SWR: render cached, revalidate in background
   useEffect(() => {
     if (!orgId) return;
-
-    const STALE_MS = 5 * 60 * 1000; // 5 minutes
+    const STALE_MS = 5 * 60 * 1000;
     const isFresh = snapshotFetchedAt && Date.now() - snapshotFetchedAt < STALE_MS;
-
     if (!snapshot || !isFresh) {
       if (!snapshot) setSnapshotLoading(true);
-
       getDashboardSnapshot(orgId).then(({ data }) => {
         if (data) setSnapshot(data as DashboardSnapshot);
       });
     }
   }, [orgId, snapshot, snapshotFetchedAt, setSnapshot, setSnapshotLoading]);
 
-  // Load persisted layout from Supabase (once)
   useEffect(() => {
     loadDashboardLayout().then(({ data }) => {
       if (data && Array.isArray(data) && data.length > 0) {
@@ -52,50 +48,56 @@ export default function DashboardPage() {
     });
   }, [setLayouts, setActiveWidgets]);
 
-  // Active jobs from snapshot or store
   const activeJobCount = snapshot?.active_jobs
     ?? (jobsLoaded ? jobsFromStore.filter(j => j.status !== "done" && j.status !== "cancelled").length : null);
 
   return (
-    <div className="relative p-4 lg:p-6">
-      {/* Subtle dot grid background */}
-      <div className="pointer-events-none fixed inset-0 bg-dot-grid opacity-[0.015]" />
-
-      {/* Page header */}
-      <div className="mb-5 flex items-center justify-between">
+    <div className="relative p-6 lg:p-8">
+      {/* Page header — stagger in first */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="mb-6 flex items-center justify-between"
+      >
         <div>
-          <h1 className="text-[15px] font-medium text-zinc-200">Dashboard</h1>
+          <h1 className="text-[18px] font-medium tracking-tight text-white">
+            Dashboard
+          </h1>
           <p className="mt-0.5 text-[12px] text-zinc-600">
             {dayName}, {monthDay}
             {activeJobCount !== null ? ` — ${activeJobCount} active job${activeJobCount !== 1 ? "s" : ""}` : ""}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Edit Layout Toggle */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+          className="flex items-center gap-3"
+        >
           <button
             onClick={() => setEditMode(!editMode)}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-200 ${
+            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-medium transition-all duration-300 ${
               editMode
-                ? "border-emerald-500/30 bg-emerald-500/8 text-emerald-500"
-                : "border-white/[0.06] text-zinc-500 hover:border-white/[0.12] hover:text-zinc-300"
+                ? "border border-emerald-500/30 bg-emerald-500/[0.06] text-emerald-500 shadow-[0_0_20px_-6px_rgba(16,185,129,0.2)]"
+                : "border border-white/[0.04] text-zinc-600 hover:border-white/[0.08] hover:text-zinc-400"
             }`}
           >
-            <Pencil size={12} />
+            <Pencil size={11} />
             {editMode ? "Editing" : "Edit Layout"}
           </button>
 
-          {/* Live indicator */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.04] px-3 py-1.5">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-50" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-40" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
             <span className="text-[11px] text-zinc-600">Live</span>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      {/* Customizable Grid */}
+      {/* Grid */}
       <DashboardGrid />
     </div>
   );

@@ -425,7 +425,7 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="relative z-30 flex h-12 shrink-0 items-center border-b border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.5)] px-3 backdrop-blur-xl md:px-4">
+    <header className="relative z-30 flex h-12 shrink-0 items-center border-b border-white/[0.04] bg-black/40 px-3 backdrop-blur-2xl md:px-4">
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileSidebarOpen(true)}
@@ -475,14 +475,14 @@ export function Topbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-1.5">
-        {/* Command Search Trigger */}
+        {/* Command Search Trigger — minimal, borderless */}
         <button
           onClick={() => setCommandMenuOpen(true)}
-          className="flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-transparent px-2.5 py-1 text-[13px] text-zinc-600 transition-colors duration-150 hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-400"
+          className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] text-zinc-600 transition-all duration-200 hover:bg-white/[0.03] hover:text-zinc-400"
         >
-          <Search size={13} strokeWidth={1.5} />
-          <span className="hidden sm:inline">Search...</span>
-          <kbd className="hidden rounded border border-[rgba(255,255,255,0.06)] px-1 py-0.5 font-mono text-[9px] text-zinc-600 sm:inline-block">
+          <Search size={14} strokeWidth={1.5} />
+          <span className="hidden text-zinc-700 sm:inline">Search...</span>
+          <kbd className="hidden font-mono text-[9px] text-zinc-700 sm:inline-block">
             ⌘K
           </kbd>
         </button>

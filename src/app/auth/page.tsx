@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, ArrowLeft, Mail } from "lucide-react";
+import { ArrowRight, ArrowLeft, Mail, KeyRound, Eye, EyeOff } from "lucide-react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { emailSchema } from "@/lib/validation";
 import { Spinner } from "@/components/onboarding/spinner";
 import { createClient } from "@/lib/supabase/client";
 
-type AuthMode = "choice" | "email" | "magic_link_sent" | "authenticating";
+type AuthMode = "choice" | "email" | "password" | "magic_link_sent" | "authenticating";
 
 export default function AuthPage() {
   return (
@@ -26,14 +26,16 @@ function AuthPageInner() {
   const { setAuth } = useOnboardingStore();
   const [mode, setMode] = useState<AuthMode>("choice");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordEmailRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    if (mode === "email") {
-      emailInputRef.current?.focus();
-    }
+    if (mode === "email") emailInputRef.current?.focus();
+    if (mode === "password") passwordEmailRef.current?.focus();
   }, [mode]);
 
   // Show error from callback
@@ -83,10 +85,38 @@ function AuthPageInner() {
     setMode("magic_link_sent");
   }
 
+  async function handlePasswordSubmit() {
+    const result = emailSchema.safeParse(email);
+    if (!result.success) {
+      setError(result.error.issues[0].message);
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+    setError(null);
+    setMode("authenticating");
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setMode("password");
+      return;
+    }
+
+    router.push("/dashboard");
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault();
-      handleEmailSubmit();
+      if (mode === "password") handlePasswordSubmit();
+      else handleEmailSubmit();
     }
   }
 
@@ -201,7 +231,18 @@ function AuthPageInner() {
                   <div className="h-px flex-1 bg-[rgba(255,255,255,0.06)]" />
                 </div>
 
-                {/* Email */}
+                {/* Password */}
+                <motion.button
+                  whileHover={{ scale: 1.01, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setMode("password")}
+                  className="flex w-full items-center justify-center gap-3 rounded-lg border border-[rgba(255,255,255,0.1)] bg-transparent px-4 py-3 text-sm text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-200"
+                >
+                  <KeyRound size={16} />
+                  Sign in with Password
+                </motion.button>
+
+                {/* Email Magic Link */}
                 <motion.button
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.98 }}
@@ -209,7 +250,7 @@ function AuthPageInner() {
                   className="flex w-full items-center justify-center gap-3 rounded-lg border border-[rgba(255,255,255,0.1)] bg-transparent px-4 py-3 text-sm text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-200"
                 >
                   <Mail size={16} />
-                  Continue with Email
+                  Continue with Magic Link
                 </motion.button>
               </div>
 
@@ -285,6 +326,85 @@ function AuthPageInner() {
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
                 >
                   Continue
+                  <ArrowRight size={14} />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {mode === "password" && (
+            <motion.div
+              key="password"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20, scale: 0.95 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-6"
+            >
+              <div>
+                <button
+                  onClick={() => { setMode("choice"); setError(null); }}
+                  className="mb-4 text-xs text-zinc-500 transition-colors hover:text-zinc-300"
+                >
+                  &larr; Back
+                </button>
+                <h2 className="text-xl font-medium tracking-tight text-zinc-100">
+                  Sign in with password
+                </h2>
+                <p className="mt-1.5 text-sm text-zinc-500">
+                  Enter your email and password.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <input
+                  ref={passwordEmailRef}
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="you@company.com"
+                  className="w-full border-b border-[rgba(255,255,255,0.1)] bg-transparent py-3 text-base text-zinc-100 outline-none transition-colors placeholder:text-zinc-700 focus:border-white"
+                  autoComplete="email"
+                />
+
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Password"
+                    className="w-full border-b border-[rgba(255,255,255,0.1)] bg-transparent py-3 pr-10 text-base text-zinc-100 outline-none transition-colors placeholder:text-zinc-700 focus:border-white"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-600 hover:text-zinc-300"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xs text-red-400/80"
+                  >
+                    {error}
+                  </motion.p>
+                )}
+
+                <motion.button
+                  whileHover={{ scale: 1.01, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handlePasswordSubmit}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
+                >
+                  Sign In
                   <ArrowRight size={14} />
                 </motion.button>
               </div>

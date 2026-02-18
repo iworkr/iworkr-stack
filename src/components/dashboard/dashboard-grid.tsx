@@ -56,7 +56,7 @@ function renderWidget(id: string, size: WidgetSize) {
 /* ── Grid Component ─────────────────────────────────── */
 
 const ROW_HEIGHT = 100;
-const MARGIN: [number, number] = [16, 16];
+const MARGIN: [number, number] = [20, 20];
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
 const COLS = { lg: 4, md: 4, sm: 2, xs: 1, xxs: 1 };
 

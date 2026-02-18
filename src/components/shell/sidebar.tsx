@@ -261,7 +261,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
           <img
             src="/logos/logo-dark-streamline.png"
             alt="iWorkr"
-            className="h-[22px] w-[22px] shrink-0 object-contain"
+            className="h-[22px] w-[22px] shrink-0 object-contain brightness-150"
           />
           <AnimatePresence>
             {!sidebarCollapsed && (
@@ -282,17 +282,17 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
         </button>
       </div>
 
-      {/* ── New Item Button (Ghost / Outline — Stealth Mode) ── */}
+      {/* ── New Item Button — Emerald Solid ── */}
       <div className="px-2 pt-2.5 pb-0.5">
         <button
           onClick={onCreateClick}
-          className={`group/create flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] text-zinc-400 font-medium transition-all duration-200 hover:border-emerald-500/30 hover:text-emerald-400 hover:bg-emerald-500/[0.04] hover:shadow-[0_0_20px_-8px_rgba(16,185,129,0.25)] ${
+          className={`group/create flex items-center gap-2 rounded-lg bg-emerald-600 text-white font-medium transition-all duration-300 hover:bg-emerald-500 hover:shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)] ${
             sidebarCollapsed
               ? "w-10 justify-center p-2"
               : "w-full px-2.5 py-[6px]"
           }`}
         >
-          <Pencil size={13} className="shrink-0 transition-colors duration-200 group-hover/create:text-emerald-400" />
+          <Pencil size={13} className="shrink-0" />
           <AnimatePresence>
             {!sidebarCollapsed && (
               <motion.span
@@ -302,7 +302,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                 className="flex flex-1 items-center justify-between text-[13px]"
               >
                 New Item
-                <kbd className="rounded border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
+                <kbd className="rounded border border-white/[0.15] bg-white/[0.1] px-1.5 py-0.5 font-mono text-[9px] text-emerald-200/60">
                   C
                 </kbd>
               </motion.span>

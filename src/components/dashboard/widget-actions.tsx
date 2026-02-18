@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus, FileText, UserPlus, Megaphone, Zap } from "lucide-react";
+import { Briefcase, FileText, UserPlus, Megaphone, Zap } from "lucide-react";
 import { useShellStore } from "@/lib/shell-store";
 import { WidgetShell } from "./widget-shell";
 import type { WidgetSize } from "@/lib/dashboard-store";
@@ -9,10 +9,11 @@ import type { WidgetSize } from "@/lib/dashboard-store";
 const actions = [
   {
     id: "new-job",
-    icon: Plus,
+    icon: Briefcase,
     label: "New Job",
     description: "Create a new job order",
     action: "createJob",
+    accentHover: "hover:border-emerald-500/20 hover:shadow-[0_0_24px_-8px_rgba(16,185,129,0.15)]",
   },
   {
     id: "new-invoice",
@@ -20,6 +21,7 @@ const actions = [
     label: "New Invoice",
     description: "Generate a new invoice",
     action: "createInvoice",
+    accentHover: "hover:border-blue-500/20 hover:shadow-[0_0_24px_-8px_rgba(59,130,246,0.15)]",
   },
   {
     id: "add-client",
@@ -27,6 +29,7 @@ const actions = [
     label: "Add Client",
     description: "Register a new client",
     action: "createClient",
+    accentHover: "hover:border-violet-500/20 hover:shadow-[0_0_24px_-8px_rgba(139,92,246,0.15)]",
   },
   {
     id: "broadcast",
@@ -34,6 +37,7 @@ const actions = [
     label: "Broadcast",
     description: "Send a team broadcast",
     action: "broadcast",
+    accentHover: "hover:border-amber-500/20 hover:shadow-[0_0_24px_-8px_rgba(245,158,11,0.15)]",
   },
 ] as const;
 
@@ -51,60 +55,23 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
     }
   };
 
-  /* ── SMALL: Compact icon row ────────────────────────── */
   if (size === "small") {
     return (
-      <WidgetShell delay={0.2}>
-        <div className="flex h-full items-center justify-center gap-2 p-2">
-          {actions.map((a) => {
-            const Icon = a.icon;
-            return (
-              <button
-                key={a.id}
-                onClick={() => handleAction(a.action)}
-                className="group/action flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.05] bg-white/[0.02] transition-all duration-200 hover:border-white/[0.1] hover:bg-white/[0.04] hover:scale-105"
-                title={a.label}
-              >
-                <Icon size={14} strokeWidth={1.5} className="text-zinc-500 transition-colors group-hover/action:text-zinc-200" />
-              </button>
-            );
-          })}
-        </div>
-      </WidgetShell>
-    );
-  }
-
-  /* ── LARGE: Grid with descriptions ──────────────────── */
-  if (size === "large") {
-    return (
-      <WidgetShell
-        delay={0.2}
-        header={
-          <div className="flex items-center gap-2">
-            <Zap size={14} strokeWidth={1.5} className="text-zinc-500" />
-            <span className="text-[13px] font-medium text-zinc-300">Quick Actions</span>
-          </div>
-        }
-      >
-        <div className="grid grid-cols-2 gap-2 p-3">
+      <WidgetShell delay={0.25}>
+        <div className="flex h-full items-center justify-center gap-2.5 p-3">
           {actions.map((a, i) => {
             const Icon = a.icon;
             return (
               <motion.button
                 key={a.id}
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.25 + i * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ delay: 0.3 + i * 0.05 }}
                 onClick={() => handleAction(a.action)}
-                className="group/action flex flex-col items-center justify-center gap-2 rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-4 transition-all duration-200 hover:border-white/[0.1] hover:bg-white/[0.04] hover:scale-[1.01]"
+                className={`group/action flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.04] bg-transparent transition-all duration-300 ${a.accentHover}`}
+                title={a.label}
               >
-                <Icon size={22} strokeWidth={1.5} className="text-zinc-500 transition-all duration-200 group-hover/action:text-zinc-200 group-hover/action:scale-105" />
-                <span className="text-[10px] font-medium text-zinc-500 transition-colors group-hover/action:text-zinc-300">
-                  {a.label}
-                </span>
-                <span className="text-[8px] text-zinc-700 transition-colors group-hover/action:text-zinc-500">
-                  {a.description}
-                </span>
+                <Icon size={15} strokeWidth={1.5} className="text-zinc-600 transition-all duration-300 group-hover/action:text-zinc-200 group-hover/action:scale-110" />
               </motion.button>
             );
           })}
@@ -113,33 +80,43 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
     );
   }
 
-  /* ── MEDIUM: 2x2 grid (default) ─────────────────────── */
   return (
     <WidgetShell
-      delay={0.2}
+      delay={0.25}
       header={
         <div className="flex items-center gap-2">
-          <Zap size={14} strokeWidth={1.5} className="text-zinc-500" />
+          <Zap size={14} strokeWidth={1.5} className="text-zinc-600" />
           <span className="text-[13px] font-medium text-zinc-300">Quick Actions</span>
         </div>
       }
     >
-      <div className="grid grid-cols-2 gap-2 p-3">
+      <div className={`grid gap-2.5 p-4 ${size === "large" ? "grid-cols-2" : "grid-cols-2"}`}>
         {actions.map((a, i) => {
           const Icon = a.icon;
           return (
             <motion.button
               key={a.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.25 + i * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => handleAction(a.action)}
-              className="group/action flex flex-col items-center justify-center gap-2 rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-4 transition-all duration-200 hover:border-white/[0.1] hover:bg-white/[0.04] hover:scale-[1.01]"
+              className={`group/action flex flex-col items-center justify-center gap-2.5 rounded-xl border border-white/[0.03] bg-transparent px-3 py-5 transition-all duration-300 ${a.accentHover}`}
             >
-              <Icon size={22} strokeWidth={1.5} className="text-zinc-500 transition-all duration-200 group-hover/action:text-zinc-200 group-hover/action:scale-105" />
-              <span className="text-[10px] font-medium text-zinc-500 transition-colors group-hover/action:text-zinc-300">
+              <div className="relative">
+                <Icon
+                  size={size === "large" ? 24 : 20}
+                  strokeWidth={1.5}
+                  className="text-zinc-600 transition-all duration-300 group-hover/action:text-zinc-200 group-hover/action:scale-110"
+                />
+              </div>
+              <span className="text-[10px] font-medium text-zinc-600 transition-colors duration-300 group-hover/action:text-zinc-300">
                 {a.label}
               </span>
+              {size === "large" && (
+                <span className="text-[8px] text-zinc-800 transition-colors duration-300 group-hover/action:text-zinc-600">
+                  {a.description}
+                </span>
+              )}
             </motion.button>
           );
         })}
