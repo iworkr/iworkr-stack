@@ -388,6 +388,34 @@ img, video, svg, canvas {
   animation: backlog-idle 3s ease-in-out infinite;
 }
 
+@keyframes capsule-glow {
+  0%, 100% { box-shadow: 0 0 6px var(--capsule-glow-color, rgba(16, 185, 129, 0.2)), inset 0 0 4px var(--capsule-glow-color, rgba(16, 185, 129, 0.05)); }
+  50% { box-shadow: 0 0 14px var(--capsule-glow-color, rgba(16, 185, 129, 0.3)), inset 0 0 8px var(--capsule-glow-color, rgba(16, 185, 129, 0.08)); }
+}
+
+.animate-capsule-glow {
+  animation: capsule-glow 2.5s ease-in-out infinite;
+}
+
+@keyframes urgent-stripe {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 20px; }
+}
+
+.animate-urgent-stripe {
+  animation: urgent-stripe 1s linear infinite;
+}
+
+.diagonal-stripe {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 4px,
+    rgba(244, 63, 94, 0.06) 4px,
+    rgba(244, 63, 94, 0.06) 5px
+  );
+}
+
 .schedule-block-hover {
   transition: transform 150ms ease-out, box-shadow 150ms ease-out, z-index 0ms;
 }
@@ -406,6 +434,21 @@ img, video, svg, canvas {
 .group:hover .tech-avatar-grayscale,
 .tech-avatar-grayscale:hover {
   filter: grayscale(0%) brightness(1);
+}
+
+@keyframes slide-date-left {
+  0% { transform: translateX(30px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes slide-date-right {
+  0% { transform: translateX(-30px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-date-left {
+  animation: slide-date-left 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-slide-date-right {
+  animation: slide-date-right 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ── Jobs: "The Command List" ─────────────────────── */

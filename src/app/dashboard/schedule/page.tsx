@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -18,12 +18,12 @@ import {
   Trash2,
   ArrowLeftToLine,
   Copy,
-  Calendar,
   Rows3,
   Navigation,
   Grip,
   GripVertical,
   Inbox,
+  CalendarClock,
 } from "lucide-react";
 import { type ScheduleBlock, type Technician } from "@/lib/data";
 import { useScheduleStore, type ViewScale } from "@/lib/schedule-store";
@@ -31,6 +31,8 @@ import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import { useOrg } from "@/lib/hooks/use-org";
 import { type BacklogJob } from "@/app/actions/schedule";
+import { LottieIcon } from "@/components/dashboard/lottie-icon";
+import { timelineClockAnimation } from "@/components/dashboard/lottie-data-relay";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -39,36 +41,50 @@ const DAY_END = 19;
 const WORK_START = 7;
 const WORK_END = 17;
 const TOTAL_HOURS = DAY_END - DAY_START;
-const RESOURCE_COL_W = 200;
-const ROW_H = 80;
+const RESOURCE_COL_W = 220;
+const ROW_H = 88;
 const HOUR_W = 120;
 
-/* ── Glass & Spine Status Palette ──────────────────────────── */
+/* ── Glass Capsule Status Palette ─────────────────────────── */
 
-const statusColorMap: Record<string, { spine: string; dot: string; label: string; text: string }> = {
+const statusColorMap: Record<string, {
+  spine: string; bg: string; border: string; dot: string; label: string; text: string; glow: string;
+}> = {
   scheduled: {
     spine: "bg-sky-500",
+    bg: "bg-sky-500/[0.08]",
+    border: "border-l-2 border-sky-500",
     dot: "bg-sky-400",
     label: "text-sky-400",
-    text: "text-sky-300",
+    text: "text-sky-100",
+    glow: "rgba(56, 189, 248, 0.15)",
   },
   en_route: {
     spine: "bg-amber-500",
+    bg: "bg-amber-500/[0.08]",
+    border: "border-l-2 border-amber-500",
     dot: "bg-amber-400",
     label: "text-amber-400",
-    text: "text-amber-300",
+    text: "text-amber-100",
+    glow: "rgba(245, 158, 11, 0.15)",
   },
   in_progress: {
     spine: "bg-emerald-500",
+    bg: "bg-emerald-500/[0.08]",
+    border: "border-l-2 border-emerald-500",
     dot: "bg-emerald-400",
     label: "text-emerald-400",
-    text: "text-emerald-300",
+    text: "text-emerald-100",
+    glow: "rgba(16, 185, 129, 0.2)",
   },
   complete: {
     spine: "bg-zinc-600",
+    bg: "bg-zinc-500/[0.05]",
+    border: "border-l-2 border-zinc-600",
     dot: "bg-zinc-500",
     label: "text-zinc-500",
     text: "text-zinc-400",
+    glow: "rgba(161, 161, 170, 0.08)",
   },
 };
 
@@ -130,6 +146,15 @@ function snapToGrid(hour: number): number {
   return Math.round(hour * 4) / 4;
 }
 
+function formatDateDisplay(dateStr: string): { label: string; isToday: boolean; isPast: boolean } {
+  const d = new Date(dateStr + "T12:00:00");
+  const today = new Date();
+  const isToday = d.toDateString() === today.toDateString();
+  const isPast = d < today && !isToday;
+  const label = d.toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric", year: "numeric" });
+  return { label, isToday, isPast };
+}
+
 /* ── Drag Types ──────────────────────────────────────────── */
 
 type DragSource = "block" | "backlog";
@@ -175,6 +200,10 @@ export default function SchedulePage() {
 
   const technicians = storeTechnicians;
 
+  /* ── Date nav direction (for slide animation) ───────────── */
+  const [navDir, setNavDir] = useState<"left" | "right" | null>(null);
+  const [dateKey, setDateKey] = useState(0);
+
   /* ── Drag state ─────────────────────────────────────────── */
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -189,10 +218,20 @@ export default function SchedulePage() {
     open: false, x: 0, y: 0, blockId: "",
   });
 
-  /* ── Now line ───────────────────────────────────────────── */
-  const now = new Date();
-  const nowHour = now.getHours() + now.getMinutes() / 60;
+  /* ── Now line (updates every minute) ────────────────────── */
+  const [nowTime, setNowTime] = useState(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNowTime(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const nowHour = nowTime.getHours() + nowTime.getMinutes() / 60;
   const nowX = hourToX(Math.max(DAY_START, Math.min(DAY_END, nowHour)));
+  const isCurrentDay = useMemo(() => {
+    const today = new Date();
+    const sel = new Date(selectedDate + "T12:00:00");
+    return sel.toDateString() === today.toDateString();
+  }, [selectedDate]);
 
   /* ── Hours array ────────────────────────────────────────── */
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => DAY_START + i);
@@ -220,6 +259,30 @@ export default function SchedulePage() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleKey]);
+
+  /* ── Date navigation helpers ────────────────────────────── */
+  const navigateDate = useCallback((direction: -1 | 1) => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + direction);
+    const newDate = d.toISOString().split("T")[0];
+    setNavDir(direction === 1 ? "left" : "right");
+    setDateKey((k) => k + 1);
+    useScheduleStore.getState().setSelectedDate(newDate);
+    if (orgId) useScheduleStore.getState().loadFromServer(orgId, newDate);
+  }, [selectedDate, orgId]);
+
+  const goToday = useCallback(() => {
+    const today = new Date().toISOString().split("T")[0];
+    if (today === selectedDate) return;
+    const sel = new Date(selectedDate + "T12:00:00");
+    const tod = new Date(today + "T12:00:00");
+    setNavDir(tod > sel ? "left" : "right");
+    setDateKey((k) => k + 1);
+    useScheduleStore.getState().setSelectedDate(today);
+    if (orgId) useScheduleStore.getState().loadFromServer(orgId, today);
+  }, [selectedDate, orgId]);
+
+  const dateInfo = useMemo(() => formatDateDisplay(selectedDate), [selectedDate]);
 
   /* ── Block Drag handlers ────────────────────────────────── */
   const handleBlockDragStart = useCallback(
@@ -393,55 +456,43 @@ export default function SchedulePage() {
 
   return (
     <div className="flex h-full flex-col bg-[#050505]">
-      {/* ── Control Deck Header ──────────────────────────────── */}
-      <div className="flex items-center justify-between border-b border-white/[0.05] px-5 py-2.5">
-        <div className="flex items-center gap-4">
-          <h1 className="text-[15px] font-medium text-white">Schedule</h1>
-
-          {/* Date Navigator: < [ Today, Feb 17 ] > */}
-          <div className="flex items-center gap-0.5">
+      {/* ── Command Header (Transparent, Stealth) ────────────── */}
+      <div className="flex items-center justify-between px-5 py-3">
+        <div className="flex items-center gap-5">
+          {/* Date Navigator — Stealth style */}
+          <div className="group/nav flex items-center gap-1">
             <button
-              onClick={() => {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() - 1);
-                const newDate = d.toISOString().split("T")[0];
-                useScheduleStore.getState().setSelectedDate(newDate);
-                if (orgId) useScheduleStore.getState().loadFromServer(orgId, newDate);
-              }}
-              className="rounded-md p-1.5 text-zinc-500 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white"
+              onClick={() => navigateDate(-1)}
+              className="rounded-md p-1.5 text-zinc-700 opacity-0 transition-all duration-150 group-hover/nav:opacity-100 hover:bg-white/[0.04] hover:text-zinc-300"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={15} />
             </button>
-            <span className="min-w-[110px] text-center text-[13px] font-medium text-white">
-              {(() => {
-                const d = new Date(selectedDate + "T12:00:00");
-                const today = new Date();
-                const isToday = d.toDateString() === today.toDateString();
-                const label = d.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
-                return isToday ? `Today, ${label}` : label;
-              })()}
-            </span>
-            <button
-              onClick={() => {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() + 1);
-                const newDate = d.toISOString().split("T")[0];
-                useScheduleStore.getState().setSelectedDate(newDate);
-                if (orgId) useScheduleStore.getState().loadFromServer(orgId, newDate);
-              }}
-              className="rounded-md p-1.5 text-zinc-500 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white"
+            <motion.span
+              key={dateKey}
+              initial={{ opacity: 0, x: navDir === "left" ? 20 : -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="min-w-[200px] text-center text-[15px] font-medium text-white"
             >
-              <ChevronRight size={14} />
+              {dateInfo.label}
+            </motion.span>
+            <button
+              onClick={() => navigateDate(1)}
+              className="rounded-md p-1.5 text-zinc-700 opacity-0 transition-all duration-150 group-hover/nav:opacity-100 hover:bg-white/[0.04] hover:text-zinc-300"
+            >
+              <ChevronRight size={15} />
             </button>
           </div>
 
+          {/* "Today" ghost button — glows Emerald when viewing non-today */}
           <button
-            onClick={() => {
-              const today = new Date().toISOString().split("T")[0];
-              useScheduleStore.getState().setSelectedDate(today);
-              if (orgId) useScheduleStore.getState().loadFromServer(orgId, today);
-            }}
-            className="rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-white/[0.1] hover:text-white"
+            onClick={goToday}
+            className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+              dateInfo.isToday
+                ? "text-zinc-600 cursor-default"
+                : "text-emerald-500 hover:bg-emerald-500/[0.06] hover:shadow-[0_0_12px_-3px_rgba(16,185,129,0.3)]"
+            }`}
+            disabled={dateInfo.isToday}
           >
             Today
           </button>
@@ -453,14 +504,14 @@ export default function SchedulePage() {
               <motion.span
                 animate={{ opacity: [1, 0.3, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="h-1.5 w-1.5 rounded-full bg-red-500"
+                className="h-1.5 w-1.5 rounded-full bg-rose-500"
               />
               {conflictCount} conflict{conflictCount > 1 ? "s" : ""}
             </span>
           )}
 
-          {/* View Switcher — Segmented pill */}
-          <div className="flex items-center rounded-lg bg-zinc-900 p-1">
+          {/* View Switcher — Sliding Pill */}
+          <div className="relative flex items-center gap-0.5 rounded-lg p-0.5">
             {(["day", "week", "month"] as ViewScale[]).map((scale) => {
               const isDisabled = scale !== "day";
               const isActive = viewScale === scale;
@@ -470,37 +521,44 @@ export default function SchedulePage() {
                   onClick={() => !isDisabled && setViewScale(scale)}
                   disabled={isDisabled}
                   title={isDisabled ? "Coming soon" : viewScaleLabels[scale]}
-                  className={`rounded-md px-3 py-1 text-[11px] font-medium transition-all duration-150 ${
+                  className={`relative z-10 rounded-md px-3.5 py-1.5 text-[11px] font-medium transition-colors duration-150 ${
                     isDisabled
-                      ? "cursor-not-allowed text-zinc-700"
+                      ? "cursor-not-allowed text-zinc-800"
                       : isActive
-                        ? "bg-zinc-800 text-white shadow-sm"
+                        ? "text-white"
                         : "text-zinc-500 hover:text-zinc-300"
                   }`}
                 >
-                  {viewScaleLabels[scale]}
+                  {isActive && (
+                    <motion.div
+                      layoutId="schedule-view-pill"
+                      className="absolute inset-0 rounded-md bg-white/[0.08]"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative">{viewScaleLabels[scale]}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Backlog toggle */}
+          {/* Backlog trigger — Icon + badge */}
           <button
             onClick={() => setUnscheduledDrawerOpen(!unscheduledDrawerOpen)}
-            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition-all duration-150 ${
+            className={`relative flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150 ${
               unscheduledDrawerOpen
-                ? "border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-400"
-                : "border-white/[0.06] text-zinc-500 hover:border-white/[0.1] hover:text-zinc-300"
+                ? "bg-emerald-500/[0.06] text-emerald-400"
+                : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
             }`}
           >
-            <Rows3 size={12} />
+            <Inbox size={14} strokeWidth={1.5} />
             Backlog
             {backlogJobs.length > 0 && (
-              <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-medium text-emerald-500">
+              <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500/90 px-1 text-[9px] font-bold text-white">
                 {backlogJobs.length}
               </span>
             )}
-            <kbd className="ml-1 rounded bg-white/[0.04] px-1 py-0.5 font-mono text-[8px] text-zinc-600">
+            <kbd className="ml-0.5 rounded bg-white/[0.04] px-1 py-0.5 font-mono text-[8px] text-zinc-700">
               U
             </kbd>
           </button>
@@ -508,349 +566,389 @@ export default function SchedulePage() {
       </div>
 
       {/* ── Main area ──────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden border-t border-white/[0.04]">
         {/* ── Timeline area ────────────────────────────────── */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Hour headers */}
-          <div className="flex border-b border-white/[0.04]" style={{ paddingLeft: RESOURCE_COL_W }}>
+          <div className="flex border-b border-white/[0.03]" style={{ paddingLeft: RESOURCE_COL_W }}>
             <div className="overflow-hidden" style={{ width: `calc(100% - 0px)` }}>
               <div className="flex" style={{ width: totalWidth }}>
-                {hours.map((h) => (
-                  <div
-                    key={h}
-                    className="flex-shrink-0 border-l border-white/[0.06] py-2 text-center"
-                    style={{ width: HOUR_W }}
-                  >
-                    <span className="font-mono text-[10px] text-zinc-500">
-                      {formatHour(h)}
-                    </span>
-                  </div>
-                ))}
+                {hours.map((h) => {
+                  const isWorkHour = h >= WORK_START && h < WORK_END;
+                  return (
+                    <div
+                      key={h}
+                      className="relative flex-shrink-0 border-l border-white/[0.04] py-2.5 text-center"
+                      style={{ width: HOUR_W }}
+                    >
+                      <span className={`font-mono text-[10px] ${isWorkHour ? "text-zinc-400" : "text-zinc-700"}`}>
+                        {formatHour(h)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
 
           {/* Technician rows */}
-          <div ref={timelineRef} className="flex-1 overflow-auto">
+          <div ref={timelineRef} className="flex-1 overflow-auto scrollbar-none">
+            {/* Empty state */}
             {technicians.length === 0 && !loading && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 className="flex flex-col items-center justify-center py-24 text-center"
               >
-                {/* Lottie-style empty state */}
-                <div className="relative mb-5 flex h-16 w-16 items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
-                  <div className="absolute inset-2 rounded-full border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.6s" }} />
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
-                    <Calendar size={18} strokeWidth={1.5} className="text-zinc-600" />
-                  </div>
-                </div>
-                <h3 className="text-[14px] font-medium text-zinc-300">No schedule data</h3>
-                <p className="mt-1 text-[12px] text-zinc-600">Assign technicians and jobs to see the dispatch board.</p>
+                <div className="pointer-events-none absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.03] blur-[60px]" />
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative mb-6"
+                >
+                  <LottieIcon
+                    animationData={timelineClockAnimation}
+                    size={120}
+                    loop
+                    autoplay
+                    className="opacity-60"
+                  />
+                  <div className="absolute inset-0 rounded-full border border-emerald-500/[0.06] animate-signal-pulse" />
+                  <div className="absolute inset-[-8px] rounded-full border border-emerald-500/[0.03] animate-signal-pulse" style={{ animationDelay: "0.8s" }} />
+                </motion.div>
+                <h3 className="text-[15px] font-medium text-zinc-200">No schedule data</h3>
+                <p className="mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-zinc-600">
+                  Assign technicians and jobs to see the dispatch timeline.
+                </p>
+                <button
+                  onClick={() => setUnscheduledDrawerOpen(true)}
+                  className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500 hover:shadow-emerald-900/30"
+                >
+                  <CalendarClock size={14} />
+                  Open Backlog
+                </button>
               </motion.div>
             )}
 
-            {technicians.map((tech, techIdx) => {
-              const techBlocks = blocks.filter((b) => b.technicianId === tech.id);
-              const capacityPct = (tech.hoursBooked / tech.hoursAvailable) * 100;
-              const isDropRow = dropTarget?.techIdx === techIdx && dragState !== null;
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={selectedDate}
+                initial={{ opacity: 0, x: navDir === "left" ? 8 : navDir === "right" ? -8 : 0 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: navDir === "left" ? -8 : 8 }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {technicians.map((tech, techIdx) => {
+                  const techBlocks = blocks.filter((b) => b.technicianId === tech.id);
+                  const capacityPct = (tech.hoursBooked / tech.hoursAvailable) * 100;
+                  const isDropRow = dropTarget?.techIdx === techIdx && dragState !== null;
 
-              return (
-                <motion.div
-                  key={tech.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: techIdx * 0.03, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  className={`group flex border-b transition-colors duration-150 ${
-                    isDropRow
-                      ? "border-emerald-500/15 bg-emerald-500/[0.02]"
-                      : "border-white/[0.03]"
-                  }`}
-                >
-                  {/* ── Resource column (sticky left) ──────── */}
-                  <div className="sticky left-0 z-10 box-border flex h-[80px] w-[200px] shrink-0 items-center gap-3 border-r border-white/[0.05] bg-[#050505] px-4">
-                    <div className="relative">
-                      <div className="tech-avatar-grayscale flex h-7 w-7 items-center justify-center rounded-md bg-zinc-800 text-[9px] font-medium text-zinc-400">
-                        {tech.initials}
-                      </div>
-                      <div
-                        className={`absolute -right-0.5 -bottom-0.5 h-[6px] w-[6px] rounded-full ring-[1.5px] ring-[#050505] ${
-                          tech.status === "online"
-                            ? "bg-emerald-500"
-                            : tech.status === "away"
-                              ? "bg-amber-500"
-                              : "bg-zinc-600"
-                        }`}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[12px] font-medium text-zinc-300 transition-colors duration-150 group-hover:text-white">
-                        {tech.name}
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5">
-                        <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/[0.04]">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(100, capacityPct)}%` }}
-                            transition={{ duration: 0.6, delay: techIdx * 0.08, ease: "easeOut" }}
-                            className={`h-full rounded-full ${
-                              capacityPct > 90
-                                ? "bg-red-500/50"
-                                : capacityPct > 70
-                                  ? "bg-amber-500/40"
-                                  : "bg-emerald-500/30"
+                  return (
+                    <motion.div
+                      key={tech.id}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: techIdx * 0.04, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className={`group flex border-b transition-colors duration-150 ${
+                        isDropRow
+                          ? "border-emerald-500/15 bg-emerald-500/[0.015]"
+                          : "border-white/[0.03] hover:bg-white/[0.01]"
+                      }`}
+                    >
+                      {/* ── Resource column (sticky left) ──────── */}
+                      <div className="sticky left-0 z-10 box-border flex shrink-0 items-center gap-3 border-r border-white/[0.04] bg-[#050505] px-4" style={{ width: RESOURCE_COL_W, height: ROW_H }}>
+                        <div className="relative">
+                          <div className="tech-avatar-grayscale flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800/80 text-[10px] font-semibold tracking-wide text-zinc-400">
+                            {tech.initials}
+                          </div>
+                          <div
+                            className={`absolute -right-0.5 -bottom-0.5 h-[7px] w-[7px] rounded-full ring-2 ring-[#050505] ${
+                              tech.status === "online"
+                                ? "bg-emerald-500"
+                                : tech.status === "away"
+                                  ? "bg-amber-500"
+                                  : "bg-zinc-600"
                             }`}
                           />
                         </div>
-                        <span className="text-[9px] text-zinc-600">{tech.hoursBooked}h</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── Timeline track ─────────────────────── */}
-                  <div className="relative flex-1 overflow-hidden" style={{ height: ROW_H }}>
-                    <div className="relative h-full" style={{ width: totalWidth }}>
-                      {/* Hour grid lines */}
-                      {hours.map((h) => (
-                        <div
-                          key={h}
-                          className="absolute top-0 h-full w-px bg-white/[0.06]"
-                          style={{ left: hourToX(h) }}
-                        />
-                      ))}
-                      {/* 15-min sub-lines */}
-                      {hours.map((h) =>
-                        [0.25, 0.5, 0.75].map((q) => (
-                          <div
-                            key={`${h}-${q}`}
-                            className="absolute top-0 h-full w-px bg-white/[0.02]"
-                            style={{ left: hourToX(h + q) }}
-                          />
-                        ))
-                      )}
-
-                      {/* Non-working hours shading */}
-                      <div
-                        className="absolute top-0 h-full bg-white/[0.01]"
-                        style={{
-                          left: 0,
-                          width: hourToX(WORK_START),
-                          backgroundImage:
-                            "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.015) 4px, rgba(255,255,255,0.015) 5px)",
-                        }}
-                      />
-                      <div
-                        className="absolute top-0 h-full bg-white/[0.01]"
-                        style={{
-                          left: hourToX(WORK_END),
-                          width: totalWidth - hourToX(WORK_END),
-                          backgroundImage:
-                            "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.015) 4px, rgba(255,255,255,0.015) 5px)",
-                        }}
-                      />
-
-                      {/* ── "Laser" Now Line ─────────────────── */}
-                      <div className="absolute top-0 z-20 h-full" style={{ left: nowX }}>
-                        <div className="h-full w-px bg-emerald-500/60 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-                        {/* Glowing head */}
-                        {techIdx === 0 && (
-                          <div
-                            className="absolute -top-1.5 -left-[4px] h-[9px] w-[9px] rounded-full bg-emerald-500 animate-laser-pulse"
-                          />
-                        )}
-                      </div>
-
-                      {/* Drop target highlight (snap guide) */}
-                      {isDropRow && dropTarget && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="absolute top-1 z-[15] rounded-md border-2 border-dashed border-emerald-500/30 bg-emerald-500/[0.04]"
-                          style={{
-                            left: hourToX(dropTarget.hour),
-                            width: ghostDuration * HOUR_W,
-                            height: ROW_H - 8,
-                          }}
-                        >
-                          <div className="flex h-full items-center justify-center">
-                            <span className="text-[10px] font-medium text-emerald-500/50">
-                              {formatHour(dropTarget.hour)}
-                            </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[12px] font-medium text-zinc-300 transition-colors duration-150 group-hover:text-white">
+                            {tech.name}
                           </div>
-                        </motion.div>
-                      )}
+                          <div className="mt-0.5 text-[9px] text-zinc-600">
+                            Technician
+                          </div>
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/[0.04]">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.min(100, capacityPct)}%` }}
+                                transition={{ duration: 0.6, delay: techIdx * 0.08, ease: "easeOut" }}
+                                className={`h-full rounded-full ${
+                                  capacityPct > 90
+                                    ? "bg-rose-500/50"
+                                    : capacityPct > 70
+                                      ? "bg-amber-500/40"
+                                      : "bg-emerald-500/30"
+                                }`}
+                              />
+                            </div>
+                            <span className="font-mono text-[9px] text-zinc-600">{tech.hoursBooked}h</span>
+                          </div>
+                        </div>
+                      </div>
 
-                      {/* Schedule Events (breaks/meetings) */}
-                      {scheduleEvents
-                        .filter((evt) => evt.user_id === tech.id)
-                        .map((evt, i) => {
-                          const evtStart = timeToDecimalHours(evt.start_time);
-                          const evtDuration = calculateDuration(evt.start_time, evt.end_time);
-                          const evtLeft = hourToX(evtStart);
-                          const evtWidth = evtDuration * HOUR_W;
-                          const typeColor = evt.type === "break"
-                            ? "bg-zinc-500/8 border-zinc-700/30"
-                            : evt.type === "meeting"
-                              ? "bg-emerald-500/6 border-emerald-500/15"
-                              : evt.type === "personal"
-                                ? "bg-teal-500/6 border-teal-500/15"
-                                : "bg-red-500/6 border-red-500/15";
+                      {/* ── Timeline track ─────────────────────── */}
+                      <div className="relative flex-1 overflow-hidden" style={{ height: ROW_H }}>
+                        <div className="relative h-full" style={{ width: totalWidth }}>
+                          {/* Hour grid lines — subtle guides */}
+                          {hours.map((h) => (
+                            <div
+                              key={h}
+                              className="absolute top-0 h-full w-px bg-white/[0.04]"
+                              style={{ left: hourToX(h) }}
+                            />
+                          ))}
+                          {/* 15-min sub-lines — barely visible */}
+                          {hours.map((h) =>
+                            [0.25, 0.5, 0.75].map((q) => (
+                              <div
+                                key={`${h}-${q}`}
+                                className="absolute top-0 h-full w-px bg-white/[0.015]"
+                                style={{ left: hourToX(h + q) }}
+                              />
+                            ))
+                          )}
 
-                          return (
+                          {/* Non-working hours shading */}
+                          <div
+                            className="absolute top-0 h-full"
+                            style={{
+                              left: 0,
+                              width: hourToX(WORK_START),
+                              background: "rgba(255,255,255,0.008)",
+                              backgroundImage:
+                                "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.012) 4px, rgba(255,255,255,0.012) 5px)",
+                            }}
+                          />
+                          <div
+                            className="absolute top-0 h-full"
+                            style={{
+                              left: hourToX(WORK_END),
+                              width: totalWidth - hourToX(WORK_END),
+                              background: "rgba(255,255,255,0.008)",
+                              backgroundImage:
+                                "repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.012) 4px, rgba(255,255,255,0.012) 5px)",
+                            }}
+                          />
+
+                          {/* ── "Laser" Now Line ─────────────────── */}
+                          {isCurrentDay && (
+                            <div className="absolute top-0 z-20 h-full" style={{ left: nowX }}>
+                              <div className="h-full w-[2px] bg-emerald-500/70 shadow-[0_0_10px_rgba(16,185,129,0.5),0_0_20px_rgba(16,185,129,0.2)]" />
+                              {techIdx === 0 && (
+                                <div className="absolute -top-1 -left-[5px] h-[12px] w-[12px] rounded-full bg-emerald-500 animate-laser-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                              )}
+                            </div>
+                          )}
+
+                          {/* Drop target highlight (snap guide) */}
+                          {isDropRow && dropTarget && (
                             <motion.div
-                              key={evt.id}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              transition={{ delay: i * 0.02 }}
-                              className={`absolute top-2 z-[5] rounded-md border border-dashed ${typeColor}`}
+                              className="absolute top-2 z-[15] rounded-lg border-2 border-dashed border-emerald-500/30 bg-emerald-500/[0.03]"
                               style={{
-                                left: evtLeft,
-                                width: Math.max(24, evtWidth),
+                                left: hourToX(dropTarget.hour),
+                                width: ghostDuration * HOUR_W,
                                 height: ROW_H - 16,
                               }}
                             >
-                              <div className="flex h-full items-center justify-center truncate px-2">
-                                <span className="truncate text-[9px] text-zinc-600">{evt.title}</span>
+                              <div className="flex h-full items-center justify-center">
+                                <span className="font-mono text-[10px] font-medium text-emerald-500/40">
+                                  {formatHour(dropTarget.hour)}
+                                </span>
                               </div>
                             </motion.div>
-                          );
-                        })
-                      }
+                          )}
 
-                      {/* ── Job Blocks (Glass & Spine) ────────── */}
-                      {techBlocks.map((block, i) => {
-                        const colors = statusColorMap[block.status] || statusColorMap.scheduled;
-                        const isDragging = dragState?.source === "block" && dragState?.blockId === block.id;
-                        const isPeeking = peekBlockId === block.id;
+                          {/* Schedule Events (breaks/meetings) */}
+                          {scheduleEvents
+                            .filter((evt) => evt.user_id === tech.id)
+                            .map((evt, i) => {
+                              const evtStart = timeToDecimalHours(evt.start_time);
+                              const evtDuration = calculateDuration(evt.start_time, evt.end_time);
+                              const evtLeft = hourToX(evtStart);
+                              const evtWidth = evtDuration * HOUR_W;
+                              const typeColor = evt.type === "break"
+                                ? "bg-zinc-500/5 border-zinc-700/20"
+                                : evt.type === "meeting"
+                                  ? "bg-emerald-500/5 border-emerald-500/10"
+                                  : evt.type === "personal"
+                                    ? "bg-teal-500/5 border-teal-500/10"
+                                    : "bg-rose-500/5 border-rose-500/10";
 
-                        let blockLeft = hourToX(block.startHour);
-                        let blockWidth = block.duration * HOUR_W;
-
-                        if (isDragging && dragState) {
-                          if (dragState.mode === "resize") {
-                            blockWidth += dragDelta.dx;
-                            blockWidth = Math.max(HOUR_W * 0.25, blockWidth);
-                          }
-                        }
-
-                        const travelW = block.travelTime ? (block.travelTime / 60) * HOUR_W : 0;
-
-                        return (
-                          <div key={block.id}>
-                            {/* Travel time block */}
-                            {travelW > 0 && !isDragging && (
-                              <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: techIdx * 0.04 + i * 0.03 + 0.1 }}
-                                className="absolute top-3 h-[calc(100%-24px)] rounded-md border border-dashed border-white/[0.04] bg-white/[0.01]"
-                                style={{
-                                  left: hourToX(block.startHour) - travelW,
-                                  width: travelW,
-                                }}
-                              >
-                                <div className="flex h-full items-center justify-center">
-                                  <Navigation size={8} className="text-zinc-700" />
-                                </div>
-                              </motion.div>
-                            )}
-
-                            {/* The Block — Glass & Spine */}
-                            <motion.div
-                              initial={{ opacity: 0, scaleX: 0 }}
-                              animate={{
-                                opacity: isDragging ? 0.3 : 1,
-                                scaleX: 1,
-                                zIndex: isPeeking ? 25 : 10,
-                              }}
-                              transition={{
-                                delay: isDragging ? 0 : techIdx * 0.04 + i * 0.03,
-                                duration: 0.3,
-                                ease: [0.16, 1, 0.3, 1],
-                              }}
-                              className={`schedule-block-hover absolute top-2 origin-left cursor-grab overflow-hidden rounded-md border border-white/[0.06] bg-[#1A1A1A] ${
-                                block.conflict ? "border-red-500/40" : ""
-                              } ${isPeeking ? "ring-1 ring-white/15" : ""}`}
-                              style={{
-                                left: blockLeft,
-                                width: Math.max(24, blockWidth),
-                                height: ROW_H - 16,
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPeekBlockId(isPeeking ? null : block.id);
-                              }}
-                              onContextMenu={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setCtxMenu({ open: true, x: e.clientX, y: e.clientY, blockId: block.id });
-                              }}
-                              onMouseDown={(e) => {
-                                if (e.button === 0) handleBlockDragStart(e, block.id, "move");
-                              }}
-                            >
-                              {/* Status Spine — 3px left bar */}
-                              <div className={`absolute left-0 top-0 h-full w-[3px] ${colors.spine}`} />
-                              <div className="flex h-full flex-col justify-center truncate pl-3 pr-2">
-                                {blockWidth > 60 && (
-                                  <span className="font-mono text-[9px] text-zinc-500">
-                                    {formatHour(block.startHour)} — {formatHour(block.startHour + block.duration)}
-                                  </span>
-                                )}
-                                <span className="truncate text-[11px] font-medium text-white">{block.title}</span>
-                                {blockWidth > 80 && (
-                                  <span className="truncate text-[10px] text-zinc-400">{block.client}</span>
-                                )}
-                                {blockWidth > 120 && block.location && (
-                                  <span className="truncate text-[9px] text-zinc-600">{block.location}</span>
-                                )}
-                              </div>
-
-                              {/* Conflict indicator */}
-                              {block.conflict && (
+                              return (
                                 <motion.div
-                                  animate={{ scale: [1, 1.3, 1] }}
-                                  transition={{ duration: 1.5, repeat: Infinity }}
-                                  className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-[#050505]"
-                                />
-                              )}
+                                  key={evt.id}
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: i * 0.02 }}
+                                  className={`absolute top-3 z-[5] rounded-lg border border-dashed ${typeColor}`}
+                                  style={{
+                                    left: evtLeft,
+                                    width: Math.max(24, evtWidth),
+                                    height: ROW_H - 24,
+                                  }}
+                                >
+                                  <div className="flex h-full items-center justify-center truncate px-2">
+                                    <span className="truncate text-[9px] text-zinc-600">{evt.title}</span>
+                                  </div>
+                                </motion.div>
+                              );
+                            })
+                          }
 
-                              {/* Resize handle */}
-                              <div
-                                className="absolute top-0 right-0 h-full w-2 cursor-ew-resize opacity-0 transition-opacity hover:opacity-100"
-                                onMouseDown={(e) => {
-                                  e.stopPropagation();
-                                  handleBlockDragStart(e, block.id, "resize");
-                                }}
-                              >
-                                <div className="flex h-full items-center justify-center">
-                                  <Grip size={8} className="text-zinc-500" />
-                                </div>
-                              </div>
+                          {/* ── Job Capsules (Glass & Spine) ────────── */}
+                          {techBlocks.map((block, i) => {
+                            const colors = statusColorMap[block.status] || statusColorMap.scheduled;
+                            const isDragging = dragState?.source === "block" && dragState?.blockId === block.id;
+                            const isPeeking = peekBlockId === block.id;
+                            const isInProgress = block.status === "in_progress";
+                            const isUrgent = block.status === "en_route";
 
-                              {/* Peek Card */}
-                              <AnimatePresence>
-                                {isPeeking && !isDragging && (
-                                  <JobPeekCard
-                                    block={block}
-                                    onClose={() => setPeekBlockId(null)}
-                                    onOpenFull={() => {
-                                      setPeekBlockId(null);
-                                      router.push(`/dashboard/jobs/${block.jobId}`);
+                            let blockLeft = hourToX(block.startHour);
+                            let blockWidth = block.duration * HOUR_W;
+
+                            if (isDragging && dragState) {
+                              if (dragState.mode === "resize") {
+                                blockWidth += dragDelta.dx;
+                                blockWidth = Math.max(HOUR_W * 0.25, blockWidth);
+                              }
+                            }
+
+                            const travelW = block.travelTime ? (block.travelTime / 60) * HOUR_W : 0;
+
+                            return (
+                              <div key={block.id}>
+                                {/* Travel time block */}
+                                {travelW > 0 && !isDragging && (
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: techIdx * 0.04 + i * 0.03 + 0.1 }}
+                                    className="absolute top-3 h-[calc(100%-24px)] rounded-lg border border-dashed border-white/[0.03] bg-white/[0.008]"
+                                    style={{
+                                      left: hourToX(block.startHour) - travelW,
+                                      width: travelW,
                                     }}
-                                  />
+                                  >
+                                    <div className="flex h-full items-center justify-center">
+                                      <Navigation size={8} className="text-zinc-700" />
+                                    </div>
+                                  </motion.div>
                                 )}
-                              </AnimatePresence>
-                            </motion.div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+
+                                {/* The Capsule — Glass & Spine */}
+                                <motion.div
+                                  initial={{ opacity: 0, scaleX: 0 }}
+                                  animate={{
+                                    opacity: isDragging ? 0.3 : 1,
+                                    scaleX: 1,
+                                    zIndex: isPeeking ? 25 : 10,
+                                  }}
+                                  transition={{
+                                    delay: isDragging ? 0 : techIdx * 0.04 + i * 0.03,
+                                    duration: 0.3,
+                                    ease: [0.16, 1, 0.3, 1],
+                                  }}
+                                  className={`schedule-block-hover absolute top-2 origin-left cursor-grab overflow-hidden rounded-lg ${colors.bg} ${colors.border} backdrop-blur-sm ${
+                                    block.conflict ? "ring-1 ring-rose-500/30" : ""
+                                  } ${isPeeking ? "ring-1 ring-white/15" : ""} ${
+                                    isInProgress ? "animate-capsule-glow" : ""
+                                  } ${isUrgent ? "diagonal-stripe" : ""}`}
+                                  style={{
+                                    left: blockLeft,
+                                    width: Math.max(24, blockWidth),
+                                    height: ROW_H - 16,
+                                    ["--capsule-glow-color" as string]: colors.glow,
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPeekBlockId(isPeeking ? null : block.id);
+                                  }}
+                                  onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setCtxMenu({ open: true, x: e.clientX, y: e.clientY, blockId: block.id });
+                                  }}
+                                  onMouseDown={(e) => {
+                                    if (e.button === 0) handleBlockDragStart(e, block.id, "move");
+                                  }}
+                                >
+                                  <div className="flex h-full flex-col justify-center truncate pl-3 pr-2">
+                                    {blockWidth > 60 && (
+                                      <span className={`font-mono text-[9px] ${colors.text} opacity-60`}>
+                                        {formatHour(block.startHour)} — {formatHour(block.startHour + block.duration)}
+                                      </span>
+                                    )}
+                                    <span className={`truncate text-[11px] font-medium ${colors.text}`}>{block.title}</span>
+                                    {blockWidth > 80 && (
+                                      <span className={`truncate text-[10px] ${colors.text} opacity-50`}>{block.client}</span>
+                                    )}
+                                    {blockWidth > 120 && block.location && (
+                                      <span className={`truncate text-[9px] ${colors.text} opacity-30`}>{block.location}</span>
+                                    )}
+                                  </div>
+
+                                  {/* Conflict indicator */}
+                                  {block.conflict && (
+                                    <motion.div
+                                      animate={{ scale: [1, 1.3, 1] }}
+                                      transition={{ duration: 1.5, repeat: Infinity }}
+                                      className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-[#050505]"
+                                    />
+                                  )}
+
+                                  {/* Resize handle */}
+                                  <div
+                                    className="absolute top-0 right-0 h-full w-2 cursor-ew-resize opacity-0 transition-opacity hover:opacity-100"
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                      handleBlockDragStart(e, block.id, "resize");
+                                    }}
+                                  >
+                                    <div className="flex h-full items-center justify-center">
+                                      <Grip size={8} className="text-zinc-500" />
+                                    </div>
+                                  </div>
+
+                                  {/* Peek Card */}
+                                  <AnimatePresence>
+                                    {isPeeking && !isDragging && (
+                                      <JobPeekCard
+                                        block={block}
+                                        onClose={() => setPeekBlockId(null)}
+                                        onOpenFull={() => {
+                                          setPeekBlockId(null);
+                                          router.push(`/dashboard/jobs/${block.jobId}`);
+                                        }}
+                                      />
+                                    )}
+                                  </AnimatePresence>
+                                </motion.div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
@@ -859,17 +957,20 @@ export default function SchedulePage() {
           {unscheduledDrawerOpen && (
             <motion.div
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 280, opacity: 1 }}
+              animate={{ width: 300, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 35 }}
-              className="shrink-0 overflow-hidden border-l border-white/[0.05] bg-[#080808]"
+              className="shrink-0 overflow-hidden border-l border-white/[0.04] bg-[#070707]"
             >
-              <div className="flex h-full w-[280px] flex-col">
-                <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <Rows3 size={13} strokeWidth={1.5} className="text-zinc-500" />
-                    <span className="text-[13px] font-medium text-zinc-300">Unassigned Jobs</span>
-                    <span className="text-[10px] text-zinc-600">{backlogJobs.length}</span>
+              <div className="flex h-full w-[300px] flex-col">
+                {/* Drawer header — glassmorphism */}
+                <div className="flex items-center justify-between border-b border-white/[0.04] bg-black/40 px-4 py-3 backdrop-blur-xl">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.04]">
+                      <Inbox size={12} strokeWidth={1.5} className="text-zinc-400" />
+                    </div>
+                    <span className="text-[13px] font-medium text-zinc-200">Unassigned</span>
+                    <span className="rounded-full bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">{backlogJobs.length}</span>
                   </div>
                   <button
                     onClick={() => setUnscheduledDrawerOpen(false)}
@@ -879,9 +980,9 @@ export default function SchedulePage() {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-3">
-                  <p className="mb-2 text-[10px] text-zinc-700">
-                    Drag a job onto the timeline to assign it
+                <div className="flex-1 overflow-y-auto scrollbar-none p-3">
+                  <p className="mb-3 text-[10px] text-zinc-700">
+                    Drag a job onto the timeline to schedule
                   </p>
                   <div className="space-y-2">
                     {backlogJobs.length > 0 ? (
@@ -894,7 +995,7 @@ export default function SchedulePage() {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: isBeingDragged ? 0.3 : 1, x: 0 }}
                             transition={{ delay: idx * 0.03, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                            className="cursor-grab select-none rounded-lg border border-white/[0.05] bg-white/[0.02] p-3 transition-all duration-150 hover:border-white/[0.08] hover:bg-white/[0.03] active:cursor-grabbing"
+                            className="cursor-grab select-none rounded-xl border border-white/[0.04] bg-white/[0.015] p-3 transition-all duration-150 hover:border-white/[0.08] hover:bg-white/[0.03] active:cursor-grabbing"
                             onMouseDown={(e) => handleBacklogDragStart(e, item)}
                           >
                             <div className="flex items-start justify-between">
@@ -904,7 +1005,7 @@ export default function SchedulePage() {
                                   <span
                                     className={`h-1.5 w-1.5 rounded-full ${
                                       item.priority === "urgent"
-                                        ? "bg-red-400"
+                                        ? "bg-rose-400"
                                         : item.priority === "high"
                                           ? "bg-orange-400"
                                           : item.priority === "medium"
@@ -941,21 +1042,19 @@ export default function SchedulePage() {
                         );
                       })
                     ) : (
-                      /* Lottie-style empty backlog */
-                      <div className="flex flex-col items-center py-10 text-center">
-                        <div className="relative mb-4 flex h-12 w-12 items-center justify-center">
-                          {/* Floating idle animation */}
+                      <div className="flex flex-col items-center py-12 text-center">
+                        <div className="relative mb-5">
+                          <div className="pointer-events-none absolute top-1/2 left-1/2 h-[60px] w-[60px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.04] blur-[20px]" />
                           <div className="animate-backlog-idle">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
-                              <Inbox size={16} strokeWidth={1.5} className="text-zinc-600" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                              <Inbox size={18} strokeWidth={1.5} className="text-zinc-600" />
                             </div>
                           </div>
-                          {/* Subtle rings */}
                           <div className="absolute inset-0 rounded-full border border-white/[0.03] animate-signal-pulse" />
                         </div>
                         <p className="text-[12px] font-medium text-zinc-400">All jobs assigned</p>
-                        <p className="mt-0.5 text-[10px] text-zinc-600">
-                          Create a job to see it here
+                        <p className="mt-1 text-[10px] text-zinc-600">
+                          Create a new job to see it here
                         </p>
                       </div>
                     )}
@@ -973,19 +1072,22 @@ export default function SchedulePage() {
           className="pointer-events-none fixed inset-0 z-[9999]"
           style={{ cursor: "grabbing" }}
         >
-          <div
-            className="absolute rounded-md border border-emerald-500/40 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.4)]"
+          <motion.div
+            initial={{ scale: 1 }}
+            animate={{ scale: 1.05 }}
+            className="absolute rounded-lg border border-emerald-500/40 shadow-[0_12px_40px_-10px_rgba(16,185,129,0.4)]"
             style={{
               left: mousePos.x - 80,
-              top: mousePos.y - 24,
+              top: mousePos.y - 28,
               width: Math.max(120, ghostDuration * HOUR_W),
               height: ROW_H - 16,
-              background: "rgba(16, 185, 129, 0.08)",
-              backdropFilter: "blur(4px)",
+              background: "rgba(16, 185, 129, 0.06)",
+              backdropFilter: "blur(8px)",
+              opacity: 0.9,
             }}
           >
             {/* Spine */}
-            <div className="absolute left-0 top-0 h-full w-[3px] rounded-l-md bg-emerald-500" />
+            <div className="absolute left-0 top-0 h-full w-[2px] rounded-l-lg bg-emerald-500" />
             <div className="flex h-full flex-col justify-center truncate pl-3 pr-2">
               {dragState.source === "backlog" && dragState.backlogJob ? (
                 <>
@@ -1012,7 +1114,7 @@ export default function SchedulePage() {
                 })()
               ) : null}
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 
@@ -1049,12 +1151,12 @@ function JobPeekCard({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -8 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      className="absolute top-full left-0 z-50 mt-2 w-[320px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0A0A0A] shadow-2xl backdrop-blur-xl"
+      className="absolute top-full left-0 z-50 mt-2 w-[320px] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A0A0A]/95 shadow-2xl backdrop-blur-xl"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-2.5">
+      <div className="flex items-center justify-between border-b border-white/[0.04] bg-black/40 px-4 py-2.5 backdrop-blur-xl">
         <button
           onClick={onOpenFull}
           className="font-mono text-[12px] text-zinc-400 transition-colors hover:text-white"
@@ -1115,12 +1217,12 @@ function JobPeekCard({
             if (!block.location) { addToast("No location set for this job"); return; }
             window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}`, "_blank");
           }}
-          className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-white"
+          className="absolute right-2 bottom-2 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-white"
         >
           <Navigation size={9} />
           Directions
         </button>
-        <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-[10px] text-zinc-500 backdrop-blur-sm">
+        <div className="absolute bottom-2 left-2 rounded-lg bg-black/60 px-2 py-1 text-[10px] text-zinc-500 backdrop-blur-sm">
           {block.location}
         </div>
       </div>
@@ -1129,7 +1231,7 @@ function JobPeekCard({
       <div className="space-y-0 border-t border-white/[0.04] p-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <div className="text-[9px] tracking-wider text-zinc-600 uppercase">Time</div>
+            <div className="text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Time</div>
             <div className="mt-0.5 flex items-center gap-1 text-[12px] text-zinc-300">
               <Clock size={10} className="text-zinc-500" />
               {formatHour(block.startHour)} — {formatHour(block.startHour + block.duration)}
@@ -1137,7 +1239,7 @@ function JobPeekCard({
             <div className="text-[10px] text-zinc-600">{formatDuration(block.duration)}</div>
           </div>
           <div>
-            <div className="text-[9px] tracking-wider text-zinc-600 uppercase">Client</div>
+            <div className="text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
             <div className="mt-0.5 flex items-center gap-1 text-[12px] text-zinc-300">
               <User size={10} className="text-zinc-500" />
               {block.client}
@@ -1145,7 +1247,7 @@ function JobPeekCard({
           </div>
         </div>
         <div className="mt-3">
-          <div className="text-[9px] tracking-wider text-zinc-600 uppercase">Service</div>
+          <div className="text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Service</div>
           <div className="mt-0.5 flex items-center gap-1 text-[12px] text-zinc-300">
             <Wrench size={10} className="text-zinc-500" />
             {block.title}
@@ -1165,10 +1267,10 @@ function JobPeekCard({
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={onOpenFull}
-          className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20"
+          className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-colors hover:bg-emerald-500"
         >
           <ExternalLink size={11} />
-          Open Mission Control
+          Mission Control
         </motion.button>
         <div className="flex items-center gap-1">
           <button
