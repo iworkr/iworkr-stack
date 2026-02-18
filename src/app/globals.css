@@ -81,10 +81,10 @@
   background: var(--scrollbar-thumb-hover);
 }
 
-/* ── Selection ───────────────────────────────────────── */
+/* ── Selection (Emerald highlight) ───────────────────── */
 ::selection {
-  background: var(--selection-bg);
-  color: var(--text-primary);
+  background: rgba(16, 185, 129, 0.2);
+  color: white;
 }
 
 /* ── Interactive cursors ─────────────────────────────── */
