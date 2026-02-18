@@ -27,51 +27,27 @@ export async function createOrganization(data: {
     return { error: "Not authenticated" };
   }
 
-  // Generate a unique slug
   let slug = slugify(data.name);
   if (!slug) slug = "workspace";
 
-  // Check for slug collisions and append a suffix if needed
-  const { data: existing } = await supabase
-    .from("organizations")
-    .select("slug")
-    .eq("slug", slug)
-    .single();
+  // Append suffix to avoid slug collisions
+  slug = `${slug}-${Date.now().toString(36)}`;
 
-  if (existing) {
-    slug = `${slug}-${Date.now().toString(36)}`;
+  // Use the SECURITY DEFINER function to atomically create org + owner membership
+  const { data: result, error } = await (supabase as any).rpc(
+    "create_organization_with_owner",
+    {
+      org_name: data.name,
+      org_slug: slug,
+      org_trade: data.trade || null,
+    }
+  );
+
+  if (error) {
+    return { error: error.message };
   }
 
-  // Create the organization
-  const { data: org, error: orgError } = await (supabase as any)
-    .from("organizations")
-    .insert({
-      name: data.name,
-      slug,
-      trade: data.trade,
-    })
-    .select()
-    .single();
-
-  if (orgError) {
-    return { error: orgError.message };
-  }
-
-  // Add the creating user as owner
-  const { error: memberError } = await (supabase as any)
-    .from("organization_members")
-    .insert({
-      organization_id: org.id,
-      user_id: user.id,
-      role: "owner",
-      status: "active",
-    });
-
-  if (memberError) {
-    return { error: memberError.message };
-  }
-
-  return { organization: org };
+  return { organization: result };
 }
 
 export async function updateOrganizationTrade(orgId: string, trade: string) {
