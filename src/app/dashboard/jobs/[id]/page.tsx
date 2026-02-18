@@ -29,6 +29,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { useJobsStore } from "@/lib/jobs-store";
+import { InlineMap } from "@/components/maps/inline-map";
 import { useToastStore } from "@/components/app/action-toast";
 import { StatusIcon, StatusLabel } from "@/components/app/status-icon";
 import { PriorityIcon } from "@/components/app/priority-icon";
@@ -669,57 +670,15 @@ export default function JobDetailPage() {
                 </h3>
                 <div className="overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)]">
                   <div className="relative h-[200px] bg-[#0a0a0a]">
-                    {/* Stylized dark map placeholder */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="relative">
-                        {/* Grid lines */}
-                        <div className="absolute -inset-20 opacity-[0.03]">
-                          {Array.from({ length: 8 }).map((_, i) => (
-                            <div
-                              key={`h-${i}`}
-                              className="absolute left-0 right-0 border-t border-white"
-                              style={{ top: `${i * 14.3}%` }}
-                            />
-                          ))}
-                          {Array.from({ length: 8 }).map((_, i) => (
-                            <div
-                              key={`v-${i}`}
-                              className="absolute top-0 bottom-0 border-l border-white"
-                              style={{ left: `${i * 14.3}%` }}
-                            />
-                          ))}
-                        </div>
-                        {/* Pin */}
-                        <motion.div
-                          initial={{ y: -20, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 15,
-                            delay: 0.3,
-                          }}
-                          className="relative z-10 flex flex-col items-center"
-                        >
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
-                            <MapPin size={14} className="text-white" />
-                          </div>
-                          <div className="mt-0.5 h-2 w-2 rounded-full bg-emerald-500/40" />
-                          {/* Pulse ring */}
-                          <motion.div
-                            animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "easeOut",
-                            }}
-                            className="absolute top-0 h-8 w-8 rounded-full border border-emerald-500"
-                          />
-                        </motion.div>
+                    {job.locationCoords ? (
+                      <InlineMap lat={job.locationCoords.lat} lng={job.locationCoords.lng} zoom={15} className="h-full w-full" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <MapPin size={20} strokeWidth={1} className="text-zinc-700" />
                       </div>
-                    </div>
-                    {/* Address overlay */}
-                    <div className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2.5 py-1 text-[11px] text-zinc-400 backdrop-blur-sm">
+                    )}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
+                    <div className="absolute right-3 bottom-3 z-10 rounded-md bg-black/60 px-2.5 py-1 text-[11px] text-zinc-400 backdrop-blur-sm">
                       <div className="flex items-center gap-1.5">
                         <MapPin size={10} className="text-zinc-500" />
                         {job.location}

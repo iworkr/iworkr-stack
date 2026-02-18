@@ -25,6 +25,7 @@ import {
 import { useRouter, useParams } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
 import { useFormsStore } from "@/lib/forms-store";
+import { InlineMap } from "@/components/maps/inline-map";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getOrgSettings } from "@/app/actions/finance";
 import { downloadFormPDF } from "@/lib/pdf/generate-form-pdf";
@@ -152,36 +153,11 @@ export default function SubmissionDetailPage() {
                 </div>
                 {/* Mini map */}
                 <div className="relative mb-2 h-20 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#080808]">
-                  {/* Grid overlay */}
-                  <div
-                    className="absolute inset-0 opacity-10"
-                    style={{
-                      backgroundImage: `linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)`,
-                      backgroundSize: "20px 20px",
-                    }}
-                  />
-                  {/* Center pin */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <div className="relative">
-                      <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" />
-                      <motion.div
-                        animate={{ scale: [1, 2, 1], opacity: [0.4, 0, 0.4] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="absolute inset-0 rounded-full bg-emerald-500"
-                      />
-                    </div>
-                  </div>
-                  {/* Radar sweep */}
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                    style={{
-                      width: 80,
-                      height: 80,
-                      background: "conic-gradient(from 0deg, transparent 0deg, rgba(16,185,129,0.08) 30deg, transparent 60deg)",
-                      borderRadius: "50%",
-                    }}
+                  <InlineMap
+                    lat={submission.telemetry.gpsLat}
+                    lng={submission.telemetry.gpsLng}
+                    zoom={16}
+                    className="h-full w-full"
                   />
                 </div>
                 <p className="text-[10px] leading-tight text-zinc-400">

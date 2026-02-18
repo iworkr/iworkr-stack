@@ -1187,42 +1187,29 @@ function JobPeekCard({
 
       {/* Mini map */}
       <div className="relative h-[100px] bg-[#080808]">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="absolute inset-0 opacity-[0.02]">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-white" style={{ top: `${i * 20}%` }} />
-            ))}
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l border-white" style={{ left: `${i * 10}%` }} />
-            ))}
+        {block.location ? (
+          <img
+            src={`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(block.location)}&zoom=15&size=640x200&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:water%7Celement:labels%7Cvisibility:off&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=feature:administrative%7Celement:geometry.stroke%7Ccolor:0x27272a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&markers=color:0x10B981%7C${encodeURIComponent(block.location)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+            alt={block.location}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <MapPin size={14} strokeWidth={1} className="text-zinc-700" />
           </div>
-          <motion.div
-            initial={{ y: -10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 15 }}
-            className="relative z-10"
-          >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
-              <MapPin size={10} className="text-white" />
-            </div>
-            <motion.div
-              animate={{ scale: [1, 2, 1], opacity: [0.3, 0, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute inset-0 rounded-full border border-emerald-500"
-            />
-          </motion.div>
-        </div>
+        )}
         <button
           onClick={() => {
             if (!block.location) { addToast("No location set for this job"); return; }
             window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}`, "_blank");
           }}
-          className="absolute right-2 bottom-2 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-white"
+          className="absolute right-2 bottom-2 z-10 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-white"
         >
           <Navigation size={9} />
           Directions
         </button>
-        <div className="absolute bottom-2 left-2 rounded-lg bg-black/60 px-2 py-1 text-[10px] text-zinc-500 backdrop-blur-sm">
+        <div className="absolute bottom-2 left-2 z-10 rounded-lg bg-black/60 px-2 py-1 text-[10px] text-zinc-500 backdrop-blur-sm">
           {block.location}
         </div>
       </div>

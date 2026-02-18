@@ -19,6 +19,7 @@ import {
 import { PopoverMenu } from "./popover-menu";
 import { useToastStore } from "./action-toast";
 import { useClientsStore } from "@/lib/clients-store";
+import { InlineMap } from "@/components/maps/inline-map";
 import { useOrg } from "@/lib/hooks/use-org";
 import { clients as existingClients, type Client, type ClientStatus } from "@/lib/data";
 
@@ -413,45 +414,29 @@ export function CreateClientModal({
                       {/* Map card */}
                       <div className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)]">
                         <div className="relative h-[160px] bg-[#0a0a0a]">
-                          {/* Grid lines */}
-                          <div className="absolute inset-0 opacity-[0.03]">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                              <div key={`mh-${i}`} className="absolute left-0 right-0 border-t border-white" style={{ top: `${i * 20}%` }} />
-                            ))}
-                            {Array.from({ length: 8 }).map((_, i) => (
-                              <div key={`mv-${i}`} className="absolute top-0 bottom-0 border-l border-white" style={{ left: `${i * 14.28}%` }} />
-                            ))}
-                          </div>
-
-                          {/* Pin */}
-                          {(addressCoords || address) && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <motion.div
-                                initial={{ y: -20, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 12, delay: 0.3 }}
-                              >
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
-                                  <MapPin size={12} className="text-white" />
-                                </div>
-                                <motion.div
-                                  animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
-                                  transition={{ duration: 2, repeat: Infinity }}
-                                  className="absolute inset-0 rounded-full border border-[#00E676]"
-                                />
-                              </motion.div>
+                          {addressCoords ? (
+                            <InlineMap lat={addressCoords.lat} lng={addressCoords.lng} zoom={15} className="h-full w-full" />
+                          ) : address ? (
+                            <img
+                              src={`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=15&size=640x320&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&markers=color:0x10B981%7C${encodeURIComponent(address)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+                              alt={address}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center">
+                              <MapPin size={16} strokeWidth={1} className="text-zinc-700" />
                             </div>
                           )}
 
-                          {/* Address overlay card */}
                           {address && (
                             <motion.div
                               initial={{ opacity: 0, y: 4 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.5 }}
-                              className="absolute bottom-2 left-2 right-2 flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.7)] px-3 py-2 backdrop-blur-md"
+                              className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.7)] px-3 py-2 backdrop-blur-md"
                             >
-                              <MapPin size={10} className="shrink-0 text-[#00E676]" />
+                              <MapPin size={10} className="shrink-0 text-emerald-500" />
                               <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-300">
                                 {address}
                               </span>

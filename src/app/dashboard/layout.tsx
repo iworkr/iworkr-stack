@@ -10,6 +10,7 @@ import { SlideOver } from "@/components/shell/slide-over";
 import { ActionToastContainer } from "@/components/app/action-toast";
 import { DataProvider } from "@/components/app/data-provider";
 import { HydrationGate } from "@/components/app/hydration-gate";
+import { GoogleMapsProvider } from "@/components/maps/google-maps-provider";
 import { useShellStore } from "@/lib/shell-store";
 
 const DesktopBridge = dynamic(() => import("@/lib/desktop/desktop-bridge").then((m) => m.DesktopBridge), { ssr: false });
@@ -159,6 +160,7 @@ export default function DashboardLayout({
   const mainMarginLeft = isMobile ? 0 : sidebarCollapsed ? 64 : 240;
 
   return (
+    <GoogleMapsProvider>
     <HydrationGate>
     <div className="flex h-screen overflow-hidden bg-black">
       {/* Noise grain */}
@@ -237,5 +239,6 @@ export default function DashboardLayout({
       <DesktopOfflineBanner />
     </div>
     </HydrationGate>
+    </GoogleMapsProvider>
   );
 }

@@ -34,6 +34,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { type Client, type ClientActivity } from "@/lib/data";
+import { InlineMap } from "@/components/maps/inline-map";
 import { useToastStore } from "@/components/app/action-toast";
 import { useClientsStore } from "@/lib/clients-store";
 import { getClientDetails } from "@/app/actions/clients";
@@ -615,33 +616,16 @@ export default function ClientDossierPage() {
                 </h4>
                 <div className="overflow-hidden rounded-xl border border-white/[0.06]">
                   <div className="relative h-[130px] bg-[#080808]">
-                    <div className="absolute inset-0 opacity-[0.03]">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-white" style={{ top: `${i * 20}%` }} />
-                      ))}
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l border-white" style={{ left: `${i * 12.5}%` }} />
-                      ))}
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <motion.div
-                        initial={{ y: -15, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.3 }}
-                        className="relative"
-                      >
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
-                          <MapPin size={10} className="text-white" />
-                        </div>
-                        <motion.div
-                          animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="absolute inset-0 rounded-full border border-emerald-500"
-                        />
-                      </motion.div>
-                    </div>
+                    {client.addressCoords ? (
+                      <InlineMap lat={client.addressCoords.lat} lng={client.addressCoords.lng} zoom={15} className="h-full w-full" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <MapPin size={16} strokeWidth={1} className="text-zinc-700" />
+                      </div>
+                    )}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#080808] to-transparent" />
                     {client.addressCoords && (
-                      <div className="absolute right-2 bottom-2 rounded-md bg-black/60 px-2 py-1 text-[9px] text-zinc-400 backdrop-blur-sm">
+                      <div className="absolute right-2 bottom-2 z-10 rounded-md bg-black/60 px-2 py-1 text-[9px] text-zinc-400 backdrop-blur-sm">
                         {haversineKm(client.addressCoords.lat, client.addressCoords.lng, -33.8688, 151.2093).toFixed(1)} km from HQ
                       </div>
                     )}

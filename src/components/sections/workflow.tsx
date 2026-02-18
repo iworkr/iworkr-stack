@@ -81,26 +81,33 @@ function InboxVisual() {
 }
 
 function MapVisual() {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const staticMapUrl = apiKey
+    ? `https://maps.googleapis.com/maps/api/staticmap?center=-27.4698,153.0251&zoom=13&size=640x400&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&markers=color:0x10B981%7C-27.4698,153.0251&markers=color:0x10B981%7C-27.4575,153.0355&markers=color:0x10B981%7C-27.4785,153.0190&key=${apiKey}`
+    : null;
+
   return (
     <div className="relative">
-      {/* Greyscale map placeholder */}
       <div className="relative h-64 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
-        {/* Grid streets */}
-        <div
-          className="absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
+        {staticMapUrl ? (
+          <img
+            src={staticMapUrl}
+            alt="Route optimization map"
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <MapPin size={24} strokeWidth={1} className="text-zinc-700" />
+          </div>
+        )}
 
-        {/* Route line */}
-        <svg className="absolute inset-0 h-full w-full">
+        {/* Route overlay line */}
+        <svg className="pointer-events-none absolute inset-0 h-full w-full">
           <motion.path
             d="M 60 180 C 100 180, 120 100, 160 90 S 240 60, 300 50"
             fill="none"
-            stroke="rgba(0,230,118,0.6)"
+            stroke="rgba(16,185,129,0.5)"
             strokeWidth="2"
             strokeDasharray="8 4"
             initial={{ pathLength: 0 }}
@@ -110,29 +117,7 @@ function MapVisual() {
           />
         </svg>
 
-        {/* Pins */}
-        {[
-          { x: "15%", y: "70%", label: "Current", color: "bg-emerald-500" },
-          { x: "42%", y: "35%", label: "Next Job", color: "bg-[#00E676]" },
-          { x: "78%", y: "20%", label: "After", color: "bg-zinc-500" },
-        ].map((pin, i) => (
-          <motion.div
-            key={pin.label}
-            initial={{ opacity: 0, scale: 0 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 + i * 0.2, type: "spring" }}
-            className="absolute flex flex-col items-center"
-            style={{ left: pin.x, top: pin.y }}
-          >
-            <div
-              className={`h-3 w-3 rounded-full ${pin.color} ring-2 ring-black`}
-            />
-            <span className="mt-1 rounded bg-black/80 px-1.5 py-0.5 text-[8px] text-zinc-400">
-              {pin.label}
-            </span>
-          </motion.div>
-        ))}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050505] to-transparent" />
       </div>
 
       <div className="mt-3 flex items-center justify-between text-[10px] text-zinc-500">

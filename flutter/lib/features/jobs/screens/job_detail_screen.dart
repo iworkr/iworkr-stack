@@ -10,6 +10,12 @@ import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
 import 'package:iworkr_mobile/core/widgets/status_pip.dart';
 import 'package:iworkr_mobile/models/job.dart';
+import 'package:iworkr_mobile/core/services/map_launcher_service.dart';
+import 'package:iworkr_mobile/core/widgets/obsidian_map.dart';
+import 'package:iworkr_mobile/features/quotes/screens/quote_create_screen.dart';
+import 'package:iworkr_mobile/features/safety/screens/safety_shield_screen.dart';
+import 'package:iworkr_mobile/features/ai/screens/ai_cortex_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 /// Job detail — "The Dossier" Bento Grid layout.
@@ -65,7 +71,7 @@ class _JobDetailBody extends StatelessWidget {
           pinned: true,
           backgroundColor: ObsidianTheme.void_,
           leading: IconButton(
-            icon: const Icon(PhosphorIconsRegular.arrowLeft, size: 20),
+            icon: const Icon(PhosphorIconsLight.arrowLeft, size: 20),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text(
@@ -77,7 +83,7 @@ class _JobDetailBody extends StatelessWidget {
           ),
           actions: [
             IconButton(
-              icon: const Icon(PhosphorIconsRegular.dotsThree, size: 20),
+              icon: const Icon(PhosphorIconsLight.dotsThree, size: 20),
               onPressed: () => HapticFeedback.lightImpact(),
             ),
           ],
@@ -177,7 +183,7 @@ class _JobDetailBody extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(PhosphorIconsRegular.mapPin, size: 12, color: ObsidianTheme.textTertiary),
+                            const Icon(PhosphorIconsLight.mapPin, size: 12, color: ObsidianTheme.textTertiary),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
@@ -192,6 +198,133 @@ class _JobDetailBody extends StatelessWidget {
                       ),
                   ],
                 ),
+
+                const SizedBox(height: 20),
+
+                // Execute Mission Button
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    context.push('/jobs/${job.id}/execute');
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: ObsidianTheme.radiusMd,
+                      gradient: LinearGradient(
+                        colors: [
+                          ObsidianTheme.emerald.withValues(alpha: 0.1),
+                          ObsidianTheme.emerald.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(PhosphorIconsLight.play, size: 18, color: ObsidianTheme.emerald),
+                        const SizedBox(width: 10),
+                        Text(
+                          'EXECUTE MISSION',
+                          style: GoogleFonts.jetBrainsMono(
+                            color: ObsidianTheme.emerald,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                    .animate()
+                    .fadeIn(delay: 250.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+                    .moveY(begin: 6, delay: 250.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
+
+                // Inline map preview
+                if (job.locationLat != null && job.locationLng != null) ...[
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: ObsidianTheme.radiusMd,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: ObsidianTheme.radiusMd,
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      ),
+                      child: ObsidianInlineMap(
+                        lat: job.locationLat!,
+                        lng: job.locationLng!,
+                        zoom: 15,
+                        height: 140,
+                      ),
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(delay: 260.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
+                ],
+
+                // Navigate Button — launches native maps
+                if (job.locationLat != null && job.locationLng != null) ...[
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () async {
+                      HapticFeedback.mediumImpact();
+                      final ok = await MapLauncherService.navigate(
+                        lat: job.locationLat!,
+                        lng: job.locationLng!,
+                        label: job.title,
+                      );
+                      if (context.mounted) {
+                        MapLauncherService.showLaunchFeedback(context, success: ok);
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: ObsidianTheme.radiusMd,
+                        color: ObsidianTheme.blue.withValues(alpha: 0.06),
+                        border: Border.all(color: ObsidianTheme.blue.withValues(alpha: 0.15)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(PhosphorIconsLight.navigationArrow, size: 16, color: ObsidianTheme.blue),
+                          const SizedBox(width: 8),
+                          Text(
+                            'NAVIGATE',
+                            style: GoogleFonts.jetBrainsMono(
+                              color: ObsidianTheme.blue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              color: ObsidianTheme.blue.withValues(alpha: 0.1),
+                            ),
+                            child: Text(
+                              'NATIVE',
+                              style: GoogleFonts.jetBrainsMono(
+                                color: ObsidianTheme.blue.withValues(alpha: 0.6),
+                                fontSize: 8,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(delay: 280.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+                      .moveY(begin: 6, delay: 280.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
+                ],
 
                 const SizedBox(height: 28),
 
@@ -248,6 +381,128 @@ class _JobDetailBody extends StatelessWidget {
                   ),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
+
+                const SizedBox(height: 28),
+
+                // Safety & Intelligence
+                _SectionLabel(label: 'FIELD INTELLIGENCE', delayMs: 330),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          HapticFeedback.mediumImpact();
+                          await showSafetyShield(context, jobId: job.id);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: ObsidianTheme.radiusMd,
+                            border: Border.all(color: ObsidianTheme.amber.withValues(alpha: 0.3)),
+                            color: ObsidianTheme.amber.withValues(alpha: 0.06),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(PhosphorIconsLight.shieldWarning, size: 15, color: ObsidianTheme.amber),
+                              const SizedBox(width: 6),
+                              Text('Safety Shield', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.amber, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          showAiCortex(context, jobId: job.id);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: ObsidianTheme.radiusMd,
+                            border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.06),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(PhosphorIconsLight.brain, size: 15, color: const Color(0xFF6366F1)),
+                              const SizedBox(width: 6),
+                              Text('AI Cortex', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF6366F1), fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+                    .animate()
+                    .fadeIn(delay: 340.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
+
+                const SizedBox(height: 28),
+
+                // Commerce Actions
+                _SectionLabel(label: 'COMMERCE', delayMs: 350),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => showQuoteCreator(
+                          context,
+                          jobId: job.id,
+                          clientId: job.clientId,
+                          clientName: job.clientName,
+                          jobTitle: job.title,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            borderRadius: ObsidianTheme.radiusMd,
+                            border: Border.all(color: ObsidianTheme.borderMedium),
+                            color: ObsidianTheme.hoverBg,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(PhosphorIconsLight.fileText, size: 14, color: ObsidianTheme.textSecondary),
+                              const SizedBox(width: 6),
+                              Text('Create Quote', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => HapticFeedback.lightImpact(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            borderRadius: ObsidianTheme.radiusMd,
+                            border: Border.all(color: ObsidianTheme.borderMedium),
+                            color: ObsidianTheme.hoverBg,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(PhosphorIconsLight.receipt, size: 14, color: ObsidianTheme.textSecondary),
+                              const SizedBox(width: 6),
+                              Text('Invoice', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+                    .animate()
+                    .fadeIn(delay: 370.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
 
                 const SizedBox(height: 28),
 

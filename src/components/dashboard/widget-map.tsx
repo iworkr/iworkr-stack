@@ -1,13 +1,15 @@
 "use client";
 
+import { GoogleMap, OverlayView } from "@react-google-maps/api";
 import { motion } from "framer-motion";
-import { ArrowRight, MapPin, Radio, Users } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { ArrowRight, MapPin, Radio } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getLiveDispatch, type DispatchPin } from "@/app/actions/dashboard";
 import { createClient } from "@/lib/supabase/client";
 import { WidgetShell } from "./widget-shell";
+import { useGoogleMaps } from "@/components/maps/google-maps-provider";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const statusConfig = {
@@ -16,32 +18,59 @@ const statusConfig = {
   idle: { color: "bg-zinc-600", ring: "ring-zinc-600/20", label: "Idle" },
 };
 
-function coordsToPosition(lat: number | null, lng: number | null, allPins: DispatchPin[]) {
-  if (!lat || !lng) return { x: "50%", y: "50%" };
-  const lats = allPins.filter(p => p.location_lat).map(p => p.location_lat!);
-  const lngs = allPins.filter(p => p.location_lng).map(p => p.location_lng!);
-  if (lats.length < 2) return { x: "50%", y: "50%" };
-  const minLat = Math.min(...lats) - 0.01;
-  const maxLat = Math.max(...lats) + 0.01;
-  const minLng = Math.min(...lngs) - 0.01;
-  const maxLng = Math.max(...lngs) + 0.01;
-  const x = ((lng - minLng) / (maxLng - minLng)) * 70 + 15;
-  const y = (1 - (lat - minLat) / (maxLat - minLat)) * 60 + 20;
-  return { x: `${Math.max(10, Math.min(90, x))}%`, y: `${Math.max(10, Math.min(90, y))}%` };
-}
+const statusDotColors: Record<string, string> = {
+  on_job: "#10B981",
+  en_route: "#38BDF8",
+  idle: "#52525B",
+};
+
+const DARK_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#52525b" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#0a0a0a" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative.neighborhood", stylers: [{ visibility: "off" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#18181b" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
+  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#1c1c1e" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#050505" }] },
+  { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
+];
+
+const MAP_OPTIONS: google.maps.MapOptions = {
+  styles: DARK_STYLES,
+  disableDefaultUI: true,
+  zoomControl: false,
+  mapTypeControl: false,
+  streetViewControl: false,
+  fullscreenControl: false,
+  clickableIcons: false,
+  gestureHandling: "greedy",
+  backgroundColor: "#050505",
+  keyboardShortcuts: false,
+};
+
+const BRISBANE_CENTER = { lat: -27.4698, lng: 153.0251 };
 
 interface Pin {
   id: string;
   name: string;
   task: string;
   status: "on_job" | "en_route" | "idle";
-  x: string;
-  y: string;
+  lat: number;
+  lng: number;
 }
 
 export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
+  const { isLoaded } = useGoogleMaps();
   const [hovered, setHovered] = useState<string | null>(null);
   const [dispatchData, setDispatchData] = useState<DispatchPin[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -68,24 +97,36 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
 
   const pins: Pin[] = useMemo(() => {
     if (dispatchData.length === 0) return [];
-    return dispatchData.map(d => {
-      const pos = coordsToPosition(d.location_lat, d.location_lng, dispatchData);
-      return {
+    return dispatchData
+      .filter(d => d.location_lat && d.location_lng)
+      .map(d => ({
         id: d.id,
-        name: d.name ? d.name.split(" ").map(n => n[0]).join("") + "." : "Unassigned",
+        name: d.name ? d.name.split(" ").map(n => n[0]).join("") + "." : "??",
         task: d.task,
         status: d.dispatch_status === "on_job" ? "on_job" as const : "en_route" as const,
-        x: pos.x,
-        y: pos.y,
-      };
-    });
+        lat: d.location_lat!,
+        lng: d.location_lng!,
+      }));
   }, [dispatchData]);
+
+  const mapCenter = useMemo(() => {
+    if (pins.length === 0) return BRISBANE_CENTER;
+    const avgLat = pins.reduce((s, p) => s + p.lat, 0) / pins.length;
+    const avgLng = pins.reduce((s, p) => s + p.lng, 0) / pins.length;
+    return { lat: avgLat, lng: avgLng };
+  }, [pins]);
 
   const activeCount = pins.filter((p) => p.status !== "idle").length;
   const onJobCount = pins.filter((p) => p.status === "on_job").length;
   const enRouteCount = pins.filter((p) => p.status === "en_route").length;
 
-  /* ── SMALL: Just the active tech count ──────────────── */
+  const fitBounds = useCallback((map: google.maps.Map) => {
+    if (pins.length < 2) return;
+    const bounds = new google.maps.LatLngBounds();
+    pins.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }));
+    map.fitBounds(bounds, 40);
+  }, [pins]);
+
   if (size === "small") {
     return (
       <WidgetShell delay={0.05}>
@@ -109,7 +150,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
     );
   }
 
-  if (!loaded) {
+  if (!loaded || !isLoaded) {
     return (
       <WidgetShell delay={0.05}>
         <div className="relative h-full min-h-[120px] overflow-hidden p-4">
@@ -119,13 +160,12 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
               <span className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" />
             </div>
           </div>
-          <div className="absolute inset-0 mt-10 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+          <div className="skeleton-shimmer h-full min-h-[80px] rounded-lg bg-[#0a0a0a]" />
         </div>
       </WidgetShell>
     );
   }
 
-  /* ── MEDIUM: Mini map (static, no radar sweep) ─────── */
   if (size === "medium") {
     return (
       <WidgetShell
@@ -147,10 +187,24 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         }
       >
         <div className="relative h-full min-h-[120px] overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+          <GoogleMap
+            mapContainerClassName="h-full w-full"
+            center={mapCenter}
+            zoom={13}
+            options={MAP_OPTIONS}
+            onLoad={fitBounds}
+          >
+            {pins.map((pin) => (
+              <OverlayView key={pin.id} position={{ lat: pin.lat, lng: pin.lng }} mapPaneName={OverlayView.FLOAT_PANE}>
+                <div className="relative">
+                  <div className={`h-2.5 w-2.5 rounded-full ${statusConfig[pin.status].color} ring-2 ring-black`} />
+                </div>
+              </OverlayView>
+            ))}
+          </GoogleMap>
 
           {loaded && pins.length === 0 && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center">
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/60">
               <div className="text-center">
                 <MapPin size={16} strokeWidth={1} className="mx-auto mb-1 text-zinc-700" />
                 <p className="text-[10px] text-zinc-600">No active dispatches</p>
@@ -158,16 +212,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
             </div>
           )}
 
-          {pins.map((pin) => {
-            const cfg = statusConfig[pin.status];
-            return (
-              <div key={pin.id} className="absolute z-20" style={{ left: pin.x, top: pin.y }}>
-                <div className={`relative h-2.5 w-2.5 rounded-full ${cfg.color} ring-2 ring-black`} />
-              </div>
-            );
-          })}
-
-          <div className="absolute inset-x-0 bottom-0 z-20 h-8 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-8 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
           <div className="absolute bottom-2 left-3 z-30 flex items-center gap-2">
             <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> On Job</span>
             <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-sky-400" /> En Route</span>
@@ -177,7 +222,6 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
     );
   }
 
-  /* ── LARGE: Full interactive map with radar sweep ──── */
   return (
     <WidgetShell
       delay={0.05}
@@ -206,33 +250,54 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
       }
     >
       <div className="relative h-full min-h-[260px] overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
-
-        <svg className="absolute inset-0 h-full w-full opacity-[0.06]" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <line x1="20" y1="0" x2="20" y2="100" stroke="white" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-          <line x1="60" y1="0" x2="60" y2="100" stroke="white" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-          <line x1="0" y1="40" x2="100" y2="40" stroke="white" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-          <line x1="0" y1="75" x2="100" y2="75" stroke="white" strokeWidth="0.3" vectorEffect="non-scaling-stroke" />
-          <path d="M 10 20 Q 35 50, 70 30" fill="none" stroke="white" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
-          <path d="M 5 60 Q 45 40, 85 65" fill="none" stroke="white" strokeWidth="0.4" vectorEffect="non-scaling-stroke" />
-        </svg>
-
-        {/* Radar sweep */}
-        <div className="absolute" style={{ left: "48%", top: "48%", transform: "translate(-50%, -50%)" }}>
-          <div className="relative z-10 flex h-4 w-4 items-center justify-center rounded-sm border border-zinc-600 bg-zinc-800">
-            <div className="h-1.5 w-1.5 rounded-full bg-white" />
-          </div>
-          {[80, 140, 200].map((r) => (
-            <div key={r} className="absolute rounded-full border border-zinc-800/60" style={{ width: r * 2, height: r * 2, left: `calc(50% - ${r}px)`, top: `calc(50% - ${r}px)` }} />
-          ))}
-          <motion.div className="absolute left-1/2 top-1/2" style={{ width: 0, height: 0 }} animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}>
-            <div className="absolute top-0 left-0 origin-left" style={{ width: 200, height: 2, marginTop: -1, background: "linear-gradient(90deg, rgba(16,185,129,0.4) 0%, rgba(16,185,129,0.08) 70%, transparent 100%)", borderRadius: 1 }} />
-            <div className="absolute top-0 left-0 origin-top-left" style={{ width: 200, height: 200, background: "conic-gradient(from 0deg at 0% 0%, rgba(16,185,129,0.05) 0deg, rgba(16,185,129,0.02) 20deg, transparent 50deg)" }} />
-          </motion.div>
-        </div>
+        <GoogleMap
+          mapContainerClassName="h-full w-full"
+          center={mapCenter}
+          zoom={13}
+          options={MAP_OPTIONS}
+          onLoad={fitBounds}
+        >
+          {pins.map((pin) => {
+            const cfg = statusConfig[pin.status];
+            const dotColor = statusDotColors[pin.status];
+            return (
+              <OverlayView key={pin.id} position={{ lat: pin.lat, lng: pin.lng }} mapPaneName={OverlayView.FLOAT_PANE}>
+                <div
+                  className="relative"
+                  onMouseEnter={() => setHovered(pin.id)}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  {pin.status !== "idle" && (
+                    <motion.div
+                      animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className={`absolute rounded-full ${cfg.color}`}
+                      style={{ width: 12, height: 12, left: -2, top: -2 }}
+                    />
+                  )}
+                  <div className={`relative h-3 w-3 cursor-pointer rounded-full ${cfg.color} ring-2 ring-black transition-transform hover:scale-150`} />
+                  {hovered === pin.id && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      className="absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <div className={`h-1.5 w-1.5 rounded-full ${cfg.color}`} />
+                        <span className="text-[11px] font-medium text-zinc-200">{pin.name}</span>
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-zinc-500">{pin.task} · {cfg.label}</div>
+                      <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-zinc-700 bg-zinc-900" />
+                    </motion.div>
+                  )}
+                </div>
+              </OverlayView>
+            );
+          })}
+        </GoogleMap>
 
         {loaded && pins.length === 0 && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/60">
             <div className="text-center">
               <MapPin size={20} strokeWidth={1} className="mx-auto mb-1.5 text-zinc-700" />
               <p className="text-[11px] text-zinc-600">No active dispatches</p>
@@ -241,29 +306,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           </div>
         )}
 
-        {pins.map((pin) => {
-          const cfg = statusConfig[pin.status];
-          return (
-            <div key={pin.id} className="absolute z-20" style={{ left: pin.x, top: pin.y }} onMouseEnter={() => setHovered(pin.id)} onMouseLeave={() => setHovered(null)}>
-              {pin.status !== "idle" && (
-                <motion.div animate={{ scale: [1, 2.5], opacity: [0.4, 0] }} transition={{ duration: 2, repeat: Infinity }} className={`absolute inset-0 rounded-full ${cfg.color}`} style={{ width: 12, height: 12, margin: "-2px" }} />
-              )}
-              <div className={`relative h-3 w-3 cursor-pointer rounded-full ${cfg.color} ring-2 ring-black transition-transform hover:scale-150`} />
-              {hovered === pin.id && (
-                <motion.div initial={{ opacity: 0, y: 5, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`h-1.5 w-1.5 rounded-full ${cfg.color}`} />
-                    <span className="text-[11px] font-medium text-zinc-200">{pin.name}</span>
-                  </div>
-                  <div className="mt-0.5 text-[10px] text-zinc-500">{pin.task} · {cfg.label}</div>
-                  <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-zinc-700 bg-zinc-900" />
-                </motion.div>
-              )}
-            </div>
-          );
-        })}
-
-        <div className="absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
         <div className="absolute bottom-3 left-3 z-30 flex items-center gap-3">
           <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> On Job</span>
           <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" /> En Route</span>
