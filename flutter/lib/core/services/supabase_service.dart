@@ -29,13 +29,11 @@ class SupabaseService {
     });
   }
 
-  /// Extract auth tokens from deep link URI and establish session
+  /// Extract auth tokens from deep link URI and establish session,
+  /// then sync any OAuth profile data (avatar, name) to the profiles table.
   static Future<void> _handleAuthDeepLink(Uri uri) async {
-    // supabase_flutter handles most of this automatically, but we ensure
-    // fragments with access_token are processed
     final fragment = uri.fragment;
     if (fragment.isNotEmpty && fragment.contains('access_token')) {
-      // Parse the fragment as query parameters
       final params = Uri.splitQueryString(fragment);
       final accessToken = params['access_token'];
       final refreshToken = params['refresh_token'];
@@ -44,6 +42,27 @@ class SupabaseService {
         await auth.setSession(refreshToken);
       }
     }
+
+    // Sync Google profile data (avatar + name) into profiles table
+    await _syncOAuthProfile();
+  }
+
+  /// Pull avatar_url and full_name from user_metadata and persist to profiles
+  static Future<void> _syncOAuthProfile() async {
+    final user = auth.currentUser;
+    if (user == null) return;
+
+    final meta = user.userMetadata ?? {};
+    final avatarUrl = meta['avatar_url'] ?? meta['picture'];
+    final fullName = meta['full_name'] ?? meta['name'];
+
+    if (avatarUrl == null && fullName == null) return;
+
+    await client.from('profiles').update({
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
+      if (fullName != null) 'full_name': fullName,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', user.id);
   }
 }
 

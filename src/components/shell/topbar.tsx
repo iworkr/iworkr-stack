@@ -311,6 +311,7 @@ function ProfileMenu({
   const { profile, signOut } = useAuthStore();
   const displayName = profile?.full_name || "";
   const displayEmail = profile?.email || "";
+  const avatarUrl = profile?.avatar_url;
   const initials = displayName
     ? displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
     : "";
@@ -337,9 +338,15 @@ function ProfileMenu({
     <div ref={ref} className="relative">
       <button
         onClick={onToggle}
-        className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-[rgba(255,255,255,0.08)] transition-all duration-150 hover:ring-[rgba(255,255,255,0.2)]"
+        className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-[rgba(255,255,255,0.08)] transition-all duration-150 hover:ring-[rgba(255,255,255,0.2)]"
       >
-        {initials || <Shimmer className="h-3 w-3 rounded-full" />}
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+        ) : initials ? (
+          initials
+        ) : (
+          <Shimmer className="h-3 w-3 rounded-full" />
+        )}
       </button>
 
       <AnimatePresence>
@@ -352,13 +359,22 @@ function ProfileMenu({
             className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
           >
             {/* User info */}
-            <div className="border-b border-[rgba(255,255,255,0.06)] px-3 py-2.5">
-              <p className="text-[12px] font-medium text-zinc-200">
-                {displayName || <Shimmer className="h-3 w-24" />}
-              </p>
-              <p className="mt-0.5 text-[10px] text-zinc-600">
-                {displayEmail || <Shimmer className="h-2 w-32" />}
-              </p>
+            <div className="flex items-center gap-2.5 border-b border-[rgba(255,255,255,0.06)] px-3 py-2.5">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/[0.08]" referrerPolicy="no-referrer" />
+              ) : initials ? (
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-medium text-zinc-400 ring-1 ring-white/[0.08]">
+                  {initials}
+                </div>
+              ) : null}
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-medium text-zinc-200">
+                  {displayName || <Shimmer className="h-3 w-24" />}
+                </p>
+                <p className="mt-0.5 truncate text-[10px] text-zinc-600">
+                  {displayEmail || <Shimmer className="h-2 w-32" />}
+                </p>
+              </div>
             </div>
 
             <div className="py-1">

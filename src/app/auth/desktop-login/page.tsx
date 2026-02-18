@@ -39,6 +39,11 @@ export default function DesktopLoginPage() {
           options: {
             redirectTo: `${window.location.origin}/auth/desktop-callback`,
             skipBrowserRedirect: false,
+            scopes: "openid email profile",
+            queryParams: {
+              access_type: "offline",
+              prompt: "consent",
+            },
           },
         });
 

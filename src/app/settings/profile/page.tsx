@@ -55,8 +55,9 @@ export default function ProfilePage() {
           {avatarUrl ? (
             <img
               src={avatarUrl}
-              alt={fullName}
-              className="h-16 w-16 rounded-full object-cover"
+              alt={fullName || ""}
+              className="h-16 w-16 rounded-full object-cover ring-1 ring-white/[0.08]"
+              referrerPolicy="no-referrer"
             />
           ) : initials ? (
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-lg font-medium text-zinc-300">

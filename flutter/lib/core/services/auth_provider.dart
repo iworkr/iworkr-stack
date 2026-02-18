@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/models/profile.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -25,23 +26,33 @@ final profileProvider = FutureProvider<Profile?>((ref) async {
   return Profile.fromJson(data);
 });
 
-/// Provides the user's organization membership
+/// Provides the user's organization membership (scoped to active workspace)
 final organizationProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return null;
 
-  final data = await SupabaseService.client
+  // Use the active workspace if set, otherwise fall back to first match
+  final activeWsId = ref.watch(activeWorkspaceIdProvider);
+
+  var query = SupabaseService.client
       .from('organization_members')
       .select('*, organizations(*)')
       .eq('user_id', user.id)
-      .eq('status', 'active')
-      .maybeSingle();
+      .eq('status', 'active');
 
+  if (activeWsId != null) {
+    query = query.eq('organization_id', activeWsId);
+  }
+
+  final data = await query.maybeSingle();
   return data;
 });
 
-/// Provides the organization ID
+/// Provides the organization ID (active workspace)
 final organizationIdProvider = FutureProvider<String?>((ref) async {
+  final activeWsId = ref.watch(activeWorkspaceIdProvider);
+  if (activeWsId != null) return activeWsId;
+
   final orgData = await ref.watch(organizationProvider.future);
   return orgData?['organization_id'] as String?;
 });
@@ -94,6 +105,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
     await SupabaseService.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: 'com.iworkr.mobile://login-callback',
+      scopes: 'openid email profile',
+      queryParams: {'access_type': 'offline', 'prompt': 'consent'},
     );
   }
 

@@ -11,9 +11,23 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // Check if user has completed onboarding / has an org
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const meta = user.user_metadata || {};
+        const avatarUrl = meta.avatar_url || meta.picture || null;
+        const fullName = meta.full_name || meta.name || null;
+
+        if (avatarUrl || fullName) {
+          await (supabase as any)
+            .from("profiles")
+            .update({
+              ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+              ...(fullName ? { full_name: fullName } : {}),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", user.id);
+        }
+
         const { data: profile } = await (supabase as any)
           .from("profiles")
           .select("onboarding_completed")
@@ -21,7 +35,6 @@ export async function GET(request: Request) {
           .single();
 
         if ((profile as any)?.onboarding_completed) {
-          // User already onboarded — go to dashboard
           const forwardedHost = request.headers.get("x-forwarded-host");
           const isLocalEnv = process.env.NODE_ENV === "development";
           if (isLocalEnv) {
@@ -34,7 +47,6 @@ export async function GET(request: Request) {
         }
       }
 
-      // New user or not onboarded — go to setup
       const forwardedHost = request.headers.get("x-forwarded-host");
       const isLocalEnv = process.env.NODE_ENV === "development";
       if (isLocalEnv) {
@@ -47,6 +59,5 @@ export async function GET(request: Request) {
     }
   }
 
-  // Auth error — redirect to auth page with error
   return NextResponse.redirect(`${origin}/auth?error=auth_callback_error`);
 }

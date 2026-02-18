@@ -266,6 +266,7 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
                             src={msg.profiles.avatar_url}
                             alt=""
                             className="h-8 w-8 rounded-lg object-cover"
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           initials

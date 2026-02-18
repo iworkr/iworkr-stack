@@ -6,16 +6,16 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/rbac_provider.dart';
+import 'package:iworkr_mobile/core/services/timeclock_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
+import 'package:iworkr_mobile/core/widgets/stealth_icon.dart';
 
-/// Profile screen — settings, branding, sign out.
+/// Profile screen — identity card, quick actions, and gateway to Settings.
 ///
-/// Web spec:
-/// - Same surface/border tokens
-/// - Ghost-style buttons
-/// - Monospace metadata
+/// Uses Phosphor Light icons for 1.5px stroke precision.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -30,14 +30,38 @@ class ProfileScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
           children: [
-            Text(
-              'Profile',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: ObsidianTheme.textPrimary,
-                letterSpacing: -0.3,
-              ),
+            // Header with settings gear
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Profile',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: ObsidianTheme.textPrimary,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/profile/settings');
+                  },
+                  child: Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      borderRadius: ObsidianTheme.radiusMd,
+                      border: Border.all(color: ObsidianTheme.border),
+                      color: ObsidianTheme.surface1,
+                    ),
+                    child: const Center(
+                      child: Icon(PhosphorIconsLight.gearSix, size: 18, color: ObsidianTheme.textSecondary),
+                    ),
+                  ),
+                ),
+              ],
             ).animate().fadeIn(duration: 300.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
 
             const SizedBox(height: 20),
@@ -51,26 +75,26 @@ class ProfileScreen extends ConsumerWidget {
                   borderRadius: ObsidianTheme.radiusLg,
                   child: Row(
                     children: [
-                      // Avatar — emerald initials
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: ObsidianTheme.radiusMd,
-                          color: ObsidianTheme.emeraldDim,
-                          border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
-                        ),
-                        child: Center(
-                          child: Text(
-                            profile.initials,
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: ObsidianTheme.emerald,
+                      profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
+                        ? CircleAvatar(
+                            radius: 26,
+                            backgroundImage: NetworkImage(profile.avatarUrl!),
+                            backgroundColor: ObsidianTheme.emeraldDim,
+                          )
+                        : Container(
+                            width: 52, height: 52,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: ObsidianTheme.emeraldDim,
+                              border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                            ),
+                            child: Center(
+                              child: Text(
+                                profile.initials,
+                                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: ObsidianTheme.emerald),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
@@ -78,23 +102,17 @@ class ProfileScreen extends ConsumerWidget {
                           children: [
                             Text(
                               profile.displayName,
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: ObsidianTheme.textPrimary,
-                              ),
+                              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               profile.email,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 11,
-                                color: ObsidianTheme.textTertiary,
-                              ),
+                              style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary),
                             ),
                           ],
                         ),
                       ),
+                      const Icon(PhosphorIconsLight.caretRight, size: 16, color: ObsidianTheme.textTertiary),
                     ],
                   ),
                 )
@@ -102,25 +120,44 @@ class ProfileScreen extends ConsumerWidget {
                     .fadeIn(delay: 100.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1))
                     .moveY(begin: 10, end: 0, delay: 100.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1));
               },
-              loading: () => ShimmerLoading(height: 88, borderRadius: ObsidianTheme.radiusLg),
+              loading: () => ShimmerLoading(height: 92, borderRadius: ObsidianTheme.radiusLg),
               error: (_, __) => const SizedBox.shrink(),
             ),
 
             const SizedBox(height: 12),
 
-            // Organization info
+            // Organization info with clearance badge
             orgAsync.when(
               data: (org) {
                 if (org == null) return const SizedBox.shrink();
                 final orgData = org['organizations'] as Map<String, dynamic>?;
+                final roleStr = org['role'] as String? ?? 'technician';
+                final role = UserRole.fromString(roleStr);
+                final Color badgeColor;
+                final String badgeLabel;
+                final IconData badgeIcon;
+
+                if (role.isGodMode) {
+                  badgeColor = const Color(0xFFA78BFA);
+                  badgeLabel = 'GOD MODE';
+                  badgeIcon = PhosphorIconsBold.crown;
+                } else if (role.isManager) {
+                  badgeColor = ObsidianTheme.amber;
+                  badgeLabel = 'DISPATCH';
+                  badgeIcon = PhosphorIconsBold.shieldStar;
+                } else {
+                  badgeColor = ObsidianTheme.emerald;
+                  badgeLabel = 'OPERATOR';
+                  badgeIcon = PhosphorIconsBold.wrench;
+                }
+
                 return GlassCard(
                   padding: const EdgeInsets.all(14),
                   borderRadius: ObsidianTheme.radiusLg,
                   child: Row(
                     children: [
                       Container(
-                        width: 36,
-                        height: 36,
+                        width: 36, height: 36,
                         decoration: BoxDecoration(
                           borderRadius: ObsidianTheme.radiusMd,
                           color: ObsidianTheme.shimmerBase,
@@ -141,8 +178,33 @@ class ProfileScreen extends ConsumerWidget {
                               style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
                             ),
                             Text(
-                              '${org['role']} · ${org['branch'] ?? 'HQ'}',
+                              '${role.label} · ${org['branch'] ?? 'HQ'}',
                               style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Clearance badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: badgeColor.withValues(alpha: 0.1),
+                          border: Border.all(color: badgeColor.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(badgeIcon, size: 11, color: badgeColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              badgeLabel,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w600,
+                                color: badgeColor,
+                                letterSpacing: 1,
+                              ),
                             ),
                           ],
                         ),
@@ -158,20 +220,160 @@ class ProfileScreen extends ConsumerWidget {
               error: (_, __) => const SizedBox.shrink(),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
 
-            // Settings list
+            // MY TIME section
             Text(
-              'SETTINGS',
+              'MY TIME',
               style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
-            ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
+            ).animate().fadeIn(delay: 250.ms, duration: 300.ms),
             const SizedBox(height: 10),
 
-            ..._buildSettingsItems(context, ref),
+            GlassCard(
+              padding: EdgeInsets.zero,
+              borderRadius: ObsidianTheme.radiusLg,
+              child: Column(
+                children: [
+                  // Time Clock
+                  _QuickAction(
+                    icon: PhosphorIconsLight.clock,
+                    label: 'Time Clock',
+                    subtitle: 'Clock in/out, track shifts',
+                    trailing: Consumer(
+                      builder: (_, ref, __) {
+                        final activeAsync = ref.watch(activeTimeEntryProvider);
+                        final isActive = activeAsync.valueOrNull != null;
+                        if (!isActive) return const SizedBox.shrink();
+                        return Container(
+                          width: 8, height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: ObsidianTheme.emerald,
+                            boxShadow: [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.5), blurRadius: 6)],
+                          ),
+                        );
+                      },
+                    ),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/profile/timeclock');
+                    },
+                    index: 0,
+                  ),
+                  const Divider(height: 1, color: ObsidianTheme.border),
+                  // Weekly Hours
+                  Consumer(
+                    builder: (_, ref, __) {
+                      final weeklyAsync = ref.watch(weeklyHoursProvider);
+                      final hours = weeklyAsync.valueOrNull ?? 0;
+                      return _QuickAction(
+                        icon: PhosphorIconsLight.chartBar,
+                        label: 'Weekly Hours',
+                        subtitle: '${hours.toStringAsFixed(1)}h this week',
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          context.push('/profile/timeclock');
+                        },
+                        index: 1,
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, color: ObsidianTheme.border),
+                  // Leave
+                  _QuickAction(
+                    icon: PhosphorIconsLight.sunHorizon,
+                    label: 'Leave Requests',
+                    subtitle: 'Annual, sick, RDO',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/profile/leave');
+                    },
+                    index: 2,
+                  ),
+                ],
+              ),
+            )
+                .animate()
+                .fadeIn(delay: 280.ms, duration: 500.ms, curve: ObsidianTheme.easeOutExpo)
+                .moveY(begin: 10, end: 0, delay: 280.ms, duration: 500.ms),
+
+            const SizedBox(height: 24),
+
+            // Quick Actions
+            Text(
+              'QUICK ACTIONS',
+              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+            ).animate().fadeIn(delay: 350.ms, duration: 300.ms),
+            const SizedBox(height: 10),
+
+            GlassCard(
+              padding: EdgeInsets.zero,
+              borderRadius: ObsidianTheme.radiusLg,
+              child: Column(
+                children: [
+                  _QuickAction(
+                    icon: PhosphorIconsLight.key,
+                    label: 'Security & Password',
+                    subtitle: 'Change password, biometrics',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/profile/security');
+                    },
+                    index: 3,
+                  ),
+                  const Divider(height: 1, color: ObsidianTheme.border),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.bellSimple,
+                    label: 'Notifications',
+                    subtitle: 'Push, email, and SMS preferences',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/profile/settings');
+                    },
+                    index: 4,
+                  ),
+                  const Divider(height: 1, color: ObsidianTheme.border),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.sliders,
+                    label: 'Preferences',
+                    subtitle: 'Appearance, haptics, start screen',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/profile/settings');
+                    },
+                    index: 5,
+                  ),
+                  const Divider(height: 1, color: ObsidianTheme.border),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.arrowsClockwise,
+                    label: 'Sync Status',
+                    subtitle: 'Last synced just now',
+                    trailing: Container(
+                      width: 6, height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: ObsidianTheme.emerald,
+                        boxShadow: [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.4), blurRadius: 4)],
+                      ),
+                    ),
+                    onTap: () => HapticFeedback.lightImpact(),
+                    index: 6,
+                  ),
+                  const Divider(height: 1, color: ObsidianTheme.border),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.question,
+                    label: 'Help & Support',
+                    subtitle: 'Documentation, contact us',
+                    onTap: () => HapticFeedback.lightImpact(),
+                    index: 7,
+                  ),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 28),
 
-            // Sign out — rose accent
+            // Sign out
             GestureDetector(
               onTap: () async {
                 HapticFeedback.heavyImpact();
@@ -186,9 +388,13 @@ class ProfileScreen extends ConsumerWidget {
                   color: ObsidianTheme.rose.withValues(alpha: 0.05),
                 ),
                 child: Center(
-                  child: Text(
-                    'Sign Out',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.rose),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(PhosphorIconsLight.signOut, size: 16, color: ObsidianTheme.rose),
+                      const SizedBox(width: 8),
+                      Text('Sign Out', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.rose)),
+                    ],
                   ),
                 ),
               ),
@@ -196,16 +402,13 @@ class ProfileScreen extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // Footer branding
+            // Footer
             Center(
               child: Column(
                 children: [
                   Image.asset('assets/logos/logo-dark-full.png', width: 80, opacity: const AlwaysStoppedAnimation(0.3)),
                   const SizedBox(height: 8),
-                  Text(
-                    'v3.0.0',
-                    style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
-                  ),
+                  Text('v3.0.0', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
                 ],
               ),
             ).animate().fadeIn(delay: 700.ms, duration: 400.ms),
@@ -214,50 +417,47 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
-
-  List<Widget> _buildSettingsItems(BuildContext context, WidgetRef ref) {
-    final items = [
-      _SettingsItem(icon: PhosphorIconsRegular.bell, label: 'Notifications', index: 0),
-      _SettingsItem(icon: PhosphorIconsRegular.moon, label: 'Appearance', index: 1),
-      _SettingsItem(icon: PhosphorIconsRegular.shieldCheck, label: 'Security', index: 2, route: '/profile/security'),
-      _SettingsItem(icon: PhosphorIconsRegular.arrowsClockwise, label: 'Sync Status', index: 3),
-      _SettingsItem(icon: PhosphorIconsRegular.question, label: 'Help & Support', index: 4),
-    ];
-    return items;
-  }
 }
 
-class _SettingsItem extends StatelessWidget {
+class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String subtitle;
+  final Widget? trailing;
+  final VoidCallback onTap;
   final int index;
-  final String? route;
 
-  const _SettingsItem({required this.icon, required this.label, required this.index, this.route});
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    this.trailing,
+    required this.onTap,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        if (route != null) context.push(route!);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
-        ),
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: ObsidianTheme.textSecondary),
+            StealthIcon(icon, size: 18),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary)),
+                  Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                ],
               ),
             ),
-            const Icon(PhosphorIconsRegular.caretRight, size: 14, color: ObsidianTheme.textTertiary),
+            if (trailing != null) trailing!
+            else Icon(PhosphorIconsLight.caretRight, size: 14, color: ObsidianTheme.textTertiary),
           ],
         ),
       ),
