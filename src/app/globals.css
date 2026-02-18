@@ -513,6 +513,69 @@ img, video, svg, canvas {
   opacity: 1;
 }
 
+/* ── Micro-Interactions ──────────────────────────────── */
+
+@keyframes check-pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-check-pop {
+  animation: check-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes subtle-bounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-2px); }
+}
+
+.animate-subtle-bounce {
+  animation: subtle-bounce 0.4s ease-out;
+}
+
+/* Button micro-interactions */
+.btn-micro {
+  transition: transform 100ms ease-out, box-shadow 200ms ease-out;
+}
+.btn-micro:hover {
+  transform: scale(1.02);
+}
+.btn-micro:active {
+  transform: scale(0.98);
+}
+
+/* Focus ring for keyboard users */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #050505, 0 0 0 4px rgba(16, 185, 129, 0.4);
+}
+
+/* Smooth toggle track */
+.toggle-track {
+  transition: background-color 200ms ease-out;
+}
+.toggle-thumb {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Skeleton shimmer */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 25%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.02) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
 /* ── Desktop Ghost Mode (Offline) ─────────────────────── */
 body.desktop-ghost-mode {
   filter: saturate(0%) brightness(0.85);

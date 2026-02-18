@@ -425,7 +425,7 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="relative z-30 flex h-12 shrink-0 items-center border-b border-white/[0.04] bg-black/40 px-3 backdrop-blur-2xl md:px-4">
+    <header className="relative z-30 flex h-12 shrink-0 items-center border-b border-white/[0.05] bg-[#050505]/80 px-3 backdrop-blur-xl md:px-4">
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileSidebarOpen(true)}
