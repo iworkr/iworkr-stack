@@ -8,18 +8,25 @@ import {
   ChevronDown,
   Check,
   Info,
+  Crown,
+  Shield,
+  Wrench,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTeamStore } from "@/lib/team-store";
 import { roleDefinitions, branches, getRoleLabel, type RoleId } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
 
-/* ── Role text styles (Stealth) ──────────────────────── */
+/* ── Role Card Config ────────────────────────────────────── */
 
-const roleTextStyles: Record<string, string> = {
-  owner: "text-rose-400",
-  admin: "text-emerald-400",
-  tech: "text-zinc-400",
+const roleCardConfig: Record<string, { text: string; bg: string; border: string; icon: typeof Shield }> = {
+  owner: { text: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Crown },
+  manager: { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Shield },
+  office_admin: { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Shield },
+  senior_tech: { text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/20", icon: Wrench },
+  technician: { text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/20", icon: Wrench },
+  apprentice: { text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20", icon: Wrench },
+  subcontractor: { text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20", icon: Wrench },
 };
 
 export function InviteModal() {
@@ -30,7 +37,6 @@ export function InviteModal() {
   const [inputValue, setInputValue] = useState("");
   const [selectedRole, setSelectedRole] = useState<RoleId>("technician");
   const [selectedBranches, setSelectedBranches] = useState<string[]>(["Brisbane HQ"]);
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -104,9 +110,7 @@ export function InviteModal() {
     if (successCount > 0) {
       setSent(true);
       addToast(`${successCount} invite${successCount > 1 ? "s" : ""} sent successfully`);
-      setTimeout(() => {
-        setInviteModalOpen(false);
-      }, 1500);
+      setTimeout(() => setInviteModalOpen(false), 1500);
     } else {
       addToast(`Failed to send invites: ${lastError}`);
     }
@@ -120,7 +124,6 @@ export function InviteModal() {
     <AnimatePresence>
       {inviteModalOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -129,42 +132,41 @@ export function InviteModal() {
             className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl"
           />
 
-          {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            initial={{ opacity: 0, scale: 0.95, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            exit={{ opacity: 0, scale: 0.95, y: 16 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-white/[0.06] bg-[#0A0A0A] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.8)]"
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A0A0A]/95 shadow-[0_40px_80px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/[0.05] px-5 py-3.5">
+            <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-3.5">
               <div className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.03]">
-                  <UserPlus size={14} className="text-zinc-400" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 shadow-lg shadow-emerald-900/30">
+                  <UserPlus size={14} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-[13px] font-medium text-white">Invite People</h2>
-                  <p className="text-[10px] text-zinc-600">Send invites to join your workspace</p>
+                  <h2 className="text-[13px] font-medium text-white">Invite to Workspace</h2>
+                  <p className="text-[10px] text-zinc-600">Send summons to join your team</p>
                 </div>
               </div>
               <button
                 onClick={() => setInviteModalOpen(false)}
-                className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
               >
                 <X size={13} />
               </button>
             </div>
 
             {/* Content */}
-            <div className="px-5 py-4 space-y-4">
-              {/* Email chips input */}
+            <div className="px-5 py-4 space-y-5">
+              {/* Email chips */}
               <div>
-                <label className="mb-1.5 block text-[9px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
                   Email Addresses
                 </label>
                 <div
-                  className="flex min-h-[40px] flex-wrap items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 transition-colors focus-within:border-emerald-500/20"
+                  className="flex min-h-[42px] flex-wrap items-center gap-1.5 rounded-xl border border-white/[0.06] bg-zinc-900/30 px-3 py-2 transition-colors focus-within:border-emerald-500/20 focus-within:shadow-[0_0_0_1px_rgba(16,185,129,0.05)]"
                   onClick={() => inputRef.current?.focus()}
                 >
                   {emails.map((email) => (
@@ -172,7 +174,8 @@ export function InviteModal() {
                       key={email}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-1 rounded-md bg-white/[0.05] px-2 py-0.5 text-[11px] text-zinc-300"
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      className="flex items-center gap-1 rounded-lg bg-white/[0.05] px-2 py-0.5 text-[11px] text-zinc-300"
                     >
                       {email}
                       <button
@@ -197,52 +200,43 @@ export function InviteModal() {
                 </div>
               </div>
 
-              {/* Role selector */}
+              {/* Role Selection — Card Grid */}
               <div>
-                <label className="mb-1.5 block text-[9px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
                   Role
                 </label>
-                <div className="relative">
-                  <button
-                    onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                    className="flex w-full items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[12px] text-zinc-300 transition-colors hover:border-white/[0.1]"
-                  >
-                    <span className={`font-mono text-[10px] font-medium uppercase tracking-wider ${roleTextStyles[selectedRoleDef?.color || "tech"]}`}>
-                      {getRoleLabel(selectedRole)}
-                    </span>
-                    <ChevronDown size={12} className="text-zinc-600" />
-                  </button>
-
-                  <AnimatePresence>
-                    {roleDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        className="absolute left-0 top-full z-20 mt-1 w-full rounded-lg border border-white/[0.06] bg-[#0C0C0C] py-1 shadow-xl"
+                <div className="grid grid-cols-3 gap-2">
+                  {roleDefinitions.filter((r) => r.id !== "owner").slice(0, 6).map((r) => {
+                    const rc = roleCardConfig[r.id] || roleCardConfig.technician;
+                    const isActive = selectedRole === r.id;
+                    const RcIcon = rc.icon;
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => setSelectedRole(r.id)}
+                        className={`relative flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all duration-200 ${
+                          isActive
+                            ? `${rc.border} ${rc.bg} ${rc.text}`
+                            : "border-white/[0.04] bg-zinc-900/20 text-zinc-500 hover:border-white/[0.08] hover:bg-zinc-900/40"
+                        }`}
                       >
-                        {roleDefinitions.filter((r) => r.id !== "owner").map((r) => (
-                          <button
-                            key={r.id}
-                            onClick={() => { setSelectedRole(r.id); setRoleDropdownOpen(false); }}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-white/[0.03]"
+                        <RcIcon size={14} />
+                        <span className="text-[9px] font-medium">{r.label}</span>
+                        {isActive && (
+                          <motion.div
+                            layoutId="invite-role-check"
+                            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 shadow"
+                            transition={{ type: "spring", stiffness: 300 }}
                           >
-                            <span className={`font-mono text-[9px] font-medium uppercase tracking-wider ${roleTextStyles[r.color] || roleTextStyles.tech}`}>
-                              {r.label}
-                            </span>
-                            <div className="flex-1">
-                              <p className="text-[10px] text-zinc-600">{r.description}</p>
-                            </div>
-                            {selectedRole === r.id && <Check size={11} className="text-emerald-400" />}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                            <Check size={8} className="text-white" />
+                          </motion.div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-
                 {selectedRoleDef && (
-                  <div className="mt-1.5 flex items-start gap-1.5 rounded-md bg-white/[0.015] px-2 py-1.5">
+                  <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-white/[0.015] px-2 py-1.5">
                     <Info size={10} className="mt-0.5 shrink-0 text-zinc-700" />
                     <p className="text-[10px] leading-relaxed text-zinc-600">
                       {selectedRoleDef.description}
@@ -253,7 +247,7 @@ export function InviteModal() {
 
               {/* Branch */}
               <div>
-                <label className="mb-1.5 block text-[9px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
                   Branch
                 </label>
                 <div className="flex gap-2">
@@ -263,10 +257,10 @@ export function InviteModal() {
                       <button
                         key={branch}
                         onClick={() => toggleBranch(branch)}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-[11px] font-medium transition-all ${
+                        className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-[11px] font-medium transition-all ${
                           isSelected
                             ? "border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400"
-                            : "border-white/[0.05] bg-white/[0.02] text-zinc-500 hover:text-zinc-300"
+                            : "border-white/[0.05] bg-zinc-900/30 text-zinc-500 hover:text-zinc-300"
                         }`}
                       >
                         <div className={`flex h-3.5 w-3.5 items-center justify-center rounded border transition-colors ${
@@ -283,7 +277,7 @@ export function InviteModal() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between border-t border-white/[0.05] px-5 py-3">
+            <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-3">
               <p className="text-[10px] text-zinc-600">
                 {emails.length > 0 ? `${emails.length} invite${emails.length > 1 ? "s" : ""} ready` : "Paste or type email addresses"}
               </p>
@@ -291,13 +285,13 @@ export function InviteModal() {
               <button
                 onClick={handleSend}
                 disabled={emails.length === 0 || sending || sent}
-                className={`flex items-center gap-2 rounded-md px-4 py-1.5 text-[11px] font-medium transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-2 text-[11px] font-medium transition-all ${
                   sent
-                    ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/30"
                     : emails.length === 0
-                    ? "cursor-not-allowed border border-white/[0.04] bg-zinc-900 text-zinc-600"
-                    : "border border-white/[0.08] bg-zinc-900 text-white hover:border-emerald-500/30 hover:text-emerald-400"
-                }`}
+                    ? "cursor-not-allowed bg-zinc-900 text-zinc-600"
+                    : "bg-emerald-600 text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500"
+                } disabled:opacity-50`}
               >
                 {sent ? (
                   <><Check size={13} /> Sent!</>
@@ -312,7 +306,7 @@ export function InviteModal() {
                     Sending…
                   </>
                 ) : (
-                  <><Send size={13} /> Send Invites</>
+                  <><Send size={13} /> Send Summons</>
                 )}
               </button>
             </div>

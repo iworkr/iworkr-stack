@@ -27,9 +27,9 @@ import { useToastStore } from "@/components/app/action-toast";
 /* ── Stealth Role Styles ─────────────────────────────── */
 
 const roleBadgeStyles: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  owner: { bg: "bg-rose-500/[0.06]", text: "text-rose-400", border: "border-rose-500/20", dot: "bg-rose-500" },
-  admin: { bg: "bg-emerald-500/[0.06]", text: "text-emerald-400", border: "border-emerald-500/20", dot: "bg-emerald-500" },
-  tech: { bg: "bg-zinc-800/40", text: "text-zinc-400", border: "border-zinc-800", dot: "bg-zinc-500" },
+  owner: { bg: "bg-amber-500/[0.06]", text: "text-amber-400", border: "border-amber-500/20", dot: "bg-amber-500" },
+  admin: { bg: "bg-purple-500/[0.06]", text: "text-purple-400", border: "border-purple-500/20", dot: "bg-purple-500" },
+  tech: { bg: "bg-sky-500/[0.06]", text: "text-sky-400", border: "border-sky-500/20", dot: "bg-sky-500" },
 };
 
 /* ── Action icon map ──────────────────────────────────── */
@@ -126,7 +126,7 @@ export default function RolesPage() {
   return (
     <div className="flex h-full flex-col bg-[#050505]">
       {/* ── Back Nav ──────────────────────────────────── */}
-      <div className="border-b border-white/[0.05] px-5 py-2.5">
+      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 px-5 py-2.5 backdrop-blur-xl">
         <button
           onClick={() => router.push("/dashboard/team")}
           className="flex items-center gap-2 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300"
@@ -134,7 +134,7 @@ export default function RolesPage() {
           <ArrowLeft size={13} />
           <span>Command Roster</span>
           <span className="text-zinc-700">/</span>
-          <span className="text-zinc-300">Roles & Permissions</span>
+          <span className="font-medium text-white">Roles & Permissions</span>
         </button>
       </div>
 
@@ -213,18 +213,18 @@ export default function RolesPage() {
 
                   {/* Scopes */}
                   <div className="mb-5 grid grid-cols-3 gap-2">
-                    <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
-                      <p className="text-[8px] font-medium uppercase tracking-wider text-zinc-600">Job Visibility</p>
+                    <div className="rounded-xl bg-zinc-900/30 p-3 transition-colors hover:bg-zinc-900/40">
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-zinc-600">Job Visibility</p>
                       <p className="mt-1 font-mono text-[11px] font-medium capitalize text-zinc-300">{selectedRole.scopes.jobVisibility} Jobs</p>
                     </div>
-                    <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
-                      <p className="text-[8px] font-medium uppercase tracking-wider text-zinc-600">Invoice Approval</p>
+                    <div className="rounded-xl bg-zinc-900/30 p-3 transition-colors hover:bg-zinc-900/40">
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-zinc-600">Invoice Approval</p>
                       <p className="mt-1 font-mono text-[11px] font-medium text-zinc-300">
                         {selectedRole.scopes.invoiceApproval ? "Can Approve" : "View Only"}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
-                      <p className="text-[8px] font-medium uppercase tracking-wider text-zinc-600">Team Management</p>
+                    <div className="rounded-xl bg-zinc-900/30 p-3 transition-colors hover:bg-zinc-900/40">
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-zinc-600">Team Management</p>
                       <p className="mt-1 font-mono text-[11px] font-medium text-zinc-300">
                         {selectedRole.scopes.canManageTeam ? "Full Access" : "No Access"}
                       </p>
