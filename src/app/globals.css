@@ -250,6 +250,16 @@ img, video, svg, canvas {
   animation: signal-pulse 2s ease-out infinite;
 }
 
+/* ── Scrollbar Hide ──────────────────────────────────── */
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Background Textures ─────────────────────────────── */
 
 .bg-dot-grid {

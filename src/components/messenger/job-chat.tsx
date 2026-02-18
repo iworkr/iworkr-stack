@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { MessageSquare, Send, Check, CheckCheck } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useMessengerStore, type Message } from "@/lib/stores/messenger-store";
@@ -15,7 +15,12 @@ interface JobChatProps {
 
 export function JobChat({ jobId, jobTitle }: JobChatProps) {
   const { user, profile, currentOrg } = useAuthStore();
-  const { messages: allMessages, loadMessages, sendMessage, addRealtimeMessage } = useMessengerStore();
+  const {
+    messages: allMessages,
+    loadMessages,
+    sendMessage,
+    addRealtimeMessage,
+  } = useMessengerStore();
   const [channelId, setChannelId] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -24,7 +29,7 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
 
   const orgId = currentOrg?.id;
   const userId = user?.id;
-  const messages = channelId ? (allMessages[channelId] || []) : [];
+  const messages = channelId ? allMessages[channelId] || [] : [];
 
   useEffect(() => {
     if (!orgId || !jobId) return;
@@ -45,7 +50,12 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
       .channel(`job-chat:${channelId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `channel_id=eq.${channelId}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `channel_id=eq.${channelId}`,
+        },
         (payload) => {
           const msg = payload.new as any;
           if (msg.sender_id !== userId) {
@@ -58,11 +68,13 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
                 if (data) addRealtimeMessage(data as Message);
               });
           }
-        }
+        },
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(sub); };
+    return () => {
+      supabase.removeChannel(sub);
+    };
   }, [channelId, userId, addRealtimeMessage]);
 
   useEffect(() => {
@@ -85,8 +97,17 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
         <div className="relative h-6 w-6">
-          <div className="absolute inset-0 rounded-full border border-zinc-700/50 animate-spin" style={{ animationDuration: "1.5s" }} />
-          <div className="absolute inset-1 rounded-full border border-zinc-600/30 animate-spin" style={{ animationDuration: "1s", animationDirection: "reverse" }} />
+          <div
+            className="absolute inset-0 animate-spin rounded-full border border-emerald-500/20"
+            style={{ animationDuration: "1.5s" }}
+          />
+          <div
+            className="absolute inset-1 animate-spin rounded-full border border-zinc-600/20"
+            style={{
+              animationDuration: "1s",
+              animationDirection: "reverse",
+            }}
+          />
         </div>
         <span className="mt-2 text-[11px] text-zinc-600">Loading chat…</span>
       </div>
@@ -96,12 +117,22 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
   return (
     <div className="flex flex-col">
       {/* Messages */}
-      <div className="max-h-[300px] overflow-y-auto px-1 py-2">
+      <div className="scrollbar-none max-h-[300px] overflow-y-auto px-1 py-2">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center py-6 text-center">
-            <MessageSquare size={16} strokeWidth={1.5} className="mb-2 text-zinc-700" />
-            <p className="text-[11px] text-zinc-500">No messages yet.</p>
-            <p className="text-[10px] text-zinc-700">Start a conversation about this job.</p>
+          <div className="flex flex-col items-center py-8 text-center">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+              <MessageSquare
+                size={16}
+                strokeWidth={1.5}
+                className="text-zinc-600"
+              />
+            </div>
+            <p className="text-[12px] font-medium text-zinc-400">
+              No messages yet
+            </p>
+            <p className="mt-0.5 text-[11px] text-zinc-700">
+              Start a conversation about this job
+            </p>
           </div>
         ) : (
           messages.map((msg) => {
@@ -113,28 +144,42 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="mb-2 flex gap-2"
+                className="mb-2.5 flex gap-2"
               >
-                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[8px] font-medium ${
-                  isSelf ? "bg-zinc-800/60 text-zinc-400" : "bg-zinc-800/40 text-zinc-500"
-                }`}>
-                  {name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                <div
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[8px] font-semibold ${
+                    isSelf
+                      ? "bg-emerald-600/15 text-emerald-400"
+                      : "bg-zinc-800/60 text-zinc-500"
+                  }`}
+                >
+                  {name
+                    .split(" ")
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-medium text-white">
+                    <span className="text-[11px] font-semibold text-white">
                       {isSelf ? "You" : name}
                     </span>
-                    <span className="text-[9px] text-zinc-700">
-                      {new Date(msg.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                    <span className="font-mono text-[9px] text-zinc-700">
+                      {new Date(msg.created_at).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
                     </span>
                   </div>
-                  <p className={`text-[12px] leading-relaxed ${isSelf ? "text-zinc-200" : "text-zinc-400"} ${
-                    msg.status === "sending" ? "opacity-50" : ""
-                  }`}>
+                  <p
+                    className={`text-[12px] leading-relaxed ${isSelf ? "text-zinc-200" : "text-zinc-400"} ${
+                      msg.status === "sending" ? "opacity-50" : ""
+                    }`}
+                  >
                     {msg.content}
                   </p>
-                  {/* Delivery */}
                   {isSelf && msg.status !== "sending" && (
                     <div className="mt-0.5">
                       {(msg as any).read_at ? (
@@ -152,21 +197,28 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="mt-2 flex items-center gap-2 rounded-md border border-white/[0.06] bg-[#0C0C0C] px-2 py-1.5 transition-colors focus-within:border-white/[0.1]">
+      {/* Stealth input — floating glass bar */}
+      <div className="mt-2 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-zinc-900/80 px-3 py-2 backdrop-blur-xl transition-all duration-200 focus-within:border-white/[0.1] focus-within:shadow-lg focus-within:shadow-black/20">
         <input
           ref={inputRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
           placeholder="Message this job…"
           className="flex-1 bg-transparent text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600"
         />
         <button
           onClick={handleSend}
           disabled={!content.trim()}
-          className={`rounded p-1 transition-all duration-200 ${
-            content.trim() ? "text-emerald-500 hover:bg-emerald-500/10" : "text-zinc-700"
+          className={`rounded-lg p-1.5 transition-all duration-200 ${
+            content.trim()
+              ? "bg-emerald-600 text-white shadow-sm shadow-emerald-900/30 hover:bg-emerald-500"
+              : "text-zinc-700"
           }`}
         >
           <Send size={12} strokeWidth={1.5} />
