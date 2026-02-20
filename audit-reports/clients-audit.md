@@ -1,10 +1,10 @@
 # Clients Module — Post-PRD Audit Report
 
-> **Generated**: 2026-02-16T14:23:16.184Z
+> **Generated**: 2026-02-19T01:02:43.533Z
 > **Module**: Clients (`/dashboard/clients` & `/dashboard/clients/[id]`)
 > **PRD**: Clients Module Live Activation (P0)
 > **Test Framework**: Playwright (20 test suites)
-> **Total Findings**: 44
+> **Total Findings**: 36
 
 ---
 
@@ -12,17 +12,32 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
+| 🔴 Critical Failures | 4 |
 | 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 11 |
-| 🟢 Flow Passes | 33 |
+| 🟠 Warnings | 12 |
+| 🟢 Flow Passes | 20 |
 
 ---
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
+### Clients heading missing
+- **Area**: Header
+- **Detail**: h1 'Clients' not found.
+
+### Search input not found
+- **Area**: Search
+- **Detail**: Skipping.
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 406 ()
+
+### No empty state shown
+- **Area**: EmptyState
+- **Detail**: Clients list has 0 rows but no 'No clients found' message.
+
 ---
 
 ## 🟡 Visual Defects
@@ -37,9 +52,9 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
-### Search returned no results
-- **Area**: Search
-- **Detail**: No rows match 'David'.
+### No client rows and no empty state
+- **Area**: Rows
+- **Detail**: 0 rows found but no empty state message either.
 
 ### No rows to click
 - **Area**: Navigation
@@ -77,6 +92,10 @@ _No dummy data leaks found._
 - **Area**: Location
 - **Detail**: Skipping.
 
+### HTTP 406
+- **Area**: Network
+- **Detail**: URL: https://iaroashargzwsuuciqox.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
+
 ### No clients
 - **Area**: CommActions
 - **Detail**: Skipping communication test.
@@ -85,11 +104,6 @@ _No dummy data leaks found._
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** Clients heading renders: h1 'Clients' is visible.
-- ✅ **[Header]** Total count badge: Badge: "0 total"
-- ✅ **[Header]** Active count: "0 active"
-- ✅ **[Header]** LTV total renders: LTV: "$0 LTV"
-- ✅ **[Header]** Search input renders: Search clients input visible.
 - ✅ **[Header]** 'Filter' button renders: Filter button with SlidersHorizontal icon.
 - ✅ **[Header]** 'Add Client' CTA renders: White primary button with Plus icon.
 - ✅ **[Columns]** "Client" column: "Client" visible.
@@ -98,8 +112,6 @@ _No dummy data leaks found._
 - ✅ **[Columns]** "Jobs" column: "Jobs" visible.
 - ✅ **[Columns]** "LTV" column: "LTV" visible.
 - ✅ **[Columns]** "Last Active" column: "Last Active" visible.
-- ✅ **[Rows]** Empty state shown: No client rows — 'No clients found' empty state correctly displayed.
-- ✅ **[Search]** Search clear resets list: Reset to 0 rows.
 - ✅ **[Filter]** Filter popover opens: Filter popover with 'Filters' heading appeared.
 - ✅ **[Filter]** Status: "Active" option: Filter option "Active" visible.
 - ✅ **[Filter]** Status: "Lead" option: Filter option "Lead" visible.
@@ -111,13 +123,7 @@ _No dummy data leaks found._
 - ✅ **[Filter]** 'Clear all' resets filters: Filters cleared.
 - ✅ **[AddClient]** 'Add Client' opens modal: Create client modal appeared.
 - ✅ **[Style]** All checked buttons have pointer: Checked 12 buttons.
-- ✅ **[Style]** Dark theme correct: Body bg is #000.
 - ✅ **[Style]** Inter font applied: Font: Inter, "Inter Fallback"
-- ✅ **[Console]** No console errors: Clients pages loaded without console errors.
-- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
-- ✅ **[EmptyState]** Empty state displayed: 'No clients found' message shown when DB has 0 clients (PRD 3.1).
-- ✅ **[EmptyState]** Empty state CTA visible: CTA text guides user to add first client.
-- ✅ **[EmptyState]** Empty state icon visible: Users icon rendered in empty state.
 
 ---
 

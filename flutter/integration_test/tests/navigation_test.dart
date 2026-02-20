@@ -7,6 +7,7 @@ import '../robots/profile_robot.dart';
 import '../robots/schedule_robot.dart';
 import '../robots/inbox_robot.dart';
 import '../robots/search_robot.dart';
+import '../utils/qase_reporter.dart';
 import '../utils/test_logger.dart';
 import '../utils/screenshot_helper.dart';
 import '../app_bootstrap.dart';
@@ -19,7 +20,7 @@ void navigationTests(IntegrationTestWidgetsFlutterBinding binding) {
       screenshots = ScreenshotHelper(binding);
     });
 
-    testWidgets('NAV-001: Full dock tab cycle', (tester) async {
+    qaseTestWidgets('NAV-001: Full dock tab cycle', (tester) async {
       TestLogger.section('NAV-001: Dock Tab Cycle');
       try {
         await bootstrapAndLogin(tester);
@@ -36,8 +37,9 @@ void navigationTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('NAV-002: Dashboard -> Jobs -> Job Detail -> Back',
-        (tester) async {
+    qaseTestWidgets('NAV-002: Dashboard -> Jobs -> Job Detail -> Back', (
+      tester,
+    ) async {
       TestLogger.section('NAV-002: Job Detail Navigation');
       try {
         await bootstrapAndLogin(tester);
@@ -62,7 +64,7 @@ void navigationTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('NAV-003: Profile -> Settings -> Back', (tester) async {
+    qaseTestWidgets('NAV-003: Profile -> Settings -> Back', (tester) async {
       TestLogger.section('NAV-003: Profile Settings Nav');
       try {
         await bootstrapAndLogin(tester);
@@ -80,7 +82,7 @@ void navigationTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('NAV-004: Profile -> Time Clock -> Back', (tester) async {
+    qaseTestWidgets('NAV-004: Profile -> Time Clock -> Back', (tester) async {
       TestLogger.section('NAV-004: Time Clock Nav');
       try {
         await bootstrapAndLogin(tester);
@@ -98,7 +100,7 @@ void navigationTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('NAV-005: Search overlay open/close', (tester) async {
+    qaseTestWidgets('NAV-005: Search overlay open/close', (tester) async {
       TestLogger.section('NAV-005: Search Overlay');
       try {
         await bootstrapAndLogin(tester);
@@ -119,7 +121,7 @@ void navigationTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('NAV-006: Schedule timeline exploration', (tester) async {
+    qaseTestWidgets('NAV-006: Schedule timeline exploration', (tester) async {
       TestLogger.section('NAV-006: Schedule Exploration');
       try {
         await bootstrapAndLogin(tester);
@@ -137,7 +139,7 @@ void navigationTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('NAV-007: Inbox notification browsing', (tester) async {
+    qaseTestWidgets('NAV-007: Inbox notification browsing', (tester) async {
       TestLogger.section('NAV-007: Inbox Browsing');
       try {
         await bootstrapAndLogin(tester);

@@ -1,11 +1,15 @@
 "use client";
 
-import { useRef, useState, useCallback, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
+import type { CSSProperties } from "react";
 
-const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
+const LottieIconInner = dynamic(
+  () =>
+    import("./lottie-icon-inner").then((mod) => ({ default: mod.LottieIconInner })),
+  { ssr: false }
+);
 
-interface LottieIconProps {
+export interface LottieIconProps {
   animationData: object;
   size?: number;
   loop?: boolean;
@@ -24,33 +28,15 @@ export function LottieIcon({
   className = "",
   style,
 }: LottieIconProps) {
-  const lottieRef = useRef<any>(null);
-  const [hasPlayed, setHasPlayed] = useState(false);
-
-  const handleMouseEnter = useCallback(() => {
-    if (playOnHover && lottieRef.current) {
-      lottieRef.current.goToAndPlay(0);
-    }
-  }, [playOnHover]);
-
-  const handleComplete = useCallback(() => {
-    setHasPlayed(true);
-  }, []);
-
   return (
-    <div
+    <LottieIconInner
+      animationData={animationData}
+      size={size}
+      loop={loop}
+      autoplay={autoplay}
+      playOnHover={playOnHover}
       className={className}
-      style={{ width: size, height: size, ...style }}
-      onMouseEnter={handleMouseEnter}
-    >
-      <Lottie
-        lottieRef={lottieRef}
-        animationData={animationData}
-        loop={loop}
-        autoplay={playOnHover ? false : autoplay}
-        onComplete={handleComplete}
-        style={{ width: size, height: size }}
-      />
-    </div>
+      style={style}
+    />
   );
 }

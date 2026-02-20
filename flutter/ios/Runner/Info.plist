@@ -41,7 +41,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<string>3</string>
 	<key>NSCameraUsageDescription</key>
 	<string>iWorkr needs camera access to scan barcodes, QR codes, and capture site evidence photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -50,6 +50,10 @@
 	<string>iWorkr needs photo library access to attach images to jobs and reports.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>iWorkr needs your location to optimize routes, track job progress, and watermark evidence photos.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>iWorkr uses background location to optimize routes and track job progress when you're in the field.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>iWorkr uses Bluetooth to connect to payment terminals and scanning devices.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>iWorkr uses Face ID to secure access to the app.</string>
 	<key>LSApplicationQueriesSchemes</key>

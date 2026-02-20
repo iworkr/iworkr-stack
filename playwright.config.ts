@@ -21,14 +21,30 @@ const chromeAuditProjects = auditModules.map((mod) => ({
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: false,
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: 1,
+  workers: process.env.CI ? 2 : 1,
   reporter: [
     ["html", { open: process.env.CI ? "never" : "on-failure", outputFolder: "playwright-report" }],
     ["list"],
     ["json", { outputFile: "playwright-report/results.json" }],
+    [
+      "playwright-qase-reporter",
+      {
+        mode: process.env.QASE_API_TOKEN ? "testops" : "off",
+        debug: !!process.env.QASE_DEBUG,
+        testops: {
+          api: { token: process.env.QASE_API_TOKEN ?? "" },
+          project: process.env.QASE_TESTOPS_PROJECT ?? "IWORKR",
+          uploadAttachments: true,
+          run: {
+            complete: true,
+            title: process.env.QASE_TESTOPS_RUN_TITLE ?? "iWorkr Web E2E",
+          },
+        },
+      },
+    ],
   ],
   timeout: 60_000,
   expect: { timeout: 10_000 },
@@ -49,7 +65,19 @@ export default defineConfig({
     // Audit projects (Chrome)
     ...chromeAuditProjects,
 
-    // Smoke + auth + functional + visual (Chrome)
+    // Smoke — sharded for parallel execution (core + settings run concurrently)
+    {
+      name: "smoke-core",
+      testMatch: /smoke-core\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "smoke-settings",
+      testMatch: /smoke-settings\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
     {
       name: "smoke",
       testMatch: /smoke\.spec\.ts/,
@@ -80,17 +108,23 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
+    {
+      name: "comprehensive",
+      testMatch: /comprehensive\/.*\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
 
     // Cross-browser smoke (Firefox + WebKit)
     {
       name: "smoke-firefox",
-      testMatch: /smoke\.spec\.ts/,
+      testMatch: /smoke(-core|-settings)?\.spec\.ts/,
       use: { ...devices["Desktop Firefox"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
     {
       name: "smoke-webkit",
-      testMatch: /smoke\.spec\.ts/,
+      testMatch: /smoke(-core|-settings)?\.spec\.ts/,
       use: { ...devices["Desktop Safari"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },

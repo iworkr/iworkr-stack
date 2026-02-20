@@ -90,6 +90,7 @@ export default function DashboardLayout({
         const map: Record<string, string> = {
           j: "/dashboard/jobs",
           s: "/dashboard/schedule",
+          p: "/dashboard/dispatch",
           i: "/dashboard/inbox",
           c: "/dashboard/clients",
           f: "/dashboard/finance",

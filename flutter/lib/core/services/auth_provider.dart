@@ -76,11 +76,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final response = await SupabaseService.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-      // Store session securely
+      final override = ref.read(authSignInOverrideProvider);
+      final response = override != null
+          ? await override(email: email, password: password)
+          : await SupabaseService.auth.signInWithPassword(
+              email: email,
+              password: password,
+            );
+      // Store session securely (skip in tests when override is used if desired)
       if (response.session != null) {
         await _storeSession(response.session!);
       }
@@ -100,7 +103,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
     );
   }
 
-  /// Sign in with Google OAuth
+  /// Sign in with Google OAuth.
+  /// Uses redirectTo so Supabase sends the user back to the app after login (not the website).
+  /// Supabase Dashboard must have: Redirect URLs = com.iworkr.mobile://login-callback
+  /// Google OAuth client: 1043967222535-08d24sh3u4lvuvt337lcin0pn8em8jk9.apps.googleusercontent.com
   Future<void> signInWithGoogle() async {
     await SupabaseService.auth.signInWithOAuth(
       OAuthProvider.google,
@@ -165,6 +171,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
     await _storage.delete(key: 'refresh_token');
   }
 }
+
+/// Optional override for tests: when set, signInWithPassword uses this instead of Supabase.
+final authSignInOverrideProvider = Provider<Future<AuthResponse> Function({required String email, required String password})?>((ref) => null);
 
 final authNotifierProvider = StateNotifierProvider<AuthNotifier, AsyncValue<void>>((ref) {
   return AuthNotifier(ref);

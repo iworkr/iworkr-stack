@@ -312,8 +312,14 @@ export default function FormFillPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-zinc-600" />
+      <div className="flex h-full flex-col p-6">
+        <div className="mb-6 h-6 w-48 rounded skeleton-shimmer" />
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-14 rounded-xl skeleton-shimmer" />
+          ))}
+        </div>
+        <div className="mt-8 h-10 w-32 rounded-lg skeleton-shimmer" />
       </div>
     );
   }
@@ -373,7 +379,7 @@ export default function FormFillPage() {
         <button
           onClick={handleSubmit}
           disabled={submitting || !allRequiredFilled}
-          className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-[11px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
           Submit & Sign

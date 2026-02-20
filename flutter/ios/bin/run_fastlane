@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Use Homebrew Ruby 3.x (required for ffi, fastlane)
+export PATH="/opt/homebrew/opt/ruby/bin:/usr/local/opt/ruby/bin:$PATH"
+cd "$(dirname "$0")/.."
+bundle exec fastlane "$@"

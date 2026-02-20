@@ -6,6 +6,11 @@
   --font-sans: var(--font-inter);
   --font-mono: var(--font-mono);
 
+  /* Obsidian: Headers use tight tracking; data/IDs/money use JetBrains Mono */
+  --font-display: var(--font-inter);
+  --tracking-tight: -0.025em;
+  --tracking-tighter: -0.05em;
+
   /* Semantic surface tokens (resolved via CSS vars below) */
   --color-surface: var(--surface-1);
   --color-surface-hover: var(--surface-2);
@@ -116,6 +121,14 @@ main {
 img, video, svg, canvas {
   max-width: 100%;
   height: auto;
+}
+
+/* Lottie container: let SVG/canvas fill the wrapper so animations are visible */
+.lottie-icon-wrapper svg,
+.lottie-icon-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
 }
 
 /* ── Animations ──────────────────────────────────────── */
@@ -563,6 +576,12 @@ img, video, svg, canvas {
 @keyframes skeleton-shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+/* Obsidian: Display typography for headers (tight tracking) */
+.font-display {
+  font-family: var(--font-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: var(--tracking-tighter, -0.05em);
 }
 
 .skeleton-shimmer {

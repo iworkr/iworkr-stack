@@ -137,39 +137,50 @@ export const useJobsStore = create<JobsState>()(
     }));
   },
 
-  /** Optimistic update + server persist */
+  /** Optimistic update + server persist. Reverts on error. */
   updateJobServer: async (id, patch) => {
-    // Find the real DB UUID for this job
     const job = get().jobs.find((j) => j.id === id);
     const dbId = job?.dbId || id;
-    // Optimistic
+    const prev = job ? { ...job } : null;
+    // Optimistic — instant UI update
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, ...patch } : j)),
     }));
-    // Build server-compatible patch
     const serverPatch: Record<string, unknown> = {};
     if (patch.title !== undefined) serverPatch.title = patch.title;
     if (patch.description !== undefined) serverPatch.description = patch.description;
     if (patch.status !== undefined) serverPatch.status = patch.status;
     if (patch.priority !== undefined) serverPatch.priority = patch.priority;
-    // Server sync using the real UUID
-    updateJobAction(dbId, serverPatch as any).catch((err) => {
+    try {
+      await updateJobAction(dbId, serverPatch as any);
+    } catch (err) {
       console.error("Failed to persist job update:", err);
-    });
+      if (prev) set((s) => ({ jobs: s.jobs.map((j) => (j.id === id ? prev : j)) }));
+      throw err;
+    }
   },
 
-  /** Update status with server persistence */
+  /** Optimistic status update + server persistence. Reverts on error. */
   updateJobStatus: async (id: string, status: string) => {
-    // Find the real DB UUID for this job
     const job = get().jobs.find((j) => j.id === id);
     const dbId = job?.dbId || id;
-    // Optimistic update
+    const prevStatus = job?.status;
     const typedStatus = status as JobStatus;
+    // Optimistic — instant UI update (0ms latency)
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, status: typedStatus } : j)),
     }));
-    // Server sync using the real UUID
-    updateJobAction(dbId, { status: typedStatus }).catch(console.error);
+    try {
+      await updateJobAction(dbId, { status: typedStatus });
+    } catch (err) {
+      console.error("Failed to persist status:", err);
+      if (prevStatus !== undefined) {
+        set((s) => ({
+          jobs: s.jobs.map((j) => (j.id === id ? { ...j, status: prevStatus } : j)),
+        }));
+      }
+      throw err;
+    }
   },
 
   deleteJob: (id) =>

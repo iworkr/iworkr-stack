@@ -69,7 +69,7 @@ function EmptyStateRadar() {
         transition={{ delay: 0.85 }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="mt-6 flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-[12px] font-medium text-zinc-400 transition-all duration-200 hover:border-emerald-500/20 hover:text-emerald-400 hover:shadow-lg hover:shadow-emerald-900/10"
+        className="mt-6 flex items-center gap-2 rounded-xl border border-white/10 bg-transparent px-4 py-2 text-[12px] font-medium text-zinc-400 transition-all duration-200 hover:bg-white/5 hover:text-white"
       >
         <Radio size={13} />
         Start a new transmission
@@ -114,21 +114,30 @@ export default function InboxPage() {
           table: "messages",
         },
         (payload) => {
-          const newMsg = payload.new as any;
-          if (
-            channelIds.includes(newMsg.channel_id) &&
-            newMsg.sender_id !== userId
-          ) {
-            supabase
+          try {
+            const newMsg = payload?.new as Record<string, unknown> | undefined;
+            if (
+              !newMsg ||
+              typeof newMsg.channel_id !== "string" ||
+              typeof newMsg.sender_id !== "string" ||
+              typeof newMsg.id !== "string"
+            )
+              return;
+            if (
+              !channelIds.includes(newMsg.channel_id) ||
+              newMsg.sender_id === userId
+            )
+              return;
+            void supabase
               .from("messages")
               .select("*, profiles:sender_id(id, full_name, avatar_url)")
               .eq("id", newMsg.id)
               .single()
               .then(({ data }) => {
-                if (data) {
-                  addRealtimeMessage(data as Message);
-                }
+                if (data) addRealtimeMessage(data as Message);
               });
+          } catch {
+            // ignore malformed payloads
           }
         },
       )
@@ -146,9 +155,18 @@ export default function InboxPage() {
     avatar_url: profile?.avatar_url || null,
   };
 
+  // Avoid rendering messenger until we have a user (prevents undefined access downstream)
+  if (!userId) {
+    return (
+      <div className="relative flex h-full items-center justify-center overflow-hidden bg-[#050505]">
+        <p className="text-[13px] text-zinc-500">Loading messages…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex h-full overflow-hidden bg-[#050505]">
-      <MessengerSidebar userId={userId || ""} />
+      <MessengerSidebar userId={userId} orgId={currentOrg?.id ?? undefined} />
 
       <AnimatePresence mode="wait">
         {activeView === "triage" ? (
@@ -166,7 +184,7 @@ export default function InboxPage() {
           <ChatStream
             key={activeChannel.id}
             channel={activeChannel}
-            userId={userId || ""}
+            userId={userId}
             userProfile={userProfile}
           />
         ) : (

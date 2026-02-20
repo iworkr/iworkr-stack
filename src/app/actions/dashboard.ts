@@ -264,3 +264,59 @@ export async function getLiveDispatch(orgId: string) {
     return { data: null, error: error.message || "Failed to fetch dispatch data" };
   }
 }
+
+/** Footprint trail for dispatch map: path + optional timestamps per tech */
+export interface FootprintTrailRow {
+  technician_id: string;
+  path: Array<{ lat: number; lng: number }>;
+  timestamps?: number[] | null;
+}
+
+export async function getFootprintTrails(orgId: string) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+    const { data, error } = await supabase
+      .from("footprint_trails")
+      .select("technician_id, path, timestamps")
+      .eq("organization_id", orgId);
+
+    if (error) {
+      logger.error("Failed to fetch footprint trails", "dashboard", undefined, { error: error.message });
+      return { data: [], error: error.message };
+    }
+    const rows = (data || []) as FootprintTrailRow[];
+    const trails = rows
+      .filter((r) => Array.isArray(r.path) && r.path.length >= 2)
+      .map((r) => ({
+        techId: r.technician_id,
+        path: r.path as { lat: number; lng: number }[],
+        timestamps: r.timestamps ?? undefined,
+      }));
+    return { data: trails, error: null };
+  } catch (error: any) {
+    logger.error("Footprint trails error", "dashboard", error);
+    return { data: [], error: error.message || "Failed to fetch footprint trails" };
+  }
+}
+
+/** Snap raw GPS path to roads (Google Roads API). Call on-demand when footprints are toggled; cache in frontend. */
+export async function snapFootprintToRoads(path: Array<{ lat: number; lng: number }>) {
+  try {
+    if (path.length < 2) return { data: path, error: null };
+    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
+    if (!key) return { data: path, error: "Missing Google Maps API key" };
+    const pathStr = path.map((p) => `${p.lat},${p.lng}`).join("|");
+    const url = `https://roads.googleapis.com/v1/snapToRoads?path=${encodeURIComponent(pathStr)}&key=${key}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const text = await res.text();
+      return { data: path, error: `Roads API: ${res.status} ${text}` };
+    }
+    const json = (await res.json()) as { snappedPoints?: Array<{ location: { latitude: number; longitude: number } }> };
+    const snapped =
+      json.snappedPoints?.map((p) => ({ lat: p.location.latitude, lng: p.location.longitude })) ?? path;
+    return { data: snapped.length >= 2 ? snapped : path, error: null };
+  } catch (error: any) {
+    return { data: path, error: error?.message ?? "Snap to roads failed" };
+  }
+}

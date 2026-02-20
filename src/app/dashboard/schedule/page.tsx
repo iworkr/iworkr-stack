@@ -624,7 +624,7 @@ export default function SchedulePage() {
                 </p>
                 <button
                   onClick={() => setUnscheduledDrawerOpen(true)}
-                  className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500 hover:shadow-emerald-900/30"
+                  className="mt-5 flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[12px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
                 >
                   <CalendarClock size={14} />
                   Open Backlog
@@ -1254,7 +1254,7 @@ function JobPeekCard({
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={onOpenFull}
-          className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-colors hover:bg-emerald-500"
+          className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-[11px] font-medium text-black transition-colors hover:bg-zinc-200"
         >
           <ExternalLink size={11} />
           Mission Control

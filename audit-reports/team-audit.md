@@ -1,9 +1,9 @@
 # Team & RBAC Module — Post-PRD Audit Report
 
-> **Generated**: 2026-02-16T15:24:18.345Z
+> **Generated**: 2026-02-19T01:10:52.086Z
 > **Module**: Team & RBAC (`/dashboard/team`, `/dashboard/team/roles`)
 > **Test Framework**: Playwright (16 test suites)
-> **Total Findings**: 26
+> **Total Findings**: 18
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
+| 🔴 Critical Failures | 4 |
 | 🟡 Visual Defects | 0 |
-| 🟣 Dummy Data Leaks | 3 |
-| 🟠 Warnings | 5 |
-| 🟢 Flow Passes | 18 |
+| 🟣 Dummy Data Leaks | 0 |
+| 🟠 Warnings | 6 |
+| 🟢 Flow Passes | 8 |
 
 ---
 
@@ -23,8 +23,8 @@
 
 | Requirement | Status |
 |-------------|--------|
-| Network Green (no 406) | PASS |
-| Real Data (no mock fallback) | CHECK |
+| Network Green (no 406) | FAIL |
+| Real Data (no mock fallback) | PASS |
 | Persistence (role change) | PENDING |
 | Security (permission toggle) | PASS |
 | Invites (real server call) | PENDING |
@@ -33,7 +33,23 @@
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
+### Heading missing
+- **Area**: Header
+- **Detail**: h1 not found.
+
+### HTTP 406 error detected
+- **Area**: Network
+- **Detail**: useOrg 406 fix may not be applied.
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 406 ()
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load finance data: TypeError: Failed to fetch
+    at fetchServerAction (http://localhost:3000/_next/static/chunks/f105d_next_dist_client_37b09c39._.js:8817:23)
+
 ---
 
 ## 🟡 Visual Defects
@@ -43,21 +59,14 @@ _No visual defects found._
 
 ## 🟣 Dummy Data Leaks
 
-### Mock member: "Mike Thompson"
-- **Area**: MockData
-- **Detail**: Found "Mike Thompson" — could be from team-data.ts mock.
-
-### Mock member: "Sarah Chen"
-- **Area**: MockData
-- **Detail**: Found "Sarah Chen" — could be from team-data.ts mock.
-
-### Mock member: "James O'Brien"
-- **Area**: MockData
-- **Detail**: Found "James O'Brien" — could be from team-data.ts mock.
-
+_No dummy data leaks found._
 ---
 
 ## 🟠 Warnings
+
+### No members shown
+- **Area**: Members
+- **Detail**: Could be loading or empty.
 
 ### No members to click
 - **Area**: Drawer
@@ -83,23 +92,13 @@ _No visual defects found._
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** Heading renders: 'Members' h1 visible.
-- ✅ **[Header]** Search input: Search box visible.
 - ✅ **[Header]** 'Roles' link renders: Navigates to /dashboard/team/roles.
-- ✅ **[Header]** 'Invite People' button: CTA visible.
-- ✅ **[Members]** Empty state renders: No mock fallback — DB empty.
-- ✅ **[Search]** Search shows empty state: No results for non-matching query.
-- ✅ **[Invite]** Invite modal opens: Modal with email, role, branch fields.
-- ✅ **[Invite]** Email chip input: Supports comma-separated emails.
-- ✅ **[Invite]** Role picker: Role selection dropdown.
-- ✅ **[Invite]** Send button wired: Uses inviteMemberServer() — no setTimeout simulation.
+- ✅ **[Filters]** Filter button visible: Filter functionality present.
 - ✅ **[Roles]** Roles sidebar loads: Role list with counts.
-- ✅ **[Roles]** 3 roles listed: Roles from DB.
+- ✅ **[Roles]** 1 roles listed: Roles from DB.
 - ✅ **[Permissions]** Permission toggles present: Uses saveRolePermissionsServer() with optimistic rollback.
-- ✅ **[Style]** All buttons have pointer: Checked 13.
-- ✅ **[Style]** Dark theme correct: Body bg is #000.
-- ✅ **[Network]** No 406 errors: useOrg fix confirmed.
-- ✅ **[Console]** No console errors: Team pages loaded without errors.
+- ✅ **[MockData]** No mock data detected: Empty state — no mock fallback.
+- ✅ **[Style]** All buttons have pointer: Checked 14.
 - ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
 
 ---

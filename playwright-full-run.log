@@ -1,0 +1,89 @@
+[dotenv@17.3.1] injecting env (15) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+Running 36 tests using 2 workers
+
+(node:70226) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70226) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[dotenv@17.3.1] injecting env (0) from .env.local -- tip: 🛡️ auth for agents: https://vestauth.com
+Got session tokens, injecting into browser...
+  ✘   1 [setup] › e2e/global-setup.ts:14:6 › authenticate via Supabase (2.5s)
+[INFO] qase: Test authenticate via Supabase invalid
+(node:70358) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70358) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[dotenv@17.3.1] injecting env (0) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+Got session tokens, injecting into browser...
+  ✘   2 [setup] › e2e/global-setup.ts:14:6 › authenticate via Supabase (retry #1) (2.3s)
+[INFO] qase: Test authenticate via Supabase invalid
+
+
+  1) [setup] › e2e/global-setup.ts:14:6 › authenticate via Supabase ────────────────────────────────
+
+    Error: browserContext.addCookies: Protocol error (Storage.setCookies): Invalid cookie fields
+
+      119 |   // We also need to set the auth cookie for SSR
+      120 |   const projectRef = new URL(SUPABASE_URL).hostname.split(".")[0];
+    > 121 |   await page.context().addCookies([
+          |                        ^
+      122 |     {
+      123 |       name: `sb-${projectRef}-auth-token`,
+      124 |       value: `base64-${Buffer.from(JSON.stringify({
+        at /Users/tlenterprises/Development/STACK/iWorkr-Linear/e2e/global-setup.ts:121:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/global-setup.ts-authenticate-via-Supabase-setup/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/global-setup.ts-authenticate-via-Supabase-setup/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/global-setup.ts-authenticate-via-Supabase-setup/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/global-setup.ts-authenticate-via-Supabase-setup/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/global-setup.ts-authenticate-via-Supabase-setup/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: browserContext.addCookies: Protocol error (Storage.setCookies): Invalid cookie fields
+
+      119 |   // We also need to set the auth cookie for SSR
+      120 |   const projectRef = new URL(SUPABASE_URL).hostname.split(".")[0];
+    > 121 |   await page.context().addCookies([
+          |                        ^
+      122 |     {
+      123 |       name: `sb-${projectRef}-auth-token`,
+      124 |       value: `base64-${Buffer.from(JSON.stringify({
+        at /Users/tlenterprises/Development/STACK/iWorkr-Linear/e2e/global-setup.ts:121:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/global-setup.ts-authenticate-via-Supabase-setup-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/global-setup.ts-authenticate-via-Supabase-setup-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/global-setup.ts-authenticate-via-Supabase-setup-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/global-setup.ts-authenticate-via-Supabase-setup-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/global-setup.ts-authenticate-via-Supabase-setup-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [setup] › e2e/global-setup.ts:14:6 › authenticate via Supabase ─────────────────────────────────
+  35 did not run
+[INFO] qase: Test run link: https://app.qase.io/run/IWORKR/dashboard/5
+[INFO] qase: Run 5 completed

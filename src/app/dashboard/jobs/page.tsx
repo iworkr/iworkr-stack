@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { PriorityIcon } from "@/components/app/priority-icon";
 import { StatusIcon } from "@/components/app/status-icon";
+import { StatusPill, formatStatus } from "@/components/ui/status-pill";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import { useToastStore } from "@/components/app/action-toast";
 import { useJobsStore } from "@/lib/jobs-store";
@@ -48,43 +49,12 @@ const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
 
 type ViewFilter = "all" | "active" | "backlog" | "done";
 
-function formatStatus(status: string): string {
-  const map: Record<string, string> = {
-    in_progress: "In Progress",
-    todo: "To Do",
-    done: "Done",
-    backlog: "Backlog",
-    cancelled: "Cancelled",
-    on_hold: "On Hold",
-  };
-  return map[status] || status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-}
-
 function formatDue(due: string | undefined): { label: string; isOverdue: boolean } {
   if (!due) return { label: "", isOverdue: false };
   if (due === "Today") return { label: "Today", isOverdue: false };
   if (due === "Tomorrow") return { label: "Tomorrow", isOverdue: false };
   if (due === "Overdue" || due === "Yesterday") return { label: due, isOverdue: true };
   return { label: due, isOverdue: false };
-}
-
-/* ── Status Pill ─────────────────────────────────────── */
-
-function StatusPill({ status }: { status: JobStatus }) {
-  const styles: Record<JobStatus, string> = {
-    urgent: "bg-rose-500/15 text-rose-400",
-    backlog: "bg-zinc-500/10 text-zinc-500",
-    todo: "bg-zinc-400/10 text-zinc-400",
-    in_progress: "bg-amber-500/15 text-amber-400",
-    done: "bg-emerald-500/15 text-emerald-400",
-    cancelled: "bg-zinc-500/10 text-zinc-600",
-  };
-
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide ${styles[status] || styles.backlog}`}>
-      {formatStatus(status)}
-    </span>
-  );
 }
 
 const contextItems: ContextMenuItem[] = [
@@ -291,7 +261,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <button className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-semibold text-white shadow-lg shadow-emerald-900/30 transition-all duration-200 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-900/40">
+          <button className="mt-5 flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200">
             <Plus size={14} />
             Create Job
           </button>
@@ -417,7 +387,6 @@ export default function JobsPage() {
         }
       }
     } catch {
-      if (prevJob) updateJobStatus(jobId, prevJob.status);
       addToast("Failed to update status");
     }
   }
@@ -567,12 +536,12 @@ export default function JobsPage() {
             <FilterPopover open={showFilterPopover} onClose={() => setShowFilterPopover(false)} filters={advancedFilters} onApply={setAdvancedFilters} anchorRef={filterBtnRef} />
           </div>
 
-          {/* New Job — Solid Emerald */}
+          {/* New Job — Obsidian primary CTA */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setCreateJobModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-lg shadow-emerald-900/30 transition-all duration-200 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-900/40"
+            className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200"
           >
             <Plus size={13} strokeWidth={2} />
             New Job
@@ -581,16 +550,16 @@ export default function JobsPage() {
       </div>
 
       {/* ── Sticky Column Headers ──────────────────────────── */}
-      <div className="relative z-10 flex items-center border-b border-white/[0.04] bg-[#080808] px-5 py-2">
+      <div className="relative z-10 flex items-center border-b border-white/5 bg-[#080808] px-5 py-2">
         <div className="w-8" />
         <div className="w-8 px-1" />
-        <div className="w-[80px] px-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">ID</div>
-        <div className="w-[72px] px-1 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Status</div>
-        <div className="min-w-0 flex-1 px-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Title</div>
-        <div className="w-28 px-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Client</div>
-        <div className="w-28 px-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Location</div>
-        <div className="w-10 px-1 text-[10px] font-bold tracking-widest text-zinc-500 uppercase"></div>
-        <div className="w-20 px-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Due</div>
+        <div className="w-[80px] px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">ID</div>
+        <div className="w-[72px] px-1 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Status</div>
+        <div className="min-w-0 flex-1 px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Title</div>
+        <div className="w-28 px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Client</div>
+        <div className="w-28 px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Location</div>
+        <div className="w-10 px-1 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase"></div>
+        <div className="w-20 px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Due</div>
         <div className="w-24" />
       </div>
 
@@ -623,18 +592,18 @@ export default function JobsPage() {
                 onContextMenu={(e) => handleContextMenu(e, job.id)}
                 onMouseEnter={() => setHoveredRowId(job.id)}
                 onMouseLeave={() => setHoveredRowId(null)}
-                className={`group relative flex cursor-pointer items-center border-b border-white/[0.03] px-5 transition-all duration-100 ${
+                className={`group relative flex cursor-pointer items-center border-b border-white/5 px-5 transition-all duration-100 ${
                   isSelected
-                    ? "bg-emerald-500/[0.06]"
+                    ? "bg-white/[0.06]"
                     : isFocused
                       ? "bg-white/[0.03]"
                       : "hover:bg-white/[0.02]"
                 }`}
                 style={{ height: 42 }}
               >
-                {/* Selected spine */}
+                {/* Selected spine — monochrome */}
                 {isSelected && (
-                  <motion.div layoutId={`sel-${job.id}`} className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500" />
+                  <motion.div layoutId={`sel-${job.id}`} className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-white" />
                 )}
 
                 {/* Checkbox */}
@@ -643,13 +612,13 @@ export default function JobsPage() {
                     whileTap={{ scale: 0.9 }}
                     className={`flex h-3.5 w-3.5 items-center justify-center rounded border transition-all duration-150 ${
                       isSelected
-                        ? "border-emerald-500 bg-emerald-500"
+                        ? "border-white bg-white"
                         : "border-white/[0.08] opacity-0 group-hover:opacity-100"
                     }`}
                     onClick={(e) => { e.stopPropagation(); toggleSelect(job.id); }}
                   >
                     {isSelected && (
-                      <svg viewBox="0 0 12 12" className="h-full w-full text-white">
+                      <svg viewBox="0 0 12 12" className="h-full w-full text-black">
                         <path d="M3 6l2 2 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
@@ -749,7 +718,7 @@ export default function JobsPage() {
                             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                             setStatusDropdown({ jobId: job.id, x: rect.left, y: rect.bottom + 4 });
                           }}
-                          className="rounded-md p-1.5 text-zinc-600 transition-colors duration-100 hover:bg-white/[0.06] hover:text-emerald-400"
+                          className="rounded-md p-1.5 text-zinc-500 transition-colors duration-100 hover:bg-white/5 hover:text-white"
                           title="Status"
                         >
                           <Check size={12} />
@@ -853,18 +822,18 @@ export default function JobsPage() {
         )}
       </AnimatePresence>
 
-      {/* Bulk Delete Modal */}
+      {/* Bulk Delete Modal — PRD 55.0 Glass & Shadow */}
       <AnimatePresence>
         {isBulkDeleteModalOpen && bulkDeleteJobs.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
             onClick={() => !isDeleting && setIsBulkDeleteModalOpen(false)}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[420px] rounded-2xl border border-white/[0.06] bg-zinc-900/90 shadow-2xl shadow-black/50 backdrop-blur-xl">
-              <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+              className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-950 p-6 shadow-2xl">
+              <div className="flex items-center gap-3 pb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
                   <AlertTriangle size={18} className="text-red-400" />
                 </div>
@@ -873,8 +842,8 @@ export default function JobsPage() {
                   <p className="text-[12px] text-zinc-500">This action cannot be undone.</p>
                 </div>
               </div>
-              <div className="px-5 py-3">
-                <div className="scrollbar-none max-h-32 space-y-1 overflow-y-auto rounded-xl border border-white/[0.04] bg-white/[0.02] p-3">
+              <div className="py-2">
+                <div className="scrollbar-none max-h-32 space-y-1 overflow-y-auto rounded-xl border border-white/5 bg-white/[0.02] p-3">
                   {bulkDeleteJobs.map((j) => (
                     <div key={j.id} className="flex items-center gap-2 text-[11px]">
                       <span className="font-mono text-zinc-600">{j.id}</span>
@@ -883,9 +852,9 @@ export default function JobsPage() {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-2 border-t border-white/[0.04] px-5 py-3">
-                <button onClick={() => setIsBulkDeleteModalOpen(false)} disabled={isDeleting} className="rounded-lg px-3 py-1.5 text-[13px] text-zinc-400 transition-colors hover:bg-white/[0.04]">Cancel</button>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={confirmBulkDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-[13px] font-semibold text-red-400 transition-colors hover:bg-red-500/25 disabled:opacity-50">
+              <div className="flex items-center justify-end gap-2 pt-4">
+                <button onClick={() => setIsBulkDeleteModalOpen(false)} disabled={isDeleting} className="rounded-xl bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white">Cancel</button>
+                <motion.button whileTap={{ scale: 0.98 }} onClick={confirmBulkDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10 disabled:opacity-50">
                   <Trash2 size={13} />{isDeleting ? "Deleting…" : `Delete ${bulkDeleteJobs.length} Jobs`}
                 </motion.button>
               </div>
@@ -894,18 +863,18 @@ export default function JobsPage() {
         )}
       </AnimatePresence>
 
-      {/* Single Delete Modal */}
+      {/* Single Delete Modal — PRD 55.0 */}
       <AnimatePresence>
         {isDeleteModalOpen && jobToDelete && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
             onClick={() => { if (!isDeleting) { setIsDeleteModalOpen(false); setJobToDelete(null); } }}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[420px] rounded-2xl border border-white/[0.06] bg-zinc-900/90 shadow-2xl shadow-black/50 backdrop-blur-xl">
-              <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+              className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-950 p-6 shadow-2xl">
+              <div className="flex items-center gap-3 pb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
                   <AlertTriangle size={18} className="text-red-400" />
                 </div>
@@ -914,8 +883,8 @@ export default function JobsPage() {
                   <p className="text-[12px] text-zinc-500">This action cannot be undone.</p>
                 </div>
               </div>
-              <div className="px-5 py-3">
-                <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
+              <div className="py-2">
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-[11px] text-zinc-500">{jobToDelete.id}</span>
                     <StatusPill status={jobToDelete.status} />
@@ -924,9 +893,9 @@ export default function JobsPage() {
                   {jobToDelete.client && <p className="mt-0.5 text-[12px] text-zinc-500">{jobToDelete.client}</p>}
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-2 border-t border-white/[0.04] px-5 py-3">
-                <button onClick={() => { setIsDeleteModalOpen(false); setJobToDelete(null); }} disabled={isDeleting} className="rounded-lg px-3 py-1.5 text-[13px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200 disabled:opacity-50">Cancel</button>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={confirmDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-[13px] font-semibold text-red-400 transition-colors hover:bg-red-500/25 disabled:opacity-50">
+              <div className="flex items-center justify-end gap-2 pt-4">
+                <button onClick={() => { setIsDeleteModalOpen(false); setJobToDelete(null); }} disabled={isDeleting} className="rounded-xl bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50">Cancel</button>
+                <motion.button whileTap={{ scale: 0.98 }} onClick={confirmDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10 disabled:opacity-50">
                   <Trash2 size={13} />{isDeleting ? "Deleting…" : "Delete"}
                 </motion.button>
               </div>

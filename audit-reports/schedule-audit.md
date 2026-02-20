@@ -1,9 +1,9 @@
 # Schedule Module — Comprehensive Audit Report (Post-PRD)
 
-> **Generated**: 2026-02-16T14:32:56.569Z
+> **Generated**: 2026-02-19T01:01:21.606Z
 > **Module**: Schedule (`/dashboard/schedule`)
 > **Test Framework**: Playwright (18 test suites)
-> **Total Findings**: 36
+> **Total Findings**: 11
 > **PRD**: Schedule Module Live Activation (P0)
 
 ---
@@ -12,17 +12,20 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
+| 🔴 Critical Failures | 1 |
 | 🟡 Visual Defects | 1 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 7 |
-| 🟢 Flow Passes | 28 |
+| 🟠 Warnings | 4 |
+| 🟢 Flow Passes | 5 |
 
 ---
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 406 ()
+
 ---
 
 ## 🟡 Visual Defects
@@ -40,22 +43,6 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
-### No blocks to click
-- **Area**: Peek
-- **Detail**: Skipping.
-
-### No blocks
-- **Area**: ContextMenu
-- **Detail**: Skipping.
-
-### Next day unchanged
-- **Area**: DateNav
-- **Detail**: Clicked forward but date label didn't change visually.
-
-### V key effect unclear
-- **Area**: Keyboard
-- **Detail**: Could not confirm view scale change.
-
 ### No blocks to drag
 - **Area**: DragDrop
 - **Detail**: Skipping.
@@ -63,6 +50,10 @@ _No dummy data leaks found._
 ### No blocks
 - **Area**: PeekNav
 - **Detail**: Skipping.
+
+### HTTP 406
+- **Area**: Network
+- **Detail**: URL: https://iaroashargzwsuuciqox.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
 
 ### No blocks for action test
 - **Area**: PeekActions
@@ -72,34 +63,11 @@ _No dummy data leaks found._
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** Schedule heading renders: h1 'Schedule' is visible.
-- ✅ **[Header]** Date label renders: Date: "16 Feb"
-- ✅ **[Header]** Navigation buttons render: Found 12 header buttons.
-- ✅ **[Header]** 'Today' button renders: Quick-jump to today button visible.
-- ✅ **[Header]** 'Day' view toggle: View scale button "Day" visible.
-- ✅ **[Header]** 'Week' view toggle: View scale button "Week" visible.
-- ✅ **[Header]** 'Month' view toggle: View scale button "Month" visible.
-- ✅ **[Header]** 'Backlog' toggle renders: Backlog drawer toggle with U shortcut visible.
-- ✅ **[Resources]** 4 technician avatars: Avatar circles with initials in resource column.
-- ✅ **[Timeline]** 13 hour labels: Hour grid headers from 6 AM to 7 PM.
-- ✅ **[Blocks]** Empty state renders: 'No schedule data' empty state — expected for test user with no live data.
-- ✅ **[Blocks]** Empty state CTA renders: Helper text visible below empty state heading.
-- ✅ **[ViewScale]** "Week" is disabled: Week toggle correctly disabled — prevents broken view rendering.
-- ✅ **[ViewScale]** "Week" has tooltip: Tooltip: "Coming soon"
-- ✅ **[ViewScale]** "Month" is disabled: Month toggle correctly disabled — prevents broken view rendering.
-- ✅ **[ViewScale]** "Month" has tooltip: Tooltip: "Coming soon"
-- ✅ **[Keyboard]** U key opens backlog drawer: Backlog sidebar drawer appeared.
+- ✅ **[Keyboard]** V key cycles view scale: Changed from "Day" to ""
 - ✅ **[Keyboard]** Escape closes drawer: Pressed Escape to close backlog drawer.
-- ✅ **[Backlog]** Backlog drawer opens: 280px drawer sidebar visible.
-- ✅ **[Backlog]** Empty state renders: 'No unscheduled jobs' with calendar icon.
 - ✅ **[Style]** All checked buttons have pointer cursor: Checked 12 buttons.
-- ✅ **[Style]** Dark theme correct: Body bg is #000.
 - ✅ **[Style]** Inter font applied: Font: Inter, "Inter Fallback"
-- ✅ **[Console]** No console errors: Schedule page loaded without console errors.
-- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
 - ✅ **[EmptyState]** Empty state heading renders: 'No schedule data' displayed.
-- ✅ **[EmptyState]** Empty state CTA renders: 'Assign technicians and jobs...' prompt displayed.
-- ✅ **[EmptyState]** Empty state icon renders: Calendar icon with styled container.
 
 ---
 

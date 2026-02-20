@@ -6,6 +6,10 @@ export const uuidSchema = z.string().uuid("Invalid ID format");
 
 export const emailSchema = z.string().email("Invalid email address").max(255);
 
+export function validateEmail(email: string): boolean {
+  return emailSchema.safeParse(email).success;
+}
+
 export const phoneSchema = z
   .string()
   .max(30)

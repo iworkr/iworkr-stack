@@ -1,3 +1,7 @@
+/** Golden User (Admin) — Project Panopticon / full coverage runs */
+export const GOLDEN_EMAIL = "theo.caleb.lewis@gmail.com";
+export const GOLDEN_PASSWORD = "lowerUPPER#123";
+
 export const TEST_EMAIL = "qa-test@iworkrapp.com";
 export const TEST_PASSWORD = "QATestPass123!";
 
@@ -35,7 +39,8 @@ export const SETTINGS_ROUTES = [
   { label: "Workflow", href: "/settings/workflow" },
 ] as const;
 
-export const ALL_PROTECTED_ROUTES = [
+/** Core (dashboard) protected routes — used by smoke-core.spec.ts */
+export const PROTECTED_ROUTES_CORE = [
   "/dashboard",
   "/dashboard/inbox",
   "/dashboard/jobs",
@@ -50,6 +55,10 @@ export const ALL_PROTECTED_ROUTES = [
   "/dashboard/ai-agent",
   "/dashboard/get-app",
   "/dashboard/help",
+] as const;
+
+/** Settings protected routes — used by smoke-settings.spec.ts (longer timeout) */
+export const PROTECTED_ROUTES_SETTINGS = [
   "/settings",
   "/settings/preferences",
   "/settings/profile",
@@ -67,6 +76,11 @@ export const ALL_PROTECTED_ROUTES = [
   "/settings/templates",
   "/settings/statuses",
   "/settings/workflow",
+] as const;
+
+export const ALL_PROTECTED_ROUTES = [
+  ...PROTECTED_ROUTES_CORE,
+  ...PROTECTED_ROUTES_SETTINGS,
 ] as const;
 
 export const PUBLIC_ROUTES = [

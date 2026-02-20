@@ -33,7 +33,7 @@ function InsightSkeleton({ size }: { size: WidgetSize }) {
         <div className="flex items-center gap-2">
           <div className="relative h-3.5 w-3.5">
             <div className="absolute inset-0 animate-orbit">
-              <div className="h-1 w-1 rounded-full bg-emerald-500/40" />
+              <div className="h-1 w-1 rounded-full bg-zinc-500/40" />
             </div>
             <div className="absolute inset-0 animate-orbit-reverse">
               <div className="absolute bottom-0 right-0 h-0.5 w-0.5 rounded-full bg-zinc-600" />
@@ -87,7 +87,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
       <WidgetShell delay={0.25}>
         <div className="flex h-full flex-col items-center justify-center p-3 text-center">
           <div className="relative mb-1.5">
-            <Sparkles size={14} className="text-emerald-500" />
+            <Sparkles size={14} className="text-zinc-400" />
           </div>
           <div className={`flex h-5 w-5 items-center justify-center rounded ${config.bg} mb-1`}>
             <Icon size={10} className={config.color} />
@@ -107,17 +107,17 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
     return (
       <WidgetShell delay={0.25}>
         <div className="relative overflow-hidden">
-          {/* Ultra-subtle aurora */}
+          {/* Ultra-subtle neutral aurora (Obsidian) */}
           <div className="pointer-events-none absolute inset-[-50%] z-0 opacity-[0.04]">
             <motion.div className="h-full w-full"
-              style={{ background: "conic-gradient(from 180deg at 50% 50%, rgba(16,185,129,0.4) 0deg, transparent 120deg, rgba(16,185,129,0.3) 240deg, transparent 360deg)", filter: "blur(50px)" }}
+              style={{ background: "conic-gradient(from 180deg at 50% 50%, rgba(255,255,255,0.08) 0deg, transparent 120deg, rgba(255,255,255,0.05) 240deg, transparent 360deg)", filter: "blur(50px)" }}
               animate={{ rotate: [0, 360] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
             />
           </div>
 
           <div className="relative z-10 p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Sparkles size={14} className="text-emerald-500" />
+              <Sparkles size={14} className="text-zinc-400" />
               <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">AI Insights</span>
               <span className="text-[10px] text-zinc-700">{insights.length} active</span>
             </div>
@@ -143,7 +143,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
                       {ins.action && ins.action_route && (
                         <button
                           onClick={() => router.push(ins.action_route!)}
-                          className="mt-1.5 flex items-center gap-1 text-[9px] font-medium text-zinc-500 transition-colors hover:text-emerald-500"
+                          className="mt-1.5 flex items-center gap-1 text-[9px] font-medium text-zinc-500 transition-colors hover:text-white"
                         >
                           <Calendar size={9} /> {ins.action}
                         </button>
@@ -163,17 +163,17 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
   return (
     <WidgetShell delay={0.25}>
       <div className="relative overflow-hidden p-5">
-        {/* Subtle aurora background */}
+        {/* Subtle neutral aurora (Obsidian) */}
         <div className="pointer-events-none absolute inset-[-50%] z-0 opacity-[0.05]">
           <motion.div className="h-full w-full"
-            style={{ background: "conic-gradient(from 180deg at 50% 50%, rgba(16,185,129,0.4) 0deg, transparent 120deg, rgba(16,185,129,0.3) 240deg, transparent 360deg)", filter: "blur(50px)" }}
+            style={{ background: "conic-gradient(from 180deg at 50% 50%, rgba(255,255,255,0.08) 0deg, transparent 120deg, rgba(255,255,255,0.05) 240deg, transparent 360deg)", filter: "blur(50px)" }}
             animate={{ rotate: [0, 360] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
           />
         </div>
 
         <div className="relative z-10">
           <div className="mb-3 flex items-center gap-2">
-            <Sparkles size={14} className="text-emerald-500" />
+            <Sparkles size={14} className="text-zinc-400" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">AI Insight</span>
           </div>
           <div className="flex items-start gap-3">

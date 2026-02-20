@@ -141,7 +141,7 @@ export function MessageInput({ channelId, userId, userProfile }: MessageInputPro
   const hasContent = content.trim().length > 0;
 
   return (
-    <div className="relative z-10 px-5 pb-4 pt-2">
+    <div className="relative z-10 m-4 pt-2">
       <div className="mx-auto max-w-[800px]">
         {/* Slash commands popover */}
         <AnimatePresence>
@@ -248,8 +248,8 @@ export function MessageInput({ channelId, userId, userProfile }: MessageInputPro
           )}
         </AnimatePresence>
 
-        {/* Floating glass composer */}
-        <div className="relative flex items-end gap-2 rounded-xl border border-white/[0.06] bg-zinc-900/80 px-3.5 py-2.5 backdrop-blur-xl transition-all duration-200 focus-within:border-white/[0.1] focus-within:shadow-lg focus-within:shadow-black/30">
+        {/* PRD 59: Stealth composer — floating glass bar, border-white/5 */}
+        <div className="relative flex items-end gap-2 rounded-xl border border-white/5 bg-zinc-900/80 px-3.5 py-2.5 backdrop-blur-md transition-all duration-200 focus-within:border-white/10 focus-within:shadow-lg focus-within:shadow-black/30">
           {/* Attachment button */}
           <div className="relative">
             <button
@@ -352,14 +352,14 @@ export function MessageInput({ channelId, userId, userProfile }: MessageInputPro
             <Mic size={15} strokeWidth={1.5} />
           </button>
 
-          {/* Send — Animated paper plane */}
+          {/* PRD 59: Paper plane — Zinc-500 idle, White hover */}
           <button
             onClick={handleSend}
             disabled={!hasContent || sendingMessage}
             className={`shrink-0 overflow-hidden rounded-lg p-1.5 transition-all duration-200 ${
               hasContent
-                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500"
-                : "text-zinc-700"
+                ? "text-zinc-500 hover:text-white"
+                : "text-zinc-600 cursor-default"
             }`}
           >
             <motion.div animate={sendControls}>

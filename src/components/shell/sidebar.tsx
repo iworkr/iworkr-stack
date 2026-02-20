@@ -24,6 +24,7 @@ import {
   Moon,
   Bot,
   Smartphone,
+  Map,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -48,6 +49,7 @@ const navItems = [
   { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
   { id: "nav_jobs", label: "My Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
   { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
+  { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P" },
   { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
   { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
   { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A" },
@@ -90,13 +92,13 @@ function NavLink({
       title={collapsed ? item.label : undefined}
       className={`group relative flex items-center gap-2.5 rounded-lg px-2 py-[7px] transition-all duration-150 ${
         collapsed ? "justify-center" : ""
-      } ${active ? "text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
+      } ${active ? "text-white" : "text-zinc-500 hover:text-white"}`}
     >
-      {/* Floating Glass Pill — slides between active items */}
+      {/* Floating Glass Pill — active state (Obsidian: white/zinc only) */}
       {active && (
         <motion.div
           layoutId="sidebar-glass-pill"
-          className="absolute inset-0 rounded-lg bg-white/[0.05] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
+          className="absolute inset-0 rounded-lg bg-white/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
           transition={{ type: "spring", stiffness: 350, damping: 28 }}
         />
       )}
@@ -104,15 +106,6 @@ function NavLink({
       {/* Hover glow */}
       {!active && (
         <div className="absolute inset-0 rounded-lg opacity-0 transition-opacity duration-150 group-hover:opacity-100 bg-white/[0.02]" />
-      )}
-
-      {/* Active emerald bar */}
-      {active && (
-        <motion.div
-          layoutId="sidebar-active-bar"
-          className="absolute top-1/2 left-0 h-4 w-[2px] -translate-y-1/2 rounded-r bg-emerald-500"
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        />
       )}
 
       <Icon
@@ -273,12 +266,12 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
           </button>
         </div>
 
-        {/* ── New Item — Emerald Solid ── */}
+        {/* ── New Item — Monochrome CTA (Obsidian) ── */}
         <div className="px-2 pt-2.5 pb-0.5">
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={onCreateClick}
-            className={`group/create flex items-center gap-2 rounded-lg bg-emerald-600 font-medium text-white transition-all duration-300 hover:bg-emerald-500 hover:shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)] ${
+            className={`group/create flex items-center gap-2 rounded-lg bg-white font-medium text-black transition-all duration-200 hover:bg-zinc-200 ${
               sidebarCollapsed
                 ? "w-10 justify-center p-2"
                 : "w-full px-2.5 py-[7px]"
@@ -294,7 +287,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                   className="flex flex-1 items-center justify-between text-[13px]"
                 >
                   New Item
-                  <kbd className="rounded border border-white/[0.15] bg-white/[0.1] px-1.5 py-0.5 font-mono text-[9px] text-emerald-200/60">
+                  <kbd className="rounded border border-black/10 bg-black/5 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
                     C
                   </kbd>
                 </motion.span>

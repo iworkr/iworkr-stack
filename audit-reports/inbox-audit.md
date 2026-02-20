@@ -1,9 +1,9 @@
 # Inbox Module — Comprehensive Audit Report (Post-PRD)
 
-> **Generated**: 2026-02-16T14:29:22.385Z
+> **Generated**: 2026-02-19T00:58:00.104Z
 > **Module**: Inbox (`/dashboard/inbox`)
 > **Test Framework**: Playwright (18 test suites)
-> **Total Findings**: 39
+> **Total Findings**: 17
 > **PRD**: Inbox Module Live Activation & Fixes (P0)
 
 ---
@@ -12,26 +12,38 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
-| 🟡 Visual Defects | 0 |
+| 🔴 Critical Failures | 3 |
+| 🟡 Visual Defects | 1 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 7 |
-| 🟢 Flow Passes | 32 |
+| 🟠 Warnings | 10 |
+| 🟢 Flow Passes | 3 |
 
 ---
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
 
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 406 ()
+
+### Filter button not found
+- **Area**: Filter
+- **Detail**: Could not locate the filter button in the inbox header.
+
+### No empty state shown
+- **Area**: EmptyState
+- **Detail**: Inbox has 0 items but no empty state message is visible — blank screen.
 
 
 ---
 
 ## 🟡 Visual Defects
 
-_No visual defects found._
 
+### Mobile preview pane state unclear
+- **Area**: Responsive
+- **Detail**: Could not verify if right pane is properly hidden on mobile.
 
 
 ---
@@ -46,6 +58,10 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
+
+### No items and no empty state
+- **Area**: Items
+- **Detail**: Inbox appears blank without items or empty state messaging.
 
 ### No items to select
 - **Area**: Preview
@@ -75,43 +91,22 @@ _No dummy data leaks found._
 - **Area**: JobRef
 - **Detail**: Skipping.
 
+### HTTP 406
+- **Area**: Network
+- **Detail**: URL: https://iaroashargzwsuuciqox.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
+
+### Snooze not visible (empty inbox)
+- **Area**: Snooze
+- **Detail**: Snooze is not visible — preview pane shows empty state instead. Acceptable for MVP.
+
 
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Layout]** Inbox heading renders: h1 'Inbox' is visible.
-- ✅ **[Layout]** Left pane (feed) renders: 350px feed column is visible.
-- ✅ **[Layout]** Right pane (preview) renders: Empty state shown.
-- ✅ **[Layout]** Two-pane layout verified: Inbox uses split-pane design consistent with Linear.
-- ✅ **[Tabs]** "All" tab renders: Tab button "All" is visible.
-- ✅ **[Tabs]** "All" tab has active indicator: Animated underline indicator is present under active tab.
-- ✅ **[Tabs]** "Unread" tab renders: Tab button "Unread" is visible.
-- ✅ **[Tabs]** "Unread" tab has active indicator: Animated underline indicator is present under active tab.
-- ✅ **[Tabs]** Unread empty state renders: 'All caught up' when no unread items.
-- ✅ **[Tabs]** "Snoozed" tab renders: Tab button "Snoozed" is visible.
-- ✅ **[Tabs]** "Snoozed" tab has active indicator: Animated underline indicator is present under active tab.
-- ✅ **[Tabs]** Snoozed empty state renders: 'No snoozed items' empty state is correct.
-- ✅ **[Items]** Empty state or zen state shown: Inbox is empty — expected for test user.
-- ✅ **[UI]** Keyboard hints render: Found 21 kbd elements for J, K, E, H hints.
-- ✅ **[UI]** "done" hint visible: Keyboard action label "done" rendered.
-- ✅ **[UI]** "snooze" hint visible: Keyboard action label "snooze" rendered.
-- ✅ **[UI]** "open" hint visible: Keyboard action label "open" rendered.
-- ✅ **[Style]** All buttons have pointer cursor: Checked 15 buttons.
-- ✅ **[Style]** Dark theme correct: Body bg is #000.
+- ✅ **[UI]** Keyboard hints render: Found 14 kbd elements for J, K, E, H hints.
+- ✅ **[Style]** All buttons have pointer cursor: Checked 14 buttons.
 - ✅ **[Style]** Inter font applied: Font: Inter, "Inter Fallback"
-- ✅ **[Style]** Custom border colors used: 26 elements use rgba border styling — consistent with theme.
-- ✅ **[Console]** No console errors: Inbox page loaded without console errors.
-- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
-- ✅ **[Responsive]** Desktop (1440px) renders: Inbox heading visible at desktop width.
-- ✅ **[Responsive]** Mobile (375px) renders: Inbox heading visible on mobile.
-- ✅ **[Responsive]** Preview pane hidden on mobile: Right pane correctly hidden with hidden md:flex classes.
-- ✅ **[Filter]** Filter button renders: Filter button is visible in the inbox header.
-- ✅ **[Filter]** Filter button shows active state: Filter button displays violet active style when Mentions mode is on.
-- ✅ **[Filter]** Filter tooltip updated: Button title: "Showing mentions only — click for all"
-- ✅ **[Filter]** Filter toggles back to All: Second click restores 'All' filter mode.
-- ✅ **[Snooze]** Snooze visible in empty state: Snooze button is rendered in the preview.
-- ✅ **[EmptyState]** Empty state renders: 'No notifications' or 'You're all clear' is displayed.
 
 ---
 

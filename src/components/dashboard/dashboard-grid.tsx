@@ -129,14 +129,14 @@ export function DashboardGrid() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="mb-4 flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] px-4 py-2.5 backdrop-blur-sm"
+            className="mb-4 flex items-center justify-between rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2.5 backdrop-blur-sm"
           >
             <div className="flex items-center gap-2">
-              <Pencil size={14} className="text-emerald-500" />
-              <span className="text-[13px] font-medium text-emerald-500">
+              <Pencil size={14} className="text-zinc-300" />
+              <span className="text-[13px] font-medium text-white">
                 Editing Layout
               </span>
-              <span className="text-[11px] text-emerald-500/50">
+              <span className="text-[11px] text-zinc-500">
                 Drag to reorder, resize handles in corners
               </span>
             </div>
@@ -160,7 +160,7 @@ export function DashboardGrid() {
               </button>
               <button
                 onClick={() => setEditMode(false)}
-                className="flex items-center gap-1.5 rounded-md bg-emerald-500 px-3 py-1 text-[12px] font-medium text-black transition-colors hover:bg-emerald-600"
+                className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200"
               >
                 <Check size={13} />
                 Done
@@ -197,7 +197,7 @@ export function DashboardGrid() {
             <div key={widgetId} className="relative">
               {/* Edit mode overlay */}
               {editMode && (
-                <div className="pointer-events-none absolute inset-0 z-20 rounded-xl ring-2 ring-[rgba(0,230,118,0.3)] ring-offset-1 ring-offset-black/50" />
+                <div className="pointer-events-none absolute inset-0 z-20 rounded-xl ring-2 ring-white/20 ring-offset-1 ring-offset-black/50" />
               )}
 
               {/* Drag handle + remove button (edit mode only) */}

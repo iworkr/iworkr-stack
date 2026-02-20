@@ -81,7 +81,7 @@ export default function Error({
         >
           <button
             onClick={reset}
-            className="btn-micro inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-[13px] font-medium text-white transition-all hover:bg-emerald-500 hover:shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)]"
+            className="btn-micro inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[13px] font-medium text-black transition-all hover:bg-zinc-200"
           >
             <RotateCcw size={14} />
             Try Again

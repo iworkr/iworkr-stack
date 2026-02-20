@@ -347,40 +347,41 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — PRD 55.0 Glass & Shadow */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[8px]"
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
 
-          {/* Stage */}
+          {/* Stage — Obsidian container */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "circOut" }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             layout
-            className="fixed top-[8%] left-1/2 z-50 flex w-full max-w-[900px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0C0C0C] backdrop-blur-md"
-            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5), 0 0 40px -10px rgba(0,230,118,0.06)", maxHeight: "82vh" }}
+            className="fixed top-[8%] left-1/2 z-50 flex w-full max-w-[900px] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
+            style={{ maxHeight: "82vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ── Header ────────────────────────────────────── */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-2.5">
-              <span className="text-[12px] text-zinc-600">
+            <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-4">
+              <span className="text-[12px] text-zinc-500">
                 New Job <span className="text-zinc-700">/</span>{" "}
-                <span className="text-zinc-500">{estimateMode ? "Quote" : "Draft"}</span>
+                <span className="text-zinc-600">{estimateMode ? "Quote" : "Draft"}</span>
               </span>
               <div className="flex items-center gap-2">
-                <kbd className="rounded bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
+                <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
                   Esc
                 </kbd>
                 <button
                   onClick={onClose}
-                  className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+                  className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
+                  aria-label="Close"
                 >
                   <X size={14} />
                 </button>
@@ -811,49 +812,46 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
             </div>
 
             {/* ── Footer / Action Row ───────────────────────── */}
-            <div className="flex shrink-0 items-center justify-between border-t border-[rgba(255,255,255,0.06)] px-5 py-3">
-              {/* Create more toggle */}
-              <label className="flex items-center gap-2 text-[11px] text-zinc-600">
+            <div className="flex shrink-0 items-center justify-between gap-6 px-6 py-4">
+              {/* Create more toggle — monochrome */}
+              <label className="flex items-center gap-2 text-[11px] text-zinc-500">
                 <button
+                  type="button"
                   onClick={() => setCreateMore(!createMore)}
-                  className={`relative h-[16px] w-[28px] rounded-full transition-colors ${createMore ? "bg-[#00E676]" : "bg-zinc-700"}`}
+                  className={`relative h-[16px] w-[28px] rounded-full transition-colors ${createMore ? "bg-white" : "bg-zinc-700"}`}
                 >
                   <motion.div
                     layout
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="absolute top-[2px] h-3 w-3 rounded-full bg-white"
+                    className={`absolute top-[2px] h-3 w-3 rounded-full ${createMore ? "bg-black" : "bg-white"}`}
                     style={{ left: createMore ? 13 : 2 }}
                   />
                 </button>
                 Create more
               </label>
 
-              {/* Submit button */}
+              {/* Submit — Primary CTA: stark white (PRD 55.0) */}
               {estimateMode && quoteTotal > 0 ? (
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
                   disabled={!title.trim() || saving}
-                  className="relative flex items-center gap-2 overflow-hidden rounded-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-4 py-1.5 text-[13px] font-medium text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] disabled:opacity-30"
+                  className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 disabled:opacity-50"
                 >
                   <Send size={12} />
                   {saving ? "Saving..." : "Send Quote & Save"}
-                  <kbd className="rounded bg-[rgba(255,255,255,0.15)] px-1 py-0.5 font-mono text-[9px]">
-                    ⌘↵
-                  </kbd>
+                  <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
                 </motion.button>
               ) : (
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
                   disabled={!title.trim() || saving}
-                  className="flex items-center gap-2 rounded-md bg-[#00E676] px-4 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-[#00C853] disabled:opacity-30"
+                  className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 disabled:opacity-50"
                 >
                   <Check size={12} />
                   {saving ? "Saving..." : "Create Job"}
-                  <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">
-                    ⌘↵
-                  </kbd>
+                  <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
                 </motion.button>
               )}
             </div>
@@ -866,7 +864,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
-                className="fixed z-[100] overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                className="fixed z-[100] overflow-hidden rounded-lg border border-white/5 bg-zinc-950 p-1 shadow-xl"
                 style={{
                   top: catalogDropdownPos.top,
                   left: catalogDropdownPos.left,

@@ -1,39 +1,17 @@
 "use client";
 
-import { GoogleMap, Marker } from "@react-google-maps/api";
+import { Map, Marker } from "@vis.gl/react-google-maps";
 import { useGoogleMaps } from "./google-maps-provider";
-import { useCallback, useState } from "react";
+import { OBSIDIAN_MAP_STYLES } from "./obsidian-map-styles";
+import { MapOfflineFallback } from "./map-offline-fallback";
 
-const DARK_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#52525b" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#0a0a0a" }] },
-  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
-  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative.neighborhood", stylers: [{ visibility: "off" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#18181b" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
-  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#1c1c1e" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#050505" }] },
-  { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
-];
-
-const MAP_OPTIONS: google.maps.MapOptions = {
-  styles: DARK_STYLES,
-  disableDefaultUI: true,
-  zoomControl: false,
-  mapTypeControl: false,
-  streetViewControl: false,
-  fullscreenControl: false,
-  clickableIcons: false,
-  gestureHandling: "none",
-  backgroundColor: "#050505",
-  keyboardShortcuts: false,
+const INLINE_MARKER_ICON: google.maps.Symbol = {
+  path: google.maps.SymbolPath.CIRCLE,
+  scale: 7,
+  fillColor: "#10B981",
+  fillOpacity: 1,
+  strokeColor: "#27272a",
+  strokeWeight: 1,
 };
 
 interface InlineMapProps {
@@ -44,37 +22,50 @@ interface InlineMapProps {
   interactive?: boolean;
 }
 
-export function InlineMap({ lat, lng, zoom = 15, className = "h-full w-full", interactive = false }: InlineMapProps) {
-  const { isLoaded } = useGoogleMaps();
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-
-  const onLoad = useCallback((m: google.maps.Map) => setMap(m), []);
-
-  if (!isLoaded) {
-    return <div className={`${className} skeleton-shimmer bg-[#0a0a0a]`} />;
-  }
-
+/** PRD: single-location map with emerald dot; Obsidian dark style. */
+export function InlineMap({
+  lat,
+  lng,
+  zoom = 15,
+  className = "h-full w-full",
+  interactive = false,
+}: InlineMapProps) {
+  const { isLoaded, loadError } = useGoogleMaps();
   const center = { lat, lng };
 
+  if (loadError) {
+    return (
+      <div
+        className={`${className} flex items-center justify-center rounded-xl border border-white/5 bg-zinc-950`}
+      >
+        <MapOfflineFallback message="Map Offline" />
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return <div className={`${className} skeleton-shimmer rounded-xl bg-[#0a0a0a]`} />;
+  }
+
   return (
-    <GoogleMap
-      mapContainerClassName={className}
+    <Map
+      className={className}
+      defaultCenter={center}
+      defaultZoom={zoom}
       center={center}
       zoom={zoom}
-      onLoad={onLoad}
-      options={{ ...MAP_OPTIONS, gestureHandling: interactive ? "greedy" : "none" }}
+      style={{ width: "100%", height: "100%" }}
+      styles={OBSIDIAN_MAP_STYLES}
+      disableDefaultUI
+      zoomControl={false}
+      mapTypeControl={false}
+      streetViewControl={false}
+      fullscreenControl={false}
+      clickableIcons={false}
+      gestureHandling={interactive ? "greedy" : "none"}
+      backgroundColor="#050505"
     >
-      <Marker
-        position={center}
-        icon={{
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 7,
-          fillColor: "#10B981",
-          fillOpacity: 1,
-          strokeColor: "#000000",
-          strokeWeight: 2,
-        }}
-      />
-    </GoogleMap>
+      <Marker position={center} icon={INLINE_MARKER_ICON} />
+    </Map>
   );
 }

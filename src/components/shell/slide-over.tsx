@@ -82,8 +82,8 @@ export function SlideOver() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/40"
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
             onClick={closeSlideOver}
           />
 
@@ -92,10 +92,10 @@ export function SlideOver() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed top-0 right-0 z-40 flex h-full w-full max-w-2xl flex-col border-l border-white/[0.06] bg-[#050505]/98 backdrop-blur-xl"
+            className="fixed top-0 right-0 z-40 flex h-full w-full max-w-2xl flex-col border-l border-white/5 bg-zinc-950 shadow-2xl"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] px-5 py-3">
+            {/* Header — no hr, whitespace */}
+            <div className="flex items-center justify-between gap-4 px-6 py-4">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-[12px] tracking-tight text-zinc-500/60">
                   {slideOverContent.id}
@@ -109,14 +109,15 @@ export function SlideOver() {
                       router.push(`/dashboard/jobs/${slideOverContent.id}`);
                     }
                   }}
-                  className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+                  className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
                   title="Open full view"
                 >
                   <Maximize2 size={13} />
                 </button>
                 <button
                   onClick={closeSlideOver}
-                  className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300"
+                  className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
+                  aria-label="Close"
                 >
                   <X size={14} />
                 </button>

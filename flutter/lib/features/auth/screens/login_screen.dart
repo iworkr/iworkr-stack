@@ -353,6 +353,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         // Google
         _AuthButton(
+          key: const Key('btn_auth_google'),
           onTap: _handleGoogleAuth,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -390,8 +391,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         const SizedBox(height: 14),
 
-        // Continue button
+        // Continue button (Email vs Phone)
         _AuthButton(
+          key: Key(_tab == _AuthTab.email ? 'btn_auth_email' : 'btn_auth_phone'),
           filled: false,
           onTap: () {
             HapticFeedback.lightImpact();
@@ -441,16 +443,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       ),
       child: Row(
         children: [
-          _buildTabPill('Email', _AuthTab.email),
-          _buildTabPill('Phone', _AuthTab.phone),
+          _buildTabPill('Email', _AuthTab.email, const Key('tab_auth_email')),
+          _buildTabPill('Phone', _AuthTab.phone, const Key('tab_auth_phone')),
         ],
       ),
     );
   }
 
-  Widget _buildTabPill(String label, _AuthTab tab) {
+  Widget _buildTabPill(String label, _AuthTab tab, Key key) {
     final isActive = _tab == tab;
     return Expanded(
+      key: key,
       child: GestureDetector(
         onTap: () {
           if (_tab != tab) {
@@ -509,6 +512,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         // Email input
         TextField(
+          key: const Key('input_email'),
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
@@ -530,6 +534,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         // Password input
         TextField(
+          key: const Key('input_password'),
           controller: _passwordController,
           obscureText: _obscurePassword,
           style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textPrimary, fontSize: 14),
@@ -563,6 +568,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           width: double.infinity,
           height: 44,
           child: _AuthButton(
+            key: const Key('btn_submit_login'),
             onTap: _loading ? () {} : _handlePasswordLogin,
             filled: true,
             solidFill: true,
@@ -580,6 +586,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
 
         const SizedBox(height: 16),
+
+        // Forgot Password (placeholder for tests; implement reset flow later)
+        GestureDetector(
+          key: const Key('link_forgot_password'),
+          onTap: () {},
+          child: Text(
+            'Forgot password?',
+            style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary, fontWeight: FontWeight.w500),
+          ),
+        ).animate().fadeIn(delay: 340.ms, duration: 300.ms),
+
+        const SizedBox(height: 8),
 
         // Use Magic Link instead
         GestureDetector(
@@ -1031,7 +1049,7 @@ class _AuthButton extends StatefulWidget {
   final Widget child;
   final bool filled;
   final bool solidFill;
-  const _AuthButton({required this.onTap, required this.child, this.filled = true, this.solidFill = false});
+  const _AuthButton({super.key, required this.onTap, required this.child, this.filled = true, this.solidFill = false});
 
   @override
   State<_AuthButton> createState() => _AuthButtonState();

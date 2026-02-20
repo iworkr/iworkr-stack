@@ -13,7 +13,13 @@ class ScreenshotHelper {
     final sanitized = name.replaceAll(RegExp(r'[^\w\-]'), '_').toLowerCase();
     final filename = '${_counter.toString().padLeft(3, '0')}_$sanitized';
     TestLogger.info('Capturing screenshot: $filename');
-    await binding.takeScreenshot(filename);
+    try {
+      await binding.takeScreenshot(filename);
+    } catch (e) {
+      TestLogger.warn(
+        'Screenshot capture failed (plugin not available on this platform): $e',
+      );
+    }
   }
 
   Future<void> captureOnFailure(String testName, Object error) async {

@@ -61,7 +61,7 @@ export default function DashboardPage() {
         className="mb-6 flex items-center justify-between"
       >
         <div>
-          <h1 className="text-[18px] font-medium tracking-tight text-white">
+          <h1 className="font-display text-[18px] font-semibold tracking-tighter text-white">
             Dashboard
           </h1>
           <p className="mt-0.5 text-[12px] text-zinc-600">
@@ -79,7 +79,7 @@ export default function DashboardPage() {
             onClick={() => setEditMode(!editMode)}
             className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-medium transition-all duration-300 ${
               editMode
-                ? "border border-emerald-500/30 bg-emerald-500/[0.06] text-emerald-500 shadow-[0_0_20px_-6px_rgba(16,185,129,0.2)]"
+                ? "border border-white/20 bg-white/10 text-white shadow-[0_0_20px_-6px_rgba(255,255,255,0.08)]"
                 : "border border-white/[0.04] text-zinc-600 hover:border-white/[0.08] hover:text-zinc-400"
             }`}
           >

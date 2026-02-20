@@ -107,38 +107,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         onAvatarTap: _openSwitcher,
                         onToggleEdit: () {
                           HapticFeedback.mediumImpact();
-                          ref.read(dashboardEditModeProvider.notifier).state = !editMode;
+                          ref.read(dashboardEditModeProvider.notifier).state =
+                              !editMode;
                         },
                         onAddWidget: () async {
                           final config = await showWidgetGallery(context, ref);
                           if (config != null) {
-                            ref.read(dashboardLayoutProvider.notifier).addWidget(config.type, config.size);
+                            ref
+                                .read(dashboardLayoutProvider.notifier)
+                                .addWidget(config.type, config.size);
                           }
                         },
                         onReset: () {
                           HapticFeedback.heavyImpact();
-                          ref.read(dashboardLayoutProvider.notifier).resetToDefault();
+                          ref
+                              .read(dashboardLayoutProvider.notifier)
+                              .resetToDefault();
                         },
                       ),
                     ),
 
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(12, 8, 12, 120),
-                      sliver: SliverMasonryGrid.count(
-                        crossAxisCount: 2,
+                      sliver: SliverMasonryGrid(
+                        gridDelegate:
+                            const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                            ),
                         mainAxisSpacing: 10,
                         crossAxisSpacing: 10,
-                        childCount: filteredLayout.length,
-                        itemBuilder: (context, index) {
-                          final config = filteredLayout[index];
-                          return _LivingGridTile(
-                            key: ValueKey(config.id),
-                            config: config,
-                            editMode: editMode,
-                            index: index,
-                            ref: ref,
-                          );
-                        },
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final config = filteredLayout[index];
+                            return _LivingGridTile(
+                              key: ValueKey(config.id),
+                              config: config,
+                              editMode: editMode,
+                              index: index,
+                              ref: ref,
+                            );
+                          },
+                          childCount: filteredLayout.length,
+                          addRepaintBoundaries: false,
+                          addAutomaticKeepAlives: false,
+                          addSemanticIndexes: false,
+                        ),
                       ),
                     ),
                   ],
@@ -213,7 +226,10 @@ class _DashboardHeader extends StatelessWidget {
                         children: [
                           Text(
                             greeting,
-                            style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: ObsidianTheme.textMuted,
+                            ),
                           ),
                           if (role != null) ...[
                             const SizedBox(width: 8),
@@ -225,8 +241,10 @@ class _DashboardHeader extends StatelessWidget {
                       Text(
                         profile?.displayName ?? 'Operator',
                         style: GoogleFonts.inter(
-                          fontSize: 22, fontWeight: FontWeight.w600,
-                          color: ObsidianTheme.textPrimary, letterSpacing: -0.5,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: ObsidianTheme.textPrimary,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -241,7 +259,11 @@ class _DashboardHeader extends StatelessWidget {
                   ),
                   error: (_, __) => Text(
                     'Command Center',
-                    style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -249,7 +271,9 @@ class _DashboardHeader extends StatelessWidget {
               if (editMode) ...[
                 _HeaderButton(
                   icon: PhosphorIconsLight.plus,
-                  color: role != null ? _accentForRole(role) : ObsidianTheme.emerald,
+                  color: role != null
+                      ? _accentForRole(role)
+                      : ObsidianTheme.emerald,
                   onTap: onAddWidget,
                 ),
                 const SizedBox(width: 6),
@@ -261,17 +285,19 @@ class _DashboardHeader extends StatelessWidget {
                 const SizedBox(width: 6),
               ],
               _HeaderButton(
-                icon: editMode ? PhosphorIconsBold.checkCircle : PhosphorIconsLight.squaresFour,
-                color: editMode ? ObsidianTheme.emerald : ObsidianTheme.textSecondary,
+                icon: editMode
+                    ? PhosphorIconsBold.checkCircle
+                    : PhosphorIconsLight.squaresFour,
+                color: editMode
+                    ? ObsidianTheme.emerald
+                    : ObsidianTheme.textSecondary,
                 onTap: onToggleEdit,
               ),
             ],
           ),
         ],
       ),
-    )
-        .animate()
-        .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic);
+    ).animate().fadeIn(duration: 400.ms, curve: Curves.easeOutCubic);
   }
 }
 
@@ -291,9 +317,7 @@ class _WorkspaceAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         color: ObsidianTheme.surface2,
-        border: Border.all(
-          color: ObsidianTheme.emerald.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.3)),
         image: workspace?.logoUrl != null
             ? DecorationImage(
                 image: NetworkImage(workspace!.logoUrl!),
@@ -375,32 +399,38 @@ class _ClearanceBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        color: accent.withValues(alpha: 0.1),
-        border: Border.all(color: accent.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: accent),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8,
-              fontWeight: FontWeight.w600,
-              color: accent,
-              letterSpacing: 1.2,
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            color: accent.withValues(alpha: 0.1),
+            border: Border.all(color: accent.withValues(alpha: 0.2)),
           ),
-        ],
-      ),
-    )
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 10, color: accent),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w600,
+                  color: accent,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        )
         .animate()
         .fadeIn(delay: 300.ms, duration: 400.ms)
-        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1), delay: 300.ms, duration: 400.ms, curve: Curves.easeOutBack);
+        .scale(
+          begin: const Offset(0.8, 0.8),
+          end: const Offset(1, 1),
+          delay: 300.ms,
+          duration: 400.ms,
+          curve: Curves.easeOutBack,
+        );
   }
 }
 
@@ -408,14 +438,19 @@ class _HeaderButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
-  const _HeaderButton({required this.icon, required this.color, required this.onTap});
+  const _HeaderButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36, height: 36,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           color: color.withValues(alpha: 0.08),
@@ -492,8 +527,6 @@ class _LivingGridTileState extends State<_LivingGridTile>
 
   @override
   Widget build(BuildContext context) {
-    final crossSpan = widget.config.crossAxisCellCount;
-
     Widget tile = AnimatedContainer(
       duration: ObsidianTheme.medium,
       curve: Curves.easeOutCubic,
@@ -508,11 +541,15 @@ class _LivingGridTileState extends State<_LivingGridTile>
           editMode: widget.editMode,
           onRemove: () {
             HapticFeedback.heavyImpact();
-            widget.ref.read(dashboardLayoutProvider.notifier).removeWidget(widget.config.id);
+            widget.ref
+                .read(dashboardLayoutProvider.notifier)
+                .removeWidget(widget.config.id);
           },
           onResize: () {
             HapticFeedback.selectionClick();
-            widget.ref.read(dashboardLayoutProvider.notifier).resizeWidget(widget.config.id);
+            widget.ref
+                .read(dashboardLayoutProvider.notifier)
+                .resizeWidget(widget.config.id);
           },
           child: buildGridWidget(widget.config, widget.ref),
         ),
@@ -546,18 +583,10 @@ class _LivingGridTileState extends State<_LivingGridTile>
           curve: const Cubic(0.16, 1, 0.3, 1),
         );
 
-    // For medium/large widgets, span 2 columns
-    if (crossSpan == 2) {
-      return StaggeredGridTile.fit(
-        crossAxisCellCount: 2,
-        child: tile,
-      );
-    }
-
-    return StaggeredGridTile.fit(
-      crossAxisCellCount: 1,
-      child: tile,
-    );
+    // SliverMasonryGrid expects plain widget children, NOT StaggeredGridTile.
+    // Each delegate child occupies one cell. For 2-column spanning we would
+    // need StaggeredGrid; SliverMasonryGrid does not support that.
+    return tile;
   }
 }
 
@@ -613,13 +642,23 @@ class _GlassWidgetContainer extends StatelessWidget {
                   child: GestureDetector(
                     onTap: onRemove,
                     child: Container(
-                      width: 24, height: 24,
+                      width: 24,
+                      height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: ObsidianTheme.rose.withValues(alpha: 0.9),
-                        boxShadow: [BoxShadow(color: ObsidianTheme.rose.withValues(alpha: 0.3), blurRadius: 8)],
+                        boxShadow: [
+                          BoxShadow(
+                            color: ObsidianTheme.rose.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
-                      child: const Icon(PhosphorIconsBold.minus, size: 12, color: Colors.white),
+                      child: const Icon(
+                        PhosphorIconsBold.minus,
+                        size: 12,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -631,13 +670,23 @@ class _GlassWidgetContainer extends StatelessWidget {
                   child: GestureDetector(
                     onTap: onResize,
                     child: Container(
-                      width: 24, height: 24,
+                      width: 24,
+                      height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: ObsidianTheme.blue.withValues(alpha: 0.9),
-                        boxShadow: [BoxShadow(color: ObsidianTheme.blue.withValues(alpha: 0.3), blurRadius: 8)],
+                        boxShadow: [
+                          BoxShadow(
+                            color: ObsidianTheme.blue.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
-                      child: const Icon(PhosphorIconsBold.arrowsOutSimple, size: 12, color: Colors.white),
+                      child: const Icon(
+                        PhosphorIconsBold.arrowsOutSimple,
+                        size: 12,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -647,14 +696,21 @@ class _GlassWidgetContainer extends StatelessWidget {
                   bottom: 0,
                   left: 0,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       color: Colors.white.withValues(alpha: 0.06),
                     ),
                     child: Text(
                       config.size.name.toUpperCase(),
-                      style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1),
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 8,
+                        color: ObsidianTheme.textTertiary,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -677,9 +733,9 @@ class _GridOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: CustomPaint(painter: _DottedGridPainter())
-          .animate()
-          .fadeIn(duration: 300.ms),
+      child: CustomPaint(
+        painter: _DottedGridPainter(),
+      ).animate().fadeIn(duration: 300.ms),
     );
   }
 }

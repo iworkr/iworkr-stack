@@ -1,9 +1,9 @@
 # Jobs Module — Comprehensive Audit Report (Post-PRD)
 
-> **Generated**: 2026-02-16T14:31:47.898Z
+> **Generated**: 2026-02-19T00:59:30.331Z
 > **Module**: Jobs (`/dashboard/jobs` & `/dashboard/jobs/[id]`)
 > **Test Framework**: Playwright (22 test suites)
-> **Total Findings**: 37
+> **Total Findings**: 30
 > **PRD**: Jobs Module Live Activation (P0)
 
 ---
@@ -12,25 +12,44 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 1 |
-| 🟡 Visual Defects | 0 |
+| 🔴 Critical Failures | 3 |
+| 🟡 Visual Defects | 3 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 13 |
-| 🟢 Flow Passes | 23 |
+| 🟠 Warnings | 15 |
+| 🟢 Flow Passes | 9 |
 
 ---
 
 ## 🔴 Critical Failures
 
-### 'Display' is a dead click
-- **Area**: Display
-- **Detail**: Clicked 'Display' button but nothing happened — no popover/filter UI.
+### Jobs heading missing
+- **Area**: Header
+- **Detail**: h1 'Jobs' not found.
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 406 ()
+
+### No empty state shown
+- **Area**: EmptyState
+- **Detail**: Jobs list has 0 rows but no 'No jobs found' message.
 
 ---
 
 ## 🟡 Visual Defects
 
-_No visual defects found._
+### Total count badge missing
+- **Area**: Header
+- **Detail**: Expected 'X total' badge near heading.
+
+### "Priority" column header missing
+- **Area**: Columns
+- **Detail**: Expected column header "Priority" not found.
+
+### "Assignee" column header missing
+- **Area**: Columns
+- **Detail**: Expected column header "Assignee" not found.
+
 ---
 
 ## 🟣 Dummy Data Leaks
@@ -39,6 +58,10 @@ _No dummy data leaks found._
 ---
 
 ## 🟠 Warnings
+
+### No job rows and no empty state
+- **Area**: Rows
+- **Detail**: Jobs list appears blank.
 
 ### No rows to click
 - **Area**: Navigation
@@ -84,6 +107,10 @@ _No dummy data leaks found._
 - **Area**: Properties
 - **Detail**: Skipping.
 
+### HTTP 406
+- **Area**: Network
+- **Detail**: URL: https://iaroashargzwsuuciqox.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
+
 ### No jobs
 - **Area**: HappyPath
 - **Detail**: Skipping happy path.
@@ -96,29 +123,15 @@ _No dummy data leaks found._
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** Jobs heading renders: h1 'Jobs' is visible.
-- ✅ **[Header]** Total count badge renders: Badge: "0 total"
-- ✅ **[Header]** 'Display' button renders: Filter/display settings button visible.
 - ✅ **[Header]** 'New Job' button renders: Primary CTA button visible with Plus icon.
-- ✅ **[Header]** 'New Job' button styled correctly: BG: rgb(255, 255, 255) (white CTA)
-- ✅ **[Columns]** "Priority" column header: Column header "Priority" visible (not uppercased).
 - ✅ **[Columns]** "ID" column header: Column header "ID" visible.
 - ✅ **[Columns]** "Title" column header: Column header "Title" visible (not uppercased).
 - ✅ **[Columns]** "Location" column header: Column header "Location" visible (not uppercased).
 - ✅ **[Columns]** "Status" column header: Column header "Status" visible (not uppercased).
-- ✅ **[Columns]** "Assignee" column header: Column header "Assignee" visible (not uppercased).
 - ✅ **[Columns]** "Due" column header: Column header "Due" visible (not uppercased).
-- ✅ **[Rows]** Empty state renders: 'No jobs found' empty state — expected for test user with no real data.
-- ✅ **[Rows]** Empty state CTA renders: 'Create your first job' prompt visible.
 - ✅ **[NewJob]** 'New Job' opens modal: A modal/dialog appeared for job creation.
 - ✅ **[Style]** All checked buttons have pointer cursor: Checked 10 buttons.
-- ✅ **[Style]** Dark theme correct: Body bg is #000.
 - ✅ **[Style]** Inter font applied: Font: Inter, "Inter Fallback"
-- ✅ **[Console]** No console errors: Jobs pages loaded without console errors.
-- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
-- ✅ **[EmptyState]** Empty state heading renders: 'No jobs found' is displayed.
-- ✅ **[EmptyState]** Empty state CTA renders: 'Create your first job' prompt is displayed.
-- ✅ **[EmptyState]** Empty state icon renders: Briefcase icon with styled container.
 
 ---
 

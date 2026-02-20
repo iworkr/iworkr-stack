@@ -61,18 +61,18 @@ export function PopoverMenu<T extends string>({
         <>
           <div className="fixed inset-0 z-50" onClick={onClose} />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -4 }}
-            transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className={`absolute z-50 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl ${
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className={`absolute z-50 overflow-hidden rounded-lg border border-white/5 bg-zinc-950 p-1 shadow-2xl ${
               align === "right" ? "right-0" : "left-0"
             }`}
             style={{ width }}
           >
             {/* Search */}
             {searchable && (
-              <div className="flex items-center gap-2 border-b border-[rgba(255,255,255,0.06)] px-2 pb-1.5 pt-0.5">
+              <div className="flex items-center gap-2 border-b border-white/5 px-2 pb-1.5 pt-0.5">
                 <Search size={11} className="shrink-0 text-zinc-600" />
                 <input
                   ref={inputRef}

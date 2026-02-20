@@ -215,13 +215,15 @@ function BentoCard({ icon: Icon, title, desc, index }: { icon: typeof Zap; title
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.8 + index * 0.04, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="group rounded-lg border border-white/[0.05] bg-zinc-900/40 p-4 transition-colors duration-200 hover:border-emerald-500/10 hover:bg-zinc-900/60"
+      className="group flex flex-col rounded-lg border border-white/[0.05] bg-zinc-900/40 p-4 transition-colors duration-200 hover:border-emerald-500/10 hover:bg-zinc-900/60"
     >
-      <div className="mb-2.5 flex h-7 w-7 items-center justify-center rounded-md border border-white/[0.04] bg-white/[0.02]">
-        <Icon size={13} strokeWidth={1.5} className="text-zinc-500 transition-colors group-hover:text-emerald-400" />
+      <div className="mb-2.5 flex w-full justify-center">
+        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-white/[0.04] bg-white/[0.02]">
+          <Icon size={13} strokeWidth={1.5} className="text-zinc-500 transition-colors group-hover:text-emerald-400" />
+        </div>
       </div>
-      <h3 className="text-[12px] font-medium text-zinc-200">{title}</h3>
-      <p className="mt-0.5 font-mono text-[10px] text-zinc-600">{desc}</p>
+      <h3 className="text-center text-[12px] font-medium text-zinc-200">{title}</h3>
+      <p className="mt-0.5 text-center font-mono text-[10px] text-zinc-600">{desc}</p>
     </motion.div>
   );
 }

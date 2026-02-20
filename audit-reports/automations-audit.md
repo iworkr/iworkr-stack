@@ -1,8 +1,8 @@
 # Automations Module — Post-PRD Audit Report
 
-> **Generated**: 2026-02-16T15:56:38.476Z
+> **Generated**: 2026-02-19T01:12:41.350Z
 > **Module**: Automations (`/dashboard/automations` & `/dashboard/automations/[id]`)
-> **Total Findings**: 25
+> **Total Findings**: 9
 > **Test Suites**: 16
 
 ---
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical | 0 |
+| 🔴 Critical | 1 |
 | 🟡 Visual | 0 |
-| 🟣 Dummy Data | 2 |
-| 🟠 Warnings | 0 |
-| 🟢 Passes | 23 |
+| 🟣 Dummy Data | 0 |
+| 🟠 Warnings | 1 |
+| 🟢 Passes | 7 |
 
 ---
 
@@ -55,7 +55,9 @@
 
 ## 🔴 Critical Failures
 
-_None._
+### 406 errors detected
+- **Area**: Network
+- **Detail**: useOrg fix may not be applied.
 
 ---
 
@@ -67,47 +69,18 @@ _None._
 
 ## 🟣 Dummy Data Leaks
 
-- Mock creator: "Mike Thompson": From automations-data.ts.
-
-- Mock creator: "Sarah Chen": From automations-data.ts.
+_None._
 
 ---
 
 ## 🟠 Warnings
 
-_None._
+### Console error
+- Failed to load resource: the server responded with a status of 406 ()
 
 ---
 
 ## 🟢 Passes
-
-- ✅ [Header] Heading renders
-
-- ✅ [Stats] Active flows count
-
-- ✅ [Stats] Runs today
-
-- ✅ [Header] 'Flows' tab
-
-- ✅ [Header] 'Activity Log' tab
-
-- ✅ [Header] Search input
-
-- ✅ [EmptyState] Empty state renders
-
-- ✅ [EmptyState] CTA button present
-
-- ✅ [NewFlow] 'New Flow' button is wired
-
-- ✅ [MasterPause] Pause/Resume toggle visible
-
-- ✅ [Activity] Empty activity log
-
-- ✅ [Search] No flows to filter
-
-- ✅ [MockData] No mock flow titles detected
-
-- ✅ [MockData] No mock log data detected
 
 - ✅ [Store] automations-store.ts: No mock imports
 
@@ -120,10 +93,6 @@ _None._
 - ✅ [Store] testFlowServer action added
 
 - ✅ [Style] All buttons have cursor:pointer
-
-- ✅ [Network] No 406 errors
-
-- ✅ [Console] No console errors
 
 - ✅ [Network] No network failures
 

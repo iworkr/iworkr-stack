@@ -300,44 +300,39 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — PRD 55.0 */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-[16px]"
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
 
-          {/* Stage */}
+          {/* Stage — Obsidian */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={sent ? { opacity: 0, scale: 0.92 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-[7.5%] left-1/2 z-50 flex w-full max-w-[1100px] -translate-x-1/2 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0C0C0C] backdrop-blur-md"
-            style={{ height: "85vh", boxShadow: "0 40px 80px -12px rgba(0,0,0,0.6), 0 0 40px -10px rgba(0,230,118,0.06)" }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={sent ? { opacity: 0, scale: 0.92 } : { opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed top-[7.5%] left-1/2 z-50 flex w-full max-w-[1100px] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
+            style={{ height: "85vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ═══════════════════════════════════════════════ */}
             {/* ZONE A: Constructor (Left Column - 40%)         */}
             {/* ═══════════════════════════════════════════════ */}
-            <div className="flex w-[40%] flex-col border-r border-[rgba(255,255,255,0.06)]">
+            <div className="flex w-[40%] flex-col border-r border-white/5">
               {/* Header */}
-              <div className="flex shrink-0 items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-2.5">
-                <span className="text-[12px] text-zinc-600">
+              <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-4">
+                <span className="text-[12px] text-zinc-500">
                   Finance <span className="text-zinc-700">/</span>{" "}
-                  <span className="text-zinc-500">New Invoice</span>
+                  <span className="text-zinc-600">New Invoice</span>
                 </span>
                 <div className="flex items-center gap-2">
-                  <kbd className="rounded bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
-                    Esc
-                  </kbd>
-                  <button
-                    onClick={onClose}
-                    className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
-                  >
+                  <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">Esc</kbd>
+                  <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white" aria-label="Close">
                     <X size={14} />
                   </button>
                 </div>

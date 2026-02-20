@@ -1,39 +1,10 @@
 "use client";
 
-import { GoogleMap, Marker, OverlayView } from "@react-google-maps/api";
+import { Map, Marker, useMap } from "@vis.gl/react-google-maps";
 import { useGoogleMaps } from "./google-maps-provider";
-import { useCallback, useState, type ReactNode } from "react";
-
-const DARK_MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#52525b" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#0a0a0a" }] },
-  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
-  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative.neighborhood", stylers: [{ visibility: "off" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#18181b" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
-  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#1c1c1e" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#27272a" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#050505" }] },
-  { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
-];
-
-const DEFAULT_MAP_OPTIONS: google.maps.MapOptions = {
-  styles: DARK_MAP_STYLES,
-  disableDefaultUI: true,
-  zoomControl: false,
-  mapTypeControl: false,
-  streetViewControl: false,
-  fullscreenControl: false,
-  clickableIcons: false,
-  gestureHandling: "greedy",
-  backgroundColor: "#050505",
-};
+import { useCallback, useEffect, type ReactNode } from "react";
+import { OBSIDIAN_MAP_STYLES } from "./obsidian-map-styles";
+import { MapOfflineFallback } from "./map-offline-fallback";
 
 interface ObsidianMapProps {
   center: { lat: number; lng: number };
@@ -45,6 +16,14 @@ interface ObsidianMapProps {
   interactive?: boolean;
 }
 
+function MapOnLoad({ onLoad }: { onLoad?: (map: google.maps.Map) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map) onLoad?.(map);
+  }, [map, onLoad]);
+  return null;
+}
+
 export function ObsidianMap({
   center,
   zoom = 13,
@@ -54,16 +33,15 @@ export function ObsidianMap({
   onLoad,
   interactive = true,
 }: ObsidianMapProps) {
-  const { isLoaded } = useGoogleMaps();
-  const [, setMap] = useState<google.maps.Map | null>(null);
+  const { isLoaded, loadError } = useGoogleMaps();
 
-  const handleLoad = useCallback(
-    (map: google.maps.Map) => {
-      setMap(map);
-      onLoad?.(map);
-    },
-    [onLoad]
-  );
+  if (loadError) {
+    return (
+      <div className={`${className} flex items-center justify-center rounded-xl border border-white/5 bg-zinc-950`}>
+        <MapOfflineFallback message="Map Offline" />
+      </div>
+    );
+  }
 
   if (!isLoaded) {
     return (
@@ -72,19 +50,26 @@ export function ObsidianMap({
   }
 
   return (
-    <GoogleMap
-      mapContainerClassName={className}
+    <Map
+      className={className}
+      defaultCenter={center}
+      defaultZoom={zoom}
       center={center}
       zoom={zoom}
-      onLoad={handleLoad}
-      options={{
-        ...DEFAULT_MAP_OPTIONS,
-        ...options,
-        gestureHandling: interactive ? "greedy" : "none",
-      }}
+      style={{ width: "100%", height: "100%" }}
+      styles={OBSIDIAN_MAP_STYLES}
+      disableDefaultUI
+      zoomControl={false}
+      mapTypeControl={false}
+      streetViewControl={false}
+      fullscreenControl={false}
+      clickableIcons={false}
+      gestureHandling={interactive ? "greedy" : "none"}
+      backgroundColor="#050505"
     >
+      <MapOnLoad onLoad={onLoad} />
       {children}
-    </GoogleMap>
+    </Map>
   );
 }
 
@@ -96,22 +81,41 @@ interface MapPinProps {
   onClick?: () => void;
 }
 
-export function MapPin({ position, color = "bg-emerald-500", label, pulsing = false, onClick }: MapPinProps) {
+const EMERALD_PIN_ICON: google.maps.Symbol = {
+  path: google.maps.SymbolPath.CIRCLE,
+  scale: 7,
+  fillColor: "#10B981",
+  fillOpacity: 1,
+  strokeColor: "#050505",
+  strokeWeight: 1,
+};
+
+/** PRD: custom marker (emerald dot). Use inside ObsidianMap. */
+export function MapPin({
+  position,
+  label,
+  onClick,
+}: MapPinProps) {
   return (
-    <OverlayView position={position} mapPaneName={OverlayView.FLOAT_PANE}>
-      <div className="relative cursor-pointer" onClick={onClick}>
-        {pulsing && (
-          <div className={`absolute -inset-1 animate-ping rounded-full ${color} opacity-30`} />
-        )}
-        <div className={`relative h-3 w-3 rounded-full ${color} ring-2 ring-black shadow-lg`} />
-        {label && (
-          <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900/95 px-1.5 py-0.5 text-[8px] font-medium text-zinc-300 shadow-lg backdrop-blur-sm">
-            {label}
-          </div>
-        )}
-      </div>
-    </OverlayView>
+    <Marker
+      position={position}
+      icon={EMERALD_PIN_ICON}
+      title={label ?? undefined}
+      onClick={onClick}
+    />
   );
 }
 
-export { DARK_MAP_STYLES, DEFAULT_MAP_OPTIONS };
+export { OBSIDIAN_MAP_STYLES };
+export const DARK_MAP_STYLES = OBSIDIAN_MAP_STYLES;
+export const DEFAULT_MAP_OPTIONS = {
+  styles: OBSIDIAN_MAP_STYLES,
+  disableDefaultUI: true,
+  zoomControl: false,
+  mapTypeControl: false,
+  streetViewControl: false,
+  fullscreenControl: false,
+  clickableIcons: false,
+  gestureHandling: "greedy" as const,
+  backgroundColor: "#050505",
+};

@@ -350,7 +350,7 @@ export default function ClientDossierPage() {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => router.push(`/dashboard/jobs?clientId=${client.id}&clientName=${encodeURIComponent(client.name)}`)}
-              className="ml-2 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-500"
+              className="ml-2 flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-[12px] font-medium text-black transition-all hover:bg-zinc-200"
             >
               <Plus size={12} />
               Create Job
@@ -801,7 +801,7 @@ export default function ClientDossierPage() {
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push(`/dashboard/jobs?clientId=${client.id}&clientName=${encodeURIComponent(client.name)}`)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 py-2 text-[12px] font-medium text-white transition-all hover:bg-emerald-500"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white py-2 text-[12px] font-medium text-black transition-all hover:bg-zinc-200"
               >
                 <Briefcase size={12} />
                 Create Job

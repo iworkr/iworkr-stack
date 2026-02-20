@@ -22,6 +22,8 @@ env:
   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  QASE_API_TOKEN: ${{ secrets.QASE_API_TOKEN }}
+  QASE_MODE: testops
 
 jobs:
   playwright:
@@ -52,6 +54,8 @@ jobs:
         run: |
           npx playwright test \
             --project=setup \
+            --project=smoke-core \
+            --project=smoke-settings \
             --project=smoke \
             --project=auth-flow \
             --project=functional \
@@ -68,10 +72,10 @@ jobs:
             --project=team-audit \
             --project=automations-audit \
             --project=integrations-audit \
-            --reporter=html,list \
             2>&1 | tee test-output.log
         env:
           CI: true
+          QASE_TESTOPS_RUN_TITLE: "iWorkr Web E2E | ${{ github.ref_name }} #${{ github.run_number }}"
 
       - name: Upload test report
         if: always()
@@ -142,10 +146,10 @@ jobs:
           npx playwright test \
             --project=setup \
             --project=smoke-firefox \
-            --project=smoke-webkit \
-            --reporter=html,list
+            --project=smoke-webkit
         env:
           CI: true
+          QASE_TESTOPS_RUN_TITLE: "iWorkr Web Cross-Browser | ${{ github.ref_name }} #${{ github.run_number }}"
 
       - name: Upload cross-browser report
         if: always()

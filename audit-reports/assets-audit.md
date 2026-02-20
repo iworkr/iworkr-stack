@@ -1,9 +1,9 @@
 # Assets Module — Post-PRD Audit Report
 
-> **Generated**: 2026-02-16T15:02:50.083Z
+> **Generated**: 2026-02-19T01:06:42.771Z
 > **Module**: Assets (`/dashboard/assets` & `/dashboard/assets/[id]`)
 > **Test Framework**: Playwright (21 test suites)
-> **Total Findings**: 37
+> **Total Findings**: 7
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
+| 🔴 Critical Failures | 2 |
 | 🟡 Visual Defects | 0 |
-| 🟣 Dummy Data Leaks | 3 |
-| 🟠 Warnings | 10 |
-| 🟢 Flow Passes | 24 |
+| 🟣 Dummy Data Leaks | 0 |
+| 🟠 Warnings | 0 |
+| 🟢 Flow Passes | 5 |
 
 ---
 
@@ -23,7 +23,7 @@
 
 | Requirement | Status |
 |-------------|--------|
-| Network Green (no 406) | PASS |
+| Network Green (no 406) | FAIL |
 | Real Data (stats from DB) | PASS |
 | Custody persists (Assign/Check-In) | PASS |
 | Inventory stepper persists | PENDING |
@@ -33,7 +33,14 @@
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
+### HTTP 406 error detected
+- **Area**: Network
+- **Detail**: The useOrg 406 fix may not have been applied.
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 406 ()
+
 ---
 
 ## 🟡 Visual Defects
@@ -43,89 +50,20 @@ _No visual defects found._
 
 ## 🟣 Dummy Data Leaks
 
-### Mock team member: "Mike Thompson"
-- **Area**: MockData
-- **Detail**: Found "Mike Thompson" — from assets-data.ts mock assignees.
-
-### Mock team member: "Sarah Chen"
-- **Area**: MockData
-- **Detail**: Found "Sarah Chen" — from assets-data.ts mock assignees.
-
-### Mock team member: "James O'Brien"
-- **Area**: MockData
-- **Detail**: Found "James O'Brien" — from assets-data.ts mock assignees.
-
+_No dummy data leaks found._
 ---
 
 ## 🟠 Warnings
 
-### No cards to click
-- **Area**: Navigation
-- **Detail**: DB empty — skipping card nav test.
-
-### No assets to search
-- **Area**: Search
-- **Detail**: DB empty.
-
-### No cards
-- **Area**: FleetHover
-- **Detail**: DB empty — skipping hover test.
-
-### Not enough stock rows
-- **Area**: Inventory
-- **Detail**: Skipping stepper test.
-
-### No results for 'Copper'
-- **Area**: Search
-- **Detail**: May not have matching inventory items.
-
-### No audit entries to search
-- **Area**: Search
-- **Detail**: DB empty.
-
-### No assets in DB
-- **Area**: Detail
-- **Detail**: Skipping detail page test.
-
-### No assets in DB
-- **Area**: Custody
-- **Detail**: Skipping custody test.
-
-### No assets in DB
-- **Area**: Service
-- **Detail**: Skipping log service test.
-
-### No assets
-- **Area**: Detail
-- **Detail**: Skipping notes test.
-
+_No warnings._
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** Heading renders: 'Assets & Inventory' h1 visible.
-- ✅ **[Header]** Subtitle renders: Description text visible.
-- ✅ **[Header]** Search input renders: Search box visible.
-- ✅ **[Stats]** Total Asset Value stat: Stats ticker visible.
-- ✅ **[Stats]** Low Stock Alerts stat: Stats ticker visible.
-- ✅ **[Stats]** Vehicles Active stat: Stats ticker visible.
-- ✅ **[Header]** 'Fleet & Tools' tab renders: Tab "Fleet & Tools" visible.
-- ✅ **[Header]** 'Inventory' tab renders: Tab "Inventory" visible.
-- ✅ **[Header]** 'Audits' tab renders: Tab "Audits" visible.
-- ✅ **[Fleet]** Empty state renders: 'No assets found' message visible — DB is empty, no mock data fallback.
-- ✅ **[Search]** Search empty state: 'No assets found' with search hint.
-- ✅ **[Inventory]** Empty state renders: 'No inventory items' — DB empty, no mock fallback.
-- ✅ **[Audits]** Empty state renders: 'No audit entries' — DB empty, no mock fallback.
-- ✅ **[ViewToggle]** Grid/List toggle works: Bi-directional view switching.
-- ✅ **[Stats]** Total Value is dynamic: Value is "$0k" — calculated from DB, not mock helper.
-- ✅ **[Stats]** Vehicles Active is dynamic: Count: "0" — calculated from assets array.
-- ✅ **[Stats]** Low Stock Alerts is dynamic: Count: "0" — calculated from stock array.
+- ✅ **[Stats]** Total Value is dynamic: Value is "$0" — calculated from DB, not mock helper.
 - ✅ **[MockData]** No mock data detected: Page shows empty state or real DB data — no mock fallbacks.
 - ✅ **[Style]** All buttons have pointer: Checked 15.
-- ✅ **[Style]** Dark theme correct: Body bg is #000.
 - ✅ **[Style]** Inter font applied: Font: Inter, "Inter Fallback"
-- ✅ **[Network]** No 406 errors: useOrg fix confirmed — no 406 responses.
-- ✅ **[Console]** No console errors: Assets pages loaded without console errors.
 - ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
 
 ---

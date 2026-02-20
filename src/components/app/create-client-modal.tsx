@@ -294,41 +294,36 @@ export function CreateClientModal({
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — PRD 55.0 */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-[12px]"
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
 
-          {/* Stage */}
+          {/* Stage — Obsidian */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={saved ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "circOut" }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             layout
-            className="fixed top-[10%] left-1/2 z-50 flex w-full max-w-[800px] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A0A0A]/95 backdrop-blur-xl"
-            style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.6), 0 0 50px -15px rgba(16,185,129,0.06)", maxHeight: "80vh" }}
+            className="fixed top-[10%] left-1/2 z-50 flex w-full max-w-[800px] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
+            style={{ maxHeight: "80vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ── Header ────────────────────────────────────── */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-2.5">
-              <span className="text-[12px] text-zinc-600">
+            <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-4">
+              <span className="text-[12px] text-zinc-500">
                 Clients <span className="text-zinc-700">/</span>{" "}
-                <span className="text-zinc-500">New Entity</span>
+                <span className="text-zinc-600">New Entity</span>
               </span>
               <div className="flex items-center gap-2">
-                <kbd className="rounded bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
-                  Esc
-                </kbd>
-                <button
-                  onClick={onClose}
-                  className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
-                >
+                <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">Esc</kbd>
+                <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white" aria-label="Close">
                   <X size={14} />
                 </button>
               </div>
@@ -477,12 +472,12 @@ export function CreateClientModal({
                               onClick={() => setClientType(ct.value)}
                               className={`relative flex flex-col items-center gap-2 rounded-xl border px-4 py-4 text-center transition-all duration-200 ${
                                 active
-                                  ? "border-emerald-500/40 bg-emerald-500/[0.06]"
+                                  ? "border-white/20 bg-white/[0.06]"
                                   : "border-white/[0.06] bg-white/[0.01] hover:border-white/[0.12] hover:bg-white/[0.02]"
                               }`}
                             >
                               <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-                                active ? "bg-emerald-500/15 text-emerald-400" : "bg-white/[0.04] text-zinc-500"
+                                active ? "bg-white/10 text-white" : "bg-white/[0.04] text-zinc-500"
                               }`}>
                                 <Icon size={20} />
                               </div>
@@ -495,10 +490,10 @@ export function CreateClientModal({
                               {active && (
                                 <motion.div
                                   layoutId="entity-type-check"
-                                  className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500"
+                                  className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-white"
                                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                 >
-                                  <Check size={10} className="text-white" />
+                                  <Check size={10} className="text-black" />
                                 </motion.div>
                               )}
                             </motion.button>
@@ -673,15 +668,11 @@ export function CreateClientModal({
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSave("save")}
                   disabled={!isValid}
-                  className="flex items-center gap-2 rounded-l-md bg-[#00E676] px-4 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-[#00C853] disabled:opacity-30"
+                  className="flex items-center gap-2 rounded-l-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-50"
                 >
                   {saved ? (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                    >
-                      <Check size={14} className="text-emerald-600" />
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}>
+                      <Check size={14} className="text-black" />
                     </motion.div>
                   ) : (
                     <>
@@ -689,29 +680,27 @@ export function CreateClientModal({
                       Create Client
                     </>
                   )}
-                  <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">
-                    ⌘↵
-                  </kbd>
+                  <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
                 </motion.button>
 
                 {/* Split dropdown trigger */}
                 <button
                   onClick={() => setSplitMenuOpen(!splitMenuOpen)}
                   disabled={!isValid}
-                  className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(0,0,0,0.15)] bg-[#00E676] px-1.5 text-black transition-colors hover:bg-[#00C853] disabled:opacity-30"
+                  className="flex h-[40px] items-center rounded-r-xl border-l border-black/10 bg-white px-2 text-black transition-colors hover:bg-zinc-200 disabled:opacity-50"
                 >
                   <ChevronDown size={12} />
                 </button>
 
-                {/* Split dropdown */}
+                {/* Split dropdown — Obsidian popover */}
                 <AnimatePresence>
                   {splitMenuOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 4, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                      transition={{ duration: 0.1 }}
-                      className="absolute bottom-full right-0 z-20 mb-2 w-[200px] overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute bottom-full right-0 z-20 mb-2 w-[200px] overflow-hidden rounded-lg border border-white/5 bg-zinc-950 p-1 shadow-2xl"
                     >
                       <button
                         onClick={() => { setSplitMenuOpen(false); handleSave("save"); }}

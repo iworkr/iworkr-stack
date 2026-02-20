@@ -58,16 +58,16 @@ const activityIcons: Record<string, { icon: typeof MapPin; color: string; bg: st
   role_change: { icon: RefreshCw, color: "text-zinc-400", bg: "bg-zinc-500/10" },
 };
 
-/* ── Premium Role Badge ──────────────────────────────────── */
+/* ── Muted Glass Role Badges (PRD 57.0, sync with team page) */
 
 const roleBadgeConfig: Record<string, { text: string; bg: string; border: string }> = {
-  owner: { text: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-  manager: { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-  office_admin: { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-  senior_tech: { text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/20" },
-  technician: { text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/20" },
-  apprentice: { text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
-  subcontractor: { text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
+  owner: { text: "text-amber-400/90", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  manager: { text: "text-blue-400/90", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  office_admin: { text: "text-purple-400/90", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+  senior_tech: { text: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-white/10" },
+  technician: { text: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-white/10" },
+  apprentice: { text: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-white/10" },
+  subcontractor: { text: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-white/10" },
 };
 
 function getRoleBadge(roleId: string) {
@@ -174,7 +174,7 @@ export function MemberDrawer() {
             animate={{ x: 0 }}
             exit={{ x: 420 }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-[420px] flex-col border-l border-white/[0.06] bg-[#050505]"
+            className="fixed right-0 top-0 z-50 flex h-screen w-[400px] flex-col border-l border-white/5 bg-[#050505]"
           >
             {/* ── Hero Header ──────────────────────────── */}
             <div className="relative shrink-0 overflow-hidden bg-gradient-to-b from-zinc-900/60 to-[#050505]">
@@ -216,7 +216,7 @@ export function MemberDrawer() {
                   <h2 className="truncate text-[17px] font-semibold text-white">{member.name}</h2>
                   <p className="text-[11px] text-zinc-500">{member.email}</p>
                   <div className="mt-1.5 flex items-center gap-1.5">
-                    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-medium ${roleBadge.bg} ${roleBadge.text} ${roleBadge.border}`}>
+                    <span className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium ${roleBadge.bg} ${roleBadge.border} ${roleBadge.text}`}>
                       {member.role === "owner" && <span className="text-[8px]">★</span>}
                       {getRoleLabel(member.role)}
                     </span>

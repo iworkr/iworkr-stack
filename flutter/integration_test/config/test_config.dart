@@ -1,6 +1,6 @@
 class TestConfig {
-  static const String testEmail = 'qa-auto@iworkr.dev';
-  static const String testPassword = 'TestPass123!';
+  static const String testEmail = 'theo.caleb.lewis@gmail.com';
+  static const String testPassword = 'lowerUPPER#123';
 
   static const Duration shortWait = Duration(milliseconds: 500);
   static const Duration mediumWait = Duration(seconds: 2);

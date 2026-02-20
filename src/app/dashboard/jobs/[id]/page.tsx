@@ -331,7 +331,7 @@ export default function JobDetailPage() {
                   updateJobServer(job.id, { status: "done" });
                   addToast("Job marked as complete");
                 }}
-                className="ml-2 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-lg shadow-emerald-900/30 transition-all duration-200 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-900/40"
+                className="ml-2 flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200"
               >
                 <Check size={13} />
                 Complete Job

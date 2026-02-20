@@ -1,9 +1,9 @@
 # Finance Module — Post-PRD Audit Report
 
-> **Generated**: 2026-02-16T14:37:05.619Z
+> **Generated**: 2026-02-19T01:04:18.301Z
 > **Module**: Finance (`/dashboard/finance` & `/dashboard/finance/invoices/[id]`)
 > **Test Framework**: Playwright (20 test suites)
-> **Total Findings**: 34
+> **Total Findings**: 32
 
 ---
 
@@ -11,17 +11,32 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
+| 🔴 Critical Failures | 4 |
 | 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 8 |
-| 🟢 Flow Passes | 26 |
+| 🟠 Warnings | 10 |
+| 🟢 Flow Passes | 18 |
 
 ---
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
+### Finance heading missing
+- **Area**: Header
+- **Detail**: h1 'Finance' not found.
+
+### Missing empty state
+- **Area**: EmptyState
+- **Detail**: No rows and no 'No invoices found' heading.
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 406 ()
+
+### HTTP 406 error
+- **Area**: Network
+- **Detail**: URL: https://iaroashargzwsuuciqox.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit — useOrg fix may not be applied.
+
 ---
 
 ## 🟡 Visual Defects
@@ -35,6 +50,10 @@ _No dummy data leaks found._
 ---
 
 ## 🟠 Warnings
+
+### No rows, no empty state
+- **Area**: Invoices
+- **Detail**: Neither rows nor empty state visible.
 
 ### No rows to search
 - **Area**: Search
@@ -68,11 +87,14 @@ _No dummy data leaks found._
 - **Area**: Keyboard
 - **Detail**: Need 2+.
 
+### HTTP 406
+- **Area**: Network
+- **Detail**: URL: https://iaroashargzwsuuciqox.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
+
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** Finance heading renders: h1 'Finance' is visible.
 - ✅ **[Header]** Invoice count badge: "0 invoices"
 - ✅ **[Header]** 'New Invoice' CTA renders: White button with Plus icon.
 - ✅ **[Header]** 'Overview' tab renders: Tab "Overview" visible.
@@ -81,23 +103,16 @@ _No dummy data leaks found._
 - ✅ **[Overview]** Revenue label renders: 'Total Revenue (MTD)' heading.
 - ✅ **[Overview]** Revenue chart renders: SVG area chart with bezier curve.
 - ✅ **[DynamicStats]** No growth badge (no data): Growth badge hidden when no overview data — correct behavior.
-- ✅ **[DynamicStats]** Dynamic payout arrival: "No pending payouts"
-- ✅ **[DynamicStats]** Dynamic avg comparison: "Faster than industry average"
+- ✅ **[DynamicStats]** No avg comparison (no data): Avg comparison hidden when no data — correct.
 - ✅ **[Overview]** Stripe Balance card: Stripe balance widget visible.
 - ✅ **[Overview]** Overdue card renders: Overdue amount widget visible.
 - ✅ **[Overview]** Avg Payout Time card: Average days to payment widget.
 - ✅ **[Overview]** Recent Activity heading: Recent activity section visible.
-- ✅ **[Overview]** 'View all' switches tab: Clicked 'View all' — now on Invoices tab.
-- ✅ **[Invoices]** Empty state renders: 'No invoices found' shown when DB is empty.
 - ✅ **[Payouts]** Bank Transfers heading: Payouts section heading visible.
 - ✅ **[Payouts]** Empty state renders: 'No payouts yet' — correct when DB is empty.
 - ✅ **[NewInvoice]** 'New Invoice' opens modal: Create invoice modal appeared.
-- ✅ **[EmptyState]** Empty state heading: 'No invoices found' when DB empty.
-- ✅ **[EmptyState]** Search empty hint: 'Try a different search term' shown.
+- ✅ **[EmptyState]** Empty state CTA: 'New Invoice' CTA in empty state.
 - ✅ **[Style]** All buttons have pointer: Checked 12.
-- ✅ **[Console]** No console errors: Finance pages loaded without console errors.
-- ✅ **[Network]** No 406 errors: useOrg fix confirmed.
-- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
 
 ---
 

@@ -31,17 +31,14 @@ class SupabaseService {
 
   /// Extract auth tokens from deep link URI and establish session,
   /// then sync any OAuth profile data (avatar, name) to the profiles table.
+  /// Uses getSessionFromUrl to properly handle both PKCE (code) and implicit (fragment) flows.
   static Future<void> _handleAuthDeepLink(Uri uri) async {
-    final fragment = uri.fragment;
-    if (fragment.isNotEmpty && fragment.contains('access_token')) {
-      final params = Uri.splitQueryString(fragment);
-      final accessToken = params['access_token'];
-      final refreshToken = params['refresh_token'];
+    final hasAuthData = uri.fragment.contains('access_token') ||
+        uri.fragment.contains('refresh_token') ||
+        uri.queryParameters.containsKey('code');
+    if (!hasAuthData) return;
 
-      if (accessToken != null && refreshToken != null) {
-        await auth.setSession(refreshToken);
-      }
-    }
+    await auth.getSessionFromUrl(uri);
 
     // Sync Google profile data (avatar + name) into profiles table
     await _syncOAuthProfile();

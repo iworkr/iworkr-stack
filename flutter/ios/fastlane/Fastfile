@@ -6,15 +6,24 @@ platform :ios do
   # Creates the App ID + App Store Connect entry if it doesn't exist.
   # Usage: fastlane ios setup_app
   # ──────────────────────────────────────────────────────────────────
+  # Create app via App Store Connect API (no Apple ID password needed)
+  desc "Create app on App Store Connect via API (bundle ID + app record)"
+  lane :setup_app_api do
+    create_app_api(
+      app_name: "iWorkr",
+      bundle_id: "com.iworkr.app",
+      sku: "com.iworkr.app.ios"
+    )
+  end
+
+  # Create app via produce (requires FASTLANE_PASSWORD = app-specific password)
   desc "Register the app on Apple Developer Portal and App Store Connect"
   lane :setup_app do
-    api_key = app_store_connect_api_key(
-      key_id: ENV["ASC_KEY_ID"],
-      issuer_id: ENV["ASC_ISSUER_ID"],
-      key_content: ENV["ASC_KEY_CONTENT"],
-      is_key_content_base64: true,
-      in_house: false
-    )
+    # Produce uses Spaceship; set App Store Connect API key env vars for auth
+    ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"] = ENV["ASC_KEY_ID"]
+    ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"] = ENV["ASC_ISSUER_ID"]
+    ENV["APP_STORE_CONNECT_API_KEY_KEY_CONTENT"] = ENV["ASC_KEY_CONTENT"]
+    ENV["APP_STORE_CONNECT_API_KEY_IS_KEY_CONTENT_BASE64"] = "true"
 
     produce(
       app_identifier: "com.iworkr.app",
@@ -22,8 +31,7 @@ platform :ios do
       language: "English",
       app_version: "1.0.0",
       sku: "com.iworkr.app.ios",
-      platform: "ios",
-      api_key: api_key
+      platform: "ios"
     )
   end
 
@@ -47,22 +55,29 @@ platform :ios do
     sh("cd ../.. && flutter build ios --release --no-codesign")
 
     # 2. Increment build number (auto-increment based on latest TestFlight build)
-    latest = latest_testflight_build_number(
-      api_key: api_key,
-      app_identifier: "com.iworkr.app"
-    )
+    latest = begin
+      latest_testflight_build_number(
+        api_key: api_key,
+        app_identifier: "com.iworkr.app"
+      )
+    rescue => e
+      UI.important("Could not fetch latest build number: #{e.message}")
+      UI.important("Using build number 1 (run setup_app first if the app does not exist)")
+      0
+    end
     increment_build_number(
       build_number: latest + 1,
       xcodeproj: "Runner.xcodeproj"
     )
 
-    # 3. Build the signed IPA
+    # 3. Build the signed IPA (allow Xcode to create/update provisioning profiles)
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
       output_directory: "../build/ios/ipa",
-      output_name: "iWorkr.ipa"
+      output_name: "iWorkr.ipa",
+      xcargs: "-allowProvisioningUpdates"
     )
 
     # 4. Upload to TestFlight

@@ -30,7 +30,6 @@ import {
   ChevronRight as ChevronRightIcon,
   MessageSquare,
   Pencil,
-  Radio,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -53,16 +52,16 @@ const skillIconMap: Record<string, typeof Wrench> = {
   Droplets, Zap, Flame, Wind, Waves, Home, Wrench, Hammer,
 };
 
-/* ── Premium Role Badge Styles ──────────────────────────── */
+/* ── Muted Glass Role Badges (PRD 57.0) ─────────────────── */
 
 const roleBadgeConfig: Record<string, { text: string; bg: string; border: string }> = {
-  owner: { text: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-  manager: { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-  office_admin: { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-  senior_tech: { text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/20" },
-  technician: { text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/20" },
-  apprentice: { text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
-  subcontractor: { text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
+  owner: { text: "text-amber-400/90", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  manager: { text: "text-blue-400/90", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  office_admin: { text: "text-purple-400/90", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+  senior_tech: { text: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-white/10" },
+  technician: { text: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-white/10" },
+  apprentice: { text: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-white/10" },
+  subcontractor: { text: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-white/10" },
 };
 
 function getRoleBadge(roleId: string) {
@@ -128,6 +127,7 @@ export default function TeamPage() {
     filterRole,
     filterSkill,
     loading,
+    selectedMemberId,
     setSearchQuery,
     setFilterBranch,
     setFilterRole,
@@ -200,10 +200,18 @@ export default function TeamPage() {
     });
   }, [members, filterBranch, filterRole, filterSkill, searchQuery]);
 
+  const drawerOpen = !!selectedMemberId;
+
   return (
     <div className="flex h-full flex-col bg-[#050505]">
-      {/* ── Header ───────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+      <motion.div
+        className="flex min-h-0 flex-1 flex-col"
+        style={{ transformOrigin: "center left" }}
+        animate={{ scale: drawerOpen ? 0.98 : 1 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      >
+        {/* ── Header ───────────────────────────────────────── */}
+        <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-[12px]">
@@ -212,23 +220,26 @@ export default function TeamPage() {
               <span className="font-medium text-white">Team</span>
             </div>
 
-            {/* Fleet Stats */}
+            {/* Command bar stats — PRD 57.0 (JetBrains Mono, neutral pills) */}
             <div className="flex items-center gap-3 ml-2">
-              <div className="flex items-center gap-1.5 rounded-md bg-white/[0.03] px-2 py-0.5">
-                <Users size={10} className="text-zinc-600" />
-                <span className="font-mono text-[11px] text-emerald-400">{activeCount}</span>
-                <span className="text-[10px] text-zinc-600">total</span>
+              <div className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2.5 py-1">
+                <Users size={10} className="text-zinc-500" />
+                <span className="font-mono text-[11px] text-zinc-400">{activeCount}</span>
+                <span className="text-[10px] text-zinc-500">total</span>
               </div>
-              <div className="flex items-center gap-1.5 rounded-md bg-white/[0.03] px-2 py-0.5">
-                <Radio size={10} className="text-emerald-500" />
-                <span className="font-mono text-[11px] text-emerald-400">{onlineCount}</span>
-                <span className="text-[10px] text-zinc-600">online</span>
+              <div className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2.5 py-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-40" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                <span className="font-mono text-[11px] text-zinc-300">{onlineCount}</span>
+                <span className="text-[10px] text-zinc-500">online</span>
               </div>
               {pendingCount > 0 && (
-                <div className="flex items-center gap-1 rounded-md bg-amber-500/[0.06] px-2 py-0.5">
-                  <Clock size={9} className="text-amber-400" />
+                <div className="flex items-center gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                   <span className="font-mono text-[11px] text-amber-400">{pendingCount}</span>
-                  <span className="text-[10px] text-zinc-600">pending</span>
+                  <span className="text-[10px] text-zinc-500">pending</span>
                 </div>
               )}
             </div>
@@ -238,13 +249,13 @@ export default function TeamPage() {
             {/* Stealth Search */}
             <div className="relative flex items-center gap-2">
               <motion.div
-                className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+                className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-white"
                 initial={false}
                 animate={{ opacity: searchFocused ? 1 : 0, scaleY: searchFocused ? 1 : 0 }}
                 transition={{ duration: 0.15 }}
               />
               <div className="flex items-center gap-2 pl-2">
-                <Search size={12} className={`shrink-0 transition-colors duration-150 ${searchFocused ? "text-emerald-500" : "text-zinc-600"}`} />
+                <Search size={12} className={`shrink-0 transition-colors duration-150 ${searchFocused ? "text-white" : "text-zinc-600"}`} />
                 <input
                   ref={searchRef}
                   value={searchQuery}
@@ -304,13 +315,13 @@ export default function TeamPage() {
               Roles
             </Link>
 
-            {/* Invite */}
+            {/* Invite — PRD 57.0 Stark White primary CTA */}
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => setInviteModalOpen(true)}
-              className="flex h-7 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500"
+              className="flex h-7 items-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
             >
-              <UserPlus size={13} strokeWidth={2} />
+              <UserPlus size={13} strokeWidth={2} className="text-black" />
               Invite
             </motion.button>
           </div>
@@ -356,7 +367,7 @@ export default function TeamPage() {
                 {hasActiveFilters && (
                   <button
                     onClick={() => { setFilterBranch("all"); setFilterRole("all"); setFilterSkill("all"); }}
-                    className="ml-1 text-[10px] text-zinc-600 transition-colors hover:text-emerald-400"
+                    className="ml-1 text-[10px] text-zinc-600 transition-colors hover:text-white"
                   >
                     Clear all
                   </button>
@@ -379,14 +390,14 @@ export default function TeamPage() {
               transition={{ duration: 0.2 }}
               className="min-w-[700px]"
             >
-              {/* Table header */}
-              <div className="sticky top-0 z-10 flex items-center border-b border-white/[0.03] bg-[#080808] px-5 py-1.5">
+              {/* Table header — PRD 57.0 Inter Display, tracking-widest, text-zinc-500 */}
+              <div className="sticky top-0 z-10 flex items-center border-b border-white/5 bg-[#080808] px-5 py-1.5">
                 <div className="w-8" />
-                <div className="min-w-0 flex-1 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Member</div>
-                <div className="w-28 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Role</div>
-                <div className="w-24 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Branch</div>
-                <div className="w-36 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Skills</div>
-                <div className="w-24 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Last Active</div>
+                <div className="min-w-0 flex-1 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Member</div>
+                <div className="w-28 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Role</div>
+                <div className="w-24 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Branch</div>
+                <div className="w-36 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Skills</div>
+                <div className="w-24 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Last Active</div>
                 <div className="w-20" />
               </div>
 
@@ -406,7 +417,7 @@ export default function TeamPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: Math.min(i * 0.02, 0.3), duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                       onClick={() => setSelectedMemberId(member.id)}
-                      className={`group flex cursor-pointer items-center border-b border-white/[0.03] px-5 transition-colors duration-100 hover:bg-white/[0.02] ${
+                      className={`group flex cursor-pointer items-center border-b border-white/5 px-5 transition-colors duration-100 hover:bg-white/[0.02] ${
                         isPending ? "opacity-60" : ""
                       } ${isSuspended ? "opacity-40" : ""}`}
                       style={{ height: 52 }}
@@ -431,7 +442,7 @@ export default function TeamPage() {
 
                       {/* Identity */}
                       <div className="min-w-0 flex-1 px-2 flex items-center gap-3">
-                        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-semibold text-zinc-400">
+                        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/5 bg-zinc-800 text-[10px] font-semibold text-white">
                           {member.initials}
                           {member.onlineStatus === "online" && (
                             <div className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#050505] bg-emerald-500" />
@@ -455,10 +466,10 @@ export default function TeamPage() {
                         </div>
                       </div>
 
-                      {/* Role — Premium Insignia Pill */}
+                      {/* Role — Muted glass pill (PRD 57.0) */}
                       <div className="w-28 px-2">
-                        <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-medium ${roleBadge.bg} ${roleBadge.text} ${roleBadge.border}`}>
-                          {member.role === "owner" && <span className="text-[8px]">★</span>}
+                        <span className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium ${roleBadge.bg} ${roleBadge.border} ${roleBadge.text}`}>
+                          {member.role === "owner" && <span className="text-[8px] opacity-90">★</span>}
                           {getRoleLabel(member.role)}
                         </span>
                       </div>
@@ -497,7 +508,7 @@ export default function TeamPage() {
                       <div className="w-24 px-2">
                         <span className={`font-mono text-[10px] ${
                           member.lastActive === "Never" ? "text-zinc-700" :
-                          member.onlineStatus === "online" ? "text-emerald-500" :
+                          member.onlineStatus === "online" ? "text-zinc-300" :
                           "text-zinc-600"
                         }`}>
                           {member.lastActive}
@@ -644,7 +655,7 @@ export default function TeamPage() {
                         <div className="flex flex-col items-center px-4 pb-4 pt-6">
                           {/* Avatar */}
                           <div className="relative mb-3">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-lg font-semibold text-zinc-400">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/5 bg-zinc-800 text-lg font-semibold text-white">
                               {member.initials}
                             </div>
                             {member.onlineStatus === "online" && (
@@ -666,7 +677,7 @@ export default function TeamPage() {
 
                           {/* Role Badge */}
                           <div className="mt-1.5">
-                            <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-medium ${roleBadge.bg} ${roleBadge.text} ${roleBadge.border}`}>
+                            <span className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium ${roleBadge.bg} ${roleBadge.border} ${roleBadge.text}`}>
                               {member.role === "owner" && <span className="text-[8px]">★</span>}
                               {getRoleLabel(member.role)}
                             </span>
@@ -706,6 +717,7 @@ export default function TeamPage() {
           )}
         </AnimatePresence>
       </div>
+      </motion.div>
 
       {/* ── Overlays ─────────────────────────────────────── */}
       <MemberDrawer />

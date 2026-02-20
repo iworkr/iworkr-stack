@@ -8,19 +8,19 @@ import {
   Plus,
   Briefcase,
   Search,
-  PenSquare,
-  CircleDot,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useMessengerStore, type Channel } from "@/lib/stores/messenger-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { useTeamStore } from "@/lib/team-store";
+import { NewMessageModal } from "./new-message-modal";
 
 interface MessengerSidebarProps {
   userId: string;
+  orgId?: string | null;
 }
 
-export function MessengerSidebar({ userId }: MessengerSidebarProps) {
+export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
   const {
     channels,
     activeChannelId,
@@ -28,10 +28,11 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
     setActiveChannel,
     setActiveView,
   } = useMessengerStore();
-  const unreadInbox = useInboxStore(
-    (s) => s.items.filter((i) => !i.read && !i.archived).length,
+  const [newMessageOpen, setNewMessageOpen] = useState(false);
+  const unreadInbox = useInboxStore((s) =>
+    (s.items ?? []).filter((i) => !i.read && !i.archived).length
   );
-  const members = useTeamStore((s) => s.members);
+  const members = useTeamStore((s) => s.members ?? []);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -41,6 +42,10 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         searchRef.current?.focus();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+        e.preventDefault();
+        setNewMessageOpen(true);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
@@ -69,18 +74,20 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
       : list;
 
   return (
-    <aside className="flex h-full w-[260px] shrink-0 flex-col overflow-hidden border-r border-white/[0.04] bg-zinc-950">
+    <aside className="flex h-full w-[280px] shrink-0 flex-col overflow-hidden border-r border-white/[0.04] bg-zinc-950">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <h2 className="text-[14px] font-semibold tracking-tight text-white">
           Messages
         </h2>
         <motion.button
-          whileHover={{ scale: 1.1 }}
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="rounded-md p-1.5 text-zinc-600 transition-colors duration-150 hover:bg-emerald-500/10 hover:text-emerald-500"
+          onClick={() => orgId && setNewMessageOpen(true)}
+          className="rounded-md p-1.5 text-zinc-500 transition-colors duration-150 hover:bg-white/5 hover:text-white"
+          title="New message (⌘N)"
         >
-          <PenSquare size={14} strokeWidth={1.5} />
+          <Plus size={14} strokeWidth={1.5} />
         </motion.button>
       </div>
 
@@ -93,9 +100,9 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
               : "bg-transparent"
           }`}
         >
-          {/* Emerald spine on focus */}
+          {/* Spine on focus — monochrome */}
           <motion.div
-            className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+            className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-white"
             initial={false}
             animate={{
               opacity: searchFocused ? 1 : 0,
@@ -106,7 +113,7 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
           <Search
             size={13}
             className={`shrink-0 transition-colors duration-150 ${
-              searchFocused ? "text-emerald-500" : "text-zinc-600"
+              searchFocused ? "text-white" : "text-zinc-600"
             }`}
           />
           <input
@@ -127,7 +134,8 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-1 scrollbar-none">
-        {/* Triage / System inbox */}
+        {/* PRD 59: Order — Triage, Job Threads, Direct Messages, Channels */}
+        <SectionHeader label="Triage" />
         <div className="mb-3">
           <SidebarItem
             active={activeView === "triage"}
@@ -145,26 +153,6 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
           />
         </div>
 
-        {/* Channels */}
-        <SectionHeader label="Channels" />
-        <div className="mb-3">
-          {filterChannels(groupChannels).map((ch) => (
-            <SidebarItem
-              key={ch.id}
-              active={activeChannelId === ch.id && activeView === "chat"}
-              onClick={() => handleChannelClick(ch)}
-              icon={<Hash size={14} strokeWidth={1.5} />}
-              label={ch.name || "Channel"}
-            />
-          ))}
-          {groupChannels.length === 0 && (
-            <p className="px-2.5 py-1 text-[11px] text-zinc-700">
-              No channels yet
-            </p>
-          )}
-        </div>
-
-        {/* Job Threads */}
         <SectionHeader label="Job Threads" />
         <div className="mb-3">
           {filterChannels(jobChannels).length > 0 ? (
@@ -210,7 +198,6 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
           )}
         </div>
 
-        {/* Direct Messages */}
         <SectionHeader label="Direct Messages" />
         <div className="mb-3">
           {dmChannels.length > 0
@@ -238,7 +225,32 @@ export function MessengerSidebar({ userId }: MessengerSidebarProps) {
                 />
               ))}
         </div>
+
+        <SectionHeader label="Channels" />
+        <div className="mb-3">
+          {filterChannels(groupChannels).map((ch) => (
+            <SidebarItem
+              key={ch.id}
+              active={activeChannelId === ch.id && activeView === "chat"}
+              onClick={() => handleChannelClick(ch)}
+              icon={<Hash size={14} strokeWidth={1.5} />}
+              label={ch.name || "Channel"}
+            />
+          ))}
+          {groupChannels.length === 0 && (
+            <p className="px-2.5 py-1 text-[11px] text-zinc-700">
+              No channels yet
+            </p>
+          )}
+        </div>
       </nav>
+
+      <NewMessageModal
+        open={newMessageOpen}
+        onClose={() => setNewMessageOpen(false)}
+        orgId={orgId || ""}
+        currentUserId={userId}
+      />
     </aside>
   );
 }
@@ -253,7 +265,7 @@ function SectionHeader({ label }: { label: string }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <span className="text-[10px] font-bold tracking-widest text-zinc-600 uppercase select-none">
+      <span className="font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase select-none">
         {label}
       </span>
       <AnimatePresence>
@@ -296,11 +308,12 @@ function SidebarItem({
       onClick={onClick}
       className={`group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] transition-all duration-150 ${
         active
-          ? "bg-emerald-500/10 text-white"
+          ? "bg-white/5 text-white"
           : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
       }`}
     >
-      {/* Emerald vertical spine */}
+      {/* Active channel: emerald left spine (PRD 56.0) */}
+      {/* PRD 59: Active = 2px Emerald left spine */}
       {active && (
         <motion.div
           layoutId="msg-sidebar-active"
@@ -311,7 +324,7 @@ function SidebarItem({
 
       <span
         className={`shrink-0 transition-colors duration-150 ${
-          active ? "text-emerald-500" : "text-zinc-600 group-hover:text-zinc-400"
+          active ? "text-white" : "text-zinc-600 group-hover:text-zinc-400"
         }`}
       >
         {icon}
@@ -320,7 +333,7 @@ function SidebarItem({
 
       {badge !== undefined && badge > 0 && (
         <span
-          className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold ${
+          className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 font-mono text-[10px] font-semibold ${
             badgeColor === "rose"
               ? "bg-rose-500/15 text-rose-400"
               : "bg-emerald-500/15 text-emerald-500"

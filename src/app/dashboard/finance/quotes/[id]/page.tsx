@@ -74,8 +74,24 @@ export default function QuoteDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 size={20} className="animate-spin text-zinc-600" />
+      <div className="flex h-full flex-col p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg skeleton-shimmer" />
+            <div className="space-y-1">
+              <div className="h-5 w-40 rounded skeleton-shimmer" />
+              <div className="h-3 w-24 rounded skeleton-shimmer" />
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 space-y-6">
+          <div className="h-24 rounded-xl skeleton-shimmer" />
+          <div className="h-48 rounded-xl skeleton-shimmer" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-32 rounded-xl skeleton-shimmer" />
+            <div className="h-32 rounded-xl skeleton-shimmer" />
+          </div>
+        </div>
       </div>
     );
   }

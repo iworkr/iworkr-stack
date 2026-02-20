@@ -20,8 +20,8 @@ export function WidgetShell({
 }: WidgetShellProps) {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const spotlightBg = useMotionTemplate`radial-gradient(350px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.035), transparent 80%)`;
-  const borderGlow = useMotionTemplate`radial-gradient(400px circle at ${mouseX}px ${mouseY}px, rgba(16,185,129,0.15), transparent 70%)`;
+  const spotlightBg = useMotionTemplate`radial-gradient(350px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.06), transparent 80%)`;
+  const borderGlow = useMotionTemplate`radial-gradient(400px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.06), transparent 70%)`;
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -45,7 +45,7 @@ export function WidgetShell({
       className={`group/widget relative flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-500 ${className}`}
       style={{ borderRadius: 16 }}
     >
-      {/* Outer border glow — only on hover, emerald */}
+      {/* Outer border glow — only on hover (Obsidian: white/zinc) */}
       <motion.div
         className="pointer-events-none absolute -inset-px z-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover/widget:opacity-100"
         style={{ background: borderGlow }}

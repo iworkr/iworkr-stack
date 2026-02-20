@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
@@ -97,8 +98,8 @@ final allWorkspacesProvider = FutureProvider<List<Workspace>>((ref) async {
 /// Active workspace ID — persisted across sessions
 final activeWorkspaceIdProvider =
     StateNotifierProvider<ActiveWorkspaceNotifier, String?>((ref) {
-  return ActiveWorkspaceNotifier(ref);
-});
+      return ActiveWorkspaceNotifier(ref);
+    });
 
 class ActiveWorkspaceNotifier extends StateNotifier<String?> {
   final Ref ref;
@@ -108,10 +109,12 @@ class ActiveWorkspaceNotifier extends StateNotifier<String?> {
   }
 
   Future<void> _loadPersistedWorkspace() async {
-    final stored = await _storage.read(key: _kActiveWorkspaceKey);
-    if (stored != null && stored.isNotEmpty) {
-      state = stored;
-    } else {
+    try {
+      final stored = await _storage.read(key: _kActiveWorkspaceKey);
+      if (stored != null && stored.isNotEmpty) {
+        state = stored;
+        return;
+      }
       final workspaces = await ref.read(allWorkspacesProvider.future);
       if (workspaces.isNotEmpty) {
         state = workspaces.first.organizationId;
@@ -120,6 +123,11 @@ class ActiveWorkspaceNotifier extends StateNotifier<String?> {
           value: workspaces.first.organizationId,
         );
       }
+    } on PlatformException catch (e) {
+      // Keychain access can fail in test/sandboxed environments (e.g. macOS -34018).
+      // Continue without persisted workspace; user will select after login.
+      if (e.code != '-34018' && e.code != 'Unexpected security result code')
+        rethrow;
     }
   }
 
@@ -146,14 +154,11 @@ final activeWorkspaceProvider = FutureProvider<Workspace?>((ref) async {
   if (activeId == null) return null;
 
   final workspaces = await ref.watch(allWorkspacesProvider.future);
-  return workspaces
-      .where((w) => w.organizationId == activeId)
-      .firstOrNull;
+  return workspaces.where((w) => w.organizationId == activeId).firstOrNull;
 });
 
 /// Cross-workspace unread notification counts (polled every 5 minutes)
-final workspaceUnreadProvider =
-    StreamProvider<Map<String, int>>((ref) async* {
+final workspaceUnreadProvider = StreamProvider<Map<String, int>>((ref) async* {
   final user = SupabaseService.auth.currentUser;
   if (user == null) {
     yield {};

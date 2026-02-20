@@ -5,6 +5,7 @@ import '../robots/navigation_robot.dart';
 import '../robots/jobs_robot.dart';
 import '../robots/profile_robot.dart';
 import '../robots/search_robot.dart';
+import '../utils/qase_reporter.dart';
 import '../utils/test_logger.dart';
 import '../utils/screenshot_helper.dart';
 import '../app_bootstrap.dart';
@@ -17,7 +18,7 @@ void criticalOpsTests(IntegrationTestWidgetsFlutterBinding binding) {
       screenshots = ScreenshotHelper(binding);
     });
 
-    testWidgets('OPS-001: Dashboard pull-to-refresh', (tester) async {
+    qaseTestWidgets('OPS-001: Dashboard pull-to-refresh', (tester) async {
       TestLogger.section('OPS-001: Dashboard Refresh');
       try {
         await bootstrapAndLogin(tester);
@@ -35,7 +36,7 @@ void criticalOpsTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('OPS-002: Dashboard scroll exploration', (tester) async {
+    qaseTestWidgets('OPS-002: Dashboard scroll exploration', (tester) async {
       TestLogger.section('OPS-002: Dashboard Scroll');
       try {
         await bootstrapAndLogin(tester);
@@ -52,7 +53,7 @@ void criticalOpsTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('OPS-003: Job list filtering', (tester) async {
+    qaseTestWidgets('OPS-003: Job list filtering', (tester) async {
       TestLogger.section('OPS-003: Job Filtering');
       try {
         await bootstrapAndLogin(tester);
@@ -70,7 +71,7 @@ void criticalOpsTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('OPS-004: Job list scroll + tap last', (tester) async {
+    qaseTestWidgets('OPS-004: Job list scroll + tap last', (tester) async {
       TestLogger.section('OPS-004: Job Scroll & Tap');
       try {
         await bootstrapAndLogin(tester);
@@ -89,7 +90,7 @@ void criticalOpsTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('OPS-005: Search and filter results', (tester) async {
+    qaseTestWidgets('OPS-005: Search and filter results', (tester) async {
       TestLogger.section('OPS-005: Global Search');
       try {
         await bootstrapAndLogin(tester);
@@ -107,7 +108,7 @@ void criticalOpsTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('OPS-006: Profile sections exploration', (tester) async {
+    qaseTestWidgets('OPS-006: Profile sections exploration', (tester) async {
       TestLogger.section('OPS-006: Profile Exploration');
       try {
         await bootstrapAndLogin(tester);
@@ -125,8 +126,9 @@ void criticalOpsTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('OPS-007: Full critical path — Login to Logout',
-        (tester) async {
+    qaseTestWidgets('OPS-007: Full critical path — Login to Logout', (
+      tester,
+    ) async {
       TestLogger.section('OPS-007: Full Critical Path');
       try {
         await bootstrapAndLogin(tester);

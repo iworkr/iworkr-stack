@@ -129,44 +129,46 @@ export function InviteModal() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setInviteModalOpen(false)}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl"
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 16 }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A0A0A]/95 shadow-[0_40px_80px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-3.5">
+            {/* Header — no hr, whitespace separation */}
+            <div className="flex items-center justify-between gap-4 px-6 py-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 shadow-lg shadow-emerald-900/30">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10">
                   <UserPlus size={14} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-[13px] font-medium text-white">Invite to Workspace</h2>
-                  <p className="text-[10px] text-zinc-600">Send summons to join your team</p>
+                  <h2 className="font-display text-[15px] font-semibold tracking-tight text-white">Invite to Workspace</h2>
+                  <p className="text-[11px] text-zinc-500">Send summons to join your team</p>
                 </div>
               </div>
               <button
                 onClick={() => setInviteModalOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
+                className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
+                aria-label="Close"
               >
                 <X size={13} />
               </button>
             </div>
 
             {/* Content */}
-            <div className="px-5 py-4 space-y-5">
+            <div className="px-6 pb-5 space-y-5">
               {/* Email chips */}
               <div>
                 <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
                   Email Addresses
                 </label>
                 <div
-                  className="flex min-h-[42px] flex-wrap items-center gap-1.5 rounded-xl border border-white/[0.06] bg-zinc-900/30 px-3 py-2 transition-colors focus-within:border-emerald-500/20 focus-within:shadow-[0_0_0_1px_rgba(16,185,129,0.05)]"
+                  className="flex min-h-[42px] flex-wrap items-center gap-1.5 rounded-xl border border-white/[0.06] bg-zinc-900/50 px-3 py-2 transition-colors focus-within:border-white/20 focus-within:shadow-[0_0_0_1px_rgba(255,255,255,0.05)]"
                   onClick={() => inputRef.current?.focus()}
                 >
                   {emails.map((email) => (
@@ -225,10 +227,10 @@ export function InviteModal() {
                         {isActive && (
                           <motion.div
                             layoutId="invite-role-check"
-                            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 shadow"
+                            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white shadow"
                             transition={{ type: "spring", stiffness: 300 }}
                           >
-                            <Check size={8} className="text-white" />
+                            <Check size={8} className="text-black" />
                           </motion.div>
                         )}
                       </button>
@@ -259,12 +261,12 @@ export function InviteModal() {
                         onClick={() => toggleBranch(branch)}
                         className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-[11px] font-medium transition-all ${
                           isSelected
-                            ? "border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400"
-                            : "border-white/[0.05] bg-zinc-900/30 text-zinc-500 hover:text-zinc-300"
+                            ? "border-white/20 bg-white/10 text-white"
+                            : "border-white/[0.05] bg-zinc-900/50 text-zinc-500 hover:text-zinc-300"
                         }`}
                       >
                         <div className={`flex h-3.5 w-3.5 items-center justify-center rounded border transition-colors ${
-                          isSelected ? "border-emerald-500 bg-emerald-500" : "border-zinc-700 bg-transparent"
+                          isSelected ? "border-white bg-white" : "border-zinc-600 bg-transparent"
                         }`}>
                           {isSelected && <Check size={8} className="text-black" />}
                         </div>
@@ -276,21 +278,21 @@ export function InviteModal() {
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-3">
-              <p className="text-[10px] text-zinc-600">
+            {/* Footer — Primary: white (PRD 55.0) */}
+            <div className="flex items-center justify-between gap-4 px-6 py-4">
+              <p className="text-[11px] text-zinc-500">
                 {emails.length > 0 ? `${emails.length} invite${emails.length > 1 ? "s" : ""} ready` : "Paste or type email addresses"}
               </p>
 
               <button
                 onClick={handleSend}
                 disabled={emails.length === 0 || sending || sent}
-                className={`flex items-center gap-2 rounded-xl px-5 py-2 text-[11px] font-medium transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-medium transition-all ${
                   sent
-                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/30"
+                    ? "bg-white text-black"
                     : emails.length === 0
-                    ? "cursor-not-allowed bg-zinc-900 text-zinc-600"
-                    : "bg-emerald-600 text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500"
+                    ? "cursor-not-allowed bg-zinc-800 text-zinc-600"
+                    : "bg-white text-black hover:bg-zinc-200"
                 } disabled:opacity-50`}
               >
                 {sent ? (

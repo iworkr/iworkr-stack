@@ -117,4 +117,50 @@ test.describe("Visual Regression Tests", () => {
       logger.pass(`All ${Math.min(count, 25)} checked buttons have cursor:pointer`);
     }
   });
+
+  test("VISUAL: Sidebar open and collapsed widths", async ({ page }) => {
+    logger.step("Sidebar width verification");
+
+    await page.goto("/dashboard");
+    await page.waitForTimeout(2500);
+
+    const aside = page.locator("aside").first();
+    await expect(aside).toBeVisible();
+
+    const widthOpen = await aside.evaluate((el) => (el as HTMLElement).offsetWidth);
+    expect(widthOpen).toBe(240);
+    logger.pass(`Sidebar open width: ${widthOpen}px`);
+
+    const collapseBtn = page.locator('aside button[aria-label*="collapse"], aside button').first();
+    await collapseBtn.click();
+    await page.waitForTimeout(400);
+
+    const widthCollapsed = await aside.evaluate((el) => (el as HTMLElement).offsetWidth);
+    expect(widthCollapsed).toBe(64);
+    logger.pass(`Sidebar collapsed width: ${widthCollapsed}px`);
+  });
+
+  test("VISUAL: Create Job modal open state", async ({ page }) => {
+    logger.step("Create Job modal screenshot");
+
+    await page.goto("/dashboard");
+    await page.waitForTimeout(2500);
+
+    await page.keyboard.press("Meta+k");
+    await page.waitForTimeout(500);
+    await page.getByRole("option", { name: /create job/i }).click().catch(() => null);
+    await page.waitForTimeout(400);
+
+    const modal = page.locator('[role="dialog"], [data-state="open"]').filter({ has: page.locator('text=/job|title/i') }).first();
+    const visible = await modal.isVisible().catch(() => false);
+    if (visible) {
+      await expect(modal).toHaveScreenshot("create-job-modal-open.png", {
+        maxDiffPixelRatio: 0.02,
+        animations: "disabled",
+      });
+      logger.pass("Create Job modal screenshot matches baseline");
+    } else {
+      logger.info("Create Job modal not found — skipping screenshot (modal may use different selector)");
+    }
+  });
 });

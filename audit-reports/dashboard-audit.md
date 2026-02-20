@@ -1,9 +1,9 @@
 # Dashboard Module — Audit Report
 
-> **Generated**: 2026-02-16T14:25:10.736Z
+> **Generated**: 2026-02-19T00:56:25.527Z
 > **Module**: Dashboard (`/dashboard`)
 > **Test Framework**: Playwright
-> **Total Findings**: 50
+> **Total Findings**: 48
 
 ---
 
@@ -11,20 +11,45 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 1 |
-| 🟡 Visual Defects | 2 |
+| 🔴 Critical Failures | 6 |
+| 🟡 Visual Defects | 3 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 3 |
-| 🟢 Flow Passes | 44 |
+| 🟠 Warnings | 4 |
+| 🟢 Flow Passes | 35 |
 
 ---
 
 ## 🔴 Critical Failures
 
 
+### Missing widgets in bento grid
+- **Widget**: Page
+- **Detail**: Expected 6 widgets but found 4. Some widgets may have failed to render.
+
+
 ### Revenue MTD label missing
 - **Widget**: Revenue
 - **Detail**: The Revenue widget may not have loaded — 'Revenue MTD' text not found.
+
+
+### Live Dispatch header missing
+- **Widget**: Map
+- **Detail**: The map widget may not have loaded.
+
+
+### 'Open Dispatch' button missing
+- **Widget**: Map
+- **Detail**: The 'Open Dispatch' action link is not rendered.
+
+
+### AI Insight header missing
+- **Widget**: Insights
+- **Detail**: Insights widget may not have loaded.
+
+
+### "Inbox" nav link missing
+- **Widget**: Sidebar
+- **Detail**: Sidebar link "Inbox" not found or not visible.
 
 
 
@@ -41,6 +66,11 @@
 ### Map legend incomplete
 - **Widget**: Map
 - **Detail**: One or more legend items missing from the map widget.
+
+
+### Background color unexpected
+- **Widget**: Style
+- **Detail**: Body background is rgb(5, 5, 5) — expected pure black (#000).
 
 
 
@@ -61,6 +91,10 @@ _No dummy data leaks found._
 - **Widget**: Map
 - **Detail**: No technician pins found — map may be showing empty state or pins have different selectors.
 
+### No inbox items or empty state
+- **Widget**: Inbox
+- **Detail**: Neither items nor 'All caught up' found — widget may have render issues.
+
 ### ⌘K shortcut may not work in test
 - **Widget**: Topbar
 - **Detail**: Could not detect command menu after ⌘K — may be a Playwright focus issue.
@@ -75,16 +109,11 @@ _No dummy data leaks found._
 ## 🟢 Flow Verification (Passes)
 
 - ✅ **[Page]** Dashboard heading renders: The h1 'Dashboard' heading is visible on page load.
-- ✅ **[Page]** Dynamic date renders correctly: Subheading contains current day "Tuesday" — not hardcoded.
+- ✅ **[Page]** Dynamic date renders correctly: Subheading contains current day "Thursday" — not hardcoded.
 - ✅ **[Page]** Live indicator present: The green pulsing 'Live' indicator is rendered.
-- ✅ **[Page]** All 6 widgets rendered: Found 6 widget containers in the bento grid.
-- ✅ **[Revenue]** SVG area chart renders: Found 38 SVG elements with paths (chart area + line).
-- ✅ **[Map]** Live Dispatch header renders: 'Live Dispatch' label is visible.
-- ✅ **[Map]** Active technicians badge renders: Badge showing number of active technicians is visible.
-- ✅ **[Map]** 'Open Dispatch' navigates to Schedule: Button navigated to http://localhost:3000/dashboard/schedule
+- ✅ **[Revenue]** SVG area chart renders: Found 34 SVG elements with paths (chart area + line).
 - ✅ **[Inbox]** Triage header renders: 'Triage' label is visible in the inbox widget.
 - ✅ **[Inbox]** 'View all' navigates to Inbox: Navigated to http://localhost:3000/dashboard/inbox
-- ✅ **[Inbox]** Empty state renders correctly: 'All caught up' empty state is displayed — no unread items.
 - ✅ **[Schedule]** My Schedule header renders: 'My Schedule' label is visible.
 - ✅ **[Schedule]** 'Today' label visible: Schedule widget correctly shows 'Today' context.
 - ✅ **[Schedule]** 'Full View' navigates to Schedule: Navigated to http://localhost:3000/dashboard/schedule
@@ -97,21 +126,17 @@ _No dummy data leaks found._
 - ✅ **[Actions]** 'Add Client' opens modal: Clicking 'Add Client' successfully opens the create client modal.
 - ✅ **[Actions]** 'New Job' opens modal: Clicking 'New Job' successfully opens the create job modal.
 - ✅ **[Actions]** 'Broadcast' opens modal: Clicking 'Broadcast' triggers a UI response.
-- ✅ **[Insights]** AI Insight header renders: 'AI Insight' label is visible with sparkle icon.
 - ✅ **[Sidebar]** "My Jobs" → /dashboard/jobs: Navigation successful.
 - ✅ **[Sidebar]** "Schedule" → /dashboard/schedule: Navigation successful.
-- ✅ **[Sidebar]** "Inbox" → /dashboard/inbox: Navigation successful.
 - ✅ **[Sidebar]** "Clients" → /dashboard/clients: Navigation successful.
 - ✅ **[Sidebar]** "Finance" → /dashboard/finance: Navigation successful.
 - ✅ **[Sidebar]** "Assets" → /dashboard/assets: Navigation successful.
 - ✅ **[Sidebar]** "Forms" → /dashboard/forms: Navigation successful.
 - ✅ **[Sidebar]** "Team" → /dashboard/team: Navigation successful.
 - ✅ **[Sidebar]** "Automations" → /dashboard/automations: Navigation successful.
-- ✅ **[Topbar]** Search trigger visible: ⌘K search bar trigger is rendered in the topbar.
-- ✅ **[Style]** All buttons have pointer cursor: Checked 20 buttons — all have cursor: pointer.
-- ✅ **[Style]** Dark theme background correct: Body background is rgb(0, 0, 0) — matches dark theme.
+- ✅ **[Style]** All buttons have pointer cursor: Checked 19 buttons — all have cursor: pointer.
 - ✅ **[Style]** Inter font applied: Font family: Inter, "Inter Fallback"
-- ✅ **[Style]** No default blue links: All 14 checked links have custom themed colors.
+- ✅ **[Style]** No default blue links: All 15 checked links have custom themed colors.
 - ✅ **[Console]** No console errors: Dashboard loaded without any console.error calls.
 - ✅ **[Network]** No network failures: All network requests returned 2xx/3xx status codes.
 - ✅ **[Shortcuts]** '?' opens keyboard shortcuts: Keyboard shortcuts modal opens correctly.

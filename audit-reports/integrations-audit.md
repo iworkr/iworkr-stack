@@ -1,8 +1,8 @@
 # Integrations Module — Post-PRD Audit Report
 
-> **Generated**: 2026-02-16T16:22:27.939Z
+> **Generated**: 2026-02-19T01:14:28.741Z
 > **Module**: Integrations (`/dashboard/integrations`)
-> **Total Findings**: 32
+> **Total Findings**: 18
 > **Test Suites**: 16
 
 ---
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical | 0 |
+| 🔴 Critical | 1 |
 | 🟡 Visual | 0 |
-| 🟣 Dummy Data | 1 |
-| 🟠 Warnings | 0 |
-| 🟢 Passes | 31 |
+| 🟣 Dummy Data | 0 |
+| 🟠 Warnings | 1 |
+| 🟢 Passes | 16 |
 
 ---
 
@@ -53,7 +53,9 @@
 
 ## 🔴 Critical Failures
 
-_None._
+### 406 errors detected
+- **Area**: Network
+- **Detail**: useOrg fix may not be applied.
 
 ---
 
@@ -65,45 +67,18 @@ _None._
 
 ## 🟣 Dummy Data Leaks
 
-- Mock company: "Apex Plumbing": Hardcoded connectedAs.
+_None._
 
 ---
 
 ## 🟠 Warnings
 
-_None._
+### Console error
+- Failed to load resource: the server responded with a status of 406 ()
 
 ---
 
 ## 🟢 Passes
-
-- ✅ [Header] Heading renders
-
-- ✅ [Stats] Connected count
-
-- ✅ [Header] Search input
-
-- ✅ [Tabs] "All" tab
-
-- ✅ [Tabs] "Financial" tab
-
-- ✅ [Tabs] "Communication" tab
-
-- ✅ [Tabs] "Storage" tab
-
-- ✅ [Tabs] "Calendar" tab
-
-- ✅ [Tabs] "Maps" tab
-
-- ✅ [EmptyState] Empty state renders
-
-- ✅ [Tabs] "Financial" filter
-
-- ✅ [Tabs] "Communication" filter
-
-- ✅ [Tabs] "Storage" filter
-
-- ✅ [Search] Search filters correctly
 
 - ✅ [Connect] No cards (DB empty)
 
@@ -121,6 +96,8 @@ _None._
 
 - ✅ [StripeModal] Stripe modal wired to connectServer
 
+- ✅ [MockData] No mock data leaks detected
+
 - ✅ [Store] integrations-store.ts: No mock imports
 
 - ✅ [Store] Store initializes with empty []
@@ -132,10 +109,6 @@ _None._
 - ✅ [Store] updateAccountMappingServer added
 
 - ✅ [Style] All buttons have cursor:pointer
-
-- ✅ [Network] No 406 errors
-
-- ✅ [Console] No console errors
 
 - ✅ [Network] No network failures
 

@@ -4,6 +4,7 @@ import '../robots/login_robot.dart';
 import '../robots/dashboard_robot.dart';
 import '../robots/navigation_robot.dart';
 import '../robots/profile_robot.dart';
+import '../utils/qase_reporter.dart';
 import '../utils/test_logger.dart';
 import '../utils/screenshot_helper.dart';
 import '../config/test_config.dart';
@@ -17,7 +18,9 @@ void authTests(IntegrationTestWidgetsFlutterBinding binding) {
       screenshots = ScreenshotHelper(binding);
     });
 
-    testWidgets('AUTH-001: Login screen displays correctly', (tester) async {
+    qaseTestWidgets('AUTH-001: Login screen displays correctly', (
+      tester,
+    ) async {
       TestLogger.section('AUTH-001: Login Screen Display');
       try {
         await bootstrapApp(tester);
@@ -33,7 +36,7 @@ void authTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('AUTH-002: Email method selection', (tester) async {
+    qaseTestWidgets('AUTH-002: Email method selection', (tester) async {
       TestLogger.section('AUTH-002: Email Method Selection');
       try {
         await bootstrapApp(tester);
@@ -51,7 +54,9 @@ void authTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('AUTH-003: Email login — invalid credentials', (tester) async {
+    qaseTestWidgets('AUTH-003: Email login — invalid credentials', (
+      tester,
+    ) async {
       TestLogger.section('AUTH-003: Invalid Credentials');
       try {
         await bootstrapApp(tester);
@@ -69,7 +74,9 @@ void authTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('AUTH-004: Email login — valid credentials', (tester) async {
+    qaseTestWidgets('AUTH-004: Email login — valid credentials', (
+      tester,
+    ) async {
       TestLogger.section('AUTH-004: Valid Login');
       try {
         await bootstrapApp(tester);
@@ -93,7 +100,7 @@ void authTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('AUTH-005: Back navigation on login', (tester) async {
+    qaseTestWidgets('AUTH-005: Back navigation on login', (tester) async {
       TestLogger.section('AUTH-005: Login Back Navigation');
       try {
         await bootstrapApp(tester);
@@ -114,7 +121,7 @@ void authTests(IntegrationTestWidgetsFlutterBinding binding) {
       }
     });
 
-    testWidgets('AUTH-006: Logout flow', (tester) async {
+    qaseTestWidgets('AUTH-006: Logout flow', (tester) async {
       TestLogger.section('AUTH-006: Logout Flow');
       try {
         await bootstrapApp(tester);

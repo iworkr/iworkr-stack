@@ -241,7 +241,14 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
                     </div>
                   )}
 
-                  {/* Message row */}
+                  {/* Message row — system messages: centered only */}
+                  {msg.type === "system" ? (
+                    <div className="flex w-full justify-center py-2">
+                      <span className="font-mono text-[10px] text-zinc-500">
+                        {msg.content}
+                      </span>
+                    </div>
+                  ) : (
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -257,7 +264,7 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
                       <div
                         className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[10px] font-semibold ${
                           isSelf
-                            ? "bg-emerald-600/15 text-emerald-400"
+                            ? "bg-white/10 text-white"
                             : "bg-zinc-800/80 text-zinc-400"
                         }`}
                       >
@@ -292,21 +299,30 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
                         </div>
                       )}
 
-                      {/* Content */}
+                      {/* Content — PRD 59: My = emerald-600 white rounded-br-sm; Their = zinc-900 zinc-200 rounded-bl-sm */}
                       {msg.type === "poll" ? (
                         <PollMessage message={msg} userId={userId} />
                       ) : isSelf ? (
                         <div
-                          className={`inline-block max-w-[70%] rounded-2xl rounded-tr-sm bg-emerald-600 px-4 py-2.5 text-[13px] leading-relaxed text-white shadow-lg shadow-emerald-900/20 ${
-                            msg.status === "sending" ? "opacity-50" : ""
-                          } ${msg.status === "error" ? "ring-1 ring-red-500/40" : ""}`}
+                          className={`inline-block max-w-[70%] rounded-2xl rounded-br-sm bg-emerald-600 px-4 py-2.5 text-[13px] leading-relaxed text-white ${
+                            msg.status === "sending" ? "opacity-70" : msg.status === "error" ? "opacity-100" : ""
+                          } ${msg.status === "error" ? "border border-rose-500" : ""}`}
                         >
                           <MessageContent content={msg.content} isSelf />
+                          {msg.status === "error" && (
+                            <button
+                              type="button"
+                              className="ml-1.5 inline-flex align-middle text-rose-400 hover:text-rose-300"
+                              title="Retry"
+                            >
+                              <AlertCircle size={12} />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div
-                          className={`inline-block max-w-[70%] rounded-2xl rounded-tl-sm bg-zinc-900 px-4 py-2.5 text-[13px] leading-relaxed text-zinc-200 ${
-                            msg.status === "sending" ? "opacity-50" : ""
+                          className={`inline-block max-w-[70%] rounded-2xl rounded-bl-sm bg-zinc-900 px-4 py-2.5 text-[13px] leading-relaxed text-zinc-200 ${
+                            msg.status === "sending" ? "opacity-70" : ""
                           }`}
                         >
                           <MessageContent content={msg.content} />
@@ -373,6 +389,7 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
                       )}
                     </AnimatePresence>
                   </motion.div>
+                  )}
                 </div>
               );
             })

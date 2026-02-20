@@ -328,7 +328,7 @@ function AuthPageInner() {
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleEmailSubmit}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-500 hover:shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)]"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-medium text-black transition-all hover:bg-zinc-200"
                 >
                   Continue
                   <ArrowRight size={14} />
@@ -407,7 +407,7 @@ function AuthPageInner() {
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handlePasswordSubmit}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-500 hover:shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)]"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-medium text-black transition-all hover:bg-zinc-200"
                 >
                   Sign In
                   <ArrowRight size={14} />

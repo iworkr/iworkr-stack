@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'base_robot.dart';
@@ -7,15 +6,18 @@ import '../utils/test_logger.dart';
 class LoginRobot extends BaseRobot {
   LoginRobot(super.tester);
 
-  // ── Finders ───────────────────────────────────────────────
+  // ── Finders (semantic keys from LoginScreen) ───────────────
 
-  Finder get _emailMethodCard => findByText('Email & Password');
-  Finder get _phoneMethodCard => findByText('Phone Number');
+  Finder get _emailMethodCard => findByKey('btn_auth_email');
+  Finder get _phoneMethodCard => findByKey('tab_auth_phone');
   Finder get _choiceScreen => findByKey('choice');
   Finder get _emailPasswordScreen => findByKey('email-password');
   Finder get _phoneEntryScreen => findByKey('phone-entry');
-  Finder get _googleButton => findTextContaining('Google');
+  Finder get _googleButton => findByKey('btn_auth_google');
   Finder get _successScreen => findByKey('success');
+  Finder get _inputEmail => findByKey('input_email');
+  Finder get _inputPassword => findByKey('input_password');
+  Finder get _submitButton => findByKey('btn_submit_login');
 
   // ── Verifications ─────────────────────────────────────────
 
@@ -38,46 +40,47 @@ class LoginRobot extends BaseRobot {
   // ── Actions ───────────────────────────────────────────────
 
   Future<void> selectEmailMethod() async {
-    TestLogger.step('Select "Email & Password" method');
-    await tap(_emailMethodCard, label: 'Email & Password card');
+    TestLogger.step('Select "Continue with Email" method');
+    await tap(_emailMethodCard, label: 'Continue with Email button');
     await settle();
   }
 
   Future<void> selectPhoneMethod() async {
-    TestLogger.step('Select "Phone Number" method');
-    await tap(_phoneMethodCard, label: 'Phone Number card');
+    TestLogger.step('Select "Phone" tab');
+    await tap(_phoneMethodCard, label: 'Phone tab');
     await settle();
   }
 
   Future<void> enterEmail(String email) async {
     TestLogger.step('Enter email: $email');
-    final fields = find.byType(TextField);
-    await tester.ensureVisible(fields.first);
-    await tester.tap(fields.first);
+    await tester.ensureVisible(_inputEmail.first);
+    await tester.tap(_inputEmail.first);
     await tester.pumpAndSettle();
-    await tester.enterText(fields.first, email);
+    await tester.enterText(_inputEmail.first, email);
     await tester.pumpAndSettle();
   }
 
   Future<void> enterPassword(String password) async {
     TestLogger.step('Enter password: ****');
-    final fields = find.byType(TextField);
-    final passwordFinder = fields.at(1);
-    await tester.ensureVisible(passwordFinder);
-    await tester.tap(passwordFinder);
+    await tester.ensureVisible(_inputPassword.first);
+    await tester.tap(_inputPassword.first);
     await tester.pumpAndSettle();
-    await tester.enterText(passwordFinder, password);
+    await tester.enterText(_inputPassword.first, password);
     await tester.pumpAndSettle();
   }
 
   Future<void> tapInitialize() async {
-    TestLogger.step('Tap Initialize button');
-    final btn = find.textContaining('Initialize');
-    if (btn.evaluate().isNotEmpty) {
-      await tap(btn, label: 'Initialize button');
+    TestLogger.step('Tap sign-in / Authenticate button');
+    if (_submitButton.evaluate().isNotEmpty) {
+      await tap(_submitButton, label: 'Authenticate button');
     } else {
-      final signIn = find.textContaining('Sign');
-      await tap(signIn, label: 'Sign In button');
+      final btn = find.textContaining('Initialize');
+      if (btn.evaluate().isNotEmpty) {
+        await tap(btn, label: 'Initialize button');
+      } else {
+        final signIn = find.textContaining('Sign');
+        await tap(signIn, label: 'Sign In button');
+      }
     }
   }
 

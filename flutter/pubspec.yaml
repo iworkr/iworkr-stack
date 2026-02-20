@@ -1,6 +1,6 @@
 name: iworkr_mobile
 description: "iWorkr — The Field Operating System"
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -66,8 +66,10 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
+  http: ^1.2.0
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
+  mocktail: ^1.0.4
 
 flutter:
   uses-material-design: true

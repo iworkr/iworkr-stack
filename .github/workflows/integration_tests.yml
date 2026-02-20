@@ -20,6 +20,30 @@ env:
   JAVA_VERSION: "17"
 
 jobs:
+  flutter-unit-widget:
+    name: Flutter Unit & Widget Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: flutter
+        run: flutter pub get
+
+      - name: Run unit and widget tests
+        working-directory: flutter
+        run: flutter test test/
+
   integration-test-android:
     name: Android Integration Tests
     runs-on: ubuntu-latest
@@ -85,6 +109,9 @@ jobs:
 
       - name: Run integration tests
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          QASE_API_TOKEN: ${{ secrets.QASE_API_TOKEN }}
+          QASE_RUN_TITLE: "iWorkr Mobile Android | ${{ github.ref_name }} #${{ github.run_number }}"
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
@@ -149,6 +176,9 @@ jobs:
 
       - name: Run integration tests (iOS)
         working-directory: flutter
+        env:
+          QASE_API_TOKEN: ${{ secrets.QASE_API_TOKEN }}
+          QASE_RUN_TITLE: "iWorkr Mobile iOS | ${{ github.ref_name }} #${{ github.run_number }}"
         run: |
           flutter test integration_test/app_test.dart \
             --reporter=expanded \
