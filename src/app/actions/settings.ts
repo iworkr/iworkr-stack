@@ -19,7 +19,7 @@ export async function getOrganization(orgId: string) {
       .from("organizations")
       .select("*")
       .eq("id", orgId)
-      .single();
+      .maybeSingle();
 
     if (error) return { data: null, error: error.message };
     return { data, error: null };
@@ -67,7 +67,7 @@ export async function updateOrgSettings(orgId: string, settingsUpdate: Record<st
       .from("organizations")
       .select("settings")
       .eq("id", orgId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) return { data: null, error: fetchError.message };
 
@@ -104,7 +104,7 @@ export async function getProfile(userId: string) {
       .from("profiles")
       .select("*")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
     if (error) return { data: null, error: error.message };
     return { data, error: null };
@@ -151,7 +151,7 @@ export async function updateProfilePreferences(userId: string, prefsUpdate: Reco
       .from("profiles")
       .select("preferences")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) return { data: null, error: fetchError.message };
 
@@ -186,7 +186,7 @@ export async function updateNotificationPreferences(userId: string, prefsUpdate:
       .from("profiles")
       .select("notification_preferences")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) return { data: null, error: fetchError.message };
 

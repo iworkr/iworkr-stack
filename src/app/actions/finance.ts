@@ -134,7 +134,7 @@ export async function getOrgSettings(orgId: string) {
       .from("organizations")
       .select("name, settings")
       .eq("id", orgId)
-      .single();
+      .maybeSingle();
 
     if (error) return { data: null, error: error.message };
     return { data: { name: data.name, settings: data.settings || {} }, error: null };
@@ -198,7 +198,7 @@ export async function getInvoice(invoiceId: string) {
       `)
       .eq("id", invoiceId)
       .is("deleted_at", null)
-      .single();
+      .maybeSingle();
 
     if (error) {
       return { data: null, error: error.message };
@@ -245,7 +245,7 @@ async function generateDisplayId(supabase: any, orgId: string): Promise<string> 
     .like("display_id", "INV-%")
     .order("display_id", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   let displayId = "INV-0001";
   if (!maxError && maxInvoice?.display_id) {
@@ -406,7 +406,7 @@ export async function updateInvoice(invoiceId: string, updates: UpdateInvoicePar
         .from("invoices")
         .select("invoice_line_items (quantity, unit_price)")
         .eq("id", invoiceId)
-        .single();
+        .maybeSingle();
 
       if (currentInvoice?.invoice_line_items) {
         const { subtotal, tax, total } = calculateTotals(
@@ -460,7 +460,7 @@ export async function updateInvoiceStatus(
       .from("invoices")
       .select("display_id, status")
       .eq("id", invoiceId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) {
       return { data: null, error: fetchError.message };
@@ -549,7 +549,7 @@ export async function addLineItem(invoiceId: string, item: AddLineItemParams) {
       .from("invoices")
       .select("tax_rate, invoice_line_items (quantity, unit_price, sort_order)")
       .eq("id", invoiceId)
-      .single();
+      .maybeSingle();
 
     if (invoiceError) {
       return { data: null, error: invoiceError.message };
@@ -632,7 +632,7 @@ export async function updateLineItem(
       .from("invoices")
       .select("tax_rate, invoice_line_items (quantity, unit_price)")
       .eq("id", lineItem.invoice_id)
-      .single();
+      .maybeSingle();
 
     if (!invoiceError && invoice) {
       const { subtotal, tax, total } = calculateTotals(
@@ -669,7 +669,7 @@ export async function removeLineItem(lineItemId: string) {
       .from("invoice_line_items")
       .select("invoice_id")
       .eq("id", lineItemId)
-      .single();
+      .maybeSingle();
 
     if (lineItemError) {
       return { data: null, error: lineItemError.message };
@@ -690,7 +690,7 @@ export async function removeLineItem(lineItemId: string) {
       .from("invoices")
       .select("tax_rate, invoice_line_items (quantity, unit_price)")
       .eq("id", lineItem.invoice_id)
-      .single();
+      .maybeSingle();
 
     if (invoiceError) {
       return { data: null, error: invoiceError.message };

@@ -81,7 +81,7 @@ export async function getQuote(quoteId: string): Promise<{ data: Quote | null; e
     .from("quotes")
     .select("*")
     .eq("id", quoteId)
-    .single();
+    .maybeSingle();
 
   if (error) return { data: null, error: error.message };
 
@@ -205,7 +205,7 @@ async function recalcQuoteTotals(quoteId: string) {
     .from("quotes")
     .select("tax_rate")
     .eq("id", quoteId)
-    .single();
+    .maybeSingle();
 
   const subtotal = (items || []).reduce((s: number, i: any) => s + i.quantity * i.unit_price, 0);
   const taxRate = quote?.tax_rate || 10;
@@ -225,7 +225,7 @@ export async function sendQuote(quoteId: string): Promise<{ error?: string }> {
     .from("quotes")
     .select("*, organization:organizations(name, logo_url)")
     .eq("id", quoteId)
-    .single();
+    .maybeSingle();
 
   if (!quote) return { error: "Quote not found" };
   if (!quote.client_email) return { error: "No client email set" };
@@ -284,7 +284,7 @@ export async function getDocumentByToken(token: string): Promise<{
     .from("quotes")
     .select("*, organization:organizations(name, logo_url)")
     .eq("secure_token", token)
-    .single();
+    .maybeSingle();
 
   if (quote) {
     const { data: items } = await (supabase as any)
@@ -313,7 +313,7 @@ export async function getDocumentByToken(token: string): Promise<{
     .from("invoices")
     .select("*, organization:organizations(name, logo_url)")
     .eq("secure_token", token)
-    .single();
+    .maybeSingle();
 
   if (invoice) {
     const { data: items } = await (supabase as any)
@@ -343,7 +343,7 @@ export async function approveQuote(token: string, signatureDataUrl: string, sign
     .from("quotes")
     .select("*")
     .eq("secure_token", token)
-    .single();
+    .maybeSingle();
 
   if (!quote) return { error: "Quote not found" };
   if (quote.status === "accepted") return { error: "Already approved" };
@@ -421,7 +421,7 @@ export async function rejectQuote(token: string, reason: string): Promise<{ erro
     .from("quotes")
     .select("id, organization_id")
     .eq("secure_token", token)
-    .single();
+    .maybeSingle();
 
   if (!quote) return { error: "Quote not found" };
 

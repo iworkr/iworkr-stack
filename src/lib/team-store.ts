@@ -368,7 +368,9 @@ export const useTeamStore = create<TeamState>()(
     // Call server if it's a real invite
     if (memberId.startsWith("invite-")) {
       const inviteId = memberId.replace("invite-", "");
-      resendInviteServer(inviteId);
+      resendInviteServer(inviteId).catch((err) => {
+        console.error("Failed to resend invite:", err);
+      });
     }
   },
 

@@ -87,7 +87,7 @@ export async function deleteBranch(branchId: string): Promise<{ error?: string }
     .from("branches")
     .select("is_headquarters")
     .eq("id", branchId)
-    .single();
+    .maybeSingle();
 
   if (branch?.is_headquarters) return { error: "Cannot delete headquarters branch" };
 

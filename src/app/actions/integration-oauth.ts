@@ -190,7 +190,7 @@ export async function refreshIntegrationToken(integrationId: string): Promise<{ 
     .from("integrations")
     .select("provider, refresh_token")
     .eq("id", integrationId)
-    .single();
+    .maybeSingle();
 
   if (!int?.refresh_token) return { error: "No refresh token" };
 
@@ -282,7 +282,7 @@ export async function updateProviderSettings(
     .from("integrations")
     .select("settings")
     .eq("id", integrationId)
-    .single();
+    .maybeSingle();
 
   const merged = { ...(current?.settings || {}), ...settings };
 

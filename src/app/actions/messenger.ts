@@ -36,7 +36,7 @@ export async function getChannel(channelId: string) {
       .from("channels")
       .select("*")
       .eq("id", channelId)
-      .single();
+      .maybeSingle();
 
     if (error) return { data: null, error: error.message };
     return { data, error: null };
@@ -308,7 +308,7 @@ export async function toggleReaction(messageId: string, emoji: string) {
       .from("messages")
       .select("reactions")
       .eq("id", messageId)
-      .single();
+      .maybeSingle();
 
     if (fetchErr) return { data: null, error: fetchErr.message };
 
@@ -366,7 +366,7 @@ export async function votePoll(messageId: string, optionIndex: number) {
       .from("messages")
       .select("metadata")
       .eq("id", messageId)
-      .single();
+      .maybeSingle();
 
     if (fetchErr) return { data: null, error: fetchErr.message };
 

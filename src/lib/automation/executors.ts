@@ -106,7 +106,7 @@ async function sendEmailAction(
           .from("profiles")
           .select("email")
           .eq("id", assigneeId)
-          .single();
+          .maybeSingle();
         recipientEmail = profile?.email || "";
       }
     }
@@ -223,7 +223,7 @@ async function createInvoiceAction(
       .from("jobs")
       .select("*, clients!client_id(name, email, address)")
       .eq("id", jobId)
-      .single();
+      .maybeSingle();
 
     if (!job) {
       return { success: false, error: "Job not found" };
@@ -236,7 +236,7 @@ async function createInvoiceAction(
       .eq("organization_id", ctx.event.organization_id)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     const lastNum = maxInv?.display_id ? parseInt(maxInv.display_id.replace("INV-", "")) : 1250;
     const displayId = `INV-${lastNum + 1}`;
@@ -487,7 +487,7 @@ async function updateInventoryAction(
       .from("inventory_items")
       .select("quantity, min_quantity")
       .eq("id", itemId)
-      .single();
+      .maybeSingle();
 
     if (!item) return { success: false, error: "Item not found" };
 
@@ -545,9 +545,22 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   return current;
 }
 
+/* ── HTML Escaping ────────────────────────────────────── */
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /* ── Email HTML Builder ───────────────────────────────── */
 
 function buildEmailHtml(subject: string, body: string): string {
+  const safeSubject = escapeHtml(subject);
+  const safeBody = escapeHtml(body).replace(/\n/g, "<br>");
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
@@ -557,8 +570,8 @@ function buildEmailHtml(subject: string, body: string): string {
 <div style="display:inline-block;width:36px;height:36px;background:white;border-radius:8px;line-height:36px;font-weight:700;font-size:16px;color:#050505">iW</div>
 </div>
 <div style="background:#0a0a0a;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:32px">
-<h2 style="color:#fff;margin:0 0 16px;font-size:18px;font-weight:600">${subject}</h2>
-<p style="color:rgba(255,255,255,0.6);margin:0;font-size:14px;line-height:1.6">${body.replace(/\n/g, "<br>")}</p>
+<h2 style="color:#fff;margin:0 0 16px;font-size:18px;font-weight:600">${safeSubject}</h2>
+<p style="color:rgba(255,255,255,0.6);margin:0;font-size:14px;line-height:1.6">${safeBody}</p>
 </div>
 <div style="text-align:center;margin-top:24px">
 <p style="color:rgba(255,255,255,0.3);font-size:12px;margin:0">Sent automatically by iWorkr</p>

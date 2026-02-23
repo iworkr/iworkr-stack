@@ -22,7 +22,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const stateData = JSON.parse(Buffer.from(state, "base64url").toString());
+    let stateData: { integrationId?: string; provider?: string };
+    try {
+      stateData = JSON.parse(Buffer.from(state, "base64url").toString());
+    } catch {
+      return NextResponse.redirect(
+        `${APP_URL}/dashboard/integrations?connection=error&message=Malformed+state+parameter`
+      );
+    }
     const { integrationId, provider } = stateData;
 
     if (!integrationId || !provider) {

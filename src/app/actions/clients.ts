@@ -211,7 +211,7 @@ export async function getClient(clientId: string) {
       .select("*")
       .eq("id", clientId)
       .is("deleted_at", null)
-      .single();
+      .maybeSingle();
 
     if (clientError) {
       return { data: null, error: clientError.message };
@@ -529,7 +529,7 @@ export async function updateClientContact(contactId: string, updates: UpdateClie
       .from("client_contacts")
       .select("client_id, is_primary")
       .eq("id", contactId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) {
       return { data: null, error: fetchError.message };
@@ -680,7 +680,7 @@ export async function createClientFull(params: CreateClientParams) {
       .from("clients")
       .select("*")
       .eq("id", result.client_id)
-      .single();
+      .maybeSingle();
 
     revalidatePath("/dashboard/clients");
     return { data: client || result, error: null };

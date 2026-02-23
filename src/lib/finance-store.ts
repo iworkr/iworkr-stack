@@ -426,6 +426,8 @@ export const useFinanceStore = create<FinanceState>()(
     set((s) => ({ invoices: [invoice, ...s.invoices].sort((a, b) => b.id.localeCompare(a.id)) })),
 
   recalcInvoice: (id) => {
+    const inv = get().invoices.find((i) => i.id === id);
+    if (!inv) return;
     set((s) => ({
       invoices: s.invoices.map((inv) => {
         if (inv.id !== id) return inv;
@@ -438,8 +440,8 @@ export const useFinanceStore = create<FinanceState>()(
       }),
     }));
     // Persist recalculated totals — refresh from server after a short debounce
-    const inv = get().invoices.find((i) => i.id === id);
-    if (inv?.dbId) {
+    const updated = get().invoices.find((i) => i.id === id);
+    if (updated?.dbId) {
       get().refresh().catch(() => {});
     }
   },

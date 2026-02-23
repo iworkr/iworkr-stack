@@ -26,7 +26,7 @@ export async function sendJobAssignment(params: {
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const assignedBy = profile?.full_name || user.email || "Your manager";
 
@@ -62,13 +62,13 @@ export async function sendTeamInviteEmail(params: {
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const { data: org } = await (supabase as any)
     .from("organizations")
     .select("name")
     .eq("id", params.orgId)
-    .single();
+    .maybeSingle();
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iworkrapp.com";
 

@@ -44,7 +44,7 @@ export async function getForm(formId: string) {
       .from("forms")
       .select("*")
       .eq("id", formId)
-      .single();
+      .maybeSingle();
 
     if (error) return { data: null, error: error.message };
     return { data, error: null };
@@ -193,7 +193,7 @@ export async function getFormSubmission(submissionId: string) {
       `
       )
       .eq("id", submissionId)
-      .single();
+      .maybeSingle();
 
     if (error) return { data: null, error: error.message };
     return { data, error: null };
@@ -220,7 +220,7 @@ export async function createFormSubmission(params: {
       .from("profiles")
       .select("full_name")
       .eq("id", user?.id)
-      .single();
+      .maybeSingle();
 
     const { data, error } = await supabase
       .from("form_submissions")

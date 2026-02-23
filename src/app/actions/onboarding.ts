@@ -84,13 +84,13 @@ export async function sendTeamInvites(
     .from("organizations")
     .select("name")
     .eq("id", orgId)
-    .single();
+    .maybeSingle();
 
   const { data: profile } = await (supabase as any)
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const inviterName = profile?.full_name || user.email || "A team member";
   const companyName = org?.name || "your team";
@@ -161,7 +161,7 @@ export async function completeOnboarding() {
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   // Get the user's first org
   const { data: membership } = await (supabase as any)
@@ -169,7 +169,7 @@ export async function completeOnboarding() {
     .select("organization_id, organizations(name)")
     .eq("user_id", user.id)
     .limit(1)
-    .single();
+    .maybeSingle();
 
   const orgName = membership?.organizations?.name;
 

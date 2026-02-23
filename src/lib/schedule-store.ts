@@ -234,6 +234,7 @@ export const useScheduleStore = create<ScheduleState>()(
 
   moveBlock: (blockId, newStartHour, newTechId) => {
     const block = get().blocks.find((b) => b.id === blockId);
+    if (!block) return;
     const snappedHour = Math.round(newStartHour * 4) / 4;
 
     // Optimistic local update
@@ -250,20 +251,19 @@ export const useScheduleStore = create<ScheduleState>()(
     }));
 
     // Persist to server
-    if (block) {
-      const date = get().selectedDate;
-      const startISO = decimalHourToISO(date, snappedHour);
-      const endISO = decimalHourToISO(date, snappedHour + block.duration);
-      const techId = newTechId || block.technicianId;
+    const date = get().selectedDate;
+    const startISO = decimalHourToISO(date, snappedHour);
+    const endISO = decimalHourToISO(date, snappedHour + block.duration);
+    const techId = newTechId || block.technicianId;
 
-      moveScheduleBlockServer(blockId, techId, startISO, endISO).catch((err) => {
-        console.error("Failed to persist block move:", err);
-      });
-    }
+    moveScheduleBlockServer(blockId, techId, startISO, endISO).catch((err) => {
+      console.error("Failed to persist block move:", err);
+    });
   },
 
   resizeBlock: (blockId, newDuration) => {
     const block = get().blocks.find((b) => b.id === blockId);
+    if (!block) return;
     const snapped = Math.max(0.25, Math.round(newDuration * 4) / 4);
 
     // Optimistic local update
@@ -274,16 +274,16 @@ export const useScheduleStore = create<ScheduleState>()(
     }));
 
     // Persist to server
-    if (block) {
-      const date = get().selectedDate;
-      const endISO = decimalHourToISO(date, block.startHour + snapped);
-      resizeScheduleBlockServer(blockId, endISO).catch((err) => {
-        console.error("Failed to persist block resize:", err);
-      });
-    }
+    const date = get().selectedDate;
+    const endISO = decimalHourToISO(date, block.startHour + snapped);
+    resizeScheduleBlockServer(blockId, endISO).catch((err) => {
+      console.error("Failed to persist block resize:", err);
+    });
   },
 
   deleteBlock: (blockId) => {
+    const block = get().blocks.find((b) => b.id === blockId);
+    if (!block) return;
     // Optimistic local delete
     set((s) => ({
       blocks: s.blocks.filter((b) => b.id !== blockId),

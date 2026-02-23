@@ -254,7 +254,8 @@ export const useJobsStore = create<JobsState>()(
     // Find current completion state before toggling
     const job = get().jobs.find((j) => j.id === jobId);
     const subtask = job?.subtasks?.find((st) => st.id === subtaskId);
-    const newCompleted = subtask ? !subtask.completed : true;
+    if (!subtask) return;
+    const newCompleted = !subtask.completed;
     // Optimistic
     set((s) => ({
       jobs: s.jobs.map((j) =>

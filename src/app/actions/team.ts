@@ -302,7 +302,7 @@ export async function deleteRole(roleId: string) {
       .from("organization_roles")
       .select("is_system_role")
       .eq("id", roleId)
-      .single();
+      .maybeSingle();
 
     if (role?.is_system_role) {
       return { data: null, error: "Cannot delete system roles" };
@@ -385,7 +385,7 @@ export async function resendInvite(inviteId: string) {
       .from("organization_invites")
       .select("*")
       .eq("id", inviteId)
-      .single();
+      .maybeSingle();
 
     if (error) return { data: null, error: error.message };
 

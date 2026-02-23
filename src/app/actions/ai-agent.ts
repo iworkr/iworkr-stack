@@ -103,7 +103,7 @@ export async function getCallTranscript(callId: string): Promise<{ transcript: s
     .from("ai_agent_calls")
     .select("transcript")
     .eq("id", callId)
-    .single();
+    .maybeSingle();
 
   if (error) return { transcript: null, error: error.message };
   return { transcript: data?.transcript };

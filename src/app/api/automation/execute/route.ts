@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { dispatchAndWait, type AutomationEvent } from "@/lib/automation";
 import { rateLimit, getIdentifier, RateLimits } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -27,7 +28,15 @@ export async function POST(request: NextRequest) {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const automationSecret = process.env.AUTOMATION_SECRET || serviceKey;
 
-    if (!authHeader || !authHeader.includes(automationSecret?.slice(0, 20) || "")) {
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+
+    const isSecretValid =
+      bearerToken &&
+      automationSecret &&
+      bearerToken.length === automationSecret.length &&
+      timingSafeEqual(Buffer.from(bearerToken), Buffer.from(automationSecret));
+
+    if (!isSecretValid) {
       // Also allow requests from same origin (internal calls)
       const origin = request.headers.get("origin") || "";
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";

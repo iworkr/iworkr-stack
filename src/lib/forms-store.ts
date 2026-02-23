@@ -289,7 +289,9 @@ export const useFormsStore = create<FormsState>()(
         t.id === id ? { ...t, status: "archived" as const } : t
       ),
     }));
-    updateFormServer(id, { status: "archived" });
+    updateFormServer(id, { status: "archived" }).catch((err) => {
+      console.error("Failed to archive template:", err);
+    });
   },
 
   duplicateTemplate: (id) => {
@@ -317,6 +319,8 @@ export const useFormsStore = create<FormsState>()(
         description: original.description,
         category: original.category,
         blocks: original.blocks,
+      }).catch((err) => {
+        console.error("Failed to duplicate template on server:", err);
       });
     }
   },
