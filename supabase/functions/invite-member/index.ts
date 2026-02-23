@@ -110,15 +110,65 @@ serve(async (req) => {
       new_data: { email, role: role || "technician" },
     });
 
-    // TODO: Send email via Resend when RESEND_API_KEY is configured
-    // const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    // if (resendApiKey) { ... }
+    // Send invite email via Resend
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const appUrl = Deno.env.get("APP_URL") || "http://localhost:3000";
+
+    if (resendApiKey) {
+      const { data: org } = await adminClient
+        .from("organizations")
+        .select("name")
+        .eq("id", organization_id)
+        .single();
+
+      const { data: inviter } = await adminClient
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      const orgName = org?.name || "your team";
+      const inviterName = inviter?.full_name || "A team member";
+      const acceptUrl = `${appUrl}/accept-invite?token=${invite.token}`;
+
+      try {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: Deno.env.get("RESEND_FROM_EMAIL") || "iWorkr <noreply@iworkrapp.com>",
+            to: [email],
+            subject: `${inviterName} invited you to join ${orgName} on iWorkr`,
+            html: `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+                <h2 style="color: #111; font-size: 20px; margin-bottom: 8px;">You're invited</h2>
+                <p style="color: #555; font-size: 15px; line-height: 1.6;">
+                  ${inviterName} has invited you to join <strong>${orgName}</strong> on iWorkr as a <strong>${role || "technician"}</strong>.
+                </p>
+                <a href="${acceptUrl}" style="display: inline-block; margin-top: 24px; padding: 12px 28px; background: #10B981; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
+                  Accept Invitation
+                </a>
+                <p style="color: #999; font-size: 12px; margin-top: 32px;">
+                  This invitation expires in 7 days. If you didn't expect this email, you can safely ignore it.
+                </p>
+              </div>
+            `,
+          }),
+        });
+      } catch {
+        // Email send failure is non-fatal — invite is still created
+      }
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         invite_id: invite.id,
         expires_at: invite.expires_at,
+        email_sent: !!resendApiKey,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

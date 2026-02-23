@@ -14,7 +14,7 @@ export async function triggerSync(integrationId: string): Promise<{ error?: stri
     .from("integrations")
     .select("*")
     .eq("id", integrationId)
-    .single();
+    .maybeSingle();
 
   if (!int) return { error: "Integration not found" };
   if (int.status !== "connected") return { error: "Integration not connected" };

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Briefcase, FileText, UserPlus, Megaphone, Zap } from "lucide-react";
 import { useShellStore } from "@/lib/shell-store";
+import { useToastStore } from "@/components/app/action-toast";
 import { WidgetShell } from "./widget-shell";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
@@ -42,15 +43,22 @@ const actions = [
 ] as const;
 
 export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
-  const { setCreateClientModalOpen, setCreateInvoiceModalOpen } = useShellStore();
+  const { setCreateClientModalOpen, setCreateInvoiceModalOpen, setCreateJobModalOpen } = useShellStore();
+  const { addToast } = useToastStore();
 
   const handleAction = (actionId: string) => {
     switch (actionId) {
+      case "createJob":
+        setCreateJobModalOpen(true);
+        break;
       case "createClient":
         setCreateClientModalOpen(true);
         break;
       case "createInvoice":
         setCreateInvoiceModalOpen(true);
+        break;
+      case "broadcast":
+        addToast("Broadcast coming soon");
         break;
     }
   };

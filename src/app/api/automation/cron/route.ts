@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         .eq("organization_id", block.organization_id)
         .contains("trigger_data", { entity_id: block.id, event_type: "schedule.reminder" })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!existingLog) {
         const event = {
@@ -180,4 +180,89 @@ export async function GET(request: NextRequest) {
     processed_at: new Date().toISOString(),
     ...results,
   });
+}
+
+/**
+ * POST /api/automation/cron
+ *
+ * Handles specific cron jobs dispatched by pg_cron.
+ * Body: { "job": "invoice-overdue-watchdog" | "daily-digest-emails" | ... }
+ */
+export async function POST(request: NextRequest) {
+  // Verify auth
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { job?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const { job } = body;
+  if (!job) {
+    return NextResponse.json({ error: "Missing 'job' field" }, { status: 400 });
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  // Route to the appropriate Edge Function or inline handler
+  const edgeFunctionMap: Record<string, string> = {
+    "daily-digest-emails": "trigger-daily-emails",
+    "asset-service-reminders": "asset-service-reminder",
+    "sync-polar-subscriptions": "sync-polar-status",
+    "run-scheduled-automations": "run-automations",
+  };
+
+  // Jobs that can be handled by invoking the GET handler
+  if (job === "invoice-overdue-watchdog") {
+    // Re-use the GET handler logic for overdue invoice processing
+    const response = await GET(request);
+    return response;
+  }
+
+  if (job === "stale-job-cleanup") {
+    // Clean up soft-deleted jobs older than 30 days
+    const supabase = createClient(supabaseUrl, serviceKey);
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await supabase
+      .from("jobs")
+      .delete({ count: "exact" })
+      .not("deleted_at", "is", null)
+      .lt("deleted_at", cutoff);
+
+    logger.info("Stale job cleanup", "cron", { deleted: count });
+    return NextResponse.json({ success: true, job, deleted: count });
+  }
+
+  // Dispatch to Edge Function
+  const functionName = edgeFunctionMap[job];
+  if (functionName) {
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ triggered_by: "pg_cron", job }),
+      });
+
+      const data = await res.json();
+      logger.info(`Cron job ${job} dispatched`, "cron", { status: res.status });
+      return NextResponse.json({ success: res.ok, job, ...data });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`Cron job ${job} failed: ${msg}`, "cron");
+      return NextResponse.json({ error: msg, job }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({ error: `Unknown job: ${job}` }, { status: 400 });
 }

@@ -59,7 +59,7 @@ export async function getArticleBySlug(slug: string): Promise<{ data: HelpArticl
     .select("id, title, slug, content, summary, category, icon, sort_order")
     .eq("slug", slug)
     .eq("published", true)
-    .single();
+    .maybeSingle();
 
   if (error) return { data: null, error: error.message };
   return { data };

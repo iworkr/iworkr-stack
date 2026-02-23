@@ -23,7 +23,7 @@ async function getOrgOwnerEmail(
     .eq("organization_id", orgId)
     .eq("role", "owner")
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (!membership) return null;
 
@@ -31,13 +31,13 @@ async function getOrgOwnerEmail(
     .from("profiles")
     .select("full_name, email")
     .eq("id", membership.user_id)
-    .single();
+    .maybeSingle();
 
   const { data: org } = await supabase
     .from("organizations")
     .select("name")
     .eq("id", orgId)
-    .single();
+    .maybeSingle();
 
   if (!profile?.email) return null;
 

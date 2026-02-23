@@ -1,7 +1,13 @@
 import { Resend } from "resend";
 import type { ReactElement } from "react";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
+  }
+  return _resend;
+}
 
 const FROM_ADDRESS = "iWorkr <noreply@iworkrapp.com>";
 const REPLY_TO = process.env.ADMIN_EMAIL || "admin@iworkrapp.com";
@@ -22,7 +28,7 @@ export async function sendEmail({
   tags,
 }: SendEmailOptions) {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_ADDRESS,
       to: Array.isArray(to) ? to : [to],
       subject,

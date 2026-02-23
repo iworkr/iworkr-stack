@@ -33,7 +33,7 @@ export const useBillingStore = create<BillingState>((set) => ({
         .in("status", ["active", "trialing", "past_due"])
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const { count } = await (supabase as any)
         .from("organization_members")

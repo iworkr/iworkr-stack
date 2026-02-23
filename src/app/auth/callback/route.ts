@@ -32,7 +32,7 @@ export async function GET(request: Request) {
           .from("profiles")
           .select("onboarding_completed")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if ((profile as any)?.onboarding_completed) {
           const forwardedHost = request.headers.get("x-forwarded-host");

@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       // Get organizations the user belongs to
       const { data: memberships } = await (supabase as any)
@@ -112,7 +112,7 @@ export const useAuthStore = create<AuthState>()(
       .from("profiles")
       .select("*")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profile) set({ profile });
   },
