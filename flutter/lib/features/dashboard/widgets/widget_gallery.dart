@@ -48,12 +48,12 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
   Color _colorForType(String type) {
     switch (type) {
       case 'revenue': return ObsidianTheme.emerald;
-      case 'next_job': return ObsidianTheme.blue;
-      case 'quick_actions': return ObsidianTheme.amber;
+      case 'next_job': return ObsidianTheme.textSecondary;
+      case 'quick_actions': return ObsidianTheme.textSecondary;
       case 'team_pulse': return const Color(0xFF8B5CF6);
-      case 'schedule': return ObsidianTheme.blue;
+      case 'schedule': return ObsidianTheme.textSecondary;
       case 'route': return ObsidianTheme.emerald;
-      case 'stats': return ObsidianTheme.indigo;
+      case 'stats': return ObsidianTheme.textSecondary;
       default: return ObsidianTheme.textSecondary;
     }
   }

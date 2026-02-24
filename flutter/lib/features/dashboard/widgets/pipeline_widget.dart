@@ -75,11 +75,11 @@ class _PipelineViewState extends State<_PipelineView>
 
   static const _stages = [
     _Stage('Draft', 'backlog', PhosphorIconsLight.noteBlank, ObsidianTheme.textMuted),
-    _Stage('Queued', 'todo', PhosphorIconsLight.queue, ObsidianTheme.blue),
-    _Stage('Scheduled', 'scheduled', PhosphorIconsLight.calendarCheck, ObsidianTheme.amber),
+    _Stage('Queued', 'todo', PhosphorIconsLight.queue, ObsidianTheme.textSecondary),
+    _Stage('Scheduled', 'scheduled', PhosphorIconsLight.calendarCheck, ObsidianTheme.textSecondary),
     _Stage('Executing', 'in_progress', PhosphorIconsLight.lightning, ObsidianTheme.emerald),
     _Stage('Completed', 'done', PhosphorIconsLight.checkCircle, ObsidianTheme.emerald),
-    _Stage('Invoiced', 'invoiced', PhosphorIconsLight.receipt, Color(0xFFA78BFA)),
+    _Stage('Invoiced', 'invoiced', PhosphorIconsLight.receipt, ObsidianTheme.textSecondary),
   ];
 
   @override
@@ -143,22 +143,24 @@ class _CompactPipeline extends StatelessWidget {
         return Column(
           children: [
             SizedBox(
-              height: 6,
+              height: 4,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: Row(
-                  children: stages.asMap().entries.map((e) {
-                    final count = stats[e.value.key] ?? 0;
-                    final fraction = total > 0 ? count / total : 0.0;
-                    final animFraction = fraction * progress.value;
-                    return Expanded(
-                      flex: max(1, (animFraction * 100).round()),
+                borderRadius: BorderRadius.circular(2),
+                child: Stack(
+                  children: [
+                    Container(color: Colors.white.withValues(alpha: 0.08)),
+                    FractionallySizedBox(
+                      widthFactor: total > 0
+                          ? ((stats['in_progress'] ?? 0) + (stats['done'] ?? 0) + (stats['invoiced'] ?? 0)) / total * progress.value
+                          : 0,
                       child: Container(
-                        color: e.value.color.withValues(alpha: 0.6 + 0.4 * progress.value),
-                        margin: EdgeInsets.only(right: e.key < stages.length - 1 ? 1.5 : 0),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          color: ObsidianTheme.emerald,
+                        ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -217,24 +219,26 @@ class _ExpandedPipeline extends StatelessWidget {
       builder: (_, __) {
         return Column(
           children: [
-            // Segmented bar
+            // Monolithic progress bar
             SizedBox(
-              height: 8,
+              height: 6,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Row(
-                  children: stages.asMap().entries.map((e) {
-                    final count = stats[e.value.key] ?? 0;
-                    final fraction = total > 0 ? count / total : 0.0;
-                    return Expanded(
-                      flex: max(1, (fraction * 100).round()),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 600),
-                        color: e.value.color.withValues(alpha: 0.5 + 0.5 * progress.value),
-                        margin: EdgeInsets.only(right: e.key < stages.length - 1 ? 2 : 0),
+                borderRadius: BorderRadius.circular(3),
+                child: Stack(
+                  children: [
+                    Container(color: Colors.white.withValues(alpha: 0.08)),
+                    FractionallySizedBox(
+                      widthFactor: total > 0
+                          ? ((stats['in_progress'] ?? 0) + (stats['done'] ?? 0) + (stats['invoiced'] ?? 0)) / total * progress.value
+                          : 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          color: ObsidianTheme.emerald,
+                        ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -254,9 +258,9 @@ class _ExpandedPipeline extends StatelessWidget {
                       height: 28,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: s.color.withValues(alpha: 0.1),
+                        color: Colors.white.withValues(alpha: 0.04),
                       ),
-                      child: Icon(s.icon, size: 14, color: s.color),
+                      child: Icon(s.icon, size: 14, color: count > 0 ? s.color : ObsidianTheme.textDisabled),
                     ),
                     const SizedBox(width: 10),
                     Expanded(

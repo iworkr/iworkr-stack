@@ -152,7 +152,7 @@ class _PulseViewState extends State<_PulseView>
           _PulseStat(
             label: 'OUTSTANDING',
             value: fmt.format(outstanding),
-            color: outstanding > 0 ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+            color: outstanding > 0 ? ObsidianTheme.rose : ObsidianTheme.textTertiary,
             icon: PhosphorIconsLight.clock,
           ),
         ] else ...[
@@ -169,7 +169,7 @@ class _PulseViewState extends State<_PulseView>
               _MiniStat(
                 label: 'OUT',
                 value: fmt.format(outstanding),
-                color: outstanding > 0 ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+                color: outstanding > 0 ? ObsidianTheme.rose : ObsidianTheme.textTertiary,
               ),
             ],
           ),
@@ -180,7 +180,7 @@ class _PulseViewState extends State<_PulseView>
 
   Color _rateColor(double rate) {
     if (rate >= 80) return ObsidianTheme.emerald;
-    if (rate >= 50) return ObsidianTheme.amber;
+    if (rate >= 50) return ObsidianTheme.textSecondary;
     return ObsidianTheme.rose;
   }
 }
@@ -309,7 +309,7 @@ class _CollectionArcPainter extends CustomPainter {
       if (rate >= 80) {
         arcColor = ObsidianTheme.emerald;
       } else if (rate >= 50) {
-        arcColor = ObsidianTheme.amber;
+        arcColor = ObsidianTheme.textSecondary;
       } else {
         arcColor = ObsidianTheme.rose;
       }

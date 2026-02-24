@@ -214,6 +214,7 @@ class _OverwatchScreenState extends ConsumerState<OverwatchScreen>
 // ── Tactical Map Painter ─────────────────────────────────
 // ═══════════════════════════════════════════════════════════
 
+// ignore: unused_element
 class _TacticalMapPainter extends CustomPainter {
   final List<FleetPosition> positions;
   final int? selectedIndex;

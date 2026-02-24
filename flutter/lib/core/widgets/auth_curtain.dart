@@ -1,22 +1,25 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
-
 import 'package:iworkr_mobile/core/services/biometric_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
-/// The Airlock — cold start biometric lock screen & privacy curtain.
-///
-/// Wraps the entire app via MaterialApp.builder.
-/// - Cold start: full lock screen with breathing logo + biometric prompt
-/// - Resume: blur curtain with 30s grace period
-/// - PIN fallback after 3 biometric failures
+// ═══════════════════════════════════════════════════════════
+// ── The Vault Lock — Biometric Auth Curtain ──────────────
+// ═══════════════════════════════════════════════════════════
+//
+// Wraps the entire app via MaterialApp.builder.
+// - Cold start: full lock screen with breathing logo + biometric prompt
+// - Resume: blur curtain with 30s grace period
+// - PIN fallback after 3 biometric failures
+// - Log out escape hatch for broken sensors
+
 class AuthCurtain extends StatefulWidget {
   final Widget child;
   const AuthCurtain({super.key, required this.child});
@@ -78,17 +81,14 @@ class _AuthCurtainState extends State<AuthCurtain> with WidgetsBindingObserver {
 
   Future<void> _onResume() async {
     if (!_resumeLocked) return;
-
     final withinGrace = await BiometricService.isWithinGracePeriod();
     if (withinGrace) {
       if (mounted) setState(() => _resumeLocked = false);
-      return;
     }
-    // Hard lock — the AirlockOverlay will handle auth
   }
 
   void _onUnlocked() {
-    HapticFeedback.heavyImpact();
+    HapticFeedback.lightImpact();
     if (mounted) {
       setState(() {
         _coldStartLocked = false;
@@ -107,7 +107,6 @@ class _AuthCurtainState extends State<AuthCurtain> with WidgetsBindingObserver {
 
     return Stack(
       children: [
-        // App content — scale in on unlock
         AnimatedScale(
           scale: _showAirlock ? 0.94 : 1.0,
           duration: const Duration(milliseconds: 280),
@@ -118,10 +117,8 @@ class _AuthCurtainState extends State<AuthCurtain> with WidgetsBindingObserver {
             child: widget.child,
           ),
         ),
-
-        // Airlock overlay
         if (_showAirlock)
-          _AirlockOverlay(
+          _VaultLockOverlay(
             isColdStart: _coldStartLocked,
             onUnlocked: _onUnlocked,
           ),
@@ -136,9 +133,9 @@ class _BootSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
-      child: Center(
+    return Scaffold(
+      backgroundColor: ObsidianTheme.void_,
+      body: Center(
         child: Image.asset(
           'assets/logos/icon.png',
           width: 48,
@@ -150,31 +147,32 @@ class _BootSplash extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// THE AIRLOCK OVERLAY
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// ── The Vault Lock Overlay ───────────────────────────────
+// ═══════════════════════════════════════════════════════════
 
-class _AirlockOverlay extends StatefulWidget {
+enum _VaultState { idle, prompting, error, success }
+
+class _VaultLockOverlay extends StatefulWidget {
   final bool isColdStart;
   final VoidCallback onUnlocked;
 
-  const _AirlockOverlay({
+  const _VaultLockOverlay({
     required this.isColdStart,
     required this.onUnlocked,
   });
 
   @override
-  State<_AirlockOverlay> createState() => _AirlockOverlayState();
+  State<_VaultLockOverlay> createState() => _VaultLockOverlayState();
 }
 
-class _AirlockOverlayState extends State<_AirlockOverlay>
+class _VaultLockOverlayState extends State<_VaultLockOverlay>
     with TickerProviderStateMixin {
   late AnimationController _breathe;
-  late AnimationController _scanLine;
-  late AnimationController _glyphPulse;
   late AnimationController _unlockCtrl;
+  late AnimationController _shakeCtrl;
 
-  _GlyphState _glyphState = _GlyphState.idle;
+  _VaultState _state = _VaultState.idle;
   int _failCount = 0;
   bool _showPin = false;
   bool _unlocking = false;
@@ -186,91 +184,70 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
     super.initState();
     _breathe = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4000),
-    )..repeat(reverse: true);
-
-    _scanLine = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    );
-
-    _glyphPulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 3000),
     )..repeat(reverse: true);
 
     _unlockCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 350),
     );
 
-    // Auto-trigger biometric on cold start
+    _shakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
     Future.delayed(const Duration(milliseconds: 600), _attemptBiometric);
   }
 
   @override
   void dispose() {
     _breathe.dispose();
-    _scanLine.dispose();
-    _glyphPulse.dispose();
     _unlockCtrl.dispose();
+    _shakeCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _attemptBiometric() async {
     if (_unlocking || _showPin) return;
-    setState(() {
-      _glyphState = _GlyphState.scanning;
-      _pinError = null;
-    });
-    _scanLine.repeat();
+    setState(() => _state = _VaultState.prompting);
 
     final success = await BiometricService.authenticate(reason: 'Unlock iWorkr');
 
-    _scanLine.stop();
+    if (!mounted) return;
 
     if (success) {
       _onAuthSuccess();
     } else {
       _failCount++;
-      setState(() => _glyphState = _GlyphState.error);
+      setState(() => _state = _VaultState.error);
       HapticFeedback.heavyImpact();
+      _shakeCtrl.forward(from: 0);
 
       if (_failCount >= 3) {
         final hasPin = await BiometricService.hasPinCode;
-        if (hasPin) {
+        if (hasPin && mounted) {
           await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) setState(() => _showPin = true);
         }
       }
-
-      await Future.delayed(const Duration(milliseconds: 1500));
-      if (mounted) setState(() => _glyphState = _GlyphState.idle);
     }
   }
 
   void _onAuthSuccess() {
     setState(() {
-      _glyphState = _GlyphState.success;
+      _state = _VaultState.success;
       _unlocking = true;
     });
-    HapticFeedback.heavyImpact();
-    _unlockCtrl.forward().then((_) {
-      widget.onUnlocked();
-    });
+    HapticFeedback.lightImpact();
+    _unlockCtrl.forward().then((_) => widget.onUnlocked());
   }
 
   void _onPinDigit(String digit) {
     if (_pinEntry.length >= 6) return;
     HapticFeedback.lightImpact();
-    setState(() {
-      _pinEntry += digit;
-      _pinError = null;
-    });
-
-    if (_pinEntry.length == 4 || _pinEntry.length == 6) {
-      _verifyPin();
-    }
+    setState(() { _pinEntry += digit; _pinError = null; });
+    if (_pinEntry.length == 4 || _pinEntry.length == 6) _verifyPin();
   }
 
   void _onPinDelete() {
@@ -285,81 +262,94 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
       _onAuthSuccess();
     } else if (_pinEntry.length >= 6) {
       HapticFeedback.heavyImpact();
-      setState(() {
-        _pinEntry = '';
-        _pinError = 'Incorrect PIN';
-      });
+      _shakeCtrl.forward(from: 0);
+      setState(() { _pinEntry = ''; _pinError = 'Incorrect PIN'; });
+    }
+  }
+
+  Future<void> _logout() async {
+    HapticFeedback.heavyImpact();
+    await SupabaseService.auth.signOut();
+    if (mounted) {
+      // Force a full restart by popping everything
+      Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-
     return AnimatedBuilder(
       animation: _unlockCtrl,
       builder: (context, child) {
-        final unlockProgress = _unlockCtrl.value;
+        final p = Curves.easeOutCubic.transform(_unlockCtrl.value);
         return Opacity(
-          opacity: 1.0 - unlockProgress,
-          child: Transform.scale(
-            scale: 1.0 + unlockProgress * 0.5,
-            child: child,
-          ),
+          opacity: (1.0 - p).clamp(0.0, 1.0),
+          child: Transform.scale(scale: 1.0 + p * 0.08, child: child),
         );
       },
       child: widget.isColdStart
-          ? _buildColdStartScreen(mq)
-          : _buildResumeCurtain(mq),
+          ? _buildColdStart(context)
+          : _buildResumeCurtain(context),
     );
   }
 
-  Widget _buildColdStartScreen(MediaQueryData mq) {
-    return Container(
-      color: Colors.black,
-      child: SafeArea(
+  // ── Cold Start (Full screen) ───────────────────────────
+
+  Widget _buildColdStart(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
+    return Scaffold(
+      backgroundColor: ObsidianTheme.void_,
+      body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            // 40% breathing room at top
-            const Spacer(flex: 35),
-
-            // Breathing logo
+            const Spacer(flex: 30),
             _buildBreathingLogo(),
-
-            const Spacer(flex: 10),
-
-            // Status text
+            const SizedBox(height: 28),
             _buildStatusText(),
-
             const Spacer(flex: 15),
-
-            // Biometric glyph or PIN pad
-            _showPin ? _buildPinPad(mq) : _buildBiometricGlyph(),
-
-            SizedBox(height: mq.padding.bottom + 40),
+            _showPin ? _buildPinPad() : _buildLockGlyph(),
+            const SizedBox(height: 24),
+            if (_state == _VaultState.error && !_showPin) _buildRetryButton(),
+            const Spacer(flex: 8),
+            _buildLogoutEscape(),
+            SizedBox(height: bottomPad + 16),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildResumeCurtain(MediaQueryData mq) {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-        child: Container(
-          color: Colors.black.withValues(alpha: 0.60),
-          child: SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 35),
-                _buildBreathingLogo(),
-                const Spacer(flex: 10),
-                _buildStatusText(),
-                const Spacer(flex: 15),
-                _showPin ? _buildPinPad(mq) : _buildBiometricGlyph(),
-                SizedBox(height: mq.padding.bottom + 40),
-              ],
+  // ── Resume Curtain (Blur overlay) ──────────────────────
+
+  Widget _buildResumeCurtain(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.65),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  const Spacer(flex: 30),
+                  _buildBreathingLogo(),
+                  const SizedBox(height: 28),
+                  _buildStatusText(),
+                  const Spacer(flex: 15),
+                  _showPin ? _buildPinPad() : _buildLockGlyph(),
+                  const SizedBox(height: 24),
+                  if (_state == _VaultState.error && !_showPin) _buildRetryButton(),
+                  const Spacer(flex: 8),
+                  _buildLogoutEscape(),
+                  SizedBox(height: bottomPad + 16),
+                ],
+              ),
             ),
           ),
         ),
@@ -367,89 +357,62 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
     );
   }
 
-  // ── Breathing Logo ─────────────────────────────────
+  // ── Breathing Logo ─────────────────────────────────────
 
   Widget _buildBreathingLogo() {
     return AnimatedBuilder(
       animation: _breathe,
-      builder: (_, child) {
-        final scale = 1.0 + _breathe.value * 0.05;
-        final glowAlpha = 0.1 + _breathe.value * 0.15;
+      builder: (_, __) {
+        final opacity = 0.6 + _breathe.value * 0.4;
+        final glowAlpha = _breathe.value * 0.12;
 
-        return Transform.scale(
-          scale: scale,
+        return Opacity(
+          opacity: _state == _VaultState.success ? 1.0 : opacity,
           child: Container(
             width: 80,
             height: 80,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: ObsidianTheme.emerald.withValues(alpha: glowAlpha),
-                  blurRadius: 40 + _breathe.value * 20,
-                  spreadRadius: 4,
-                ),
-              ],
+              boxShadow: _state == _VaultState.success
+                  ? [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.35), blurRadius: 40)]
+                  : [BoxShadow(color: Colors.white.withValues(alpha: glowAlpha), blurRadius: 30)],
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Outer ring
-                CustomPaint(
-                  size: const Size(80, 80),
-                  painter: _LogoRingPainter(
-                    progress: _glyphState == _GlyphState.scanning
-                        ? _scanLine.value
-                        : 1.0,
-                    color: _glyphState == _GlyphState.error
-                        ? ObsidianTheme.rose
-                        : ObsidianTheme.emerald,
-                    glowAlpha: glowAlpha,
-                  ),
-                ),
-                // Logo
-                Image.asset(
-                  'assets/logos/icon.png',
-                  width: 40,
-                  height: 40,
-                  color: _glyphState == _GlyphState.error
-                      ? ObsidianTheme.rose
-                      : null,
-                ),
-              ],
+            child: Image.asset(
+              'assets/logos/icon.png',
+              width: 80,
+              height: 80,
+              color: _state == _VaultState.success ? ObsidianTheme.emerald : Colors.white,
             ),
           ),
         );
       },
-    ).animate().fadeIn(duration: 800.ms).scale(
-          begin: const Offset(0.8, 0.8),
-          duration: 800.ms,
-          curve: Curves.easeOutCubic,
-        );
+    )
+        .animate()
+        .fadeIn(duration: 800.ms)
+        .scale(begin: const Offset(0.85, 0.85), duration: 800.ms, curve: Curves.easeOutCubic);
   }
 
-  // ── Status Text ────────────────────────────────────
+  // ── Status Text ────────────────────────────────────────
 
   Widget _buildStatusText() {
     String title;
     String subtitle;
     Color titleColor = Colors.white;
 
-    switch (_glyphState) {
-      case _GlyphState.idle:
+    switch (_state) {
+      case _VaultState.idle:
         title = 'iWorkr';
-        subtitle = _showPin ? 'Enter your PIN' : 'Tap to authenticate';
-      case _GlyphState.scanning:
-        title = 'Verifying...';
-        subtitle = 'Hold still';
-        titleColor = ObsidianTheme.emerald;
-      case _GlyphState.success:
+        subtitle = _showPin ? 'Enter your PIN to unlock' : 'Tap to authenticate';
+      case _VaultState.prompting:
+        title = 'Verifying Identity';
+        subtitle = 'Look at the screen to unlock';
+      case _VaultState.success:
         title = 'Welcome Back';
         subtitle = 'Unlocking...';
         titleColor = ObsidianTheme.emerald;
-      case _GlyphState.error:
-        title = 'Try Again';
-        subtitle = _failCount >= 3 ? 'Tap "Enter PIN" below' : 'Authentication failed';
+      case _VaultState.error:
+        title = 'Recognition Failed';
+        subtitle = _failCount >= 3 ? 'Enter PIN or try again' : 'Face or fingerprint not recognized';
         titleColor = ObsidianTheme.rose;
     }
 
@@ -460,12 +423,12 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
           duration: const Duration(milliseconds: 200),
           child: Text(
             title,
-            key: ValueKey(title),
+            key: ValueKey('t_$title'),
             style: GoogleFonts.inter(
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.w600,
               color: titleColor,
-              letterSpacing: -0.5,
+              letterSpacing: -0.3,
             ),
           ),
         ),
@@ -474,111 +437,87 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
           duration: const Duration(milliseconds: 200),
           child: Text(
             subtitle,
-            key: ValueKey(subtitle),
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: ObsidianTheme.textTertiary,
-            ),
+            key: ValueKey('s_$subtitle'),
+            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF71717A)),
           ),
         ),
       ],
     ).animate().fadeIn(delay: 400.ms, duration: 500.ms);
   }
 
-  // ── Biometric Glyph ────────────────────────────────
+  // ── Lock Glyph ─────────────────────────────────────────
 
-  Widget _buildBiometricGlyph() {
+  Widget _buildLockGlyph() {
+    final IconData icon;
+    final Color iconColor;
+
+    switch (_state) {
+      case _VaultState.idle:
+        icon = CupertinoIcons.lock_fill;
+        iconColor = const Color(0xFF71717A);
+      case _VaultState.prompting:
+        icon = CupertinoIcons.lock_fill;
+        iconColor = Colors.white;
+      case _VaultState.success:
+        icon = CupertinoIcons.lock_open_fill;
+        iconColor = ObsidianTheme.emerald;
+      case _VaultState.error:
+        icon = CupertinoIcons.lock_fill;
+        iconColor = ObsidianTheme.rose;
+    }
+
+    Widget lockWidget = GestureDetector(
+      onTap: _state != _VaultState.prompting ? _attemptBiometric : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _state == _VaultState.prompting
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.white.withValues(alpha: 0.03),
+          border: Border.all(
+            color: _state == _VaultState.success
+                ? ObsidianTheme.emerald.withValues(alpha: 0.5)
+                : _state == _VaultState.error
+                    ? ObsidianTheme.rose.withValues(alpha: 0.3)
+                    : Colors.white.withValues(alpha: 0.06),
+            width: 1,
+          ),
+          boxShadow: _state == _VaultState.success
+              ? [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.25), blurRadius: 20)]
+              : _state == _VaultState.prompting
+                  ? [BoxShadow(color: Colors.white.withValues(alpha: 0.05), blurRadius: 16)]
+                  : null,
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Icon(icon, key: ValueKey(icon), size: 24, color: iconColor),
+        ),
+      ),
+    );
+
+    if (_state == _VaultState.error) {
+      lockWidget = AnimatedBuilder(
+        animation: _shakeCtrl,
+        builder: (_, child) {
+          final shake = sin(_shakeCtrl.value * pi * 6) * 8 * (1 - _shakeCtrl.value);
+          return Transform.translate(offset: Offset(shake, 0), child: child);
+        },
+        child: lockWidget,
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Scanning glyph
-        GestureDetector(
-          onTap: _glyphState != _GlyphState.scanning ? _attemptBiometric : null,
-          child: AnimatedBuilder(
-            animation: _glyphPulse,
-            builder: (_, __) {
-              return Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.03),
-                  border: Border.all(
-                    color: _glyphBorderColor,
-                    width: 1.5,
-                  ),
-                  boxShadow: _glyphState == _GlyphState.success
-                      ? [
-                          BoxShadow(
-                            color: ObsidianTheme.emerald.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Scan line
-                    if (_glyphState == _GlyphState.scanning)
-                      AnimatedBuilder(
-                        animation: _scanLine,
-                        builder: (_, __) {
-                          return Positioned(
-                            top: 8 + _scanLine.value * 52,
-                            left: 12,
-                            right: 12,
-                            child: Container(
-                              height: 2,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.transparent,
-                                    ObsidianTheme.emerald.withValues(alpha: 0.8),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                    // Icon
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(
-                        _glyphIcon,
-                        key: ValueKey(_glyphState),
-                        size: 28,
-                        color: _glyphIconColor,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        )
+        lockWidget
             .animate()
             .fadeIn(delay: 600.ms, duration: 500.ms)
-            .scale(
-              begin: const Offset(0.9, 0.9),
-              delay: 600.ms,
-              duration: 500.ms,
-              curve: Curves.easeOutBack,
-            ),
-
-        // Shake on error
-        if (_glyphState == _GlyphState.error)
-          const SizedBox.shrink()
-              .animate()
-              .shake(hz: 4, duration: 400.ms),
-
-        const SizedBox(height: 24),
-
-        // "Enter PIN" fallback
-        if (_failCount >= 2 && !_showPin)
+            .scale(begin: const Offset(0.9, 0.9), delay: 600.ms, duration: 500.ms, curve: Curves.easeOutBack),
+        if (_failCount >= 2 && !_showPin) ...[
+          const SizedBox(height: 20),
           GestureDetector(
             onTap: () async {
               final hasPin = await BiometricService.hasPinCode;
@@ -588,89 +527,92 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
               }
             },
             child: Text(
-              'Enter PIN',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: ObsidianTheme.textMuted,
-                fontWeight: FontWeight.w500,
-              ),
+              'Enter PIN Instead',
+              style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted, fontWeight: FontWeight.w500),
             ),
           ).animate().fadeIn(duration: 300.ms),
+        ],
       ],
     );
   }
 
-  Color get _glyphBorderColor {
-    switch (_glyphState) {
-      case _GlyphState.idle:
-        return Colors.white.withValues(alpha: 0.08 + _glyphPulse.value * 0.04);
-      case _GlyphState.scanning:
-        return ObsidianTheme.emerald.withValues(alpha: 0.3 + _glyphPulse.value * 0.2);
-      case _GlyphState.success:
-        return ObsidianTheme.emerald;
-      case _GlyphState.error:
-        return ObsidianTheme.rose.withValues(alpha: 0.5);
-    }
+  // ── Try Again Button ───────────────────────────────────
+
+  Widget _buildRetryButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() => _state = _VaultState.idle);
+        _attemptBiometric();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          color: Colors.white.withValues(alpha: 0.03),
+        ),
+        child: Text(
+          'Try Again',
+          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
+        ),
+      ),
+    ).animate().fadeIn(delay: 200.ms, duration: 300.ms).moveY(begin: 8, delay: 200.ms, duration: 300.ms);
   }
 
-  IconData get _glyphIcon {
-    switch (_glyphState) {
-      case _GlyphState.idle:
-      case _GlyphState.scanning:
-        return PhosphorIconsLight.fingerprint;
-      case _GlyphState.success:
-        return PhosphorIconsBold.lockOpen;
-      case _GlyphState.error:
-        return PhosphorIconsBold.lockKey;
-    }
+  // ── Logout Escape Hatch ────────────────────────────────
+
+  Widget _buildLogoutEscape() {
+    return GestureDetector(
+      onTap: _logout,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+        child: Text(
+          'Log out instead',
+          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted),
+        ),
+      ),
+    );
   }
 
-  Color get _glyphIconColor {
-    switch (_glyphState) {
-      case _GlyphState.idle:
-        return ObsidianTheme.textSecondary;
-      case _GlyphState.scanning:
-        return ObsidianTheme.emerald;
-      case _GlyphState.success:
-        return ObsidianTheme.emerald;
-      case _GlyphState.error:
-        return ObsidianTheme.rose;
-    }
-  }
+  // ── PIN Pad ────────────────────────────────────────────
 
-  // ── PIN Pad ────────────────────────────────────────
-
-  Widget _buildPinPad(MediaQueryData mq) {
+  Widget _buildPinPad() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // PIN dots
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(6, (i) {
-            final filled = i < _pinEntry.length;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              width: filled ? 14 : 12,
-              height: filled ? 14 : 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: filled
-                    ? ObsidianTheme.emerald
-                    : Colors.transparent,
-                border: Border.all(
-                  color: filled
-                      ? ObsidianTheme.emerald
-                      : Colors.white.withValues(alpha: 0.15),
-                  width: 1.5,
+        AnimatedBuilder(
+          animation: _shakeCtrl,
+          builder: (_, child) {
+            final shake = _pinError != null
+                ? sin(_shakeCtrl.value * pi * 6) * 6 * (1 - _shakeCtrl.value)
+                : 0.0;
+            return Transform.translate(offset: Offset(shake, 0), child: child);
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(6, (i) {
+              final filled = i < _pinEntry.length;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                width: filled ? 14 : 12,
+                height: filled ? 14 : 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: filled ? ObsidianTheme.emerald : Colors.transparent,
+                  border: Border.all(
+                    color: filled ? ObsidianTheme.emerald : Colors.white.withValues(alpha: 0.15),
+                    width: 1.5,
+                  ),
+                  boxShadow: filled
+                      ? [BoxShadow(color: ObsidianTheme.emeraldGlow, blurRadius: 6)]
+                      : null,
                 ),
-                boxShadow: filled
-                    ? [BoxShadow(color: ObsidianTheme.emeraldGlow, blurRadius: 6)]
-                    : null,
-              ),
-            );
-          }),
+              );
+            }),
+          ),
         ),
 
         if (_pinError != null) ...[
@@ -678,12 +620,11 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
           Text(
             _pinError!,
             style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.rose),
-          ).animate().shake(hz: 3, duration: 300.ms),
+          ),
         ],
 
         const SizedBox(height: 32),
 
-        // Number grid (3x4)
         SizedBox(
           width: 260,
           child: Column(
@@ -710,27 +651,23 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
           return _PinKey(
             onTap: () {
               HapticFeedback.mediumImpact();
-              setState(() => _showPin = false);
+              setState(() { _showPin = false; _state = _VaultState.idle; });
               _attemptBiometric();
             },
-            child: Icon(PhosphorIconsLight.fingerprint, size: 22, color: ObsidianTheme.emerald),
+            child: Icon(CupertinoIcons.lock_fill, size: 20, color: ObsidianTheme.emerald),
           );
         }
         if (key == 'del') {
           return _PinKey(
             onTap: _onPinDelete,
-            child: Icon(PhosphorIconsLight.backspace, size: 20, color: ObsidianTheme.textSecondary),
+            child: const Icon(CupertinoIcons.delete_left, size: 20, color: ObsidianTheme.textSecondary),
           );
         }
         return _PinKey(
           onTap: () => _onPinDigit(key),
           child: Text(
             key,
-            style: GoogleFonts.inter(
-              fontSize: 24,
-              fontWeight: FontWeight.w300,
-              color: Colors.white,
-            ),
+            style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w300, color: Colors.white),
           ),
         );
       }).toList(),
@@ -738,14 +675,13 @@ class _AirlockOverlayState extends State<_AirlockOverlay>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PIN KEY
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// ── PIN Key ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 
 class _PinKey extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
-
   const _PinKey({required this.child, required this.onTap});
 
   @override
@@ -770,13 +706,9 @@ class _PinKeyState extends State<_PinKey> {
         height: 72,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: _pressed
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.white.withValues(alpha: 0.03),
+          color: _pressed ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.03),
           border: Border.all(
-            color: _pressed
-                ? Colors.white.withValues(alpha: 0.15)
-                : Colors.white.withValues(alpha: 0.06),
+            color: _pressed ? Colors.white.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.06),
           ),
         ),
         child: Center(child: widget.child),
@@ -784,61 +716,3 @@ class _PinKeyState extends State<_PinKey> {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LOGO RING PAINTER — emerald trace ring around the logo
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LogoRingPainter extends CustomPainter {
-  final double progress;
-  final Color color;
-  final double glowAlpha;
-
-  _LogoRingPainter({
-    required this.progress,
-    required this.color,
-    required this.glowAlpha,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 2;
-
-    // Background ring
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.04)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-
-    // Progress arc
-    if (progress > 0) {
-      final sweepAngle = 2 * pi * progress;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -pi / 2,
-        sweepAngle,
-        false,
-        Paint()
-          ..color = color.withValues(alpha: 0.6)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _LogoRingPainter old) =>
-      old.progress != progress || old.color != color || old.glowAlpha != glowAlpha;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GLYPH STATE
-// ─────────────────────────────────────────────────────────────────────────────
-
-enum _GlyphState { idle, scanning, success, error }

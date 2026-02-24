@@ -126,8 +126,9 @@ class ActiveWorkspaceNotifier extends StateNotifier<String?> {
     } on PlatformException catch (e) {
       // Keychain access can fail in test/sandboxed environments (e.g. macOS -34018).
       // Continue without persisted workspace; user will select after login.
-      if (e.code != '-34018' && e.code != 'Unexpected security result code')
+      if (e.code != '-34018' && e.code != 'Unexpected security result code') {
         rethrow;
+      }
     }
   }
 

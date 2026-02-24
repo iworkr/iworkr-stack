@@ -1,21 +1,24 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
+import 'package:iworkr_mobile/core/services/settings_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
-import 'package:iworkr_mobile/core/widgets/glass_card.dart';
-import 'package:iworkr_mobile/core/widgets/stealth_icon.dart';
 
-/// Settings Modal — "The Control Panel"
+/// Settings — "The Control Panel"
 ///
-/// Full-screen modal covering 95% of viewport.
-/// Sections: Profile, Security, Preferences, Notifications, Workspace.
-/// Glass-grouped lists on matte black.
+/// Fully reactive. Every toggle/input syncs to Supabase or local device storage
+/// via SettingsNotifier. Obsidian Vantablack/Zinc aesthetic throughout.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -24,22 +27,94 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  // Preferences state
-  String _appearance = 'obsidian';
-  String _hapticLevel = 'medium';
-  String _startScreen = 'dashboard';
+  late TextEditingController _nameCtrl;
+  late TextEditingController _phoneCtrl;
+  late TextEditingController _companyCtrl;
+  late TextEditingController _supportEmailCtrl;
+  final _picker = ImagePicker();
 
-  // Notification toggles
-  bool _pushEnabled = true;
-  bool _emailEnabled = true;
-  bool _smsEnabled = false;
-  bool _jobAssigned = true;
-  bool _jobStatusChange = true;
-  bool _mentionedInChat = true;
+  @override
+  void initState() {
+    super.initState();
+    final s = ref.read(settingsProvider);
+    _nameCtrl = TextEditingController(text: s.displayName);
+    _phoneCtrl = TextEditingController(text: s.phone ?? '');
+    _companyCtrl = TextEditingController(text: s.companyName ?? '');
+    _supportEmailCtrl = TextEditingController(text: s.supportEmail ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _companyCtrl.dispose();
+    _supportEmailCtrl.dispose();
+    super.dispose();
+  }
+
+  void _syncControllers(SettingsState s) {
+    if (_nameCtrl.text != s.displayName && !_nameCtrl.text.contains(s.displayName)) {
+      _nameCtrl.text = s.displayName;
+    }
+    if (_phoneCtrl.text != (s.phone ?? '') && _phoneCtrl.text.isEmpty) {
+      _phoneCtrl.text = s.phone ?? '';
+    }
+    if (_companyCtrl.text != (s.companyName ?? '') && _companyCtrl.text.isEmpty) {
+      _companyCtrl.text = s.companyName ?? '';
+    }
+    if (_supportEmailCtrl.text != (s.supportEmail ?? '') && _supportEmailCtrl.text.isEmpty) {
+      _supportEmailCtrl.text = s.supportEmail ?? '';
+    }
+  }
+
+  Future<void> _pickAvatar() async {
+    HapticFeedback.lightImpact();
+    final source = await showCupertinoModalPopup<ImageSource>(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context, ImageSource.camera),
+            child: const Text('Take Photo'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context, ImageSource.gallery),
+            child: const Text('Choose from Library'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    if (source == null) return;
+
+    final image = await _picker.pickImage(source: source, maxWidth: 512, maxHeight: 512, imageQuality: 80);
+    if (image == null) return;
+
+    await ref.read(settingsProvider.notifier).uploadAvatar(image);
+  }
+
+  Future<void> _toggleNotif(String key, bool value) async {
+    HapticFeedback.lightImpact();
+    final success = await ref.read(settingsProvider.notifier).setNotificationPref(key, value);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: ObsidianTheme.rose,
+          content: Text('Sync failed. Check connection.', style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final profileAsync = ref.watch(profileProvider);
+    final s = ref.watch(settingsProvider);
+    _syncControllers(s);
 
     return Scaffold(
       backgroundColor: ObsidianTheme.void_,
@@ -47,251 +122,187 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         bottom: false,
         child: Column(
           children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      context.pop();
-                    },
-                    child: Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(
-                        borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: ObsidianTheme.border),
-                        color: ObsidianTheme.surface1,
-                      ),
-                      child: const Center(
-                        child: Icon(PhosphorIconsLight.x, size: 16, color: ObsidianTheme.textSecondary),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    'Settings',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textPrimary,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 300.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
-
-            const SizedBox(height: 16),
-
-            // Scrollable content
+            _Header(onClose: () => context.pop()),
+            const SizedBox(height: 8),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                 children: [
-                  // ── Profile ───────────────────────────────
-                  _SectionLabel('PROFILE'),
+                  // ── Profile ─────────────────────────────
+                  _SectionLabel('ACCOUNT'),
                   const SizedBox(height: 8),
-                  profileAsync.when(
-                    data: (profile) {
-                      if (profile == null) return const SizedBox.shrink();
-                      return GlassCard(
-                        padding: const EdgeInsets.all(20),
-                        borderRadius: ObsidianTheme.radiusLg,
-                        child: Column(
-                          children: [
-                            // Avatar
-                            profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
-                              ? CircleAvatar(
-                                  radius: 36,
-                                  backgroundImage: NetworkImage(profile.avatarUrl!),
-                                  backgroundColor: ObsidianTheme.emeraldDim,
-                                )
-                              : Container(
-                                  width: 72, height: 72,
+                  _Card(
+                    children: [
+                      const SizedBox(height: 4),
+                      Center(
+                        child: GestureDetector(
+                          onTap: _pickAvatar,
+                          child: Stack(
+                            children: [
+                              s.avatarUrl != null && s.avatarUrl!.isNotEmpty
+                                  ? CircleAvatar(
+                                      radius: 36,
+                                      backgroundImage: NetworkImage(s.avatarUrl!),
+                                      backgroundColor: ObsidianTheme.emeraldDim,
+                                    )
+                                  : Container(
+                                      width: 72,
+                                      height: 72,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: ObsidianTheme.emeraldDim,
+                                        border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          s.displayName.isNotEmpty
+                                              ? s.displayName.split(' ').map((p) => p.isNotEmpty ? p[0] : '').take(2).join().toUpperCase()
+                                              : 'U',
+                                          style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, color: ObsidianTheme.emerald),
+                                        ),
+                                      ),
+                                    ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: ObsidianTheme.emeraldDim,
-                                    border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                                    color: ObsidianTheme.surface2,
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                                   ),
-                                  child: Center(
-                                    child: Text(
-                                      profile.initials,
-                                      style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, color: ObsidianTheme.emerald),
-                                    ),
+                                  child: const Icon(PhosphorIconsLight.camera, size: 12, color: ObsidianTheme.textSecondary),
+                                ),
+                              ),
+                              if (s.saving)
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                                    child: const Center(child: CupertinoActivityIndicator()),
                                   ),
                                 ),
-                            const SizedBox(height: 16),
-                            // Name (editable look)
-                            _SettingsField(
-                              label: 'Display Name',
-                              value: profile.displayName,
-                              icon: PhosphorIconsLight.user,
-                            ),
-                            const SizedBox(height: 12),
-                            _SettingsField(
-                              label: 'Email',
-                              value: profile.email,
-                              icon: PhosphorIconsLight.envelope,
-                              locked: true,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    loading: () => _shimmer(100),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Security ──────────────────────────────
-                  _SectionLabel('SECURITY'),
-                  const SizedBox(height: 8),
-                  GlassCard(
-                    padding: EdgeInsets.zero,
-                    borderRadius: ObsidianTheme.radiusLg,
-                    child: Column(
-                      children: [
-                        _SettingsNavItem(
-                          icon: PhosphorIconsLight.shieldCheck,
-                          label: 'Security & Billing',
-                          subtitle: 'Password, biometrics, sessions, plan',
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            context.push('/profile/security');
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Preferences ────────────────────────────
-                  _SectionLabel('PREFERENCES'),
-                  const SizedBox(height: 8),
-                  GlassCard(
-                    padding: EdgeInsets.zero,
-                    borderRadius: ObsidianTheme.radiusLg,
-                    child: Column(
-                      children: [
-                        _SettingsSelector(
-                          icon: PhosphorIconsLight.moon,
-                          label: 'Appearance',
-                          value: _appearance == 'obsidian' ? 'Obsidian' : _appearance == 'dark' ? 'Dark' : 'System',
-                          options: const ['System', 'Dark', 'Obsidian'],
-                          onChanged: (v) {
-                            HapticFeedback.selectionClick();
-                            setState(() => _appearance = v.toLowerCase());
-                          },
-                        ),
-                        const Divider(height: 1, color: ObsidianTheme.border),
-                        _SettingsSelector(
-                          icon: PhosphorIconsLight.vibrate,
-                          label: 'Haptics',
-                          value: _hapticLevel[0].toUpperCase() + _hapticLevel.substring(1),
-                          options: const ['Off', 'Light', 'Medium', 'Heavy'],
-                          onChanged: (v) {
-                            HapticFeedback.selectionClick();
-                            setState(() => _hapticLevel = v.toLowerCase());
-                          },
-                        ),
-                        const Divider(height: 1, color: ObsidianTheme.border),
-                        _SettingsSelector(
-                          icon: PhosphorIconsLight.rocket,
-                          label: 'Start Screen',
-                          value: _startScreen == 'dashboard' ? 'Dashboard' : 'Schedule',
-                          options: const ['Dashboard', 'Schedule'],
-                          onChanged: (v) {
-                            HapticFeedback.selectionClick();
-                            setState(() => _startScreen = v.toLowerCase());
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Notifications ──────────────────────────
-                  _SectionLabel('NOTIFICATIONS'),
-                  const SizedBox(height: 8),
-                  GlassCard(
-                    padding: EdgeInsets.zero,
-                    borderRadius: ObsidianTheme.radiusLg,
-                    child: Column(
-                      children: [
-                        _SettingsToggle(
-                          icon: PhosphorIconsLight.bellSimple,
-                          label: 'Push Notifications',
-                          value: _pushEnabled,
-                          onChanged: (v) { HapticFeedback.mediumImpact(); setState(() => _pushEnabled = v); },
-                        ),
-                        const Divider(height: 1, color: ObsidianTheme.border),
-                        _SettingsToggle(
-                          icon: PhosphorIconsLight.envelope,
-                          label: 'Email Alerts',
-                          value: _emailEnabled,
-                          onChanged: (v) { HapticFeedback.mediumImpact(); setState(() => _emailEnabled = v); },
-                        ),
-                        const Divider(height: 1, color: ObsidianTheme.border),
-                        _SettingsToggle(
-                          icon: PhosphorIconsLight.chatText,
-                          label: 'SMS (Urgent Only)',
-                          value: _smsEnabled,
-                          onChanged: (v) { HapticFeedback.mediumImpact(); setState(() => _smsEnabled = v); },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Triggers
-                  GlassCard(
-                    padding: EdgeInsets.zero,
-                    borderRadius: ObsidianTheme.radiusLg,
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'TRIGGERS',
-                              style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
-                            ),
+                            ],
                           ),
                         ),
-                        _SettingsToggle(
-                          icon: PhosphorIconsLight.briefcase,
-                          label: 'New Job Assigned',
-                          value: _jobAssigned,
-                          onChanged: (v) { HapticFeedback.mediumImpact(); setState(() => _jobAssigned = v); },
-                        ),
-                        const Divider(height: 1, color: ObsidianTheme.border),
-                        _SettingsToggle(
-                          icon: PhosphorIconsLight.arrowsClockwise,
-                          label: 'Job Status Change',
-                          value: _jobStatusChange,
-                          onChanged: (v) { HapticFeedback.mediumImpact(); setState(() => _jobStatusChange = v); },
-                        ),
-                        const Divider(height: 1, color: ObsidianTheme.border),
-                        _SettingsToggle(
-                          icon: PhosphorIconsLight.at,
-                          label: 'Mentioned in Chat',
-                          value: _mentionedInChat,
-                          onChanged: (v) { HapticFeedback.mediumImpact(); setState(() => _mentionedInChat = v); },
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 20),
+                      _StealthInput(
+                        label: 'Display Name',
+                        controller: _nameCtrl,
+                        icon: PhosphorIconsLight.user,
+                        onSubmitted: (v) => ref.read(settingsProvider.notifier).updateDisplayName(v),
+                      ),
+                      _Divider(),
+                      _StealthInput(
+                        label: 'Phone',
+                        controller: _phoneCtrl,
+                        icon: PhosphorIconsLight.phone,
+                        keyboard: TextInputType.phone,
+                        onSubmitted: (v) => ref.read(settingsProvider.notifier).updatePhone(v),
+                      ),
+                      _Divider(),
+                      _StaticField(
+                        label: 'Email',
+                        value: s.email,
+                        icon: PhosphorIconsLight.envelope,
+                        locked: true,
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 24),
 
-                  // ── Workspace (Admin Only — requires adminView claim) ──
+                  // ── Security ────────────────────────────
+                  _SectionLabel('SECURITY'),
+                  const SizedBox(height: 8),
+                  _Card(
+                    children: [
+                      _ToggleRow(
+                        icon: PhosphorIconsLight.fingerprint,
+                        label: 'Require Face ID / Touch ID',
+                        value: s.biometricsEnabled,
+                        enabled: s.biometricsAvailable,
+                        onChanged: (_) async {
+                          HapticFeedback.mediumImpact();
+                          await ref.read(settingsProvider.notifier).toggleBiometrics();
+                        },
+                      ),
+                      _Divider(),
+                      _NavRow(
+                        icon: PhosphorIconsLight.shieldCheck,
+                        label: 'Password & Sessions',
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          context.push('/profile/security');
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Notifications ───────────────────────
+                  _SectionLabel('NOTIFICATIONS'),
+                  const SizedBox(height: 8),
+                  _Card(
+                    children: [
+                      _ToggleRow(
+                        icon: PhosphorIconsLight.bellSimple,
+                        label: 'Push Notifications',
+                        value: s.pushEnabled,
+                        onChanged: (v) => _toggleNotif('push_enabled', v),
+                      ),
+                      _Divider(),
+                      _ToggleRow(
+                        icon: PhosphorIconsLight.envelope,
+                        label: 'Email Alerts',
+                        value: s.emailEnabled,
+                        onChanged: (v) => _toggleNotif('email_enabled', v),
+                      ),
+                      _Divider(),
+                      _ToggleRow(
+                        icon: PhosphorIconsLight.chatText,
+                        label: 'SMS (Urgent Only)',
+                        value: s.smsEnabled,
+                        onChanged: (v) => _toggleNotif('sms_enabled', v),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _Card(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('TRIGGERS', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                      ),
+                      _ToggleRow(
+                        icon: PhosphorIconsLight.briefcase,
+                        label: 'New Job Assigned',
+                        value: s.jobAssigned,
+                        onChanged: (v) => _toggleNotif('job_assigned', v),
+                      ),
+                      _Divider(),
+                      _ToggleRow(
+                        icon: PhosphorIconsLight.arrowsClockwise,
+                        label: 'Job Status Change',
+                        value: s.jobStatusChange,
+                        onChanged: (v) => _toggleNotif('job_status_change', v),
+                      ),
+                      _Divider(),
+                      _ToggleRow(
+                        icon: PhosphorIconsLight.at,
+                        label: 'Mentioned in Chat',
+                        value: s.mentionedInChat,
+                        onChanged: (v) => _toggleNotif('mentioned_in_chat', v),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Workspace (Admin Only) ──────────────
                   PermissionGuard(
                     claim: Claims.adminView,
                     child: Column(
@@ -299,93 +310,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       children: [
                         _SectionLabel('WORKSPACE'),
                         const SizedBox(height: 8),
-                        GlassCard(
-                          padding: EdgeInsets.zero,
-                          borderRadius: ObsidianTheme.radiusLg,
-                          child: Column(
-                            children: [
-                              PermissionGuard(
-                                claim: Claims.adminUsers,
-                                child: _SettingsNavItem(
-                                  icon: PhosphorIconsLight.usersThree,
-                                  label: 'Team Members',
-                                  subtitle: 'Manage roles & access',
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    context.push('/admin/users');
-                                  },
-                                ),
-                              ),
-                              const Divider(height: 1, color: ObsidianTheme.border),
-                              PermissionGuard(
-                                claim: Claims.adminBilling,
-                                child: _SettingsNavItem(
-                                  icon: PhosphorIconsLight.creditCard,
-                                  label: 'Billing',
-                                  subtitle: 'Pro Plan · Active',
-                                  trailing: Container(
-                                    width: 6, height: 6,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: ObsidianTheme.emerald,
-                                      boxShadow: [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.4), blurRadius: 4)],
-                                    ),
-                                  ),
-                                  onTap: () => HapticFeedback.lightImpact(),
-                                ),
-                              ),
-                              const Divider(height: 1, color: ObsidianTheme.border),
-                              PermissionGuard(
-                                claim: Claims.adminIntegrations,
-                                child: _SettingsNavItem(
-                                  icon: PhosphorIconsLight.plugs,
-                                  label: 'Integrations',
-                                  subtitle: 'Stripe, Xero, Slack',
-                                  onTap: () => HapticFeedback.lightImpact(),
-                                ),
-                              ),
-                            ],
-                          ),
+                        _Card(
+                          children: [
+                            _StealthInput(
+                              label: 'Company Name',
+                              controller: _companyCtrl,
+                              icon: PhosphorIconsLight.buildings,
+                              onSubmitted: (v) => ref.read(settingsProvider.notifier).updateCompanyName(v),
+                            ),
+                            _Divider(),
+                            _StealthInput(
+                              label: 'Support Email',
+                              controller: _supportEmailCtrl,
+                              icon: PhosphorIconsLight.envelopeSimple,
+                              keyboard: TextInputType.emailAddress,
+                              onSubmitted: (v) => ref.read(settingsProvider.notifier).updateSupportEmail(v),
+                            ),
+                            _Divider(),
+                            _NavRow(
+                              icon: PhosphorIconsLight.usersThree,
+                              label: 'Team Members',
+                              subtitle: 'Manage roles & access',
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                context.push('/admin/users');
+                              },
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 24),
                       ],
                     ),
                   ),
 
-                  // ── Sign Out ───────────────────────────────
-                  GestureDetector(
+                  // ── Destructive ─────────────────────────
+                  _GhostDangerButton(
+                    label: 'Sign Out',
+                    color: ObsidianTheme.textSecondary,
                     onTap: () async {
                       HapticFeedback.heavyImpact();
                       await ref.read(authNotifierProvider.notifier).signOut();
                       if (context.mounted) context.go('/login');
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.2)),
-                        color: ObsidianTheme.rose.withValues(alpha: 0.05),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Sign Out',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.rose),
-                        ),
-                      ),
-                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _GhostDangerButton(
+                    label: 'Delete Account',
+                    color: ObsidianTheme.rose,
+                    onTap: () => _showDeleteModal(context),
                   ),
 
-                  const SizedBox(height: 24),
-
-                  // Footer
+                  const SizedBox(height: 32),
                   Center(
-                    child: Column(
-                      children: [
-                        Image.asset('assets/logos/logo-dark-full.png', width: 80, opacity: const AlwaysStoppedAnimation(0.3)),
-                        const SizedBox(height: 8),
-                        Text('v3.0.0', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
-                      ],
-                    ),
+                    child: Text('v3.0.0', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
                   ),
                 ],
               ),
@@ -396,19 +373,170 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _shimmer(double height) {
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: ObsidianTheme.radiusLg,
-        color: ObsidianTheme.shimmerBase,
-      ),
+  void _showDeleteModal(BuildContext context) {
+    final deleteCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final enabled = deleteCtrl.text.trim().toUpperCase() == 'DELETE';
+            return Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    width: 340,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF09090B),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: ObsidianTheme.rose.withValues(alpha: 0.1),
+                            ),
+                            child: const Icon(PhosphorIconsLight.warning, size: 24, color: ObsidianTheme.rose),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Delete Account',
+                            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'This action is permanent and cannot be undone. Type DELETE to confirm.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary, height: 1.5),
+                          ),
+                          const SizedBox(height: 20),
+                          TextField(
+                            controller: deleteCtrl,
+                            onChanged: (_) => setModalState(() {}),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.jetBrainsMono(fontSize: 16, color: ObsidianTheme.rose, fontWeight: FontWeight.w600, letterSpacing: 4),
+                            decoration: InputDecoration(
+                              hintText: 'DELETE',
+                              hintStyle: GoogleFonts.jetBrainsMono(fontSize: 16, color: ObsidianTheme.textDisabled, letterSpacing: 4),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: ObsidianTheme.rose.withValues(alpha: 0.5))),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => Navigator.pop(ctx),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                    ),
+                                    child: Center(
+                                      child: Text('Cancel', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textSecondary)),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: enabled
+                                      ? () async {
+                                          Navigator.pop(ctx);
+                                          await ref.read(settingsProvider.notifier).deleteAccount();
+                                          if (context.mounted) context.go('/login');
+                                        }
+                                      : null,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: enabled ? ObsidianTheme.rose : ObsidianTheme.rose.withValues(alpha: 0.15),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Delete Forever',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: enabled ? Colors.white : ObsidianTheme.rose.withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
-
 }
 
-// ── Section Label ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// ── Shared Components ───────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+class _Header extends StatelessWidget {
+  final VoidCallback onClose;
+  const _Header({required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onClose();
+            },
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                borderRadius: ObsidianTheme.radiusMd,
+                border: Border.all(color: ObsidianTheme.border),
+                color: ObsidianTheme.surface1,
+              ),
+              child: const Center(child: Icon(PhosphorIconsLight.x, size: 16, color: ObsidianTheme.textSecondary)),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Text(
+            'Settings',
+            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary, letterSpacing: -0.3),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 300.ms, curve: const Cubic(0.16, 1, 0.3, 1));
+  }
+}
 
 class _SectionLabel extends StatelessWidget {
   final String text;
@@ -416,68 +544,210 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+    return Text(text, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5));
+  }
+}
+
+class _Card extends StatelessWidget {
+  final List<Widget> children;
+  const _Card({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF09090B),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
     );
   }
 }
 
-// ── Settings Field (Readonly / Editable) ─────────────
+class _Divider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 32),
+      child: Container(height: 1, color: const Color(0xFF18181B), margin: const EdgeInsets.symmetric(vertical: 2)),
+    );
+  }
+}
 
-class _SettingsField extends StatelessWidget {
+class _StealthInput extends StatefulWidget {
+  final String label;
+  final TextEditingController controller;
+  final IconData icon;
+  final TextInputType keyboard;
+  final ValueChanged<String> onSubmitted;
+
+  const _StealthInput({
+    required this.label,
+    required this.controller,
+    required this.icon,
+    this.keyboard = TextInputType.text,
+    required this.onSubmitted,
+  });
+
+  @override
+  State<_StealthInput> createState() => _StealthInputState();
+}
+
+class _StealthInputState extends State<_StealthInput> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(widget.icon, size: 16, color: ObsidianTheme.textTertiary),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.label, style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                const SizedBox(height: 2),
+                Focus(
+                  onFocusChange: (f) => setState(() => _focused = f),
+                  child: TextField(
+                    controller: widget.controller,
+                    keyboardType: widget.keyboard,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: _focused ? Colors.white : ObsidianTheme.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.only(bottom: 4),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                    ),
+                    onSubmitted: widget.onSubmitted,
+                    onEditingComplete: () {
+                      widget.onSubmitted(widget.controller.text);
+                      FocusScope.of(context).unfocus();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StaticField extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
   final bool locked;
 
-  const _SettingsField({required this.label, required this.value, required this.icon, this.locked = false});
+  const _StaticField({required this.label, required this.value, required this.icon, this.locked = false});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        StealthIcon(icon, size: 16),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: ObsidianTheme.textTertiary),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                const SizedBox(height: 2),
+                Text(value, style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500)),
+              ],
+            ),
           ),
-        ),
-        if (locked) Icon(PhosphorIconsLight.lockSimple, size: 14, color: ObsidianTheme.textTertiary),
-      ],
+          if (locked) const Icon(PhosphorIconsLight.lockSimple, size: 14, color: ObsidianTheme.textTertiary),
+        ],
+      ),
     );
   }
 }
 
-// ── Settings Nav Item (Pushes to screen) ─────────────
+class _ToggleRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
 
-class _SettingsNavItem extends StatelessWidget {
+  const _ToggleRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.enabled = true,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: value ? ObsidianTheme.emerald : ObsidianTheme.textTertiary),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: enabled ? ObsidianTheme.textPrimary : ObsidianTheme.textDisabled,
+              ),
+            ),
+          ),
+          IgnorePointer(
+            ignoring: !enabled,
+            child: Opacity(
+              opacity: enabled ? 1 : 0.4,
+              child: CupertinoSwitch(
+                value: value,
+                activeTrackColor: ObsidianTheme.emerald,
+                inactiveTrackColor: const Color(0xFF27272A),
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String? subtitle;
-  final Widget? trailing;
   final VoidCallback onTap;
 
-  const _SettingsNavItem({required this.icon, required this.label, this.subtitle, this.trailing, required this.onTap});
+  const _NavRow({required this.icon, required this.label, this.subtitle, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: [
-            StealthIcon(icon, size: 18),
+            Icon(icon, size: 16, color: ObsidianTheme.textTertiary),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -489,8 +759,7 @@ class _SettingsNavItem extends StatelessWidget {
                 ],
               ),
             ),
-            if (trailing != null) trailing!
-            else Icon(PhosphorIconsLight.caretRight, size: 14, color: ObsidianTheme.textTertiary),
+            const Icon(CupertinoIcons.chevron_right, size: 14, color: ObsidianTheme.textTertiary),
           ],
         ),
       ),
@@ -498,131 +767,29 @@ class _SettingsNavItem extends StatelessWidget {
   }
 }
 
-// ── Settings Toggle ──────────────────────────────────
-
-class _SettingsToggle extends StatelessWidget {
-  final IconData icon;
+class _GhostDangerButton extends StatelessWidget {
   final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
+  final Color color;
+  final VoidCallback onTap;
 
-  const _SettingsToggle({required this.icon, required this.label, required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          StealthIcon(icon, size: 18, isActive: value),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(label, style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary)),
-          ),
-          _ObsidianSwitch(value: value, onChanged: onChanged),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Obsidian Switch (Custom Toggle) ──────────────────
-
-class _ObsidianSwitch extends StatelessWidget {
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _ObsidianSwitch({required this.value, required this.onChanged});
+  const _GhostDangerButton({required this.label, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => onChanged(!value),
-      child: AnimatedContainer(
-        duration: ObsidianTheme.standard,
-        width: 40,
-        height: 22,
-        padding: const EdgeInsets.all(2),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(11),
-          color: value ? ObsidianTheme.emerald : const Color(0xFF27272A),
-          border: Border.all(
-            color: value ? ObsidianTheme.emerald.withValues(alpha: 0.5) : ObsidianTheme.borderMedium,
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.transparent,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: color),
           ),
         ),
-        child: AnimatedAlign(
-          duration: ObsidianTheme.standard,
-          curve: Curves.easeOutBack,
-          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              boxShadow: value
-                  ? [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.3), blurRadius: 4)]
-                  : null,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Settings Selector ────────────────────────────────
-
-class _SettingsSelector extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final List<String> options;
-  final ValueChanged<String> onChanged;
-
-  const _SettingsSelector({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.options,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          StealthIcon(icon, size: 18),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(label, style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary)),
-          ),
-          GestureDetector(
-            onTap: () {
-              final currentIndex = options.indexWhere((o) => o == value);
-              final nextIndex = (currentIndex + 1) % options.length;
-              onChanged(options[nextIndex]);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                borderRadius: ObsidianTheme.radiusMd,
-                color: ObsidianTheme.shimmerBase,
-                border: Border.all(color: ObsidianTheme.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(value, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textSecondary)),
-                  const SizedBox(width: 4),
-                  Icon(PhosphorIconsLight.caretDown, size: 10, color: ObsidianTheme.textTertiary),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

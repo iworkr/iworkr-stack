@@ -103,7 +103,7 @@ class _SmallRevenue extends StatelessWidget {
         Text('REVENUE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
         Text(
           formatted,
-          style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1),
+          style: GoogleFonts.jetBrainsMono(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1),
         ),
         SizedBox(height: 20, child: _MiniSparkline(color: ObsidianTheme.emerald)),
       ],
@@ -145,7 +145,7 @@ class _MediumRevenue extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           formatted,
-          style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1.5),
+          style: GoogleFonts.jetBrainsMono(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1.5),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -183,7 +183,7 @@ class _LargeRevenue extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           formatted,
-          style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1.5),
+          style: GoogleFonts.jetBrainsMono(fontSize: 36, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1.5),
         ),
         const SizedBox(height: 16),
         Expanded(child: _BarChart()),
@@ -219,14 +219,14 @@ class _StatsWidget extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(PhosphorIconsLight.briefcase, size: 12, color: ObsidianTheme.blue),
+                  Icon(PhosphorIconsLight.briefcase, size: 12, color: ObsidianTheme.textMuted),
                   const SizedBox(width: 4),
                   Text('JOBS', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
                 ],
               ),
               Row(
                 children: [
-                  Text('$active', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w700, color: ObsidianTheme.blue, letterSpacing: -1)),
+                  Text('$active', style: GoogleFonts.jetBrainsMono(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1)),
                   Text(' active', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
                 ],
               ),
@@ -249,12 +249,12 @@ class _StatsWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(children: [
-                    Icon(PhosphorIconsLight.briefcase, size: 12, color: ObsidianTheme.blue),
+                    Icon(PhosphorIconsLight.briefcase, size: 12, color: ObsidianTheme.textMuted),
                     const SizedBox(width: 4),
                     Text('ACTIVE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
                   ]),
                   const SizedBox(height: 6),
-                  Text('$active', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1)),
+                  Text('$active', style: GoogleFonts.jetBrainsMono(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1)),
                 ],
               ),
             ),
@@ -467,10 +467,10 @@ class _QuickActionsWidget extends StatelessWidget {
     }
 
     final actions = [
-      _ActionDef(icon: PhosphorIconsLight.barcode, label: 'Scan', color: ObsidianTheme.emerald, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScannerScreen()))),
-      _ActionDef(icon: PhosphorIconsLight.plus, label: 'New Job', color: ObsidianTheme.blue, onTap: () => showCreateJobSheet(context)),
-      _ActionDef(icon: PhosphorIconsLight.magnifyingGlass, label: 'Search', color: ObsidianTheme.textSecondary, onTap: () => showCommandPalette(context)),
-      _ActionDef(icon: PhosphorIconsLight.timer, label: 'Clock', color: ObsidianTheme.amber, onTap: () => HapticFeedback.lightImpact()),
+      _ActionDef(icon: PhosphorIconsLight.barcode, label: 'Scan', color: Colors.white, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScannerScreen()))),
+      _ActionDef(icon: PhosphorIconsLight.plus, label: 'New Job', color: Colors.white, onTap: () => showCreateJobSheet(context)),
+      _ActionDef(icon: PhosphorIconsLight.magnifyingGlass, label: 'Search', color: Colors.white, onTap: () => showCommandPalette(context)),
+      _ActionDef(icon: PhosphorIconsLight.timer, label: 'Clock', color: Colors.white, onTap: () => HapticFeedback.lightImpact()),
     ];
 
     return Row(
@@ -536,9 +536,9 @@ class _AnimatedActionIconState extends State<_AnimatedActionIcon>
         return Container(
           width: 40, height: 40,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: widget.color.withValues(alpha: 0.06 + _ctrl.value * 0.04),
-            border: Border.all(color: widget.color.withValues(alpha: 0.12 + _ctrl.value * 0.08)),
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.white.withValues(alpha: 0.03 + _ctrl.value * 0.02),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: Icon(widget.icon, size: 18, color: widget.color),
         );
@@ -707,9 +707,9 @@ class _ScheduleWidget extends StatelessWidget {
   Color _statusColor(dynamic status) {
     final s = status.toString();
     if (s.contains('inProgress')) return ObsidianTheme.emerald;
-    if (s.contains('enRoute')) return ObsidianTheme.amber;
+    if (s.contains('enRoute')) return ObsidianTheme.emerald;
     if (s.contains('complete')) return ObsidianTheme.textTertiary;
-    return ObsidianTheme.blue;
+    return ObsidianTheme.textMuted;
   }
 
   @override
@@ -733,7 +733,7 @@ class _ScheduleWidget extends StatelessWidget {
                 const Spacer(),
                 GestureDetector(
                   onTap: () => context.go('/schedule'),
-                  child: Text('View all', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.blue, fontWeight: FontWeight.w500)),
+                  child: Text('View all', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textMuted, fontWeight: FontWeight.w500)),
                 ),
               ],
             ),
@@ -805,8 +805,8 @@ class _RouteWidget extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _RouteMiniStat(label: 'STOPS', value: '${route.jobSequence.length}', color: ObsidianTheme.blue),
-                  _RouteMiniStat(label: 'DRIVE', value: route.driveTimeLabel, color: ObsidianTheme.amber),
+                  _RouteMiniStat(label: 'STOPS', value: '${route.jobSequence.length}', color: Colors.white),
+                  _RouteMiniStat(label: 'DRIVE', value: route.driveTimeLabel, color: Colors.white),
                   _RouteMiniStat(label: 'DIST', value: route.distanceLabel, color: ObsidianTheme.emerald),
                 ],
               ),

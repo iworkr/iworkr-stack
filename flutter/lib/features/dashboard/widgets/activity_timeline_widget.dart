@@ -64,7 +64,7 @@ class _TimelineView extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(PhosphorIconsLight.pulse, size: 12, color: ObsidianTheme.blue),
+            Icon(PhosphorIconsLight.pulse, size: 12, color: ObsidianTheme.textMuted),
             const SizedBox(width: 6),
             Text(
               'ACTIVITY',
@@ -245,7 +245,7 @@ class _TimelineEntry extends StatelessWidget {
 
     return _EntryMeta(
       icon: PhosphorIconsLight.pencilSimple,
-      color: ObsidianTheme.blue,
+      color: ObsidianTheme.textSecondary,
       title: '${_entityLabel(entityType)} updated',
       subtitle: action,
     );
@@ -268,14 +268,14 @@ class _TimelineEntry extends StatelessWidget {
         return ObsidianTheme.emerald;
       case 'in_progress':
       case 'scheduled':
-        return ObsidianTheme.blue;
+        return ObsidianTheme.textSecondary;
       case 'overdue':
       case 'cancelled':
       case 'rejected':
         return ObsidianTheme.rose;
       case 'sent':
       case 'viewed':
-        return ObsidianTheme.amber;
+        return ObsidianTheme.textSecondary;
       case 'invoiced':
         return const Color(0xFFA78BFA);
       default:
@@ -335,7 +335,7 @@ class _EmptyTimeline extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(PhosphorIconsLight.pulse, size: 12, color: ObsidianTheme.blue),
+            Icon(PhosphorIconsLight.pulse, size: 12, color: ObsidianTheme.textMuted),
             const SizedBox(width: 6),
             Text(
               'ACTIVITY',

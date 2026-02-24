@@ -39,24 +39,22 @@ class _GlassCardState extends State<GlassCard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    final radius = widget.borderRadius ?? ObsidianTheme.radiusLg;
-
     final card = AnimatedContainer(
       duration: ObsidianTheme.medium,
       curve: Curves.easeOut,
       transform: _pressed ? Matrix4.diagonal3Values(0.98, 0.98, 1) : Matrix4.identity(),
       transformAlignment: Alignment.center,
       child: ClipRRect(
-        borderRadius: radius,
+        borderRadius: widget.borderRadius ?? ObsidianTheme.radiusXl,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
           child: Container(
             padding: widget.padding ?? const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: ObsidianTheme.surface1,
-              borderRadius: radius,
+              color: const Color(0xFF09090B),
+              borderRadius: widget.borderRadius ?? ObsidianTheme.radiusXl,
               border: Border.all(
-                color: widget.borderColor ?? ObsidianTheme.border,
+                color: widget.borderColor ?? Colors.white.withValues(alpha: 0.05),
               ),
             ),
             child: widget.child,

@@ -60,6 +60,13 @@ dependencies:
   # Haptics (built-in via flutter/services)
   cupertino_icons: ^1.0.8
   flutter_staggered_grid_view: ^0.7.0
+  drift: ^2.31.0
+  sqlite3_flutter_libs: ^0.6.0+eol
+  path_provider: ^2.1.5
+  workmanager: ^0.9.0+3
+  uuid: ^4.5.3
+  home_widget: ^0.9.0
+  live_activities: ^2.4.3
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +77,8 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
   mocktail: ^1.0.4
+  drift_dev: ^2.31.0
+  build_runner: ^2.11.1
 
 flutter:
   uses-material-design: true

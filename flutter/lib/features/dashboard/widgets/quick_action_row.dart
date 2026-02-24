@@ -145,20 +145,21 @@ class _QuickActionButtonState extends State<_QuickActionButton> {
         transformAlignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
-          border: Border.all(color: ObsidianTheme.borderMedium),
-          color: ObsidianTheme.hoverBg,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          color: Colors.white.withValues(alpha: 0.03),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(widget.action.icon, size: 20, color: ObsidianTheme.textSecondary),
+            Icon(widget.action.icon, size: 20, color: Colors.white),
             const SizedBox(height: 8),
             Text(
-              widget.action.label,
-              style: GoogleFonts.inter(
-                fontSize: 10,
+              widget.action.label.toUpperCase(),
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 8,
                 color: ObsidianTheme.textMuted,
                 fontWeight: FontWeight.w500,
+                letterSpacing: 1.2,
               ),
             ),
           ],

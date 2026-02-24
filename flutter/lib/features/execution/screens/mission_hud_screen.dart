@@ -149,6 +149,7 @@ class _MissionHudScreenState extends ConsumerState<MissionHudScreen>
     if (postForms.isNotEmpty && mounted) {
       final postComplete = await ref.read(postJobFormsCompleteProvider(widget.jobId).future);
       if (!postComplete) {
+        if (!mounted) return;
         final cleared = await showCompliancePacket(
           context,
           jobId: widget.jobId,

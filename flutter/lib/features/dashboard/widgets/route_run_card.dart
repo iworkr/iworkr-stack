@@ -53,9 +53,9 @@ class _NoRouteCard extends StatelessWidget {
             width: 40, height: 40,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: ObsidianTheme.blue.withValues(alpha: 0.1),
+              color: Colors.white.withValues(alpha: 0.04),
             ),
-            child: Icon(PhosphorIconsLight.path, color: ObsidianTheme.blue, size: 18),
+            child: Icon(PhosphorIconsLight.path, color: ObsidianTheme.textSecondary, size: 18),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -87,13 +87,13 @@ class _NoRouteCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: ObsidianTheme.blue.withValues(alpha: 0.1),
-                border: Border.all(color: ObsidianTheme.blue.withValues(alpha: 0.2)),
+                color: ObsidianTheme.emerald.withValues(alpha: 0.1),
+                border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
               ),
               child: Text(
                 'Optimize',
                 style: GoogleFonts.inter(
-                  color: ObsidianTheme.blue,
+                  color: ObsidianTheme.emerald,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -124,7 +124,7 @@ class _RouteCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: Colors.white.withValues(alpha: 0.02),
-          border: Border.all(color: ObsidianTheme.blue.withValues(alpha: 0.12)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           children: [
@@ -166,23 +166,18 @@ class _RouteCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      gradient: LinearGradient(
-                        colors: [
-                          ObsidianTheme.blue.withValues(alpha: 0.15),
-                          const Color(0xFF8B5CF6).withValues(alpha: 0.15),
-                        ],
-                      ),
-                      border: Border.all(color: ObsidianTheme.blue.withValues(alpha: 0.25)),
+                      color: ObsidianTheme.emerald.withValues(alpha: 0.12),
+                      border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(PhosphorIconsLight.navigationArrow, color: ObsidianTheme.blue, size: 14),
+                        Icon(PhosphorIconsLight.navigationArrow, color: ObsidianTheme.emerald, size: 14),
                         const SizedBox(width: 6),
                         Text(
                           route.isActive ? 'Continue' : 'Start Run',
                           style: GoogleFonts.inter(
-                            color: ObsidianTheme.blue,
+                            color: ObsidianTheme.emerald,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -257,7 +252,7 @@ class _RouteMapPainter extends CustomPainter {
     // Dark background
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = const Color(0xFF080810),
+      Paint()..color = const Color(0xFF050508),
     );
 
     // Grid lines
@@ -290,7 +285,7 @@ class _RouteMapPainter extends CustomPainter {
     if (points.length > 1) {
       // Glow line
       final glowPaint = Paint()
-        ..color = ObsidianTheme.blue.withValues(alpha: 0.12)
+        ..color = ObsidianTheme.emerald.withValues(alpha: 0.1)
         ..strokeWidth = 6
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
@@ -305,12 +300,10 @@ class _RouteMapPainter extends CustomPainter {
       }
       canvas.drawPath(glowPath, glowPaint);
 
-      // Main line
+      // Main line — solid emerald stroke
       final linePaint = Paint()
-        ..shader = const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-        ..strokeWidth = 2
+        ..color = ObsidianTheme.emerald
+        ..strokeWidth = 2.5
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
       canvas.drawPath(glowPath, linePaint);
@@ -321,22 +314,19 @@ class _RouteMapPainter extends CustomPainter {
       final p = points[i];
       final isCompleted = i < stops.length && stops[i].isCompleted;
 
-      // Outer ring
+      // Outer ring — subtle emerald glow
       canvas.drawCircle(
         p,
-        8,
+        6,
         Paint()
-          ..color = isCompleted
-              ? ObsidianTheme.emerald.withValues(alpha: 0.2)
-              : ObsidianTheme.blue.withValues(alpha: 0.15),
+          ..color = ObsidianTheme.emerald.withValues(alpha: isCompleted ? 0.2 : 0.12),
       );
 
-      // Inner dot
+      // Inner dot — solid emerald 4px radius (8px diameter)
       canvas.drawCircle(
         p,
         4,
-        Paint()
-          ..color = isCompleted ? ObsidianTheme.emerald : ObsidianTheme.blue,
+        Paint()..color = ObsidianTheme.emerald,
       );
 
       // Number label

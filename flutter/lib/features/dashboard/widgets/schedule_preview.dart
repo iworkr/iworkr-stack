@@ -20,13 +20,13 @@ class SchedulePreview extends StatelessWidget {
       case ScheduleBlockStatus.inProgress:
         return ObsidianTheme.emerald;
       case ScheduleBlockStatus.enRoute:
-        return ObsidianTheme.amber;
+        return ObsidianTheme.emerald;
       case ScheduleBlockStatus.complete:
         return ObsidianTheme.textTertiary;
       case ScheduleBlockStatus.cancelled:
         return ObsidianTheme.rose;
       default:
-        return ObsidianTheme.blue;
+        return ObsidianTheme.textMuted;
     }
   }
 

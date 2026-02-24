@@ -74,27 +74,8 @@ const widgetCatalog = <WidgetTypeInfo>[
     type: 'revenue',
     label: 'Revenue',
     description: 'Monthly revenue with sparkline and trend',
-    supportedSizes: [WidgetSize.small, WidgetSize.medium, WidgetSize.large],
-    requiredClaim: Claims.financeView,
-  ),
-  WidgetTypeInfo(
-    type: 'next_job',
-    label: 'Next Job',
-    description: 'Upcoming scheduled job with navigate',
-    supportedSizes: [WidgetSize.small, WidgetSize.medium, WidgetSize.large],
-  ),
-  WidgetTypeInfo(
-    type: 'quick_actions',
-    label: 'Quick Actions',
-    description: 'Shortcuts to common tasks',
-    supportedSizes: [WidgetSize.small, WidgetSize.medium],
-  ),
-  WidgetTypeInfo(
-    type: 'team_pulse',
-    label: 'Team Pulse',
-    description: 'Team status and availability',
     supportedSizes: [WidgetSize.medium, WidgetSize.large],
-    requiredClaim: Claims.adminView,
+    requiredClaim: Claims.financeView,
   ),
   WidgetTypeInfo(
     type: 'schedule',
@@ -103,44 +84,10 @@ const widgetCatalog = <WidgetTypeInfo>[
     supportedSizes: [WidgetSize.medium, WidgetSize.large],
   ),
   WidgetTypeInfo(
-    type: 'route',
-    label: 'Route Intel',
-    description: "Today's optimized route stats",
-    supportedSizes: [WidgetSize.medium, WidgetSize.large],
-  ),
-  WidgetTypeInfo(
-    type: 'stats',
-    label: 'Job Stats',
-    description: 'Active and completed job counts',
+    type: 'quick_actions',
+    label: 'Quick Actions',
+    description: 'Shortcuts to common tasks',
     supportedSizes: [WidgetSize.small, WidgetSize.medium],
-  ),
-  WidgetTypeInfo(
-    type: 'pipeline',
-    label: 'Pipeline',
-    description: 'Lead-to-Cash workflow stage distribution',
-    supportedSizes: [WidgetSize.medium, WidgetSize.large],
-    requiredClaim: Claims.adminView,
-  ),
-  WidgetTypeInfo(
-    type: 'risk_radar',
-    label: 'Risk Radar',
-    description: 'Overdue jobs, unpaid invoices, operational alerts',
-    supportedSizes: [WidgetSize.medium, WidgetSize.large],
-    requiredClaim: Claims.adminView,
-  ),
-  WidgetTypeInfo(
-    type: 'financial_pulse',
-    label: 'Financial Pulse',
-    description: 'Revenue collected vs outstanding debt',
-    supportedSizes: [WidgetSize.small, WidgetSize.medium, WidgetSize.large],
-    requiredClaim: Claims.financeView,
-  ),
-  WidgetTypeInfo(
-    type: 'activity',
-    label: 'Activity',
-    description: 'Recent state changes and audit log',
-    supportedSizes: [WidgetSize.medium, WidgetSize.large],
-    requiredClaim: Claims.adminView,
   ),
 ];
 
@@ -148,28 +95,18 @@ const widgetCatalog = <WidgetTypeInfo>[
 // ── Default Layout ───────────────────────────────────────
 // ═══════════════════════════════════════════════════════════
 
-/// Admin / Owner "God Mode" — full visibility
+/// Admin / Owner "God Mode" — Core 5 command deck
 const _adminLayout = <DashboardWidgetConfig>[
-  DashboardWidgetConfig(id: 'w1', type: 'pipeline', size: WidgetSize.large),
-  DashboardWidgetConfig(id: 'w2', type: 'risk_radar', size: WidgetSize.medium),
-  DashboardWidgetConfig(id: 'w8', type: 'financial_pulse', size: WidgetSize.small),
-  DashboardWidgetConfig(id: 'w3', type: 'stats', size: WidgetSize.small),
-  DashboardWidgetConfig(id: 'w9', type: 'revenue', size: WidgetSize.medium),
-  DashboardWidgetConfig(id: 'w4', type: 'quick_actions', size: WidgetSize.medium),
-  DashboardWidgetConfig(id: 'w5', type: 'next_job', size: WidgetSize.medium),
-  DashboardWidgetConfig(id: 'w10', type: 'activity', size: WidgetSize.medium),
-  DashboardWidgetConfig(id: 'w6', type: 'schedule', size: WidgetSize.medium),
-  DashboardWidgetConfig(id: 'w7', type: 'route', size: WidgetSize.medium),
-  DashboardWidgetConfig(id: 'w11', type: 'team_pulse', size: WidgetSize.medium),
+  DashboardWidgetConfig(id: 'w1', type: 'revenue', size: WidgetSize.large),
+  DashboardWidgetConfig(id: 'w2', type: 'schedule', size: WidgetSize.large),
+  DashboardWidgetConfig(id: 'w3', type: 'quick_actions', size: WidgetSize.medium),
 ];
 
-/// Technician "Operator Mode" — streamlined for execution
+/// Technician "Operator Mode" — same Core 5 layout
 const _techLayout = <DashboardWidgetConfig>[
-  DashboardWidgetConfig(id: 'w1', type: 'next_job', size: WidgetSize.large),
-  DashboardWidgetConfig(id: 'w2', type: 'schedule', size: WidgetSize.medium),
-  DashboardWidgetConfig(id: 'w3', type: 'stats', size: WidgetSize.small),
-  DashboardWidgetConfig(id: 'w4', type: 'quick_actions', size: WidgetSize.small),
-  DashboardWidgetConfig(id: 'w5', type: 'route', size: WidgetSize.medium),
+  DashboardWidgetConfig(id: 'w1', type: 'revenue', size: WidgetSize.large),
+  DashboardWidgetConfig(id: 'w2', type: 'schedule', size: WidgetSize.large),
+  DashboardWidgetConfig(id: 'w3', type: 'quick_actions', size: WidgetSize.medium),
 ];
 
 List<DashboardWidgetConfig> defaultLayoutForRole(UserRole role) {

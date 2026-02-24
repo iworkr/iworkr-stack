@@ -1,5 +1,5 @@
-/// Project Panopticon — Widget Walker & Golden Path
-/// Full coverage: tap every nav and dashboard tile; Golden Path with step-wise Qase reporting.
+// Project Panopticon — Widget Walker & Golden Path
+// Full coverage: tap every nav and dashboard tile; Golden Path with step-wise Qase reporting.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

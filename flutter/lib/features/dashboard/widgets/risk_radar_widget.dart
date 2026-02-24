@@ -61,7 +61,7 @@ class _RiskContent extends ConsumerWidget {
     if (overdueInvoices > 0) {
       alerts.add(_Alert(
         icon: PhosphorIconsBold.currencyCircleDollar,
-        color: ObsidianTheme.amber,
+        color: ObsidianTheme.textSecondary,
         title: '$overdueInvoices Unpaid Invoice${overdueInvoices > 1 ? 's' : ''}',
         subtitle: '\$${totalDebt.toStringAsFixed(0)} outstanding',
         severity: _Severity.warning,
@@ -199,8 +199,8 @@ class _AlertRow extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: alert.color.withValues(alpha: 0.1),
-              border: Border.all(color: alert.color.withValues(alpha: 0.2)),
+              color: Colors.white.withValues(alpha: 0.04),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
             ),
             child: Icon(alert.icon, size: 14, color: alert.color),
           ),
