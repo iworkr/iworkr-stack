@@ -347,32 +347,32 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop — PRD 55.0 Glass & Shadow */}
+          {/* Backdrop — PRD: no heavy blur, focus on modal */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/50"
             onClick={onClose}
+            aria-hidden
           />
 
-          {/* Stage — Obsidian container */}
+          {/* Stage — PRD: 840px, #141414, 1px border, 24px 48px shadow */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             layout
-            className="fixed top-[8%] left-1/2 z-50 flex w-full max-w-[900px] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
-            style={{ maxHeight: "82vh" }}
+            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#141414] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
+            style={{ maxHeight: "85vh" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* ── Header ────────────────────────────────────── */}
-            <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-4">
+            {/* ── Header — PRD: breadcrumb left, minimize/close right ── */}
+            <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-3.5">
               <span className="text-[12px] text-zinc-500">
-                New Job <span className="text-zinc-700">/</span>{" "}
-                <span className="text-zinc-600">{estimateMode ? "Quote" : "Draft"}</span>
+                Apex Plumbing <span className="text-zinc-600">&gt;</span> New Job
               </span>
               <div className="flex items-center gap-2">
                 <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
@@ -544,8 +544,8 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Summary of works..."
-                  className="mb-2 w-full bg-transparent text-[22px] font-medium tracking-tight text-zinc-100 outline-none placeholder:text-zinc-700"
+                  placeholder="Job Title..."
+                  className="mb-2 w-full bg-transparent text-[24px] font-medium tracking-tight text-zinc-100 outline-none placeholder:text-zinc-600"
                 />
 
                 {/* Description */}
@@ -830,28 +830,28 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                 Create more
               </label>
 
-              {/* Submit — Primary CTA: stark white (PRD 55.0) */}
+              {/* Submit — PRD: "Create Issue" #5E6AD2 (Blurple) */}
               {estimateMode && quoteTotal > 0 ? (
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
                   disabled={!title.trim() || saving}
-                  className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-md bg-[#5E6AD2] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-[#4f5bc4] disabled:opacity-50"
                 >
                   <Send size={12} />
                   {saving ? "Saving..." : "Send Quote & Save"}
-                  <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
+                  <kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
                 </motion.button>
               ) : (
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
                   disabled={!title.trim() || saving}
-                  className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-md bg-[#5E6AD2] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-[#4f5bc4] disabled:opacity-50"
                 >
                   <Check size={12} />
-                  {saving ? "Saving..." : "Create Job"}
-                  <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
+                  {saving ? "Saving..." : "Create Issue"}
+                  <kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
                 </motion.button>
               )}
             </div>
@@ -864,7 +864,8 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
-                className="fixed z-[100] overflow-hidden rounded-lg border border-white/5 bg-zinc-950 p-1 shadow-xl"
+                transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="fixed z-[100] overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
                 style={{
                   top: catalogDropdownPos.top,
                   left: catalogDropdownPos.left,

@@ -137,7 +137,7 @@ export function CommandMenu() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -8 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-[18%] left-1/2 z-50 w-full max-w-[560px] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0A0A0A] shadow-[0_40px_100px_-12px_rgba(0,0,0,0.9)]"
+            className="fixed top-[18%] left-1/2 z-50 w-full max-w-[560px] -translate-x-1/2 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.08)] bg-[#0F0F0F] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
           >
             {/* Search input */}
             <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3.5">

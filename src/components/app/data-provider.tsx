@@ -13,7 +13,7 @@ import { useFormsStore } from "@/lib/forms-store";
 import { useTeamStore } from "@/lib/team-store";
 import { useIntegrationsStore } from "@/lib/integrations-store";
 import { useMessengerStore } from "@/lib/stores/messenger-store";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 /**
  * Loads data from Supabase into Zustand stores when the user is authenticated.
@@ -45,9 +45,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     useMessengerStore.getState().loadChannels(orgId);
   }, [orgId]);
 
-  // Realtime subscription for notifications
+  // Realtime subscription for notifications (skip when Supabase env invalid to avoid WS errors)
   useEffect(() => {
-    if (!userId) return;
+    if (!isSupabaseConfigured || !userId) return;
 
     const supabase = createClient();
 
@@ -86,7 +86,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription for schedule_blocks (multi-player dispatch)
   useEffect(() => {
-    if (!orgId) return;
+    if (!isSupabaseConfigured || !orgId) return;
 
     const supabase = createClient();
 
@@ -137,7 +137,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription for jobs (backlog sync for schedule)
   useEffect(() => {
-    if (!orgId) return;
+    if (!isSupabaseConfigured || !orgId) return;
 
     const supabase = createClient();
 
@@ -165,7 +165,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription for invoices (finance live updates)
   useEffect(() => {
-    if (!orgId) return;
+    if (!isSupabaseConfigured || !orgId) return;
 
     const supabase = createClient();
 
@@ -204,7 +204,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription for assets & inventory
   useEffect(() => {
-    if (!orgId) return;
+    if (!isSupabaseConfigured || !orgId) return;
 
     const supabase = createClient();
 
@@ -243,7 +243,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription for team members & roles
   useEffect(() => {
-    if (!orgId) return;
+    if (!isSupabaseConfigured || !orgId) return;
 
     const supabase = createClient();
 
@@ -282,7 +282,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription for form submissions
   useEffect(() => {
-    if (!orgId) return;
+    if (!isSupabaseConfigured || !orgId) return;
 
     const supabase = createClient();
 
@@ -309,7 +309,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription for automation flows
   useEffect(() => {
-    if (!orgId) return;
+    if (!isSupabaseConfigured || !orgId) return;
 
     const supabase = createClient();
 
@@ -336,7 +336,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription for integrations
   useEffect(() => {
-    if (!orgId) return;
+    if (!isSupabaseConfigured || !orgId) return;
 
     const supabase = createClient();
 

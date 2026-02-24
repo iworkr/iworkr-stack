@@ -306,7 +306,8 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/50"
+            aria-hidden
             onClick={onClose}
           />
 
@@ -316,7 +317,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
             animate={sent ? { opacity: 0, scale: 0.92 } : { opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed top-[7.5%] left-1/2 z-50 flex w-full max-w-[1100px] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
+            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[1100px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#141414] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
             style={{ height: "85vh" }}
             onClick={(e) => e.stopPropagation()}
           >

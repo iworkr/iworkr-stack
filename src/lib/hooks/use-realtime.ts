@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 /**
@@ -22,7 +22,7 @@ export function useRealtime(
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
-    if (options.enabled === false) return;
+    if (options.enabled === false || !isSupabaseConfigured) return;
 
     const supabase = createClient();
     const channelName = `realtime-${table}-${Date.now()}`;

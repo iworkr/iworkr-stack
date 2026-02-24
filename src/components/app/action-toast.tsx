@@ -28,7 +28,7 @@ export const useToastStore = create<ToastStore>((set) => ({
     set((s) => ({ toasts: [...s.toasts, { id, message, undoAction, type }] }));
     setTimeout(() => {
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
-    }, 4000);
+    }, 5000);
   },
   removeToast: (id) =>
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
@@ -46,36 +46,37 @@ export function ActionToastContainer() {
   const { toasts, removeToast } = useToastStore();
 
   return (
-    <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-2">
+    <div className="fixed bottom-6 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
       <AnimatePresence>
-        {toasts.map((toast, i) => {
+        {toasts.map((toast) => {
           const config = typeConfig[toast.type];
           const Icon = config.icon;
           return (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: 16, scale: 0.95, x: 20 }}
-              animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className={`flex items-center gap-2.5 rounded-xl border ${config.borderColor} bg-[#0A0A0A]/95 px-3.5 py-2.5 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.5)] backdrop-blur-xl`}
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              className={`flex items-center gap-2.5 rounded-full border border-zinc-700 ${config.borderColor} bg-zinc-900 px-4 py-2.5 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.5)]`}
             >
               <Icon size={13} className={config.color} />
-              <span className="text-[12px] text-zinc-200">{toast.message}</span>
+              <span className="text-[13px] text-white">{toast.message}</span>
               {toast.undoAction && (
                 <button
                   onClick={() => {
                     toast.undoAction?.();
                     removeToast(toast.id);
                   }}
-                  className="ml-1 rounded-md border border-white/[0.06] bg-white/[0.04] px-2 py-0.5 text-[11px] font-medium text-zinc-400 transition-all hover:bg-white/[0.08] hover:text-zinc-200"
+                  className="ml-1 rounded-md px-2 py-0.5 text-[12px] font-medium text-zinc-500 transition-colors hover:text-zinc-300"
                 >
                   Undo
                 </button>
               )}
               <button
                 onClick={() => removeToast(toast.id)}
-                className="ml-0.5 rounded-md p-0.5 text-zinc-700 transition-colors hover:text-zinc-400"
+                className="ml-0.5 rounded p-0.5 text-zinc-600 transition-colors hover:text-zinc-400"
+                aria-label="Dismiss"
               >
                 <X size={11} />
               </button>

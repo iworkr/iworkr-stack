@@ -83,16 +83,17 @@ export function SlideOver() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-black/40"
             onClick={closeSlideOver}
+            aria-hidden
           />
 
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed top-0 right-0 z-40 flex h-full w-full max-w-2xl flex-col border-l border-white/5 bg-zinc-950 shadow-2xl"
+            transition={{ type: "spring", stiffness: 400, damping: 36 }}
+            className="fixed top-0 right-0 z-40 flex h-full w-[400px] flex-col border-l border-[rgba(255,255,255,0.08)] bg-[#0A0A0A] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
           >
             {/* Header — no hr, whitespace */}
             <div className="flex items-center justify-between gap-4 px-6 py-4">

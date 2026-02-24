@@ -744,14 +744,14 @@ export default function JobsPage() {
         {ctxStatusMenu.open && (
           <>
             <div className="fixed inset-0 z-50" onClick={() => setCtxStatusMenu((p) => ({ ...p, open: false }))} />
-            <motion.div initial={{ opacity: 0, scale: 0.95, x: -4 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: 0.95, x: -4 }} transition={{ duration: 0.1 }}
-              className="fixed z-50 overflow-hidden rounded-xl border border-white/[0.06] bg-zinc-900/90 p-1 shadow-2xl shadow-black/50 backdrop-blur-xl" style={{ left: ctxStatusMenu.x, top: ctxStatusMenu.y, width: 160 }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed z-50 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]" style={{ left: ctxStatusMenu.x, top: ctxStatusMenu.y, width: 160 }}>
               {STATUS_OPTIONS.map((opt) => {
                 const currentJob = jobsList.find((j) => j.id === ctxStatusMenu.jobId);
                 const isActive = currentJob?.status === opt.value;
                 return (
                   <button key={opt.value} onClick={(e) => handleStatusChange(ctxStatusMenu.jobId, opt.value, e.currentTarget)}
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[12px] transition-colors duration-150 ${isActive ? "bg-white/[0.04] text-zinc-200" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}`}>
+                    className={`flex h-7 w-full items-center gap-2.5 rounded px-2 text-left text-[13px] transition-colors duration-100 ${isActive ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>
                     <StatusIcon status={opt.value} size={12} />{opt.label}
                   </button>
                 );
@@ -764,14 +764,14 @@ export default function JobsPage() {
       {/* Status Dropdown */}
       <AnimatePresence>
         {statusDropdown && (
-          <motion.div ref={statusDropdownRef} initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.95 }} transition={{ duration: 0.12 }}
-            className="fixed z-50 overflow-hidden rounded-xl border border-white/[0.06] bg-zinc-900/90 p-1 shadow-2xl shadow-black/50 backdrop-blur-xl" style={{ left: statusDropdown.x, top: statusDropdown.y, width: 160 }}>
+          <motion.div ref={statusDropdownRef} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed z-50 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]" style={{ left: statusDropdown.x, top: statusDropdown.y, width: 160 }}>
             {STATUS_OPTIONS.map((opt) => {
               const currentJob = jobsList.find((j) => j.id === statusDropdown.jobId);
               const isActive = currentJob?.status === opt.value;
               return (
                 <button key={opt.value} onClick={(e) => handleStatusChange(statusDropdown.jobId, opt.value, e.currentTarget)}
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[12px] transition-colors duration-150 ${isActive ? "bg-white/[0.04] text-zinc-200" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}`}>
+                  className={`flex h-7 w-full items-center gap-2.5 rounded px-2 text-left text-[13px] transition-colors duration-100 ${isActive ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>
                   <StatusIcon status={opt.value} size={12} />{opt.label}
                 </button>
               );
@@ -780,41 +780,39 @@ export default function JobsPage() {
         )}
       </AnimatePresence>
 
-      {/* Floating Bulk Action Bar */}
+      {/* Floating Bulk Action Bar — PRD: bottom center, slides up from y: 50 */}
       <AnimatePresence>
         {selected.size > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-0 bottom-6 z-50 flex justify-center"
+            className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2"
           >
-            <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-zinc-900/95 px-3 py-2 shadow-2xl shadow-black/50 backdrop-blur-xl">
-              <span className="px-2 text-[13px] font-semibold text-white">
-                {selected.size} selected
-              </span>
-              <div className="mx-1 h-4 w-px bg-white/[0.08]" />
+            <div className="flex items-center gap-2 rounded-[8px] border border-zinc-700 bg-zinc-900 px-4 py-2.5 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]">
+              <span className="text-[13px] font-medium text-white">{selected.size} selected</span>
+              <div className="h-4 w-px bg-zinc-700" />
               <button
                 onClick={() => addToast(`${selected.size} jobs status updated`)}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-zinc-400 transition-all duration-150 hover:bg-white/[0.04] hover:text-zinc-200"
+                className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] text-zinc-400 transition-colors duration-100 hover:bg-zinc-800 hover:text-white"
               >
-                <ArrowRight size={13} />Change Status
+                <ArrowRight size={12} />Change Status
               </button>
               <button
                 onClick={() => addToast(`${selected.size} jobs assigned`)}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-zinc-400 transition-all duration-150 hover:bg-white/[0.04] hover:text-zinc-200"
+                className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] text-zinc-400 transition-colors duration-100 hover:bg-zinc-800 hover:text-white"
               >
-                <UserPlus size={13} />Assign Team
+                <User size={12} />Assign
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-zinc-400 transition-all duration-150 hover:bg-rose-500/10 hover:text-rose-400"
+                className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] text-zinc-400 transition-colors duration-100 hover:bg-rose-500/10 hover:text-rose-400"
               >
-                <Trash2 size={13} />Delete
+                <Trash2 size={12} />Delete
               </button>
-              <div className="mx-1 h-4 w-px bg-white/[0.08]" />
-              <button onClick={clearSelection} className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300">
+              <div className="h-4 w-px bg-zinc-700" />
+              <button onClick={clearSelection} className="rounded p-1.5 text-zinc-500 transition-colors hover:text-zinc-300" aria-label="Clear selection">
                 <X size={14} />
               </button>
             </div>
@@ -826,10 +824,11 @@ export default function JobsPage() {
       <AnimatePresence>
         {isBulkDeleteModalOpen && bulkDeleteJobs.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
             onClick={() => !isDeleting && setIsBulkDeleteModalOpen(false)}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+              initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-950 p-6 shadow-2xl">
@@ -870,10 +869,10 @@ export default function JobsPage() {
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
             onClick={() => { if (!isDeleting) { setIsDeleteModalOpen(false); setJobToDelete(null); } }}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-950 p-6 shadow-2xl">
+              className="w-full max-w-[420px] rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#141414] p-6 shadow-[0_24px_48px_rgba(0,0,0,0.4)]">
               <div className="flex items-center gap-3 pb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
                   <AlertTriangle size={18} className="text-red-400" />

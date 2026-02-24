@@ -300,7 +300,8 @@ export function CreateClientModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/50"
+            aria-hidden
             onClick={onClose}
           />
 
@@ -311,7 +312,7 @@ export function CreateClientModal({
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             layout
-            className="fixed top-[10%] left-1/2 z-50 flex w-full max-w-[800px] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
+            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#141414] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
             style={{ maxHeight: "80vh" }}
             onClick={(e) => e.stopPropagation()}
           >
