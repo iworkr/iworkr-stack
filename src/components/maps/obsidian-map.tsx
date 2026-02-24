@@ -81,14 +81,20 @@ interface MapPinProps {
   onClick?: () => void;
 }
 
-const EMERALD_PIN_ICON: google.maps.Symbol = {
-  path: google.maps.SymbolPath.CIRCLE,
-  scale: 7,
-  fillColor: "#10B981",
-  fillOpacity: 1,
-  strokeColor: "#050505",
-  strokeWeight: 1,
-};
+let _cachedPinIcon: google.maps.Symbol | null = null;
+function getEmeraldPinIcon(): google.maps.Symbol {
+  if (!_cachedPinIcon && typeof google !== "undefined") {
+    _cachedPinIcon = {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 7,
+      fillColor: "#10B981",
+      fillOpacity: 1,
+      strokeColor: "#050505",
+      strokeWeight: 1,
+    };
+  }
+  return _cachedPinIcon!;
+}
 
 /** PRD: custom marker (emerald dot). Use inside ObsidianMap. */
 export function MapPin({
@@ -99,7 +105,7 @@ export function MapPin({
   return (
     <Marker
       position={position}
-      icon={EMERALD_PIN_ICON}
+      icon={getEmeraldPinIcon()}
       title={label ?? undefined}
       onClick={onClick}
     />

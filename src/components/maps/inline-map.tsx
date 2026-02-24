@@ -5,14 +5,20 @@ import { useGoogleMaps } from "./google-maps-provider";
 import { OBSIDIAN_MAP_STYLES } from "./obsidian-map-styles";
 import { MapOfflineFallback } from "./map-offline-fallback";
 
-const INLINE_MARKER_ICON: google.maps.Symbol = {
-  path: google.maps.SymbolPath.CIRCLE,
-  scale: 7,
-  fillColor: "#10B981",
-  fillOpacity: 1,
-  strokeColor: "#27272a",
-  strokeWeight: 1,
-};
+let _cachedIcon: google.maps.Symbol | null = null;
+function getInlineMarkerIcon(): google.maps.Symbol {
+  if (!_cachedIcon && typeof google !== "undefined") {
+    _cachedIcon = {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 7,
+      fillColor: "#10B981",
+      fillOpacity: 1,
+      strokeColor: "#27272a",
+      strokeWeight: 1,
+    };
+  }
+  return _cachedIcon!;
+}
 
 interface InlineMapProps {
   lat: number;
@@ -65,7 +71,7 @@ export function InlineMap({
       gestureHandling={interactive ? "greedy" : "none"}
       backgroundColor="#050505"
     >
-      <Marker position={center} icon={INLINE_MARKER_ICON} />
+      <Marker position={center} icon={getInlineMarkerIcon()} />
     </Map>
   );
 }
