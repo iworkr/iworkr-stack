@@ -262,4 +262,21 @@ class ObsidianTheme {
       ),
     );
   }
+
+  /// Generate a ThemeData with a custom brand color for white-labeling.
+  static ThemeData darkThemeWith(Color brandColor) {
+    final onBrand = brandColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
+    return darkTheme.copyWith(
+      primaryColor: brandColor,
+      colorScheme: darkTheme.colorScheme.copyWith(
+        primary: brandColor,
+        onPrimary: onBrand,
+      ),
+      bottomNavigationBarTheme: darkTheme.bottomNavigationBarTheme.copyWith(
+        selectedItemColor: brandColor,
+      ),
+    );
+  }
 }

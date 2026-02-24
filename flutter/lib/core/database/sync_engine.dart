@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
@@ -20,11 +21,16 @@ const _uuid = Uuid();
 // this engine: local DB is updated optimistically, then a mutation
 // is queued for background sync to Supabase.
 
+enum SyncStatus { synced, syncing, offline, failed }
+
 class SyncEngine {
   final AppDatabase _db;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   Timer? _syncTimer;
   bool _syncing = false;
+
+  /// Callback for sync status updates (for UI toasts).
+  void Function(SyncStatus status)? onStatusChange;
 
   SyncEngine(this._db, Ref ref) {
     _startListening();
@@ -327,14 +333,33 @@ class SyncEngine {
 
   Future<void> drainQueue() async {
     if (_syncing) return;
+
+    // Pre-flight connectivity check
+    final connectivity = await Connectivity().checkConnectivity();
+    final isOffline = connectivity.every((r) => r == ConnectivityResult.none);
+    if (isOffline) {
+      onStatusChange?.call(SyncStatus.offline);
+      return;
+    }
+
     _syncing = true;
+    onStatusChange?.call(SyncStatus.syncing);
 
     try {
       final pending = await _db.pendingMutations();
+      if (pending.isEmpty) {
+        onStatusChange?.call(SyncStatus.synced);
+        return;
+      }
+
       for (final item in pending) {
         try {
           await _processMutation(item);
           await _db.markSynced(item.id);
+        } on SocketException {
+          // Network dropped mid-sync — stop draining, don't increment retry
+          onStatusChange?.call(SyncStatus.offline);
+          return;
         } catch (e) {
           await _db.incrementRetry(item.id);
           if (item.retryCount >= 4) {
@@ -342,6 +367,7 @@ class SyncEngine {
           }
         }
       }
+      onStatusChange?.call(SyncStatus.synced);
     } finally {
       _syncing = false;
     }
@@ -418,3 +444,6 @@ final failedSyncCountProvider = FutureProvider<int>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return db.failedCount();
 });
+
+/// Reactive sync status for the cloud indicator in the app bar.
+final syncStatusProvider = StateProvider<SyncStatus>((ref) => SyncStatus.synced);

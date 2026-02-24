@@ -160,7 +160,7 @@ class _OverwatchScreenState extends ConsumerState<OverwatchScreen>
             ),
           ),
 
-          // Mission Card (peek sheet) for selected tech
+          // Job Card (peek sheet) for selected tech
           if (_selectedTechIndex != null)
             Positioned(
               bottom: 0,
@@ -169,7 +169,7 @@ class _OverwatchScreenState extends ConsumerState<OverwatchScreen>
               child: fleetAsync.when(
                 data: (positions) {
                   if (_selectedTechIndex! >= positions.length) return const SizedBox.shrink();
-                  return _MissionCard(
+                  return _JobCard(
                     position: positions[_selectedTechIndex!],
                     onClose: () => setState(() => _selectedTechIndex = null),
                     onCall: () => HapticFeedback.mediumImpact(),
@@ -785,16 +785,16 @@ class _TechRoster extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ── Mission Card (Peek Sheet) ────────────────────────────
+// ── Job Card (Peek Sheet) ────────────────────────────
 // ═══════════════════════════════════════════════════════════
 
-class _MissionCard extends StatelessWidget {
+class _JobCard extends StatelessWidget {
   final FleetPosition position;
   final VoidCallback onClose;
   final VoidCallback onCall;
   final VoidCallback onMessage;
 
-  const _MissionCard({
+  const _JobCard({
     required this.position,
     required this.onClose,
     required this.onCall,

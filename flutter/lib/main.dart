@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iworkr_mobile/core/router/app_router.dart';
+import 'package:iworkr_mobile/core/services/brand_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/auth_curtain.dart';
@@ -32,11 +33,12 @@ class IWorkrApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final brandColor = ref.watch(brandColorProvider);
 
     return MaterialApp.router(
       title: 'iWorkr',
       debugShowCheckedModeBanner: false,
-      theme: ObsidianTheme.darkTheme,
+      theme: ObsidianTheme.darkThemeWith(brandColor),
       routerConfig: router,
       builder: (context, child) {
         // Global tap-to-dismiss keyboard — tapping outside any text field

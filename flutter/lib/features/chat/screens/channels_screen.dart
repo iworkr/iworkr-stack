@@ -659,21 +659,32 @@ class _ChannelRow extends StatelessWidget {
                 children: [
                   Text(
                     channel.displayName,
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: channel.unreadCount > 0 ? FontWeight.w600 : FontWeight.w500,
+                      color: channel.unreadCount > 0 ? ObsidianTheme.textPrimary : ObsidianTheme.textSecondary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (!channel.isDm && channel.description != null && channel.description!.isNotEmpty)
+                  const SizedBox(height: 2),
+                  if (channel.lastMessageContent != null && channel.lastMessageContent!.isNotEmpty)
                     Text(
-                      channel.description!,
+                      channel.lastMessageContent!,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: channel.unreadCount > 0 ? ObsidianTheme.textSecondary : ObsidianTheme.textTertiary,
+                        fontWeight: channel.unreadCount > 0 ? FontWeight.w500 : FontWeight.w400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  else
+                    Text(
+                      channel.isDm ? 'Direct Message' : (channel.description ?? 'No messages yet'),
                       style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                    ),
-                  if (channel.isDm)
-                    Text(
-                      'Direct Message',
-                      style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
                     ),
                 ],
               ),
@@ -685,6 +696,23 @@ class _ChannelRow extends StatelessWidget {
                 timeago.format(channel.lastMessageAt!, locale: 'en_short'),
                 style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary),
               ),
+            if (channel.unreadCount > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: ObsidianTheme.emerald,
+                  boxShadow: [
+                    BoxShadow(
+                      color: ObsidianTheme.emerald.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

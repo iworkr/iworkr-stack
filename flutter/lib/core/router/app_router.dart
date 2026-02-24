@@ -199,7 +199,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     pageBuilder: (context, state) {
                       final jobId = state.pathParameters['id']!;
                       return CustomTransitionPage(
-                        child: MissionHudScreen(jobId: jobId),
+                        child: JobHudScreen(jobId: jobId),
                         transitionsBuilder: _slideUpTransition,
                       );
                     },

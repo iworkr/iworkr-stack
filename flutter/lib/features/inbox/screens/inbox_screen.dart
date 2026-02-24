@@ -13,7 +13,7 @@ import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
 import 'package:iworkr_mobile/models/notification_item.dart';
 
-/// Inbox screen — "The Mission Log" (grouped notifications with deep links)
+/// Inbox screen — "The Inbox" (grouped notifications with deep links)
 class InboxScreen extends ConsumerWidget {
   const InboxScreen({super.key});
 
@@ -109,6 +109,24 @@ class InboxScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Row(
                 children: [
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        context.go('/');
+                      }
+                    },
+                    child: const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Center(
+                        child: Icon(PhosphorIconsLight.arrowLeft, size: 18, color: ObsidianTheme.textSecondary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   Text(
                     'Inbox',
                     style: GoogleFonts.inter(

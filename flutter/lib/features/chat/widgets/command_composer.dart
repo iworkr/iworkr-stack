@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Command Composer — glass input bar with action toggles.
@@ -76,68 +77,27 @@ class CommandComposerState extends State<CommandComposer> {
       isScrollControlled: true,
       builder: (ctx) => _MemberPickerSheet(
         members: widget.members,
-        onSelect: (name) {
+        onSelect: (name, userId) {
           Navigator.pop(ctx);
-          _insertText('@$name ');
+          _insertText('@[user:$userId] ');
         },
       ),
     );
   }
 
-  // ── # Tag ─────────────────────────────────────
+  // ── # Job Reference ─────────────────────────────────────
 
   void _showTagMenu() {
     HapticFeedback.selectionClick();
-    final tags = ['urgent', 'question', 'update', 'resolved', 'blocker', 'fyi'];
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: ObsidianTheme.surface1,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  const Icon(PhosphorIconsLight.hash, size: 16, color: ObsidianTheme.emerald),
-                  const SizedBox(width: 8),
-                  Text('Insert Tag', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: tags.map((tag) => GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  Navigator.pop(ctx);
-                  _insertText('#$tag ');
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: ObsidianTheme.radiusMd,
-                    color: ObsidianTheme.shimmerBase,
-                    border: Border.all(color: ObsidianTheme.border),
-                  ),
-                  child: Text('#$tag', style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textSecondary)),
-                ),
-              )).toList(),
-            ),
-            SizedBox(height: MediaQuery.of(ctx).padding.bottom + 20),
-          ],
-        ),
+      isScrollControlled: true,
+      builder: (ctx) => _JobReferencePicker(
+        onSelect: (jobId, displayId) {
+          Navigator.pop(ctx);
+          _insertText('#[job:$jobId] ');
+        },
       ),
     );
   }
@@ -694,7 +654,7 @@ class _TemplateOption extends StatelessWidget {
 
 class _MemberPickerSheet extends StatefulWidget {
   final List<Map<String, dynamic>> members;
-  final ValueChanged<String> onSelect;
+  final void Function(String displayName, String userId) onSelect;
 
   const _MemberPickerSheet({required this.members, required this.onSelect});
 
@@ -767,7 +727,7 @@ class _MemberPickerSheetState extends State<_MemberPickerSheet> {
                 final m = filtered[i];
                 final name = m['name'] as String? ?? 'Unknown';
                 return GestureDetector(
-                  onTap: () => widget.onSelect(name.split(' ').first),
+                  onTap: () => widget.onSelect(name, m['id'] as String? ?? ''),
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -795,6 +755,165 @@ class _MemberPickerSheetState extends State<_MemberPickerSheet> {
                 ).animate().fadeIn(delay: Duration(milliseconds: 30 * i), duration: 200.ms);
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Job Reference Picker ─────────────────────────────
+
+class _JobReferencePicker extends StatefulWidget {
+  final void Function(String jobId, String displayId) onSelect;
+  const _JobReferencePicker({required this.onSelect});
+
+  @override
+  State<_JobReferencePicker> createState() => _JobReferencePickerState();
+}
+
+class _JobReferencePickerState extends State<_JobReferencePicker> {
+  String _search = '';
+  List<Map<String, dynamic>> _jobs = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchJobs();
+  }
+
+  Future<void> _fetchJobs() async {
+    try {
+      final userId = SupabaseService.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final orgRow = await SupabaseService.client
+          .from('organization_members')
+          .select('organization_id')
+          .eq('user_id', userId)
+          .limit(1)
+          .maybeSingle();
+      if (orgRow == null) return;
+
+      final jobs = await SupabaseService.client
+          .from('jobs')
+          .select('id, display_id, title, status')
+          .eq('organization_id', orgRow['organization_id'])
+          .order('updated_at', ascending: false)
+          .limit(50);
+
+      if (mounted) {
+        setState(() {
+          _jobs = (jobs as List).cast<Map<String, dynamic>>();
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _search.isEmpty
+        ? _jobs
+        : _jobs.where((j) {
+            final title = (j['title'] as String? ?? '').toLowerCase();
+            final displayId = (j['display_id'] as String? ?? '').toLowerCase();
+            return title.contains(_search) || displayId.contains(_search);
+          }).toList();
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.5,
+      decoration: const BoxDecoration(
+        color: ObsidianTheme.surface1,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                const Icon(PhosphorIconsLight.hash, size: 16, color: ObsidianTheme.emerald),
+                const SizedBox(width: 8),
+                Text('Reference a Job', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                borderRadius: ObsidianTheme.radiusMd,
+                color: ObsidianTheme.shimmerBase,
+                border: Border.all(color: ObsidianTheme.border),
+              ),
+              child: TextField(
+                autofocus: true,
+                style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Search jobs...',
+                  hintStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _loading
+                ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 1.5, color: ObsidianTheme.emerald)))
+                : ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, i) {
+                      final j = filtered[i];
+                      final title = j['title'] as String? ?? 'Untitled';
+                      final displayId = j['display_id'] as String? ?? '';
+                      final status = j['status'] as String? ?? '';
+                      return GestureDetector(
+                        onTap: () => widget.onSelect(j['id'] as String, displayId),
+                        behavior: HitTestBehavior.opaque,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  color: ObsidianTheme.emerald.withValues(alpha: 0.1),
+                                ),
+                                child: Text(
+                                  displayId.isNotEmpty ? displayId : '#',
+                                  style: GoogleFonts.jetBrainsMono(fontSize: 10, fontWeight: FontWeight.w600, color: ObsidianTheme.emerald),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(title, style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    Text(status.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 0.5)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

@@ -112,13 +112,13 @@ class _FlightPathScreenState extends ConsumerState<FlightPathScreen> {
                 child: _TopBar(route: route),
               ),
 
-              // Layer 2: Mission Card at bottom
+              // Layer 2: Route stop card at bottom
               if (selectedStop != null)
                 Positioned(
                   left: 16,
                   right: 16,
                   bottom: mq.padding.bottom + 90,
-                  child: MissionCard(
+                  child: RouteStopCard(
                     key: ValueKey(selectedStop.jobId),
                     stop: selectedStop,
                     stopNumber: (selectedIdx ?? 0) + 1,

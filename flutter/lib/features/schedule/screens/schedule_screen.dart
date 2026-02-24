@@ -533,7 +533,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       width: colWidth - 4,
       height: height.clamp(44.0, double.infinity),
       child: GestureDetector(
-        onTap: () => _showMissionBrief(context, block),
+        onTap: () => _showJobBrief(context, block),
         onLongPress: () {
           HapticFeedback.heavyImpact();
           if (block.jobId != null) context.push('/jobs/${block.jobId}');
@@ -766,12 +766,12 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     ).animate().fadeIn(duration: 200.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1), duration: 200.ms);
   }
 
-  void _showMissionBrief(BuildContext context, ScheduleBlock block) {
+  void _showJobBrief(BuildContext context, ScheduleBlock block) {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _MissionBriefSheet(block: block),
+      builder: (_) => _JobBriefSheet(block: block),
     );
   }
 }
@@ -1119,12 +1119,12 @@ class _DraggableBacklogCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════
-// ── Mission Brief Sheet ──────────────────────────────
+// ── Job Brief Sheet ──────────────────────────────
 // ══════════════════════════════════════════════════════
 
-class _MissionBriefSheet extends StatelessWidget {
+class _JobBriefSheet extends StatelessWidget {
   final ScheduleBlock block;
-  const _MissionBriefSheet({required this.block});
+  const _JobBriefSheet({required this.block});
 
   Color _statusColor() {
     switch (block.status) {

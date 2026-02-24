@@ -69,6 +69,48 @@ final channelsProvider = StreamProvider<List<ChatChannel>>((ref) {
         }).toList();
       }
 
+      // Hydrate last message preview (best-effort)
+      try {
+        if (channels.isNotEmpty) {
+          final allIds = channels.map((c) => c.id).toList();
+          final lastMsgs = await client.rpc('get_last_messages_for_channels', params: {
+            'p_channel_ids': allIds,
+          });
+          
+          if (lastMsgs != null && lastMsgs is List) {
+            final msgMap = <String, Map<String, dynamic>>{};
+            for (final row in lastMsgs) {
+              msgMap[row['channel_id'] as String] = row;
+            }
+            
+            channels = channels.map((c) {
+              final msg = msgMap[c.id];
+              if (msg == null) return c;
+              return ChatChannel(
+                id: c.id,
+                organizationId: c.organizationId,
+                type: c.type,
+                name: c.name,
+                description: c.description,
+                contextId: c.contextId,
+                contextType: c.contextType,
+                createdBy: c.createdBy,
+                isArchived: c.isArchived,
+                lastMessageAt: c.lastMessageAt,
+                createdAt: c.createdAt,
+                metadata: c.metadata,
+                lastMessageContent: msg['content'] as String?,
+                lastMessageSenderName: msg['sender_name'] as String?,
+                unreadCount: (msg['unread_count'] as int?) ?? 0,
+                members: c.members,
+              );
+            }).toList();
+          }
+        }
+      } catch (_) {
+        // RPC not deployed yet; continue without previews
+      }
+
       if (!controller.isClosed) controller.add(channels);
     } catch (e) {
       if (!controller.isClosed) controller.addError(e);

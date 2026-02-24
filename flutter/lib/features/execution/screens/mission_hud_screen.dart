@@ -23,19 +23,19 @@ import 'package:iworkr_mobile/features/forms/screens/compliance_packet_screen.da
 import 'package:iworkr_mobile/features/forms/screens/form_runner_screen.dart';
 import 'package:iworkr_mobile/models/form_template.dart';
 
-/// Mission HUD — immersive "Black Box" job execution interface.
+/// Job HUD — immersive "Black Box" job execution interface.
 ///
 /// Full-screen, dock hidden, emerald pulse vignette indicates "live recording."
 /// Contains: Job Brief (pre-start), Timer, Task List, Evidence Locker, Activity Stream.
-class MissionHudScreen extends ConsumerStatefulWidget {
+class JobHudScreen extends ConsumerStatefulWidget {
   final String jobId;
-  const MissionHudScreen({super.key, required this.jobId});
+  const JobHudScreen({super.key, required this.jobId});
 
   @override
-  ConsumerState<MissionHudScreen> createState() => _MissionHudScreenState();
+  ConsumerState<JobHudScreen> createState() => _JobHudScreenState();
 }
 
-class _MissionHudScreenState extends ConsumerState<MissionHudScreen>
+class _JobHudScreenState extends ConsumerState<JobHudScreen>
     with TickerProviderStateMixin {
   Timer? _ticker;
   Duration _elapsed = Duration.zero;

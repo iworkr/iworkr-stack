@@ -177,7 +177,7 @@ export async function sendJobAssignedEmail(params: {
   const shortAddress = params.clientAddress.split(",")[0];
   return sendEmail({
     to: params.to,
-    subject: `📍 New mission: ${shortAddress} at ${params.scheduledTime}`,
+    subject: `📍 New job: ${shortAddress} at ${params.scheduledTime}`,
     react: createElement(JobAssignedEmail, params),
     tags: [{ name: "event", value: "job_assigned" }],
   });

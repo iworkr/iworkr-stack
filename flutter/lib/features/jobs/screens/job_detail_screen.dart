@@ -201,7 +201,7 @@ class _JobDetailBody extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Execute Mission Button
+                // Execute Job Button
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.mediumImpact();
@@ -226,7 +226,7 @@ class _JobDetailBody extends StatelessWidget {
                         Icon(PhosphorIconsLight.play, size: 18, color: ObsidianTheme.emerald),
                         const SizedBox(width: 10),
                         Text(
-                          'EXECUTE MISSION',
+                          'EXECUTE JOB',
                           style: GoogleFonts.jetBrainsMono(
                             color: ObsidianTheme.emerald,
                             fontSize: 13,

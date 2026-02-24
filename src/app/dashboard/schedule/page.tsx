@@ -102,7 +102,7 @@ const viewScaleLabels: Record<ViewScale, string> = {
 };
 
 const contextItems: ContextMenuItem[] = [
-  { id: "open", label: "Open Mission Control", icon: <ExternalLink size={13} />, shortcut: "↵" },
+  { id: "open", label: "Open Job Control", icon: <ExternalLink size={13} />, shortcut: "↵" },
   { id: "copy", label: "Copy Job ID", icon: <Copy size={13} />, shortcut: "⌘L" },
   { id: "divider-1", label: "", divider: true },
   { id: "unschedule", label: "Unschedule", icon: <ArrowLeftToLine size={13} /> },
@@ -1257,7 +1257,7 @@ function JobPeekCard({
           className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-[11px] font-medium text-black transition-colors hover:bg-zinc-200"
         >
           <ExternalLink size={11} />
-          Mission Control
+          Job Control
         </motion.button>
         <div className="flex items-center gap-1">
           <button

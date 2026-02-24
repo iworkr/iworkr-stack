@@ -14,6 +14,7 @@ import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/services/schedule_provider.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
+import 'package:iworkr_mobile/core/database/sync_engine.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
 import 'package:iworkr_mobile/features/scan/screens/scanner_screen.dart';
@@ -181,6 +182,8 @@ class _GlassAppBar extends StatelessWidget {
                 ),
               ),
               const Spacer(),
+              const _SyncStatusIndicator(),
+              const SizedBox(width: 6),
               _GhostIconButton(
                 icon: CupertinoIcons.search,
                 onTap: onSearchTap,
@@ -191,6 +194,36 @@ class _GlassAppBar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SyncStatusIndicator extends ConsumerWidget {
+  const _SyncStatusIndicator();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(syncStatusProvider);
+
+    if (status == SyncStatus.synced) return const SizedBox.shrink();
+
+    final icon = switch (status) {
+      SyncStatus.offline => PhosphorIconsLight.cloudSlash,
+      SyncStatus.syncing => PhosphorIconsLight.arrowsClockwise,
+      SyncStatus.failed => PhosphorIconsLight.warning,
+      _ => PhosphorIconsLight.cloud,
+    };
+
+    final color = switch (status) {
+      SyncStatus.offline => ObsidianTheme.textMuted,
+      SyncStatus.syncing => ObsidianTheme.emerald,
+      SyncStatus.failed => ObsidianTheme.amber,
+      _ => ObsidianTheme.textMuted,
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 2),
+      child: Icon(icon, size: 14, color: color),
     );
   }
 }

@@ -10,8 +10,8 @@ import 'package:iworkr_mobile/core/services/map_launcher_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/route_run.dart';
 
-/// Floating glass "Mission Card" — shows next stop info + Navigate CTA.
-class MissionCard extends StatelessWidget {
+/// Floating glass route stop card — shows next stop info + Navigate CTA.
+class RouteStopCard extends StatelessWidget {
   final RouteStop stop;
   final int stopNumber;
   final int totalStops;
@@ -19,7 +19,7 @@ class MissionCard extends StatelessWidget {
   final String? driveTimeLabel;
   final VoidCallback? onViewJob;
 
-  const MissionCard({
+  const RouteStopCard({
     super.key,
     required this.stop,
     required this.stopNumber,

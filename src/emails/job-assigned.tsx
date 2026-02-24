@@ -29,7 +29,7 @@ export default function JobAssignedEmail({
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clientAddress)}`;
 
   return (
-    <EmailLayout preview={`New mission: ${jobTitle} — ${clientAddress} at ${scheduledTime}`}>
+    <EmailLayout preview={`New job: ${jobTitle} — ${clientAddress} at ${scheduledTime}`}>
       {/* Green accent line */}
       <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%", marginBottom: "28px" }}>
         <tr>
@@ -45,7 +45,7 @@ export default function JobAssignedEmail({
           color: colors.green,
           border: `1px solid ${colors.greenBorder}`,
         }}>
-          📍 New Mission
+          📍 New Job
         </span>
       </Section>
 
@@ -59,7 +59,7 @@ export default function JobAssignedEmail({
       {/* Briefing card */}
       <Section style={styles.infoCard}>
         <Text style={{ ...styles.paragraph, fontWeight: 600, color: colors.white, margin: "0 0 16px", fontSize: "13px", letterSpacing: "0.02em", textTransform: "uppercase" as const }}>
-          Mission Briefing
+          Job Briefing
         </Text>
         <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
           <tr>
@@ -112,7 +112,7 @@ export default function JobAssignedEmail({
           <tr>
             <td style={{ paddingRight: "8px" }}>
               <Button href={`${BASE_URL}/dashboard/jobs/${jobId}`} style={styles.button}>
-                View Mission Control →
+                View Job Details →
               </Button>
             </td>
             <td style={{ paddingLeft: "8px" }}>
@@ -127,7 +127,7 @@ export default function JobAssignedEmail({
       <Hr style={{ borderTop: `1px solid ${colors.cardBorder}`, margin: "24px 0 20px" }} />
 
       <Text style={styles.smallText}>
-        All your missions live in the{" "}
+        All your jobs live in the{" "}
         <a href={`${BASE_URL}/dashboard/schedule`} style={styles.link}>schedule</a>.
         Stay sharp out there.
       </Text>

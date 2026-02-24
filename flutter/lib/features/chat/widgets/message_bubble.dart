@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/features/chat/widgets/rich_message_text.dart';
 import 'package:iworkr_mobile/models/chat_message.dart';
 
 /// Message bubble — "The Stealth Stream" design.
@@ -79,7 +81,7 @@ class MessageBubble extends StatelessWidget {
               children: [
                 if (isMe) _buildTimestamp(),
                 if (isMe) const SizedBox(width: 6),
-                Flexible(child: _buildBubbleContent()),
+                Flexible(child: _buildBubbleContent(context)),
                 if (!isMe) const SizedBox(width: 6),
                 if (!isMe) _buildTimestamp(),
               ],
@@ -93,7 +95,7 @@ class MessageBubble extends StatelessWidget {
         .moveY(begin: 8, end: 0, duration: 200.ms, curve: Curves.easeOut);
   }
 
-  Widget _buildBubbleContent() {
+  Widget _buildBubbleContent(BuildContext context) {
     if (isMe) {
       // My message — no background, emerald spine on right
       return IntrinsicHeight(
@@ -104,10 +106,17 @@ class MessageBubble extends StatelessWidget {
             Flexible(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                child: Text(
-                  message.content,
-                  style: GoogleFonts.inter(fontSize: 14, color: Colors.white, height: 1.4),
-                ),
+                child: RichMessageText.hasStructuredContent(message.content)
+                    ? RichMessageText(
+                        content: message.content,
+                        baseStyle: GoogleFonts.inter(fontSize: 14, color: Colors.white, height: 1.4),
+                        onMentionTap: (_) {},
+                        onReferenceTap: (jobId) => context.push('/jobs/$jobId'),
+                      )
+                    : Text(
+                        message.content,
+                        style: GoogleFonts.inter(fontSize: 14, color: Colors.white, height: 1.4),
+                      ),
               ),
             ),
             // Emerald spine
@@ -130,10 +139,17 @@ class MessageBubble extends StatelessWidget {
           color: ObsidianTheme.surface1,
           border: Border.all(color: ObsidianTheme.border),
         ),
-        child: Text(
-          message.content,
-          style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFD4D4D8), height: 1.4),
-        ),
+        child: RichMessageText.hasStructuredContent(message.content)
+            ? RichMessageText(
+                content: message.content,
+                baseStyle: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFD4D4D8), height: 1.4),
+                onMentionTap: (_) {},
+                onReferenceTap: (jobId) => context.push('/jobs/$jobId'),
+              )
+            : Text(
+                message.content,
+                style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFD4D4D8), height: 1.4),
+              ),
       );
     }
   }
