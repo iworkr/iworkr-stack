@@ -122,7 +122,7 @@ class InboxScreen extends ConsumerWidget {
                   // Unread count badge
                   Consumer(
                     builder: (_, ref, __) {
-                      final count = ref.watch(unreadCountProvider).valueOrNull ?? 0;
+                      final count = ref.watch(unreadCountProvider);
                       if (count == 0) return const SizedBox.shrink();
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

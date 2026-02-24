@@ -9,7 +9,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
-import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/services/schedule_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -116,6 +115,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
     HapticFeedback.heavyImpact();
 
+    // 1. Optimistic UI — immediately clear drag state and show placement
     setState(() {
       _isDragging = false;
       _dragJob = null;
@@ -124,6 +124,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     });
 
     try {
+      // 2. Execute the backend mutation — AWAIT it fully
       await dispatchJob(
         jobId: job.id,
         jobTitle: job.title,
@@ -135,10 +136,11 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         location: job.location,
       );
 
+      // 3. Success — Realtime will push updates automatically, but
+      //    invalidate as a belt-and-suspenders measure.
       ref.invalidate(technicianScheduleProvider);
       ref.invalidate(backlogJobsProvider);
       ref.invalidate(myTodayBlocksProvider);
-      ref.invalidate(jobsProvider);
 
       if (mounted) {
         final selectedTech = ref.read(selectedTechnicianProvider);
@@ -167,14 +169,40 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         ));
       }
     } catch (e) {
+      // 4. ROLLBACK — Mutation failed: revert the optimistic update
+      //    Force refetch from the real database state so ghost data
+      //    is impossible. The job will reappear in the backlog.
+      ref.invalidate(technicianScheduleProvider);
+      ref.invalidate(backlogJobsProvider);
+      ref.invalidate(myTodayBlocksProvider);
+
       if (mounted) {
+        setState(() => _incomingJobId = null);
+
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Dispatch failed: $e'),
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, size: 16, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Failed to schedule job. $e',
+                  style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
           backgroundColor: ObsidianTheme.rose,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          duration: const Duration(seconds: 4),
         ));
       }
+      return;
     }
 
+    // Clear the incoming animation after the Realtime stream catches up
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) setState(() => _incomingJobId = null);
     });

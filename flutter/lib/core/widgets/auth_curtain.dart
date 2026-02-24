@@ -118,9 +118,11 @@ class _AuthCurtainState extends State<AuthCurtain> with WidgetsBindingObserver {
           ),
         ),
         if (_showAirlock)
-          _VaultLockOverlay(
-            isColdStart: _coldStartLocked,
-            onUnlocked: _onUnlocked,
+          Positioned.fill(
+            child: _VaultLockOverlay(
+              isColdStart: _coldStartLocked,
+              onUnlocked: _onUnlocked,
+            ),
           ),
       ],
     );
@@ -302,20 +304,23 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
       backgroundColor: ObsidianTheme.void_,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            const Spacer(flex: 30),
-            _buildBreathingLogo(),
-            const SizedBox(height: 28),
-            _buildStatusText(),
-            const Spacer(flex: 15),
-            _showPin ? _buildPinPad() : _buildLockGlyph(),
-            const SizedBox(height: 24),
-            if (_state == _VaultState.error && !_showPin) _buildRetryButton(),
-            const Spacer(flex: 8),
-            _buildLogoutEscape(),
-            SizedBox(height: bottomPad + 16),
-          ],
+        child: SizedBox.expand(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Spacer(flex: 30),
+              _buildBreathingLogo(),
+              const SizedBox(height: 28),
+              _buildStatusText(),
+              const Spacer(flex: 15),
+              _showPin ? _buildPinPad() : _buildLockGlyph(),
+              const SizedBox(height: 24),
+              if (_state == _VaultState.error && !_showPin) _buildRetryButton(),
+              const Spacer(flex: 8),
+              _buildLogoutEscape(),
+              SizedBox(height: bottomPad + 16),
+            ],
+          ),
         ),
       ),
     );
@@ -335,20 +340,23 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
             color: Colors.black.withValues(alpha: 0.65),
             child: SafeArea(
               bottom: false,
-              child: Column(
-                children: [
-                  const Spacer(flex: 30),
-                  _buildBreathingLogo(),
-                  const SizedBox(height: 28),
-                  _buildStatusText(),
-                  const Spacer(flex: 15),
-                  _showPin ? _buildPinPad() : _buildLockGlyph(),
-                  const SizedBox(height: 24),
-                  if (_state == _VaultState.error && !_showPin) _buildRetryButton(),
-                  const Spacer(flex: 8),
-                  _buildLogoutEscape(),
-                  SizedBox(height: bottomPad + 16),
-                ],
+              child: SizedBox.expand(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Spacer(flex: 30),
+                    _buildBreathingLogo(),
+                    const SizedBox(height: 28),
+                    _buildStatusText(),
+                    const Spacer(flex: 15),
+                    _showPin ? _buildPinPad() : _buildLockGlyph(),
+                    const SizedBox(height: 24),
+                    if (_state == _VaultState.error && !_showPin) _buildRetryButton(),
+                    const Spacer(flex: 8),
+                    _buildLogoutEscape(),
+                    SizedBox(height: bottomPad + 16),
+                  ],
+                ),
               ),
             ),
           ),

@@ -101,21 +101,36 @@ class _MissionHudScreenState extends ConsumerState<MissionHudScreen>
   }
 
   Future<void> _onEngaged() async {
+    // Optimistic: show engaged state immediately
     setState(() => _engaged = true);
-    _startTimer();
 
-    await logTelemetryEvent(
-      jobId: widget.jobId,
-      eventType: TelemetryEventType.jobStarted,
-    );
+    try {
+      await logTelemetryEvent(
+        jobId: widget.jobId,
+        eventType: TelemetryEventType.jobStarted,
+      );
 
-    final session = await startJobTimer(jobId: widget.jobId);
-    if (session != null && mounted) {
-      setState(() => _sessionId = session.id);
+      final session = await startJobTimer(jobId: widget.jobId);
+      if (session != null && mounted) {
+        setState(() => _sessionId = session.id);
+        _startTimer();
+      }
+
+      ref.invalidate(jobDetailProvider(widget.jobId));
+    } catch (e) {
+      // Rollback: revert engaged state on failure
+      if (mounted) {
+        setState(() => _engaged = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to start job. Check your connection.'),
+          backgroundColor: const Color(0xFFF43F5E),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          duration: const Duration(seconds: 4),
+        ));
+      }
     }
-
-    ref.invalidate(jobDetailProvider(widget.jobId));
-    ref.invalidate(jobsProvider);
   }
 
   Future<void> _onTaskToggle(Map<String, dynamic> task) async {
@@ -123,6 +138,10 @@ class _MissionHudScreenState extends ConsumerState<MissionHudScreen>
     final wasCompleted = task['completed'] as bool? ?? false;
     final newCompleted = !wasCompleted;
 
+    // 1. Snapshot for rollback
+    final previousSubtasks = List<Map<String, dynamic>>.from(_subtasks.map((t) => Map<String, dynamic>.from(t)));
+
+    // 2. Optimistic update
     setState(() {
       final idx = _subtasks.indexWhere((t) => t['id'] == id);
       if (idx >= 0) {
@@ -130,15 +149,29 @@ class _MissionHudScreenState extends ConsumerState<MissionHudScreen>
       }
     });
 
-    await toggleSubtask(subtaskId: id, completed: newCompleted);
+    try {
+      await toggleSubtask(subtaskId: id, completed: newCompleted);
 
-    await logTelemetryEvent(
-      jobId: widget.jobId,
-      eventType: newCompleted
-          ? TelemetryEventType.taskCompleted
-          : TelemetryEventType.taskUnchecked,
-      eventData: {'task_title': task['title'], 'task_id': id},
-    );
+      await logTelemetryEvent(
+        jobId: widget.jobId,
+        eventType: newCompleted
+            ? TelemetryEventType.taskCompleted
+            : TelemetryEventType.taskUnchecked,
+        eventData: {'task_title': task['title'], 'task_id': id},
+      );
+    } catch (e) {
+      // 3. Rollback on failure
+      if (mounted) {
+        setState(() => _subtasks = previousSubtasks);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to update task.'),
+          backgroundColor: const Color(0xFFF43F5E),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+        ));
+      }
+    }
   }
 
   Future<void> _onComplete() async {

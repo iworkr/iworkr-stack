@@ -28,7 +28,7 @@ class JobsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final jobsAsync = ref.watch(jobsProvider);
+    final jobsAsync = ref.watch(jobsStreamProvider);
     final filter = ref.watch(jobFilterProvider);
 
     return Scaffold(
@@ -146,7 +146,7 @@ class JobsScreen extends ConsumerWidget {
                     backgroundColor: ObsidianTheme.surface1,
                     onRefresh: () async {
                       HapticFeedback.mediumImpact();
-                      ref.invalidate(jobsProvider);
+                      ref.invalidate(jobsStreamProvider);
                     },
                     child: ListView.builder(
                       padding: const EdgeInsets.only(bottom: 120),

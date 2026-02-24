@@ -41,14 +41,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (switched && mounted) {
       setState(() => _wormholeTrigger = true);
       ref.invalidate(profileProvider);
-      ref.invalidate(revenueStatsProvider);
+      ref.invalidate(jobsStreamProvider);
       ref.invalidate(myTodayBlocksProvider);
     }
   }
 
   Future<void> _refresh() async {
     HapticFeedback.mediumImpact();
-    ref.invalidate(revenueStatsProvider);
+    ref.invalidate(jobsStreamProvider);
     ref.invalidate(myTodayBlocksProvider);
     ref.invalidate(profileProvider);
     ref.invalidate(allWorkspacesProvider);

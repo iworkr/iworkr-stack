@@ -283,6 +283,7 @@ final backlogJobsProvider = StreamProvider<List<Job>>((ref) {
 
 /// Dispatch a job to a specific technician at a specific time.
 /// Creates a schedule_block and updates the job assignment.
+/// Both mutations must succeed or the schedule_block is rolled back.
 Future<void> dispatchJob({
   required String jobId,
   required String jobTitle,
@@ -296,7 +297,8 @@ Future<void> dispatchJob({
   final endTime = startTime.add(Duration(minutes: durationMinutes));
   final client = SupabaseService.client;
 
-  await client.from('schedule_blocks').insert({
+  // Step 1: Insert the schedule block (get the ID back for rollback)
+  final blockData = await client.from('schedule_blocks').insert({
     'organization_id': organizationId,
     'job_id': jobId,
     'technician_id': technicianId,
@@ -306,14 +308,23 @@ Future<void> dispatchJob({
     'start_time': startTime.toUtc().toIso8601String(),
     'end_time': endTime.toUtc().toIso8601String(),
     'status': 'scheduled',
-  });
+  }).select('id').single();
 
-  await client.from('jobs').update({
-    'status': 'scheduled',
-    'due_date': startTime.toIso8601String(),
-    'assignee_id': technicianId,
-    'updated_at': DateTime.now().toIso8601String(),
-  }).eq('id', jobId);
+  try {
+    // Step 2: Update the job status
+    await client.from('jobs').update({
+      'status': 'scheduled',
+      'due_date': startTime.toIso8601String(),
+      'assignee_id': technicianId,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', jobId);
+  } catch (e) {
+    // Rollback: remove the orphaned schedule block
+    await client.from('schedule_blocks')
+        .delete()
+        .eq('id', blockData['id'] as String);
+    rethrow;
+  }
 }
 
 /// Snap a DateTime to the nearest 15-minute increment.
