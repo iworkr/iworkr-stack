@@ -19,6 +19,7 @@ import { DispatchRoster } from "@/components/dispatch/dispatch-roster";
 import { DispatchSearch } from "@/components/dispatch/dispatch-search";
 import { HoverDialog, type HoverDialogTech } from "@/components/dispatch/hover-dialog";
 import { useJobsStore } from "@/lib/jobs-store";
+import { FeatureGate } from "@/components/app/feature-gate";
 
 
 function FitBoundsToData({
@@ -227,6 +228,11 @@ export default function DispatchPage() {
   }
 
   return (
+    <FeatureGate
+      requiredTier="pro"
+      featureTitle="God Mode Dispatch"
+      featureDescription="Unlock real-time fleet tracking, road-snapped routing, and GPS footprint trails for your entire operation."
+    >
     <div className="relative h-full w-full overflow-hidden bg-zinc-950">
       <DispatchCommandPanel
         showFleet={showFleet}
@@ -298,5 +304,6 @@ export default function DispatchPage() {
         <FootprintsLayer trails={footprintsToRender} visible={showFootprints} />
       </GoogleMap>
     </div>
+    </FeatureGate>
   );
 }

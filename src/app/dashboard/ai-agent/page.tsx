@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/lib/auth-store";
 import { useEffect, useState } from "react";
 import { getAgentConfig } from "@/app/actions/ai-agent";
+import { FeatureGate } from "@/components/app/feature-gate";
 
 /* ── PRD 60: Agent definitions (The Synthetic Roster) ───── */
 
@@ -168,50 +169,56 @@ export default function AIWorkforceHubPage() {
   const maxAgents = 5;
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
-      {/* PRD 60: Hub Header */}
-      <div className="sticky top-0 z-10 border-b border-white/5 bg-[#050505]/95 backdrop-blur-xl">
-        <div className="px-6 py-5">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-white">
-            AI Workforce
-          </h1>
-          <p className="mt-1 text-[13px] text-zinc-500">
-            Deploy synthetic agents to automate your operations.
-          </p>
-          {/* Micro-metric bar */}
-          <div className="mt-4 flex items-center gap-4 font-mono text-[11px]">
-            <span className="text-zinc-500">
-              Active Agents:{" "}
-              <span className="text-zinc-300">{activeCount}/{maxAgents}</span>
-            </span>
-            <span className="text-zinc-700">•</span>
-            <span className="text-zinc-500">
-              Tasks Automated Today:{" "}
-              <span className="text-violet-400/90">{tasksToday}</span>
-            </span>
+    <FeatureGate
+      requiredTier="business"
+      featureTitle="AI Workforce Hub"
+      featureDescription="Deploy synthetic receptionists and automated dispatchers to scale your operations without scaling payroll."
+    >
+      <div className="flex h-full flex-col bg-[#050505]">
+        {/* PRD 60: Hub Header */}
+        <div className="sticky top-0 z-10 border-b border-white/5 bg-[#050505]/95 backdrop-blur-xl">
+          <div className="px-6 py-5">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-white">
+              AI Workforce
+            </h1>
+            <p className="mt-1 text-[13px] text-zinc-500">
+              Deploy synthetic agents to automate your operations.
+            </p>
+            {/* Micro-metric bar */}
+            <div className="mt-4 flex items-center gap-4 font-mono text-[11px]">
+              <span className="text-zinc-500">
+                Active Agents:{" "}
+                <span className="text-zinc-300">{activeCount}/{maxAgents}</span>
+              </span>
+              <span className="text-zinc-700">•</span>
+              <span className="text-zinc-500">
+                Tasks Automated Today:{" "}
+                <span className="text-violet-400/90">{tasksToday}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Agent Grid — PRD 60: responsive, Obsidian cards */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {AGENTS.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                isActive={
+                  agent.id === "phone" ? phoneEnabled : false
+                }
+                onActivate={
+                  agent.id !== "phone"
+                    ? () => {}
+                    : undefined
+                }
+              />
+            ))}
           </div>
         </div>
       </div>
-
-      {/* Agent Grid — PRD 60: responsive, Obsidian cards */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {AGENTS.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              isActive={
-                agent.id === "phone" ? phoneEnabled : false
-              }
-              onActivate={
-                agent.id !== "phone"
-                  ? () => {}
-                  : undefined
-              }
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+    </FeatureGate>
   );
 }

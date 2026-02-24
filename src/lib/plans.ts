@@ -32,6 +32,10 @@ export interface PlanDefinition {
   polarPriceIdMonthly: string;
   /** Polar Price ID for yearly billing (empty if not available yet) */
   polarPriceIdYearly: string;
+  /** Stripe Price ID for monthly billing */
+  stripePriceIdMonthly: string;
+  /** Stripe Price ID for yearly billing */
+  stripePriceIdYearly: string;
   limits: PlanLimits;
   highlighted: boolean;
   badge?: string;
@@ -69,6 +73,8 @@ export const PLANS: PlanDefinition[] = [
     polarProductId: "",
     polarPriceIdMonthly: "",
     polarPriceIdYearly: "",
+    stripePriceIdMonthly: "",
+    stripePriceIdYearly: "",
     limits: {
       maxUsers: 1,
       maxJobsPerMonth: 10,
@@ -103,6 +109,8 @@ export const PLANS: PlanDefinition[] = [
     polarProductId: "95b33e16-0141-4359-8d6c-464b5f08a254",
     polarPriceIdMonthly: "a70530fd-5055-4477-9bf6-291428d08856",
     polarPriceIdYearly: "",
+    stripePriceIdMonthly: "price_starter_monthly",
+    stripePriceIdYearly: "price_starter_yearly",
     limits: {
       maxUsers: 5,
       maxJobsPerMonth: Infinity,
@@ -140,6 +148,8 @@ export const PLANS: PlanDefinition[] = [
     polarProductId: "7673fa11-335c-4e37-a5cf-106f17202e58",
     polarPriceIdMonthly: "5ed03136-ef53-4795-8512-fcae419212a6",
     polarPriceIdYearly: "",
+    stripePriceIdMonthly: "price_pro_monthly",
+    stripePriceIdYearly: "price_pro_yearly",
     limits: {
       maxUsers: 25,
       maxJobsPerMonth: Infinity,
@@ -179,6 +189,8 @@ export const PLANS: PlanDefinition[] = [
     polarProductId: "e5ac6ca6-8dfa-4be8-85aa-87c2eac2633e",
     polarPriceIdMonthly: "72baea92-875b-4ed1-9ae3-fed6f349f7ad",
     polarPriceIdYearly: "",
+    stripePriceIdMonthly: "price_business_monthly",
+    stripePriceIdYearly: "price_business_yearly",
     limits: {
       maxUsers: Infinity,
       maxJobsPerMonth: Infinity,

@@ -12,6 +12,8 @@ import { DataProvider } from "@/components/app/data-provider";
 import { HydrationGate } from "@/components/app/hydration-gate";
 import { GoogleMapsProvider } from "@/components/maps/google-maps-provider";
 import { useShellStore } from "@/lib/shell-store";
+import { PastDueBanner } from "@/components/app/feature-gate";
+import { useAuthStore } from "@/lib/auth-store";
 
 const DesktopBridge = dynamic(() => import("@/lib/desktop/desktop-bridge").then((m) => m.DesktopBridge), { ssr: false });
 const DesktopBadge = dynamic(() => import("@/lib/desktop/desktop-badge").then((m) => m.DesktopBadge), { ssr: false });
@@ -182,6 +184,7 @@ export default function DashboardLayout({
         style={{ marginLeft: mainMarginLeft }}
       >
         <Topbar />
+        <PastDueBannerWrapper />
 
         {/* Content canvas */}
         <motion.main
@@ -242,4 +245,10 @@ export default function DashboardLayout({
     </HydrationGate>
     </GoogleMapsProvider>
   );
+}
+
+function PastDueBannerWrapper() {
+  const { currentOrg } = useAuthStore();
+  if (!currentOrg?.id) return null;
+  return <PastDueBanner orgId={currentOrg.id} />;
 }

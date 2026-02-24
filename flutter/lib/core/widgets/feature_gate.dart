@@ -1,114 +1,75 @@
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import 'package:iworkr_mobile/core/services/subscription_provider.dart';
-import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/services/billing_provider.dart';
 
-/// FeatureGate — a glass blur overlay that locks Pro features for free users.
-///
-/// The feature content is rendered underneath but obscured by a frosted glass
-/// layer with a golden lock icon. Tapping the overlay opens the paywall.
+// ═══════════════════════════════════════════════════════════
+// ── Feature Gate — The Obsidian Tollbooth ─────────────────
+// ═══════════════════════════════════════════════════════════
+//
+// Wraps premium features. If the workspace plan_tier doesn't
+// meet the required tier, the children are rendered with a
+// blur and a polished upgrade sheet is shown.
+//
+// On mobile, the CTA opens the web billing page (App Store
+// compliance — no in-app purchases for B2B SaaS).
+
+const _tierOrder = ['free', 'starter', 'pro', 'business'];
+
+bool _meetsTier(String current, String required) {
+  final currentIdx = _tierOrder.indexOf(current);
+  final requiredIdx = _tierOrder.indexOf(required);
+  return currentIdx >= requiredIdx;
+}
+
 class FeatureGate extends ConsumerWidget {
+  final String requiredTier;
   final Widget child;
-  final String featureLabel;
+  final String? featureTitle;
+  final String? featureDescription;
 
   const FeatureGate({
     super.key,
+    required this.requiredTier,
     required this.child,
-    this.featureLabel = 'Pro Feature',
+    this.featureTitle,
+    this.featureDescription,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isPro = ref.watch(isProProvider).valueOrNull ?? false;
+    final tierAsync = ref.watch(planTierProvider);
+    final currentTier = tierAsync.valueOrNull ?? 'free';
 
-    if (isPro) return child;
+    if (_meetsTier(currentTier, requiredTier)) {
+      return child;
+    }
 
     return Stack(
       children: [
-        // Underlying content (visible but blurred)
-        child,
-
-        // Glass lock overlay
+        IgnorePointer(
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+            child: Opacity(opacity: 0.3, child: child),
+          ),
+        ),
         Positioned.fill(
           child: GestureDetector(
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              _showPaywallSheet(context);
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Golden lock
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: ObsidianTheme.gold.withValues(alpha: 0.1),
-                            border: Border.all(
-                              color:
-                                  ObsidianTheme.gold.withValues(alpha: 0.25),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    ObsidianTheme.gold.withValues(alpha: 0.15),
-                                blurRadius: 20,
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              PhosphorIconsBold.lock,
-                              size: 22,
-                              color: ObsidianTheme.gold,
-                            ),
-                          ),
-                        )
-                            .animate(onPlay: (c) => c.repeat(reverse: true))
-                            .scaleXY(
-                              begin: 1.0,
-                              end: 1.06,
-                              duration: 2000.ms,
-                              curve: Curves.easeInOut,
-                            ),
-
-                        const SizedBox(height: 12),
-
-                        Text(
-                          featureLabel,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: ObsidianTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tap to unlock',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: ObsidianTheme.gold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+            onTap: () => _showUpgradeSheet(context),
+            child: Container(
+              color: const Color(0xFF09090B).withValues(alpha: 0.8),
+              child: Center(
+                child: _GatePlaceholder(
+                  title: featureTitle ?? _tierDisplayName(requiredTier),
+                  description: featureDescription ??
+                      'Upgrade to ${_tierDisplayName(requiredTier)} to unlock this feature.',
+                  onUpgrade: () => _showUpgradeSheet(context),
                 ),
               ),
             ),
@@ -118,152 +79,177 @@ class FeatureGate extends ConsumerWidget {
     );
   }
 
-  void _showPaywallSheet(BuildContext context) {
+  void _showUpgradeSheet(BuildContext context) {
+    HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black54,
-      builder: (_) => const _UpgradeSheet(),
+      isScrollControlled: true,
+      builder: (_) => _UpgradeSheet(
+        requiredTier: requiredTier,
+        featureTitle: featureTitle,
+        featureDescription: featureDescription,
+      ),
     );
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// ── Upgrade Sheet (Mini Paywall) ─────────────────────────
-// ═══════════════════════════════════════════════════════════
+// ── Inline lock placeholder ──────────────────────────────
 
-class _UpgradeSheet extends StatelessWidget {
-  const _UpgradeSheet();
+class _GatePlaceholder extends StatelessWidget {
+  final String title;
+  final String description;
+  final VoidCallback onUpgrade;
+
+  const _GatePlaceholder({
+    required this.title,
+    required this.description,
+    required this.onUpgrade,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-        child: Container(
-          constraints: BoxConstraints(maxHeight: mq.size.height * 0.55),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0A0A0A).withValues(alpha: 0.92),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: ObsidianTheme.borderMedium),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
+            child: const Icon(CupertinoIcons.lock_fill, size: 20, color: Color(0xFF71717A)),
           ),
+          const SizedBox(height: 16),
+          Text(
+            '$title Feature',
+            style: GoogleFonts.inter(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF71717A), height: 1.5),
+          ),
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: onUpgrade,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Manage Plan on Web',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Full upgrade bottom sheet ────────────────────────────
+
+class _UpgradeSheet extends StatelessWidget {
+  final String requiredTier;
+  final String? featureTitle;
+  final String? featureDescription;
+
+  const _UpgradeSheet({
+    required this.requiredTier,
+    this.featureTitle,
+    this.featureDescription,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tierName = _tierDisplayName(requiredTier);
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF09090B),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(
+          top: BorderSide(color: Color(0x0DFFFFFF)),
+          left: BorderSide(color: Color(0x0DFFFFFF)),
+          right: BorderSide(color: Color(0x0DFFFFFF)),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, bottomPad + 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 16),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: ObsidianTheme.textTertiary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-
-              // Shield icon
+              const SizedBox(height: 24),
               Container(
-                width: 60,
-                height: 60,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: ObsidianTheme.emerald.withValues(alpha: 0.1),
-                  border: Border.all(
-                    color: ObsidianTheme.emerald.withValues(alpha: 0.25),
-                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
-                child: const Center(
-                  child: Icon(
-                    PhosphorIconsBold.rocketLaunch,
-                    size: 26,
-                    color: ObsidianTheme.emerald,
-                  ),
-                ),
-              )
-                  .animate()
-                  .scaleXY(
-                      begin: 0.7,
-                      end: 1,
-                      duration: 500.ms,
-                      curve: Curves.easeOutBack),
-
-              const SizedBox(height: 16),
-
+                child: const Icon(CupertinoIcons.lock_fill, size: 24, color: Color(0xFF71717A)),
+              ),
+              const SizedBox(height: 20),
               Text(
-                'Upgrade to Pro',
+                featureTitle ?? 'Unlock $tierName',
                 style: GoogleFonts.inter(
                   fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: ObsidianTheme.textPrimary,
-                  letterSpacing: -0.3,
-                ),
-              )
-                  .animate()
-                  .fadeIn(delay: 100.ms, duration: 400.ms),
-
-              const SizedBox(height: 6),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  'Unlock unlimited jobs, AI tools, fleet management, and more.',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: ObsidianTheme.textMuted,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              )
-                  .animate()
-                  .fadeIn(delay: 200.ms, duration: 400.ms),
-
-              const SizedBox(height: 24),
-
-              // Quick features
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    _quickFeature(
-                        PhosphorIconsLight.infinity, 'Unlimited Jobs & Invoices'),
-                    _quickFeature(
-                        PhosphorIconsLight.brain, 'AI Scout & Market Index'),
-                    _quickFeature(
-                        PhosphorIconsLight.mapTrifold, 'Fleet Map & Dispatch'),
-                    _quickFeature(
-                        PhosphorIconsLight.chartLineUp, 'Advanced Analytics'),
-                  ],
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: -0.4,
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              // CTA
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+              const SizedBox(height: 8),
+              Text(
+                featureDescription ??
+                    'This feature requires the $tierName plan. Manage your subscription on the web to continue.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF71717A), height: 1.5),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
                 child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.heavyImpact();
-                    Navigator.pop(context);
-                    context.push('/paywall');
-                  },
+                  onTap: () => _openBillingWeb(context),
                   child: Container(
-                    width: double.infinity,
-                    height: 48,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: ObsidianTheme.emerald,
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
                       child: Text(
-                        'View Plans',
+                        'Manage Plan on Web',
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -273,11 +259,18 @@ class _UpgradeSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-              )
-                  .animate()
-                  .fadeIn(delay: 300.ms, duration: 400.ms),
-
-              SizedBox(height: mq.padding.bottom + 20),
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Not now',
+                    style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF71717A)),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -285,23 +278,70 @@ class _UpgradeSheet extends StatelessWidget {
     );
   }
 
-  Widget _quickFeature(IconData icon, String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: ObsidianTheme.emerald),
-          const SizedBox(width: 10),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: ObsidianTheme.textSecondary,
+  Future<void> _openBillingWeb(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final uri = Uri.parse('https://app.iworkr.com/settings/billing');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    if (context.mounted) Navigator.of(context).pop();
+  }
+}
+
+// ── Soft Gate badge (inline) ─────────────────────────────
+
+class SoftGateBadge extends ConsumerWidget {
+  final String requiredTier;
+  final Widget child;
+
+  const SoftGateBadge({
+    super.key,
+    required this.requiredTier,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tierAsync = ref.watch(planTierProvider);
+    final currentTier = tierAsync.valueOrNull ?? 'free';
+
+    if (_meetsTier(currentTier, requiredTier)) {
+      return child;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Opacity(opacity: 0.5, child: IgnorePointer(child: child)),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+          ),
+          child: Text(
+            _tierDisplayName(requiredTier).toUpperCase(),
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFF59E0B),
+              letterSpacing: 0.5,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
+// ── Helpers ──────────────────────────────────────────────
+
+String _tierDisplayName(String tier) {
+  switch (tier) {
+    case 'starter': return 'Starter';
+    case 'pro': return 'Standard';
+    case 'business': return 'Enterprise';
+    default: return 'Pro';
+  }
+}

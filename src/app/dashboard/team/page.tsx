@@ -45,6 +45,8 @@ import {
 import { MemberDrawer } from "@/components/team/member-drawer";
 import { InviteModal } from "@/components/team/invite-modal";
 import { useToastStore } from "@/components/app/action-toast";
+import { useBillingStore } from "@/lib/billing-store";
+import { getPlanByKey } from "@/lib/plans";
 
 /* ── Skill icon map ─────────────────────────────────────── */
 
@@ -315,15 +317,33 @@ export default function TeamPage() {
               Roles
             </Link>
 
-            {/* Invite — PRD 57.0 Stark White primary CTA */}
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setInviteModalOpen(true)}
-              className="flex h-7 items-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
-            >
-              <UserPlus size={13} strokeWidth={2} className="text-black" />
-              Invite
-            </motion.button>
+            {/* Invite — PRD 57.0 Stark White primary CTA + Seat Limit Gate */}
+            {(() => {
+              const { plan, memberCount } = useBillingStore();
+              const atLimit = memberCount >= plan.limits.maxUsers;
+              if (atLimit) {
+                return (
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => window.location.href = "/settings/billing"}
+                    className="flex h-7 items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 text-[11px] font-medium text-amber-400 transition-all duration-200 hover:bg-amber-500/20"
+                  >
+                    <UserPlus size={13} strokeWidth={2} />
+                    Upgrade to Add Seats
+                  </motion.button>
+                );
+              }
+              return (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setInviteModalOpen(true)}
+                  className="flex h-7 items-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
+                >
+                  <UserPlus size={13} strokeWidth={2} className="text-black" />
+                  Invite
+                </motion.button>
+              );
+            })()}
           </div>
         </div>
 

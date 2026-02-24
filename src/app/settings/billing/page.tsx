@@ -176,8 +176,8 @@ function PlanCard({
         </a>
       ) : (
         <button
-          onClick={() => onUpgrade(plan.polarProductId)}
-          disabled={loading || !plan.polarProductId}
+          onClick={() => onUpgrade(isYearly ? plan.stripePriceIdYearly : plan.stripePriceIdMonthly)}
+          disabled={loading || !(isYearly ? plan.stripePriceIdYearly : plan.stripePriceIdMonthly)}
           className={`mt-3 flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-medium transition-all ${
             plan.highlighted
               ? "bg-white text-black hover:bg-zinc-200"
@@ -213,14 +213,38 @@ export default function BillingPage() {
     if (orgId) loadBilling(orgId);
   }, [orgId, loadBilling]);
 
-  function handleUpgrade(productId: string) {
-    if (!productId) return;
-    window.location.href = `/api/checkout?products=${productId}`;
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  async function handleUpgrade(priceId: string) {
+    if (!priceId || !orgId) return;
+    setUpgradeLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, orgId }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      setUpgradeLoading(false);
+    }
   }
 
-  function handleManageBilling() {
-    // For now, open Polar portal. In future, integrate customerId from subscription.
-    window.open("https://polar.sh/iworkr/portal", "_blank");
+  async function handleManageBilling() {
+    if (!orgId) return;
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // Fallback to Polar portal
+      window.open("https://polar.sh/iworkr/portal", "_blank");
+    }
   }
 
   const currentPlanKey = subscription?.plan_key || "free";

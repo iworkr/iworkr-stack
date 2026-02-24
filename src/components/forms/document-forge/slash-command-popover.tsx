@@ -4,6 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useEffect, useRef, useState } from "react";
 import { TOOLBOX_ITEMS, filterTools } from "./forge-config";
 import type { BlockType } from "@/lib/forms-data";
+import { useBillingStore } from "@/lib/billing-store";
+
+const GATED_BLOCKS: Record<string, string> = {
+  signature: "pro",
+  risk_matrix: "pro",
+};
+
+const PLAN_ORDER = ["free", "starter", "pro", "business"];
 
 interface SlashCommandPopoverProps {
   open: boolean;
@@ -87,6 +95,10 @@ export function SlashCommandPopover({
             filtered.map((item, i) => {
               const Icon = item.icon;
               const isHighlight = i === highlightIndex;
+              const requiredTier = GATED_BLOCKS[item.type];
+              const { plan } = useBillingStore();
+              const isLocked = requiredTier && PLAN_ORDER.indexOf(plan.key) < PLAN_ORDER.indexOf(requiredTier);
+
               return (
                 <button
                   key={item.type}
@@ -94,8 +106,16 @@ export function SlashCommandPopover({
                   role="option"
                   aria-selected={isHighlight}
                   onMouseEnter={() => setHighlightIndex(i)}
-                  onClick={() => onSelect(item.type)}
+                  onClick={() => {
+                    if (isLocked) {
+                      window.location.href = "/settings/billing";
+                      return;
+                    }
+                    onSelect(item.type);
+                  }}
                   className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12px] transition-colors ${
+                    isLocked ? "opacity-50" : ""
+                  } ${
                     isHighlight
                       ? "bg-white/10 text-white"
                       : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
@@ -103,6 +123,11 @@ export function SlashCommandPopover({
                 >
                   <Icon size={14} className="shrink-0 text-zinc-500" />
                   {item.label}
+                  {isLocked && (
+                    <span className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold tracking-wider bg-amber-500/10 text-amber-400">
+                      PRO
+                    </span>
+                  )}
                 </button>
               );
             })
