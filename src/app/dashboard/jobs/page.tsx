@@ -829,7 +829,6 @@ export default function JobsPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-950 p-6 shadow-2xl">
               <div className="flex items-center gap-3 pb-4">
