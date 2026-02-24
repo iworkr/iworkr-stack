@@ -473,5 +473,6 @@ struct iWorkrWidgetBundle: WidgetBundle {
         NextJobWidget()
         RevenueWidget()
         ScheduleWidget()
+        iWorkrJobLiveActivity()
     }
 }

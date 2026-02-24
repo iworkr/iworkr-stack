@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:drift/drift.dart' show OrderingTerm;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:live_activities/live_activities.dart';
@@ -12,28 +14,43 @@ import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 // ═══════════════════════════════════════════════════════════
 // ── Native Bridge Service ────────────────────────────────
 // ═══════════════════════════════════════════════════════════
-//
-// Serializes critical app state to native OS storage (App Groups)
-// so that WidgetKit, Live Activities, and CarPlay can read it.
-// Also manages iOS Live Activities via ActivityKit.
 
 const _kAppGroup = 'group.com.iworkr.app';
-const _kWidgetName = 'iWorkrWidget';
+const _kWidgetName = 'iWorkrWidgetExtension';
+
+void _log(String msg) => developer.log(msg, name: 'NativeBridge');
 
 class NativeBridgeService {
   final Ref _ref;
   final LiveActivities _liveActivities = LiveActivities();
   String? _currentActivityId;
+  bool _initialized = false;
 
   NativeBridgeService(this._ref);
 
-  /// Initialize the bridge — call once at app boot.
   Future<void> initialize() async {
-    HomeWidget.setAppGroupId(_kAppGroup);
+    if (_initialized) return;
+    _initialized = true;
+
+    try {
+      HomeWidget.setAppGroupId(_kAppGroup);
+      _log('HomeWidget appGroupId set: $_kAppGroup');
+    } on PlatformException catch (e) {
+      _log('HomeWidget init failed: ${e.code} — ${e.message}');
+    }
+
+    try {
+      await _liveActivities.init(appGroupId: _kAppGroup);
+      _log('LiveActivities initialized with appGroupId: $_kAppGroup');
+    } on PlatformException catch (e) {
+      _log('LiveActivities init failed: ${e.code} — ${e.message}');
+    } catch (e) {
+      _log('LiveActivities init error: $e');
+    }
+
     await syncAll();
   }
 
-  /// Push all current state to native storage.
   Future<void> syncAll() async {
     await Future.wait([
       _syncActiveJob(),
@@ -41,7 +58,15 @@ class NativeBridgeService {
       _syncAdminMetrics(),
       _syncMeta(),
     ]);
-    await HomeWidget.updateWidget(name: _kWidgetName);
+    try {
+      await HomeWidget.updateWidget(
+        name: _kWidgetName,
+        iOSName: _kWidgetName,
+      );
+      _log('HomeWidget.updateWidget succeeded');
+    } on PlatformException catch (e) {
+      _log('HomeWidget.updateWidget failed: ${e.code} — ${e.message}');
+    }
   }
 
   // ── Active Job ─────────────────────────────────────────
@@ -81,7 +106,8 @@ class NativeBridgeService {
         'client_name': job?.clientName,
       });
       await HomeWidget.saveWidgetData('active_job', payload);
-    } catch (_) {
+    } catch (e) {
+      _log('_syncActiveJob error: $e');
       await HomeWidget.saveWidgetData('active_job', null);
     }
   }
@@ -117,7 +143,9 @@ class NativeBridgeService {
         'client_name': job.clientName,
       });
       await HomeWidget.saveWidgetData('next_job', payload);
-    } catch (_) {}
+    } catch (e) {
+      _log('_syncNextJob error: $e');
+    }
   }
 
   // ── Admin Metrics ──────────────────────────────────────
@@ -141,7 +169,9 @@ class NativeBridgeService {
         'urgent_alerts': 0,
       });
       await HomeWidget.saveWidgetData('admin_metrics', payload);
-    } catch (_) {}
+    } catch (e) {
+      _log('_syncAdminMetrics error: $e');
+    }
   }
 
   // ── Meta ───────────────────────────────────────────────
@@ -167,7 +197,7 @@ class NativeBridgeService {
     String? clientName,
   }) async {
     try {
-      final data = <String, dynamic>{
+      final data = <String, String>{
         'jobId': jobId,
         'jobTitle': jobTitle,
         'address': address,
@@ -176,8 +206,14 @@ class NativeBridgeService {
         'clientName': clientName ?? '',
       };
 
+      _log('Starting Live Activity — jobId=$jobId, data=$data');
       _currentActivityId = await _liveActivities.createActivity(jobId, data);
-    } catch (_) {}
+      _log('Live Activity created — activityId=$_currentActivityId');
+    } on PlatformException catch (e) {
+      _log('startJobLiveActivity PlatformException: ${e.code} — ${e.message} — ${e.details}');
+    } catch (e) {
+      _log('startJobLiveActivity error: $e');
+    }
   }
 
   Future<void> updateJobLiveActivity({
@@ -195,15 +231,20 @@ class NativeBridgeService {
           if (elapsedSeconds != null) 'elapsedSeconds': elapsedSeconds,
         },
       );
-    } catch (_) {}
+    } on PlatformException catch (e) {
+      _log('updateJobLiveActivity error: ${e.code} — ${e.message}');
+    }
   }
 
   Future<void> endJobLiveActivity() async {
     if (_currentActivityId == null) return;
     try {
       await _liveActivities.endActivity(_currentActivityId!);
+      _log('Live Activity ended — activityId=$_currentActivityId');
       _currentActivityId = null;
-    } catch (_) {}
+    } on PlatformException catch (e) {
+      _log('endJobLiveActivity error: ${e.code} — ${e.message}');
+    }
   }
 
   // ── Logout Cleanup ─────────────────────────────────────
@@ -214,13 +255,11 @@ class NativeBridgeService {
     await HomeWidget.saveWidgetData('admin_metrics', null);
     await HomeWidget.saveWidgetData('is_logged_in', 'false');
     await HomeWidget.saveWidgetData('timestamp', null);
-    await HomeWidget.updateWidget(name: _kWidgetName);
+    await HomeWidget.updateWidget(name: _kWidgetName, iOSName: _kWidgetName);
     await endJobLiveActivity();
   }
 
-  void dispose() {
-    // No persistent subscriptions to clean up
-  }
+  void dispose() {}
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -41,7 +41,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>12</string>
+	<string>13</string>
 	<key>NSCameraUsageDescription</key>
 	<string>iWorkr needs camera access to scan barcodes, QR codes, and capture site evidence photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -61,6 +61,10 @@
 		<string>comgooglemaps</string>
 		<string>maps</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

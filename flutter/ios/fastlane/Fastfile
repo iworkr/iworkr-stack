@@ -6,7 +6,6 @@ platform :ios do
   # Creates the App ID + App Store Connect entry if it doesn't exist.
   # Usage: fastlane ios setup_app
   # ──────────────────────────────────────────────────────────────────
-  # Create app via App Store Connect API (no Apple ID password needed)
   desc "Create app on App Store Connect via API (bundle ID + app record)"
   lane :setup_app_api do
     create_app_api(
@@ -16,10 +15,8 @@ platform :ios do
     )
   end
 
-  # Create app via produce (requires FASTLANE_PASSWORD = app-specific password)
   desc "Register the app on Apple Developer Portal and App Store Connect"
   lane :setup_app do
-    # Produce uses Spaceship; set App Store Connect API key env vars for auth
     ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"] = ENV["ASC_KEY_ID"]
     ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"] = ENV["ASC_ISSUER_ID"]
     ENV["APP_STORE_CONNECT_API_KEY_KEY_CONTENT"] = ENV["ASC_KEY_CONTENT"]
@@ -37,8 +34,8 @@ platform :ios do
 
   # ──────────────────────────────────────────────────────────────────
   # Lane: deploy_ios
-  # Builds the Flutter app, increments the build number, and uploads
-  # the binary to TestFlight.
+  # Builds the Flutter app (including Widget Extension), increments
+  # the build number, and uploads the binary to TestFlight.
   # Usage: fastlane ios deploy_ios
   # ──────────────────────────────────────────────────────────────────
   desc "Build and upload to TestFlight"
@@ -71,6 +68,8 @@ platform :ios do
     )
 
     # 3. Build the signed IPA (allow Xcode to create/update provisioning profiles)
+    #    -allowProvisioningUpdates lets Xcode auto-manage profiles for both
+    #    the main app AND the widget extension target.
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
@@ -104,7 +103,8 @@ platform :ios do
       scheme: "Runner",
       export_method: "app-store",
       output_directory: "../build/ios/ipa",
-      output_name: "iWorkr.ipa"
+      output_name: "iWorkr.ipa",
+      xcargs: "-allowProvisioningUpdates"
     )
   end
 end
