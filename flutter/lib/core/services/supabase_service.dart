@@ -9,9 +9,9 @@ class SupabaseService {
 
   static Future<void> initialize() async {
     await Supabase.initialize(
-      url: 'https://iaroashargzwsuuciqox.supabase.co',
+      url: 'https://olqjuadvseoxpfjzlghb.supabase.co',
       anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhcm9hc2hhcmd6d3N1dWNpcW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjc3MzgsImV4cCI6MjA4NjgwMzczOH0.jMV3QdFNZ8UzAQrZGyLwI2k_vjZ4oYBv2USLH5gOZpM',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9scWp1YWR2c2VveHBmanpsZ2hiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4ODQ4ODcsImV4cCI6MjA4NzQ2MDg4N30.1-109HFf0IrDugPm7GPpYoAc_RVBXLDpz1zyojs8kZY',
     );
   }
 
@@ -19,7 +19,7 @@ class SupabaseService {
   ///
   /// Handles both:
   /// - Custom scheme: com.iworkr.mobile://login-callback#access_token=...
-  /// - Universal links: https://iaroashargzwsuuciqox.supabase.co/auth/v1/callback?...
+  /// - Universal links: https://olqjuadvseoxpfjzlghb.supabase.co/auth/v1/callback?...
   static void initDeepLinks() {
     final appLinks = AppLinks();
 

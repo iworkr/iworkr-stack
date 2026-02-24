@@ -46,7 +46,7 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https"
-                      android:host="iaroashargzwsuuciqox.supabase.co"
+                      android:host="olqjuadvseoxpfjzlghb.supabase.co"
                       android:pathPrefix="/auth/v1/callback"/>
             </intent-filter>
 

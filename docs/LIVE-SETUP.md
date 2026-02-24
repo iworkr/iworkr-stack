@@ -6,9 +6,9 @@ Complete steps to go live with Supabase + Polar.sh billing.
 
 ## 1. Run Database Migrations
 
-Your Supabase project (`iaroashargzwsuuciqox`) uses IPv6-only direct connections. Run the bundled migration through the **Supabase Dashboard SQL Editor**.
+Your Supabase project (`olqjuadvseoxpfjzlghb`) uses IPv6-only direct connections. Run the bundled migration through the **Supabase Dashboard SQL Editor**.
 
-1. Go to: **https://supabase.com/dashboard/project/iaroashargzwsuuciqox/sql/new**
+1. Go to: **https://supabase.com/dashboard/project/olqjuadvseoxpfjzlghb/sql/new**
 2. Copy the contents of `supabase/migrations/BUNDLED_ALL_MIGRATIONS.sql`
 3. Paste and click **Run**
 
@@ -18,9 +18,9 @@ This creates all core tables, enums, RLS policies, and helper functions.
 
 ## 2. Get Supabase API Keys
 
-1. Go to: **https://supabase.com/dashboard/project/iaroashargzwsuuciqox/settings/api**
+1. Go to: **https://supabase.com/dashboard/project/olqjuadvseoxpfjzlghb/settings/api**
 2. Copy these values:
-   - **Project URL**: `https://iaroashargzwsuuciqox.supabase.co`
+   - **Project URL**: `https://olqjuadvseoxpfjzlghb.supabase.co`
    - **anon (public) key**: `eyJ...`
    - **service_role (secret) key**: `eyJ...`
 
@@ -37,7 +37,7 @@ Add these (for **Production**, **Preview**, and **Development** scopes):
 | `NEXT_PUBLIC_SITE_URL` | `https://iworkrapp.com` | Primary domain |
 | `NEXT_PUBLIC_SITE_NAME` | `iWorkr` | |
 | `NEXT_PUBLIC_APP_URL` | `https://iworkrapp.com` | |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://iaroashargzwsuuciqox.supabase.co` | |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://olqjuadvseoxpfjzlghb.supabase.co` | |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` (from step 2) | Public |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` (from step 2) | Secret — server only |
 | `POLAR_ACCESS_TOKEN` | `polar_oat_3J47yJELxt78ZhU9Aczh8tiLtLr4pRk4KGvPM0t29k0` | Secret |

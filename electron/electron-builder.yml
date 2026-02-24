@@ -19,7 +19,7 @@ extraMetadata:
 # ── Auto-Update (Supabase Storage) ──────────────────────
 publish:
   provider: generic
-  url: https://iaroashargzwsuuciqox.supabase.co/storage/v1/object/public/releases/
+  url: https://olqjuadvseoxpfjzlghb.supabase.co/storage/v1/object/public/releases/
   channel: latest
 
 # ── macOS ────────────────────────────────────────────────

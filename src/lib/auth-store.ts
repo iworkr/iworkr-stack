@@ -89,6 +89,8 @@ export const useAuthStore = create<AuthState>()(
               hourly_rate: firstMembership.hourly_rate,
               invited_by: firstMembership.invited_by,
               joined_at: firstMembership.joined_at,
+              last_active_at: firstMembership.last_active_at ?? null,
+              role_id: firstMembership.role_id ?? null,
             }
           : null,
         loading: false,

@@ -35,7 +35,7 @@
 
 ### HTTP 406 error
 - **Area**: Network
-- **Detail**: URL: https://iaroashargzwsuuciqox.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit — useOrg fix may not be applied.
+- **Detail**: URL: https://olqjuadvseoxpfjzlghb.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit — useOrg fix may not be applied.
 
 ---
 
@@ -89,7 +89,7 @@ _No dummy data leaks found._
 
 ### HTTP 406
 - **Area**: Network
-- **Detail**: URL: https://iaroashargzwsuuciqox.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
+- **Detail**: URL: https://olqjuadvseoxpfjzlghb.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
 
 ---
 

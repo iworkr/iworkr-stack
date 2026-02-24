@@ -11,7 +11,7 @@ import { initAnalytics, trackEvent } from "./analytics";
 import { initSentry } from "./sentry";
 import Store from "electron-store";
 
-const PROD_URL = "https://iworkr-stack-aiva-io.vercel.app/dashboard";
+const PROD_URL = "https://www.iworkrapp.com/dashboard";
 const DEV_URL = "http://localhost:3000/dashboard";
 const IS_DEV = !app.isPackaged;
 const APP_URL = IS_DEV ? DEV_URL : PROD_URL;
