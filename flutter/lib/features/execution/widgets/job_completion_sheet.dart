@@ -117,22 +117,41 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
     setState(() => _submitting = true);
     HapticFeedback.heavyImpact();
 
-    await completeJobTimer(
-      sessionId: widget.sessionId,
-      jobId: widget.jobId,
-    );
+    try {
+      await completeJobTimer(
+        sessionId: widget.sessionId,
+        jobId: widget.jobId,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to complete job: ${e.toString().split('\n').first}'),
+          backgroundColor: const Color(0xFFF43F5E),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          duration: const Duration(seconds: 4),
+        ));
+      }
+      return;
+    }
 
-    await logTelemetryEvent(
-      jobId: widget.jobId,
-      eventType: TelemetryEventType.jobCompleted,
-      eventData: {
-        'total_time_seconds': widget.elapsed.inSeconds,
-        'tasks_completed': _completedTasks,
-        'total_tasks': _totalTasks,
-        'photos': widget.photoCount,
-        'signed': _hasSigned,
-      },
-    );
+    try {
+      await logTelemetryEvent(
+        jobId: widget.jobId,
+        eventType: TelemetryEventType.jobCompleted,
+        eventData: {
+          'total_time_seconds': widget.elapsed.inSeconds,
+          'tasks_completed': _completedTasks,
+          'total_tasks': _totalTasks,
+          'photos': widget.photoCount,
+          'signed': _hasSigned,
+        },
+      );
+    } catch (_) {
+      // Telemetry is non-critical — don't block completion
+    }
 
     if (!mounted) return;
 

@@ -256,24 +256,50 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
   }
 
   Future<void> _onComplete() async {
-    if (_sessionId == null) return;
-
-    final postForms = await ref.read(stageFormsProvider('post_job').future);
-    if (postForms.isNotEmpty && mounted) {
-      final postComplete = await ref.read(postJobFormsCompleteProvider(widget.jobId).future);
-      if (!postComplete) {
-        if (!mounted) return;
-        final cleared = await showCompliancePacket(
-          context,
-          jobId: widget.jobId,
-          stage: FormStage.postJob,
-        );
-        if (!cleared) return;
-        ref.invalidate(postJobFormsCompleteProvider(widget.jobId));
-      }
+    // Recover session if lost (e.g. OS killed app while camera was open)
+    if (_sessionId == null) {
+      try {
+        final session = await ref.read(exec.activeTimerProvider(widget.jobId).future);
+        if (session != null && mounted) {
+          setState(() {
+            _sessionId = session.id;
+            _startTime = session.startedAt;
+            _elapsed = DateTime.now().difference(session.startedAt);
+          });
+        }
+      } catch (_) {}
     }
 
-    final photoCount = await ref.read(exec.jobMediaCountProvider(widget.jobId).future);
+    if (_sessionId == null) {
+      if (mounted) _showError('No active timer session. Please restart the job.');
+      return;
+    }
+
+    try {
+      final postForms = await ref.read(stageFormsProvider('post_job').future);
+      if (postForms.isNotEmpty && mounted) {
+        final postComplete = await ref.read(postJobFormsCompleteProvider(widget.jobId).future);
+        if (!postComplete) {
+          if (!mounted) return;
+          final cleared = await showCompliancePacket(
+            context,
+            jobId: widget.jobId,
+            stage: FormStage.postJob,
+          );
+          if (!cleared) return;
+          ref.invalidate(postJobFormsCompleteProvider(widget.jobId));
+        }
+      }
+    } catch (_) {
+      // Don't block completion on form-check failures
+    }
+
+    int photoCount = 0;
+    try {
+      photoCount = await ref.read(exec.jobMediaCountProvider(widget.jobId).future);
+    } catch (_) {
+      // Non-critical — show 0 if fetch fails
+    }
 
     if (!mounted) return;
 

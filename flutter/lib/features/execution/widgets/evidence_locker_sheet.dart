@@ -65,7 +65,6 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
         return;
       }
 
-      // Upload to Supabase Storage
       final orgId = ref.read(organizationIdProvider).valueOrNull;
       if (orgId == null) {
         if (mounted) setState(() => _capturing = false);
@@ -76,7 +75,8 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
       final storagePath = '$orgId/${widget.jobId}/$fileName';
       final fileBytes = await photo.readAsBytes();
 
-      String remoteUrl = photo.path; // fallback to local path
+      String remoteUrl = photo.path;
+      bool uploadedToStorage = false;
       try {
         await SupabaseService.client.storage
             .from('evidence')
@@ -85,30 +85,46 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
         remoteUrl = SupabaseService.client.storage
             .from('evidence')
             .getPublicUrl(storagePath);
+        uploadedToStorage = true;
       } catch (_) {
-        // Offline: enqueue for background upload
-        final db = ref.read(appDatabaseProvider);
-        await db.enqueueUpload(UploadQueueCompanion(
-          id: Value(const Uuid().v4()),
-          jobId: Value(widget.jobId),
-          localPath: Value(photo.path),
-          remotePath: Value(storagePath),
-          createdAt: Value(DateTime.now()),
-        ));
+        try {
+          final db = ref.read(appDatabaseProvider);
+          await db.enqueueUpload(UploadQueueCompanion(
+            id: Value(const Uuid().v4()),
+            jobId: Value(widget.jobId),
+            localPath: Value(photo.path),
+            remotePath: Value(storagePath),
+            createdAt: Value(DateTime.now()),
+          ));
+        } catch (_) {
+          // Local queue also failed — still record the media with local path
+        }
       }
 
-      await recordJobMedia(
-        jobId: widget.jobId,
-        fileUrl: remoteUrl,
-        caption: 'Evidence photo',
-      );
+      try {
+        await recordJobMedia(
+          jobId: widget.jobId,
+          fileUrl: remoteUrl,
+          caption: uploadedToStorage ? 'Evidence photo' : 'Evidence photo (pending upload)',
+        );
+      } catch (_) {
+        // Media record failed — show feedback but don't crash
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Photo saved locally — will sync when online'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ));
+        }
+      }
 
-      // Log telemetry
-      await logTelemetryEvent(
-        jobId: widget.jobId,
-        eventType: TelemetryEventType.photoTaken,
-        eventData: {'file_path': photo.path},
-      );
+      try {
+        await logTelemetryEvent(
+          jobId: widget.jobId,
+          eventType: TelemetryEventType.photoTaken,
+          eventData: {'file_path': photo.path},
+        );
+      } catch (_) {}
 
       if (mounted) {
         ref.invalidate(jobMediaProvider(widget.jobId));

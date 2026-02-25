@@ -84,6 +84,9 @@ Future<JobTimerSession?> startJobTimer({
 }
 
 /// Complete the job timer session (in_progress → completed)
+///
+/// Closes the timer session first, then transitions the job status.
+/// Throws on failure so callers can surface the error to the user.
 Future<void> completeJobTimer({
   required String sessionId,
   required String jobId,
@@ -92,15 +95,20 @@ Future<void> completeJobTimer({
 }) async {
   final now = DateTime.now().toUtc();
 
-  await SupabaseService.client
-      .from('job_timer_sessions')
-      .update({
-        'ended_at': now.toIso8601String(),
-        'end_lat': lat,
-        'end_lng': lng,
-        'status': 'completed',
-      })
-      .eq('id', sessionId);
+  // Close the timer session (non-blocking — proceed even if it fails)
+  try {
+    await SupabaseService.client
+        .from('job_timer_sessions')
+        .update({
+          'ended_at': now.toIso8601String(),
+          'end_lat': lat,
+          'end_lng': lng,
+          'status': 'completed',
+        })
+        .eq('id', sessionId);
+  } catch (_) {
+    // Timer session close is best-effort; job status update is critical
+  }
 
   await SupabaseService.client
       .from('jobs')
@@ -143,7 +151,10 @@ final jobMediaCountProvider =
   return media.length;
 });
 
-/// Record a new media entry
+/// Record a new media entry.
+///
+/// Returns null on auth/org lookup failure. Throws on insert failure
+/// so callers can handle gracefully.
 Future<JobMedia?> recordJobMedia({
   required String jobId,
   required String fileUrl,
@@ -179,7 +190,8 @@ Future<JobMedia?> recordJobMedia({
       'lat': lat,
       'lng': lng,
     },
-  }).select().single();
+  }).select().maybeSingle();
 
+  if (row == null) return null;
   return JobMedia.fromJson(row);
 }
