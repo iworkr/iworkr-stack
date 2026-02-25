@@ -14,6 +14,7 @@ import { useTeamStore } from "@/lib/team-store";
 import { useIntegrationsStore } from "@/lib/integrations-store";
 import { useMessengerStore } from "@/lib/stores/messenger-store";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { useFleetTracking } from "@/lib/hooks/use-fleet-tracking";
 
 /**
  * Loads data from Supabase into Zustand stores when the user is authenticated.
@@ -26,6 +27,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const { orgId, userId } = useOrg();
 
   const addRealtimeItem = useInboxStore((s) => s.addRealtimeItem);
+
+  useFleetTracking({ orgId, enabled: !!orgId });
 
   // Fire as soon as orgId is available (instant from cache, or after network)
   useEffect(() => {

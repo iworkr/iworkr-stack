@@ -8,10 +8,13 @@ export interface HoverDialogTech {
   technician_id: string | null;
   name: string | null;
   task: string | null;
-  dispatch_status: "on_job" | "en_route";
+  dispatch_status: "on_job" | "en_route" | "idle" | "offline";
   location_lat: number | null;
   location_lng: number | null;
   speedKmh?: number;
+  speed?: number | null;
+  battery?: number | null;
+  position_updated_at?: string | null;
   lastPingAgo?: string;
 }
 
@@ -65,11 +68,18 @@ export function HoverDialog({ tech, anchor }: HoverDialogProps) {
   const statusText =
     tech.dispatch_status === "on_job"
       ? "Working on Site"
-      : `En Route to ${tech.task ?? "Job"}`;
+      : tech.dispatch_status === "en_route"
+        ? `En Route to ${tech.task ?? "Job"}`
+        : tech.dispatch_status === "idle"
+          ? "Idle"
+          : "Offline";
   const statusClass =
     tech.dispatch_status === "on_job"
       ? "text-violet-400"
-      : "text-emerald-400";
+      : tech.dispatch_status === "en_route"
+        ? "text-emerald-400"
+        : "text-zinc-500";
+  const displaySpeed = tech.speedKmh ?? tech.speed;
 
   return (
     <div
@@ -89,10 +99,11 @@ export function HoverDialog({ tech, anchor }: HoverDialogProps) {
       <div className="mt-2 space-y-1 border-t border-white/10 pt-2">
         <p className={`text-[12px] ${statusClass}`}>{statusText}</p>
         <p className="font-mono text-[11px] text-zinc-400">
-          {tech.speedKmh != null ? `${tech.speedKmh} km/h` : "— km/h"}
+          {displaySpeed != null ? `${displaySpeed} km/h` : "— km/h"}
+          {tech.battery != null && ` · ${tech.battery}%`}
         </p>
         <p className="font-mono text-[11px] text-zinc-500">
-          {tech.lastPingAgo ?? "Active now"}
+          {tech.lastPingAgo ?? (tech.position_updated_at ? "Active" : "Active now")}
         </p>
       </div>
     </div>

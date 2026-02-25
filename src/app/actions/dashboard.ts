@@ -54,14 +54,22 @@ export interface TeamMemberStatus {
 
 export interface DispatchPin {
   id: string;
-  task: string;
-  status: string;
+  task: string | null;
+  status?: string;
+  job_status?: string | null;
   location: string | null;
   location_lat: number | null;
   location_lng: number | null;
   name: string | null;
   technician_id: string | null;
-  dispatch_status: "on_job" | "en_route";
+  dispatch_status: "on_job" | "en_route" | "idle" | "offline";
+  heading?: number | null;
+  speed?: number | null;
+  battery?: number | null;
+  accuracy?: number | null;
+  gps_status?: string | null;
+  position_updated_at?: string | null;
+  current_job_id?: string | null;
 }
 
 /* ── Dashboard Stats ─────────────────────────────────── */
@@ -262,6 +270,43 @@ export async function getLiveDispatch(orgId: string) {
   } catch (error: any) {
     logger.error("Dispatch error", "dashboard", error);
     return { data: null, error: error.message || "Failed to fetch dispatch data" };
+  }
+}
+
+/* ── Fleet Position Update ──────────────────────────── */
+
+export async function updateFleetPosition(
+  orgId: string,
+  lat: number,
+  lng: number,
+  opts?: {
+    heading?: number;
+    speed?: number;
+    accuracy?: number;
+    battery?: number;
+    status?: string;
+  }
+) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+    const { data, error } = await supabase.rpc("update_fleet_position", {
+      p_org_id: orgId,
+      p_lat: lat,
+      p_lng: lng,
+      p_heading: opts?.heading ?? null,
+      p_speed: opts?.speed ?? null,
+      p_accuracy: opts?.accuracy ?? null,
+      p_battery: opts?.battery ?? null,
+      p_status: opts?.status ?? "idle",
+    });
+    if (error) {
+      logger.error("Fleet position update failed", "dispatch", undefined, { error: error.message });
+      return { success: false, error: error.message };
+    }
+    return { success: true, error: null };
+  } catch (error: any) {
+    logger.error("Fleet position error", "dispatch", error);
+    return { success: false, error: error.message || "Failed to update position" };
   }
 }
 

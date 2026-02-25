@@ -6,6 +6,7 @@ import { useOrg } from "@/lib/hooks/use-org";
 import { getLiveDispatch, getFootprintTrails, snapFootprintToRoads, type DispatchPin } from "@/app/actions/dashboard";
 import { createClient } from "@/lib/supabase/client";
 import { useShellStore } from "@/lib/shell-store";
+import { useFleetTracking } from "@/lib/hooks/use-fleet-tracking";
 import { useGoogleMaps } from "@/components/maps/google-maps-provider";
 import { OBSIDIAN_MAP_STYLES, DEFAULT_MAP_CENTER } from "@/components/maps/obsidian-map-styles";
 import { MapOfflineFallback } from "@/components/maps/map-offline-fallback";
@@ -76,6 +77,8 @@ export default function DispatchPage() {
   const jobs = useJobsStore((s) => s.jobs);
   const loadFromServer = useJobsStore((s) => s.loadFromServer);
 
+  useFleetTracking({ orgId, enabled: true });
+
   useEffect(() => {
     if (!orgId) return;
     loadFromServer(orgId);
@@ -113,11 +116,13 @@ export default function DispatchPage() {
   useEffect(() => {
     if (!orgId) return;
     const supabase = createClient();
+    const refresh = () => {
+      getLiveDispatch(orgId).then(({ data }) => { if (data) setDispatchPins(data); });
+    };
     const ch = supabase
       .channel("dispatch-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "jobs", filter: `organization_id=eq.${orgId}` }, () => {
-        getLiveDispatch(orgId).then(({ data }) => { if (data) setDispatchPins(data); });
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "fleet_positions", filter: `organization_id=eq.${orgId}` }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs", filter: `organization_id=eq.${orgId}` }, refresh)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [orgId]);
@@ -154,7 +159,11 @@ export default function DispatchPage() {
     () =>
       dispatchPins
         .filter((p) => p.location_lat != null && p.location_lng != null)
-        .map((p) => ({ ...p, heading: 0, speedKmh: undefined })),
+        .map((p) => ({
+          ...p,
+          heading: p.heading ?? 0,
+          speedKmh: p.speed != null ? p.speed : undefined,
+        })),
     [dispatchPins]
   );
 

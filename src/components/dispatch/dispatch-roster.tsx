@@ -35,11 +35,15 @@ function useUniqueTechs(pins: DispatchPin[]) {
   }, [pins]);
 }
 
-function StatusPill({ status }: { status: "on_job" | "en_route" }) {
+function StatusPill({ status }: { status: string }) {
   const config =
     status === "on_job"
       ? { label: "Working", className: "bg-violet-500/20 text-violet-400 border-violet-500/30" }
-      : { label: "En Route", className: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" };
+      : status === "en_route"
+        ? { label: "En Route", className: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" }
+        : status === "idle"
+          ? { label: "Idle", className: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" }
+          : { label: "Offline", className: "bg-zinc-800/20 text-zinc-600 border-zinc-800/30" };
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${config.className}`}
@@ -47,6 +51,17 @@ function StatusPill({ status }: { status: "on_job" | "en_route" }) {
       {config.label}
     </span>
   );
+}
+
+function timeAgo(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 export function DispatchRoster({
@@ -124,17 +139,30 @@ export function DispatchRoster({
                   <span className="truncate text-[13px] font-medium text-white">{pin.name ?? "Technician"}</span>
                   <StatusPill status={pin.dispatch_status} />
                 </div>
-                <div className="mt-0.5 flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenJobDossier?.(pin.id, pin.task ?? "");
-                    }}
-                    className="font-mono text-[11px] text-zinc-400 hover:text-emerald-400 hover:underline"
-                  >
-                    Job • {pin.task}
-                  </button>
+                {pin.task && (
+                  <div className="mt-0.5 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenJobDossier?.(pin.current_job_id ?? pin.id, pin.task ?? "");
+                      }}
+                      className="font-mono text-[11px] text-zinc-400 hover:text-emerald-400 hover:underline"
+                    >
+                      Job • {pin.task}
+                    </button>
+                  </div>
+                )}
+                <div className="mt-0.5 flex items-center gap-2 text-[10px] text-zinc-600">
+                  {pin.speed != null && pin.speed > 0 && (
+                    <span>{pin.speed} km/h</span>
+                  )}
+                  {pin.battery != null && (
+                    <span>{pin.battery}%</span>
+                  )}
+                  {pin.position_updated_at && (
+                    <span>{timeAgo(pin.position_updated_at)}</span>
+                  )}
                 </div>
               </div>
             </li>

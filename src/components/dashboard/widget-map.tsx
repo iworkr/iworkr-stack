@@ -106,22 +106,15 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
   useEffect(() => {
     if (!orgId) return;
     const supabase = createClient();
+    const refresh = () => {
+      getLiveDispatch(orgId).then(({ data }) => {
+        if (data) setDispatchData(data);
+      });
+    };
     const channel = supabase
       .channel("live-dispatch")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "jobs",
-          filter: `organization_id=eq.${orgId}`,
-        },
-        () => {
-          getLiveDispatch(orgId).then(({ data }) => {
-            if (data) setDispatchData(data);
-          });
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "fleet_positions", filter: `organization_id=eq.${orgId}` }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs", filter: `organization_id=eq.${orgId}` }, refresh)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -140,11 +133,13 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
               .map((n) => n[0])
               .join("") + "."
           : "??",
-        task: d.task,
+        task: d.task ?? "",
         status:
           d.dispatch_status === "on_job"
             ? ("on_job" as const)
-            : ("en_route" as const),
+            : d.dispatch_status === "idle"
+              ? ("idle" as const)
+              : ("en_route" as const),
         lat: d.location_lat!,
         lng: d.location_lng!,
       }));
