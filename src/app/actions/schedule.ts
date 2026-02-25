@@ -371,7 +371,8 @@ export async function getOrgTechnicians(orgId: string) {
         )
       `)
       .eq("organization_id", orgId)
-      .eq("role", "technician");
+      .eq("status", "active")
+      .in("role", ["owner", "manager", "senior_tech", "technician", "apprentice", "subcontractor", "office_admin"]);
 
     if (error) {
       return { data: null, error: error.message };

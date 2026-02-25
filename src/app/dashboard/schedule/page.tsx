@@ -317,6 +317,11 @@ export default function SchedulePage() {
     };
   }, [orgId, handleRealtimeUpdate]);
 
+  useEffect(() => {
+    if (!orgId) return;
+    useScheduleStore.getState().loadFromServer(orgId, selectedDate);
+  }, [orgId, selectedDate]);
+
   /* ── Date navigation helpers ────────────────────────────── */
   const navigateDate = useCallback((direction: -1 | 1) => {
     const d = new Date(selectedDate);
