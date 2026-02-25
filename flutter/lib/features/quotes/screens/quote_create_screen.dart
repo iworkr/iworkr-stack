@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/quote_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/models/quote.dart';
@@ -137,10 +138,11 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         bottom: false,
         child: StealthFieldScope(
@@ -158,25 +160,25 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                         child: Container(
                           width: 36, height: 36,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle, color: ObsidianTheme.hoverBg,
-                            border: Border.all(color: ObsidianTheme.border),
+                            shape: BoxShape.circle, color: c.hoverBg,
+                            border: Border.all(color: c.border),
                           ),
-                          child: const Center(child: Icon(PhosphorIconsLight.x, size: 16, color: ObsidianTheme.textSecondary)),
+                          child: Center(child: Icon(PhosphorIconsLight.x, size: 16, color: c.textSecondary)),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text('New Quote', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                        child: Text('New Quote', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary)),
                       ),
                       if (widget.clientName != null)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             borderRadius: ObsidianTheme.radiusFull,
-                            color: ObsidianTheme.shimmerBase,
-                            border: Border.all(color: ObsidianTheme.border),
+                            color: c.shimmerBase,
+                            border: Border.all(color: c.border),
                           ),
-                          child: Text(widget.clientName!, style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                          child: Text(widget.clientName!, style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary)),
                         ),
                     ],
                   ),
@@ -191,11 +193,11 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                       // Title
                       TextField(
                         controller: _titleController,
-                        style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+                        style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary),
                         cursorColor: ObsidianTheme.emerald,
                         decoration: InputDecoration(
                           hintText: 'Quote title (optional)',
-                          hintStyle: GoogleFonts.inter(fontSize: 18, color: ObsidianTheme.textDisabled),
+                          hintStyle: GoogleFonts.inter(fontSize: 18, color: c.textDisabled),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -207,7 +209,7 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                       const SizedBox(height: 24),
 
                       // Section: Line Items
-                      Text('LINE ITEMS', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                      Text('LINE ITEMS', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
                       const SizedBox(height: 10),
 
                       ..._items.asMap().entries.map((entry) {
@@ -226,14 +228,14 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             borderRadius: ObsidianTheme.radiusMd,
-                            border: Border.all(color: ObsidianTheme.borderMedium, style: BorderStyle.solid),
+                            border: Border.all(color: c.borderMedium, style: BorderStyle.solid),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(PhosphorIconsLight.plus, size: 14, color: ObsidianTheme.textTertiary),
+                              Icon(PhosphorIconsLight.plus, size: 14, color: c.textTertiary),
                               const SizedBox(width: 6),
-                              Text('Add Item', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textSecondary, fontWeight: FontWeight.w500)),
+                              Text('Add Item', style: GoogleFonts.inter(fontSize: 13, color: c.textSecondary, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
@@ -242,7 +244,7 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                       const SizedBox(height: 24),
 
                       // Jagged receipt divider
-                      CustomPaint(painter: _ReceiptDividerPainter(), size: const Size(double.infinity, 8)),
+                      CustomPaint(painter: _ReceiptDividerPainter(color: c.border), size: const Size(double.infinity, 8)),
 
                       const SizedBox(height: 16),
 
@@ -250,7 +252,7 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                       _TotalRow(label: 'Subtotal', value: _subtotal),
                       const SizedBox(height: 4),
                       _TotalRow(label: 'Tax (${_taxRate.toStringAsFixed(0)}%)', value: _tax),
-                      const Divider(color: ObsidianTheme.border, height: 20),
+                      Divider(color: c.border, height: 20),
                       _TotalRow(label: 'Total', value: _total, bold: true),
 
                       // Market Intelligence Gauge
@@ -263,16 +265,16 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                       const SizedBox(height: 24),
 
                       // Notes
-                      Text('NOTES', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                      Text('NOTES', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _notesController,
-                        style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textSecondary),
+                        style: GoogleFonts.inter(fontSize: 13, color: c.textSecondary),
                         maxLines: 3,
                         cursorColor: ObsidianTheme.emerald,
                         decoration: InputDecoration(
                           hintText: 'Additional notes...',
-                          hintStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textDisabled),
+                          hintStyle: GoogleFonts.inter(fontSize: 13, color: c.textDisabled),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -294,7 +296,7 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                   height: 52,
                   decoration: BoxDecoration(
                     borderRadius: ObsidianTheme.radiusMd,
-                    color: _items.isNotEmpty ? Colors.white : ObsidianTheme.shimmerBase,
+                    color: _items.isNotEmpty ? Colors.white : c.shimmerBase,
                   ),
                   child: Center(
                     child: _saving
@@ -302,11 +304,11 @@ class _QuoteCreateScreenState extends ConsumerState<QuoteCreateScreen> {
                         : Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(PhosphorIconsBold.presentation, size: 16, color: _items.isNotEmpty ? Colors.black : ObsidianTheme.textTertiary),
+                              Icon(PhosphorIconsBold.presentation, size: 16, color: _items.isNotEmpty ? Colors.black : c.textTertiary),
                               const SizedBox(width: 8),
                               Text(
                                 'Save & Present',
-                                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: _items.isNotEmpty ? Colors.black : ObsidianTheme.textTertiary),
+                                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: _items.isNotEmpty ? Colors.black : c.textTertiary),
                               ),
                             ],
                           ),
@@ -344,6 +346,7 @@ class _LineItemEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GlassCard(
       padding: const EdgeInsets.all(12),
       borderRadius: ObsidianTheme.radiusMd,
@@ -355,11 +358,11 @@ class _LineItemEditor extends StatelessWidget {
                 child: TextFormField(
                   initialValue: item.description,
                   onChanged: (v) { item.description = v; onChanged(); },
-                  style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
+                  style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
                   cursorColor: ObsidianTheme.emerald,
                   decoration: InputDecoration(
                     hintText: 'Description',
-                    hintStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textDisabled),
+                    hintStyle: GoogleFonts.inter(fontSize: 13, color: c.textDisabled),
                     border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -379,27 +382,27 @@ class _LineItemEditor extends StatelessWidget {
                   initialValue: item.quantity.toStringAsFixed(0),
                   onChanged: (v) { item.quantity = double.tryParse(v) ?? 1; onChanged(); },
                   keyboardType: TextInputType.number,
-                  style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textSecondary),
+                  style: GoogleFonts.jetBrainsMono(fontSize: 12, color: c.textSecondary),
                   cursorColor: ObsidianTheme.emerald,
                   decoration: InputDecoration(
                     hintText: 'Qty',
-                    hintStyle: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textDisabled),
+                    hintStyle: GoogleFonts.jetBrainsMono(fontSize: 12, color: c.textDisabled),
                     border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ),
-              Text(' × ', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary)),
+              Text(' × ', style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
               SizedBox(
                 width: 80,
                 child: TextFormField(
                   initialValue: item.unitPrice > 0 ? item.unitPrice.toStringAsFixed(2) : '',
                   onChanged: (v) { item.unitPrice = double.tryParse(v) ?? 0; onChanged(); },
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textSecondary),
+                  style: GoogleFonts.jetBrainsMono(fontSize: 12, color: c.textSecondary),
                   cursorColor: ObsidianTheme.emerald,
                   decoration: InputDecoration(
                     hintText: '\$0.00',
-                    hintStyle: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textDisabled),
+                    hintStyle: GoogleFonts.jetBrainsMono(fontSize: 12, color: c.textDisabled),
                     border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -407,7 +410,7 @@ class _LineItemEditor extends StatelessWidget {
               const Spacer(),
               Text(
                 '\$${item.total.toStringAsFixed(2)}',
-                style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary),
               ),
             ],
           ),
@@ -427,17 +430,18 @@ class _TotalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary)),
+          Text(label, style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
           Text(
             '\$${value.toStringAsFixed(2)}',
             style: bold
-                ? GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)
-                : GoogleFonts.jetBrainsMono(fontSize: 13, color: ObsidianTheme.textSecondary),
+                ? GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: c.textPrimary)
+                : GoogleFonts.jetBrainsMono(fontSize: 13, color: c.textSecondary),
           ),
         ],
       ),
@@ -448,9 +452,12 @@ class _TotalRow extends StatelessWidget {
 // ── Jagged Receipt Divider ───────────────────────────
 
 class _ReceiptDividerPainter extends CustomPainter {
+  final Color color;
+  _ReceiptDividerPainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0x0DFFFFFF)..style = PaintingStyle.fill;
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
     final path = Path()..moveTo(0, size.height / 2);
     const zigWidth = 8.0;
     for (double x = 0; x < size.width; x += zigWidth) {

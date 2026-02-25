@@ -10,6 +10,7 @@ import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/biometric_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/subscription_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/widgets/stealth_icon.dart';
@@ -202,6 +203,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -218,15 +220,15 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                       width: 32, height: 32,
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: ObsidianTheme.border),
+                        border: Border.all(color: c.border),
                       ),
-                      child: const Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: ObsidianTheme.textSecondary)),
+                      child: Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: c.textSecondary)),
                     ),
                   ),
                   const SizedBox(width: 14),
                   const StealthIcon(PhosphorIconsLight.shieldCheck, size: 20, isActive: true),
                   const SizedBox(width: 8),
-                  Text('Security', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary, letterSpacing: -0.3)),
+                  Text('Security', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3)),
                 ],
               ),
             ).animate().fadeIn(duration: 300.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
@@ -275,7 +277,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   Widget _buildSectionLabel(String text, int index) {
     return Text(
       text,
-      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: context.iColors.textTertiary, letterSpacing: 1.5),
     ).animate().fadeIn(delay: Duration(milliseconds: 100 + index * 80), duration: 300.ms);
   }
 
@@ -299,8 +301,8 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('App Password', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white)),
-                  Text('Set for quick login without magic links', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                  Text('App Password', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: context.iColors.textPrimary)),
+                  Text('Set for quick login without magic links', style: GoogleFonts.inter(fontSize: 11, color: context.iColors.textTertiary)),
                 ],
               ),
             ],
@@ -340,7 +342,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
               width: double.infinity, height: 44,
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
-                color: _passwordLoading ? ObsidianTheme.surface2 : Colors.white,
+                color: _passwordLoading ? context.iColors.surfaceSecondary : Colors.white,
               ),
               child: Center(
                 child: _passwordLoading
@@ -371,11 +373,11 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                   width: 36, height: 36,
                   decoration: BoxDecoration(
                     borderRadius: ObsidianTheme.radiusMd,
-                    color: _biometricEnabled ? ObsidianTheme.emeraldDim : ObsidianTheme.shimmerBase,
+                    color: _biometricEnabled ? ObsidianTheme.emeraldDim : context.iColors.shimmerBase,
                   ),
                   child: Center(child: Icon(
                     PhosphorIconsLight.fingerprint, size: 18,
-                    color: _biometricEnabled ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                    color: _biometricEnabled ? ObsidianTheme.emerald : context.iColors.textTertiary,
                   )),
                 ),
                 const SizedBox(width: 14),
@@ -383,12 +385,12 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Face ID / Touch ID', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white)),
+                      Text('Face ID / Touch ID', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: context.iColors.textPrimary)),
                       Text(
                         _biometricAvailable
                             ? (_biometricEnabled ? 'Enrolled & Active' : 'Available on this device')
                             : 'Not available on this device',
-                        style: GoogleFonts.inter(fontSize: 11, color: _biometricEnabled ? ObsidianTheme.emerald : ObsidianTheme.textTertiary),
+                        style: GoogleFonts.inter(fontSize: 11, color: _biometricEnabled ? ObsidianTheme.emerald : context.iColors.textTertiary),
                       ),
                     ],
                   ),
@@ -400,10 +402,10 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusFull,
-                      color: ObsidianTheme.shimmerBase,
-                      border: Border.all(color: ObsidianTheme.border),
+                      color: context.iColors.shimmerBase,
+                      border: Border.all(color: context.iColors.border),
                     ),
-                    child: Text('N/A', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary)),
+                    child: Text('N/A', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: context.iColors.textTertiary)),
                   ),
               ],
             ),
@@ -411,7 +413,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
 
           // App Lock toggle (only when biometrics are enabled)
           if (_biometricEnabled) ...[
-            const Divider(height: 1, color: ObsidianTheme.border),
+            Divider(height: 1, color: context.iColors.border),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -422,8 +424,8 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('App Lock', style: GoogleFonts.inter(fontSize: 14, color: Colors.white)),
-                        Text('Require biometrics on every cold start', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                        Text('App Lock', style: GoogleFonts.inter(fontSize: 14, color: context.iColors.textPrimary)),
+                        Text('Require biometrics on every cold start', style: GoogleFonts.inter(fontSize: 11, color: context.iColors.textTertiary)),
                       ],
                     ),
                   ),
@@ -433,7 +435,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             ),
             // PIN Code setup (fallback for biometric failures)
             if (_appLockEnabled) ...[
-              const Divider(height: 1, color: ObsidianTheme.border),
+              Divider(height: 1, color: context.iColors.border),
               GestureDetector(
                 onTap: _showPinSetup,
                 child: Padding(
@@ -446,10 +448,10 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Backup PIN', style: GoogleFonts.inter(fontSize: 14, color: Colors.white)),
+                            Text('Backup PIN', style: GoogleFonts.inter(fontSize: 14, color: context.iColors.textPrimary)),
                             Text(
                               _hasPinCode ? 'PIN set — tap to change' : 'Set a fallback PIN code',
-                              style: GoogleFonts.inter(fontSize: 11, color: _hasPinCode ? ObsidianTheme.emerald : ObsidianTheme.textTertiary),
+                              style: GoogleFonts.inter(fontSize: 11, color: _hasPinCode ? ObsidianTheme.emerald : context.iColors.textTertiary),
                             ),
                           ],
                         ),
@@ -457,7 +459,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                       Icon(
                         _hasPinCode ? PhosphorIconsBold.checkCircle : PhosphorIconsLight.caretRight,
                         size: 16,
-                        color: _hasPinCode ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                        color: _hasPinCode ? ObsidianTheme.emerald : context.iColors.textTertiary,
                       ),
                     ],
                   ),
@@ -500,11 +502,11 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                       width: 36, height: 36,
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        color: isCurrent ? ObsidianTheme.emeraldDim : ObsidianTheme.shimmerBase,
+                        color: isCurrent ? ObsidianTheme.emeraldDim : context.iColors.shimmerBase,
                       ),
                       child: Center(child: Icon(
                         PhosphorIconsLight.deviceMobile, size: 18,
-                        color: isCurrent ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                        color: isCurrent ? ObsidianTheme.emerald : context.iColors.textTertiary,
                       )),
                     ),
                     const SizedBox(width: 14),
@@ -515,9 +517,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                           Row(
                             children: [
                               Flexible(
-                                child: Text(
+                                child:                                   Text(
                                   session['device'] as String,
-                                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white),
+                                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: context.iColors.textPrimary),
                                   maxLines: 1, overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -537,7 +539,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                           const SizedBox(height: 2),
                           Text(
                             '${session['location']} • ${session['last_active']}',
-                            style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                            style: GoogleFonts.jetBrainsMono(fontSize: 10, color: context.iColors.textTertiary),
                           ),
                         ],
                       ),
@@ -624,12 +626,12 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                         width: 40, height: 40,
                         decoration: BoxDecoration(
                           borderRadius: ObsidianTheme.radiusMd,
-                          color: isPro ? ObsidianTheme.emeraldDim : ObsidianTheme.shimmerBase,
+                          color: isPro ? ObsidianTheme.emeraldDim : context.iColors.shimmerBase,
                           boxShadow: isPro ? [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.2), blurRadius: 12)] : null,
                         ),
                         child: Center(child: Icon(
                           isPro ? PhosphorIconsLight.crown : PhosphorIconsLight.package,
-                          size: 20, color: isPro ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                          size: 20, color: isPro ? ObsidianTheme.emerald : context.iColors.textTertiary,
                         )),
                       ),
                       const SizedBox(width: 14),
@@ -639,16 +641,16 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  isPro ? 'Pro Plan' : 'Starter Plan',
-                                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                                  Text(
+                                    isPro ? 'Pro Plan' : 'Starter Plan',
+                                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: context.iColors.textPrimary),
                                 ),
                                 const SizedBox(width: 8),
                                 Container(
                                   width: 8, height: 8,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: isPro ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                                    color: isPro ? ObsidianTheme.emerald : context.iColors.textTertiary,
                                     boxShadow: isPro ? [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.5), blurRadius: 6)] : null,
                                   ),
                                 ),
@@ -660,7 +662,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                                   : 'Basic features',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: sub.isCanceling ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+                                color: sub.isCanceling ? ObsidianTheme.amber : context.iColors.textTertiary,
                               ),
                             ),
                           ],
@@ -680,11 +682,11 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(PhosphorIconsLight.calendarBlank, size: 12, color: ObsidianTheme.textTertiary),
+                        Icon(PhosphorIconsLight.calendarBlank, size: 12, color: context.iColors.textTertiary),
                         const SizedBox(width: 6),
                         Text(
                           'Renews ${_formatDate(sub.periodEnd!)}',
-                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: context.iColors.textTertiary),
                         ),
                       ],
                     ),
@@ -702,15 +704,15 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                       width: double.infinity, height: 44,
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        color: isPro ? ObsidianTheme.surface2 : Colors.white,
-                        border: isPro ? Border.all(color: ObsidianTheme.borderMedium) : null,
+                        color: isPro ? context.iColors.surfaceSecondary : Colors.white,
+                        border: isPro ? Border.all(color: context.iColors.borderMedium) : null,
                       ),
                       child: Center(
                         child: Text(
                           isPro ? 'Manage Subscription' : 'Upgrade to Pro',
                           style: GoogleFonts.inter(
                             fontSize: 14, fontWeight: FontWeight.w600,
-                            color: isPro ? ObsidianTheme.textSecondary : Colors.black,
+                            color: isPro ? context.iColors.textSecondary : Colors.black,
                           ),
                         ),
                       ),
@@ -754,11 +756,11 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       children: [
         Row(
           children: [
-            Text(label, style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+            Text(label, style: GoogleFonts.inter(fontSize: 11, color: context.iColors.textTertiary)),
             const Spacer(),
             Text(
               unit != null ? '$current$unit / $max$unit' : '$current / $max',
-              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: isHigh ? ObsidianTheme.amber : ObsidianTheme.textTertiary),
+              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: isHigh ? ObsidianTheme.amber : context.iColors.textTertiary),
             ),
           ],
         ),
@@ -767,7 +769,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           height: 3,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(2),
-            color: ObsidianTheme.shimmerBase,
+            color: context.iColors.shimmerBase,
           ),
           child: Align(
             alignment: Alignment.centerLeft,
@@ -795,22 +797,23 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     required VoidCallback onToggle,
     ValueChanged<String>? onSubmitted,
   }) {
+    final c = context.iColors;
     return TextField(
       controller: controller,
       obscureText: obscured,
-      style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textPrimary, fontSize: 14),
+      style: GoogleFonts.jetBrainsMono(color: c.textPrimary, fontSize: 14),
       cursorColor: ObsidianTheme.emerald,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textDisabled, fontSize: 14),
+        hintStyle: GoogleFonts.jetBrainsMono(color: c.textDisabled, fontSize: 14),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(right: 12),
-          child: Icon(PhosphorIconsLight.lock, size: 16, color: ObsidianTheme.textTertiary),
+          child: Icon(PhosphorIconsLight.lock, size: 16, color: c.textTertiary),
         ),
         prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
         suffixIcon: GestureDetector(
           onTap: onToggle,
-          child: Icon(obscured ? PhosphorIconsLight.eye : PhosphorIconsLight.eyeSlash, size: 16, color: ObsidianTheme.textTertiary),
+          child: Icon(obscured ? PhosphorIconsLight.eye : PhosphorIconsLight.eyeSlash, size: 16, color: c.textTertiary),
         ),
         suffixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
       ),
@@ -847,32 +850,33 @@ class _UpgradeSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-      decoration: const BoxDecoration(
-        color: ObsidianTheme.void_,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+      decoration: BoxDecoration(
+        color: c.canvas,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(top: BorderSide(color: c.borderMedium)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Handle
           const SizedBox(height: 12),
-          Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: ObsidianTheme.textTertiary)),
+          Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: c.textTertiary)),
           const SizedBox(height: 24),
 
           // Header
           if (isPro) ...[
             const Icon(PhosphorIconsLight.crown, size: 28, color: ObsidianTheme.emerald),
             const SizedBox(height: 12),
-            Text('Manage Your Subscription', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+            Text('Manage Your Subscription', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary)),
             const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
                 'Update payment methods, download invoices, or change your plan via the Polar.sh portal.',
-                style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -891,7 +895,7 @@ class _UpgradeSheet extends StatelessWidget {
                 .animate(onPlay: (c) => c.repeat(reverse: true))
                 .scaleXY(begin: 1.0, end: 1.08, duration: 2000.ms, curve: Curves.easeInOut),
             const SizedBox(height: 16),
-            Text('Upgrade to Pro', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: -0.3)),
+            Text('Upgrade to Pro', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3)),
             const SizedBox(height: 4),
             Text('\$29/mo', style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.emerald, fontWeight: FontWeight.w500)),
           ],
@@ -938,13 +942,13 @@ class _UpgradeSheet extends StatelessWidget {
                 width: double.infinity, height: 48,
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusMd,
-                  color: isPro ? ObsidianTheme.surface2 : Colors.white,
-                  border: isPro ? Border.all(color: ObsidianTheme.borderMedium) : null,
+                  color: isPro ? c.surfaceSecondary : Colors.white,
+                  border: isPro ? Border.all(color: c.borderMedium) : null,
                 ),
                 child: Center(
                   child: Text(
                     isPro ? 'Open Billing Portal' : 'Upgrade via Polar',
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: isPro ? Colors.white : Colors.black),
+                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: isPro ? c.textPrimary : Colors.black),
                   ),
                 ),
               ),
@@ -965,19 +969,20 @@ class _FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: [
           Icon(icon, size: 16, color: ObsidianTheme.emerald),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500)),
+            child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -1044,12 +1049,13 @@ class _PinSetupSheetState extends State<_PinSetupSheet> {
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
 
+    final c = context.iColors;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, mq.padding.bottom + 20),
-      decoration: const BoxDecoration(
-        color: ObsidianTheme.void_,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+      decoration: BoxDecoration(
+        color: c.canvas,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: c.borderMedium)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1058,7 +1064,7 @@ class _PinSetupSheetState extends State<_PinSetupSheet> {
             child: Container(
               width: 36, height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: c.borderHover,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1076,7 +1082,7 @@ class _PinSetupSheetState extends State<_PinSetupSheet> {
           const SizedBox(height: 6),
           Text(
             _confirming ? 'Enter your PIN again' : 'Choose a 6-digit PIN',
-            style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+            style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
           ),
           const SizedBox(height: 24),
 
@@ -1094,7 +1100,7 @@ class _PinSetupSheetState extends State<_PinSetupSheet> {
                   shape: BoxShape.circle,
                   color: filled ? ObsidianTheme.emerald : Colors.transparent,
                   border: Border.all(
-                    color: filled ? ObsidianTheme.emerald : Colors.white.withValues(alpha: 0.15),
+                    color: filled ? ObsidianTheme.emerald : c.borderHover,
                     width: 1.5,
                   ),
                 ),
@@ -1130,6 +1136,7 @@ class _PinSetupSheetState extends State<_PinSetupSheet> {
   }
 
   Widget _pinRow(List<String> keys) {
+    final c = context.iColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: keys.map((k) {
@@ -1140,7 +1147,7 @@ class _PinSetupSheetState extends State<_PinSetupSheet> {
             child: SizedBox(
               width: 64, height: 64,
               child: Center(
-                child: Icon(PhosphorIconsLight.backspace, size: 20, color: ObsidianTheme.textSecondary),
+                child: Icon(PhosphorIconsLight.backspace, size: 20, color: c.textSecondary),
               ),
             ),
           );
@@ -1151,13 +1158,13 @@ class _PinSetupSheetState extends State<_PinSetupSheet> {
             width: 64, height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.03),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              color: c.hoverBg,
+              border: Border.all(color: c.border),
             ),
             child: Center(
               child: Text(
                 k,
-                style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w300, color: Colors.white),
+                style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w300, color: c.textPrimary),
               ),
             ),
           ),
@@ -1182,8 +1189,8 @@ class _ObsidianSwitch extends StatelessWidget {
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(11),
-          color: value ? ObsidianTheme.emerald : const Color(0xFF27272A),
-          border: Border.all(color: value ? ObsidianTheme.emerald.withValues(alpha: 0.5) : ObsidianTheme.borderMedium),
+          color: value ? ObsidianTheme.emerald : context.iColors.shimmerHighlight,
+          border: Border.all(color: value ? ObsidianTheme.emerald.withValues(alpha: 0.5) : context.iColors.borderMedium),
         ),
         child: AnimatedAlign(
           duration: ObsidianTheme.standard,

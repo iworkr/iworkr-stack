@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/timeclock_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 
@@ -106,6 +107,7 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final activeAsync = ref.watch(activeTimeEntryProvider);
     final recentAsync = ref.watch(recentTimeEntriesProvider);
     final weeklyAsync = ref.watch(weeklyHoursProvider);
@@ -120,12 +122,11 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
     }
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
           children: [
-            // Header
             Row(
               children: [
                 GestureDetector(
@@ -133,10 +134,10 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: ObsidianTheme.hoverBg,
+                      color: c.hoverBg,
                       borderRadius: ObsidianTheme.radiusMd,
                     ),
-                    child: const Icon(PhosphorIconsLight.arrowLeft, color: ObsidianTheme.textSecondary, size: 20),
+                    child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -148,12 +149,12 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                         'My Time',
                         style: GoogleFonts.inter(
                           fontSize: 20, fontWeight: FontWeight.w600,
-                          color: ObsidianTheme.textPrimary, letterSpacing: -0.3,
+                          color: c.textPrimary, letterSpacing: -0.3,
                         ),
                       ),
                       Text(
                         DateFormat('EEEE, d MMMM').format(DateTime.now()),
-                        style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary),
+                        style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textTertiary),
                       ),
                     ],
                   ),
@@ -165,7 +166,6 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
 
             const SizedBox(height: 32),
 
-            // Chronometer
             Center(
               child: _Chronometer(
                 isClockedIn: isClockedIn,
@@ -185,7 +185,6 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
 
             const SizedBox(height: 32),
 
-            // Weekly summary
             weeklyAsync.when(
               data: (hours) => GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -208,12 +207,12 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                         children: [
                           Text(
                             'This Week',
-                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${hours.toStringAsFixed(1)} hours logged',
-                            style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary),
+                            style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textTertiary),
                           ),
                         ],
                       ),
@@ -234,10 +233,9 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
 
             const SizedBox(height: 28),
 
-            // Recent history
             Text(
               'RECENT SHIFTS',
-              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
             ).animate().fadeIn(delay: 400.ms, duration: 300.ms),
             const SizedBox(height: 10),
 
@@ -259,7 +257,7 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                   }).toList(),
                 );
               },
-              loading: () => const Center(
+              loading: () => Center(
                 child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
               ),
               error: (_, __) => const SizedBox.shrink(),
@@ -294,11 +292,12 @@ class _Chronometer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final Color ringColor = isOnBreak
         ? ObsidianTheme.amber
         : isClockedIn
             ? ObsidianTheme.emerald
-            : ObsidianTheme.textTertiary;
+            : c.textTertiary;
 
     final String stateLabel = isOnBreak
         ? 'ON BREAK'
@@ -322,7 +321,6 @@ class _Chronometer extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Outer glow ring (animated)
                 if (isClockedIn)
                   AnimatedBuilder(
                     animation: pulseController,
@@ -344,7 +342,6 @@ class _Chronometer extends StatelessWidget {
                     },
                   ),
 
-                // Static ring
                 Container(
                   width: 190, height: 190,
                   decoration: BoxDecoration(
@@ -353,7 +350,6 @@ class _Chronometer extends StatelessWidget {
                   ),
                 ),
 
-                // Progress arc
                 SizedBox(
                   width: 180, height: 180,
                   child: CustomPaint(
@@ -366,11 +362,9 @@ class _Chronometer extends StatelessWidget {
                   ),
                 ),
 
-                // Center content
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Status label
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
@@ -387,19 +381,17 @@ class _Chronometer extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // Clock display
                     Text(
                       isClockedIn ? formatDuration(elapsed) : '00:00:00',
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 32, fontWeight: FontWeight.w700,
-                        color: isClockedIn ? ObsidianTheme.textPrimary : ObsidianTheme.textDisabled,
+                        color: isClockedIn ? c.textPrimary : c.textDisabled,
                         letterSpacing: 2,
                       ),
                     ),
 
                     const SizedBox(height: 4),
 
-                    // Icon
                     Icon(
                       isClockedIn
                           ? (isOnBreak ? PhosphorIconsLight.pause : PhosphorIconsLight.clock)
@@ -416,13 +408,11 @@ class _Chronometer extends StatelessWidget {
 
         const SizedBox(height: 12),
 
-        // Action hint
         Text(
           actionLabel,
-          style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary),
+          style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
         ),
 
-        // Break button (only when clocked in + not on break)
         if (onBreakTap != null) ...[
           const SizedBox(height: 16),
           GestureDetector(
@@ -466,7 +456,6 @@ class _ChronoRingPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 4;
 
-    // Track
     final trackPaint = Paint()
       ..color = color.withValues(alpha: 0.06)
       ..strokeWidth = 3
@@ -474,7 +463,6 @@ class _ChronoRingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawCircle(center, radius, trackPaint);
 
-    // Progress
     if (progress > 0) {
       final progressPaint = Paint()
         ..color = color
@@ -490,7 +478,6 @@ class _ChronoRingPainter extends CustomPainter {
         progressPaint,
       );
 
-      // Glow at tip
       final angle = -pi / 2 + 2 * pi * progress;
       final tipX = center.dx + radius * cos(angle);
       final tipY = center.dy + radius * sin(angle);
@@ -500,7 +487,6 @@ class _ChronoRingPainter extends CustomPainter {
       canvas.drawCircle(Offset(tipX, tipY), 4, glowPaint);
     }
 
-    // Tick marks (every 5 minutes = 12 ticks)
     for (int i = 0; i < 12; i++) {
       final angle = -pi / 2 + (i / 12) * 2 * pi;
       final outer = center + Offset(radius * cos(angle), radius * sin(angle));
@@ -528,6 +514,7 @@ class _ShiftHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final clockIn = DateTime.tryParse(entry['clock_in']?.toString() ?? '');
     final clockOutTime = DateTime.tryParse(entry['clock_out']?.toString() ?? '');
     final totalMinutes = entry['total_minutes'] as int? ?? 0;
@@ -541,21 +528,20 @@ class _ShiftHistoryCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusLg,
-        color: ObsidianTheme.surface1,
+        color: c.surface,
         border: Border.all(
           color: geoWarning
               ? ObsidianTheme.amber.withValues(alpha: 0.15)
-              : ObsidianTheme.border,
+              : c.border,
         ),
       ),
       child: Row(
         children: [
-          // Date column
           Container(
             width: 48, height: 48,
             decoration: BoxDecoration(
               borderRadius: ObsidianTheme.radiusMd,
-              color: ObsidianTheme.hoverBg,
+              color: c.hoverBg,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -564,12 +550,12 @@ class _ShiftHistoryCard extends StatelessWidget {
                   clockIn != null ? DateFormat('d').format(clockIn) : '--',
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 16, fontWeight: FontWeight.w700,
-                    color: ObsidianTheme.textPrimary,
+                    color: c.textPrimary,
                   ),
                 ),
                 Text(
                   clockIn != null ? DateFormat('EEE').format(clockIn).toUpperCase() : '',
-                  style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1),
+                  style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1),
                 ),
               ],
             ),
@@ -584,14 +570,14 @@ class _ShiftHistoryCard extends StatelessWidget {
                   clockIn != null && clockOutTime != null
                       ? '${timeFormat.format(clockIn.toLocal())} — ${timeFormat.format(clockOutTime.toLocal())}'
                       : 'Shift',
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary),
                 ),
                 const SizedBox(height: 3),
                 Row(
                   children: [
                     Text(
                       '${hours.toStringAsFixed(1)}h worked',
-                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                     ),
                     if (breakMinutes > 0) ...[
                       const SizedBox(width: 8),

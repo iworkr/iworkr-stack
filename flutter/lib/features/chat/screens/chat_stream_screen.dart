@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/chat_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
@@ -117,6 +118,7 @@ class _ChatStreamScreenState extends ConsumerState<ChatStreamScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final messagesAsync = ref.watch(messagesProvider(widget.channelId));
     final membersAsync = ref.watch(channelMembersProvider(widget.channelId));
     final currentUserId = SupabaseService.auth.currentUser?.id;
@@ -137,8 +139,8 @@ class _ChatStreamScreenState extends ConsumerState<ChatStreamScreen> {
             // Header
             Container(
               padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: c.border)),
               ),
               child: Row(
                 children: [
@@ -147,11 +149,11 @@ class _ChatStreamScreenState extends ConsumerState<ChatStreamScreen> {
                       HapticFeedback.lightImpact();
                       context.pop();
                     },
-                    child: const SizedBox(
+                    child: SizedBox(
                       width: 44,
                       height: 44,
                       child: Center(
-                        child: Icon(PhosphorIconsLight.arrowLeft, size: 20, color: ObsidianTheme.textSecondary),
+                        child: Icon(PhosphorIconsLight.arrowLeft, size: 20, color: c.textSecondary),
                       ),
                     ),
                   ),
@@ -179,11 +181,11 @@ class _ChatStreamScreenState extends ConsumerState<ChatStreamScreen> {
                       height: 28,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: ObsidianTheme.shimmerBase,
-                        border: Border.all(color: ObsidianTheme.border),
+                        color: c.shimmerBase,
+                        border: Border.all(color: c.border),
                       ),
-                      child: const Center(
-                        child: Icon(PhosphorIconsLight.hash, size: 13, color: ObsidianTheme.textTertiary),
+                      child: Center(
+                        child: Icon(PhosphorIconsLight.hash, size: 13, color: c.textTertiary),
                       ),
                     ),
                   const SizedBox(width: 10),
@@ -194,18 +196,18 @@ class _ChatStreamScreenState extends ConsumerState<ChatStreamScreen> {
                       children: [
                         Text(
                           _headerTitle,
-                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary),
+                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary),
                         ),
                         Text(
                           _headerSubtitle,
-                          style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                          style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                         ),
                       ],
                     ),
                   ),
                   GestureDetector(
                     onTap: () => HapticFeedback.lightImpact(),
-                    child: Icon(PhosphorIconsLight.dotsThree, size: 20, color: ObsidianTheme.textSecondary),
+                    child: Icon(PhosphorIconsLight.dotsThree, size: 20, color: c.textSecondary),
                   ),
                 ],
               ),

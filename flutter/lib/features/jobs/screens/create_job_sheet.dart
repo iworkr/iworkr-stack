@@ -10,6 +10,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/stealth_text_field.dart';
 import 'package:iworkr_mobile/core/widgets/stealth_toast.dart';
 import 'package:iworkr_mobile/models/job.dart';
@@ -174,6 +175,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final bottomPad = MediaQuery.of(context).viewInsets.bottom;
 
     return ClipRRect(
@@ -183,9 +185,9 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
         child: Container(
           height: MediaQuery.of(context).size.height * 0.92,
           decoration: BoxDecoration(
-            color: ObsidianTheme.void_.withValues(alpha: 0.97),
+            color: c.canvas.withValues(alpha: 0.97),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: const Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+            border: Border(top: BorderSide(color: c.borderMedium)),
           ),
           child: Column(
             children: [
@@ -196,7 +198,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                   width: 36, height: 4,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
-                    color: ObsidianTheme.textTertiary,
+                    color: c.textTertiary,
                   ),
                 ),
               ),
@@ -208,7 +210,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                   children: [
                     Text(
                       'New Job',
-                      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary, letterSpacing: -0.3),
+                      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3),
                     ),
                     const Spacer(),
                     GestureDetector(
@@ -220,9 +222,9 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                         width: 28, height: 28,
                         decoration: BoxDecoration(
                           borderRadius: ObsidianTheme.radiusMd,
-                          border: Border.all(color: ObsidianTheme.border),
+                          border: Border.all(color: c.border),
                         ),
-                        child: const Center(child: Icon(PhosphorIconsLight.x, size: 14, color: ObsidianTheme.textTertiary)),
+                        child: Center(child: Icon(PhosphorIconsLight.x, size: 14, color: c.textTertiary)),
                       ),
                     ),
                   ],
@@ -237,7 +239,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     children: [
                       // ── Client Lookup ──────────────────────
-                      _buildSectionLabel('CLIENT / LOCATION'),
+                      _buildSectionLabel('CLIENT / LOCATION', c),
                       const SizedBox(height: 8),
                       StealthTextField(
                         label: 'Client',
@@ -247,7 +249,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                         onChanged: _searchClients,
                       ),
                       if (_showClientDropdown && _clientResults.isNotEmpty)
-                        _buildClientDropdown(),
+                        _buildClientDropdown(c),
                       const SizedBox(height: 4),
                       const StealthDivider(),
                       const SizedBox(height: 4),
@@ -261,9 +263,9 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                       const SizedBox(height: 24),
 
                       // ── Job Definition ─────────────────────
-                      _buildSectionLabel('JOB DEFINITION'),
+                      _buildSectionLabel('JOB DEFINITION', c),
                       const SizedBox(height: 8),
-                      _buildTemplateChips(),
+                      _buildTemplateChips(c),
                       const SizedBox(height: 10),
                       StealthTextField(
                         label: 'Job Title',
@@ -290,18 +292,18 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                     const SizedBox(height: 24),
 
                     // ── Priority ───────────────────────────
-                    _buildSectionLabel('PRIORITY'),
+                    _buildSectionLabel('PRIORITY', c),
                     const SizedBox(height: 8),
-                    _buildPrioritySelector(),
+                    _buildPrioritySelector(c),
 
                     const SizedBox(height: 24),
 
                     // ── Scheduling ─────────────────────────
-                    _buildSectionLabel('SCHEDULE'),
+                    _buildSectionLabel('SCHEDULE', c),
                     const SizedBox(height: 8),
-                    _buildDateScrubber(),
+                    _buildDateScrubber(c),
                     const SizedBox(height: 12),
-                    _buildTimePicker(),
+                    _buildTimePicker(c),
 
                       const SizedBox(height: 100),
                     ],
@@ -314,7 +316,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOutQuart,
                 padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad > 0 ? bottomPad + 8 : MediaQuery.of(context).padding.bottom + 16),
-                child: _buildCommandBar(),
+                child: _buildCommandBar(c),
               ),
             ],
           ),
@@ -325,49 +327,49 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
   // ── Section Label ──────────────────────────────────
 
-  Widget _buildSectionLabel(String text) {
+  Widget _buildSectionLabel(String text, IWorkrColors c) {
     return Text(
       text,
-      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
     );
   }
 
   // ── Client Dropdown ────────────────────────────────
 
-  Widget _buildClientDropdown() {
+  Widget _buildClientDropdown(IWorkrColors c) {
     return Container(
       margin: const EdgeInsets.only(left: 22, top: 4),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.surface2,
-        border: Border.all(color: ObsidianTheme.borderMedium),
+        color: c.surfaceSecondary,
+        border: Border.all(color: c.borderMedium),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ..._clientResults.map((c) => GestureDetector(
-            onTap: () => _selectClient(c),
+          ..._clientResults.map((cl) => GestureDetector(
+            onTap: () => _selectClient(cl),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: c.border)),
               ),
               child: Row(
                 children: [
-                  Icon(PhosphorIconsLight.user, size: 14, color: ObsidianTheme.textTertiary),
+                  Icon(PhosphorIconsLight.user, size: 14, color: c.textTertiary),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          c['name'] as String,
-                          style: GoogleFonts.inter(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
+                          cl['name'] as String,
+                          style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary, fontWeight: FontWeight.w500),
                         ),
-                        if (c['address'] != null)
+                        if (cl['address'] != null)
                           Text(
-                            c['address'] as String,
-                            style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                            cl['address'] as String,
+                            style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -404,7 +406,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
   // ── Template Chips ─────────────────────────────────
 
-  Widget _buildTemplateChips() {
+  Widget _buildTemplateChips(IWorkrColors c) {
     const templates = [
       ('Service', 'General Service', JobPriority.medium),
       ('Install', 'New Installation', JobPriority.medium),
@@ -430,16 +432,16 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusFull,
-                color: isActive ? ObsidianTheme.emeraldDim : ObsidianTheme.shimmerBase,
+                color: isActive ? ObsidianTheme.emeraldDim : c.shimmerBase,
                 border: Border.all(
-                  color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.border,
+                  color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border,
                 ),
               ),
               child: Text(
                 label,
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: isActive ? ObsidianTheme.emerald : ObsidianTheme.textSecondary,
+                  color: isActive ? ObsidianTheme.emerald : c.textSecondary,
                   fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
                 ),
               ),
@@ -452,9 +454,9 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
   // ── Priority Selector ──────────────────────────────
 
-  Widget _buildPrioritySelector() {
-    const levels = [
-      (JobPriority.low, 'Low', ObsidianTheme.textTertiary),
+  Widget _buildPrioritySelector(IWorkrColors c) {
+    final levels = [
+      (JobPriority.low, 'Low', c.textTertiary),
       (JobPriority.medium, 'Med', ObsidianTheme.blue),
       (JobPriority.high, 'High', ObsidianTheme.amber),
       (JobPriority.urgent, 'Critical', ObsidianTheme.rose),
@@ -464,8 +466,8 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: levels.map((level) {
@@ -487,12 +489,11 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(6),
-                  color: isActive ? ObsidianTheme.surface2 : Colors.transparent,
+                  color: isActive ? c.surfaceSecondary : Colors.transparent,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Status dot
                     Container(
                       width: 6, height: 6,
                       decoration: BoxDecoration(
@@ -508,7 +509,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                       label,
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: isActive ? Colors.white : ObsidianTheme.textTertiary,
+                        color: isActive ? Colors.white : c.textTertiary,
                         fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
                       ),
                     ),
@@ -524,7 +525,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
   // ── Date Scrubber ──────────────────────────────────
 
-  Widget _buildDateScrubber() {
+  Widget _buildDateScrubber(IWorkrColors c) {
     final now = DateTime.now();
     final dates = List.generate(7, (i) => now.add(Duration(days: i)));
 
@@ -548,14 +549,14 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                 borderRadius: ObsidianTheme.radiusMd,
                 color: _scheduleNow ? ObsidianTheme.emeraldDim : Colors.transparent,
                 border: Border.all(
-                  color: _scheduleNow ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.border,
+                  color: _scheduleNow ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border,
                 ),
               ),
               child: Text(
                 'NOW',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 11,
-                  color: _scheduleNow ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                  color: _scheduleNow ? ObsidianTheme.emerald : c.textTertiary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -600,9 +601,9 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusMd,
-                      color: isSelected ? ObsidianTheme.surface2 : Colors.transparent,
+                      color: isSelected ? c.surfaceSecondary : Colors.transparent,
                       border: Border.all(
-                        color: isSelected ? ObsidianTheme.borderActive : ObsidianTheme.border,
+                        color: isSelected ? c.borderActive : c.border,
                       ),
                     ),
                     child: Column(
@@ -612,7 +613,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                           label,
                           style: GoogleFonts.inter(
                             fontSize: 11,
-                            color: isSelected ? Colors.white : ObsidianTheme.textTertiary,
+                            color: isSelected ? Colors.white : c.textTertiary,
                             fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
                           ),
                         ),
@@ -630,7 +631,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
   // ── Time Picker ────────────────────────────────────
 
-  Widget _buildTimePicker() {
+  Widget _buildTimePicker(IWorkrColors c) {
     if (_scheduleNow) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -675,9 +676,9 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
               width: 50,
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
-                color: isSelected ? ObsidianTheme.surface2 : Colors.transparent,
+                color: isSelected ? c.surfaceSecondary : Colors.transparent,
                 border: Border.all(
-                  color: isSelected ? ObsidianTheme.borderActive : ObsidianTheme.border,
+                  color: isSelected ? c.borderActive : c.border,
                 ),
               ),
               child: Center(
@@ -685,7 +686,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                   label,
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 11,
-                    color: isSelected ? Colors.white : ObsidianTheme.textTertiary,
+                    color: isSelected ? Colors.white : c.textTertiary,
                     fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),
@@ -699,7 +700,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
   // ── Floating Command Bar ───────────────────────────
 
-  Widget _buildCommandBar() {
+  Widget _buildCommandBar(IWorkrColors c) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -730,12 +731,12 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
             decoration: BoxDecoration(
               borderRadius: ObsidianTheme.radiusMd,
               color: _loading
-                  ? ObsidianTheme.surface2
+                  ? c.surfaceSecondary
                   : _isValid
                       ? Colors.white
-                      : ObsidianTheme.shimmerBase,
+                      : c.shimmerBase,
               border: Border.all(
-                color: _isValid ? Colors.transparent : ObsidianTheme.border,
+                color: _isValid ? Colors.transparent : c.border,
               ),
             ),
             child: Center(
@@ -749,7 +750,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: _isValid ? Colors.black : ObsidianTheme.textTertiary,
+                        color: _isValid ? Colors.black : c.textTertiary,
                       ),
                     ),
             ),

@@ -36,16 +36,18 @@ export async function POST(req: NextRequest) {
 
   const { data: org } = await (supabase as any)
     .from("organizations")
-    .select("stripe_customer_id")
+    .select("settings")
     .eq("id", orgId)
     .single();
 
-  if (!org?.stripe_customer_id) {
+  const stripeCustomerId = (org?.settings as Record<string, unknown>)?.stripe_customer_id as string | undefined;
+
+  if (!stripeCustomerId) {
     return NextResponse.json({ error: "No billing account found" }, { status: 404 });
   }
 
   const session = await stripe.billingPortal.sessions.create({
-    customer: org.stripe_customer_id,
+    customer: stripeCustomerId,
     return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing`,
   });
 

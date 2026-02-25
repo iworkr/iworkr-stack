@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
 import 'package:iworkr_mobile/core/widgets/status_pip.dart';
@@ -31,6 +32,7 @@ class JobDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final jobAsync = ref.watch(jobDetailProvider(jobId));
     final subtasksAsync = ref.watch(jobSubtasksProvider(jobId));
     final activityAsync = ref.watch(jobActivityProvider(jobId));
@@ -39,8 +41,8 @@ class JobDetailScreen extends ConsumerWidget {
       body: jobAsync.when(
         data: (job) {
           if (job == null) {
-            return const Center(
-              child: Text('Job not found', style: TextStyle(color: ObsidianTheme.textTertiary)),
+            return Center(
+              child: Text('Job not found', style: TextStyle(color: c.textTertiary)),
             );
           }
           return _JobDetailBody(job: job, subtasksAsync: subtasksAsync, activityAsync: activityAsync);
@@ -65,11 +67,12 @@ class _JobDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return CustomScrollView(
       slivers: [
         SliverAppBar(
           pinned: true,
-          backgroundColor: ObsidianTheme.void_,
+          backgroundColor: c.canvas,
           leading: IconButton(
             icon: const Icon(PhosphorIconsLight.arrowLeft, size: 20),
             onPressed: () => Navigator.of(context).pop(),
@@ -78,7 +81,7 @@ class _JobDetailBody extends StatelessWidget {
             job.displayId,
             style: GoogleFonts.jetBrainsMono(
               fontSize: 13,
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
             ),
           ),
           actions: [
@@ -101,7 +104,7 @@ class _JobDetailBody extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
-                    color: ObsidianTheme.textPrimary,
+                    color: c.textPrimary,
                     letterSpacing: -0.5,
                   ),
                 )
@@ -112,7 +115,7 @@ class _JobDetailBody extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     job.description!,
-                    style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textSecondary, height: 1.6),
+                    style: GoogleFonts.inter(fontSize: 13, color: c.textSecondary, height: 1.6),
                   )
                       .animate()
                       .fadeIn(delay: 80.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
@@ -133,7 +136,7 @@ class _JobDetailBody extends StatelessWidget {
                         children: [
                           StatusPip.fromJobStatus(job.status),
                           const SizedBox(width: 8),
-                          Text(job.status.label, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500)),
+                          Text(job.status.label, style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
@@ -147,7 +150,7 @@ class _JobDetailBody extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             job.priority.name.toUpperCase(),
-                            style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textSecondary),
+                            style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textSecondary),
                           ),
                         ],
                       ),
@@ -156,13 +159,13 @@ class _JobDetailBody extends StatelessWidget {
                       _PropertyCard(
                         label: 'CLIENT',
                         index: 2,
-                        child: Text(job.clientName!, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500)),
+                        child: Text(job.clientName!, style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
                       ),
                     if (job.assigneeName != null)
                       _PropertyCard(
                         label: 'ASSIGNEE',
                         index: 3,
-                        child: Text(job.assigneeName!, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500)),
+                        child: Text(job.assigneeName!, style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
                       ),
                     if (job.dueDate != null)
                       _PropertyCard(
@@ -172,7 +175,7 @@ class _JobDetailBody extends StatelessWidget {
                           timeago.format(job.dueDate!),
                           style: GoogleFonts.jetBrainsMono(
                             fontSize: 11,
-                            color: job.dueDate!.isBefore(DateTime.now()) ? ObsidianTheme.rose : ObsidianTheme.textSecondary,
+                            color: job.dueDate!.isBefore(DateTime.now()) ? ObsidianTheme.rose : c.textSecondary,
                           ),
                         ),
                       ),
@@ -183,12 +186,12 @@ class _JobDetailBody extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(PhosphorIconsLight.mapPin, size: 12, color: ObsidianTheme.textTertiary),
+                            Icon(PhosphorIconsLight.mapPin, size: 12, color: c.textTertiary),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
                                 job.location!,
-                                style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textSecondary),
+                                style: GoogleFonts.inter(fontSize: 12, color: c.textSecondary),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -250,7 +253,7 @@ class _JobDetailBody extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                        border: Border.all(color: c.border),
                       ),
                       child: ObsidianInlineMap(
                         lat: job.locationLat!,
@@ -343,15 +346,15 @@ class _JobDetailBody extends StatelessWidget {
                         final done = task['completed'] as bool? ?? false;
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
+                          decoration: BoxDecoration(
+                            border: Border(bottom: BorderSide(color: c.border)),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 done ? PhosphorIconsFill.checkSquare : PhosphorIconsRegular.square,
                                 size: 16,
-                                color: done ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                                color: done ? ObsidianTheme.emerald : c.textTertiary,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -359,7 +362,7 @@ class _JobDetailBody extends StatelessWidget {
                                   task['title'] as String? ?? '',
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
-                                    color: done ? ObsidianTheme.textTertiary : ObsidianTheme.textPrimary,
+                                    color: done ? c.textTertiary : c.textPrimary,
                                     decoration: done ? TextDecoration.lineThrough : null,
                                   ),
                                 ),
@@ -463,15 +466,15 @@ class _JobDetailBody extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
                             borderRadius: ObsidianTheme.radiusMd,
-                            border: Border.all(color: ObsidianTheme.borderMedium),
-                            color: ObsidianTheme.hoverBg,
+                            border: Border.all(color: c.borderMedium),
+                            color: c.hoverBg,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(PhosphorIconsLight.fileText, size: 14, color: ObsidianTheme.textSecondary),
+                              Icon(PhosphorIconsLight.fileText, size: 14, color: c.textSecondary),
                               const SizedBox(width: 6),
-                              Text('Create Quote', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500)),
+                              Text('Create Quote', style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
@@ -485,15 +488,15 @@ class _JobDetailBody extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
                             borderRadius: ObsidianTheme.radiusMd,
-                            border: Border.all(color: ObsidianTheme.borderMedium),
-                            color: ObsidianTheme.hoverBg,
+                            border: Border.all(color: c.borderMedium),
+                            color: c.hoverBg,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(PhosphorIconsLight.receipt, size: 14, color: ObsidianTheme.textSecondary),
+                              Icon(PhosphorIconsLight.receipt, size: 14, color: c.textSecondary),
                               const SizedBox(width: 6),
-                              Text('Invoice', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500)),
+                              Text('Invoice', style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
@@ -527,9 +530,9 @@ class _JobDetailBody extends StatelessWidget {
                                 width: 6,
                                 height: 6,
                                 margin: const EdgeInsets.only(top: 6),
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: ObsidianTheme.textTertiary,
+                                  color: c.textTertiary,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -539,12 +542,12 @@ class _JobDetailBody extends StatelessWidget {
                                   children: [
                                     Text(
                                       a['text'] as String? ?? '',
-                                      style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textSecondary),
+                                      style: GoogleFonts.inter(fontSize: 12, color: c.textSecondary),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       a['created_at'] != null ? timeago.format(DateTime.parse(a['created_at'] as String)) : '',
-                                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                                     ),
                                   ],
                                 ),
@@ -582,13 +585,14 @@ class _PropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       borderRadius: ObsidianTheme.radiusLg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+          Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1)),
           const SizedBox(height: 6),
           child,
         ],
@@ -607,9 +611,10 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Text(
       label,
-      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
     ).animate().fadeIn(delay: Duration(milliseconds: delayMs), duration: 300.ms);
   }
 }
@@ -620,15 +625,16 @@ class _EmptySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusLg,
-        border: Border.all(color: ObsidianTheme.border),
-        color: ObsidianTheme.surface1,
+        border: Border.all(color: c.border),
+        color: c.surface,
       ),
       child: Center(
-        child: Text(text, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary)),
+        child: Text(text, style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
       ),
     );
   }

@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/ai_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/models/ai_chat_message.dart';
 
@@ -15,11 +16,12 @@ class KnowledgeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final articlesAsync = ref.watch(knowledgeArticlesProvider);
     final mq = MediaQuery.of(context);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,13 +30,13 @@ class KnowledgeScreen extends ConsumerWidget {
             const SizedBox(height: 6),
             Expanded(
               child: articlesAsync.when(
-                loading: () => const Center(
+                loading: () => Center(
                   child: CircularProgressIndicator(color: ObsidianTheme.indigo, strokeWidth: 2),
                 ),
                 error: (e, _) => Center(
                   child: Text(
                     'Failed to load articles',
-                    style: GoogleFonts.inter(color: ObsidianTheme.textTertiary),
+                    style: GoogleFonts.inter(color: c.textTertiary),
                   ),
                 ),
                 data: (articles) {
@@ -46,7 +48,6 @@ class KnowledgeScreen extends ConsumerWidget {
                     );
                   }
 
-                  // Group by manufacturer
                   final grouped = <String, List<KnowledgeArticle>>{};
                   for (final a in articles) {
                     final key = a.manufacturer ?? 'General';
@@ -82,6 +83,7 @@ class KnowledgeScreen extends ConsumerWidget {
 class _KnowledgeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Column(
@@ -94,10 +96,10 @@ class _KnowledgeHeader extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: c.border,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
+                  child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
                 ),
               ),
               const SizedBox(width: 14),
@@ -107,7 +109,7 @@ class _KnowledgeHeader extends StatelessWidget {
                   Text(
                     'THE ARCHIVE',
                     style: GoogleFonts.jetBrainsMono(
-                      color: Colors.white,
+                      color: c.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.5,
@@ -115,7 +117,7 @@ class _KnowledgeHeader extends StatelessWidget {
                   ),
                   Text(
                     'Knowledge Base & Manuals',
-                    style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                    style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
                   ),
                 ],
               ),
@@ -131,16 +133,15 @@ class _KnowledgeHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Search bar
           TextField(
-            style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+            style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Search manuals, schematics, guides...',
-              hintStyle: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+              hintStyle: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
               filled: true,
               fillColor: Colors.transparent,
               contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
-              prefixIcon: Icon(PhosphorIconsLight.magnifyingGlass, color: ObsidianTheme.textTertiary, size: 18),
+              prefixIcon: Icon(PhosphorIconsLight.magnifyingGlass, color: c.textTertiary, size: 18),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -169,6 +170,7 @@ class _ManufacturerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -176,7 +178,7 @@ class _ManufacturerSection extends StatelessWidget {
         Text(
           manufacturer.toUpperCase(),
           style: GoogleFonts.jetBrainsMono(
-            color: ObsidianTheme.textTertiary,
+            color: c.textTertiary,
             fontSize: 11,
             fontWeight: FontWeight.w500,
             letterSpacing: 1.5,
@@ -222,12 +224,13 @@ class _ArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: c.border),
       ),
       child: Material(
         color: Colors.transparent,
@@ -235,7 +238,6 @@ class _ArticleCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           onTap: () {
             HapticFeedback.lightImpact();
-            // Open PDF viewer
           },
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -258,7 +260,7 @@ class _ArticleCard extends StatelessWidget {
                       Text(
                         article.title,
                         style: GoogleFonts.inter(
-                          color: Colors.white,
+                          color: c.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -272,7 +274,7 @@ class _ArticleCard extends StatelessWidget {
                             Text(
                               article.modelNumber!,
                               style: GoogleFonts.jetBrainsMono(
-                                color: ObsidianTheme.textTertiary,
+                                color: c.textTertiary,
                                 fontSize: 11,
                               ),
                             ),
@@ -283,7 +285,7 @@ class _ArticleCard extends StatelessWidget {
                                 ? article.fileSizeLabel
                                 : article.fileType.toUpperCase(),
                             style: GoogleFonts.jetBrainsMono(
-                              color: ObsidianTheme.textTertiary,
+                              color: c.textTertiary,
                               fontSize: 11,
                             ),
                           ),
@@ -304,7 +306,7 @@ class _ArticleCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(PhosphorIconsLight.caretRight, color: ObsidianTheme.textTertiary, size: 16),
+                Icon(PhosphorIconsLight.caretRight, color: c.textTertiary, size: 16),
               ],
             ),
           ),
@@ -317,6 +319,7 @@ class _ArticleCard extends StatelessWidget {
 class _Dot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Container(
@@ -324,7 +327,7 @@ class _Dot extends StatelessWidget {
         height: 3,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: ObsidianTheme.textTertiary.withValues(alpha: 0.5),
+          color: c.textTertiary.withValues(alpha: 0.5),
         ),
       ),
     );

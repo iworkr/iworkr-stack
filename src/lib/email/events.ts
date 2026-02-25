@@ -245,3 +245,109 @@ export async function sendWeeklyDigestEmail(params: {
     tags: [{ name: "event", value: "weekly_digest" }],
   });
 }
+
+/* ── Queue-based sending (for server-side/backend use) ── */
+
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+export async function queueEmail(params: {
+  organizationId: string;
+  eventType: string;
+  recipientEmail: string;
+  payload: Record<string, unknown>;
+}) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { error } = await supabase.from("mail_queue").insert({
+      organization_id: params.organizationId,
+      event_type: params.eventType,
+      recipient_email: params.recipientEmail,
+      payload: params.payload,
+    });
+
+    if (error) {
+      console.error("[Email Queue] Failed to enqueue:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`[Email Queue] Enqueued "${params.eventType}" for ${params.recipientEmail}`);
+    return { success: true };
+  } catch (err) {
+    console.error("[Email Queue] Unexpected error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+}
+
+export async function queueJobAssignedEmail(params: {
+  organizationId: string;
+  jobId: string;
+  jobTitle: string;
+  jobDate: string;
+  jobLocation: string;
+  technicianEmail: string;
+  technicianName: string;
+  clientName: string;
+  clientAddress: string;
+  workspaceName: string;
+}) {
+  return queueEmail({
+    organizationId: params.organizationId,
+    eventType: "job_assigned",
+    recipientEmail: params.technicianEmail,
+    payload: {
+      job_id: params.jobId,
+      job: { title: params.jobTitle, date: params.jobDate, location: params.jobLocation },
+      tech: { name: params.technicianName },
+      client: { name: params.clientName, address: params.clientAddress },
+      workspace: { name: params.workspaceName },
+    },
+  });
+}
+
+export async function queueJobCancelledEmail(params: {
+  organizationId: string;
+  jobId: string;
+  jobTitle: string;
+  technicianEmail: string;
+  technicianName: string;
+  workspaceName: string;
+  reason?: string;
+}) {
+  return queueEmail({
+    organizationId: params.organizationId,
+    eventType: "job_cancelled",
+    recipientEmail: params.technicianEmail,
+    payload: {
+      job_id: params.jobId,
+      job: { title: params.jobTitle },
+      tech: { name: params.technicianName },
+      workspace: { name: params.workspaceName },
+      reason: params.reason,
+    },
+  });
+}
+
+export async function queueComplianceWarningEmail(params: {
+  organizationId: string;
+  jobId: string;
+  jobDisplayId: string;
+  jobTitle: string;
+  technicianName: string;
+  recipientEmail: string;
+  workspaceName: string;
+}) {
+  return queueEmail({
+    organizationId: params.organizationId,
+    eventType: "compliance_warning_swms",
+    recipientEmail: params.recipientEmail,
+    payload: {
+      job_id: params.jobId,
+      job: { id: params.jobDisplayId, title: params.jobTitle },
+      tech: { name: params.technicianName },
+      workspace: { name: params.workspaceName },
+    },
+  });
+}

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/forms_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/form_template.dart';
 import 'package:iworkr_mobile/features/forms/screens/form_runner_screen.dart';
@@ -119,12 +120,13 @@ class _CompliancePacketScreenState
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final templatesAsync = ref.watch(stageFormsProvider(widget.stage.value));
     final responsesAsync = ref.watch(jobFormResponsesProvider(widget.jobId));
     final mq = MediaQuery.of(context);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: AnimatedBuilder(
         animation: _borderPulse,
         builder: (context, child) {
@@ -188,10 +190,11 @@ class _CompliancePacketScreenState
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: BoxDecoration(
-        color: ObsidianTheme.void_,
+        color: c.canvas,
         border: Border(
           bottom: BorderSide(color: _accentColor.withValues(alpha: 0.15)),
         ),
@@ -208,7 +211,7 @@ class _CompliancePacketScreenState
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: c.border,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -238,7 +241,7 @@ class _CompliancePacketScreenState
           Text(
             _stageSubtitle,
             style: GoogleFonts.inter(
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
               fontSize: 13,
             ),
           ),
@@ -251,6 +254,7 @@ class _CompliancePacketScreenState
   }
 
   Widget _buildLoading() {
+    final c = context.iColors;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -268,7 +272,7 @@ class _CompliancePacketScreenState
             'Loading forms...',
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: ObsidianTheme.textMuted,
+              color: c.textMuted,
             ),
           ),
         ],
@@ -277,6 +281,7 @@ class _CompliancePacketScreenState
   }
 
   Widget _buildError(Object e) {
+    final c = context.iColors;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -285,7 +290,7 @@ class _CompliancePacketScreenState
           const SizedBox(height: 12),
           Text(
             'Failed to load forms',
-            style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textSecondary),
+            style: GoogleFonts.inter(fontSize: 14, color: c.textSecondary),
           ),
         ],
       ),
@@ -293,6 +298,7 @@ class _CompliancePacketScreenState
   }
 
   Widget _buildEmpty() {
+    final c = context.iColors;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -304,7 +310,7 @@ class _CompliancePacketScreenState
             style: GoogleFonts.inter(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: ObsidianTheme.textSecondary,
+              color: c.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
@@ -312,7 +318,7 @@ class _CompliancePacketScreenState
             'You\'re good to proceed',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
             ),
           ),
         ],
@@ -367,14 +373,15 @@ class _CompliancePacketScreenState
   }
 
   Widget _buildFooter(MediaQueryData mq, {required bool allComplete, required bool isEmpty}) {
+    final c = context.iColors;
     final canProceed = allComplete || isEmpty;
 
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, mq.padding.bottom + 12),
       decoration: BoxDecoration(
-        color: ObsidianTheme.void_,
+        color: c.canvas,
         border: Border(
-          top: BorderSide(color: ObsidianTheme.border),
+          top: BorderSide(color: c.border),
         ),
       ),
       child: GestureDetector(
@@ -395,7 +402,7 @@ class _CompliancePacketScreenState
             borderRadius: ObsidianTheme.radiusMd,
             color: canProceed
                 ? ObsidianTheme.emerald
-                : ObsidianTheme.shimmerBase,
+                : c.shimmerBase,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -405,7 +412,7 @@ class _CompliancePacketScreenState
                     ? PhosphorIconsBold.checkCircle
                     : PhosphorIconsBold.lockKey,
                 size: 18,
-                color: canProceed ? Colors.white : ObsidianTheme.textTertiary,
+                color: canProceed ? Colors.white : c.textTertiary,
               ),
               const SizedBox(width: 8),
               Text(
@@ -415,7 +422,7 @@ class _CompliancePacketScreenState
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: canProceed ? Colors.white : ObsidianTheme.textTertiary,
+                  color: canProceed ? Colors.white : c.textTertiary,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -443,6 +450,7 @@ class _FormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -451,12 +459,12 @@ class _FormCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isComplete
               ? ObsidianTheme.emeraldDim
-              : Colors.white.withValues(alpha: 0.02),
+              : c.hoverBg,
           borderRadius: ObsidianTheme.radiusLg,
           border: Border.all(
             color: isComplete
                 ? ObsidianTheme.emerald.withValues(alpha: 0.25)
-                : Colors.white.withValues(alpha: 0.06),
+                : c.border,
           ),
         ),
         child: Row(
@@ -497,10 +505,10 @@ class _FormCard extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: isComplete
-                          ? ObsidianTheme.textMuted
-                          : Colors.white,
+                          ? c.textMuted
+                          : c.textPrimary,
                       decoration: isComplete ? TextDecoration.lineThrough : null,
-                      decorationColor: ObsidianTheme.textTertiary,
+                      decorationColor: c.textTertiary,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -510,7 +518,7 @@ class _FormCard extends StatelessWidget {
                         '${template.totalFields} fields',
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                         ),
                       ),
                       if (template.requiresSignature) ...[
@@ -518,14 +526,14 @@ class _FormCard extends StatelessWidget {
                         Icon(
                           PhosphorIconsLight.pen,
                           size: 10,
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                         ),
                         const SizedBox(width: 3),
                         Text(
                           'Signature',
                           style: GoogleFonts.inter(
                             fontSize: 11,
-                            color: ObsidianTheme.textTertiary,
+                            color: c.textTertiary,
                           ),
                         ),
                       ],
@@ -542,7 +550,7 @@ class _FormCard extends StatelessWidget {
                   : PhosphorIconsLight.caretRight,
               color: isComplete
                   ? ObsidianTheme.emerald
-                  : ObsidianTheme.textTertiary,
+                  : c.textTertiary,
               size: 18,
             ),
           ],

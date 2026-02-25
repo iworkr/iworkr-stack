@@ -1,11 +1,18 @@
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Callback for widget deep links — set by the router at startup
+typedef WidgetDeepLinkHandler = void Function(String path);
 
 /// Supabase singleton access + deep link handler
 class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
   static GoTrueClient get auth => client.auth;
+
+  static WidgetDeepLinkHandler? onWidgetDeepLink;
+  static String? pendingWidgetDeepLink;
 
   static Future<void> initialize() async {
     await Supabase.initialize(
@@ -15,18 +22,34 @@ class SupabaseService {
     );
   }
 
-  /// Initialize deep link listener for magic link / OAuth callbacks.
-  ///
-  /// Handles both:
-  /// - Custom scheme: com.iworkr.mobile://login-callback#access_token=...
-  /// - Universal links: https://olqjuadvseoxpfjzlghb.supabase.co/auth/v1/callback?...
+  /// Initialize deep link listener for auth callbacks AND widget deep links.
   static void initDeepLinks() {
     final appLinks = AppLinks();
 
-    // Handle link when app is already running
-    appLinks.uriLinkStream.listen((uri) {
-      _handleAuthDeepLink(uri);
+    // Cold start: check if app was launched via a deep link
+    appLinks.getInitialLink().then((uri) {
+      if (uri != null) _routeUri(uri);
     });
+
+    // Warm start: handle links while app is running
+    appLinks.uriLinkStream.listen(_routeUri);
+  }
+
+  static void _routeUri(Uri uri) {
+    // Widget deep links use the iworkr:// scheme
+    if (uri.scheme == 'iworkr') {
+      final path = '/${uri.host}${uri.path}';
+      debugPrint('[DeepLink] Widget link: $path');
+      if (onWidgetDeepLink != null) {
+        onWidgetDeepLink!(path);
+      } else {
+        pendingWidgetDeepLink = path;
+      }
+      return;
+    }
+
+    // Auth deep links (Supabase OAuth / magic link)
+    _handleAuthDeepLink(uri);
   }
 
   /// Extract auth tokens from deep link URI and establish session,

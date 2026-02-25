@@ -7,21 +7,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import 'package:iworkr_mobile/core/services/job_execution_provider.dart';
+import 'package:iworkr_mobile/core/services/job_execution_provider.dart' as exec;
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/services/telemetry_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/models/job.dart';
 import 'package:iworkr_mobile/models/telemetry_event.dart';
 
 import 'package:iworkr_mobile/core/services/forms_provider.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/features/execution/widgets/slide_to_engage.dart';
 import 'package:iworkr_mobile/features/execution/widgets/hud_subtask_list.dart';
 import 'package:iworkr_mobile/features/execution/widgets/evidence_locker_sheet.dart';
 import 'package:iworkr_mobile/features/execution/widgets/job_completion_sheet.dart';
+import 'package:iworkr_mobile/features/payments/screens/terminal_screen.dart';
 import 'package:iworkr_mobile/features/forms/screens/compliance_packet_screen.dart';
 import 'package:iworkr_mobile/features/forms/screens/form_runner_screen.dart';
 import 'package:iworkr_mobile/models/form_template.dart';
+import 'package:iworkr_mobile/models/invoice.dart';
 
 /// Job HUD — immersive "Black Box" job execution interface.
 ///
@@ -35,15 +39,19 @@ class JobHudScreen extends ConsumerStatefulWidget {
   ConsumerState<JobHudScreen> createState() => _JobHudScreenState();
 }
 
+enum _HudPhase { brief, traveling, onSite, working, completed }
+
 class _JobHudScreenState extends ConsumerState<JobHudScreen>
     with TickerProviderStateMixin {
   Timer? _ticker;
   Duration _elapsed = Duration.zero;
   DateTime? _startTime;
   String? _sessionId;
-  bool _engaged = false;
-  bool _completed = false;
+  _HudPhase _phase = _HudPhase.brief;
   bool _hazardActive = false;
+
+  bool get _engaged => _phase == _HudPhase.working;
+  bool get _completed => _phase == _HudPhase.completed;
 
   late AnimationController _pulseBorder;
   late AnimationController _timerGlow;
@@ -73,6 +81,44 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+
+    _resolveInitialPhase();
+  }
+
+  Future<void> _resolveInitialPhase() async {
+    final job = await ref.read(jobDetailProvider(widget.jobId).future);
+    if (job == null || !mounted) return;
+
+    setState(() {
+      switch (job.status) {
+        case JobStatus.enRoute:
+          _phase = _HudPhase.traveling;
+        case JobStatus.onSite:
+          _phase = _HudPhase.onSite;
+        case JobStatus.inProgress:
+          _phase = _HudPhase.working;
+          _resumeActiveTimer();
+        case JobStatus.done:
+        case JobStatus.completed:
+        case JobStatus.invoiced:
+        case JobStatus.archived:
+          _phase = _HudPhase.completed;
+        default:
+          _phase = _HudPhase.brief;
+      }
+    });
+  }
+
+  Future<void> _resumeActiveTimer() async {
+    final session = await ref.read(exec.activeTimerProvider(widget.jobId).future);
+    if (session != null && mounted) {
+      setState(() {
+        _sessionId = session.id;
+        _startTime = session.startedAt;
+        _elapsed = DateTime.now().difference(session.startedAt);
+      });
+      _startTimer();
+    }
   }
 
   @override
@@ -100,9 +146,44 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     _vignetteCtrl.repeat(reverse: true);
   }
 
+  Future<void> _onStartTravel() async {
+    try {
+      await exec.startTravel(jobId: widget.jobId);
+      await logTelemetryEvent(
+        jobId: widget.jobId,
+        eventType: TelemetryEventType.jobStarted,
+        eventData: {'phase': 'travel'},
+      );
+      if (mounted) {
+        setState(() => _phase = _HudPhase.traveling);
+        HapticFeedback.heavyImpact();
+      }
+      ref.invalidate(jobDetailProvider(widget.jobId));
+    } catch (e) {
+      if (mounted) _showError('Failed to start travel.');
+    }
+  }
+
+  Future<void> _onArrived() async {
+    try {
+      await exec.arriveOnSite(jobId: widget.jobId);
+      await logTelemetryEvent(
+        jobId: widget.jobId,
+        eventType: TelemetryEventType.jobStarted,
+        eventData: {'phase': 'arrived'},
+      );
+      if (mounted) {
+        setState(() => _phase = _HudPhase.onSite);
+        HapticFeedback.heavyImpact();
+      }
+      ref.invalidate(jobDetailProvider(widget.jobId));
+    } catch (e) {
+      if (mounted) _showError('Failed to update status.');
+    }
+  }
+
   Future<void> _onEngaged() async {
-    // Optimistic: show engaged state immediately
-    setState(() => _engaged = true);
+    setState(() => _phase = _HudPhase.working);
 
     try {
       await logTelemetryEvent(
@@ -110,7 +191,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
         eventType: TelemetryEventType.jobStarted,
       );
 
-      final session = await startJobTimer(jobId: widget.jobId);
+      final session = await exec.startJobTimer(jobId: widget.jobId);
       if (session != null && mounted) {
         setState(() => _sessionId = session.id);
         _startTimer();
@@ -118,19 +199,22 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
       ref.invalidate(jobDetailProvider(widget.jobId));
     } catch (e) {
-      // Rollback: revert engaged state on failure
       if (mounted) {
-        setState(() => _engaged = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to start job. Check your connection.'),
-          backgroundColor: const Color(0xFFF43F5E),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-          duration: const Duration(seconds: 4),
-        ));
+        setState(() => _phase = _HudPhase.onSite);
+        _showError('Failed to start job. Check your connection.');
       }
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: const Color(0xFFF43F5E),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+      duration: const Duration(seconds: 4),
+    ));
   }
 
   Future<void> _onTaskToggle(Map<String, dynamic> task) async {
@@ -138,10 +222,8 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     final wasCompleted = task['completed'] as bool? ?? false;
     final newCompleted = !wasCompleted;
 
-    // 1. Snapshot for rollback
     final previousSubtasks = List<Map<String, dynamic>>.from(_subtasks.map((t) => Map<String, dynamic>.from(t)));
 
-    // 2. Optimistic update
     setState(() {
       final idx = _subtasks.indexWhere((t) => t['id'] == id);
       if (idx >= 0) {
@@ -150,7 +232,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     });
 
     try {
-      await toggleSubtask(subtaskId: id, completed: newCompleted);
+      await exec.toggleSubtask(subtaskId: id, completed: newCompleted);
 
       await logTelemetryEvent(
         jobId: widget.jobId,
@@ -160,7 +242,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
         eventData: {'task_title': task['title'], 'task_id': id},
       );
     } catch (e) {
-      // 3. Rollback on failure
       if (mounted) {
         setState(() => _subtasks = previousSubtasks);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -177,7 +258,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
   Future<void> _onComplete() async {
     if (_sessionId == null) return;
 
-    // Post-Job Gate: check for closeout forms
     final postForms = await ref.read(stageFormsProvider('post_job').future);
     if (postForms.isNotEmpty && mounted) {
       final postComplete = await ref.read(postJobFormsCompleteProvider(widget.jobId).future);
@@ -193,7 +273,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
       }
     }
 
-    final photoCount = await ref.read(jobMediaCountProvider(widget.jobId).future);
+    final photoCount = await ref.read(exec.jobMediaCountProvider(widget.jobId).future);
 
     if (!mounted) return;
 
@@ -207,11 +287,51 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     );
 
     if (result == true && mounted) {
-      setState(() => _completed = true);
+      setState(() => _phase = _HudPhase.completed);
       _ticker?.cancel();
       _pulseBorder.stop();
       _timerGlow.stop();
       _vignetteCtrl.stop();
+
+      // Check for an outstanding invoice linked to this job
+      try {
+        final invoiceData = await SupabaseService.client
+            .from('invoices')
+            .select()
+            .eq('job_id', widget.jobId)
+            .inFilter('status', ['draft', 'sent', 'overdue', 'partially_paid'])
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+
+        if (invoiceData != null && mounted) {
+          final invoice = Invoice.fromJson(invoiceData);
+          if (invoice.total > 0) {
+            // Push terminal and await result — paid (true) or declined/invoice-link (false)
+            final paid = await Navigator.of(context, rootNavigator: true).push<bool>(
+              PageRouteBuilder(
+                opaque: true,
+                pageBuilder: (_, __, ___) => TerminalScreen(invoice: invoice),
+                transitionsBuilder: (_, animation, __, child) {
+                  return FadeTransition(
+                    opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 400),
+                reverseTransitionDuration: const Duration(milliseconds: 250),
+              ),
+            );
+
+            // Whether paid or pivoted to invoice link, release the tech
+            if (mounted) {
+              await Future.delayed(const Duration(milliseconds: 300));
+              Navigator.of(context).pop(paid ?? false);
+            }
+            return;
+          }
+        }
+      } catch (_) {}
 
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) Navigator.of(context).pop(true);
@@ -249,6 +369,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final jobAsync = ref.watch(jobDetailProvider(widget.jobId));
     final subtasksAsync = ref.watch(jobSubtasksProvider(widget.jobId));
     final telemetryAsync = ref.watch(jobTelemetryProvider(widget.jobId));
@@ -262,7 +383,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     });
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: AnimatedBuilder(
         animation: Listenable.merge([_pulseBorder, _vignetteCtrl]),
         builder: (context, child) {
@@ -281,7 +402,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
             child: Stack(
               children: [
                 child!,
-                // Breathing emerald vignette
                 if (_engaged && !_completed)
                   Positioned.fill(
                     child: IgnorePointer(
@@ -307,13 +427,17 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
         child: SafeArea(
           child: Column(
             children: [
-              _buildHeader(jobAsync),
+              _buildHeader(jobAsync, c),
               Expanded(
-                child: _engaged
-                    ? _buildEngagedContent(telemetryAsync)
-                    : _buildJobBrief(jobAsync, subtasksAsync),
+                child: _phase == _HudPhase.working
+                    ? _buildEngagedContent(telemetryAsync, c)
+                    : _phase == _HudPhase.traveling
+                        ? _buildTravelingView(jobAsync, c)
+                        : _phase == _HudPhase.onSite
+                            ? _buildOnSiteView(jobAsync, subtasksAsync, c)
+                            : _buildJobBrief(jobAsync, subtasksAsync, c),
               ),
-              if (_engaged && !_completed) _buildBottomBar(),
+              if (_engaged && !_completed) _buildBottomBar(c),
             ],
           ),
         ),
@@ -321,7 +445,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
       floatingActionButton: _engaged && !_completed
           ? FloatingActionButton(
               onPressed: () => showEvidenceLocker(context, jobId: widget.jobId),
-              backgroundColor: ObsidianTheme.surface2,
+              backgroundColor: c.surfaceSecondary,
               shape: const CircleBorder(),
               child: const Icon(PhosphorIconsLight.camera, color: ObsidianTheme.emerald, size: 22),
             )
@@ -336,17 +460,19 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
   // ── Header ─────────────────────────────────────────────
   // ═══════════════════════════════════════════════════════════
 
-  Widget _buildHeader(AsyncValue<Job?> jobAsync) {
+  Widget _buildHeader(AsyncValue<Job?> jobAsync, IWorkrColors c) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: BoxDecoration(
-        color: ObsidianTheme.void_,
+        color: c.canvas,
         border: Border(
           bottom: BorderSide(
-            color: _engaged
-                ? (_hazardActive ? ObsidianTheme.amber : ObsidianTheme.emerald)
-                    .withValues(alpha: 0.1)
-                : Colors.white.withValues(alpha: 0.04),
+            color: _phase == _HudPhase.traveling
+                ? ObsidianTheme.amber.withValues(alpha: 0.1)
+                : _engaged
+                    ? (_hazardActive ? ObsidianTheme.amber : ObsidianTheme.emerald)
+                        .withValues(alpha: 0.1)
+                    : c.border,
           ),
         ),
       ),
@@ -357,7 +483,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
@@ -365,7 +491,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
           ),
           const SizedBox(width: 14),
 
-          // Job ID + Client Name
           jobAsync.when(
             data: (job) => Expanded(
               child: Column(
@@ -375,7 +500,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                   Text(
                     job?.displayId ?? '',
                     style: GoogleFonts.jetBrainsMono(
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                       fontSize: 11,
                       letterSpacing: 1,
                     ),
@@ -384,7 +509,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                     Text(
                       job!.clientName!,
                       style: GoogleFonts.inter(
-                        color: ObsidianTheme.textSecondary,
+                        color: c.textSecondary,
                         fontSize: 12,
                       ),
                       maxLines: 1,
@@ -397,7 +522,48 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
             error: (_, __) => const Expanded(child: SizedBox.shrink()),
           ),
 
-          // Timer display (center-right)
+          if (_phase == _HudPhase.traveling)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: ObsidianTheme.amber.withValues(alpha: 0.1),
+                border: Border.all(color: ObsidianTheme.amber.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(PhosphorIconsBold.navigationArrow, size: 12, color: ObsidianTheme.amber),
+                  const SizedBox(width: 6),
+                  Text('EN ROUTE', style: GoogleFonts.jetBrainsMono(
+                    color: ObsidianTheme.amber, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1,
+                  )),
+                ],
+              ),
+            )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .fadeIn(begin: 0.6, duration: 1500.ms),
+
+          if (_phase == _HudPhase.onSite)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFF6D28D9).withValues(alpha: 0.1),
+                border: Border.all(color: const Color(0xFF6D28D9).withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(PhosphorIconsBold.mapPinArea, size: 12, color: Color(0xFF8B5CF6)),
+                  const SizedBox(width: 6),
+                  Text('ON SITE', style: GoogleFonts.jetBrainsMono(
+                    color: const Color(0xFF8B5CF6), fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1,
+                  )),
+                ],
+              ),
+            ).animate().fadeIn(duration: 300.ms),
+
           if (_engaged)
             AnimatedBuilder(
               animation: _timerGlow,
@@ -448,7 +614,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                 .fadeIn(duration: 400.ms)
                 .scale(begin: const Offset(0.9, 0.9), duration: 400.ms, curve: Curves.easeOutBack),
 
-          // REC badge + Hazard toggle
           if (_engaged) ...[
             const SizedBox(width: 8),
             Container(
@@ -479,17 +644,17 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                   borderRadius: BorderRadius.circular(8),
                   color: _hazardActive
                       ? ObsidianTheme.amber.withValues(alpha: 0.15)
-                      : Colors.white.withValues(alpha: 0.04),
+                      : c.border,
                   border: Border.all(
                     color: _hazardActive
                         ? ObsidianTheme.amber.withValues(alpha: 0.3)
-                        : Colors.white.withValues(alpha: 0.08),
+                        : c.borderMedium,
                   ),
                 ),
                 child: Icon(
                   PhosphorIconsBold.warning,
                   size: 14,
-                  color: _hazardActive ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+                  color: _hazardActive ? ObsidianTheme.amber : c.textTertiary,
                 ),
               ),
             ),
@@ -509,6 +674,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
   Widget _buildJobBrief(
     AsyncValue<Job?> jobAsync,
     AsyncValue<List<Map<String, dynamic>>> subtasksAsync,
+    IWorkrColors c,
   ) {
     return jobAsync.when(
       data: (job) {
@@ -516,11 +682,9 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
           children: [
-            // Map snapshot card
             _MapSnapshotCard(job: job),
             const SizedBox(height: 16),
 
-            // Scope card
             _BriefInfoCard(
               icon: PhosphorIconsLight.notepad,
               label: 'SCOPE OF WORK',
@@ -529,7 +693,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
               delay: 100,
             ),
 
-            // Access codes (if in description)
             if (job.description != null && job.description!.toLowerCase().contains('code'))
               _BriefInfoCard(
                 icon: PhosphorIconsLight.key,
@@ -539,7 +702,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                 delay: 150,
               ),
 
-            // Tasks preview
             subtasksAsync.when(
               data: (tasks) {
                 if (tasks.isEmpty) return const SizedBox.shrink();
@@ -548,7 +710,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                   icon: PhosphorIconsLight.listChecks,
                   label: 'TASKS',
                   content: '${tasks.length} tasks queued${critical > 0 ? ' · $critical critical' : ''}',
-                  accentColor: ObsidianTheme.textSecondary,
+                  accentColor: c.textSecondary,
                   delay: 200,
                 );
               },
@@ -556,7 +718,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
               error: (_, __) => const SizedBox.shrink(),
             ),
 
-            // Priority + Estimated time
             Row(
               children: [
                 Expanded(
@@ -564,7 +725,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                     icon: PhosphorIconsLight.flag,
                     label: 'PRIORITY',
                     value: job.priority.name.toUpperCase(),
-                    color: _priorityColor(job.priority),
+                    color: _priorityColor(job.priority, c),
                     delay: 250,
                   ),
                 ),
@@ -576,7 +737,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                     value: job.estimatedDurationMinutes != null
                         ? '${job.estimatedDurationMinutes}m'
                         : '${job.estimatedHours.toStringAsFixed(1)}h',
-                    color: ObsidianTheme.textSecondary,
+                    color: c.textSecondary,
                     delay: 300,
                   ),
                 ),
@@ -585,7 +746,237 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
             const SizedBox(height: 24),
 
-            // Pre-Start compliance gate
+            SlideToEngage(
+              onEngaged: _onStartTravel,
+              label: 'SLIDE TO START TRAVEL',
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ── Traveling View (en_route) ────────────────────────────
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildTravelingView(AsyncValue<Job?> jobAsync, IWorkrColors c) {
+    return jobAsync.when(
+      data: (job) {
+        if (job == null) return const SizedBox.shrink();
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+          children: [
+            _MapSnapshotCard(job: job),
+            const SizedBox(height: 16),
+
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: ObsidianTheme.amber.withValues(alpha: 0.06),
+                border: Border.all(color: ObsidianTheme.amber.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: ObsidianTheme.amber.withValues(alpha: 0.12),
+                    ),
+                    child: const Icon(PhosphorIconsBold.navigationArrow, color: ObsidianTheme.amber, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'EN ROUTE',
+                          style: GoogleFonts.jetBrainsMono(
+                            color: ObsidianTheme.amber,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          job.location ?? 'Heading to job site',
+                          style: GoogleFonts.inter(color: c.textSecondary, fontSize: 13),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+                .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
+                .shimmer(delay: 500.ms, duration: 2000.ms, color: ObsidianTheme.amber.withValues(alpha: 0.05)),
+
+            const SizedBox(height: 16),
+
+            if (job.location != null)
+              _BriefInfoCard(
+                icon: PhosphorIconsLight.mapPin,
+                label: 'DESTINATION',
+                content: job.location!,
+                accentColor: ObsidianTheme.amber,
+                delay: 100,
+              ),
+
+            _BriefInfoCard(
+              icon: PhosphorIconsLight.notepad,
+              label: 'SCOPE OF WORK',
+              content: job.description ?? job.title,
+              accentColor: ObsidianTheme.emerald,
+              delay: 150,
+            ),
+
+            const SizedBox(height: 24),
+
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.heavyImpact();
+                _onArrived();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: ObsidianTheme.amber.withValues(alpha: 0.1),
+                  border: Border.all(color: ObsidianTheme.amber.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(PhosphorIconsBold.mapPinArea, size: 18, color: ObsidianTheme.amber),
+                    const SizedBox(width: 8),
+                    Text(
+                      'I HAVE ARRIVED',
+                      style: GoogleFonts.jetBrainsMono(
+                        color: ObsidianTheme.amber,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+                .animate()
+                .fadeIn(delay: 200.ms, duration: 400.ms)
+                .moveY(begin: 8, delay: 200.ms, duration: 400.ms),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: ObsidianTheme.amber, strokeWidth: 2),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ── On-Site View (Pre-Work Gate) ─────────────────────────
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildOnSiteView(
+    AsyncValue<Job?> jobAsync,
+    AsyncValue<List<Map<String, dynamic>>> subtasksAsync,
+    IWorkrColors c,
+  ) {
+    return jobAsync.when(
+      data: (job) {
+        if (job == null) return const SizedBox.shrink();
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFF0D1117),
+                border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.15)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: ObsidianTheme.emerald.withValues(alpha: 0.1),
+                    ),
+                    child: const Icon(PhosphorIconsBold.mapPinArea, color: ObsidianTheme.emerald, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ON SITE',
+                          style: GoogleFonts.jetBrainsMono(
+                            color: ObsidianTheme.emerald,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Complete pre-start checks before beginning work',
+                          style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+                .animate()
+                .fadeIn(duration: 400.ms)
+                .moveY(begin: 8, duration: 400.ms),
+
+            const SizedBox(height: 16),
+
+            _BriefInfoCard(
+              icon: PhosphorIconsLight.notepad,
+              label: 'SCOPE OF WORK',
+              content: job.description ?? job.title,
+              accentColor: ObsidianTheme.emerald,
+              delay: 100,
+            ),
+
+            subtasksAsync.when(
+              data: (tasks) {
+                if (tasks.isEmpty) return const SizedBox.shrink();
+                final critical = tasks.where((t) => t['is_critical'] == true).length;
+                return _BriefInfoCard(
+                  icon: PhosphorIconsLight.listChecks,
+                  label: 'TASKS',
+                  content: '${tasks.length} tasks queued${critical > 0 ? ' · $critical critical' : ''}',
+                  accentColor: c.textSecondary,
+                  delay: 150,
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+
+            const SizedBox(height: 16),
+
+            // SWMS / Pre-Job Forms Gate
             Consumer(
               builder: (context, ref, _) {
                 final preJobReady = ref.watch(preJobFormsCompleteProvider(widget.jobId));
@@ -596,7 +987,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
                 return Column(
                   children: [
-                    // Compliance gate indicator
                     if (hasPreForms) ...[
                       GestureDetector(
                         onTap: () async {
@@ -649,7 +1039,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      isUnlocked ? 'SAFETY SHIELD CLEARED' : 'PRE-START REQUIRED',
+                                      isUnlocked ? 'SAFETY SHIELD CLEARED' : 'SWMS REQUIRED',
                                       style: GoogleFonts.jetBrainsMono(
                                         color: isUnlocked ? ObsidianTheme.emerald : ObsidianTheme.amber,
                                         fontSize: 11,
@@ -660,10 +1050,10 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                                     const SizedBox(height: 2),
                                     Text(
                                       isUnlocked
-                                          ? 'All forms completed'
-                                          : 'Tap to complete required forms',
+                                          ? 'All safety forms completed'
+                                          : 'Tap to complete mandatory safety check',
                                       style: GoogleFonts.inter(
-                                        color: ObsidianTheme.textTertiary,
+                                        color: c.textTertiary,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -680,15 +1070,14 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                         ),
                       )
                           .animate()
-                          .fadeIn(delay: 350.ms, duration: 400.ms)
-                          .moveY(begin: 8, delay: 350.ms, duration: 400.ms),
+                          .fadeIn(delay: 200.ms, duration: 400.ms)
+                          .moveY(begin: 8, delay: 200.ms, duration: 400.ms),
                     ],
 
-                    // Slide to start (locked when pre-start not complete)
                     SlideToEngage(
                       onEngaged: _onEngaged,
                       enabled: isUnlocked,
-                      label: isUnlocked ? 'SLIDE TO START JOB' : 'COMPLETE PRE-START',
+                      label: isUnlocked ? 'SLIDE TO START WORK' : 'COMPLETE SAFETY CHECK',
                     ),
                   ],
                 );
@@ -717,7 +1106,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     return 'See job description';
   }
 
-  Color _priorityColor(JobPriority p) {
+  Color _priorityColor(JobPriority p, IWorkrColors c) {
     switch (p) {
       case JobPriority.urgent:
         return ObsidianTheme.rose;
@@ -727,7 +1116,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
         return ObsidianTheme.blue;
       case JobPriority.low:
       case JobPriority.none:
-        return ObsidianTheme.textTertiary;
+        return c.textTertiary;
     }
   }
 
@@ -735,15 +1124,14 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
   // ── Engaged Content (Tabs) ─────────────────────────────
   // ═══════════════════════════════════════════════════════════
 
-  Widget _buildEngagedContent(AsyncValue<List<TelemetryEvent>> telemetryAsync) {
+  Widget _buildEngagedContent(AsyncValue<List<TelemetryEvent>> telemetryAsync, IWorkrColors c) {
     return Column(
       children: [
-        // Tabs: Tasks | Activity | Info
         Container(
           margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: Colors.white.withValues(alpha: 0.03),
+            color: c.hoverBg,
           ),
           child: Row(
             children: [
@@ -765,10 +1153,10 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
             child: _tabIndex == 0
                 ? _buildTasksTab()
                 : _tabIndex == 1
-                    ? _buildFormsTab()
+                    ? _buildFormsTab(c)
                     : _tabIndex == 2
-                        ? _buildActivityTab(telemetryAsync)
-                        : _buildInfoTab(),
+                        ? _buildActivityTab(telemetryAsync, c)
+                        : _buildInfoTab(c),
           ),
         ),
       ],
@@ -794,7 +1182,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     );
   }
 
-  Widget _buildFormsTab() {
+  Widget _buildFormsTab(IWorkrColors c) {
     final midFormsAsync = ref.watch(stageFormsProvider('mid_job'));
     final responsesAsync = ref.watch(jobFormResponsesProvider(widget.jobId));
 
@@ -824,14 +1212,14 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                     Icon(
                       PhosphorIconsLight.checks,
                       size: 48,
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'No forms required',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: ObsidianTheme.textMuted,
+                        color: c.textMuted,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -839,7 +1227,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                       'Process forms will appear here when assigned',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: ObsidianTheme.textTertiary,
+                        color: c.textTertiary,
                       ),
                     ),
                   ],
@@ -876,11 +1264,11 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                       borderRadius: BorderRadius.circular(14),
                       color: isComplete
                           ? ObsidianTheme.emeraldDim
-                          : Colors.white.withValues(alpha: 0.02),
+                          : c.hoverBg,
                       border: Border.all(
                         color: isComplete
                             ? ObsidianTheme.emerald.withValues(alpha: 0.2)
-                            : Colors.white.withValues(alpha: 0.06),
+                            : c.border,
                       ),
                     ),
                     child: Row(
@@ -911,9 +1299,9 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: isComplete ? ObsidianTheme.textMuted : Colors.white,
+                                  color: isComplete ? c.textMuted : Colors.white,
                                   decoration: isComplete ? TextDecoration.lineThrough : null,
-                                  decorationColor: ObsidianTheme.textTertiary,
+                                  decorationColor: c.textTertiary,
                                 ),
                               ),
                               const SizedBox(height: 3),
@@ -921,7 +1309,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                                 '${template.totalFields} fields${template.requiresSignature ? ' · Signature' : ''}',
                                 style: GoogleFonts.inter(
                                   fontSize: 11,
-                                  color: ObsidianTheme.textTertiary,
+                                  color: c.textTertiary,
                                 ),
                               ),
                             ],
@@ -932,7 +1320,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                               ? PhosphorIconsBold.check
                               : PhosphorIconsLight.caretRight,
                           size: 16,
-                          color: isComplete ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                          color: isComplete ? ObsidianTheme.emerald : c.textTertiary,
                         ),
                       ],
                     ),
@@ -986,7 +1374,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     controller.dispose();
   }
 
-  Widget _buildActivityTab(AsyncValue<List<TelemetryEvent>> telemetryAsync) {
+  Widget _buildActivityTab(AsyncValue<List<TelemetryEvent>> telemetryAsync, IWorkrColors c) {
     return Column(
       children: [
         Expanded(
@@ -1001,7 +1389,6 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Empty state with animated clock
                       SizedBox(
                         width: 64,
                         height: 64,
@@ -1012,7 +1399,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                       const SizedBox(height: 16),
                       Text(
                         'Activity will appear here',
-                        style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                        style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                       ),
                     ],
                   ),
@@ -1032,12 +1419,11 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
           ),
         ),
 
-        // Note input bar
         Container(
           padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).viewInsets.bottom > 0 ? 8 : 16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.02),
-            border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.04))),
+            color: c.hoverBg,
+            border: Border(top: BorderSide(color: c.border)),
           ),
           child: Row(
             children: [
@@ -1046,8 +1432,8 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: Colors.white.withValues(alpha: 0.04),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    color: c.activeBg,
+                    border: Border.all(color: c.border),
                   ),
                   child: TextField(
                     controller: _noteController,
@@ -1055,7 +1441,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                     style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
                     decoration: InputDecoration(
                       hintText: 'Add a note...',
-                      hintStyle: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                      hintStyle: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       isDense: true,
@@ -1087,7 +1473,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
     );
   }
 
-  Widget _buildInfoTab() {
+  Widget _buildInfoTab(IWorkrColors c) {
     final jobAsync = ref.watch(jobDetailProvider(widget.jobId));
 
     return jobAsync.when(
@@ -1128,12 +1514,12 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
   // ── Bottom Bar ─────────────────────────────────────────
   // ═══════════════════════════════════════════════════════════
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(IWorkrColors c) {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 80, MediaQuery.of(context).padding.bottom + 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.04))),
+        color: c.hoverBg,
+        border: Border(top: BorderSide(color: c.border)),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -1183,15 +1569,15 @@ class _MapSnapshotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Column(
         children: [
-          // Map area with grid
           SizedBox(
             height: 140,
             child: ClipRRect(
@@ -1212,7 +1598,6 @@ class _MapSnapshotCard extends StatelessWidget {
               ),
             ),
           ),
-          // Address bar
           if (job.location != null)
             Padding(
               padding: const EdgeInsets.all(14),
@@ -1235,7 +1620,7 @@ class _MapSnapshotCard extends StatelessWidget {
                         Text(
                           job.location!,
                           style: GoogleFonts.inter(
-                            color: ObsidianTheme.textPrimary,
+                            color: c.textPrimary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -1246,7 +1631,7 @@ class _MapSnapshotCard extends StatelessWidget {
                           Text(
                             '${job.locationLat!.toStringAsFixed(4)}, ${job.locationLng!.toStringAsFixed(4)}',
                             style: GoogleFonts.jetBrainsMono(
-                              color: ObsidianTheme.textTertiary,
+                              color: c.textTertiary,
                               fontSize: 10,
                             ),
                           ),
@@ -1357,13 +1742,14 @@ class _BriefInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1385,7 +1771,7 @@ class _BriefInfoCard extends StatelessWidget {
                 Text(
                   label,
                   style: GoogleFonts.jetBrainsMono(
-                    color: ObsidianTheme.textTertiary,
+                    color: c.textTertiary,
                     fontSize: 9,
                     letterSpacing: 1.5,
                   ),
@@ -1394,7 +1780,7 @@ class _BriefInfoCard extends StatelessWidget {
                 Text(
                   content,
                   style: GoogleFonts.inter(
-                    color: ObsidianTheme.textPrimary,
+                    color: c.textPrimary,
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -1428,13 +1814,14 @@ class _BriefStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Column(
         children: [
@@ -1453,7 +1840,7 @@ class _BriefStatCard extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.jetBrainsMono(
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
               fontSize: 9,
               letterSpacing: 1.5,
             ),
@@ -1478,14 +1865,15 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final progress = total > 0 ? done / total : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1495,7 +1883,7 @@ class _ProgressBar extends StatelessWidget {
               Text(
                 'PROGRESS',
                 style: GoogleFonts.jetBrainsMono(
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                   fontSize: 10,
                   letterSpacing: 1.5,
                 ),
@@ -1504,7 +1892,7 @@ class _ProgressBar extends StatelessWidget {
               Text(
                 '$done / $total',
                 style: GoogleFonts.jetBrainsMono(
-                  color: progress >= 1.0 ? ObsidianTheme.emerald : ObsidianTheme.textSecondary,
+                  color: progress >= 1.0 ? ObsidianTheme.emerald : c.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1518,7 +1906,7 @@ class _ProgressBar extends StatelessWidget {
               height: 4,
               child: Stack(
                 children: [
-                  Container(color: Colors.white.withValues(alpha: 0.06)),
+                  Container(color: c.border),
                   AnimatedFractionallySizedBox(
                     duration: ObsidianTheme.standard,
                     widthFactor: progress,
@@ -1561,6 +1949,7 @@ class _HudTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -1572,13 +1961,13 @@ class _HudTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: isActive ? Colors.white.withValues(alpha: 0.06) : Colors.transparent,
+            color: isActive ? c.border : Colors.transparent,
           ),
           child: Center(
             child: Text(
               label,
               style: GoogleFonts.jetBrainsMono(
-                color: isActive ? Colors.white : ObsidianTheme.textTertiary,
+                color: isActive ? Colors.white : c.textTertiary,
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                 letterSpacing: 1.5,
@@ -1601,7 +1990,7 @@ class _ActivityRow extends StatelessWidget {
 
   const _ActivityRow({required this.event, required this.index});
 
-  Color get _dotColor {
+  Color _dotColor(IWorkrColors c) {
     switch (event.eventType) {
       case TelemetryEventType.jobStarted:
       case TelemetryEventType.jobCompleted:
@@ -1612,7 +2001,7 @@ class _ActivityRow extends StatelessWidget {
       case TelemetryEventType.noteAdded:
         return ObsidianTheme.blue;
       default:
-        return ObsidianTheme.textTertiary;
+        return c.textTertiary;
     }
   }
 
@@ -1637,6 +2026,7 @@ class _ActivityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final time = '${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}';
 
     return Padding(
@@ -1644,16 +2034,15 @@ class _ActivityRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline icon
           Container(
             width: 28,
             height: 28,
             margin: const EdgeInsets.only(top: 2),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: _dotColor.withValues(alpha: 0.1),
+              color: _dotColor(c).withValues(alpha: 0.1),
             ),
-            child: Icon(_icon, size: 13, color: _dotColor),
+            child: Icon(_icon, size: 13, color: _dotColor(c)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1663,7 +2052,7 @@ class _ActivityRow extends StatelessWidget {
                 Text(
                   event.displayText,
                   style: GoogleFonts.inter(
-                    color: ObsidianTheme.textSecondary,
+                    color: c.textSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -1673,30 +2062,30 @@ class _ActivityRow extends StatelessWidget {
                     Text(
                       time,
                       style: GoogleFonts.jetBrainsMono(
-                        color: ObsidianTheme.textTertiary,
+                        color: c.textTertiary,
                         fontSize: 10,
                       ),
                     ),
                     if (event.accuracyLabel.isNotEmpty) ...[
                       _Dot(),
-                      Icon(PhosphorIconsLight.mapPin, size: 9, color: ObsidianTheme.textTertiary),
+                      Icon(PhosphorIconsLight.mapPin, size: 9, color: c.textTertiary),
                       const SizedBox(width: 2),
                       Text(
                         event.accuracyLabel,
                         style: GoogleFonts.jetBrainsMono(
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                           fontSize: 10,
                         ),
                       ),
                     ],
                     if (event.batteryLevel != null) ...[
                       _Dot(),
-                      Icon(PhosphorIconsLight.batteryHigh, size: 9, color: ObsidianTheme.textTertiary),
+                      Icon(PhosphorIconsLight.batteryHigh, size: 9, color: c.textTertiary),
                       const SizedBox(width: 2),
                       Text(
                         '${(event.batteryLevel! * 100).toInt()}%',
                         style: GoogleFonts.jetBrainsMono(
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                           fontSize: 10,
                         ),
                       ),
@@ -1726,13 +2115,14 @@ class _ActivityRow extends StatelessWidget {
 class _Dot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6),
       width: 2,
       height: 2,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: ObsidianTheme.textTertiary.withValues(alpha: 0.5),
+        color: c.textTertiary.withValues(alpha: 0.5),
       ),
     );
   }
@@ -1750,6 +2140,7 @@ class _SubtaskNoteSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final mq = MediaQuery.of(context);
 
     return Container(
@@ -1757,7 +2148,7 @@ class _SubtaskNoteSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xF8080808),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1767,7 +2158,7 @@ class _SubtaskNoteSheet extends StatelessWidget {
             child: Container(
               width: 36, height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: c.borderHover,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1776,7 +2167,7 @@ class _SubtaskNoteSheet extends StatelessWidget {
           Text(
             'NOTE FOR SUBTASK',
             style: GoogleFonts.jetBrainsMono(
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
               fontSize: 9,
               letterSpacing: 1.5,
             ),
@@ -1795,8 +2186,8 @@ class _SubtaskNoteSheet extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: Colors.white.withValues(alpha: 0.04),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              color: c.activeBg,
+              border: Border.all(color: c.borderMedium),
             ),
             child: TextField(
               controller: controller,
@@ -1805,7 +2196,7 @@ class _SubtaskNoteSheet extends StatelessWidget {
               style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Describe the issue or observation...',
-                hintStyle: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 14),
+                hintStyle: GoogleFonts.inter(color: c.textTertiary, fontSize: 14),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -1821,13 +2212,13 @@ class _SubtaskNoteSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      color: Colors.white.withValues(alpha: 0.04),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      color: c.activeBg,
+                      border: Border.all(color: c.border),
                     ),
                     child: Center(
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                        style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                       ),
                     ),
                   ),
@@ -1888,7 +2279,6 @@ class _ClockFacePainter extends CustomPainter {
         ..strokeWidth = 1,
     );
 
-    // Hour marks
     for (int i = 0; i < 12; i++) {
       final angle = i * 3.14159 * 2 / 12 - 3.14159 / 2;
       final inner = r * 0.8;

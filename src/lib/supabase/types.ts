@@ -5806,9 +5806,13 @@ export type Database = {
         | "backlog"
         | "todo"
         | "scheduled"
+        | "en_route"
+        | "on_site"
         | "in_progress"
         | "done"
+        | "completed"
         | "invoiced"
+        | "archived"
         | "cancelled"
       member_status: "active" | "pending" | "suspended" | "archived"
       message_type:
@@ -5842,6 +5846,7 @@ export type Database = {
       schedule_block_status:
         | "scheduled"
         | "en_route"
+        | "on_site"
         | "in_progress"
         | "complete"
         | "cancelled"
@@ -6020,9 +6025,13 @@ export const Constants = {
         "backlog",
         "todo",
         "scheduled",
+        "en_route",
+        "on_site",
         "in_progress",
         "done",
+        "completed",
         "invoiced",
+        "archived",
         "cancelled",
       ],
       member_status: ["active", "pending", "suspended", "archived"],
@@ -6060,6 +6069,7 @@ export const Constants = {
       schedule_block_status: [
         "scheduled",
         "en_route",
+        "on_site",
         "in_progress",
         "complete",
         "cancelled",

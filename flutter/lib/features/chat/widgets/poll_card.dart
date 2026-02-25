@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/chat_poll.dart';
 
@@ -17,13 +18,14 @@ class PollCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusLg,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.borderMedium),
+        color: c.surface,
+        border: Border.all(color: c.borderMedium),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,7 +35,7 @@ class PollCard extends StatelessWidget {
             children: [
               Icon(PhosphorIconsLight.chartBar, size: 14, color: ObsidianTheme.emerald),
               const SizedBox(width: 8),
-              Text('POLL', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+              Text('POLL', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
             ],
           ),
           const SizedBox(height: 10),
@@ -41,7 +43,7 @@ class PollCard extends StatelessWidget {
           // Question
           Text(
             poll.question,
-            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
+            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary),
           ),
           const SizedBox(height: 14),
 
@@ -68,9 +70,9 @@ class PollCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
                         border: Border.all(
-                          color: isMyVote ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.border,
+                          color: isMyVote ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border,
                         ),
-                        color: ObsidianTheme.shimmerBase,
+                        color: c.shimmerBase,
                       ),
                     ),
                     // Fill bar
@@ -114,7 +116,7 @@ class PollCard extends StatelessWidget {
                                 poll.options[i],
                                 style: GoogleFonts.inter(
                                   fontSize: 13,
-                                  color: isMyVote ? Colors.white : ObsidianTheme.textSecondary,
+                                  color: isMyVote ? c.textPrimary : c.textSecondary,
                                   fontWeight: isMyVote ? FontWeight.w500 : FontWeight.normal,
                                 ),
                               ),
@@ -122,7 +124,7 @@ class PollCard extends StatelessWidget {
                             if (poll.myVoteIndex != null || poll.isClosed)
                               Text(
                                 '$count',
-                                style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary),
+                                style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textTertiary),
                               ),
                           ],
                         ),
@@ -138,7 +140,7 @@ class PollCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             '${poll.totalVotes} vote${poll.totalVotes == 1 ? '' : 's'}',
-            style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+            style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
           ),
         ],
       ),

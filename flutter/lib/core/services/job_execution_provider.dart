@@ -22,7 +22,29 @@ final activeTimerProvider =
   return JobTimerSession.fromJson(data);
 });
 
-/// Start a job timer session
+/// Transition: scheduled → en_route (technician starts traveling)
+Future<void> startTravel({required String jobId}) async {
+  await SupabaseService.client
+      .from('jobs')
+      .update({
+        'status': 'en_route',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      })
+      .eq('id', jobId);
+}
+
+/// Transition: en_route → on_site (technician arrived)
+Future<void> arriveOnSite({required String jobId}) async {
+  await SupabaseService.client
+      .from('jobs')
+      .update({
+        'status': 'on_site',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      })
+      .eq('id', jobId);
+}
+
+/// Start a job timer session (on_site → in_progress)
 Future<JobTimerSession?> startJobTimer({
   required String jobId,
   double? lat,
@@ -41,10 +63,12 @@ Future<JobTimerSession?> startJobTimer({
   if (orgRow == null) return null;
   final orgId = orgRow['organization_id'] as String;
 
-  // Update job status to in_progress
   await SupabaseService.client
       .from('jobs')
-      .update({'status': 'in_progress'})
+      .update({
+        'status': 'in_progress',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      })
       .eq('id', jobId);
 
   final row = await SupabaseService.client.from('job_timer_sessions').insert({
@@ -59,7 +83,7 @@ Future<JobTimerSession?> startJobTimer({
   return JobTimerSession.fromJson(row);
 }
 
-/// Complete the job timer session
+/// Complete the job timer session (in_progress → completed)
 Future<void> completeJobTimer({
   required String sessionId,
   required String jobId,
@@ -78,10 +102,12 @@ Future<void> completeJobTimer({
       })
       .eq('id', sessionId);
 
-  // Update job status to done
   await SupabaseService.client
       .from('jobs')
-      .update({'status': 'done'})
+      .update({
+        'status': 'completed',
+        'updated_at': now.toIso8601String(),
+      })
       .eq('id', jobId);
 }
 

@@ -197,6 +197,8 @@ const _routeClaimMap = <String, String>{
   '/admin/users': Claims.adminUsers,
   '/fleet': Claims.fleetView,
   '/overwatch': Claims.dispatchView,
+  '/team': Claims.adminUsers,
+  '/organization': Claims.adminView,
 };
 
 /// Check if a route is allowed for the current user
@@ -320,6 +322,8 @@ void guardedPush(BuildContext context, WidgetRef ref, String path) {
     '/admin': Claims.adminView,
     '/fleet': Claims.fleetView,
     '/overwatch': Claims.dispatchView,
+    '/team': Claims.adminUsers,
+    '/organization': Claims.adminView,
   }.entries) {
     if (path.startsWith(entry.key)) {
       requiredClaim = entry.value;

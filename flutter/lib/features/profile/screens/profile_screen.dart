@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
 import 'package:iworkr_mobile/core/services/timeclock_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
@@ -23,6 +24,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(profileProvider);
     final orgAsync = ref.watch(organizationProvider);
+    final c = context.iColors;
 
     return Scaffold(
       body: SafeArea(
@@ -39,7 +41,7 @@ class ProfileScreen extends ConsumerWidget {
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textPrimary,
+                      color: c.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -53,11 +55,11 @@ class ProfileScreen extends ConsumerWidget {
                     width: 36, height: 36,
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusMd,
-                      border: Border.all(color: ObsidianTheme.border),
-                      color: ObsidianTheme.surface1,
+                      border: Border.all(color: c.border),
+                      color: c.surface,
                     ),
-                    child: const Center(
-                      child: Icon(PhosphorIconsLight.gearSix, size: 18, color: ObsidianTheme.textSecondary),
+                    child: Center(
+                      child: Icon(PhosphorIconsLight.gearSix, size: 18, color: c.textSecondary),
                     ),
                   ),
                 ),
@@ -102,17 +104,17 @@ class ProfileScreen extends ConsumerWidget {
                           children: [
                             Text(
                               profile.displayName,
-                              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary),
+                              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               profile.email,
-                              style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary),
+                              style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textTertiary),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(PhosphorIconsLight.caretRight, size: 16, color: ObsidianTheme.textTertiary),
+                      Icon(PhosphorIconsLight.caretRight, size: 16, color: c.textTertiary),
                     ],
                   ),
                 )
@@ -160,8 +162,8 @@ class ProfileScreen extends ConsumerWidget {
                         width: 36, height: 36,
                         decoration: BoxDecoration(
                           borderRadius: ObsidianTheme.radiusMd,
-                          color: ObsidianTheme.shimmerBase,
-                          border: Border.all(color: ObsidianTheme.border),
+                          color: c.shimmerBase,
+                          border: Border.all(color: c.border),
                         ),
                         child: ClipRRect(
                           borderRadius: ObsidianTheme.radiusMd,
@@ -175,11 +177,11 @@ class ProfileScreen extends ConsumerWidget {
                           children: [
                             Text(
                               orgData?['name'] as String? ?? 'Organization',
-                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textPrimary),
                             ),
                             Text(
                               '${role.label} · ${org['branch'] ?? 'HQ'}',
-                              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                             ),
                           ],
                         ),
@@ -225,7 +227,7 @@ class ProfileScreen extends ConsumerWidget {
             // MY TIME section
             Text(
               'MY TIME',
-              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
             ).animate().fadeIn(delay: 250.ms, duration: 300.ms),
             const SizedBox(height: 10),
 
@@ -260,7 +262,7 @@ class ProfileScreen extends ConsumerWidget {
                     },
                     index: 0,
                   ),
-                  const Divider(height: 1, color: ObsidianTheme.border),
+                  Divider(height: 1, color: c.border),
                   // Weekly Hours
                   Consumer(
                     builder: (_, ref, __) {
@@ -278,7 +280,7 @@ class ProfileScreen extends ConsumerWidget {
                       );
                     },
                   ),
-                  const Divider(height: 1, color: ObsidianTheme.border),
+                  Divider(height: 1, color: c.border),
                   // Leave
                   _QuickAction(
                     icon: PhosphorIconsLight.sunHorizon,
@@ -302,7 +304,7 @@ class ProfileScreen extends ConsumerWidget {
             // Quick Actions
             Text(
               'QUICK ACTIONS',
-              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+              style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
             ).animate().fadeIn(delay: 350.ms, duration: 300.ms),
             const SizedBox(height: 10),
 
@@ -321,7 +323,7 @@ class ProfileScreen extends ConsumerWidget {
                     },
                     index: 3,
                   ),
-                  const Divider(height: 1, color: ObsidianTheme.border),
+                  Divider(height: 1, color: c.border),
                   _QuickAction(
                     icon: PhosphorIconsLight.bellSimple,
                     label: 'Notifications',
@@ -332,7 +334,7 @@ class ProfileScreen extends ConsumerWidget {
                     },
                     index: 4,
                   ),
-                  const Divider(height: 1, color: ObsidianTheme.border),
+                  Divider(height: 1, color: c.border),
                   _QuickAction(
                     icon: PhosphorIconsLight.sliders,
                     label: 'Preferences',
@@ -343,7 +345,7 @@ class ProfileScreen extends ConsumerWidget {
                     },
                     index: 5,
                   ),
-                  const Divider(height: 1, color: ObsidianTheme.border),
+                  Divider(height: 1, color: c.border),
                   _QuickAction(
                     icon: PhosphorIconsLight.arrowsClockwise,
                     label: 'Sync Status',
@@ -359,7 +361,7 @@ class ProfileScreen extends ConsumerWidget {
                     onTap: () => HapticFeedback.lightImpact(),
                     index: 6,
                   ),
-                  const Divider(height: 1, color: ObsidianTheme.border),
+                  Divider(height: 1, color: c.border),
                   _QuickAction(
                     icon: PhosphorIconsLight.question,
                     label: 'Help & Support',
@@ -408,7 +410,7 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   Image.asset('assets/logos/logo-dark-full.png', width: 80, opacity: const AlwaysStoppedAnimation(0.3)),
                   const SizedBox(height: 8),
-                  Text('v3.0.0', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                  Text('v3.0.0', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary)),
                 ],
               ),
             ).animate().fadeIn(delay: 700.ms, duration: 400.ms),
@@ -438,6 +440,7 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -451,13 +454,13 @@ class _QuickAction extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary)),
-                  Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                  Text(label, style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary)),
+                  Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
                 ],
               ),
             ),
             if (trailing != null) trailing!
-            else Icon(PhosphorIconsLight.caretRight, size: 14, color: ObsidianTheme.textTertiary),
+            else Icon(PhosphorIconsLight.caretRight, size: 14, color: c.textTertiary),
           ],
         ),
       ),

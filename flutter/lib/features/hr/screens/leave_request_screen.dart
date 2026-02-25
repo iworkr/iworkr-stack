@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/timeclock_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 
 class LeaveRequestScreen extends ConsumerStatefulWidget {
@@ -20,15 +21,15 @@ class LeaveRequestScreen extends ConsumerStatefulWidget {
 class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final leaveAsync = ref.watch(leaveRequestsProvider);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
@@ -38,10 +39,10 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: ObsidianTheme.hoverBg,
+                        color: c.hoverBg,
                         borderRadius: ObsidianTheme.radiusMd,
                       ),
-                      child: const Icon(PhosphorIconsLight.arrowLeft, color: ObsidianTheme.textSecondary, size: 20),
+                      child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -50,7 +51,7 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
                       'Leave Requests',
                       style: GoogleFonts.inter(
                         fontSize: 20, fontWeight: FontWeight.w600,
-                        color: ObsidianTheme.textPrimary, letterSpacing: -0.3,
+                        color: c.textPrimary, letterSpacing: -0.3,
                       ),
                     ),
                   ),
@@ -84,7 +85,6 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
 
             const SizedBox(height: 20),
 
-            // Leave list
             Expanded(
               child: leaveAsync.when(
                 data: (requests) {
@@ -98,7 +98,7 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
 
                   return RefreshIndicator(
                     color: ObsidianTheme.emerald,
-                    backgroundColor: ObsidianTheme.surface1,
+                    backgroundColor: c.surface,
                     onRefresh: () async => ref.invalidate(leaveRequestsProvider),
                     child: ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
@@ -107,7 +107,7 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
                     ),
                   );
                 },
-                loading: () => const Center(
+                loading: () => Center(
                   child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
                 ),
                 error: (_, __) => const SizedBox.shrink(),
@@ -120,10 +120,11 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
   }
 
   void _showNewLeaveSheet(BuildContext context) {
+    final c = context.iColors;
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
-      backgroundColor: ObsidianTheme.surface1,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -158,6 +159,7 @@ class _LeaveCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final type = request['type'] as String? ?? 'annual';
     final status = request['status'] as String? ?? 'pending';
     final startDate = DateTime.tryParse(request['start_date']?.toString() ?? '');
@@ -206,8 +208,8 @@ class _LeaveCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusLg,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: [
@@ -226,7 +228,7 @@ class _LeaveCard extends StatelessWidget {
               children: [
                 Text(
                   '${type[0].toUpperCase()}${type.substring(1)} Leave',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textPrimary),
                 ),
                 const SizedBox(height: 3),
                 Row(
@@ -236,12 +238,12 @@ class _LeaveCard extends StatelessWidget {
                         startDate == endDate
                             ? DateFormat('d MMM').format(startDate)
                             : '${DateFormat('d MMM').format(startDate)} — ${DateFormat('d MMM').format(endDate!)}',
-                        style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                        style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                       ),
                     const SizedBox(width: 8),
                     Text(
                       '$days ${days == 1 ? "day" : "days"}',
-                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                     ),
                   ],
                 ),
@@ -249,7 +251,7 @@ class _LeaveCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     reason,
-                    style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                    style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -349,6 +351,7 @@ class _NewLeaveFormState extends State<_NewLeaveForm> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 24),
       child: Column(
@@ -360,7 +363,7 @@ class _NewLeaveFormState extends State<_NewLeaveForm> {
               width: 36, height: 4,
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusFull,
-                color: ObsidianTheme.borderMedium,
+                color: c.borderMedium,
               ),
             ),
           ),
@@ -368,14 +371,13 @@ class _NewLeaveFormState extends State<_NewLeaveForm> {
 
           Text(
             'Request Leave',
-            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary),
+            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary),
           ),
           const SizedBox(height: 20),
 
-          // Type selector
           Text(
             'TYPE',
-            style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+            style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
           ),
           const SizedBox(height: 8),
           Row(
@@ -393,20 +395,20 @@ class _NewLeaveFormState extends State<_NewLeaveForm> {
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusMd,
-                      color: isActive ? ObsidianTheme.emeraldDim : ObsidianTheme.hoverBg,
+                      color: isActive ? ObsidianTheme.emeraldDim : c.hoverBg,
                       border: Border.all(
-                        color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.border,
+                        color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border,
                       ),
                     ),
                     child: Column(
                       children: [
-                        Icon(t.$3, size: 16, color: isActive ? ObsidianTheme.emerald : ObsidianTheme.textTertiary),
+                        Icon(t.$3, size: 16, color: isActive ? ObsidianTheme.emerald : c.textTertiary),
                         const SizedBox(height: 4),
                         Text(
                           t.$2,
                           style: GoogleFonts.inter(
                             fontSize: 10, fontWeight: FontWeight.w500,
-                            color: isActive ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                            color: isActive ? ObsidianTheme.emerald : c.textTertiary,
                           ),
                         ),
                       ],
@@ -419,7 +421,6 @@ class _NewLeaveFormState extends State<_NewLeaveForm> {
 
           const SizedBox(height: 20),
 
-          // Dates
           Row(
             children: [
               Expanded(
@@ -429,17 +430,17 @@ class _NewLeaveFormState extends State<_NewLeaveForm> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusMd,
-                      color: ObsidianTheme.hoverBg,
-                      border: Border.all(color: ObsidianTheme.border),
+                      color: c.hoverBg,
+                      border: Border.all(color: c.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('FROM', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+                        Text('FROM', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1)),
                         const SizedBox(height: 4),
                         Text(
                           DateFormat('d MMM yyyy').format(_startDate),
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary),
                         ),
                       ],
                     ),
@@ -454,17 +455,17 @@ class _NewLeaveFormState extends State<_NewLeaveForm> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusMd,
-                      color: ObsidianTheme.hoverBg,
-                      border: Border.all(color: ObsidianTheme.border),
+                      color: c.hoverBg,
+                      border: Border.all(color: c.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('TO', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+                        Text('TO', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1)),
                         const SizedBox(height: 4),
                         Text(
                           DateFormat('d MMM yyyy').format(_endDate),
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary),
                         ),
                       ],
                     ),
@@ -476,19 +477,17 @@ class _NewLeaveFormState extends State<_NewLeaveForm> {
 
           const SizedBox(height: 16),
 
-          // Reason
           TextField(
             controller: _reasonController,
-            style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary),
+            style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
             decoration: InputDecoration(
               hintText: 'Reason (optional)',
-              hintStyle: GoogleFonts.inter(color: ObsidianTheme.textDisabled),
+              hintStyle: GoogleFonts.inter(color: c.textDisabled),
             ),
           ),
 
           const SizedBox(height: 24),
 
-          // Submit
           GestureDetector(
             onTap: _submitting
                 ? null

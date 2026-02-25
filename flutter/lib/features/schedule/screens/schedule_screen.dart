@@ -12,6 +12,7 @@ import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/schedule_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
 import 'package:iworkr_mobile/models/job.dart';
 import 'package:iworkr_mobile/models/schedule_block.dart';
@@ -115,7 +116,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
     HapticFeedback.heavyImpact();
 
-    // 1. Optimistic UI — immediately clear drag state and show placement
     setState(() {
       _isDragging = false;
       _dragJob = null;
@@ -124,7 +124,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     });
 
     try {
-      // 2. Execute the backend mutation — AWAIT it fully
       await dispatchJob(
         jobId: job.id,
         jobTitle: job.title,
@@ -136,8 +135,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         location: job.location,
       );
 
-      // 3. Success — Realtime will push updates automatically, but
-      //    invalidate as a belt-and-suspenders measure.
       ref.invalidate(technicianScheduleProvider);
       ref.invalidate(backlogJobsProvider);
       ref.invalidate(myTodayBlocksProvider);
@@ -145,6 +142,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       if (mounted) {
         final selectedTech = ref.read(selectedTechnicianProvider);
         final isOwnSchedule = selectedTech == null;
+        final c = context.iColors;
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Row(
@@ -161,7 +159,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               ),
             ],
           ),
-          backgroundColor: ObsidianTheme.surface2,
+          backgroundColor: c.surfaceSecondary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
@@ -169,9 +167,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         ));
       }
     } catch (e) {
-      // 4. ROLLBACK — Mutation failed: revert the optimistic update
-      //    Force refetch from the real database state so ghost data
-      //    is impossible. The job will reappear in the backlog.
       ref.invalidate(technicianScheduleProvider);
       ref.invalidate(backlogJobsProvider);
       ref.invalidate(myTodayBlocksProvider);
@@ -202,7 +197,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       return;
     }
 
-    // Clear the incoming animation after the Realtime stream catches up
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) setState(() => _incomingJobId = null);
     });
@@ -210,26 +204,27 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final selectedDate = ref.watch(selectedDateProvider);
     final blocksAsync = ref.watch(technicianScheduleProvider);
     final backlogAsync = ref.watch(backlogJobsProvider);
     final isToday = _isToday(selectedDate);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         bottom: false,
         child: Stack(
           children: [
             Column(
               children: [
-                _buildHeader(selectedDate),
+                _buildHeader(selectedDate, c),
                 const SizedBox(height: 4),
                 const _TeamSwitcher(),
                 const SizedBox(height: 8),
                 Expanded(
                   child: blocksAsync.when(
-                    data: (blocks) => _buildTimeline(blocks, isToday),
+                    data: (blocks) => _buildTimeline(blocks, isToday, c),
                     loading: () => Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -251,7 +246,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               Positioned(
                 right: 16,
                 bottom: MediaQuery.of(context).padding.bottom + 80,
-                child: _buildTodayButton(),
+                child: _buildTodayButton(c),
               ),
 
             Positioned(
@@ -280,7 +275,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     );
   }
 
-  Widget _buildHeader(DateTime selectedDate) {
+  Widget _buildHeader(DateTime selectedDate, IWorkrColors c) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Column(
@@ -293,7 +288,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   'Schedule',
                   style: GoogleFonts.inter(
                     fontSize: 20, fontWeight: FontWeight.w600,
-                    color: ObsidianTheme.textPrimary, letterSpacing: -0.3,
+                    color: c.textPrimary, letterSpacing: -0.3,
                   ),
                 ),
               ),
@@ -357,13 +352,13 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusMd,
-                      color: ObsidianTheme.shimmerBase,
-                      border: Border.all(color: ObsidianTheme.border),
+                      color: c.shimmerBase,
+                      border: Border.all(color: c.border),
                     ),
                     child: Center(
                       child: Text(
                         _isToday(selectedDate) ? 'Today, ${DateFormat('MMM d').format(selectedDate)}' : DateFormat('EEE, MMM d').format(selectedDate),
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary),
                       ),
                     ),
                   ),
@@ -381,8 +376,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     );
   }
 
-  Widget _buildTimeline(List<ScheduleBlock> blocks, bool isToday) {
-    // Group overlapping blocks for conflict visualization
+  Widget _buildTimeline(List<ScheduleBlock> blocks, bool isToday, IWorkrColors c) {
     final columns = _resolveConflicts(blocks);
 
     return DragTarget<Job>(
@@ -401,7 +395,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       builder: (context, candidateData, rejectedData) {
         return RefreshIndicator(
           color: ObsidianTheme.emerald,
-          backgroundColor: ObsidianTheme.surface1,
+          backgroundColor: c.surface,
           onRefresh: () async {
             HapticFeedback.mediumImpact();
             ref.invalidate(technicianScheduleProvider);
@@ -415,19 +409,15 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               height: _totalHours * _hourHeight,
               child: Stack(
                 children: [
-                  ..._buildHourLines(),
-                  // 15-min grid lines (subtle)
+                  ..._buildHourLines(c),
                   if (_isDragging) ..._buildQuarterLines(),
-                  // Job capsules with conflict columns
                   ...columns.entries.expand((entry) {
                     final block = entry.key;
                     final col = entry.value;
-                    return [_buildJobCapsule(block, blocks.indexOf(block), col.$1, col.$2)];
+                    return [_buildJobCapsule(block, blocks.indexOf(block), col.$1, col.$2, c)];
                   }),
-                  // Ghost block during drag
                   if (_isDragging && _dragY != null && _dragJob != null)
                     _buildGhostBlock(_dragY!, _dragJob!),
-                  // Laser line
                   if (isToday && _laserOffset > 0 && _laserOffset < _totalHours * _hourHeight)
                     _buildLaserLine(),
                 ],
@@ -439,7 +429,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     );
   }
 
-  /// Resolve overlapping blocks into columns for side-by-side display.
   Map<ScheduleBlock, (int, int)> _resolveConflicts(List<ScheduleBlock> blocks) {
     final result = <ScheduleBlock, (int, int)>{};
     final sorted = [...blocks]..sort((a, b) => a.startTime.compareTo(b.startTime));
@@ -464,7 +453,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     return result;
   }
 
-  List<Widget> _buildHourLines() {
+  List<Widget> _buildHourLines(IWorkrColors c) {
     return List.generate(_totalHours, (i) {
       final hour = _dayStartHour + i;
       final label = hour == 0 ? '12 AM' : hour < 12 ? '${hour}am' : hour == 12 ? '12pm' : '${hour - 12}pm';
@@ -478,7 +467,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               width: _gutterWidth,
               child: Padding(
                 padding: const EdgeInsets.only(left: 12),
-                child: Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                child: Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary)),
               ),
             ),
             Expanded(child: Container(height: 1, margin: const EdgeInsets.only(top: 6), color: const Color(0x0DFFFFFF))),
@@ -502,7 +491,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     return lines;
   }
 
-  Widget _buildJobCapsule(ScheduleBlock block, int index, int column, int totalColumns) {
+  Widget _buildJobCapsule(ScheduleBlock block, int index, int column, int totalColumns, IWorkrColors c) {
     final now = DateTime.now();
     final isActive = _isToday(ref.read(selectedDateProvider)) &&
         now.isAfter(block.startTime) && now.isBefore(block.endTime);
@@ -521,7 +510,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     switch (block.status) {
       case ScheduleBlockStatus.inProgress: statusColor = ObsidianTheme.emerald;
       case ScheduleBlockStatus.enRoute: statusColor = ObsidianTheme.amber;
-      case ScheduleBlockStatus.complete: statusColor = ObsidianTheme.textTertiary;
+      case ScheduleBlockStatus.onSite: statusColor = const Color(0xFF8B5CF6); // violet
+      case ScheduleBlockStatus.complete: statusColor = c.textTertiary;
       case ScheduleBlockStatus.cancelled: statusColor = ObsidianTheme.rose;
       default: statusColor = ObsidianTheme.blue;
     }
@@ -547,7 +537,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
                 color: const Color(0xCC18181B),
-                border: Border.all(color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.border),
+                border: Border.all(color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border),
                 boxShadow: isActive ? [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.08), blurRadius: 12)] : null,
               ),
               child: Row(
@@ -575,7 +565,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                           const SizedBox(height: 2),
                           Text(
                             '${block.timeRange}  ${block.location ?? ''}',
-                            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary),
+                            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary),
                             maxLines: 1, overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -618,7 +608,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         .moveX(begin: -12, end: 0, delay: Duration(milliseconds: 150 + index * 40), duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1));
   }
 
-  /// Ghost block shown while dragging over the timeline.
   Widget _buildGhostBlock(double y, Job job) {
     final snappedMinutes = ((y / _hourHeight * 60 + 7) ~/ 15) * 15;
     final snappedTop = (snappedMinutes / 60.0) * _hourHeight;
@@ -629,7 +618,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final snappedMin = snappedMinutes % 60;
     final timeLabel = '${snappedHour > 12 ? snappedHour - 12 : snappedHour}:${snappedMin.toString().padLeft(2, '0')} ${snappedHour >= 12 ? 'PM' : 'AM'}';
 
-    // Check for conflicts
     final blocks = ref.read(technicianScheduleProvider).valueOrNull ?? [];
     final ghostStart = snappedMinutes;
     final ghostEnd = ghostStart + durationMinutes;
@@ -743,15 +731,15 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     );
   }
 
-  Widget _buildTodayButton() {
+  Widget _buildTodayButton(IWorkrColors c) {
     return GestureDetector(
       onTap: _scrollToNow,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
-          color: ObsidianTheme.surface2,
-          border: Border.all(color: ObsidianTheme.borderMedium),
+          color: c.surfaceSecondary,
+          border: Border.all(color: c.borderMedium),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 12)],
         ),
         child: Row(
@@ -785,6 +773,7 @@ class _TeamSwitcher extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final teamAsync = ref.watch(dispatchTeamProvider);
     final selectedTech = ref.watch(selectedTechnicianProvider);
     final currentUserId = SupabaseService.auth.currentUser?.id;
@@ -824,7 +813,7 @@ class _TeamSwitcher extends ConsumerWidget {
                     borderRadius: ObsidianTheme.radiusFull,
                     color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.1) : Colors.transparent,
                     border: Border.all(
-                      color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.border,
+                      color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border,
                     ),
                   ),
                   child: Row(
@@ -834,15 +823,15 @@ class _TeamSwitcher extends ConsumerWidget {
                         width: 28, height: 28,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.2) : ObsidianTheme.surface2,
-                          border: Border.all(color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.4) : ObsidianTheme.borderMedium),
+                          color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.2) : c.surfaceSecondary,
+                          border: Border.all(color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.4) : c.borderMedium),
                         ),
                         child: Center(
                           child: Text(
                             initial,
                             style: GoogleFonts.inter(
                               fontSize: 12, fontWeight: FontWeight.w600,
-                              color: isActive ? ObsidianTheme.emerald : ObsidianTheme.textSecondary,
+                              color: isActive ? ObsidianTheme.emerald : c.textSecondary,
                             ),
                           ),
                         ),
@@ -852,7 +841,7 @@ class _TeamSwitcher extends ConsumerWidget {
                         isMe ? 'Me' : firstName,
                         style: GoogleFonts.inter(
                           fontSize: 12, fontWeight: FontWeight.w500,
-                          color: isActive ? ObsidianTheme.emerald : ObsidianTheme.textSecondary,
+                          color: isActive ? ObsidianTheme.emerald : c.textSecondary,
                         ),
                       ),
                     ],
@@ -896,6 +885,7 @@ class _BacklogTrayState extends State<_BacklogTray> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final bottomPad = MediaQuery.of(context).padding.bottom;
     final count = widget.jobs.length;
 
@@ -914,9 +904,9 @@ class _BacklogTrayState extends State<_BacklogTray> {
         curve: Curves.easeOutQuart,
         height: _expanded ? 320 + bottomPad : 52 + bottomPad,
         decoration: BoxDecoration(
-          color: ObsidianTheme.void_.withValues(alpha: 0.95),
+          color: c.canvas.withValues(alpha: 0.95),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          border: const Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+          border: Border(top: BorderSide(color: c.borderMedium)),
         ),
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -936,7 +926,7 @@ class _BacklogTrayState extends State<_BacklogTray> {
                       children: [
                         Icon(PhosphorIconsLight.tray, size: 16, color: ObsidianTheme.amber),
                         const SizedBox(width: 8),
-                        Text('Backlog', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary)),
+                        Text('Backlog', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textSecondary)),
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -947,14 +937,14 @@ class _BacklogTrayState extends State<_BacklogTray> {
                           const SizedBox(width: 8),
                           Text(
                             'DRAG TO SCHEDULE',
-                            style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1),
+                            style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1),
                           ),
                         ],
                         const Spacer(),
                         AnimatedRotation(
                           turns: _expanded ? 0.5 : 0,
                           duration: const Duration(milliseconds: 250),
-                          child: Icon(PhosphorIconsLight.caretUp, size: 16, color: ObsidianTheme.textTertiary),
+                          child: Icon(PhosphorIconsLight.caretUp, size: 16, color: c.textTertiary),
                         ),
                       ],
                     ),
@@ -978,7 +968,7 @@ class _BacklogTrayState extends State<_BacklogTray> {
                                 const SizedBox(height: 10),
                                 Text('Backlog clear', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.emerald)),
                                 const SizedBox(height: 4),
-                                Text('All jobs have been dispatched', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary)),
+                                Text('All jobs have been dispatched', style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
                               ],
                             ),
                           )
@@ -1041,20 +1031,20 @@ class _DraggableBacklogCard extends StatelessWidget {
           scale: 1.05,
           child: SizedBox(
             width: MediaQuery.of(context).size.width - 80,
-            child: _buildCard(isDragging: true),
+            child: _buildCard(context, isDragging: true),
           ),
         ),
       ),
       childWhenDragging: Opacity(
         opacity: 0.3,
-        child: _buildCard(),
+        child: _buildCard(context),
       ),
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
           context.push('/jobs/${job.id}');
         },
-        child: _buildCard(),
+        child: _buildCard(context),
       ),
     )
         .animate()
@@ -1062,12 +1052,13 @@ class _DraggableBacklogCard extends StatelessWidget {
         .moveY(begin: 8, end: 0, delay: Duration(milliseconds: 50 + index * 30), duration: 300.ms, curve: Curves.easeOutQuart);
   }
 
-  Widget _buildCard({bool isDragging = false}) {
+  Widget _buildCard(BuildContext context, {bool isDragging = false}) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: isDragging ? ObsidianTheme.surface2 : ObsidianTheme.surface1,
+        color: isDragging ? c.surfaceSecondary : c.surface,
         border: Border.all(
           color: isDragging ? ObsidianTheme.emerald.withValues(alpha: 0.4) : ObsidianTheme.amber.withValues(alpha: 0.15),
           width: isDragging ? 2 : 1,
@@ -1094,16 +1085,16 @@ class _DraggableBacklogCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    Text(job.displayId, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                    Text(job.displayId, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary)),
                     if (job.clientName != null) ...[
                       const SizedBox(width: 6),
-                      Text(job.clientName!, style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(job.clientName!, style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                     if (job.estimatedDurationMinutes != null) ...[
                       const Spacer(),
-                      Icon(PhosphorIconsLight.clock, size: 10, color: ObsidianTheme.textTertiary),
+                      Icon(PhosphorIconsLight.clock, size: 10, color: c.textTertiary),
                       const SizedBox(width: 3),
-                      Text('${job.estimatedDurationMinutes}m', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary)),
+                      Text('${job.estimatedDurationMinutes}m', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary)),
                     ],
                   ],
                 ),
@@ -1111,7 +1102,7 @@ class _DraggableBacklogCard extends StatelessWidget {
             ),
           ),
           if (!isDragging)
-            Icon(PhosphorIconsLight.dotsSixVertical, size: 16, color: ObsidianTheme.textTertiary),
+            Icon(PhosphorIconsLight.dotsSixVertical, size: 16, color: c.textTertiary),
         ],
       ),
     );
@@ -1126,11 +1117,12 @@ class _JobBriefSheet extends StatelessWidget {
   final ScheduleBlock block;
   const _JobBriefSheet({required this.block});
 
-  Color _statusColor() {
+  Color _statusColor(IWorkrColors c) {
     switch (block.status) {
       case ScheduleBlockStatus.inProgress: return ObsidianTheme.emerald;
       case ScheduleBlockStatus.enRoute: return ObsidianTheme.amber;
-      case ScheduleBlockStatus.complete: return ObsidianTheme.textTertiary;
+      case ScheduleBlockStatus.onSite: return const Color(0xFF8B5CF6); // violet
+      case ScheduleBlockStatus.complete: return c.textTertiary;
       case ScheduleBlockStatus.cancelled: return ObsidianTheme.rose;
       default: return ObsidianTheme.blue;
     }
@@ -1138,6 +1130,7 @@ class _JobBriefSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       child: BackdropFilter(
@@ -1145,25 +1138,25 @@ class _JobBriefSheet extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
           decoration: BoxDecoration(
-            color: ObsidianTheme.void_.withValues(alpha: 0.95),
+            color: c.canvas.withValues(alpha: 0.95),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            border: const Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+            border: Border(top: BorderSide(color: c.borderMedium)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: ObsidianTheme.textTertiary))),
+              Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: c.textTertiary))),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Container(width: 4, height: 20, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: _statusColor())),
+                  Container(width: 4, height: 20, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: _statusColor(c))),
                   const SizedBox(width: 10),
                   Expanded(child: Text(block.title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: -0.2))),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(borderRadius: ObsidianTheme.radiusFull, color: _statusColor().withValues(alpha: 0.1), border: Border.all(color: _statusColor().withValues(alpha: 0.2))),
-                    child: Text(block.status.label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500, color: _statusColor())),
+                    decoration: BoxDecoration(borderRadius: ObsidianTheme.radiusFull, color: _statusColor(c).withValues(alpha: 0.1), border: Border.all(color: _statusColor(c).withValues(alpha: 0.2))),
+                    child: Text(block.status.label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500, color: _statusColor(c))),
                   ),
                 ],
               ),
@@ -1185,8 +1178,8 @@ class _JobBriefSheet extends StatelessWidget {
                       onTap: () { HapticFeedback.mediumImpact(); Navigator.pop(context); if (block.jobId != null) context.push('/jobs/${block.jobId}'); },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(borderRadius: ObsidianTheme.radiusMd, border: Border.all(color: ObsidianTheme.borderMedium)),
-                        child: Center(child: Text('View Dossier', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary))),
+                        decoration: BoxDecoration(borderRadius: ObsidianTheme.radiusMd, border: Border.all(color: c.borderMedium)),
+                        child: Center(child: Text('View Dossier', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textSecondary))),
                       ),
                     ),
                   ),
@@ -1232,17 +1225,18 @@ class _BentoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(borderRadius: ObsidianTheme.radiusMd, color: ObsidianTheme.surface1, border: Border.all(color: ObsidianTheme.border)),
+      decoration: BoxDecoration(borderRadius: ObsidianTheme.radiusMd, color: c.surface, border: Border.all(color: c.border)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(icon, size: 12, color: ObsidianTheme.textTertiary),
+            Icon(icon, size: 12, color: c.textTertiary),
             const SizedBox(width: 6),
-            Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+            Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1)),
           ]),
           const SizedBox(height: 6),
           Text(value, style: isMono ? GoogleFonts.jetBrainsMono(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500) : GoogleFonts.inter(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -1259,12 +1253,13 @@ class _NavArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 36, height: 36,
-        decoration: BoxDecoration(borderRadius: ObsidianTheme.radiusMd, border: Border.all(color: ObsidianTheme.borderMedium), color: ObsidianTheme.surface1),
-        child: Icon(icon, size: 16, color: ObsidianTheme.textSecondary),
+        decoration: BoxDecoration(borderRadius: ObsidianTheme.radiusMd, border: Border.all(color: c.borderMedium), color: c.surface),
+        child: Icon(icon, size: 16, color: c.textSecondary),
       ),
     );
   }

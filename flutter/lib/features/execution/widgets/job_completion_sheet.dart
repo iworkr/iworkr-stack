@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/job_execution_provider.dart';
 import 'package:iworkr_mobile/core/services/telemetry_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/telemetry_event.dart';
 
@@ -143,6 +144,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final mq = MediaQuery.of(context);
 
     return AnimatedBuilder(
@@ -167,7 +169,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
         decoration: BoxDecoration(
           color: const Color(0xF8080808),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          border: Border.all(color: c.border),
         ),
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -179,7 +181,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                 Container(
                   width: 36, height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: c.borderHover,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -248,7 +250,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                         label: 'PHOTOS',
                         value: '${widget.photoCount}',
                         icon: PhosphorIconsLight.camera,
-                        color: ObsidianTheme.textSecondary,
+                        color: c.textSecondary,
                         delay: 2,
                       ),
                     ],
@@ -298,7 +300,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                               const SizedBox(width: 8),
                               Text(
                                 t['title'] as String? ?? '',
-                                style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 12),
+                                style: GoogleFonts.inter(color: c.textSecondary, fontSize: 12),
                               ),
                             ],
                           ),
@@ -325,11 +327,11 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: Colors.white.withValues(alpha: 0.03),
+                          color: c.hoverBg,
                           border: Border.all(
                             color: _hasSigned
-                                ? ObsidianTheme.emerald.withValues(alpha: 0.2)
-                                : Colors.white.withValues(alpha: 0.06),
+                            ? ObsidianTheme.emerald.withValues(alpha: 0.2)
+                            : c.border,
                           ),
                         ),
                         child: Row(
@@ -337,14 +339,14 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                             Icon(
                               _hasSigned ? PhosphorIconsBold.checkCircle : PhosphorIconsLight.signature,
                               size: 16,
-                              color: _hasSigned ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                              color: _hasSigned ? ObsidianTheme.emerald : c.textTertiary,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 _hasSigned ? 'Signature captured' : 'Add signature (optional)',
                                 style: GoogleFonts.inter(
-                                  color: _hasSigned ? ObsidianTheme.emerald : ObsidianTheme.textSecondary,
+                                  color: _hasSigned ? ObsidianTheme.emerald : c.textSecondary,
                                   fontSize: 13,
                                 ),
                               ),
@@ -352,7 +354,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                             Icon(
                               _showSignature ? PhosphorIconsLight.caretUp : PhosphorIconsLight.caretDown,
                               size: 14,
-                              color: ObsidianTheme.textTertiary,
+                              color: c.textTertiary,
                             ),
                           ],
                         ),
@@ -373,8 +375,8 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                             width: double.infinity,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.white.withValues(alpha: 0.04),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                              color: c.activeBg,
+                              border: Border.all(color: c.borderMedium),
                             ),
                             child: GestureDetector(
                               onPanStart: (d) {
@@ -412,7 +414,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                               Text(
                                 'Sign on glass',
                                 style: GoogleFonts.jetBrainsMono(
-                                  color: ObsidianTheme.textTertiary,
+                                  color: c.textTertiary,
                                   fontSize: 9,
                                   letterSpacing: 1,
                                 ),
@@ -428,7 +430,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                                 child: Text(
                                   'Clear',
                                   style: GoogleFonts.inter(
-                                    color: ObsidianTheme.textTertiary,
+                                    color: c.textTertiary,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -540,14 +542,15 @@ class _StatBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Expanded(
       child: Container(
         margin: EdgeInsets.only(left: delay > 0 ? 8 : 0),
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: Colors.white.withValues(alpha: 0.03),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          color: c.hoverBg,
+          border: Border.all(color: c.border),
         ),
         child: Column(
           children: [
@@ -556,7 +559,7 @@ class _StatBlock extends StatelessWidget {
             Text(
               value,
               style: GoogleFonts.jetBrainsMono(
-                color: Colors.white,
+                color: c.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
@@ -565,7 +568,7 @@ class _StatBlock extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.jetBrainsMono(
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
                 fontSize: 9,
                 letterSpacing: 1.5,
               ),

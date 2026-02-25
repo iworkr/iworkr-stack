@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/map_launcher_service.dart';
 import 'package:iworkr_mobile/core/services/route_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/route_run.dart';
 
@@ -19,16 +20,17 @@ class RouteScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final routeAsync = ref.watch(todayRouteProvider);
     final mq = MediaQuery.of(context);
+    final c = context.iColors;
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: routeAsync.when(
           loading: () => const Center(
             child: CircularProgressIndicator(color: ObsidianTheme.blue, strokeWidth: 2),
           ),
           error: (e, _) => Center(
-            child: Text('Error loading route', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary)),
+            child: Text('Error loading route', style: GoogleFonts.inter(color: c.textTertiary)),
           ),
           data: (route) {
             if (route == null) {
@@ -48,6 +50,7 @@ class _EmptyRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       children: [
         _RouteHeader(),
@@ -65,17 +68,17 @@ class _EmptyRoute extends StatelessWidget {
                   ),
                   child: Icon(PhosphorIconsLight.path, color: ObsidianTheme.blue, size: 28),
                 )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
                     .scaleXY(begin: 1.0, end: 1.06, duration: 2500.ms),
                 const SizedBox(height: 20),
                 Text(
                   'No route optimized yet',
-                  style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 15, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(color: c.textSecondary, fontSize: 15, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Tap optimize to plan your day',
-                  style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                  style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                 ),
                 const SizedBox(height: 24),
                 GestureDetector(
@@ -149,6 +152,7 @@ class _RouteBody extends StatelessWidget {
 class _RouteHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
@@ -158,7 +162,7 @@ class _RouteHeader extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
@@ -171,7 +175,7 @@ class _RouteHeader extends StatelessWidget {
               Text(
                 'THE NAVIGATOR',
                 style: GoogleFonts.jetBrainsMono(
-                  color: Colors.white,
+                  color: c.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.5,
@@ -179,7 +183,7 @@ class _RouteHeader extends StatelessWidget {
               ),
               Text(
                 'Optimized Route',
-                style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
               ),
             ],
           ),
@@ -305,7 +309,7 @@ class _StatItem extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.jetBrainsMono(
-            color: ObsidianTheme.textTertiary,
+            color: context.iColors.textTertiary,
             fontSize: 8,
             letterSpacing: 1.5,
           ),
@@ -318,7 +322,7 @@ class _StatItem extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 28, color: Colors.white.withValues(alpha: 0.06));
+    return Container(width: 1, height: 28, color: context.iColors.border);
   }
 }
 
@@ -331,6 +335,7 @@ class _StopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -401,8 +406,8 @@ class _StopCard extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white.withValues(alpha: 0.03),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                color: c.hoverBg,
+                border: Border.all(color: c.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,7 +415,7 @@ class _StopCard extends StatelessWidget {
                   Text(
                     stop.title,
                     style: GoogleFonts.inter(
-                      color: stop.isCompleted ? ObsidianTheme.textTertiary : Colors.white,
+                      color: stop.isCompleted ? c.textTertiary : c.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       decoration: stop.isCompleted ? TextDecoration.lineThrough : null,
@@ -422,16 +427,16 @@ class _StopCard extends StatelessWidget {
                       if (stop.clientName != null) ...[
                         Text(
                           stop.clientName!,
-                          style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                          style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
                         ),
                       ],
                       if (stop.estimatedMinutes != null) ...[
                         if (stop.clientName != null) _Dot(),
-                        Icon(PhosphorIconsLight.timer, size: 10, color: ObsidianTheme.textTertiary),
+                        Icon(PhosphorIconsLight.timer, size: 10, color: c.textTertiary),
                         const SizedBox(width: 3),
                         Text(
                           '~${stop.estimatedMinutes}m',
-                          style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 10),
+                          style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 10),
                         ),
                       ],
                     ],
@@ -440,12 +445,12 @@ class _StopCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(PhosphorIconsLight.mapPin, size: 10, color: ObsidianTheme.textTertiary),
+                        Icon(PhosphorIconsLight.mapPin, size: 10, color: c.textTertiary),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             stop.address!,
-                            style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 11),
+                            style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -519,7 +524,7 @@ class _Dot extends StatelessWidget {
         width: 3, height: 3,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: ObsidianTheme.textTertiary.withValues(alpha: 0.5),
+          color: context.iColors.textTertiary.withValues(alpha: 0.5),
         ),
       ),
     );

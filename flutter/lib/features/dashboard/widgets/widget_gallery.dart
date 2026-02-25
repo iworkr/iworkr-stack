@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/dashboard_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 
 /// Shows the Widget Gallery filtered by the user's clearance.
 Future<DashboardWidgetConfig?> showWidgetGallery(BuildContext context, WidgetRef ref) {
@@ -45,21 +46,22 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
     }
   }
 
-  Color _colorForType(String type) {
+  Color _colorForType(String type, IWorkrColors c) {
     switch (type) {
       case 'revenue': return ObsidianTheme.emerald;
-      case 'next_job': return ObsidianTheme.textSecondary;
-      case 'quick_actions': return ObsidianTheme.textSecondary;
+      case 'next_job': return c.textSecondary;
+      case 'quick_actions': return c.textSecondary;
       case 'team_pulse': return const Color(0xFF8B5CF6);
-      case 'schedule': return ObsidianTheme.textSecondary;
+      case 'schedule': return c.textSecondary;
       case 'route': return ObsidianTheme.emerald;
-      case 'stats': return ObsidianTheme.textSecondary;
-      default: return ObsidianTheme.textSecondary;
+      case 'stats': return c.textSecondary;
+      default: return c.textSecondary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final mq = MediaQuery.of(context);
 
     return ClipRRect(
@@ -69,21 +71,19 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
         child: Container(
           height: mq.size.height * 0.7,
           decoration: BoxDecoration(
-            color: ObsidianTheme.surface1.withValues(alpha: 0.95),
+            color: c.surface.withValues(alpha: 0.95),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: ObsidianTheme.border),
+            border: Border.all(color: c.border),
           ),
           child: Column(
             children: [
-              // Handle bar
               Center(
                 child: Container(
                   margin: const EdgeInsets.only(top: 12),
                   width: 36, height: 4,
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: ObsidianTheme.borderMedium),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: c.borderMedium),
                 ),
               ),
-              // Title
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                 child: Row(
@@ -91,7 +91,7 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                     Text(
                       'WIDGET GALLERY',
                       style: GoogleFonts.jetBrainsMono(
-                        color: Colors.white,
+                        color: c.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.5,
@@ -100,14 +100,13 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                     const Spacer(),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Icon(PhosphorIconsLight.x, color: ObsidianTheme.textTertiary, size: 20),
+                      child: Icon(PhosphorIconsLight.x, color: c.textTertiary, size: 20),
                     ),
                   ],
                 ),
               ),
-              Container(height: 1, color: ObsidianTheme.border),
+              Container(height: 1, color: c.border),
 
-              // Widget list
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
@@ -115,7 +114,7 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                   itemBuilder: (context, i) {
                     final info = widget.catalog[i];
                     final isSelected = _selectedType == info.type;
-                    final color = _colorForType(info.type);
+                    final color = _colorForType(info.type, c);
 
                     return GestureDetector(
                       onTap: () {
@@ -131,8 +130,8 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
-                          color: isSelected ? color.withValues(alpha: 0.06) : ObsidianTheme.hoverBg,
-                          border: Border.all(color: isSelected ? color.withValues(alpha: 0.2) : ObsidianTheme.border),
+                          color: isSelected ? color.withValues(alpha: 0.06) : c.hoverBg,
+                          border: Border.all(color: isSelected ? color.withValues(alpha: 0.2) : c.border),
                         ),
                         child: Column(
                           children: [
@@ -151,8 +150,8 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(info.label, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-                                      Text(info.description, style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                                      Text(info.label, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: c.textPrimary)),
+                                      Text(info.description, style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
                                     ],
                                   ),
                                 ),
@@ -160,7 +159,6 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                               ],
                             ),
 
-                            // Size selector (expanded)
                             if (isSelected) ...[
                               const SizedBox(height: 12),
                               Row(
@@ -177,15 +175,15 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                                         padding: const EdgeInsets.symmetric(vertical: 8),
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(8),
-                                          color: active ? color.withValues(alpha: 0.15) : ObsidianTheme.surface2,
-                                          border: Border.all(color: active ? color.withValues(alpha: 0.3) : ObsidianTheme.border),
+                                          color: active ? color.withValues(alpha: 0.15) : c.surfaceSecondary,
+                                          border: Border.all(color: active ? color.withValues(alpha: 0.3) : c.border),
                                         ),
                                         child: Center(
                                           child: Text(
                                             s.name.toUpperCase(),
                                             style: GoogleFonts.jetBrainsMono(
                                               fontSize: 10,
-                                              color: active ? color : ObsidianTheme.textTertiary,
+                                              color: active ? color : c.textTertiary,
                                               fontWeight: FontWeight.w600,
                                               letterSpacing: 1,
                                             ),
@@ -208,7 +206,6 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                 ),
               ),
 
-              // Add button
               if (_selectedType != null)
                 Padding(
                   padding: EdgeInsets.fromLTRB(16, 0, 16, mq.padding.bottom + 16),
@@ -231,8 +228,8 @@ class _WidgetGallerySheetState extends State<_WidgetGallerySheet> {
                         borderRadius: BorderRadius.circular(12),
                         gradient: LinearGradient(
                           colors: [
-                            _colorForType(_selectedType!),
-                            _colorForType(_selectedType!).withValues(alpha: 0.85),
+                            _colorForType(_selectedType!, c),
+                            _colorForType(_selectedType!, c).withValues(alpha: 0.85),
                           ],
                         ),
                       ),

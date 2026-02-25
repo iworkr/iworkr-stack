@@ -25,6 +25,12 @@ import {
   Download,
   Eye,
   Calendar,
+  Zap,
+  ExternalLink,
+  CheckCircle,
+  Loader2,
+  Wallet,
+  Shield,
 } from "lucide-react";
 import { type Invoice, type Payout } from "@/lib/data";
 import { useFinanceStore, type FinanceTab } from "@/lib/finance-store";
@@ -49,6 +55,7 @@ const tabs: { id: FinanceTab; label: string }[] = [
   { id: "invoices", label: "Invoices" },
   { id: "quotes", label: "Quotes" },
   { id: "payouts", label: "Payouts" },
+  { id: "payments", label: "iWorkr Pay" },
 ];
 
 const contextItems: ContextMenuItem[] = [
@@ -1062,6 +1069,19 @@ export default function FinancePage() {
               </div>
             </motion.div>
           )}
+          {/* ══════════════ iWORKR PAY TAB ═══════════════════ */}
+          {activeTab === "payments" && (
+            <motion.div
+              key="payments"
+              custom={tabDir}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+            >
+              <ConnectPaymentsTab />
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -1073,6 +1093,260 @@ export default function FinancePage() {
         onSelect={handleContextAction}
         onClose={() => setCtxMenu((p) => ({ ...p, open: false }))}
       />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+ * ── iWorkr Pay (Stripe Connect) Tab ──────────────────────
+ * ═══════════════════════════════════════════════════════════ */
+
+function ConnectPaymentsTab() {
+  const org = useOrg();
+  const toast = useToastStore();
+  const [loading, setLoading] = useState(true);
+  const [connectStatus, setConnectStatus] = useState<{
+    stripe_account_id: string | null;
+    charges_enabled: boolean;
+    payouts_enabled: boolean;
+    connect_onboarded_at: string | null;
+  }>({ stripe_account_id: null, charges_enabled: false, payouts_enabled: false, connect_onboarded_at: null });
+  const [actionLoading, setActionLoading] = useState(false);
+  const [recentPayments, setRecentPayments] = useState<{
+    id: string;
+    amount_cents: number;
+    currency: string;
+    status: string;
+    payment_method: string;
+    client_name: string;
+    created_at: string;
+  }[]>([]);
+
+  useEffect(() => {
+    loadConnectStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [org?.id]);
+
+  async function loadConnectStatus() {
+    if (!org?.id) return;
+    setLoading(true);
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("organizations")
+        .select("settings")
+        .eq("id", org.id)
+        .single();
+      if (data) {
+        const s = (data.settings as Record<string, unknown>) ?? {};
+        setConnectStatus({
+          stripe_account_id: (s.stripe_account_id as string) || null,
+          charges_enabled: (s.charges_enabled as boolean) || false,
+          payouts_enabled: (s.payouts_enabled as boolean) || false,
+          connect_onboarded_at: (s.connect_onboarded_at as string) || null,
+        });
+
+        if (s.charges_enabled) {
+          const { data: payments } = await supabase
+            .from("payments")
+            .select("id, amount_cents, currency, status, payment_method, client_name, created_at")
+            .eq("organization_id", org.id)
+            .order("created_at", { ascending: false })
+            .limit(20);
+          if (payments) setRecentPayments(payments);
+        }
+      }
+    } catch { /* silent */ }
+    setLoading(false);
+  }
+
+  async function handleSetupConnect() {
+    if (!org?.id) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/stripe/connect/onboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: org.id }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else toast.addToast("error", "Failed to start setup");
+    } catch {
+      toast.addToast("error", "Something went wrong");
+    }
+    setActionLoading(false);
+  }
+
+  async function handleOpenDashboard() {
+    if (!org?.id) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/stripe/connect/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: org.id }),
+      });
+      const data = await res.json();
+      if (data.url) window.open(data.url, "_blank");
+      else toast.addToast("error", "Failed to open dashboard");
+    } catch {
+      toast.addToast("error", "Something went wrong");
+    }
+    setActionLoading(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="w-6 h-6 text-zinc-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!connectStatus.charges_enabled) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6">
+        <div className="relative mb-8">
+          <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full" />
+          <div className="relative w-20 h-20 rounded-2xl bg-zinc-950 border border-white/10 flex items-center justify-center">
+            <Zap className="w-9 h-9 text-emerald-400" />
+          </div>
+        </div>
+
+        <h2 className="text-xl font-bold text-white tracking-tight mb-2">Get paid 3× faster with iWorkr Pay</h2>
+        <p className="text-[13px] text-zinc-500 text-center max-w-md mb-2 leading-relaxed">
+          Accept credit cards, Apple Pay, and Google Pay directly from your invoices and in the field via Tap-to-Pay.
+          Funds land in your bank account in 2 business days.
+        </p>
+        <p className="text-[11px] text-zinc-700 text-center max-w-sm mb-8">
+          Standard processing fees apply (2.9% + 30¢). iWorkr charges a 1% platform fee.
+        </p>
+
+        <div className="grid grid-cols-3 gap-3 max-w-md w-full mb-10">
+          {[
+            { icon: <CreditCard size={16} />, label: "Web Invoices", sub: "Clients pay via link" },
+            { icon: <Wallet size={16} />, label: "Tap-to-Pay", sub: "NFC field payments" },
+            { icon: <Shield size={16} />, label: "PCI Compliant", sub: "Stripe handles cards" },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl bg-zinc-950 border border-white/5 p-4 text-center">
+              <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center mx-auto mb-2 text-zinc-400">
+                {item.icon}
+              </div>
+              <div className="text-[11px] font-medium text-zinc-300">{item.label}</div>
+              <div className="text-[10px] text-zinc-600 mt-0.5">{item.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={handleSetupConnect}
+          disabled={actionLoading}
+          className="px-8 py-3 bg-white text-black font-semibold text-sm rounded-xl hover:bg-zinc-200 transition-colors disabled:opacity-30 flex items-center gap-2"
+        >
+          {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+          Setup Payments
+        </button>
+
+        {connectStatus.stripe_account_id && !connectStatus.charges_enabled && (
+          <p className="text-[11px] text-amber-400 mt-4">
+            Onboarding in progress — complete your verification to start accepting payments.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const totalCollected = recentPayments
+    .filter((p) => p.status === "succeeded")
+    .reduce((sum, p) => sum + p.amount_cents, 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between rounded-xl bg-emerald-500/5 border border-emerald-500/10 px-5 py-3">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[13px] text-emerald-400 font-medium">iWorkr Pay Active</span>
+          {connectStatus.connect_onboarded_at && (
+            <span className="text-[10px] text-zinc-600">
+              Since {new Date(connectStatus.connect_onboarded_at).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleOpenDashboard}
+          disabled={actionLoading}
+          className="flex items-center gap-1.5 text-[12px] text-zinc-400 hover:text-white transition-colors"
+        >
+          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <ExternalLink size={12} />}
+          Stripe Dashboard
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl bg-zinc-950 border border-white/5 p-4">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Collected</div>
+          <div className="font-mono text-xl font-bold text-white">
+            ${(totalCollected / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+        <div className="rounded-xl bg-zinc-950 border border-white/5 p-4">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Transactions</div>
+          <div className="font-mono text-xl font-bold text-white">
+            {recentPayments.filter((p) => p.status === "succeeded").length}
+          </div>
+        </div>
+        <div className="rounded-xl bg-zinc-950 border border-white/5 p-4">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Payouts</div>
+          <div className="flex items-center gap-1.5">
+            <div className={`w-1.5 h-1.5 rounded-full ${connectStatus.payouts_enabled ? "bg-emerald-400" : "bg-amber-400"}`} />
+            <span className="text-sm text-zinc-300">{connectStatus.payouts_enabled ? "Enabled" : "Pending"}</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">Recent Transactions</h3>
+        </div>
+        <div className="rounded-xl bg-zinc-950 border border-white/5 overflow-hidden divide-y divide-white/[0.03]">
+          {recentPayments.length === 0 && (
+            <div className="px-5 py-10 text-center">
+              <p className="text-sm text-zinc-600">No transactions yet</p>
+              <p className="text-[11px] text-zinc-700 mt-1">Payments will appear here as clients pay your invoices.</p>
+            </div>
+          )}
+          {recentPayments.map((payment) => {
+            const statusColor = payment.status === "succeeded"
+              ? "text-emerald-400 bg-emerald-500/10"
+              : payment.status === "failed"
+                ? "text-rose-400 bg-rose-500/10"
+                : "text-zinc-400 bg-zinc-500/10";
+            return (
+              <div key={payment.id} className="flex items-center gap-4 px-5 py-3">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                  {payment.payment_method === "tap_to_pay" ? (
+                    <CreditCard size={14} className="text-zinc-400" />
+                  ) : (
+                    <FileText size={14} className="text-zinc-400" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium text-zinc-300 truncate">{payment.client_name || "—"}</div>
+                  <div className="text-[11px] text-zinc-600">{new Date(payment.created_at).toLocaleDateString()}</div>
+                </div>
+                <span className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${statusColor}`}>
+                  {payment.status}
+                </span>
+                <span className="font-mono text-[14px] font-semibold text-white">
+                  ${(payment.amount_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

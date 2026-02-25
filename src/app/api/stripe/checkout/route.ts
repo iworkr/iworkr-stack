@@ -36,13 +36,14 @@ export async function POST(req: NextRequest) {
 
   const { data: org } = await (supabase as any)
     .from("organizations")
-    .select("id, name, stripe_customer_id")
+    .select("id, name, settings")
     .eq("id", orgId)
     .single();
 
   if (!org) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
-  let customerId = org.stripe_customer_id as string | null;
+  const settings = (org.settings as Record<string, unknown>) ?? {};
+  let customerId = (settings.stripe_customer_id as string) || null;
 
   if (!customerId) {
     const customer = await stripe.customers.create({
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
 
     await (supabase as any)
       .from("organizations")
-      .update({ stripe_customer_id: customerId })
+      .update({ settings: { ...settings, stripe_customer_id: customerId } })
       .eq("id", orgId);
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/models/invoice.dart';
@@ -46,13 +47,13 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     _invoice = widget.invoice;
   }
 
-  Color get _statusColor {
+  Color _statusColor(IWorkrColors c) {
     switch (_invoice.status) {
       case 'paid': return ObsidianTheme.emerald;
       case 'overdue': return ObsidianTheme.rose;
       case 'sent': return ObsidianTheme.blue;
-      case 'draft': return ObsidianTheme.textTertiary;
-      default: return ObsidianTheme.textTertiary;
+      case 'draft': return c.textTertiary;
+      default: return c.textTertiary;
     }
   }
 
@@ -60,10 +61,12 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+    final sc = _statusColor(c);
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         bottom: false,
         child: Stack(
@@ -81,10 +84,10 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                           width: 36, height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: ObsidianTheme.hoverBg,
-                            border: Border.all(color: ObsidianTheme.border),
+                            color: c.hoverBg,
+                            border: Border.all(color: c.border),
                           ),
-                          child: const Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: ObsidianTheme.textSecondary)),
+                          child: Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: c.textSecondary)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -94,31 +97,30 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                           children: [
                             Text(
                               _invoice.displayId ?? 'Invoice',
-                              style: GoogleFonts.jetBrainsMono(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                              style: GoogleFonts.jetBrainsMono(fontSize: 14, fontWeight: FontWeight.w600, color: c.textPrimary),
                             ),
                             Text(
                               _invoice.clientName ?? 'No Client',
-                              style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary),
+                              style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
                             ),
                           ],
                         ),
                       ),
-                      // Status badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           borderRadius: ObsidianTheme.radiusFull,
-                          color: _statusColor.withValues(alpha: 0.1),
-                          border: Border.all(color: _statusColor.withValues(alpha: 0.25)),
+                          color: sc.withValues(alpha: 0.1),
+                          border: Border.all(color: sc.withValues(alpha: 0.25)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(width: 5, height: 5, decoration: BoxDecoration(shape: BoxShape.circle, color: _statusColor)),
+                            Container(width: 5, height: 5, decoration: BoxDecoration(shape: BoxShape.circle, color: sc)),
                             const SizedBox(width: 6),
                             Text(
                               _statusLabel,
-                              style: GoogleFonts.jetBrainsMono(fontSize: 9, fontWeight: FontWeight.w600, color: _statusColor, letterSpacing: 1),
+                              style: GoogleFonts.jetBrainsMono(fontSize: 9, fontWeight: FontWeight.w600, color: sc, letterSpacing: 1),
                             ),
                           ],
                         ),
@@ -138,7 +140,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                           children: [
                             Text(
                               _formatCurrency(_invoice.total),
-                              style: GoogleFonts.inter(fontSize: 48, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -2),
+                              style: GoogleFonts.inter(fontSize: 48, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -2),
                             ),
                             if (_invoice.isPaid)
                               Container(
@@ -189,7 +191,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                           children: [
                             _DetailRow(label: 'Subtotal', value: _formatCurrency(_invoice.subtotal)),
                             _DetailRow(label: 'Tax (${_invoice.taxRate.toStringAsFixed(0)}%)', value: _formatCurrency(_invoice.tax)),
-                            const Divider(color: ObsidianTheme.border, height: 20),
+                            Divider(color: c.border, height: 20),
                             _DetailRow(label: 'Total', value: _formatCurrency(_invoice.total), bold: true),
                           ],
                         ),
@@ -203,11 +205,11 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('NOTES', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                              Text('NOTES', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
                               const SizedBox(height: 8),
                               Text(
                                 _invoice.notes!,
-                                style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textSecondary, height: 1.5),
+                                style: GoogleFonts.inter(fontSize: 13, color: c.textSecondary, height: 1.5),
                               ),
                             ],
                           ),
@@ -269,17 +271,18 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary)),
+          Text(label, style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
           Text(
             value,
             style: bold
-                ? GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)
-                : GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textPrimary),
+                ? GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: c.textPrimary)
+                : GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
           ),
         ],
       ),

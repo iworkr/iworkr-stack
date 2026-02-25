@@ -28,7 +28,7 @@ export const useBillingStore = create<BillingState>((set) => ({
     const supabase = createClient();
 
     try {
-      const [{ data: sub }, { count }, { data: org }] = await Promise.all([
+      const [{ data: sub }, { count }] = await Promise.all([
         (supabase as any)
           .from("subscriptions")
           .select("*")
@@ -42,14 +42,9 @@ export const useBillingStore = create<BillingState>((set) => ({
           .select("*", { count: "exact", head: true })
           .eq("organization_id", orgId)
           .eq("status", "active"),
-        (supabase as any)
-          .from("organizations")
-          .select("plan_tier")
-          .eq("id", orgId)
-          .single(),
       ]);
 
-      const tier = (org?.plan_tier as string) || sub?.plan_key || "free";
+      const tier = sub?.plan_key || "free";
       const plan = getPlanByKey(tier);
 
       set({

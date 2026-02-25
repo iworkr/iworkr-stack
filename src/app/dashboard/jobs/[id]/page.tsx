@@ -49,10 +49,16 @@ import { JobChat } from "@/components/messenger/job-chat";
 /* ── Constants ────────────────────────────────────────────── */
 
 const statusOptions: { value: JobStatus; label: string }[] = [
-  { value: "backlog", label: "Backlog" },
-  { value: "todo", label: "Todo" },
+  { value: "backlog", label: "Draft" },
+  { value: "todo", label: "To Do" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "en_route", label: "En Route" },
+  { value: "on_site", label: "On Site" },
   { value: "in_progress", label: "In Progress" },
   { value: "done", label: "Done" },
+  { value: "completed", label: "Completed" },
+  { value: "invoiced", label: "Invoiced" },
+  { value: "archived", label: "Archived" },
   { value: "cancelled", label: "Cancelled" },
 ];
 

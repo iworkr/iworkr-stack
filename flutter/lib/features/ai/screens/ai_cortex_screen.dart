@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/ai_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Shows the AI Cortex as a translucent overlay sheet.
@@ -97,13 +98,14 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final mq = MediaQuery.of(context);
     final height = mq.size.height * 0.85;
 
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xF0090912),
+        color: c.canvas.withValues(alpha: 0.94),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: ObsidianTheme.indigo.withValues(alpha: 0.15)),
       ),
@@ -119,6 +121,8 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
       decoration: BoxDecoration(
@@ -133,7 +137,7 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: c.borderHover,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -170,7 +174,7 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
                   Text(
                     'AI Field Agent',
                     style: GoogleFonts.inter(
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                       fontSize: 11,
                     ),
                   ),
@@ -204,6 +208,8 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
   }
 
   Widget _buildHeroOrb() {
+    final c = context.iColors;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 32),
       child: Column(
@@ -315,7 +321,7 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
           Text(
             'How can I help?',
             style: GoogleFonts.inter(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: c.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -324,7 +330,7 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
           Text(
             'Ask about site history, access codes, or\nlet me help draft notes and quotes.',
             style: GoogleFonts.inter(
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
               fontSize: 13,
               height: 1.5,
             ),
@@ -426,12 +432,14 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
   }
 
   Widget _buildInputBar(MediaQueryData mq) {
+    final c = context.iColors;
+
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, mq.viewInsets.bottom > 0 ? 12 : mq.padding.bottom + 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          top: BorderSide(color: c.border),
         ),
       ),
       child: Row(
@@ -455,10 +463,10 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
           Expanded(
             child: TextField(
               controller: _controller,
-              style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+              style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Ask the Cortex...',
-                hintStyle: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 14),
+                hintStyle: GoogleFonts.inter(color: c.textTertiary, fontSize: 14),
                 filled: true,
                 fillColor: Colors.transparent,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
@@ -498,6 +506,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final isUser = message.role == 'user';
 
     return Padding(
@@ -529,7 +538,7 @@ class _MessageBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isUser
                     ? ObsidianTheme.indigo.withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.05),
+                    : c.border,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(isUser ? 16 : 4),
                   topRight: Radius.circular(isUser ? 4 : 16),
@@ -539,14 +548,14 @@ class _MessageBubble extends StatelessWidget {
                 border: Border.all(
                   color: isUser
                       ? ObsidianTheme.indigo.withValues(alpha: 0.2)
-                      : Colors.white.withValues(alpha: 0.06),
+                      : c.border,
                 ),
               ),
               child: Text(
                 message.content,
                 style: isUser
-                    ? GoogleFonts.inter(color: Colors.white, fontSize: 14, height: 1.45)
-                    : GoogleFonts.jetBrainsMono(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, height: 1.5),
+                    ? GoogleFonts.inter(color: c.textPrimary, fontSize: 14, height: 1.45)
+                    : GoogleFonts.jetBrainsMono(color: c.textPrimary, fontSize: 13, height: 1.5),
               ),
             ),
           ),

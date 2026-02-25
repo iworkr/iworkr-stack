@@ -10,7 +10,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <application
         android:label="iWorkr"
         android:name="${applicationName}"
@@ -55,7 +59,7 @@
                       android:pathPrefix="/auth/v1/callback"/>
             </intent-filter>
 
-            <!-- App Link: Custom Domain -->
+            <!-- App Link: Custom Domain (Auth) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -63,6 +67,26 @@
                 <data android:scheme="https"
                       android:host="app.iworkr.com"
                       android:pathPrefix="/auth/callback"/>
+            </intent-filter>
+
+            <!-- App Link: Invite Deep Link -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"
+                      android:host="app.iworkr.com"
+                      android:pathPrefix="/accept-invite"/>
+            </intent-filter>
+
+            <!-- App Link: Workspace Deep Links (/w/:workspaceId/...) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"
+                      android:host="app.iworkr.com"
+                      android:pathPattern="/w/.*"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Command Composer — glass input bar with action toggles.
@@ -106,6 +107,7 @@ class CommandComposerState extends State<CommandComposer> {
 
   void _showTemplateMenu() {
     HapticFeedback.selectionClick();
+    final c = context.iColors;
 
     final templates = <(String, String, IconData, Color)>[
       ('/omw', "I'm on my way! ETA ~15 mins. 🚗", PhosphorIconsLight.navigationArrow, ObsidianTheme.blue),
@@ -120,16 +122,16 @@ class CommandComposerState extends State<CommandComposer> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: ObsidianTheme.surface1,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
+              Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: c.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -137,7 +139,7 @@ class CommandComposerState extends State<CommandComposer> {
                   children: [
                     const Icon(PhosphorIconsLight.lightning, size: 16, color: ObsidianTheme.emerald),
                     const SizedBox(width: 8),
-                    Text('Quick Templates', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                    Text('Quick Templates', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary)),
                   ],
                 ),
               ),
@@ -170,21 +172,22 @@ class CommandComposerState extends State<CommandComposer> {
 
   void _showAttachMenu() {
     HapticFeedback.selectionClick();
+    final c = context.iColors;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: ObsidianTheme.surface1,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
+              Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: c.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 12),
               _AttachOption(
                 icon: PhosphorIconsLight.chartBar,
@@ -248,6 +251,7 @@ class CommandComposerState extends State<CommandComposer> {
 
   void _showPollCreator() {
     HapticFeedback.lightImpact();
+    final c = context.iColors;
     final questionCtrl = TextEditingController();
     final optionCtrls = [TextEditingController(), TextEditingController()];
 
@@ -259,36 +263,36 @@ class CommandComposerState extends State<CommandComposer> {
         builder: (ctx, setSheetState) {
           return Container(
             height: MediaQuery.of(ctx).size.height * 0.7,
-            decoration: const BoxDecoration(
-              color: ObsidianTheme.surface1,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Padding(
               padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
+                  Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: c.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       const Icon(PhosphorIconsLight.chartBar, size: 18, color: ObsidianTheme.emerald),
                       const SizedBox(width: 10),
-                      Text('Create Poll', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                      Text('Create Poll', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary)),
                     ],
                   ),
                   const SizedBox(height: 16),
 
                   // Question
-                  Text('QUESTION', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                  Text('QUESTION', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
                   const SizedBox(height: 6),
                   TextField(
                     controller: questionCtrl,
                     autofocus: true,
-                    style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+                    style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Ask something...',
-                      hintStyle: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textTertiary),
+                      hintStyle: GoogleFonts.inter(fontSize: 14, color: c.textTertiary),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -297,7 +301,7 @@ class CommandComposerState extends State<CommandComposer> {
                   const SizedBox(height: 16),
 
                   // Options
-                  Text('OPTIONS', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                  Text('OPTIONS', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
                   const SizedBox(height: 6),
                   Expanded(
                     child: ListView(
@@ -310,20 +314,20 @@ class CommandComposerState extends State<CommandComposer> {
                                 width: 22, height: 22,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: ObsidianTheme.border),
+                                  border: Border.all(color: c.border),
                                 ),
                                 child: Center(
-                                  child: Text('${e.key + 1}', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                                  child: Text('${e.key + 1}', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary)),
                                 ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: TextField(
                                   controller: e.value,
-                                  style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
+                                  style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
                                   decoration: InputDecoration(
                                     hintText: 'Option ${e.key + 1}',
-                                    hintStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                                    hintStyle: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
                                     focusedBorder: InputBorder.none,
@@ -337,9 +341,9 @@ class CommandComposerState extends State<CommandComposer> {
                                     HapticFeedback.selectionClick();
                                     setSheetState(() => optionCtrls.removeAt(e.key));
                                   },
-                                  child: const Padding(
-                                    padding: EdgeInsets.only(left: 8),
-                                    child: Icon(PhosphorIconsLight.x, size: 14, color: ObsidianTheme.textTertiary),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: Icon(PhosphorIconsLight.x, size: 14, color: c.textTertiary),
                                   ),
                                 ),
                             ],
@@ -373,13 +377,11 @@ class CommandComposerState extends State<CommandComposer> {
                     child: ElevatedButton(
                       onPressed: () {
                         final q = questionCtrl.text.trim();
-                        final opts = optionCtrls.map((c) => c.text.trim()).where((s) => s.isNotEmpty).toList();
+                        final opts = optionCtrls.map((ctrl) => ctrl.text.trim()).where((s) => s.isNotEmpty).toList();
                         if (q.isEmpty || opts.length < 2) return;
                         HapticFeedback.mediumImpact();
                         Navigator.pop(ctx);
                         widget.onSendPoll?.call(q);
-                        // The parent screen handles the actual poll creation
-                        // We pass the data through the callback
                         _sendPollData(q, opts);
                       },
                       style: ElevatedButton.styleFrom(
@@ -400,13 +402,11 @@ class CommandComposerState extends State<CommandComposer> {
   }
 
   void _sendPollData(String question, List<String> options) {
-    // Fire custom poll event via the onSendPoll callback
     if (_onPoll != null) {
       _onPoll!(question, options);
     }
   }
 
-  // Allow parent to set poll callback
   void Function(String question, List<String> options)? _onPoll;
   void setPollCallback(void Function(String question, List<String> options) fn) {
     _onPoll = fn;
@@ -423,6 +423,7 @@ class CommandComposerState extends State<CommandComposer> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
@@ -432,7 +433,7 @@ class CommandComposerState extends State<CommandComposer> {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: ObsidianTheme.borderMedium),
+            border: Border.all(color: c.borderMedium),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -466,10 +467,10 @@ class CommandComposerState extends State<CommandComposer> {
                     focusNode: _focusNode,
                     maxLines: null,
                     textInputAction: TextInputAction.newline,
-                    style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+                    style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Transmit...',
-                      hintStyle: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textTertiary),
+                      hintStyle: GoogleFonts.inter(fontSize: 14, color: c.textTertiary),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                       isDense: true,
@@ -497,7 +498,7 @@ class CommandComposerState extends State<CommandComposer> {
                           PhosphorIconsLight.paperPlaneTilt,
                           key: ValueKey(_hasText),
                           size: 18,
-                          color: _hasText ? Colors.black : ObsidianTheme.textTertiary,
+                          color: _hasText ? Colors.black : c.textTertiary,
                         ),
                       ),
                     ),
@@ -522,6 +523,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -530,7 +532,7 @@ class _ActionButton extends StatelessWidget {
       child: SizedBox(
         width: 36,
         height: 36,
-        child: Center(child: Icon(icon, size: 18, color: ObsidianTheme.textMuted)),
+        child: Center(child: Icon(icon, size: 18, color: c.textMuted)),
       ),
     );
   }
@@ -555,6 +557,7 @@ class _AttachOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -579,12 +582,12 @@ class _AttachOption extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary)),
-                  Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                  Text(label, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textPrimary)),
+                  Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
                 ],
               ),
             ),
-            const Icon(PhosphorIconsLight.caretRight, size: 14, color: ObsidianTheme.textTertiary),
+            Icon(PhosphorIconsLight.caretRight, size: 14, color: c.textTertiary),
           ],
         ),
       ),
@@ -611,6 +614,7 @@ class _TemplateOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -636,7 +640,7 @@ class _TemplateOption extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     preview,
-                    style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                    style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -667,6 +671,7 @@ class _MemberPickerSheetState extends State<_MemberPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final filtered = _search.isEmpty
         ? widget.members
         : widget.members.where((m) {
@@ -676,14 +681,14 @@ class _MemberPickerSheetState extends State<_MemberPickerSheet> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.5,
-      decoration: const BoxDecoration(
-        color: ObsidianTheme.surface1,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         children: [
           const SizedBox(height: 8),
-          Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
+          Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: c.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -691,7 +696,7 @@ class _MemberPickerSheetState extends State<_MemberPickerSheet> {
               children: [
                 const Icon(PhosphorIconsLight.at, size: 16, color: ObsidianTheme.emerald),
                 const SizedBox(width: 8),
-                Text('Mention', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('Mention', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary)),
               ],
             ),
           ),
@@ -702,15 +707,15 @@ class _MemberPickerSheetState extends State<_MemberPickerSheet> {
               height: 36,
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
-                color: ObsidianTheme.shimmerBase,
-                border: Border.all(color: ObsidianTheme.border),
+                color: c.shimmerBase,
+                border: Border.all(color: c.border),
               ),
               child: TextField(
                 autofocus: true,
-                style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textPrimary),
+                style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Search...',
-                  hintStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                  hintStyle: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -738,17 +743,17 @@ class _MemberPickerSheetState extends State<_MemberPickerSheet> {
                           height: 28,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
-                            color: ObsidianTheme.shimmerBase,
+                            color: c.shimmerBase,
                           ),
                           child: Center(
                             child: Text(
                               name.isNotEmpty ? name[0].toUpperCase() : '?',
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: ObsidianTheme.textTertiary),
+                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: c.textTertiary),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Text(name, style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textPrimary)),
+                        Text(name, style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary)),
                       ],
                     ),
                   ),
@@ -816,6 +821,7 @@ class _JobReferencePickerState extends State<_JobReferencePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final filtered = _search.isEmpty
         ? _jobs
         : _jobs.where((j) {
@@ -826,14 +832,14 @@ class _JobReferencePickerState extends State<_JobReferencePicker> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.5,
-      decoration: const BoxDecoration(
-        color: ObsidianTheme.surface1,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         children: [
           const SizedBox(height: 8),
-          Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
+          Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: c.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -841,7 +847,7 @@ class _JobReferencePickerState extends State<_JobReferencePicker> {
               children: [
                 const Icon(PhosphorIconsLight.hash, size: 16, color: ObsidianTheme.emerald),
                 const SizedBox(width: 8),
-                Text('Reference a Job', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('Reference a Job', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary)),
               ],
             ),
           ),
@@ -852,15 +858,15 @@ class _JobReferencePickerState extends State<_JobReferencePicker> {
               height: 36,
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
-                color: ObsidianTheme.shimmerBase,
-                border: Border.all(color: ObsidianTheme.border),
+                color: c.shimmerBase,
+                border: Border.all(color: c.border),
               ),
               child: TextField(
                 autofocus: true,
-                style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textPrimary),
+                style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Search jobs...',
-                  hintStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                  hintStyle: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -903,8 +909,8 @@ class _JobReferencePickerState extends State<_JobReferencePicker> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(title, style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                    Text(status.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 0.5)),
+                                    Text(title, style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    Text(status.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 0.5)),
                                   ],
                                 ),
                               ),

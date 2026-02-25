@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/safety_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/safety_assessment.dart';
 
@@ -117,10 +118,11 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final mq = MediaQuery.of(context);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: AnimatedBuilder(
         animation: _borderPulse,
         builder: (context, child) {
@@ -160,10 +162,11 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
   }
 
   Widget _buildHeader(MediaQueryData mq) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: BoxDecoration(
-        color: ObsidianTheme.void_,
+        color: c.canvas,
         border: Border(
           bottom: BorderSide(color: ObsidianTheme.amber.withValues(alpha: 0.15)),
         ),
@@ -177,10 +180,10 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: c.border,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(PhosphorIconsLight.x, color: Colors.white70, size: 20),
+                  child: Icon(PhosphorIconsLight.x, color: c.textSecondary, size: 20),
                 ),
               ),
               const Spacer(),
@@ -213,7 +216,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
           Text(
             'Timer cannot start until safety shield is cleared',
             style: GoogleFonts.inter(
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
               fontSize: 13,
             ),
           ),
@@ -226,13 +229,14 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
   }
 
   Widget _buildHazardMatrix() {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'HAZARD MATRIX',
           style: GoogleFonts.jetBrainsMono(
-            color: ObsidianTheme.textTertiary,
+            color: c.textTertiary,
             fontSize: 11,
             fontWeight: FontWeight.w500,
             letterSpacing: 1.5,
@@ -285,6 +289,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
   }
 
   List<Widget> _buildControlDropdowns() {
+    final c = context.iColors;
     final selected = _selectedHazards.entries.where((e) => e.value).toList();
     if (selected.isEmpty) return [];
 
@@ -293,7 +298,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
       Text(
         'CONTROL MEASURES',
         style: GoogleFonts.jetBrainsMono(
-          color: ObsidianTheme.textTertiary,
+          color: c.textTertiary,
           fontSize: 11,
           fontWeight: FontWeight.w500,
           letterSpacing: 1.5,
@@ -329,7 +334,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
                 initialValue: currentValue,
                 hint: Text(
                   'Select control measure...',
-                  style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                  style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                 ),
                 decoration: InputDecoration(
                   filled: true,
@@ -339,8 +344,8 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                 ),
-                dropdownColor: const Color(0xFF1A1A1A),
-                style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                dropdownColor: c.surfaceSecondary,
+                style: GoogleFonts.inter(color: c.textPrimary, fontSize: 13),
                 items: controls.map((c) {
                   return DropdownMenuItem(value: c, child: Text(c));
                 }).toList(),
@@ -362,15 +367,16 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
   }
 
   Widget _buildLoneWorkerToggle() {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: _loneWorkerEnabled
               ? ObsidianTheme.amber.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.06),
+              : c.border,
         ),
       ),
       child: Row(
@@ -381,12 +387,12 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
             decoration: BoxDecoration(
               color: _loneWorkerEnabled
                   ? ObsidianTheme.amber.withValues(alpha: 0.15)
-                  : Colors.white.withValues(alpha: 0.05),
+                  : c.border,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               PhosphorIconsLight.userFocus,
-              color: _loneWorkerEnabled ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+              color: _loneWorkerEnabled ? ObsidianTheme.amber : c.textTertiary,
               size: 20,
             ),
           ),
@@ -398,7 +404,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
                 Text(
                   'LONE WORKER MODE',
                   style: GoogleFonts.jetBrainsMono(
-                    color: Colors.white,
+                    color: c.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 1,
@@ -408,7 +414,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
                 Text(
                   'Check-in every 30 min. Alerts admin if no response.',
                   style: GoogleFonts.inter(
-                    color: ObsidianTheme.textTertiary,
+                    color: c.textTertiary,
                     fontSize: 11,
                   ),
                 ),
@@ -419,7 +425,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
             value: _loneWorkerEnabled,
             activeTrackColor: ObsidianTheme.amber.withValues(alpha: 0.5),
             thumbColor: WidgetStateProperty.resolveWith((states) =>
-              states.contains(WidgetState.selected) ? ObsidianTheme.amber : ObsidianTheme.textTertiary),
+              states.contains(WidgetState.selected) ? ObsidianTheme.amber : c.textTertiary),
             onChanged: (v) {
               HapticFeedback.selectionClick();
               setState(() => _loneWorkerEnabled = v);
@@ -434,6 +440,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
   }
 
   Widget _buildActions() {
+    final c = context.iColors;
     return Column(
       children: [
         // Site Safe (long press)
@@ -484,7 +491,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
                   Text(
                     'Long press to confirm no hazards present',
                     style: GoogleFonts.inter(
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                       fontSize: 12,
                     ),
                   ),
@@ -508,7 +515,7 @@ class _SafetyShieldScreenState extends ConsumerState<SafetyShieldScreen>
             child: ElevatedButton(
               onPressed: (_canClear && !_saving) ? () => _submitAssessment(siteSafe: false) : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _canClear ? ObsidianTheme.emerald : ObsidianTheme.textTertiary.withValues(alpha: 0.2),
+                backgroundColor: _canClear ? ObsidianTheme.emerald : c.textTertiary.withValues(alpha: 0.2),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -597,6 +604,7 @@ class _HazardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -604,12 +612,12 @@ class _HazardCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? ObsidianTheme.amber.withValues(alpha: 0.12)
-              : Colors.white.withValues(alpha: 0.03),
+              : c.hoverBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
                 ? ObsidianTheme.amber.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.06),
+                : c.border,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -618,7 +626,7 @@ class _HazardCard extends StatelessWidget {
           children: [
             Icon(
               _iconForKey(hazard.key),
-              color: isSelected ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+              color: isSelected ? ObsidianTheme.amber : c.textTertiary,
               size: 26,
             ),
             const SizedBox(height: 8),
@@ -627,7 +635,7 @@ class _HazardCard extends StatelessWidget {
               child: Text(
                 hazard.label,
                 style: GoogleFonts.inter(
-                  color: isSelected ? Colors.white : ObsidianTheme.textTertiary,
+                  color: isSelected ? c.textPrimary : c.textTertiary,
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),

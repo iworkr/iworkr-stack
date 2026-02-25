@@ -10,6 +10,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/scout_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/models/site_scan.dart';
 
 /// Recon Mode — "Terminator Vision" viewfinder with real-time detection
@@ -63,7 +64,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
     if (_currentScan == null) return;
     HapticFeedback.mediumImpact();
 
-    // Simulate a detection
     final rng = math.Random();
     final template = _detectionTemplates[rng.nextInt(_detectionTemplates.length)];
 
@@ -121,13 +121,15 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: _scanning ? _buildViewfinder() : _buildPreRecon(),
     );
   }
 
   Widget _buildPreRecon() {
+    final c = context.iColors;
     return SafeArea(
       child: Column(
         children: [
@@ -137,7 +139,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Targeting reticle animation
                   SizedBox(
                     width: 140,
                     height: 140,
@@ -150,13 +151,13 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
                       },
                     ),
                   )
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
                       .scaleXY(begin: 1.0, end: 1.04, duration: 2500.ms),
                   const SizedBox(height: 24),
                   Text(
                     'Visual Opportunity AI',
                     style: GoogleFonts.inter(
-                      color: Colors.white,
+                      color: c.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
@@ -165,7 +166,7 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
                   Text(
                     'Walk the site. The Scout identifies\nassets, defects, and revenue opportunities.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                    style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                   ),
                   const SizedBox(height: 32),
                   GestureDetector(
@@ -203,7 +204,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
             ),
           ),
 
-          // Recent scans section
           _RecentScansSection(),
         ],
       ),
@@ -211,9 +211,9 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
   }
 
   Widget _buildViewfinder() {
+    final c = context.iColors;
     return Stack(
       children: [
-        // Full-screen "camera" with grid overlay
         Positioned.fill(
           child: AnimatedBuilder(
             animation: Listenable.merge([_gridPulse, _scanLine]),
@@ -229,7 +229,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
           ),
         ),
 
-        // Top HUD bar
         Positioned(
           top: 0,
           left: 0,
@@ -239,7 +238,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Row(
                 children: [
-                  // Back button
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: Container(
@@ -253,7 +251,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
                   ),
                   const SizedBox(width: 10),
 
-                  // REC indicator
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
@@ -271,7 +268,7 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
                             boxShadow: [BoxShadow(color: ObsidianTheme.rose.withValues(alpha: 0.5), blurRadius: 4)],
                           ),
                         )
-                            .animate(onPlay: (c) => c.repeat(reverse: true))
+                            .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
                             .scaleXY(begin: 1, end: 0.5, duration: 800.ms),
                         const SizedBox(width: 6),
                         Text(
@@ -287,7 +284,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
                   ),
                   const Spacer(),
 
-                  // Detection counter
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
@@ -301,7 +297,7 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
                         const SizedBox(width: 5),
                         Text(
                           '$_detectionCount',
-                          style: GoogleFonts.jetBrainsMono(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.jetBrainsMono(color: c.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -314,7 +310,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
               .fadeIn(duration: 400.ms),
         ),
 
-        // Yield counter (top right)
         Positioned(
           top: 0,
           right: 16,
@@ -361,7 +356,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
               .fadeIn(delay: 200.ms, duration: 400.ms),
         ),
 
-        // Bottom action bar
         Positioned(
           bottom: 0,
           left: 0,
@@ -371,7 +365,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               child: Row(
                 children: [
-                  // Simulate detection
                   Expanded(
                     child: GestureDetector(
                       onTap: _simulateDetection,
@@ -404,7 +397,6 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Complete recon
                   Expanded(
                     child: GestureDetector(
                       onTap: _completeRecon,
@@ -442,6 +434,7 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
@@ -451,10 +444,10 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
+              child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
             ),
           ),
           const SizedBox(width: 14),
@@ -464,7 +457,7 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
               Text(
                 'THE SCOUT',
                 style: GoogleFonts.jetBrainsMono(
-                  color: Colors.white,
+                  color: c.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.5,
@@ -472,7 +465,7 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
               ),
               Text(
                 'Visual Opportunity AI',
-                style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
               ),
             ],
           ),
@@ -511,6 +504,7 @@ class _ReconScreenState extends ConsumerState<ReconScreen>
 class _RecentScansSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final scansAsync = ref.watch(recentScansProvider);
 
     return scansAsync.when(
@@ -528,7 +522,7 @@ class _RecentScansSection extends ConsumerWidget {
               Text(
                 'RECENT SCANS',
                 style: GoogleFonts.jetBrainsMono(
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                   fontSize: 9,
                   letterSpacing: 1.5,
                 ),
@@ -543,8 +537,8 @@ class _RecentScansSection extends ConsumerWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: Colors.white.withValues(alpha: 0.03),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      color: c.hoverBg,
+                      border: Border.all(color: c.border),
                     ),
                     child: Row(
                       children: [
@@ -556,11 +550,11 @@ class _RecentScansSection extends ConsumerWidget {
                             children: [
                               Text(
                                 '${scan.detectionCount} detections',
-                                style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                                style: GoogleFonts.inter(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w500),
                               ),
                               Text(
                                 scan.durationLabel,
-                                style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 10),
+                                style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 10),
                               ),
                             ],
                           ),
@@ -584,7 +578,6 @@ class _RecentScansSection extends ConsumerWidget {
   }
 }
 
-/// Detection templates for simulation
 const _detectionTemplates = [
   {'type': 'asset', 'label': 'Split System A/C', 'condition': 'poor', 'severity': 'high', 'category': 'HVAC', 'make': 'Panasonic', 'age': 12, 'value': 450, 'action': 'Replace aging unit'},
   {'type': 'defect', 'label': 'Corroded Bracket', 'condition': 'critical', 'severity': 'critical', 'category': 'Structural', 'make': null, 'age': null, 'value': 145, 'action': 'Supply & Install Galv Bracket'},
@@ -598,7 +591,6 @@ const _detectionTemplates = [
   {'type': 'opportunity', 'label': 'Lighting Panels', 'condition': 'fair', 'severity': 'low', 'category': 'Electrical', 'make': 'Philips', 'age': 10, 'value': 650, 'action': 'LED upgrade package'},
 ];
 
-/// Live detection for bounding box display
 class _LiveDetection {
   final String label;
   final String condition;
@@ -620,7 +612,6 @@ class _LiveDetection {
   });
 }
 
-/// Viewfinder painter — draws grid, scan line, bounding boxes
 class _ViewfinderPainter extends CustomPainter {
   final double gridPulse;
   final double scanLinePos;
@@ -630,10 +621,8 @@ class _ViewfinderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Dark background
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = const Color(0xFF030306));
 
-    // Grid overlay
     final gridPaint = Paint()
       ..color = ObsidianTheme.gold.withValues(alpha: 0.02 + gridPulse * 0.015)
       ..strokeWidth = 0.5;
@@ -644,7 +633,6 @@ class _ViewfinderPainter extends CustomPainter {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
     }
 
-    // Scan line (horizontal)
     final scanY = scanLinePos * size.height;
     canvas.drawLine(
       Offset(0, scanY),
@@ -653,7 +641,6 @@ class _ViewfinderPainter extends CustomPainter {
         ..color = ObsidianTheme.gold.withValues(alpha: 0.15)
         ..strokeWidth = 1,
     );
-    // Scan glow
     canvas.drawRect(
       Rect.fromLTWH(0, scanY - 10, size.width, 20),
       Paint()
@@ -668,10 +655,8 @@ class _ViewfinderPainter extends CustomPainter {
         ).createShader(Rect.fromLTWH(0, scanY - 10, size.width, 20)),
     );
 
-    // HUD corner brackets
     _drawHUDCorners(canvas, size);
 
-    // Bounding boxes
     for (final d in detections) {
       _drawBoundingBox(canvas, size, d);
     }
@@ -705,28 +690,21 @@ class _ViewfinderPainter extends CustomPainter {
       boxColor = Colors.white.withValues(alpha: 0.5);
     }
 
-    // Fill
     canvas.drawRect(rect, Paint()..color = boxColor.withValues(alpha: 0.06));
-    // Border corners (animate draw: corners first)
     final bp = Paint()
       ..color = boxColor.withValues(alpha: 0.6)
       ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round;
     const cl = 10.0;
-    // Top-left
     canvas.drawLine(rect.topLeft, Offset(rect.left + cl, rect.top), bp);
     canvas.drawLine(rect.topLeft, Offset(rect.left, rect.top + cl), bp);
-    // Top-right
     canvas.drawLine(rect.topRight, Offset(rect.right - cl, rect.top), bp);
     canvas.drawLine(rect.topRight, Offset(rect.right, rect.top + cl), bp);
-    // Bottom-left
     canvas.drawLine(rect.bottomLeft, Offset(rect.left + cl, rect.bottom), bp);
     canvas.drawLine(rect.bottomLeft, Offset(rect.left, rect.bottom - cl), bp);
-    // Bottom-right
     canvas.drawLine(rect.bottomRight, Offset(rect.right - cl, rect.bottom), bp);
     canvas.drawLine(rect.bottomRight, Offset(rect.right, rect.bottom - cl), bp);
 
-    // Label
     final labelText = '${d.label} • ${d.condition}';
     final tp = TextPainter(
       text: TextSpan(
@@ -743,7 +721,6 @@ class _ViewfinderPainter extends CustomPainter {
     canvas.drawRRect(labelBg, Paint()..color = const Color(0xDD050505));
     tp.paint(canvas, Offset(rect.left + 5, rect.top - tp.height - 4));
 
-    // Value tag
     if (d.value > 0) {
       final valueText = '\$${d.value.toStringAsFixed(0)}';
       final vp = TextPainter(
@@ -766,7 +743,6 @@ class _ViewfinderPainter extends CustomPainter {
   bool shouldRepaint(covariant _ViewfinderPainter oldDelegate) => true;
 }
 
-/// Targeting reticle painter for pre-recon
 class _TargetReticlePainter extends CustomPainter {
   final double phase;
   _TargetReticlePainter({required this.phase});
@@ -776,7 +752,6 @@ class _TargetReticlePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 8;
 
-    // Outer circle
     canvas.drawCircle(
       center, radius,
       Paint()
@@ -785,7 +760,6 @@ class _TargetReticlePainter extends CustomPainter {
         ..strokeWidth = 1,
     );
 
-    // Inner circle
     canvas.drawCircle(
       center, radius * 0.6,
       Paint()
@@ -794,17 +768,14 @@ class _TargetReticlePainter extends CustomPainter {
         ..strokeWidth = 0.5,
     );
 
-    // Crosshair
     final cp = Paint()
       ..color = ObsidianTheme.gold.withValues(alpha: 0.25)
       ..strokeWidth = 0.5;
     canvas.drawLine(Offset(center.dx, center.dy - radius * 0.4), Offset(center.dx, center.dy + radius * 0.4), cp);
     canvas.drawLine(Offset(center.dx - radius * 0.4, center.dy), Offset(center.dx + radius * 0.4, center.dy), cp);
 
-    // Center dot
     canvas.drawCircle(center, 3, Paint()..color = ObsidianTheme.gold.withValues(alpha: 0.4 + phase * 0.3));
 
-    // Rotating tick marks
     final tickPaint = Paint()
       ..color = ObsidianTheme.gold.withValues(alpha: 0.15)
       ..strokeWidth = 1

@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:iworkr_mobile/features/auth/widgets/otp_input.dart';
@@ -325,6 +326,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Choice Mode (Landing) ─────────────────────────────
 
   Widget _buildChoiceMode() {
+    final c = context.iColors;
     return Column(
       key: const ValueKey('choice'),
       mainAxisAlignment: MainAxisAlignment.center,
@@ -337,7 +339,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w500,
-            color: ObsidianTheme.textPrimary,
+            color: c.textPrimary,
             letterSpacing: -0.3,
           ),
         ).animate().fadeIn(delay: 350.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
@@ -346,7 +348,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         Text(
           'Your field operating system',
-          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+          style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
         ).animate().fadeIn(delay: 400.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
 
         const SizedBox(height: 36),
@@ -364,7 +366,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 child: Center(child: Text('G', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black))),
               ),
               const SizedBox(width: 12),
-              Text('Continue with Google', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary)),
+              Text('Continue with Google', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textPrimary)),
             ],
           ),
         ).animate().fadeIn(delay: 500.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)).moveY(begin: 8, end: 0),
@@ -374,12 +376,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         // Divider
         Row(
           children: [
-            Expanded(child: Container(height: 1, color: ObsidianTheme.border)),
+            Expanded(child: Container(height: 1, color: c.border)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('or', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary)),
+              child: Text('or', style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
             ),
-            Expanded(child: Container(height: 1, color: ObsidianTheme.border)),
+            Expanded(child: Container(height: 1, color: c.border)),
           ],
         ).animate().fadeIn(delay: 580.ms, duration: 300.ms),
 
@@ -411,12 +413,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             children: [
               Icon(
                 _tab == _AuthTab.email ? PhosphorIconsLight.envelope : PhosphorIconsLight.phone,
-                size: 16, color: ObsidianTheme.textSecondary,
+                size: 16, color: c.textSecondary,
               ),
               const SizedBox(width: 12),
               Text(
                 _tab == _AuthTab.email ? 'Continue with Email' : 'Continue with Phone',
-                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textPrimary),
               ),
             ],
           ),
@@ -433,13 +435,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Method Switcher (Glass Toggle) ───────────────────
 
   Widget _buildMethodSwitcher() {
+    final c = context.iColors;
     return Container(
       height: 36,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.shimmerBase,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.shimmerBase,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: [
@@ -451,6 +454,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildTabPill(String label, _AuthTab tab, Key key) {
+    final c = context.iColors;
     final isActive = _tab == tab;
     return Expanded(
       key: key,
@@ -465,9 +469,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           duration: ObsidianTheme.fast,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(5),
-            color: isActive ? ObsidianTheme.surface2 : Colors.transparent,
+            color: isActive ? c.surfaceSecondary : Colors.transparent,
             border: Border.all(
-              color: isActive ? ObsidianTheme.borderMedium : Colors.transparent,
+              color: isActive ? c.borderMedium : Colors.transparent,
             ),
           ),
           child: Center(
@@ -476,7 +480,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                color: isActive ? ObsidianTheme.textPrimary : ObsidianTheme.textMuted,
+                color: isActive ? c.textPrimary : c.textMuted,
               ),
             ),
           ),
@@ -488,6 +492,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Email + Password Mode ─────────────────────────────
 
   Widget _buildEmailPasswordMode() {
+    final c = context.iColors;
     return Column(
       key: const ValueKey('email-password'),
       mainAxisAlignment: MainAxisAlignment.center,
@@ -497,14 +502,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         Text(
           'Sign in with Email',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary, letterSpacing: -0.3),
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: c.textPrimary, letterSpacing: -0.3),
         ).animate().fadeIn(duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
 
         const SizedBox(height: 6),
 
         Text(
           'Enter your credentials to authenticate.',
-          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+          style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
           textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 80.ms, duration: 400.ms),
 
@@ -517,13 +522,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
           autofocus: true,
-          style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textPrimary, fontSize: 14),
+          style: GoogleFonts.jetBrainsMono(color: c.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             hintText: 'you@company.com',
-            hintStyle: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textDisabled, fontSize: 14),
+            hintStyle: GoogleFonts.jetBrainsMono(color: c.textDisabled, fontSize: 14),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Icon(PhosphorIconsLight.envelope, size: 16, color: ObsidianTheme.textTertiary),
+              child: Icon(PhosphorIconsLight.envelope, size: 16, color: c.textTertiary),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
           ),
@@ -537,13 +542,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           key: const Key('input_password'),
           controller: _passwordController,
           obscureText: _obscurePassword,
-          style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textPrimary, fontSize: 14),
+          style: GoogleFonts.jetBrainsMono(color: c.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             hintText: 'Password',
-            hintStyle: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textDisabled, fontSize: 14),
+            hintStyle: GoogleFonts.jetBrainsMono(color: c.textDisabled, fontSize: 14),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Icon(PhosphorIconsLight.lock, size: 16, color: ObsidianTheme.textTertiary),
+              child: Icon(PhosphorIconsLight.lock, size: 16, color: c.textTertiary),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
             suffixIcon: GestureDetector(
@@ -551,7 +556,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               child: Icon(
                 _obscurePassword ? PhosphorIconsLight.eye : PhosphorIconsLight.eyeSlash,
                 size: 16,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
               ),
             ),
             suffixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
@@ -593,7 +598,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           onTap: () {},
           child: Text(
             'Forgot password?',
-            style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary, fontWeight: FontWeight.w500),
+            style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary, fontWeight: FontWeight.w500),
           ),
         ).animate().fadeIn(delay: 340.ms, duration: 300.ms),
 
@@ -621,6 +626,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Phone Entry Mode ──────────────────────────────────
 
   Widget _buildPhoneEntryMode() {
+    final c = context.iColors;
     return Column(
       key: const ValueKey('phone-entry'),
       mainAxisAlignment: MainAxisAlignment.center,
@@ -630,14 +636,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         Text(
           'Sign in with Phone',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary, letterSpacing: -0.3),
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: c.textPrimary, letterSpacing: -0.3),
         ).animate().fadeIn(duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
 
         const SizedBox(height: 6),
 
         Text(
           "We'll send a one-time code to verify.",
-          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+          style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
           textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 80.ms, duration: 400.ms),
 
@@ -649,13 +655,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           keyboardType: TextInputType.phone,
           autocorrect: false,
           autofocus: true,
-          style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textPrimary, fontSize: 14),
+          style: GoogleFonts.jetBrainsMono(color: c.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             hintText: '+61 4XX XXX XXX',
-            hintStyle: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textDisabled, fontSize: 14),
+            hintStyle: GoogleFonts.jetBrainsMono(color: c.textDisabled, fontSize: 14),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Icon(PhosphorIconsLight.phone, size: 16, color: ObsidianTheme.textTertiary),
+              child: Icon(PhosphorIconsLight.phone, size: 16, color: c.textTertiary),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
           ),
@@ -696,6 +702,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Phone OTP Mode ────────────────────────────────────
 
   Widget _buildPhoneOtpMode() {
+    final c = context.iColors;
     return Column(
       key: const ValueKey('phone-otp'),
       mainAxisAlignment: MainAxisAlignment.center,
@@ -705,14 +712,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         Text(
           'Enter verification code',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary, letterSpacing: -0.3),
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: c.textPrimary, letterSpacing: -0.3),
         ).animate().fadeIn(duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
 
         const SizedBox(height: 6),
 
         Text(
           'We sent a 6-digit code to',
-          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+          style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
           textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 80.ms, duration: 400.ms),
 
@@ -722,12 +729,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             borderRadius: ObsidianTheme.radiusMd,
-            color: ObsidianTheme.surface1,
-            border: Border.all(color: ObsidianTheme.border),
+            color: c.surface,
+            border: Border.all(color: c.border),
           ),
           child: Text(
             _phoneController.text.trim(),
-            style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500),
+            style: GoogleFonts.jetBrainsMono(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500),
           ),
         ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
 
@@ -758,11 +765,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               child: Text('Resend', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.emerald, fontWeight: FontWeight.w500)),
             ),
             const SizedBox(width: 24),
-            Container(width: 1, height: 14, color: ObsidianTheme.border),
+            Container(width: 1, height: 14, color: c.border),
             const SizedBox(width: 24),
             GestureDetector(
               onTap: () { HapticFeedback.lightImpact(); setState(() { _mode = _AuthMode.phoneEntry; _error = null; }); },
-              child: Text('Change number', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary)),
+              child: Text('Change number', style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary)),
             ),
           ],
         ).animate().fadeIn(delay: 350.ms, duration: 400.ms),
@@ -776,6 +783,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Magic Link Sent Mode ──────────────────────────────
 
   Widget _buildMagicLinkSentMode() {
+    final c = context.iColors;
     return Column(
       key: const ValueKey('magic-sent'),
       mainAxisAlignment: MainAxisAlignment.center,
@@ -792,7 +800,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.15)),
                 ),
               )
-                  .animate(onPlay: (c) => c.repeat())
+                  .animate(onPlay: (ctrl) => ctrl.repeat())
                   .scaleXY(begin: 0.9, end: 1.6, duration: 2000.ms, curve: Curves.easeOut)
                   .fadeOut(duration: 2000.ms),
 
@@ -816,12 +824,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         Text(
           'Check your email',
-          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary, letterSpacing: -0.3),
+          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3),
         ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
 
         const SizedBox(height: 10),
 
-        Text('We sent a magic link to', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary), textAlign: TextAlign.center)
+        Text('We sent a magic link to', style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary), textAlign: TextAlign.center)
             .animate().fadeIn(delay: 280.ms, duration: 400.ms),
 
         const SizedBox(height: 8),
@@ -830,12 +838,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             borderRadius: ObsidianTheme.radiusMd,
-            color: ObsidianTheme.surface1,
-            border: Border.all(color: ObsidianTheme.border),
+            color: c.surface,
+            border: Border.all(color: c.border),
           ),
           child: Text(
             _emailController.text.trim(),
-            style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textPrimary, fontWeight: FontWeight.w500),
+            style: GoogleFonts.jetBrainsMono(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500),
           ),
         ).animate().fadeIn(delay: 350.ms, duration: 400.ms),
 
@@ -843,7 +851,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         Text(
           'Tap the link in the email to sign in.',
-          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+          style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
           textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 420.ms, duration: 400.ms),
 
@@ -857,11 +865,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               child: Text('Resend', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.emerald, fontWeight: FontWeight.w500)),
             ),
             const SizedBox(width: 24),
-            Container(width: 1, height: 14, color: ObsidianTheme.border),
+            Container(width: 1, height: 14, color: c.border),
             const SizedBox(width: 24),
             GestureDetector(
               onTap: () { HapticFeedback.lightImpact(); setState(() { _mode = _AuthMode.choice; _error = null; }); },
-              child: Text('Try another method', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary)),
+              child: Text('Try another method', style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary)),
             ),
           ],
         ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
@@ -875,6 +883,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Authenticating Mode (OAuth) ───────────────────────
 
   Widget _buildAuthenticatingMode() {
+    final c = context.iColors;
     return Column(
       key: const ValueKey('authenticating'),
       mainAxisAlignment: MainAxisAlignment.center,
@@ -888,10 +897,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 width: 56, height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: ObsidianTheme.border, width: 1),
+                  border: Border.all(color: c.border, width: 1),
                 ),
               )
-                  .animate(onPlay: (c) => c.repeat())
+                  .animate(onPlay: (ctrl) => ctrl.repeat())
                   .scaleXY(begin: 0.8, end: 2, duration: 2000.ms, curve: Curves.easeOut)
                   .fadeOut(duration: 2000.ms),
 
@@ -902,7 +911,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.3), width: 1.5),
                 ),
               )
-                  .animate(onPlay: (c) => c.repeat())
+                  .animate(onPlay: (ctrl) => ctrl.repeat())
                   .rotate(duration: 1800.ms),
 
               Image.asset('assets/logos/logo-dark-streamline.png', width: 20, height: 20),
@@ -910,15 +919,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
         ),
         const SizedBox(height: 24),
-        Text('Authenticating...', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary))
+        Text('Authenticating...', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: c.textSecondary))
             .animate().fadeIn(delay: 200.ms, duration: 400.ms),
         const SizedBox(height: 6),
-        Text('Complete sign-in in your browser', style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary))
+        Text('Complete sign-in in your browser', style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary))
             .animate().fadeIn(delay: 300.ms, duration: 400.ms),
         const SizedBox(height: 32),
         GestureDetector(
           onTap: () { HapticFeedback.lightImpact(); setState(() { _mode = _AuthMode.choice; _loading = false; _error = null; }); },
-          child: Text('Cancel', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary)),
+          child: Text('Cancel', style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary)),
         ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
       ],
     );
@@ -927,6 +936,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Success Mode ──────────────────────────────────────
 
   Widget _buildSuccessMode() {
+    final c = context.iColors;
     return Column(
       key: const ValueKey('success'),
       mainAxisAlignment: MainAxisAlignment.center,
@@ -944,7 +954,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             .scaleXY(begin: 0.5, end: 1, duration: 400.ms, curve: Curves.easeOutBack)
             .fadeIn(duration: 300.ms),
         const SizedBox(height: 20),
-        Text('Welcome back', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary))
+        Text('Welcome back', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary))
             .animate().fadeIn(delay: 200.ms, duration: 400.ms),
       ],
     );
@@ -1018,6 +1028,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildBackButton() {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1026,18 +1037,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(PhosphorIconsLight.arrowLeft, size: 14, color: ObsidianTheme.textTertiary),
+          Icon(PhosphorIconsLight.arrowLeft, size: 14, color: c.textTertiary),
           const SizedBox(width: 6),
-          Text('All sign in options', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary)),
+          Text('All sign in options', style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary)),
         ],
       ),
     ).animate().fadeIn(delay: 350.ms, duration: 300.ms);
   }
 
   Widget _buildVersionLabel() {
+    final c = context.iColors;
     return Text(
       'v3.0.0',
-      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
     ).animate().fadeIn(delay: 700.ms, duration: 400.ms);
   }
 }
@@ -1060,6 +1072,7 @@ class _AuthButtonState extends State<_AuthButton> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
@@ -1074,12 +1087,12 @@ class _AuthButtonState extends State<_AuthButton> {
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
           border: Border.all(
-            color: _pressed ? ObsidianTheme.borderHover : const Color(0x1AFFFFFF),
+            color: _pressed ? c.borderHover : c.borderMedium,
           ),
           color: widget.solidFill
               ? (_pressed ? const Color(0xFFE0E0E0) : Colors.white)
               : widget.filled
-                  ? const Color(0x0AFFFFFF)
+                  ? c.activeBg
                   : Colors.transparent,
         ),
         child: Center(child: widget.child),

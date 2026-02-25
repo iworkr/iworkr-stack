@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/ar_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/ar_measurement.dart';
 
@@ -121,8 +122,9 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -143,6 +145,7 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
@@ -152,10 +155,10 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
+              child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
             ),
           ),
           const SizedBox(width: 14),
@@ -165,7 +168,7 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
               Text(
                 'SPATIAL TOOLS',
                 style: GoogleFonts.jetBrainsMono(
-                  color: Colors.white,
+                  color: c.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.5,
@@ -173,7 +176,7 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
               ),
               Text(
                 'AR Measurement',
-                style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
               ),
             ],
           ),
@@ -209,11 +212,12 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
   }
 
   Widget _buildTabs() {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
       ),
       child: Row(
         children: [
@@ -227,6 +231,7 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
   }
 
   Widget _buildMeasureTab() {
+    final c = context.iColors;
     return Column(
       key: const ValueKey(0),
       children: [
@@ -286,7 +291,7 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
                       Text(
                         'DISTANCE',
                         style: GoogleFonts.jetBrainsMono(
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                           fontSize: 8,
                           letterSpacing: 1.5,
                         ),
@@ -310,7 +315,7 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
                       Text(
                         'AREA',
                         style: GoogleFonts.jetBrainsMono(
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                           fontSize: 8,
                           letterSpacing: 1.5,
                         ),
@@ -347,14 +352,14 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: Colors.white.withValues(alpha: 0.04),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      color: c.activeBg,
+                      border: Border.all(color: c.borderMedium),
                     ),
                     child: Center(
                       child: Text(
                         'RESET',
                         style: GoogleFonts.jetBrainsMono(
-                          color: ObsidianTheme.textSecondary,
+                          color: c.textSecondary,
                           fontSize: 11,
                           letterSpacing: 1,
                         ),
@@ -375,18 +380,18 @@ class _ARMeasureScreenState extends ConsumerState<ARMeasureScreen>
                       borderRadius: BorderRadius.circular(10),
                       color: _measuring
                           ? ObsidianTheme.emerald.withValues(alpha: 0.12)
-                          : Colors.white.withValues(alpha: 0.04),
+                          : c.activeBg,
                       border: Border.all(
                         color: _measuring
                             ? ObsidianTheme.emerald.withValues(alpha: 0.3)
-                            : Colors.white.withValues(alpha: 0.08),
+                            : c.borderMedium,
                       ),
                     ),
                     child: Center(
                       child: Text(
                         'SAVE MEASUREMENT',
                         style: GoogleFonts.jetBrainsMono(
-                          color: _measuring ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                          color: _measuring ? ObsidianTheme.emerald : c.textTertiary,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1,
@@ -412,6 +417,7 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -423,13 +429,13 @@ class _Tab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: active ? Colors.white.withValues(alpha: 0.06) : Colors.transparent,
+            color: active ? c.border : Colors.transparent,
           ),
           child: Center(
             child: Text(
               label,
               style: GoogleFonts.jetBrainsMono(
-                color: active ? Colors.white : ObsidianTheme.textTertiary,
+                color: active ? c.textPrimary : c.textTertiary,
                 fontSize: 9,
                 fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                 letterSpacing: 1,
@@ -449,10 +455,11 @@ class _HistoryTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final measureAsync = ref.watch(arMeasurementsProvider);
 
     return measureAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
       ),
       error: (_, __) => const SizedBox.shrink(),
@@ -466,12 +473,12 @@ class _HistoryTab extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Text(
                   'No measurements yet',
-                  style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(color: c.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Tap points in the viewer to measure',
-                  style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                  style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
                 ),
               ],
             ),
@@ -498,13 +505,14 @@ class _MeasurementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.03),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: [
@@ -530,7 +538,7 @@ class _MeasurementCard extends StatelessWidget {
                 Text(
                   measurement.valueLabel,
                   style: GoogleFonts.jetBrainsMono(
-                    color: Colors.white,
+                    color: c.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -540,13 +548,13 @@ class _MeasurementCard extends StatelessWidget {
                   children: [
                     Text(
                       measurement.typeLabel,
-                      style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 11),
+                      style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11),
                     ),
                     if (measurement.accuracyCm != null) ...[
                       const SizedBox(width: 8),
                       Text(
                         measurement.accuracyLabel,
-                        style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 10),
+                        style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 10),
                       ),
                     ],
                     if (measurement.usedLidar) ...[

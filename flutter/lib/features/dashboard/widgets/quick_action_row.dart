@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
 import 'package:iworkr_mobile/features/scan/screens/scanner_screen.dart';
@@ -130,6 +131,7 @@ class _QuickActionButtonState extends State<_QuickActionButton> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -145,19 +147,19 @@ class _QuickActionButtonState extends State<_QuickActionButton> {
         transformAlignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          color: Colors.white.withValues(alpha: 0.03),
+          border: Border.all(color: c.border),
+          color: c.hoverBg,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(widget.action.icon, size: 20, color: Colors.white),
+            Icon(widget.action.icon, size: 20, color: c.textPrimary),
             const SizedBox(height: 8),
             Text(
               widget.action.label.toUpperCase(),
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 8,
-                color: ObsidianTheme.textMuted,
+                color: c.textMuted,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 1.2,
               ),

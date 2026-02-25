@@ -13,7 +13,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/permission_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 // ══════════════════════════════════════════════════════
@@ -168,17 +170,18 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
       return;
     }
 
-    final result = await Permission.camera.request();
+    // JIT soft prompt before the native OS dialog
+    if (!mounted) return;
+    final granted = await PermissionService.instance.requestCamera(context);
 
-    if (result.isGranted) {
+    if (granted) {
       await _startCamera();
-    } else if (result.isPermanentlyDenied) {
-      if (mounted) {
-        setState(() => _cameraState = _CameraState.permissionPermanentlyDenied);
-      }
     } else {
+      final afterStatus = await Permission.camera.status;
       if (mounted) {
-        setState(() => _cameraState = _CameraState.permissionDenied);
+        setState(() => _cameraState = afterStatus.isPermanentlyDenied
+            ? _CameraState.permissionPermanentlyDenied
+            : _CameraState.permissionDenied);
       }
     }
   }
@@ -374,6 +377,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -425,7 +430,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                         bracketColor = ObsidianTheme.amber;
                     }
                   } else if (_locked) {
-                    bracketColor = Colors.white;
+                    bracketColor = c.textPrimary;
                   } else {
                     bracketColor = ObsidianTheme.emerald;
                   }
@@ -486,7 +491,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                         border: Border.all(
                           color: _batchMode
                               ? ObsidianTheme.emerald.withValues(alpha: 0.3)
-                              : const Color(0x33FFFFFF),
+                              : c.borderHover,
                         ),
                       ),
                       child: Row(
@@ -495,14 +500,14 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                           Icon(
                             PhosphorIconsLight.stack,
                             size: 14,
-                            color: _batchMode ? ObsidianTheme.emerald : Colors.white,
+                            color: _batchMode ? ObsidianTheme.emerald : c.textPrimary,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             'Batch',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: _batchMode ? ObsidianTheme.emerald : Colors.white,
+                              color: _batchMode ? ObsidianTheme.emerald : c.textPrimary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -538,13 +543,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusFull,
                         color: Colors.black.withValues(alpha: 0.6),
-                        border: Border.all(color: const Color(0x33FFFFFF)),
+                        border: Border.all(color: c.borderHover),
                       ),
                       child: Text(
                         '[ ENTER CODE MANUALLY ]',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 11,
-                          color: ObsidianTheme.textSecondary,
+                          color: c.textSecondary,
                           letterSpacing: 2,
                         ),
                       ),
@@ -621,13 +626,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
   // ── Batch Tray ──────────────────────────────────────
 
   Widget _buildBatchTray() {
+    final c = context.iColors;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
         color: Colors.black.withValues(alpha: 0.8),
-        border: Border.all(color: const Color(0x33FFFFFF)),
+        border: Border.all(color: c.borderHover),
       ),
       child: Row(
         children: [
@@ -676,7 +683,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                         const SizedBox(width: 6),
                         Text(
                           r.name ?? (r.code.length > 8 ? r.code.substring(0, 8) : r.code),
-                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: Colors.white),
+                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textPrimary),
                         ),
                       ],
                     ),
@@ -690,7 +697,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
               HapticFeedback.lightImpact();
               setState(() => _batchResults.clear());
             },
-            child: const Icon(PhosphorIconsLight.trash, size: 16, color: ObsidianTheme.textTertiary),
+            child: Icon(PhosphorIconsLight.trash, size: 16, color: c.textTertiary),
           ),
         ],
       ),
@@ -710,8 +717,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
 class _InitializingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
-      color: Colors.black,
+      color: c.canvas,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -785,8 +794,10 @@ class _VisualCortexOffline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
-      color: Colors.black,
+      color: c.canvas,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -812,7 +823,7 @@ class _VisualCortexOffline extends StatelessWidget {
                     ? 'Camera permission was denied. Please enable it in your device Settings to scan barcodes and QR codes.'
                     : 'iWorkr needs camera access to scan assets, barcodes, and QR codes.',
                 style: GoogleFonts.inter(
-                  fontSize: 13, color: ObsidianTheme.textTertiary,
+                  fontSize: 13, color: c.textTertiary,
                   height: 1.6,
                 ),
                 textAlign: TextAlign.center,
@@ -844,12 +855,12 @@ class _VisualCortexOffline extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     borderRadius: ObsidianTheme.radiusMd,
-                    border: Border.all(color: ObsidianTheme.borderMedium),
+                    border: Border.all(color: c.borderMedium),
                   ),
                   child: Center(
                     child: Text(
                       'Enter Code Manually',
-                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary),
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textSecondary),
                     ),
                   ),
                 ),
@@ -973,8 +984,10 @@ class _CameraErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
-      color: Colors.black,
+      color: c.canvas,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -990,20 +1003,20 @@ class _CameraErrorView extends StatelessWidget {
                 ),
                 child: const Icon(PhosphorIconsLight.cameraSlash, size: 28, color: ObsidianTheme.rose),
               )
-                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
                   .scaleXY(begin: 1.0, end: 1.04, duration: 2500.ms),
               const SizedBox(height: 24),
               Text(
                 'Camera Unavailable',
                 style: GoogleFonts.inter(
                   fontSize: 18, fontWeight: FontWeight.w600,
-                  color: Colors.white, letterSpacing: -0.3,
+                  color: c.textPrimary, letterSpacing: -0.3,
                 ),
               ),
               const SizedBox(height: 10),
               Text(
                 message,
-                style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary, height: 1.5),
+                style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary, height: 1.5),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 28),
@@ -1029,10 +1042,10 @@ class _CameraErrorView extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     borderRadius: ObsidianTheme.radiusMd,
-                    border: Border.all(color: ObsidianTheme.borderMedium),
+                    border: Border.all(color: c.borderMedium),
                   ),
                   child: Center(
-                    child: Text('Enter Code Manually', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary)),
+                    child: Text('Enter Code Manually', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textSecondary)),
                   ),
                 ),
               ),
@@ -1054,8 +1067,10 @@ class _SimulatorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
-      color: const Color(0xFF0A0A0A),
+      color: c.surface,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -1083,7 +1098,7 @@ class _SimulatorView extends StatelessWidget {
               Text(
                 'Camera hardware is not available on the simulator. Use manual entry to test scanning.',
                 style: GoogleFonts.inter(
-                  fontSize: 13, color: ObsidianTheme.textTertiary,
+                  fontSize: 13, color: c.textTertiary,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -1301,6 +1316,7 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return GestureDetector(
@@ -1314,7 +1330,7 @@ class _ResultCard extends StatelessWidget {
           child: Container(
             padding: EdgeInsets.fromLTRB(20, 12, 20, bottomPad + 16),
             decoration: BoxDecoration(
-              color: ObsidianTheme.void_.withValues(alpha: 0.95),
+              color: c.canvas.withValues(alpha: 0.95),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               border: Border(top: BorderSide(color: _accentColor.withValues(alpha: 0.3))),
             ),
@@ -1327,7 +1343,7 @@ class _ResultCard extends StatelessWidget {
                     width: 36, height: 4,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(2),
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                     ),
                   ),
                 ),
@@ -1359,7 +1375,7 @@ class _ResultCard extends StatelessWidget {
                     const Spacer(),
                     Text(
                       result.code.length > 20 ? '${result.code.substring(0, 20)}...' : result.code,
-                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                     ),
                   ],
                 ),
@@ -1367,12 +1383,12 @@ class _ResultCard extends StatelessWidget {
                 Text(
                   result.name ?? 'Unregistered Item',
                   style: GoogleFonts.inter(
-                    fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: -0.3,
+                    fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3,
                   ),
                 ),
                 if (result.subtitle != null && result.subtitle!.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(result.subtitle!, style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textSecondary)),
+                  Text(result.subtitle!, style: GoogleFonts.inter(fontSize: 13, color: c.textSecondary)),
                 ],
                 const SizedBox(height: 14),
                 _buildDetailsRow(),
@@ -1439,19 +1455,21 @@ class _DetailChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+          Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1)),
           const SizedBox(height: 2),
-          Text(value, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white)),
+          Text(value, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary)),
         ],
       ),
     );
@@ -1466,6 +1484,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final isPrimary = color != null;
     return GestureDetector(
       onTap: onTap,
@@ -1474,14 +1493,14 @@ class _ActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
           color: isPrimary ? color : Colors.transparent,
-          border: isPrimary ? null : Border.all(color: ObsidianTheme.borderMedium),
+          border: isPrimary ? null : Border.all(color: c.borderMedium),
         ),
         child: Center(
           child: Text(
             label,
             style: GoogleFonts.inter(
               fontSize: 13, fontWeight: FontWeight.w600,
-              color: isPrimary ? Colors.white : ObsidianTheme.textSecondary,
+              color: isPrimary ? Colors.white : c.textSecondary,
             ),
           ),
         ),
@@ -1513,6 +1532,8 @@ class _ManualEntrySheetState extends State<_ManualEntrySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       child: BackdropFilter(
@@ -1520,9 +1541,9 @@ class _ManualEntrySheetState extends State<_ManualEntrySheet> {
         child: Container(
           padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 16),
           decoration: BoxDecoration(
-            color: ObsidianTheme.void_.withValues(alpha: 0.97),
+            color: c.canvas.withValues(alpha: 0.97),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            border: const Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+            border: Border(top: BorderSide(color: c.borderMedium)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1531,15 +1552,15 @@ class _ManualEntrySheetState extends State<_ManualEntrySheet> {
               Center(
                 child: Container(
                   width: 36, height: 4,
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: ObsidianTheme.textTertiary),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: c.textTertiary),
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Manual Code Entry', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text('Manual Code Entry', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary)),
               const SizedBox(height: 4),
               Text(
                 'Enter a barcode, serial number, or SKU',
-                style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary),
+                style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
               ),
               const SizedBox(height: 16),
               Row(
@@ -1556,11 +1577,11 @@ class _ManualEntrySheetState extends State<_ManualEntrySheet> {
                     child: TextField(
                       controller: _controller,
                       autofocus: true,
-                      style: GoogleFonts.jetBrainsMono(fontSize: 16, color: Colors.white),
+                      style: GoogleFonts.jetBrainsMono(fontSize: 16, color: c.textPrimary),
                       cursorColor: ObsidianTheme.emerald,
                       decoration: InputDecoration(
                         hintText: 'ABC-123456',
-                        hintStyle: GoogleFonts.jetBrainsMono(fontSize: 16, color: ObsidianTheme.textTertiary),
+                        hintStyle: GoogleFonts.jetBrainsMono(fontSize: 16, color: c.textTertiary),
                         border: InputBorder.none,
                         isDense: true,
                       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Dark shimmer skeleton for loading states.
@@ -21,14 +22,15 @@ class ShimmerLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Shimmer.fromColors(
-      baseColor: ObsidianTheme.shimmerBase,
-      highlightColor: ObsidianTheme.shimmerHighlight,
+      baseColor: c.shimmerBase,
+      highlightColor: c.shimmerHighlight,
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: ObsidianTheme.shimmerBase,
+          color: c.shimmerBase,
           borderRadius: borderRadius ?? ObsidianTheme.radiusMd,
         ),
       ),

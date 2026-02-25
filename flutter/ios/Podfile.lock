@@ -84,6 +84,12 @@ PODS:
   - permission_handler_apple (9.3.0):
     - Flutter
   - PromisesObjC (2.4.0)
+  - purchases_flutter (9.12.2):
+    - Flutter
+    - PurchasesHybridCommon (= 17.41.0)
+  - PurchasesHybridCommon (17.41.0):
+    - RevenueCat (= 5.59.2)
+  - RevenueCat (5.59.2)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -112,6 +118,7 @@ DEPENDENCIES:
   - mek_stripe_terminal (from `.symlinks/plugins/mek_stripe_terminal/ios`)
   - mobile_scanner (from `.symlinks/plugins/mobile_scanner/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
@@ -132,6 +139,8 @@ SPEC REPOS:
     - MLKitVision
     - nanopb
     - PromisesObjC
+    - PurchasesHybridCommon
+    - RevenueCat
     - StripeTerminal
 
 EXTERNAL SOURCES:
@@ -165,6 +174,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/mobile_scanner/ios"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
+  purchases_flutter:
+    :path: ".symlinks/plugins/purchases_flutter/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sqflite_darwin:
@@ -203,12 +214,15 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  purchases_flutter: 4d1eb4df39dc92f573069226fc6e2bafcfe3e929
+  PurchasesHybridCommon: 0fc10b0328a4dca5c607f845130e59f7427f4b69
+  RevenueCat: f352b3661288080bd8bf30bbb96e331940e73c88
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   StripeTerminal: 542aee71cf148da0d30cf1a67bf19e8bf4e06567
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   workmanager_apple: 904529ae31e97fc5be632cf628507652294a0778
 
-PODFILE CHECKSUM: f5984b0bac759aa7513b8ce50f8be44561305323
+PODFILE CHECKSUM: 6cbd2a25421eb7396b4c9fd27d8d8032eb0b0427
 
 COCOAPODS: 1.16.2

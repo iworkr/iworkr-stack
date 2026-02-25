@@ -94,6 +94,15 @@ interface ScheduleState {
   _stale: boolean;
   _lastFetchedAt: number | null;
 
+  /** Compute travel time warnings for consecutive blocks per technician */
+  getTravelWarnings: () => Array<{
+    blockId: string;
+    technicianId: string;
+    prevBlockId: string;
+    gapMinutes: number;
+    travelMinutes: number;
+  }>;
+
   /** Called by realtime when a schedule_block changes */
   handleRealtimeUpdate: () => void;
 }
@@ -259,6 +268,35 @@ export const useScheduleStore = create<ScheduleState>()(
     moveScheduleBlockServer(blockId, techId, startISO, endISO).catch((err) => {
       console.error("Failed to persist block move:", err);
     });
+
+    // Re-validate travel time after reposition
+    const orgId = get().orgId;
+    if (orgId) {
+      fetch("/api/schedule/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organization_id: orgId,
+          technician_id: techId,
+          start_time: startISO,
+          end_time: endISO,
+          location: block.location,
+        }),
+      })
+        .then((r) => r.json())
+        .then((v) => {
+          if (v?.travel?.estimated_minutes != null) {
+            set((s) => ({
+              blocks: s.blocks.map((b) =>
+                b.id === blockId
+                  ? { ...b, travelTime: v.travel.estimated_minutes }
+                  : b
+              ),
+            }));
+          }
+        })
+        .catch(() => {});
+    }
   },
 
   resizeBlock: (blockId, newDuration) => {
@@ -356,11 +394,40 @@ export const useScheduleStore = create<ScheduleState>()(
       backlogJobs: s.backlogJobs.filter((j) => j.id !== job.id),
     }));
 
-    // Persist to server
-    const result = await assignJobServer(orgId, job.id, technicianId, startISO, endISO);
+    // Fire validation + assignment in parallel
+    const [result] = await Promise.all([
+      assignJobServer(orgId, job.id, technicianId, startISO, endISO),
+      fetch("/api/schedule/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organization_id: orgId,
+          technician_id: technicianId,
+          start_time: startISO,
+          end_time: endISO,
+          job_id: job.id,
+          location: job.location,
+        }),
+      })
+        .then((r) => r.json())
+        .then((validation) => {
+          if (validation?.travel?.estimated_minutes != null) {
+            set((s) => ({
+              blocks: s.blocks.map((b) =>
+                b.id === tempBlock.id
+                  ? { ...b, travelTime: validation.travel.estimated_minutes }
+                  : b
+              ),
+            }));
+          }
+          if (validation?.warnings?.length > 0) {
+            console.warn("[Schedule] Drop warnings:", validation.warnings);
+          }
+        })
+        .catch(() => {}),
+    ]);
 
     if (result.error) {
-      // Rollback
       set((s) => ({
         blocks: s.blocks.filter((b) => b.id !== tempBlock.id),
         backlogJobs: [...s.backlogJobs, job],
@@ -368,7 +435,6 @@ export const useScheduleStore = create<ScheduleState>()(
       return;
     }
 
-    // Refresh to get the real block_id from the server
     get().refresh();
   },
 
@@ -391,6 +457,43 @@ export const useScheduleStore = create<ScheduleState>()(
         }));
       }
     });
+  },
+
+  getTravelWarnings: () => {
+    const { blocks, technicians } = get();
+    const warnings: Array<{
+      blockId: string;
+      technicianId: string;
+      prevBlockId: string;
+      gapMinutes: number;
+      travelMinutes: number;
+    }> = [];
+
+    for (const tech of technicians) {
+      const techBlocks = blocks
+        .filter((b) => b.technicianId === tech.id && b.status !== "cancelled")
+        .sort((a, b) => a.startHour - b.startHour);
+
+      for (let i = 1; i < techBlocks.length; i++) {
+        const prev = techBlocks[i - 1];
+        const curr = techBlocks[i];
+        const prevEnd = prev.startHour + prev.duration;
+        const gapMinutes = Math.round((curr.startHour - prevEnd) * 60);
+        const travelNeeded = curr.travelTime || 15;
+
+        if (gapMinutes < travelNeeded && gapMinutes >= 0) {
+          warnings.push({
+            blockId: curr.id,
+            technicianId: tech.id,
+            prevBlockId: prev.id,
+            gapMinutes,
+            travelMinutes: travelNeeded,
+          });
+        }
+      }
+    }
+
+    return warnings;
   },
 
   handleRealtimeUpdate: () => {

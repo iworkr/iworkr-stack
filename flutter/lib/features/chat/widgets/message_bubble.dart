@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/chat/widgets/rich_message_text.dart';
 import 'package:iworkr_mobile/models/chat_message.dart';
@@ -29,8 +30,9 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (message.isSystem) return _buildSystem();
-    if (message.isDeleted) return _buildDeleted();
+    final c = context.iColors;
+    if (message.isSystem) return _buildSystem(c);
+    if (message.isDeleted) return _buildDeleted(c);
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -56,19 +58,19 @@ class MessageBubble extends StatelessWidget {
                       width: 18, height: 18,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(5),
-                        color: ObsidianTheme.shimmerBase,
+                        color: c.shimmerBase,
                       ),
                       child: Center(
                         child: Text(
                           message.senderInitials,
-                          style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w600, color: ObsidianTheme.textTertiary),
+                          style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w600, color: c.textTertiary),
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       message.senderName ?? 'Unknown',
-                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary),
+                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: c.textSecondary),
                     ),
                   ],
                 ),
@@ -79,11 +81,11 @@ class MessageBubble extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (isMe) _buildTimestamp(),
+                if (isMe) _buildTimestamp(c),
                 if (isMe) const SizedBox(width: 6),
                 Flexible(child: _buildBubbleContent(context)),
                 if (!isMe) const SizedBox(width: 6),
-                if (!isMe) _buildTimestamp(),
+                if (!isMe) _buildTimestamp(c),
               ],
             ),
           ],
@@ -96,6 +98,7 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildBubbleContent(BuildContext context) {
+    final c = context.iColors;
     if (isMe) {
       // My message — no background, emerald spine on right
       return IntrinsicHeight(
@@ -109,13 +112,13 @@ class MessageBubble extends StatelessWidget {
                 child: RichMessageText.hasStructuredContent(message.content)
                     ? RichMessageText(
                         content: message.content,
-                        baseStyle: GoogleFonts.inter(fontSize: 14, color: Colors.white, height: 1.4),
+                        baseStyle: GoogleFonts.inter(fontSize: 14, color: c.textPrimary, height: 1.4),
                         onMentionTap: (_) {},
                         onReferenceTap: (jobId) => context.push('/jobs/$jobId'),
                       )
                     : Text(
                         message.content,
-                        style: GoogleFonts.inter(fontSize: 14, color: Colors.white, height: 1.4),
+                        style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary, height: 1.4),
                       ),
               ),
             ),
@@ -136,45 +139,45 @@ class MessageBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: ObsidianTheme.surface1,
-          border: Border.all(color: ObsidianTheme.border),
+          color: c.surface,
+          border: Border.all(color: c.border),
         ),
         child: RichMessageText.hasStructuredContent(message.content)
             ? RichMessageText(
                 content: message.content,
-                baseStyle: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFD4D4D8), height: 1.4),
+                baseStyle: GoogleFonts.inter(fontSize: 14, color: c.textSecondary, height: 1.4),
                 onMentionTap: (_) {},
                 onReferenceTap: (jobId) => context.push('/jobs/$jobId'),
               )
             : Text(
                 message.content,
-                style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFD4D4D8), height: 1.4),
+                style: GoogleFonts.inter(fontSize: 14, color: c.textSecondary, height: 1.4),
               ),
       );
     }
   }
 
-  Widget _buildTimestamp() {
+  Widget _buildTimestamp(IWorkrColors c) {
     return Text(
       timeago.format(message.createdAt, locale: 'en_short'),
-      style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary),
+      style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary),
     );
   }
 
-  Widget _buildSystem() {
+  Widget _buildSystem(IWorkrColors c) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
       child: Center(
         child: Text(
           '— ${message.content.toUpperCase()} —',
-          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 0.5),
+          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 0.5),
           textAlign: TextAlign.center,
         ),
       ),
     );
   }
 
-  Widget _buildDeleted() {
+  Widget _buildDeleted(IWorkrColors c) {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
@@ -182,11 +185,11 @@ class MessageBubble extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(PhosphorIconsLight.prohibit, size: 12, color: ObsidianTheme.textTertiary),
+            Icon(PhosphorIconsLight.prohibit, size: 12, color: c.textTertiary),
             const SizedBox(width: 6),
             Text(
               'Message deleted',
-              style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary, fontStyle: FontStyle.italic),
+              style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary, fontStyle: FontStyle.italic),
             ),
           ],
         ),

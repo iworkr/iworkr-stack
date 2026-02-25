@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// HUD Subtask List — high-velocity checklist with haptic confirmation.
@@ -25,21 +26,22 @@ class HudSubtaskList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     if (subtasks.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-          color: Colors.white.withValues(alpha: 0.02),
+          border: Border.all(color: c.activeBg),
+          color: c.hoverBg,
         ),
         child: Column(
           children: [
-            Icon(PhosphorIconsLight.listChecks, color: ObsidianTheme.textTertiary, size: 28),
+            Icon(PhosphorIconsLight.listChecks, color: c.textTertiary, size: 28),
             const SizedBox(height: 12),
             Text(
               'No subtasks',
-              style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+              style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
             ),
           ],
         ),
@@ -132,6 +134,7 @@ class _SubtaskRowState extends State<_SubtaskRow>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final done = widget.task['completed'] as bool? ?? false;
     final title = widget.task['title'] as String? ?? '';
     final isCritical = widget.task['is_critical'] as bool? ?? false;
@@ -145,7 +148,7 @@ class _SubtaskRowState extends State<_SubtaskRow>
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
+            bottom: BorderSide(color: c.activeBg),
           ),
           color: _justToggled
               ? ObsidianTheme.emerald.withValues(alpha: 0.04)
@@ -166,7 +169,7 @@ class _SubtaskRowState extends State<_SubtaskRow>
                 border: Border.all(
                   color: done
                       ? ObsidianTheme.emerald
-                      : ObsidianTheme.textTertiary.withValues(alpha: 0.5),
+                      : c.textTertiary.withValues(alpha: 0.5),
                   width: done ? 1.5 : 1,
                 ),
               ),
@@ -214,8 +217,8 @@ class _SubtaskRowState extends State<_SubtaskRow>
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: done
-                              ? ObsidianTheme.textTertiary
-                              : ObsidianTheme.textPrimary,
+                              ? c.textTertiary
+                              : c.textPrimary,
                           fontWeight: done ? FontWeight.w400 : FontWeight.w500,
                         ),
                       ),
@@ -248,7 +251,7 @@ class _SubtaskRowState extends State<_SubtaskRow>
               Icon(
                 PhosphorIconsLight.notepad,
                 size: 13,
-                color: ObsidianTheme.textTertiary.withValues(alpha: 0.3),
+                color: c.textTertiary.withValues(alpha: 0.3),
               ),
 
             // Completed icon

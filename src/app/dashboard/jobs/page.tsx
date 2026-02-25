@@ -33,10 +33,16 @@ import type { Job, Priority, JobStatus } from "@/lib/data";
 /* ── Status helpers ──────────────────────────────────── */
 
 const STATUS_OPTIONS = [
-  { value: "backlog", label: "Backlog" },
+  { value: "backlog", label: "Draft" },
   { value: "todo", label: "To Do" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "en_route", label: "En Route" },
+  { value: "on_site", label: "On Site" },
   { value: "in_progress", label: "In Progress" },
   { value: "done", label: "Done" },
+  { value: "completed", label: "Completed" },
+  { value: "invoiced", label: "Invoiced" },
+  { value: "archived", label: "Archived" },
 ] as const;
 
 const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
@@ -306,9 +312,10 @@ export default function JobsPage() {
 
   const filteredJobs = useMemo(() => {
     return jobsList.filter((job) => {
-      if (viewFilter === "active" && (job.status === "backlog" || job.status === "done" || job.status === "cancelled")) return false;
+      const terminalStatuses = ["done", "completed", "invoiced", "archived", "cancelled"];
+      if (viewFilter === "active" && (job.status === "backlog" || terminalStatuses.includes(job.status))) return false;
       if (viewFilter === "backlog" && job.status !== "backlog") return false;
-      if (viewFilter === "done" && job.status !== "done") return false;
+      if (viewFilter === "done" && !["done", "completed", "invoiced", "archived"].includes(job.status)) return false;
       if (advancedFilters.priority && job.priority !== advancedFilters.priority) return false;
       if (advancedFilters.status && job.status !== advancedFilters.status) return false;
       if (searchQuery.trim()) {
@@ -437,9 +444,9 @@ export default function JobsPage() {
     finally { setIsBulkDeleteModalOpen(false); setBulkDeleteJobs([]); setIsDeleting(false); }
   }
 
-  const activeCount = jobsList.filter((j) => j.status === "todo" || j.status === "in_progress").length;
+  const activeCount = jobsList.filter((j) => ["todo", "scheduled", "en_route", "on_site", "in_progress"].includes(j.status)).length;
   const backlogCount = jobsList.filter((j) => j.status === "backlog").length;
-  const doneCount = jobsList.filter((j) => j.status === "done").length;
+  const doneCount = jobsList.filter((j) => ["done", "completed", "invoiced", "archived"].includes(j.status)).length;
 
   return (
     <div className="flex h-full flex-col bg-[#050505]">

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/stealth_text_field.dart';
 
@@ -124,14 +125,14 @@ class _CommandRailBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           height: 48,
           decoration: BoxDecoration(
-            // bg-zinc-900/90
-            color: const Color(0xFF18181B).withValues(alpha: 0.9),
+            color: c.shimmerBase.withValues(alpha: 0.9),
             border: const Border(
               top: BorderSide(
                 color: Color(0x1AFFFFFF), // white/10
@@ -206,6 +207,7 @@ class _RailButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -214,12 +216,12 @@ class _RailButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusSm,
           color: enabled
-              ? Colors.white.withValues(alpha: 0.06)
+              ? c.border
               : Colors.transparent,
           border: Border.all(
             color: enabled
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.03),
+                ? c.borderMedium
+                : c.hoverBg,
           ),
         ),
         child: Center(
@@ -227,8 +229,8 @@ class _RailButton extends StatelessWidget {
             icon,
             size: 16,
             color: enabled
-                ? ObsidianTheme.textSecondary
-                : ObsidianTheme.textDisabled,
+                ? c.textSecondary
+                : c.textDisabled,
           ),
         ),
       ),

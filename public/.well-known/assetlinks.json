@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.iworkr.app",
+      "sha256_cert_fingerprints": [
+        "TODO: Replace with your signing certificate SHA256 fingerprint. Run: keytool -list -v -keystore <your-keystore> | grep SHA256"
+      ]
+    }
+  }
+]

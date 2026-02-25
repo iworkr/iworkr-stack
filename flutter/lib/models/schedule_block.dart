@@ -61,6 +61,7 @@ class ScheduleBlock {
 enum ScheduleBlockStatus {
   scheduled,
   enRoute,
+  onSite,
   inProgress,
   complete,
   cancelled;
@@ -69,6 +70,8 @@ enum ScheduleBlockStatus {
     switch (s) {
       case 'en_route':
         return ScheduleBlockStatus.enRoute;
+      case 'on_site':
+        return ScheduleBlockStatus.onSite;
       case 'in_progress':
         return ScheduleBlockStatus.inProgress;
       case 'complete':
@@ -80,12 +83,23 @@ enum ScheduleBlockStatus {
     }
   }
 
+  String get value {
+    switch (this) {
+      case ScheduleBlockStatus.enRoute: return 'en_route';
+      case ScheduleBlockStatus.onSite: return 'on_site';
+      case ScheduleBlockStatus.inProgress: return 'in_progress';
+      default: return name;
+    }
+  }
+
   String get label {
     switch (this) {
       case ScheduleBlockStatus.scheduled:
         return 'Scheduled';
       case ScheduleBlockStatus.enRoute:
         return 'En Route';
+      case ScheduleBlockStatus.onSite:
+        return 'On Site';
       case ScheduleBlockStatus.inProgress:
         return 'In Progress';
       case ScheduleBlockStatus.complete:
@@ -94,4 +108,6 @@ enum ScheduleBlockStatus {
         return 'Cancelled';
     }
   }
+
+  bool get isActive => this == enRoute || this == onSite || this == inProgress;
 }

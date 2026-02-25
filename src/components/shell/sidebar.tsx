@@ -41,6 +41,7 @@ import { Shimmer, ShimmerTeamRow } from "@/components/ui/shimmer";
 import { useTheme } from "@/components/providers/theme-provider";
 import { useBillingStore } from "@/lib/billing-store";
 import { ProBadge } from "@/components/monetization/pro-badge";
+import { roleDefinitions, type RoleId, type PermissionModule } from "@/lib/team-data";
 
 /* ── Data ─────────────────────────────────────────────── */
 
@@ -51,6 +52,7 @@ const navItems = [
   { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
   { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P" },
   { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
+  { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R" },
   { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
   { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A" },
   { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
@@ -169,6 +171,22 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
   }, [orgId, loadBilling]);
 
   const gatedNavIds = new Set(["nav_automations", "nav_integrations"]);
+
+  const membership = useAuthStore((s) => s.currentMembership);
+  const userRole = (membership?.role ?? "technician") as RoleId;
+  const roleDef = roleDefinitions.find((r) => r.id === userRole);
+  const navModuleMap: Record<string, PermissionModule> = {
+    nav_invoices: "finance",
+    nav_team: "team",
+    nav_automations: "integrations",
+    nav_integrations: "integrations",
+    nav_ai_agent: "integrations",
+  };
+  const visibleNavItems = navItems.filter((item) => {
+    const module = navModuleMap[item.id];
+    if (!module) return true;
+    return roleDef?.permissions[module]?.includes("view") ?? false;
+  });
 
   const unreadCount = useInboxStore((s) => s.items.filter(i => !i.read && !i.archived).length);
 
@@ -314,7 +332,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
           </AnimatePresence>
 
           <div className="space-y-px">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavLink
                 key={item.id}
                 item={item}
@@ -326,9 +344,9 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
             ))}
           </div>
 
-          {/* ── Team Section ── */}
+          {/* ── Team Section (visible to roles with team.view) ── */}
           <AnimatePresence>
-            {!sidebarCollapsed && (
+            {!sidebarCollapsed && roleDef?.permissions.team?.includes("view") && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -396,6 +414,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                 {systemItems.map((item) => {
                   const Icon = item.icon;
                   if (item.action === "invite") {
+                    if (!roleDef?.scopes.canManageTeam) return null;
                     return (
                       <button
                         key={item.label}

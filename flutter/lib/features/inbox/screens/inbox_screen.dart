@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:iworkr_mobile/core/services/notifications_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
@@ -97,6 +98,7 @@ class InboxScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final notifAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
@@ -118,11 +120,11 @@ class InboxScreen extends ConsumerWidget {
                         context.go('/');
                       }
                     },
-                    child: const SizedBox(
+                    child: SizedBox(
                       width: 36,
                       height: 36,
                       child: Center(
-                        child: Icon(PhosphorIconsLight.arrowLeft, size: 18, color: ObsidianTheme.textSecondary),
+                        child: Icon(PhosphorIconsLight.arrowLeft, size: 18, color: c.textSecondary),
                       ),
                     ),
                   ),
@@ -132,7 +134,7 @@ class InboxScreen extends ConsumerWidget {
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textPrimary,
+                      color: c.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -170,7 +172,7 @@ class InboxScreen extends ConsumerWidget {
                     },
                     child: Text(
                       'Mark all read',
-                      style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
                     ),
                   ),
                 ],
@@ -194,7 +196,7 @@ class InboxScreen extends ConsumerWidget {
 
                   return RefreshIndicator(
                     color: ObsidianTheme.emerald,
-                    backgroundColor: ObsidianTheme.surface1,
+                    backgroundColor: c.surface,
                     onRefresh: () async {
                       HapticFeedback.mediumImpact();
                       ref.invalidate(notificationsProvider);
@@ -276,12 +278,13 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
       child: Text(
         label.toUpperCase(),
         style: GoogleFonts.jetBrainsMono(
-          fontSize: 10, color: ObsidianTheme.textTertiary,
+          fontSize: 10, color: c.textTertiary,
           letterSpacing: 1.5, fontWeight: FontWeight.w600,
         ),
       ),
@@ -310,6 +313,7 @@ class _NotificationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final hasDeepLink = notification.relatedJobId != null ||
         (notification.actionLink != null && notification.actionLink!.isNotEmpty);
 
@@ -332,15 +336,15 @@ class _NotificationRow extends StatelessWidget {
       secondaryBackground: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: ObsidianTheme.shimmerBase,
-        child: const Icon(PhosphorIconsLight.clock, color: ObsidianTheme.textTertiary, size: 20),
+        color: c.shimmerBase,
+        child: Icon(PhosphorIconsLight.clock, color: c.textTertiary, size: 20),
       ),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: c.border)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,7 +386,7 @@ class _NotificationRow extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: notification.read ? FontWeight.w400 : FontWeight.w500,
-                        color: notification.read ? ObsidianTheme.textSecondary : ObsidianTheme.textPrimary,
+                        color: notification.read ? c.textSecondary : c.textPrimary,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -391,7 +395,7 @@ class _NotificationRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         notification.body!,
-                        style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                        style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -401,11 +405,11 @@ class _NotificationRow extends StatelessWidget {
                       children: [
                         Text(
                           timeago.format(notification.createdAt),
-                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                         ),
                         if (hasDeepLink) ...[
                           const SizedBox(width: 6),
-                          Icon(PhosphorIconsLight.arrowSquareOut, size: 10, color: ObsidianTheme.textTertiary),
+                          Icon(PhosphorIconsLight.arrowSquareOut, size: 10, color: c.textTertiary),
                         ],
                       ],
                     ),

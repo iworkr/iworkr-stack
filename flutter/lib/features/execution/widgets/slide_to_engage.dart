@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Slide-to-Engage — replaces a standard "Start" button.
@@ -88,6 +89,7 @@ class _SlideToEngageState extends State<SlideToEngage>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return AnimatedOpacity(
       opacity: widget.enabled ? 1.0 : 0.4,
       duration: ObsidianTheme.standard,
@@ -103,11 +105,11 @@ class _SlideToEngageState extends State<SlideToEngage>
                   height: _trackHeight,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(31),
-                    color: Colors.white.withValues(alpha: 0.03),
+                    color: c.hoverBg,
                     border: Border.all(
                       color: _completed
                           ? ObsidianTheme.emerald.withValues(alpha: 0.4)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : c.borderMedium,
                     ),
                   ),
                 ),
@@ -141,7 +143,7 @@ class _SlideToEngageState extends State<SlideToEngage>
                               end: Alignment(-0.5 + _shimmer.value * 3, 0),
                               colors: [
                                 Colors.transparent,
-                                Colors.white.withValues(alpha: 0.15),
+                                c.borderHover,
                                 Colors.transparent,
                               ],
                             ).createShader(bounds);
@@ -212,7 +214,7 @@ class _SlideToEngageState extends State<SlideToEngage>
                         color: _completed
                             ? ObsidianTheme.emerald
                             : Color.lerp(
-                                Colors.white.withValues(alpha: 0.08),
+                                c.borderMedium,
                                 ObsidianTheme.emerald.withValues(alpha: 0.3),
                                 _progress,
                               ),
@@ -220,7 +222,7 @@ class _SlideToEngageState extends State<SlideToEngage>
                           color: _completed
                               ? ObsidianTheme.emerald
                               : Color.lerp(
-                                  Colors.white.withValues(alpha: 0.15),
+                                  c.borderHover,
                                   ObsidianTheme.emerald.withValues(alpha: 0.6),
                                   _progress,
                                 )!,

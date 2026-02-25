@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
 import 'package:iworkr_mobile/core/widgets/status_pip.dart';
@@ -28,6 +29,7 @@ class JobsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final jobsAsync = ref.watch(jobsStreamProvider);
     final filter = ref.watch(jobFilterProvider);
 
@@ -47,12 +49,11 @@ class JobsScreen extends ConsumerWidget {
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textPrimary,
+                      color: c.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
                   const Spacer(),
-                  // Ghost "New" button — web spec: bg-white/[0.02], border-white/[0.08]
                   GestureDetector(
                     onTap: () {
                       showCreateJobSheet(context);
@@ -61,19 +62,19 @@ class JobsScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: ObsidianTheme.borderMedium),
-                        color: ObsidianTheme.hoverBg,
+                        border: Border.all(color: c.borderMedium),
+                        color: c.hoverBg,
                       ),
                       child: Row(
                         children: [
-                          const Icon(PhosphorIconsLight.plus, size: 14, color: ObsidianTheme.textSecondary),
+                          Icon(PhosphorIconsLight.plus, size: 14, color: c.textSecondary),
                           const SizedBox(width: 6),
                           Text(
                             'New',
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: ObsidianTheme.textPrimary,
+                              color: c.textPrimary,
                             ),
                           ),
                         ],
@@ -110,19 +111,19 @@ class JobsScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: ObsidianTheme.surface1,
-                border: const Border(bottom: BorderSide(color: ObsidianTheme.border)),
+                color: c.surface,
+                border: Border(bottom: BorderSide(color: c.border)),
               ),
               child: Row(
                 children: [
-                  SizedBox(width: 24, child: Text('', style: _headerStyle)),
+                  SizedBox(width: 24, child: Text('', style: _headerStyle(c))),
                   const SizedBox(width: 8),
-                  SizedBox(width: 60, child: Text('ID', style: _headerStyle)),
+                  SizedBox(width: 60, child: Text('ID', style: _headerStyle(c))),
                   const SizedBox(width: 8),
-                  SizedBox(width: 20, child: Text('S', style: _headerStyle)),
+                  SizedBox(width: 20, child: Text('S', style: _headerStyle(c))),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('TITLE', style: _headerStyle)),
-                  SizedBox(width: 80, child: Text('CLIENT', style: _headerStyle)),
+                  Expanded(child: Text('TITLE', style: _headerStyle(c))),
+                  SizedBox(width: 80, child: Text('CLIENT', style: _headerStyle(c))),
                 ],
               ),
             ).animate().fadeIn(delay: 120.ms, duration: 200.ms),
@@ -143,7 +144,7 @@ class JobsScreen extends ConsumerWidget {
 
                   return RefreshIndicator(
                     color: ObsidianTheme.emerald,
-                    backgroundColor: ObsidianTheme.surface1,
+                    backgroundColor: c.surface,
                     onRefresh: () async {
                       HapticFeedback.mediumImpact();
                       ref.invalidate(jobsStreamProvider);
@@ -178,9 +179,9 @@ class JobsScreen extends ConsumerWidget {
     );
   }
 
-  static final _headerStyle = GoogleFonts.jetBrainsMono(
+  static TextStyle _headerStyle(IWorkrColors c) => GoogleFonts.jetBrainsMono(
     fontSize: 9,
-    color: ObsidianTheme.textTertiary,
+    color: c.textTertiary,
     letterSpacing: 1.5,
   );
 }
@@ -193,6 +194,7 @@ class _JobRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -201,8 +203,8 @@ class _JobRow extends StatelessWidget {
       child: Container(
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: c.border)),
         ),
         child: Row(
           children: [
@@ -214,7 +216,7 @@ class _JobRow extends StatelessWidget {
                 job.displayId,
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 10,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                 ),
               ),
             ),
@@ -227,7 +229,7 @@ class _JobRow extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: ObsidianTheme.textPrimary,
+                  color: c.textPrimary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -239,7 +241,7 @@ class _JobRow extends StatelessWidget {
                 job.clientName ?? '',
                 style: GoogleFonts.inter(
                   fontSize: 11,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -265,6 +267,7 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -276,16 +279,16 @@ class _FilterPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
-          color: isActive ? ObsidianTheme.shimmerBase : Colors.transparent,
+          color: isActive ? c.shimmerBase : Colors.transparent,
           border: Border.all(
-            color: isActive ? ObsidianTheme.borderMedium : ObsidianTheme.border,
+            color: isActive ? c.borderMedium : c.border,
           ),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: isActive ? ObsidianTheme.textPrimary : ObsidianTheme.textTertiary,
+            color: isActive ? c.textPrimary : c.textTertiary,
             fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
           ),
         ),

@@ -218,6 +218,7 @@ export async function POST(request: NextRequest) {
     "asset-service-reminders": "asset-service-reminder",
     "sync-polar-subscriptions": "sync-polar-status",
     "run-scheduled-automations": "run-automations",
+    "process-mail-queue": "process-mail",
   };
 
   // Jobs that can be handled by invoking the GET handler

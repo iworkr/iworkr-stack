@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/models/schedule_block.dart';
 
@@ -15,23 +16,25 @@ class SchedulePreview extends StatelessWidget {
   final List<ScheduleBlock> blocks;
   const SchedulePreview({super.key, required this.blocks});
 
-  Color _statusColor(ScheduleBlockStatus status) {
+  Color _statusColor(ScheduleBlockStatus status, IWorkrColors c) {
     switch (status) {
       case ScheduleBlockStatus.inProgress:
         return ObsidianTheme.emerald;
       case ScheduleBlockStatus.enRoute:
         return ObsidianTheme.emerald;
       case ScheduleBlockStatus.complete:
-        return ObsidianTheme.textTertiary;
+        return c.textTertiary;
       case ScheduleBlockStatus.cancelled:
         return ObsidianTheme.rose;
       default:
-        return ObsidianTheme.textMuted;
+        return c.textMuted;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     if (blocks.isEmpty) {
       return const AnimatedEmptyState(
         type: EmptyStateType.calendar,
@@ -47,18 +50,17 @@ class SchedulePreview extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             borderRadius: ObsidianTheme.radiusLg,
-            color: ObsidianTheme.surface1,
-            border: Border.all(color: ObsidianTheme.border),
+            color: c.surface,
+            border: Border.all(color: c.border),
           ),
           child: ClipRRect(
             borderRadius: ObsidianTheme.radiusLg,
             child: Row(
               children: [
-                // Status spine (3px)
                 Container(
                   width: 3,
                   height: 56,
-                  color: _statusColor(block.status),
+                  color: _statusColor(block.status, c),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -72,7 +74,7 @@ class SchedulePreview extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: ObsidianTheme.textPrimary,
+                            color: c.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -82,7 +84,7 @@ class SchedulePreview extends StatelessWidget {
                           block.location ?? block.clientName ?? '',
                           style: GoogleFonts.inter(
                             fontSize: 11,
-                            color: ObsidianTheme.textTertiary,
+                            color: c.textTertiary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -97,7 +99,7 @@ class SchedulePreview extends StatelessWidget {
                     block.timeRange,
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 10,
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                     ),
                   ),
                 ),

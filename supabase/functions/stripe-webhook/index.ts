@@ -53,6 +53,25 @@ async function verifyStripeSignature(
   return JSON.parse(body);
 }
 
+async function findOrgByStripeCustomer(
+  supabase: ReturnType<typeof createClient>,
+  customerId: string,
+): Promise<{ id: string; settings: Record<string, unknown> } | null> {
+  const { data: orgs } = await supabase
+    .from("organizations")
+    .select("id, settings");
+
+  if (!orgs) return null;
+
+  for (const org of orgs) {
+    const settings = (org.settings as Record<string, unknown>) ?? {};
+    if (settings.stripe_customer_id === customerId) {
+      return { id: org.id, settings };
+    }
+  }
+  return null;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -89,13 +108,20 @@ Deno.serve(async (req: Request) => {
 
         if (!orgId) break;
 
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("settings")
+          .eq("id", orgId)
+          .single();
+
+        const existingSettings = (org?.settings as Record<string, unknown>) ?? {};
         await supabase
           .from("organizations")
-          .update({ stripe_customer_id: customerId })
+          .update({ settings: { ...existingSettings, stripe_customer_id: customerId } })
           .eq("id", orgId);
 
         if (subscriptionId) {
-          await handleSubscriptionChange(supabase, subscriptionId);
+          await handleSubscriptionChange(supabase, subscriptionId, undefined, orgId);
         }
         break;
       }
@@ -108,34 +134,21 @@ Deno.serve(async (req: Request) => {
 
       case "customer.subscription.deleted": {
         const customerId = obj.customer as string;
-
-        const { data: org } = await supabase
-          .from("organizations")
-          .select("id")
-          .eq("stripe_customer_id", customerId)
-          .single();
+        const org = await findOrgByStripeCustomer(supabase, customerId);
 
         if (org) {
           await supabase
-            .from("organizations")
-            .update({ plan_tier: "free" })
-            .eq("id", org.id);
-
-          await supabase
             .from("subscriptions")
             .update({ status: "canceled", canceled_at: new Date().toISOString() })
-            .eq("stripe_subscription_id", obj.id as string);
+            .eq("organization_id", org.id)
+            .in("status", ["active", "trialing", "past_due"]);
         }
         break;
       }
 
       case "invoice.payment_failed": {
         const customerId = obj.customer as string;
-        const { data: org } = await supabase
-          .from("organizations")
-          .select("id")
-          .eq("stripe_customer_id", customerId)
-          .single();
+        const org = await findOrgByStripeCustomer(supabase, customerId);
 
         if (org) {
           await supabase
@@ -144,6 +157,69 @@ Deno.serve(async (req: Request) => {
             .eq("organization_id", org.id)
             .in("status", ["active", "trialing"]);
         }
+        break;
+      }
+
+      // ── Stripe Connect Events ────────────────────────
+      case "account.updated": {
+        const accountId = obj.id as string;
+        const chargesEnabled = obj.charges_enabled as boolean;
+        const payoutsEnabled = obj.payouts_enabled as boolean;
+
+        const { data: orgs } = await supabase
+          .from("organizations")
+          .select("id, settings");
+
+        if (orgs) {
+          for (const org of orgs) {
+            const settings = (org.settings as Record<string, unknown>) ?? {};
+            if (settings.stripe_account_id === accountId) {
+              await supabase
+                .from("organizations")
+                .update({
+                  settings: {
+                    ...settings,
+                    charges_enabled: chargesEnabled,
+                    payouts_enabled: payoutsEnabled,
+                    ...(chargesEnabled ? { connect_onboarded_at: new Date().toISOString() } : {}),
+                  },
+                })
+                .eq("id", org.id);
+              break;
+            }
+          }
+        }
+        break;
+      }
+
+      case "payment_intent.succeeded": {
+        const piId = obj.id as string;
+        await supabase
+          .from("payments")
+          .update({ status: "succeeded", updated_at: new Date().toISOString() })
+          .eq("stripe_payment_intent_id", piId);
+
+        const { data: payment } = await supabase
+          .from("payments")
+          .select("invoice_id")
+          .eq("stripe_payment_intent_id", piId)
+          .maybeSingle();
+
+        if (payment?.invoice_id) {
+          await supabase
+            .from("invoices")
+            .update({ status: "paid", paid_at: new Date().toISOString() })
+            .eq("id", payment.invoice_id);
+        }
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        const piId = obj.id as string;
+        await supabase
+          .from("payments")
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+          .eq("stripe_payment_intent_id", piId);
         break;
       }
     }
@@ -161,7 +237,8 @@ Deno.serve(async (req: Request) => {
 async function handleSubscriptionChange(
   supabase: ReturnType<typeof createClient>,
   subscriptionId: string,
-  subObj?: Record<string, unknown>
+  subObj?: Record<string, unknown>,
+  knownOrgId?: string,
 ) {
   const sub = subObj ?? {};
   const customerId = sub.customer as string;
@@ -178,23 +255,18 @@ async function handleSubscriptionChange(
     ? new Date((sub.current_period_end as number) * 1000).toISOString()
     : null;
 
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("id")
-    .eq("stripe_customer_id", customerId)
-    .single();
+  let orgId = knownOrgId;
+  if (!orgId && customerId) {
+    const org = await findOrgByStripeCustomer(supabase, customerId);
+    orgId = org?.id;
+  }
 
-  if (!org) return;
-
-  await supabase
-    .from("organizations")
-    .update({ plan_tier: planTier })
-    .eq("id", org.id);
+  if (!orgId) return;
 
   const subRow = {
-    organization_id: org.id,
-    stripe_subscription_id: subscriptionId,
-    stripe_price_id: priceId,
+    organization_id: orgId,
+    polar_subscription_id: `stripe_${subscriptionId}`,
+    polar_product_id: priceId || null,
     plan_key: planTier,
     status: mapStripeStatus(status),
     current_period_start: periodStart,
@@ -206,7 +278,7 @@ async function handleSubscriptionChange(
   const { data: existing } = await supabase
     .from("subscriptions")
     .select("id")
-    .eq("stripe_subscription_id", subscriptionId)
+    .eq("polar_subscription_id", `stripe_${subscriptionId}`)
     .maybeSingle();
 
   if (existing) {

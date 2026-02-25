@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/services/market_intelligence_provider.dart';
 import 'package:iworkr_mobile/models/market_benchmark.dart';
@@ -46,6 +47,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final benchmarkAsync = ref.watch(
       marketBenchmarkProvider(MarketQuery(category: _selectedCategory)),
     );
@@ -53,7 +55,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
     final categoriesAsync = ref.watch(serviceCategoriesProvider);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -62,7 +64,6 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
                 children: [
-                  // Category selector
                   categoriesAsync.when(
                     data: (cats) => _buildCategorySelector(cats),
                     loading: () => const SizedBox(height: 40),
@@ -71,7 +72,6 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
 
                   const SizedBox(height: 24),
 
-                  // Bell Curve section
                   benchmarkAsync.when(
                     data: (b) => b != null
                         ? _buildBellCurveSection(b)
@@ -82,7 +82,6 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
 
                   const SizedBox(height: 20),
 
-                  // Key Metrics
                   benchmarkAsync.when(
                     data: (b) => b != null
                         ? _buildMetricsRow(b)
@@ -93,7 +92,6 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
 
                   const SizedBox(height: 20),
 
-                  // Trend chart
                   trendsAsync.when(
                     data: (trends) => trends.isNotEmpty
                         ? _buildTrendSection(trends)
@@ -104,7 +102,6 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
 
                   const SizedBox(height: 20),
 
-                  // Win Rate Breakdown
                   benchmarkAsync.when(
                     data: (b) => b != null
                         ? _buildWinRateSection(b)
@@ -115,7 +112,6 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
 
                   const SizedBox(height: 20),
 
-                  // Privacy notice
                   _buildPrivacyNotice(),
                 ],
               ),
@@ -129,6 +125,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
   // ── Header ───────────────────────────────────────────
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
@@ -143,12 +140,12 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: ObsidianTheme.hoverBg,
-                border: Border.all(color: ObsidianTheme.border),
+                color: c.hoverBg,
+                border: Border.all(color: c.border),
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(PhosphorIconsLight.arrowLeft,
-                    size: 16, color: ObsidianTheme.textSecondary),
+                    size: 16, color: c.textSecondary),
               ),
             ),
           ),
@@ -162,7 +159,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                   style: GoogleFonts.inter(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: c.textPrimary,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -171,7 +168,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                   'Market Intelligence',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: ObsidianTheme.textMuted,
+                    color: c.textMuted,
                   ),
                 ),
               ],
@@ -203,6 +200,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
   // ── Category Selector ────────────────────────────────
 
   Widget _buildCategorySelector(List<String> categories) {
+    final c = context.iColors;
     return SizedBox(
       height: 36,
       child: ListView.separated(
@@ -223,9 +221,9 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusFull,
-                color: selected ? ObsidianTheme.emerald.withValues(alpha: 0.12) : ObsidianTheme.surface1,
+                color: selected ? ObsidianTheme.emerald.withValues(alpha: 0.12) : c.surface,
                 border: Border.all(
-                  color: selected ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.border,
+                  color: selected ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border,
                 ),
               ),
               child: Text(
@@ -233,7 +231,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? ObsidianTheme.emerald : ObsidianTheme.textSecondary,
+                  color: selected ? ObsidianTheme.emerald : c.textSecondary,
                 ),
               ),
             ),
@@ -246,6 +244,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
   // ── Bell Curve ───────────────────────────────────────
 
   Widget _buildBellCurveSection(MarketBenchmark benchmark) {
+    final c = context.iColors;
     return GlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -259,7 +258,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                 'PRICE DISTRIBUTION',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -268,14 +267,13 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                 '${benchmark.sampleSize} quotes',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // Bell curve
           AnimatedBuilder(
             animation: _bellCurveAnim,
             builder: (context, _) {
@@ -289,6 +287,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                       _bellCurveAnim.value.clamp(0.0, 1.0),
                     ),
                     pulseValue: _pulseAnim.value,
+                    borderColor: c.border,
                   ),
                 ),
               );
@@ -297,7 +296,6 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
 
           const SizedBox(height: 12),
 
-          // Price labels
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -375,6 +373,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
   // ── Trend Chart ──────────────────────────────────────
 
   Widget _buildTrendSection(List<MarketTrend> trends) {
+    final c = context.iColors;
     final latestChange = trends.isNotEmpty ? trends.last.priceChangePct : 0.0;
     final isUp = latestChange >= 0;
 
@@ -391,7 +390,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                 'PRICING TRENDS',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -430,13 +429,12 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
             height: 120,
             child: CustomPaint(
               size: const Size(double.infinity, 120),
-              painter: _TrendChartPainter(trends: trends),
+              painter: _TrendChartPainter(trends: trends, borderColor: c.border),
             ),
           ),
 
           const SizedBox(height: 8),
 
-          // Month labels
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: trends.map((t) {
@@ -444,7 +442,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                 t.monthLabel,
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 8,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                 ),
               );
             }).toList(),
@@ -457,6 +455,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
   // ── Win Rate Section ─────────────────────────────────
 
   Widget _buildWinRateSection(MarketBenchmark benchmark) {
+    final c = context.iColors;
     return GlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -470,7 +469,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                 'WIN PROBABILITY',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -506,17 +505,18 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
   // ── Privacy Notice ───────────────────────────────────
 
   Widget _buildPrivacyNotice() {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.surface1.withValues(alpha: 0.5),
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface.withValues(alpha: 0.5),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(PhosphorIconsLight.shieldCheck, size: 16, color: ObsidianTheme.textTertiary),
+          Icon(PhosphorIconsLight.shieldCheck, size: 16, color: c.textTertiary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -527,7 +527,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: ObsidianTheme.textSecondary,
+                    color: c.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -536,7 +536,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
                   'No competitor names are ever shown. Updated every 24 hours.',
                   style: GoogleFonts.inter(
                     fontSize: 10,
-                    color: ObsidianTheme.textMuted,
+                    color: c.textMuted,
                     height: 1.4,
                   ),
                 ),
@@ -551,19 +551,20 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
   // ── Empty State ──────────────────────────────────────
 
   Widget _buildEmptyState() {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.all(40),
       child: Column(
         children: [
           Icon(PhosphorIconsLight.chartBar,
-              size: 48, color: ObsidianTheme.textDisabled),
+              size: 48, color: c.textDisabled),
           const SizedBox(height: 16),
           Text(
             'Not enough data yet',
             style: GoogleFonts.inter(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: ObsidianTheme.textSecondary,
+              color: c.textSecondary,
             ),
           ),
           const SizedBox(height: 6),
@@ -571,7 +572,7 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
             'We need at least 5 quotes in this category to show market intelligence.',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: ObsidianTheme.textMuted,
+              color: c.textMuted,
               height: 1.4,
             ),
             textAlign: TextAlign.center,
@@ -582,17 +583,18 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
   }
 
   Widget _buildShimmerCard() {
+    final c = context.iColors;
     return Container(
       height: 200,
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusLg,
-        color: ObsidianTheme.shimmerBase,
+        color: c.shimmerBase,
       ),
     )
-        .animate(onPlay: (c) => c.repeat())
+        .animate(onPlay: (ctrl) => ctrl.repeat())
         .shimmer(
           duration: 1200.ms,
-          color: ObsidianTheme.shimmerHighlight.withValues(alpha: 0.3),
+          color: c.shimmerHighlight.withValues(alpha: 0.3),
         );
   }
 }
@@ -601,17 +603,17 @@ class _MarketIndexScreenState extends ConsumerState<MarketIndexScreen>
 // PAINTERS
 // ══════════════════════════════════════════════════════════
 
-// ── Bell Curve Painter ─────────────────────────────────
-
 class _BellCurvePainter extends CustomPainter {
   final MarketBenchmark benchmark;
   final double progress;
   final double pulseValue;
+  final Color borderColor;
 
   _BellCurvePainter({
     required this.benchmark,
     required this.progress,
     required this.pulseValue,
+    required this.borderColor,
   });
 
   @override
@@ -621,12 +623,11 @@ class _BellCurvePainter extends CustomPainter {
     final padBottom = 20.0;
     final chartH = h - padBottom;
 
-    // Bell curve path
     final path = Path();
     final fillPath = Path();
 
     final mean = w / 2;
-    final sigma = w / 5; // controls width of the bell
+    final sigma = w / 5;
 
     path.moveTo(0, chartH);
     fillPath.moveTo(0, chartH);
@@ -649,7 +650,6 @@ class _BellCurvePainter extends CustomPainter {
     fillPath.lineTo(w * progress, chartH);
     fillPath.close();
 
-    // Fill gradient
     final fillPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.centerLeft,
@@ -662,7 +662,6 @@ class _BellCurvePainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(fillPath, fillPaint);
 
-    // Curve stroke
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
@@ -677,7 +676,6 @@ class _BellCurvePainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(path, strokePaint);
 
-    // Median line
     if (progress > 0.4) {
       final medX = w * 0.5;
       final medPaint = Paint()
@@ -687,7 +685,6 @@ class _BellCurvePainter extends CustomPainter {
       canvas.drawLine(Offset(medX, 0), Offset(medX, chartH), medPaint);
     }
 
-    // P25 and P75 dashed lines
     if (progress > 0.6) {
       _drawDashedLine(canvas, w * 0.25, chartH,
           ObsidianTheme.amber.withValues(alpha: 0.25));
@@ -695,9 +692,8 @@ class _BellCurvePainter extends CustomPainter {
           ObsidianTheme.violet.withValues(alpha: 0.25));
     }
 
-    // X-axis line
     final axisPaint = Paint()
-      ..color = ObsidianTheme.border
+      ..color = borderColor
       ..strokeWidth = 1;
     canvas.drawLine(Offset(0, chartH), Offset(w, chartH), axisPaint);
   }
@@ -716,12 +712,11 @@ class _BellCurvePainter extends CustomPainter {
       progress != old.progress || pulseValue != old.pulseValue;
 }
 
-// ── Trend Chart Painter ────────────────────────────────
-
 class _TrendChartPainter extends CustomPainter {
   final List<MarketTrend> trends;
+  final Color borderColor;
 
-  _TrendChartPainter({required this.trends});
+  _TrendChartPainter({required this.trends, required this.borderColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -744,16 +739,14 @@ class _TrendChartPainter extends CustomPainter {
       points.add(Offset(x, y));
     }
 
-    // Grid lines
     final gridPaint = Paint()
-      ..color = ObsidianTheme.border
+      ..color = borderColor
       ..strokeWidth = 0.5;
     for (int i = 0; i <= 3; i++) {
       final y = (i / 3) * chartH;
       canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
     }
 
-    // Area fill
     if (points.length >= 2) {
       final fillPath = Path()..moveTo(points.first.dx, chartH);
       for (final p in points) {
@@ -774,7 +767,6 @@ class _TrendChartPainter extends CustomPainter {
       canvas.drawPath(fillPath, fillPaint);
     }
 
-    // Line
     if (points.length >= 2) {
       final linePath = Path()..moveTo(points.first.dx, points.first.dy);
       for (int i = 1; i < points.length; i++) {
@@ -789,18 +781,15 @@ class _TrendChartPainter extends CustomPainter {
       canvas.drawPath(linePath, linePaint);
     }
 
-    // Dots
     for (int i = 0; i < points.length; i++) {
       final dotPaint = Paint()..color = ObsidianTheme.emerald;
       canvas.drawCircle(points[i], 3, dotPaint);
 
-      // Glow
       final glowPaint = Paint()
         ..color = ObsidianTheme.emerald.withValues(alpha: 0.3)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
       canvas.drawCircle(points[i], 3, glowPaint);
 
-      // Price label on last point
       if (i == points.length - 1) {
         final tp = TextPainter(
           text: TextSpan(
@@ -842,6 +831,7 @@ class _PriceLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       children: [
         Text(
@@ -855,7 +845,7 @@ class _PriceLabel extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 8, color: ObsidianTheme.textTertiary),
+          style: GoogleFonts.inter(fontSize: 8, color: c.textTertiary),
         ),
       ],
     );
@@ -879,6 +869,7 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GlassCard(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -891,13 +882,13 @@ class _MetricCard extends StatelessWidget {
             style: GoogleFonts.jetBrainsMono(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: c.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textMuted),
+            style: GoogleFonts.inter(fontSize: 10, color: c.textMuted),
           ),
         ],
       ),
@@ -920,6 +911,7 @@ class _WinRateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Row(
       children: [
         Expanded(
@@ -931,12 +923,12 @@ class _WinRateRow extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: ObsidianTheme.textSecondary,
+                  color: c.textSecondary,
                 ),
               ),
               Text(
                 subtitle,
-                style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textMuted),
+                style: GoogleFonts.inter(fontSize: 10, color: c.textMuted),
               ),
             ],
           ),
@@ -961,7 +953,7 @@ class _WinRateRow extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: winRate / 100,
                   minHeight: 3,
-                  backgroundColor: ObsidianTheme.shimmerBase,
+                  backgroundColor: c.shimmerBase,
                   valueColor: AlwaysStoppedAnimation(color),
                 ),
               ),

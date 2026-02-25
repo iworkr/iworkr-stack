@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/inventory_provider.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/models/van_stock.dart';
@@ -25,7 +26,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: context.iColors.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -48,6 +49,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
@@ -57,10 +60,10 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
+              child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
             ),
           ),
           const SizedBox(width: 14),
@@ -70,7 +73,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               Text(
                 'THE SUPPLY CHAIN',
                 style: GoogleFonts.jetBrainsMono(
-                  color: Colors.white,
+                  color: c.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.5,
@@ -78,7 +81,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               ),
               Text(
                 'Van Inventory & Load Predictions',
-                style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
               ),
             ],
           ),
@@ -95,7 +98,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        color: Colors.white.withValues(alpha: 0.03),
+        color: context.iColors.hoverBg,
       ),
       child: Row(
         children: [
@@ -118,6 +121,8 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -129,13 +134,13 @@ class _Tab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: active ? Colors.white.withValues(alpha: 0.06) : Colors.transparent,
+            color: active ? c.border : Colors.transparent,
           ),
           child: Center(
             child: Text(
               label,
               style: GoogleFonts.jetBrainsMono(
-                color: active ? Colors.white : ObsidianTheme.textTertiary,
+                color: active ? c.textPrimary : c.textTertiary,
                 fontSize: 9,
                 fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                 letterSpacing: 1,
@@ -161,7 +166,7 @@ class _VanStockTab extends ConsumerWidget {
         child: CircularProgressIndicator(color: ObsidianTheme.amber, strokeWidth: 2),
       ),
       error: (e, _) => Center(
-        child: Text('Failed to load stock', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary)),
+        child: Text('Failed to load stock', style: GoogleFonts.inter(color: context.iColors.textTertiary)),
       ),
       data: (items) {
         if (items.isEmpty) {
@@ -200,16 +205,18 @@ class _StockItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
         border: Border.all(
           color: item.isLowStock
               ? _stockColor.withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.06),
+              : c.border,
         ),
       ),
       child: Row(
@@ -240,7 +247,7 @@ class _StockItemCard extends StatelessWidget {
                 Text(
                   item.itemName ?? 'Unknown Item',
                   style: GoogleFonts.inter(
-                    color: Colors.white,
+                    color: c.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -251,7 +258,7 @@ class _StockItemCard extends StatelessWidget {
                     if (item.sku != null) ...[
                       Text(
                         item.sku!,
-                        style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 10),
+                        style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 10),
                       ),
                       const SizedBox(width: 8),
                     ],
@@ -311,12 +318,12 @@ class _StockItemCard extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
               ),
               child: Text(
                 '-1',
                 style: GoogleFonts.jetBrainsMono(
-                  color: ObsidianTheme.textSecondary,
+                  color: c.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -353,7 +360,7 @@ class _LoadSheetTab extends ConsumerWidget {
         child: CircularProgressIndicator(color: ObsidianTheme.amber, strokeWidth: 2),
       ),
       error: (e, _) => Center(
-        child: Text('Failed to generate', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary)),
+        child: Text('Failed to generate', style: GoogleFonts.inter(color: context.iColors.textTertiary)),
       ),
       data: (items) {
         if (items.isEmpty) {
@@ -365,12 +372,12 @@ class _LoadSheetTab extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Text(
                   'No predictions for today',
-                  style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(color: context.iColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Schedule jobs to get AI load predictions',
-                  style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                  style: GoogleFonts.inter(color: context.iColors.textTertiary, fontSize: 12),
                 ),
               ],
             ),
@@ -430,12 +437,14 @@ class _LoadSheetItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
         border: Border.all(
           color: item.isMissing
               ? ObsidianTheme.amber.withValues(alpha: 0.2)
@@ -467,7 +476,7 @@ class _LoadSheetItemCard extends StatelessWidget {
                 Text(
                   item.itemName,
                   style: GoogleFonts.inter(
-                    color: Colors.white,
+                    color: c.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -475,7 +484,7 @@ class _LoadSheetItemCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   item.reason,
-                  style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 11),
+                  style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11),
                 ),
               ],
             ),
@@ -486,7 +495,7 @@ class _LoadSheetItemCard extends StatelessWidget {
               Text(
                 'Need ${item.neededQuantity}',
                 style: GoogleFonts.jetBrainsMono(
-                  color: item.isMissing ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+                  color: item.isMissing ? ObsidianTheme.amber : c.textTertiary,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -551,13 +560,15 @@ class _TransferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.03),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,7 +580,7 @@ class _TransferCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   transfer.itemName ?? 'Item',
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                 ),
               ),
               Container(
@@ -595,7 +606,7 @@ class _TransferCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Qty: ${transfer.quantity}',
-            style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 11),
+            style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 11),
           ),
           if (transfer.isPending) ...[
             const SizedBox(height: 10),

@@ -348,71 +348,35 @@ export async function approveQuote(token: string, signatureDataUrl: string, sign
   if (!quote) return { error: "Quote not found" };
   if (quote.status === "accepted") return { error: "Already approved" };
 
-  // Update quote as accepted
-  await (supabase as any).from("quotes").update({
+  // Update quote to accepted — the DB trigger (trg_convert_accepted_quote)
+  // automatically creates both a job AND a draft invoice with copied line items,
+  // and sets job_id / invoice_id on the quote row.
+  const { data: updated, error: updateErr } = await (supabase as any).from("quotes").update({
     status: "accepted",
     signature_url: signatureDataUrl,
     signed_at: new Date().toISOString(),
     signed_by: signerName,
     updated_at: new Date().toISOString(),
-  }).eq("id", quote.id);
+  }).eq("id", quote.id).select("id, job_id, invoice_id").single();
+
+  if (updateErr) return { error: updateErr.message };
 
   await logDocumentEvent(quote.organization_id, "quote", quote.id, "signed", `Signed by ${signerName}`);
-  await logDocumentEvent(quote.organization_id, "quote", quote.id, "approved", "Quote approved and converted to invoice");
+  await logDocumentEvent(quote.organization_id, "quote", quote.id, "approved", "Quote approved — job and invoice auto-generated");
 
-  // Convert to invoice
-  const { data: items } = await (supabase as any)
-    .from("quote_line_items")
-    .select("*")
-    .eq("quote_id", quote.id)
-    .order("sort_order");
+  // Read back the invoice to get its secure_token for the portal redirect
+  if (updated?.invoice_id) {
+    const { data: invoice } = await (supabase as any)
+      .from("invoices")
+      .select("secure_token")
+      .eq("id", updated.invoice_id)
+      .maybeSingle();
 
-  const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + (quote.terms === "Net 30" ? 30 : 14));
-
-  const { data: invoice } = await (supabase as any)
-    .from("invoices")
-    .insert({
-      organization_id: quote.organization_id,
-      display_id: "",
-      client_id: quote.client_id,
-      job_id: quote.job_id,
-      client_name: quote.client_name,
-      client_email: quote.client_email,
-      client_address: quote.client_address,
-      status: "sent",
-      issue_date: new Date().toISOString().split("T")[0],
-      due_date: dueDate.toISOString().split("T")[0],
-      subtotal: quote.subtotal,
-      tax_rate: quote.tax_rate,
-      tax: quote.tax,
-      total: quote.total,
-      notes: quote.notes,
-      quote_id: quote.id,
-      created_by: quote.created_by,
-    })
-    .select()
-    .single();
-
-  if (invoice && items?.length) {
-    await (supabase as any).from("invoice_line_items").insert(
-      items.map((li: any) => ({
-        invoice_id: invoice.id,
-        description: li.description,
-        quantity: li.quantity,
-        unit_price: li.unit_price,
-        sort_order: li.sort_order,
-      }))
-    );
+    await logDocumentEvent(quote.organization_id, "invoice", updated.invoice_id, "created", "Auto-created from approved quote");
+    return { invoiceToken: invoice?.secure_token };
   }
 
-  if (invoice) {
-    await (supabase as any).from("quotes").update({ invoice_id: invoice.id }).eq("id", quote.id);
-    await logDocumentEvent(quote.organization_id, "invoice", invoice.id, "created", "Auto-created from approved quote");
-    return { invoiceToken: invoice.secure_token };
-  }
-
-  return { error: "Failed to create invoice" };
+  return {};
 }
 
 export async function rejectQuote(token: string, reason: string): Promise<{ error?: string }> {

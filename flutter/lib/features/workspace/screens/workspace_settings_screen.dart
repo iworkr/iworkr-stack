@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/widgets/stealth_icon.dart';
@@ -87,33 +88,34 @@ class _WorkspaceSettingsScreenState
     }
   }
 
-  void _showLeaveConfirm(Workspace ws) {
+  void     _showLeaveConfirm(Workspace ws) {
     HapticFeedback.heavyImpact();
+    final c = context.iColors;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: ObsidianTheme.surface2,
+        backgroundColor: c.surfaceSecondary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Leave Workspace?',
           style: GoogleFonts.inter(
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            color: ObsidianTheme.textPrimary,
+            color: c.textPrimary,
           ),
         ),
         content: Text(
           'You will lose access to "${ws.name}" and all its data. This action cannot be undone.',
           style: GoogleFonts.inter(
             fontSize: 13,
-            color: ObsidianTheme.textSecondary,
+            color: c.textSecondary,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text('Cancel',
-                style: GoogleFonts.inter(color: ObsidianTheme.textMuted)),
+                style: GoogleFonts.inter(color: c.textMuted)),
           ),
           TextButton(
             onPressed: () async {
@@ -160,9 +162,10 @@ class _WorkspaceSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final wsAsync = ref.watch(activeWorkspaceProvider);
+    final c = context.iColors;
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         bottom: false,
         child: wsAsync.when(
@@ -172,7 +175,7 @@ class _WorkspaceSettingsScreenState
                 child: Text(
                   'No active workspace',
                   style: GoogleFonts.inter(
-                      fontSize: 14, color: ObsidianTheme.textMuted),
+                      fontSize: 14, color: c.textMuted),
                 ),
               );
             }
@@ -200,6 +203,7 @@ class _WorkspaceSettingsScreenState
   }
 
   Widget _buildAdminView(Workspace ws) {
+    final c = context.iColors;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       children: [
@@ -216,12 +220,12 @@ class _WorkspaceSettingsScreenState
                 height: 36,
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusMd,
-                  border: Border.all(color: ObsidianTheme.border),
-                  color: ObsidianTheme.surface1,
+                  border: Border.all(color: c.border),
+                  color: c.surface,
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(PhosphorIconsLight.arrowLeft,
-                      size: 18, color: ObsidianTheme.textSecondary),
+                      size: 18, color: c.textSecondary),
                 ),
               ),
             ),
@@ -232,7 +236,7 @@ class _WorkspaceSettingsScreenState
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: ObsidianTheme.textPrimary,
+                  color: c.textPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -291,16 +295,16 @@ class _WorkspaceSettingsScreenState
               // Name field
               Text('Company Name',
                   style: GoogleFonts.inter(
-                      fontSize: 11, color: ObsidianTheme.textMuted)),
+                      fontSize: 11, color: c.textMuted)),
               const SizedBox(height: 6),
               TextField(
                 controller: _nameCtrl,
                 style: GoogleFonts.inter(
-                    fontSize: 14, color: ObsidianTheme.textPrimary),
+                    fontSize: 14, color: c.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Enter company name',
                   hintStyle: GoogleFonts.inter(
-                      fontSize: 14, color: ObsidianTheme.textDisabled),
+                      fontSize: 14, color: c.textDisabled),
                 ),
               ),
 
@@ -309,16 +313,16 @@ class _WorkspaceSettingsScreenState
               // Trade field
               Text('Trade / Industry',
                   style: GoogleFonts.inter(
-                      fontSize: 11, color: ObsidianTheme.textMuted)),
+                      fontSize: 11, color: c.textMuted)),
               const SizedBox(height: 6),
               TextField(
                 controller: _tradeCtrl,
                 style: GoogleFonts.inter(
-                    fontSize: 14, color: ObsidianTheme.textPrimary),
+                    fontSize: 14, color: c.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'e.g. Plumbing, Electrical',
                   hintStyle: GoogleFonts.inter(
-                      fontSize: 14, color: ObsidianTheme.textDisabled),
+                      fontSize: 14, color: c.textDisabled),
                 ),
               ),
 
@@ -379,12 +383,12 @@ class _WorkspaceSettingsScreenState
                   'Manage Team Members',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: ObsidianTheme.textPrimary,
+                    color: c.textPrimary,
                   ),
                 ),
               ),
-              const Icon(PhosphorIconsLight.caretRight,
-                  size: 14, color: ObsidianTheme.textTertiary),
+              Icon(PhosphorIconsLight.caretRight,
+                  size: 14, color: c.textTertiary),
             ],
           ),
           onTap: () {
@@ -424,6 +428,7 @@ class _WorkspaceSettingsScreenState
   }
 
   Widget _buildReadOnly(Workspace ws) {
+    final c = context.iColors;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       children: [
@@ -439,12 +444,12 @@ class _WorkspaceSettingsScreenState
                 height: 36,
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusMd,
-                  border: Border.all(color: ObsidianTheme.border),
-                  color: ObsidianTheme.surface1,
+                  border: Border.all(color: c.border),
+                  color: c.surface,
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(PhosphorIconsLight.arrowLeft,
-                      size: 18, color: ObsidianTheme.textSecondary),
+                      size: 18, color: c.textSecondary),
                 ),
               ),
             ),
@@ -455,7 +460,7 @@ class _WorkspaceSettingsScreenState
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: ObsidianTheme.textPrimary,
+                  color: c.textPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -505,7 +510,7 @@ class _WorkspaceSettingsScreenState
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: ObsidianTheme.textPrimary,
+                  color: c.textPrimary,
                 ),
               ),
               if (ws.trade != null) ...[
@@ -514,7 +519,7 @@ class _WorkspaceSettingsScreenState
                   ws.trade!,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: ObsidianTheme.textMuted,
+                    color: c.textMuted,
                   ),
                 ),
               ],
@@ -567,6 +572,7 @@ class _WorkspaceSettingsScreenState
   }
 
   Widget _sectionLabel(String label) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
@@ -574,7 +580,7 @@ class _WorkspaceSettingsScreenState
         style: GoogleFonts.jetBrainsMono(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: ObsidianTheme.textTertiary,
+          color: c.textTertiary,
           letterSpacing: 1.5,
         ),
       ),
@@ -610,7 +616,7 @@ class _WorkspaceSettingsScreenState
                   sublabel,
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: ObsidianTheme.textTertiary,
+                    color: context.iColors.textTertiary,
                   ),
                 ),
               ],

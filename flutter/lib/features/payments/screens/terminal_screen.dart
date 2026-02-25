@@ -7,6 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/invoice_provider.dart';
 import 'package:iworkr_mobile/core/services/payment_terminal_service.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/services/workspace_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/invoice.dart';
 
@@ -47,13 +50,12 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   TerminalState _state = TerminalState.idle;
   String? _errorMessage;
   String? _paymentIntentId;
+  bool _submitting = false;
 
-  // Receipt
   final _emailController = TextEditingController();
   bool _receiptSending = false;
   bool _receiptSent = false;
 
-  // Animations
   late AnimationController _radarController;
   late AnimationController _pulseController;
 
@@ -65,13 +67,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
     _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))
       ..repeat(reverse: true);
 
-    // Pre-fill email
     _emailController.text = widget.invoice.clientEmail ?? '';
 
-    // Enter immersive mode
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    // Start the flow
     _startTerminal();
   }
 
@@ -80,54 +79,67 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
     _radarController.dispose();
     _pulseController.dispose();
     _emailController.dispose();
-    // Restore system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
   Future<void> _startTerminal() async {
-    setState(() => _state = TerminalState.ready);
-    HapticFeedback.lightImpact();
-
-    // Wait for user tap simulation (in production, Stripe Terminal handles this)
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted || _state != TerminalState.ready) return;
-
-    // Simulate card reading
-    setState(() => _state = TerminalState.reading);
-    HapticFeedback.selectionClick();
-
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (!mounted) return;
-
-    // Process payment
-    setState(() => _state = TerminalState.processing);
-
-    final amountCents = (widget.invoice.total * 100).toInt();
-
-    final intentId = await PaymentTerminalService.createPaymentIntent(
-      amountCents: amountCents,
-      currency: 'aud',
-      invoiceId: widget.invoice.id,
-      customerEmail: widget.invoice.clientEmail,
-    );
-
-    if (intentId == null) {
-      _onDeclined('Unable to create payment intent');
+    final orgId = ref.read(activeWorkspaceIdProvider);
+    if (orgId == null) {
+      _onDeclined('No active workspace');
       return;
     }
 
-    final result = await PaymentTerminalService.processPayment(
-      paymentIntentId: intentId,
-      amountCents: amountCents,
-    );
+    final online = await PaymentTerminalService.isOnline;
+    if (!online) {
+      _onDeclined('No network connection. Tap to Pay requires internet.');
+      return;
+    }
 
-    if (!mounted) return;
+    setState(() => _state = TerminalState.ready);
+    HapticFeedback.lightImpact();
 
-    if (result.success) {
-      _onSuccess(result);
-    } else {
-      _onDeclined(result.errorMessage ?? 'Card Declined');
+    try {
+      // Initialize Stripe Terminal SDK
+      await PaymentTerminalService.initializeSdk(orgId);
+
+      final amountCents = (widget.invoice.total * 100).toInt();
+
+      // Create PaymentIntent via backend
+      final clientSecret = await PaymentTerminalService.createPaymentIntent(
+        amountCents: amountCents,
+        currency: 'usd',
+        invoiceId: widget.invoice.id,
+        orgId: orgId,
+        customerEmail: widget.invoice.clientEmail,
+      );
+
+      if (clientSecret == null || !mounted) {
+        _onDeclined('Unable to create payment intent');
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() => _state = TerminalState.reading);
+      HapticFeedback.selectionClick();
+
+      // Collect payment via NFC — native OS payment sheet takes over here
+      final result = await PaymentTerminalService.processPayment(
+        clientSecret: clientSecret,
+        amountCents: amountCents,
+      );
+
+      if (!mounted) return;
+
+      if (result.success) {
+        _onSuccess(result);
+      } else {
+        _onDeclined(result.errorMessage ?? 'Card Declined');
+      }
+    } catch (e) {
+      if (mounted) {
+        _onDeclined('Terminal error: $e');
+      }
     }
   }
 
@@ -138,13 +150,13 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
     });
     HapticFeedback.heavyImpact();
 
-    // Mark invoice as paid in Supabase
     try {
       await markInvoicePaid(widget.invoice.id);
     } catch (_) {}
   }
 
   void _onDeclined(String message) {
+    if (!mounted) return;
     setState(() {
       _state = TerminalState.declined;
       _errorMessage = message;
@@ -158,6 +170,50 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   void _retry() {
     setState(() { _state = TerminalState.idle; _errorMessage = null; });
     _startTerminal();
+  }
+
+  Future<void> _sendInvoiceLink() async {
+    HapticFeedback.mediumImpact();
+    setState(() => _submitting = true);
+
+    try {
+      final result = await SupabaseService.client.rpc(
+        'mark_invoice_sent_with_link',
+        params: {'p_invoice_id': widget.invoice.id},
+      );
+
+      final paymentLink = result?['payment_link'] as String?;
+
+      if (!mounted) return;
+      setState(() => _submitting = false);
+
+      if (paymentLink != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Invoice link sent. Job marked as invoiced.',
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+            ),
+            backgroundColor: ObsidianTheme.emerald,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+
+      Navigator.of(context).pop(false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send invoice: $e', style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: ObsidianTheme.rose,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
   }
 
   void _close() {
@@ -186,11 +242,11 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: Stack(
         children: [
-          // Background flash on success/decline
           if (_state == TerminalState.success)
             Positioned.fill(
               child: Container(color: ObsidianTheme.emerald.withValues(alpha: 0.06))
@@ -202,11 +258,9 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
                   .animate().fadeIn(duration: 200.ms).fadeOut(delay: 800.ms, duration: 400.ms),
             ),
 
-          // Main content
           SafeArea(
             child: Column(
               children: [
-                // Close button (top left, always visible)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Row(
@@ -217,24 +271,23 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
                           width: 36, height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.05),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                            color: c.border,
+                            border: Border.all(color: c.borderMedium),
                           ),
-                          child: const Center(child: Icon(PhosphorIconsLight.x, size: 16, color: ObsidianTheme.textSecondary)),
+                          child: Center(child: Icon(PhosphorIconsLight.x, size: 16, color: c.textSecondary)),
                         ),
                       ),
                       const Spacer(),
-                      // Invoice ID badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           borderRadius: ObsidianTheme.radiusFull,
-                          color: ObsidianTheme.shimmerBase,
-                          border: Border.all(color: ObsidianTheme.border),
+                          color: c.shimmerBase,
+                          border: Border.all(color: c.border),
                         ),
                         child: Text(
                           widget.invoice.displayId ?? 'INV',
-                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                         ),
                       ),
                     ],
@@ -243,7 +296,6 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
 
                 const Spacer(),
 
-                // ── State-specific content ────────────
                 if (_state == TerminalState.ready || _state == TerminalState.idle)
                   _buildReadyState(),
 
@@ -261,7 +313,6 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
 
                 const Spacer(),
 
-                // Bottom info
                 if (_state == TerminalState.ready || _state == TerminalState.reading)
                   _buildBottomInfo(),
 
@@ -277,10 +328,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   // ── Ready State: Pulsing NFC Radar ──────────────────
 
   Widget _buildReadyState() {
+    final c = context.iColors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // NFC Radar animation
         SizedBox(
           width: 200, height: 200,
           child: AnimatedBuilder(
@@ -299,10 +350,9 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
 
         const SizedBox(height: 40),
 
-        // Amount
         Text(
           _formatCurrency(widget.invoice.total),
-          style: GoogleFonts.inter(fontSize: 56, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -2),
+          style: GoogleFonts.inter(fontSize: 56, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -2),
         ).animate().fadeIn(delay: 200.ms, duration: 500.ms).moveY(begin: 10, end: 0),
 
         const SizedBox(height: 8),
@@ -310,14 +360,14 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
         if (widget.invoice.clientName != null)
           Text(
             widget.invoice.clientName!,
-            style: GoogleFonts.inter(fontSize: 15, color: ObsidianTheme.textSecondary),
+            style: GoogleFonts.inter(fontSize: 15, color: c.textSecondary),
           ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
 
         const SizedBox(height: 24),
 
         Text(
-          'Hold card or device near notch',
-          style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textTertiary, letterSpacing: 0.5),
+          'Initializing terminal...',
+          style: GoogleFonts.jetBrainsMono(fontSize: 12, color: c.textTertiary, letterSpacing: 0.5),
         ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
       ],
     );
@@ -326,15 +376,23 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   // ── Reading State ───────────────────────────────────
 
   Widget _buildReadingState() {
+    final c = context.iColors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Frozen radar with solid brackets
         SizedBox(
           width: 200, height: 200,
-          child: CustomPaint(
-            painter: _NfcRadarPainter(progress: 0, pulseValue: 0, locked: true),
-            size: const Size(200, 200),
+          child: AnimatedBuilder(
+            animation: _radarController,
+            builder: (_, __) {
+              return CustomPaint(
+                painter: _NfcRadarPainter(
+                  progress: _radarController.value,
+                  pulseValue: _pulseController.value,
+                ),
+                size: const Size(200, 200),
+              );
+            },
           ),
         ),
 
@@ -342,31 +400,30 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
 
         Text(
           _formatCurrency(widget.invoice.total),
-          style: GoogleFonts.inter(fontSize: 56, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -2),
+          style: GoogleFonts.inter(fontSize: 56, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -2),
         ),
 
         const SizedBox(height: 16),
 
-        // Reading indicator dots
         Row(
           mainAxisSize: MainAxisSize.min,
           children: List.generate(4, (i) {
             return Container(
               width: 8, height: 8,
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: ObsidianTheme.emerald,
               ),
-            ).animate().fadeIn(delay: Duration(milliseconds: 200 + i * 200), duration: 300.ms);
+            ).animate(onPlay: (c) => c.repeat(reverse: true)).fadeIn(delay: Duration(milliseconds: 200 + i * 200), duration: 600.ms);
           }),
         ),
 
         const SizedBox(height: 12),
 
         Text(
-          'Reading...',
-          style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.emerald, letterSpacing: 1),
+          'Hold card or device near top of phone',
+          style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.emerald, letterSpacing: 0.5),
         ),
       ],
     );
@@ -375,10 +432,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   // ── Processing State ────────────────────────────────
 
   Widget _buildProcessingState() {
+    final c = context.iColors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // iWorkr Pulse
         SizedBox(
           width: 80, height: 80,
           child: Stack(
@@ -410,15 +467,15 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
         const SizedBox(height: 32),
 
         Text(
-          'Processing',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.white),
+          'Processing Cryptogram',
+          style: GoogleFonts.jetBrainsMono(fontSize: 14, fontWeight: FontWeight.w500, color: c.textTertiary, letterSpacing: 0.5),
         ),
 
         const SizedBox(height: 8),
 
         Text(
           _formatCurrency(widget.invoice.total),
-          style: GoogleFonts.jetBrainsMono(fontSize: 14, color: ObsidianTheme.textTertiary),
+          style: GoogleFonts.jetBrainsMono(fontSize: 14, color: c.textTertiary),
         ),
       ],
     );
@@ -427,10 +484,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   // ── Success State ───────────────────────────────────
 
   Widget _buildSuccessState() {
+    final c = context.iColors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Checkmark burst
         Container(
           width: 80, height: 80,
           decoration: BoxDecoration(
@@ -448,8 +505,8 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
         const SizedBox(height: 28),
 
         Text(
-          'Payment Approved',
-          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
+          'Payment Successful',
+          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: c.textPrimary),
         ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
 
         const SizedBox(height: 4),
@@ -461,38 +518,38 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
 
         const SizedBox(height: 32),
 
-        // Receipt section
         _buildReceiptSection(),
       ],
     );
   }
 
   Widget _buildReceiptSection() {
+    final c = context.iColors;
     return Container(
       width: 280,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusLg,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Send Receipt', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white)),
+          Text('Send Receipt', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary)),
           const SizedBox(height: 10),
 
           TextField(
             controller: _emailController,
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+            style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
             cursorColor: ObsidianTheme.emerald,
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: 'client@email.com',
-              hintStyle: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textDisabled),
+              hintStyle: GoogleFonts.inter(fontSize: 14, color: c.textDisabled),
               prefixIcon: Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: Icon(PhosphorIconsLight.envelope, size: 16, color: ObsidianTheme.textTertiary),
+                child: Icon(PhosphorIconsLight.envelope, size: 16, color: c.textTertiary),
               ),
               prefixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 0),
               isDense: true,
@@ -536,9 +593,9 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
                   width: 40, height: 40,
                   decoration: BoxDecoration(
                     borderRadius: ObsidianTheme.radiusMd,
-                    border: Border.all(color: ObsidianTheme.borderMedium),
+                    border: Border.all(color: c.borderMedium),
                   ),
-                  child: const Center(child: Icon(PhosphorIconsLight.x, size: 14, color: ObsidianTheme.textTertiary)),
+                  child: Center(child: Icon(PhosphorIconsLight.x, size: 14, color: c.textTertiary)),
                 ),
               ),
             ],
@@ -551,10 +608,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   // ── Declined State ──────────────────────────────────
 
   Widget _buildDeclinedState() {
+    final c = context.iColors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Glitch X
         Container(
           width: 80, height: 80,
           decoration: BoxDecoration(
@@ -573,21 +630,23 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
         const SizedBox(height: 28),
 
         Text(
-          'Card Declined',
-          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
+          'Payment Declined',
+          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: c.textPrimary),
         ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
 
         const SizedBox(height: 6),
 
-        Text(
-          _errorMessage ?? 'Try insert or alternative method',
-          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
-          textAlign: TextAlign.center,
-        ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            _errorMessage ?? 'The customer\'s bank declined the transaction. Please ask for an alternative payment method.',
+            style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
+            textAlign: TextAlign.center,
+          ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+        ),
 
         const SizedBox(height: 28),
 
-        // Retry + Close
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -599,7 +658,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
                   borderRadius: ObsidianTheme.radiusMd,
                   color: Colors.white,
                 ),
-                child: Text('Try Again', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black)),
+                child: Text('Try Another Card', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black)),
               ),
             ),
             const SizedBox(width: 12),
@@ -609,13 +668,30 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusMd,
-                  border: Border.all(color: ObsidianTheme.borderMedium),
+                  border: Border.all(color: c.borderMedium),
                 ),
-                child: Text('Cancel', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary)),
+                child: Text('Cancel', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textSecondary)),
               ),
             ),
           ],
         ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
+
+        const SizedBox(height: 16),
+
+        // POS-to-Invoice pivot
+        GestureDetector(
+          onTap: _sendInvoiceLink,
+          child: Text(
+            'Send Invoice Link Instead',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: c.textTertiary,
+              decoration: TextDecoration.underline,
+              decorationColor: c.textTertiary.withValues(alpha: 0.3),
+            ),
+          ),
+        ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
       ],
     );
   }
@@ -623,6 +699,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   // ── Bottom Info (Card types) ────────────────────────
 
   Widget _buildBottomInfo() {
+    final c = context.iColors;
     return Column(
       children: [
         Row(
@@ -638,11 +715,11 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(PhosphorIconsLight.shieldCheck, size: 12, color: ObsidianTheme.textTertiary),
+            Icon(PhosphorIconsLight.shieldCheck, size: 12, color: c.textTertiary),
             const SizedBox(width: 4),
             Text(
               'Secured by Stripe',
-              style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 0.5),
+              style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 0.5),
             ),
           ],
         ),
@@ -651,15 +728,16 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
   }
 
   Widget _cardBadge(String label) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 3),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusSm,
-        color: ObsidianTheme.shimmerBase,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.shimmerBase,
+        border: Border.all(color: c.border),
       ),
-      child: Text(label, style: GoogleFonts.inter(fontSize: 9, color: ObsidianTheme.textTertiary, fontWeight: FontWeight.w500)),
+      child: Text(label, style: GoogleFonts.inter(fontSize: 9, color: c.textTertiary, fontWeight: FontWeight.w500)),
     );
   }
 
@@ -679,94 +757,48 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
 class _NfcRadarPainter extends CustomPainter {
   final double progress;
   final double pulseValue;
-  final bool locked;
 
-  _NfcRadarPainter({required this.progress, required this.pulseValue, this.locked = false});
+  _NfcRadarPainter({required this.progress, required this.pulseValue});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final maxRadius = size.width / 2;
 
-    if (!locked) {
-      // Draw concentric ripples
-      for (int i = 0; i < 3; i++) {
-        final rippleProgress = (progress + i * 0.33) % 1.0;
-        final radius = maxRadius * 0.3 + (maxRadius * 0.7 * rippleProgress);
-        final opacity = (1.0 - rippleProgress) * 0.2;
+    // Concentric ripples radiating outward
+    for (int i = 0; i < 3; i++) {
+      final rippleProgress = (progress + i * 0.33) % 1.0;
+      final radius = maxRadius * 0.3 + (maxRadius * 0.7 * rippleProgress);
+      final opacity = (1.0 - rippleProgress) * 0.2;
 
-        final paint = Paint()
-          ..color = const Color(0xFF10B981).withValues(alpha: opacity)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5;
-
-        canvas.drawCircle(center, radius, paint);
-      }
-
-      // Center contactless icon (three arcs)
-      final iconPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.6 + pulseValue * 0.4)
+      final paint = Paint()
+        ..color = const Color(0xFF10B981).withValues(alpha: opacity)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round;
+        ..strokeWidth = 1.5;
 
-      for (int i = 0; i < 3; i++) {
-        final arcRadius = 14.0 + i * 10.0;
-        canvas.drawArc(
-          Rect.fromCircle(center: center, radius: arcRadius),
-          -pi / 4,
-          pi / 2,
-          false,
-          iconPaint,
-        );
-      }
-    } else {
-      // Locked: solid circle with white brackets
-      final borderPaint = Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
-        ..strokeCap = StrokeCap.round;
+      canvas.drawCircle(center, radius, paint);
+    }
 
-      canvas.drawCircle(center, maxRadius * 0.5, Paint()..color = const Color(0xFF10B981).withValues(alpha: 0.1));
+    // Contactless icon (three arcs)
+    final iconPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.6 + pulseValue * 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
 
-      // Draw corner brackets
-      const len = 20.0;
-      final r = maxRadius * 0.5;
-      // Top-left
-      canvas.drawLine(Offset(center.dx - r, center.dy - r + len), Offset(center.dx - r, center.dy - r), borderPaint);
-      canvas.drawLine(Offset(center.dx - r, center.dy - r), Offset(center.dx - r + len, center.dy - r), borderPaint);
-      // Top-right
-      canvas.drawLine(Offset(center.dx + r - len, center.dy - r), Offset(center.dx + r, center.dy - r), borderPaint);
-      canvas.drawLine(Offset(center.dx + r, center.dy - r), Offset(center.dx + r, center.dy - r + len), borderPaint);
-      // Bottom-left
-      canvas.drawLine(Offset(center.dx - r, center.dy + r - len), Offset(center.dx - r, center.dy + r), borderPaint);
-      canvas.drawLine(Offset(center.dx - r, center.dy + r), Offset(center.dx - r + len, center.dy + r), borderPaint);
-      // Bottom-right
-      canvas.drawLine(Offset(center.dx + r, center.dy + r - len), Offset(center.dx + r, center.dy + r), borderPaint);
-      canvas.drawLine(Offset(center.dx + r - len, center.dy + r), Offset(center.dx + r, center.dy + r), borderPaint);
-
-      // Contactless icon (static)
-      final iconPaint = Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round;
-
-      for (int i = 0; i < 3; i++) {
-        final arcRadius = 14.0 + i * 10.0;
-        canvas.drawArc(
-          Rect.fromCircle(center: center, radius: arcRadius),
-          -pi / 4,
-          pi / 2,
-          false,
-          iconPaint,
-        );
-      }
+    for (int i = 0; i < 3; i++) {
+      final arcRadius = 14.0 + i * 10.0;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: arcRadius),
+        -pi / 4,
+        pi / 2,
+        false,
+        iconPaint,
+      );
     }
   }
 
   @override
   bool shouldRepaint(covariant _NfcRadarPainter old) =>
-      old.progress != progress || old.pulseValue != pulseValue || old.locked != locked;
+      old.progress != progress || old.pulseValue != pulseValue;
 }

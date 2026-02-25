@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/state_machine_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Lead-to-Cash Pipeline — animated visualization of the workflow engine.
@@ -73,17 +74,19 @@ class _PipelineViewState extends State<_PipelineView>
     super.dispose();
   }
 
-  static const _stages = [
-    _Stage('Draft', 'backlog', PhosphorIconsLight.noteBlank, ObsidianTheme.textMuted),
-    _Stage('Queued', 'todo', PhosphorIconsLight.queue, ObsidianTheme.textSecondary),
-    _Stage('Scheduled', 'scheduled', PhosphorIconsLight.calendarCheck, ObsidianTheme.textSecondary),
+  static List<_Stage> _buildStages(IWorkrColors c) => [
+    _Stage('Draft', 'backlog', PhosphorIconsLight.noteBlank, c.textMuted),
+    _Stage('Queued', 'todo', PhosphorIconsLight.queue, c.textSecondary),
+    _Stage('Scheduled', 'scheduled', PhosphorIconsLight.calendarCheck, c.textSecondary),
     _Stage('Executing', 'in_progress', PhosphorIconsLight.lightning, ObsidianTheme.emerald),
     _Stage('Completed', 'done', PhosphorIconsLight.checkCircle, ObsidianTheme.emerald),
-    _Stage('Invoiced', 'invoiced', PhosphorIconsLight.receipt, ObsidianTheme.textSecondary),
+    _Stage('Invoiced', 'invoiced', PhosphorIconsLight.receipt, c.textSecondary),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+    final stages = _buildStages(c);
     final total = widget.stats.values.fold<int>(0, (s, v) => s + v) -
         (widget.stats['cancelled'] ?? 0);
 
@@ -98,7 +101,7 @@ class _PipelineViewState extends State<_PipelineView>
               'LEAD-TO-CASH',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 9,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
                 letterSpacing: 1.5,
               ),
             ),
@@ -107,16 +110,16 @@ class _PipelineViewState extends State<_PipelineView>
               '$total active',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 9,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
               ),
             ),
           ],
         ),
         SizedBox(height: widget.compact ? 10 : 16),
         if (widget.compact)
-          _CompactPipeline(stages: _stages, stats: widget.stats, total: total, progress: _ctrl)
+          _CompactPipeline(stages: stages, stats: widget.stats, total: total, progress: _ctrl)
         else
-          _ExpandedPipeline(stages: _stages, stats: widget.stats, total: total, progress: _ctrl),
+          _ExpandedPipeline(stages: stages, stats: widget.stats, total: total, progress: _ctrl),
       ],
     );
   }
@@ -137,6 +140,7 @@ class _CompactPipeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return AnimatedBuilder(
       animation: progress,
       builder: (_, __) {
@@ -148,7 +152,7 @@ class _CompactPipeline extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
                 child: Stack(
                   children: [
-                    Container(color: Colors.white.withValues(alpha: 0.08)),
+                    Container(color: c.borderMedium),
                     FractionallySizedBox(
                       widthFactor: total > 0
                           ? ((stats['in_progress'] ?? 0) + (stats['done'] ?? 0) + (stats['invoiced'] ?? 0)) / total * progress.value
@@ -176,7 +180,7 @@ class _CompactPipeline extends StatelessWidget {
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: count > 0 ? s.color : ObsidianTheme.textDisabled,
+                        color: count > 0 ? s.color : c.textDisabled,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -184,7 +188,7 @@ class _CompactPipeline extends StatelessWidget {
                       s.label.substring(0, min(4, s.label.length)),
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 7,
-                        color: ObsidianTheme.textTertiary,
+                        color: c.textTertiary,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -214,19 +218,19 @@ class _ExpandedPipeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return AnimatedBuilder(
       animation: progress,
       builder: (_, __) {
         return Column(
           children: [
-            // Monolithic progress bar
             SizedBox(
               height: 6,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(3),
                 child: Stack(
                   children: [
-                    Container(color: Colors.white.withValues(alpha: 0.08)),
+                    Container(color: c.borderMedium),
                     FractionallySizedBox(
                       widthFactor: total > 0
                           ? ((stats['in_progress'] ?? 0) + (stats['done'] ?? 0) + (stats['invoiced'] ?? 0)) / total * progress.value
@@ -258,9 +262,9 @@ class _ExpandedPipeline extends StatelessWidget {
                       height: 28,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: Colors.white.withValues(alpha: 0.04),
+                        color: c.activeBg,
                       ),
-                      child: Icon(s.icon, size: 14, color: count > 0 ? s.color : ObsidianTheme.textDisabled),
+                      child: Icon(s.icon, size: 14, color: count > 0 ? s.color : c.textDisabled),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -269,7 +273,7 @@ class _ExpandedPipeline extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: count > 0 ? Colors.white : ObsidianTheme.textTertiary,
+                          color: count > 0 ? c.textPrimary : c.textTertiary,
                         ),
                       ),
                     ),
@@ -278,7 +282,7 @@ class _ExpandedPipeline extends StatelessWidget {
                       Container(
                         width: 16,
                         height: 1,
-                        color: ObsidianTheme.border,
+                        color: c.border,
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                       ),
                     Text(
@@ -286,7 +290,7 @@ class _ExpandedPipeline extends StatelessWidget {
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: count > 0 ? s.color : ObsidianTheme.textDisabled,
+                        color: count > 0 ? s.color : c.textDisabled,
                       ),
                     ),
                   ],
@@ -325,6 +329,7 @@ class _PipelineShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,7 +337,7 @@ class _PipelineShimmer extends StatelessWidget {
           height: 8,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            color: ObsidianTheme.shimmerBase,
+            color: c.shimmerBase,
           ),
         ),
         const SizedBox(height: 16),
@@ -342,7 +347,7 @@ class _PipelineShimmer extends StatelessWidget {
             height: 28,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: ObsidianTheme.shimmerBase,
+              color: c.shimmerBase,
             ),
           ),
         )),

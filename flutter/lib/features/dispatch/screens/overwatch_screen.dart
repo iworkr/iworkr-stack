@@ -10,6 +10,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/dispatch_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/obsidian_map.dart';
 import 'package:iworkr_mobile/models/fleet_position.dart';
@@ -57,9 +58,10 @@ class _OverwatchScreenState extends ConsumerState<OverwatchScreen>
   Widget build(BuildContext context) {
     final fleetAsync = ref.watch(fleetPositionsProvider);
     final mq = MediaQuery.of(context);
+    final c = context.iColors;
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: Stack(
         children: [
           // Google Maps tactical canvas
@@ -593,6 +595,7 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
@@ -600,9 +603,9 @@ class _TopBar extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF050505).withValues(alpha: 0.85),
+            color: c.canvas.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            border: Border.all(color: c.border),
           ),
           child: Row(
             children: [
@@ -618,7 +621,7 @@ class _TopBar extends StatelessWidget {
                   Text(
                     'THE OVERWATCH',
                     style: GoogleFonts.jetBrainsMono(
-                      color: Colors.white,
+                      color: c.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
@@ -643,11 +646,11 @@ class _TopBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     color: showHistory
                         ? ObsidianTheme.amber.withValues(alpha: 0.1)
-                        : Colors.white.withValues(alpha: 0.04),
+                        : c.activeBg,
                     border: Border.all(
                       color: showHistory
                           ? ObsidianTheme.amber.withValues(alpha: 0.2)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : c.borderMedium,
                     ),
                   ),
                   child: Row(
@@ -656,14 +659,14 @@ class _TopBar extends StatelessWidget {
                       Icon(
                         PhosphorIconsLight.clockCounterClockwise,
                         size: 14,
-                        color: showHistory ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+                        color: showHistory ? ObsidianTheme.amber : c.textTertiary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'TRAIL',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 9,
-                          color: showHistory ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+                          color: showHistory ? ObsidianTheme.amber : c.textTertiary,
                           letterSpacing: 1,
                         ),
                       ),
@@ -712,6 +715,7 @@ class _TechRoster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return SizedBox(
       width: 52,
       child: ListView.builder(
@@ -740,9 +744,9 @@ class _TechRoster extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isSelected
                     ? statusColor.withValues(alpha: 0.15)
-                    : const Color(0xFF0A0A0A).withValues(alpha: 0.8),
+                    : c.surface.withValues(alpha: 0.8),
                 border: Border.all(
-                  color: isSelected ? statusColor : Colors.white.withValues(alpha: 0.08),
+                  color: isSelected ? statusColor : c.borderMedium,
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -752,7 +756,7 @@ class _TechRoster extends StatelessWidget {
                     child: Text(
                       pos.initials,
                       style: GoogleFonts.inter(
-                        color: isSelected ? statusColor : ObsidianTheme.textSecondary,
+                        color: isSelected ? statusColor : c.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
@@ -810,6 +814,7 @@ class _JobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
+    final c = context.iColors;
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -818,9 +823,9 @@ class _JobCard extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.fromLTRB(20, 16, 20, mq.padding.bottom + 20),
           decoration: BoxDecoration(
-            color: const Color(0xFF0A0A0A).withValues(alpha: 0.92),
+            color: c.surface.withValues(alpha: 0.92),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            border: Border.all(color: c.border),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -831,7 +836,7 @@ class _JobCard extends StatelessWidget {
                 height: 4,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(2),
-                  color: ObsidianTheme.borderMedium,
+                  color: c.borderMedium,
                 ),
               ),
               const SizedBox(height: 16),
@@ -867,7 +872,7 @@ class _JobCard extends StatelessWidget {
                         Text(
                           position.displayName,
                           style: GoogleFonts.inter(
-                            color: Colors.white,
+                            color: c.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -899,7 +904,7 @@ class _JobCard extends StatelessWidget {
                   ),
                   GestureDetector(
                     onTap: onClose,
-                    child: Icon(PhosphorIconsLight.x, color: ObsidianTheme.textTertiary, size: 20),
+                    child: Icon(PhosphorIconsLight.x, color: c.textTertiary, size: 20),
                   ),
                 ],
               ),
@@ -912,7 +917,7 @@ class _JobCard extends StatelessWidget {
                   _StatChip(
                     icon: PhosphorIconsLight.speedometer,
                     label: position.speedLabel,
-                    color: position.isDriving ? ObsidianTheme.blue : ObsidianTheme.textTertiary,
+                    color: position.isDriving ? ObsidianTheme.blue : c.textTertiary,
                   ),
                   const SizedBox(width: 8),
                   _StatChip(
@@ -926,7 +931,7 @@ class _JobCard extends StatelessWidget {
                     label: position.accuracy != null
                         ? '${position.accuracy!.toInt()}m'
                         : '--',
-                    color: ObsidianTheme.textTertiary,
+                    color: c.textTertiary,
                   ),
                 ],
               ),
@@ -938,8 +943,8 @@ class _JobCard extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: Colors.white.withValues(alpha: 0.03),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    color: c.hoverBg,
+                    border: Border.all(color: c.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -952,7 +957,7 @@ class _JobCard extends StatelessWidget {
                             child: Text(
                               position.jobTitle!,
                               style: GoogleFonts.inter(
-                                color: Colors.white,
+                                color: c.textPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -972,7 +977,7 @@ class _JobCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(3),
                                 child: LinearProgressIndicator(
                                   value: position.taskProgress,
-                                  backgroundColor: Colors.white.withValues(alpha: 0.06),
+                                  backgroundColor: c.border,
                                   valueColor: const AlwaysStoppedAnimation(ObsidianTheme.emerald),
                                   minHeight: 6,
                                 ),
@@ -1125,6 +1130,7 @@ class _ReplayScrubber extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: BackdropFilter(
@@ -1132,7 +1138,7 @@ class _ReplayScrubber extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF050505).withValues(alpha: 0.85),
+            color: c.canvas.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: ObsidianTheme.amber.withValues(alpha: 0.15)),
           ),
@@ -1156,7 +1162,7 @@ class _ReplayScrubber extends StatelessWidget {
                   Text(
                     _timeLabel(progress),
                     style: GoogleFonts.jetBrainsMono(
-                      color: Colors.white,
+                      color: c.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1167,7 +1173,7 @@ class _ReplayScrubber extends StatelessWidget {
               SliderTheme(
                 data: SliderThemeData(
                   activeTrackColor: ObsidianTheme.amber,
-                  inactiveTrackColor: Colors.white.withValues(alpha: 0.06),
+                  inactiveTrackColor: c.border,
                   thumbColor: ObsidianTheme.amber,
                   overlayColor: ObsidianTheme.amber.withValues(alpha: 0.1),
                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
@@ -1181,8 +1187,8 @@ class _ReplayScrubber extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('08:00', style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 9)),
-                  Text('17:00', style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 9)),
+                  Text('08:00', style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 9)),
+                  Text('17:00', style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 9)),
                 ],
               ),
             ],
@@ -1289,7 +1295,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             'NO SIGNALS DETECTED',
             style: GoogleFonts.jetBrainsMono(
-              color: ObsidianTheme.textSecondary,
+              color: context.iColors.textSecondary,
               fontSize: 12,
               letterSpacing: 2,
               fontWeight: FontWeight.w600,
@@ -1300,7 +1306,7 @@ class _EmptyState extends StatelessWidget {
             'No active technicians on duty.\nPositions will appear when team members start their shift.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              color: ObsidianTheme.textTertiary,
+              color: context.iColors.textTertiary,
               fontSize: 13,
               height: 1.5,
             ),

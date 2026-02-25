@@ -1,15 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Glassmorphism card — matches web widget-shell.tsx exactly.
 ///
-/// Web spec:
-/// - border-radius: rounded-xl (12px)
-/// - border: border-white/[0.05]
-/// - background: #0A0A0A
-/// - hover border: border-white/[0.1]
-/// - spotlight: radial-gradient(300px circle, rgba(255,255,255,0.03))
+/// In Alabaster (light) mode uses subtle drop shadow instead of glow borders.
 class GlassCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -39,6 +35,9 @@ class _GlassCardState extends State<GlassCard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+    final isDark = context.isDark;
+
     final card = AnimatedContainer(
       duration: ObsidianTheme.medium,
       curve: Curves.easeOut,
@@ -51,11 +50,20 @@ class _GlassCardState extends State<GlassCard> with SingleTickerProviderStateMix
           child: Container(
             padding: widget.padding ?? const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF09090B),
+              color: c.surface,
               borderRadius: widget.borderRadius ?? ObsidianTheme.radiusXl,
               border: Border.all(
-                color: widget.borderColor ?? Colors.white.withValues(alpha: 0.05),
+                color: widget.borderColor ?? c.border,
               ),
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
             child: widget.child,
           ),

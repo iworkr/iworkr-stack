@@ -55,7 +55,8 @@ electron/node_modules/
 *.deb
 *.snap
 
-# ── Fastlane ──────────────────────────────────────────
+# ── Fastlane / iOS ───────────────────────────────────
+flutter/ios/vendor/
 flutter/ios/fastlane/.env
 flutter/ios/fastlane/report.xml
 flutter/ios/fastlane/README.md

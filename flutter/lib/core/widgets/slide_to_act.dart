@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// iOS-style "Slide to Act" control for critical state transitions.
@@ -115,14 +116,16 @@ class _SlideToActState extends State<SlideToAct>
       builder: (context, constraints) {
         _maxDrag = constraints.maxWidth - thumbSize - padding * 2;
 
+        final c = context.iColors;
+
         return Opacity(
           opacity: widget.enabled ? 1.0 : 0.4,
           child: Container(
             height: height,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(height / 2),
-              color: const Color(0xFF18181B),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              color: c.shimmerBase,
+              border: Border.all(color: c.border),
             ),
             child: Stack(
               children: [
@@ -161,7 +164,7 @@ class _SlideToActState extends State<SlideToAct>
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: ObsidianTheme.textSecondary,
+                            color: c.textSecondary,
                             letterSpacing: -0.2,
                           ),
                         ),
@@ -171,7 +174,7 @@ class _SlideToActState extends State<SlideToAct>
                           child: Icon(
                             CupertinoIcons.chevron_right_2,
                             size: 12,
-                            color: ObsidianTheme.textTertiary,
+                            color: c.textTertiary,
                           ),
                         ),
                       ],

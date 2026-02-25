@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/search/screens/command_palette_screen.dart';
 
@@ -139,12 +140,23 @@ class _ObsidianDock extends StatelessWidget {
         borderRadius: ObsidianTheme.radiusDock,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
+          child: Builder(builder: (context) {
+            final c = context.iColors;
+            return Container(
             height: 60,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.8),
+              color: c.dockBg,
               borderRadius: ObsidianTheme.radiusDock,
-              border: Border.all(color: ObsidianTheme.borderMedium),
+              border: Border.all(color: c.borderMedium),
+              boxShadow: context.isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -170,7 +182,8 @@ class _ObsidianDock extends StatelessWidget {
                 }),
               ],
             ),
-          ),
+          );
+          }),
         ),
       ),
     )

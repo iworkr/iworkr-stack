@@ -1,0 +1,18 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["RDC5UY3928.com.iworkr.app"],
+        "components": [
+          { "/": "/w/*" },
+          { "/": "/accept-invite" },
+          { "/": "/auth/callback" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["RDC5UY3928.com.iworkr.app"]
+  }
+}

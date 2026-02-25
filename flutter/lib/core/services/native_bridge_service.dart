@@ -16,7 +16,9 @@ import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 // ═══════════════════════════════════════════════════════════
 
 const _kAppGroup = 'group.com.iworkr.app';
-const _kWidgetName = 'iWorkrWidgetExtension';
+
+// Must match the `kind` string in each Swift Widget struct
+const _kWidgetKinds = ['NextJobWidget', 'RevenueWidget', 'ScheduleWidget'];
 
 void _log(String msg) => developer.log(msg, name: 'NativeBridge');
 
@@ -58,15 +60,14 @@ class NativeBridgeService {
       _syncAdminMetrics(),
       _syncMeta(),
     ]);
-    try {
-      await HomeWidget.updateWidget(
-        name: _kWidgetName,
-        iOSName: _kWidgetName,
-      );
-      _log('HomeWidget.updateWidget succeeded');
-    } on PlatformException catch (e) {
-      _log('HomeWidget.updateWidget failed: ${e.code} — ${e.message}');
+    for (final kind in _kWidgetKinds) {
+      try {
+        await HomeWidget.updateWidget(name: kind, iOSName: kind);
+      } on PlatformException catch (e) {
+        _log('HomeWidget.updateWidget($kind) failed: ${e.code} — ${e.message}');
+      }
     }
+    _log('HomeWidget.updateWidget succeeded for all widget kinds');
   }
 
   // ── Active Job ─────────────────────────────────────────
@@ -255,7 +256,9 @@ class NativeBridgeService {
     await HomeWidget.saveWidgetData('admin_metrics', null);
     await HomeWidget.saveWidgetData('is_logged_in', 'false');
     await HomeWidget.saveWidgetData('timestamp', null);
-    await HomeWidget.updateWidget(name: _kWidgetName, iOSName: _kWidgetName);
+    for (final kind in _kWidgetKinds) {
+      await HomeWidget.updateWidget(name: kind, iOSName: kind);
+    }
     await endJobLiveActivity();
   }
 

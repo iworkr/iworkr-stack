@@ -8,6 +8,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:iworkr_mobile/core/services/billing_provider.dart';
+import 'package:iworkr_mobile/core/services/revenuecat_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
+import 'package:iworkr_mobile/core/widgets/obsidian_paywall.dart';
 
 // ═══════════════════════════════════════════════════════════
 // ── Feature Gate — The Obsidian Tollbooth ─────────────────
@@ -17,8 +20,10 @@ import 'package:iworkr_mobile/core/services/billing_provider.dart';
 // meet the required tier, the children are rendered with a
 // blur and a polished upgrade sheet is shown.
 //
-// On mobile, the CTA opens the web billing page (App Store
-// compliance — no in-app purchases for B2B SaaS).
+// Routing logic:
+//   billing_provider == 'stripe' → "Billed via Web" (read-only)
+//   billing_provider == 'free'   → Native IAP paywall
+//   billing_provider == 'apple'/'google' → Already subscribed
 
 const _tierOrder = ['free', 'starter', 'pro', 'business'];
 
@@ -44,6 +49,7 @@ class FeatureGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final tierAsync = ref.watch(planTierProvider);
     final currentTier = tierAsync.valueOrNull ?? 'free';
 
@@ -61,15 +67,15 @@ class FeatureGate extends ConsumerWidget {
         ),
         Positioned.fill(
           child: GestureDetector(
-            onTap: () => _showUpgradeSheet(context),
+            onTap: () => _showUpgrade(context, ref),
             child: Container(
-              color: const Color(0xFF09090B).withValues(alpha: 0.8),
+              color: c.surface.withValues(alpha: 0.8),
               child: Center(
                 child: _GatePlaceholder(
                   title: featureTitle ?? _tierDisplayName(requiredTier),
                   description: featureDescription ??
                       'Upgrade to ${_tierDisplayName(requiredTier)} to unlock this feature.',
-                  onUpgrade: () => _showUpgradeSheet(context),
+                  onUpgrade: () => _showUpgrade(context, ref),
                 ),
               ),
             ),
@@ -79,17 +85,29 @@ class FeatureGate extends ConsumerWidget {
     );
   }
 
-  void _showUpgradeSheet(BuildContext context) {
+  void _showUpgrade(BuildContext context, WidgetRef ref) {
     HapticFeedback.mediumImpact();
+
+    final billingProvider =
+        ref.read(billingProviderProvider).valueOrNull ?? 'free';
+
+    if (billingProvider == 'stripe') {
+      _showWebManagedSheet(context);
+    } else {
+      showObsidianPaywall(
+        context,
+        featureTitle: featureTitle,
+        featureDescription: featureDescription,
+      );
+    }
+  }
+
+  void _showWebManagedSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _UpgradeSheet(
-        requiredTier: requiredTier,
-        featureTitle: featureTitle,
-        featureDescription: featureDescription,
-      ),
+      builder: (_) => _WebManagedSheet(requiredTier: requiredTier),
     );
   }
 }
@@ -109,6 +127,7 @@ class _GatePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Column(
@@ -119,10 +138,10 @@ class _GatePlaceholder extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              color: Colors.white.withValues(alpha: 0.05),
+              border: Border.all(color: c.borderActive),
+              color: c.border,
             ),
-            child: const Icon(CupertinoIcons.lock_fill, size: 20, color: Color(0xFF71717A)),
+            child: Icon(CupertinoIcons.lock_fill, size: 20, color: c.textTertiary),
           ),
           const SizedBox(height: 16),
           Text(
@@ -130,7 +149,7 @@ class _GatePlaceholder extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: c.textPrimary,
               letterSpacing: -0.3,
             ),
           ),
@@ -138,7 +157,7 @@ class _GatePlaceholder extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF71717A), height: 1.5),
+            style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary, height: 1.5),
           ),
           const SizedBox(height: 20),
           GestureDetector(
@@ -150,7 +169,7 @@ class _GatePlaceholder extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                'Manage Plan on Web',
+                'Upgrade',
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -165,32 +184,29 @@ class _GatePlaceholder extends StatelessWidget {
   }
 }
 
-// ── Full upgrade bottom sheet ────────────────────────────
+// ── Web-Managed Billing Sheet (Stripe users) ─────────────
+// Shown when billing_provider == 'stripe'. The user cannot
+// purchase via IAP — they manage their subscription on web.
 
-class _UpgradeSheet extends StatelessWidget {
+class _WebManagedSheet extends StatelessWidget {
   final String requiredTier;
-  final String? featureTitle;
-  final String? featureDescription;
 
-  const _UpgradeSheet({
-    required this.requiredTier,
-    this.featureTitle,
-    this.featureDescription,
-  });
+  const _WebManagedSheet({required this.requiredTier});
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final tierName = _tierDisplayName(requiredTier);
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF09090B),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(
-          top: BorderSide(color: Color(0x0DFFFFFF)),
-          left: BorderSide(color: Color(0x0DFFFFFF)),
-          right: BorderSide(color: Color(0x0DFFFFFF)),
+          top: BorderSide(color: c.border),
+          left: BorderSide(color: c.border),
+          right: BorderSide(color: c.border),
         ),
       ),
       child: SafeArea(
@@ -204,7 +220,7 @@ class _UpgradeSheet extends StatelessWidget {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: c.borderHover,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -214,27 +230,26 @@ class _UpgradeSheet extends StatelessWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                  color: Colors.white.withValues(alpha: 0.05),
+                  border: Border.all(color: c.borderActive),
+                  color: c.border,
                 ),
-                child: const Icon(CupertinoIcons.lock_fill, size: 24, color: Color(0xFF71717A)),
+                child: Icon(CupertinoIcons.lock_fill, size: 24, color: c.textTertiary),
               ),
               const SizedBox(height: 20),
               Text(
-                featureTitle ?? 'Unlock $tierName',
+                'Unlock $tierName',
                 style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: c.textPrimary,
                   letterSpacing: -0.4,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                featureDescription ??
-                    'This feature requires the $tierName plan. Manage your subscription on the web to continue.',
+                'Your subscription is managed on the web. Visit the billing page to upgrade your plan.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF71717A), height: 1.5),
+                style: GoogleFonts.inter(fontSize: 14, color: c.textTertiary, height: 1.5),
               ),
               const SizedBox(height: 28),
               SizedBox(
@@ -267,7 +282,7 @@ class _UpgradeSheet extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'Not now',
-                    style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF71717A)),
+                    style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                   ),
                 ),
               ),

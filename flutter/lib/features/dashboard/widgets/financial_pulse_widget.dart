@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/state_machine_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 
 /// Financial Pulse — real-time revenue vs outstanding debt visualization.
 class FinancialPulseWidget extends ConsumerWidget {
@@ -77,6 +78,7 @@ class _PulseViewState extends State<_PulseView>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final collected = widget.pulse['collected'] ?? 0;
     final outstanding = widget.pulse['outstanding'] ?? 0;
     final rate = widget.pulse['collection_rate'] ?? 100;
@@ -93,14 +95,13 @@ class _PulseViewState extends State<_PulseView>
               'FINANCIAL PULSE',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 9,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
                 letterSpacing: 1.5,
               ),
             ),
           ],
         ),
         SizedBox(height: widget.expanded ? 16 : 10),
-        // Collection rate arc
         Center(
           child: SizedBox(
             width: widget.expanded ? 100 : 70,
@@ -112,6 +113,8 @@ class _PulseViewState extends State<_PulseView>
                   rate: rate * _ctrl.value,
                   collected: collected,
                   outstanding: outstanding,
+                  trackColor: c.surfaceSecondary,
+                  midRateColor: c.textSecondary,
                 ),
               ),
             ),
@@ -124,7 +127,7 @@ class _PulseViewState extends State<_PulseView>
             style: GoogleFonts.jetBrainsMono(
               fontSize: widget.expanded ? 24 : 18,
               fontWeight: FontWeight.w700,
-              color: _rateColor(rate),
+              color: _rateColor(rate, c),
               letterSpacing: -1,
             ),
           ),
@@ -134,13 +137,13 @@ class _PulseViewState extends State<_PulseView>
             'collection rate',
             style: GoogleFonts.inter(
               fontSize: 10,
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
             ),
           ),
         ),
         if (widget.expanded) ...[
           const SizedBox(height: 16),
-          Container(height: 1, color: ObsidianTheme.border),
+          Container(height: 1, color: c.border),
           const SizedBox(height: 12),
           _PulseStat(
             label: 'COLLECTED',
@@ -152,7 +155,7 @@ class _PulseViewState extends State<_PulseView>
           _PulseStat(
             label: 'OUTSTANDING',
             value: fmt.format(outstanding),
-            color: outstanding > 0 ? ObsidianTheme.rose : ObsidianTheme.textTertiary,
+            color: outstanding > 0 ? ObsidianTheme.rose : c.textTertiary,
             icon: PhosphorIconsLight.clock,
           ),
         ] else ...[
@@ -165,11 +168,11 @@ class _PulseViewState extends State<_PulseView>
                 value: fmt.format(collected),
                 color: ObsidianTheme.emerald,
               ),
-              Container(width: 1, height: 20, color: ObsidianTheme.border),
+              Container(width: 1, height: 20, color: c.border),
               _MiniStat(
                 label: 'OUT',
                 value: fmt.format(outstanding),
-                color: outstanding > 0 ? ObsidianTheme.rose : ObsidianTheme.textTertiary,
+                color: outstanding > 0 ? ObsidianTheme.rose : c.textTertiary,
               ),
             ],
           ),
@@ -178,9 +181,9 @@ class _PulseViewState extends State<_PulseView>
     );
   }
 
-  Color _rateColor(double rate) {
+  Color _rateColor(double rate, IWorkrColors c) {
     if (rate >= 80) return ObsidianTheme.emerald;
-    if (rate >= 50) return ObsidianTheme.textSecondary;
+    if (rate >= 50) return c.textSecondary;
     return ObsidianTheme.rose;
   }
 }
@@ -200,6 +203,8 @@ class _PulseStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Row(
       children: [
         Container(
@@ -217,7 +222,7 @@ class _PulseStat extends StatelessWidget {
             label,
             style: GoogleFonts.jetBrainsMono(
               fontSize: 9,
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
               letterSpacing: 1,
             ),
           ),
@@ -248,6 +253,8 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Column(
       children: [
         Text(
@@ -263,7 +270,7 @@ class _MiniStat extends StatelessWidget {
           label,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 7,
-            color: ObsidianTheme.textTertiary,
+            color: c.textTertiary,
             letterSpacing: 1,
           ),
         ),
@@ -277,11 +284,15 @@ class _CollectionArcPainter extends CustomPainter {
   final double rate;
   final double collected;
   final double outstanding;
+  final Color trackColor;
+  final Color midRateColor;
 
   _CollectionArcPainter({
     required this.rate,
     required this.collected,
     required this.outstanding,
+    required this.trackColor,
+    required this.midRateColor,
   });
 
   @override
@@ -289,27 +300,25 @@ class _CollectionArcPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height);
     final radius = min(size.width / 2, size.height) - 4;
 
-    // Background arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       pi,
       pi,
       false,
       Paint()
-        ..color = ObsidianTheme.surface2
+        ..color = trackColor
         ..strokeWidth = 6
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round,
     );
 
-    // Collection arc
     final sweep = (rate / 100) * pi;
     if (sweep > 0) {
       final Color arcColor;
       if (rate >= 80) {
         arcColor = ObsidianTheme.emerald;
       } else if (rate >= 50) {
-        arcColor = ObsidianTheme.textSecondary;
+        arcColor = midRateColor;
       } else {
         arcColor = ObsidianTheme.rose;
       }
@@ -326,7 +335,6 @@ class _CollectionArcPainter extends CustomPainter {
           ..strokeCap = StrokeCap.round,
       );
 
-      // Glow
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         pi,
@@ -343,7 +351,8 @@ class _CollectionArcPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_CollectionArcPainter old) => old.rate != rate;
+  bool shouldRepaint(_CollectionArcPainter old) =>
+      old.rate != rate || old.trackColor != trackColor || old.midRateColor != midRateColor;
 }
 
 class _PulseShimmer extends StatelessWidget {
@@ -351,12 +360,14 @@ class _PulseShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Center(
       child: SizedBox(
         width: 20,
         height: 20,
         child: CircularProgressIndicator(
-          color: ObsidianTheme.textTertiary,
+          color: c.textTertiary,
           strokeWidth: 1.5,
         ),
       ),

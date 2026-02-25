@@ -48,11 +48,9 @@ serve(async (req) => {
 
     if (orgsError) throw orgsError;
 
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const appUrl = Deno.env.get("APP_URL") || "http://localhost:3000";
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-    let emailsSent = 0;
+    let emailsEnqueued = 0;
     let orgsProcessed = 0;
 
     for (const org of orgs || []) {
@@ -128,66 +126,32 @@ serve(async (req) => {
         continue;
       }
 
-      // Send digest email to each admin
+      // Enqueue digest email for each admin via mail_queue
       for (const admin of admins) {
         const profile = admin.profiles as { id: string; email: string; full_name: string } | null;
         if (!profile?.email) continue;
 
-        if (resendApiKey) {
-          try {
-            await fetch("https://api.resend.com/emails", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${resendApiKey}`,
-                "Content-Type": "application/json",
+        try {
+          await adminClient.from("mail_queue").insert({
+            organization_id: org.id,
+            event_type: "daily_fleet_digest",
+            recipient_email: profile.email,
+            payload: {
+              workspace: { name: org.name },
+              date: now.toLocaleDateString("en-AU", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+              stats: {
+                new_jobs: newJobCount || 0,
+                completed_jobs: completedJobCount || 0,
+                overdue_invoices: overdueInvoiceCount || 0,
+                today_schedule: todayScheduleCount || 0,
+                upcoming_service: upcomingServiceCount || 0,
               },
-              body: JSON.stringify({
-                from: Deno.env.get("RESEND_FROM_EMAIL") || "iWorkr <noreply@iworkrapp.com>",
-                to: [profile.email],
-                subject: `Daily Digest for ${org.name} — ${now.toLocaleDateString("en-AU")}`,
-                html: `
-                  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px;">
-                    <h2 style="color: #111; font-size: 20px; margin-bottom: 4px;">Daily Digest</h2>
-                    <p style="color: #888; font-size: 13px; margin-top: 0;">${org.name} &mdash; ${now.toLocaleDateString("en-AU", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
-
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 14px;">
-                      <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px 0; color: #555;">New jobs</td>
-                        <td style="padding: 10px 0; text-align: right; font-weight: 600;">${newJobCount || 0}</td>
-                      </tr>
-                      <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px 0; color: #555;">Completed jobs</td>
-                        <td style="padding: 10px 0; text-align: right; font-weight: 600;">${completedJobCount || 0}</td>
-                      </tr>
-                      <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px 0; color: #555;">Overdue invoices</td>
-                        <td style="padding: 10px 0; text-align: right; font-weight: 600; ${(overdueInvoiceCount || 0) > 0 ? "color: #EF4444;" : ""}">${overdueInvoiceCount || 0}</td>
-                      </tr>
-                      <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px 0; color: #555;">Today's schedule</td>
-                        <td style="padding: 10px 0; text-align: right; font-weight: 600;">${todayScheduleCount || 0} blocks</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 10px 0; color: #555;">Assets due for service (7d)</td>
-                        <td style="padding: 10px 0; text-align: right; font-weight: 600; ${(upcomingServiceCount || 0) > 0 ? "color: #F59E0B;" : ""}">${upcomingServiceCount || 0}</td>
-                      </tr>
-                    </table>
-
-                    <a href="${appUrl}/dashboard" style="display: inline-block; margin-top: 28px; padding: 12px 28px; background: #10B981; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                      Open Dashboard
-                    </a>
-
-                    <p style="color: #999; font-size: 12px; margin-top: 32px;">
-                      This is an automated daily digest from iWorkr. You receive this because you are an admin of ${org.name}.
-                    </p>
-                  </div>
-                `,
-              }),
-            });
-            emailsSent++;
-          } catch (emailErr) {
-            console.error(`Failed to send digest to ${profile.email}:`, emailErr);
-          }
+              tech: { name: profile.full_name || "Admin" },
+            },
+          });
+          emailsEnqueued++;
+        } catch (enqueueErr) {
+          console.error(`Failed to enqueue digest for ${profile.email}:`, enqueueErr);
         }
       }
 
@@ -198,16 +162,16 @@ serve(async (req) => {
     await adminClient.from("audit_log").insert({
       action: "cron.daily_digest",
       entity_type: "system",
-      new_data: { orgs_processed: orgsProcessed, emails_sent: emailsSent },
+      new_data: { orgs_processed: orgsProcessed, emails_enqueued: emailsEnqueued },
     });
 
-    console.log(`Daily digest complete: ${orgsProcessed} orgs, ${emailsSent} emails sent`);
+    console.log(`Daily digest complete: ${orgsProcessed} orgs, ${emailsEnqueued} emails enqueued`);
 
     return new Response(
       JSON.stringify({
         success: true,
         orgs_processed: orgsProcessed,
-        emails_sent: emailsSent,
+        emails_enqueued: emailsEnqueued,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

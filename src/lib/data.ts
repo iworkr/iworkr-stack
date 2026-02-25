@@ -1,7 +1,7 @@
 /* ── Mock data for iWorkr modules ───────────────────── */
 
 export type Priority = "urgent" | "high" | "medium" | "low" | "none";
-export type JobStatus = "backlog" | "todo" | "in_progress" | "done" | "cancelled" | "urgent";
+export type JobStatus = "backlog" | "todo" | "scheduled" | "en_route" | "on_site" | "in_progress" | "done" | "completed" | "invoiced" | "archived" | "cancelled" | "urgent";
 export type InboxItemType = "job_assigned" | "quote_approved" | "mention" | "system" | "review";
 
 export interface SubTask {
@@ -467,7 +467,7 @@ export const clients: Client[] = [
 
 /* ── Schedule ─────────────────────────────────────── */
 
-export type ScheduleBlockStatus = "scheduled" | "en_route" | "in_progress" | "complete";
+export type ScheduleBlockStatus = "scheduled" | "en_route" | "on_site" | "in_progress" | "complete" | "cancelled";
 
 export interface ScheduleBlock {
   id: string;

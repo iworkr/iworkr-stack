@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 // ═══════════════════════════════════════════════════════════
@@ -72,6 +73,7 @@ class _WorkspaceSwitcherSheetState
     final unreadAsync = ref.watch(workspaceUnreadProvider);
     final unreads = unreadAsync.valueOrNull ?? {};
     final mq = MediaQuery.of(context);
+    final c = context.iColors;
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -82,10 +84,10 @@ class _WorkspaceSwitcherSheetState
             maxHeight: mq.size.height * 0.65,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFF0A0A0A).withValues(alpha: 0.92),
+            color: c.surface.withValues(alpha: 0.92),
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: ObsidianTheme.borderMedium),
+            border: Border.all(color: c.borderMedium),
           ),
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 200),
@@ -101,7 +103,7 @@ class _WorkspaceSwitcherSheetState
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -114,14 +116,14 @@ class _WorkspaceSwitcherSheetState
                   child: Row(
                     children: [
                       Icon(PhosphorIconsLight.planet,
-                          size: 16, color: ObsidianTheme.textMuted),
+                          size: 16, color: c.textMuted),
                       const SizedBox(width: 8),
                       Text(
                         'SWITCH CONTEXT',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: ObsidianTheme.textMuted,
+                          color: c.textMuted,
                           letterSpacing: 1.8,
                         ),
                       ),
@@ -141,7 +143,7 @@ class _WorkspaceSwitcherSheetState
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: ObsidianTheme.textSecondary,
+                      color: c.textSecondary,
                     ),
                   ),
                 ),
@@ -265,7 +267,7 @@ class _WorkspaceSwitcherSheetState
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: ObsidianTheme.textPrimary,
+                          color: context.iColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -273,7 +275,7 @@ class _WorkspaceSwitcherSheetState
                         'Role: ${active.role.toUpperCase()} ${active.trade != null ? '  •  ${active.trade}' : ''}',
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: ObsidianTheme.textMuted,
+                          color: context.iColors.textMuted,
                         ),
                       ),
                     ],
@@ -320,6 +322,7 @@ class _WorkspaceCardState extends State<_WorkspaceCard> {
   @override
   Widget build(BuildContext context) {
     final ws = widget.workspace;
+    final c = context.iColors;
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -340,11 +343,11 @@ class _WorkspaceCardState extends State<_WorkspaceCard> {
           borderRadius: BorderRadius.circular(16),
           color: widget.isActive
               ? ObsidianTheme.emerald.withValues(alpha: 0.08)
-              : ObsidianTheme.surface2,
+              : c.surfaceSecondary,
           border: Border.all(
             color: widget.isActive
                 ? ObsidianTheme.emerald.withValues(alpha: 0.5)
-                : ObsidianTheme.border,
+                : c.border,
             width: widget.isActive ? 1.5 : 1,
           ),
         ),
@@ -362,11 +365,11 @@ class _WorkspaceCardState extends State<_WorkspaceCard> {
                     borderRadius: BorderRadius.circular(12),
                     color: widget.isActive
                         ? ObsidianTheme.emerald.withValues(alpha: 0.15)
-                        : ObsidianTheme.surface1,
+                        : c.surface,
                     border: Border.all(
                       color: widget.isActive
                           ? ObsidianTheme.emerald.withValues(alpha: 0.3)
-                          : ObsidianTheme.borderMedium,
+                          : c.borderMedium,
                     ),
                     image: ws.logoUrl != null
                         ? DecorationImage(
@@ -384,7 +387,7 @@ class _WorkspaceCardState extends State<_WorkspaceCard> {
                               fontWeight: FontWeight.w700,
                               color: widget.isActive
                                   ? ObsidianTheme.emerald
-                                  : ObsidianTheme.textSecondary,
+                                  : c.textSecondary,
                             ),
                           ),
                         )
@@ -403,7 +406,7 @@ class _WorkspaceCardState extends State<_WorkspaceCard> {
                         shape: BoxShape.circle,
                         color: ObsidianTheme.emerald,
                         border: Border.all(
-                            color: const Color(0xFF0A0A0A), width: 2),
+                            color: c.surface, width: 2),
                         boxShadow: [
                           BoxShadow(
                             color:
@@ -427,7 +430,7 @@ class _WorkspaceCardState extends State<_WorkspaceCard> {
                         shape: BoxShape.circle,
                         color: ObsidianTheme.rose,
                         border: Border.all(
-                            color: const Color(0xFF0A0A0A), width: 2),
+                            color: c.surface, width: 2),
                       ),
                       child: Center(
                         child: Text(
@@ -455,8 +458,8 @@ class _WorkspaceCardState extends State<_WorkspaceCard> {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: widget.isActive
-                    ? ObsidianTheme.textPrimary
-                    : ObsidianTheme.textSecondary,
+                    ? c.textPrimary
+                    : c.textSecondary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -508,6 +511,7 @@ class _WorkspaceCardState extends State<_WorkspaceCard> {
 class _AddWorkspaceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -520,7 +524,7 @@ class _AddWorkspaceCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: ObsidianTheme.textTertiary.withValues(alpha: 0.3),
+            color: c.textTertiary.withValues(alpha: 0.3),
             style: BorderStyle.solid,
           ),
           color: Colors.transparent,
@@ -534,13 +538,13 @@ class _AddWorkspaceCard extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: ObsidianTheme.textTertiary.withValues(alpha: 0.4),
+                  color: c.textTertiary.withValues(alpha: 0.4),
                 ),
               ),
               child: Icon(
                 PhosphorIconsLight.plus,
                 size: 20,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
               ),
             ),
             const Spacer(),
@@ -549,7 +553,7 @@ class _AddWorkspaceCard extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
               ),
             ),
           ],

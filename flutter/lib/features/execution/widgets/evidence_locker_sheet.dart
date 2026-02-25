@@ -4,10 +4,18 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
+import 'package:uuid/uuid.dart';
 
+import 'package:iworkr_mobile/core/database/app_database.dart';
+import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/job_execution_provider.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/services/permission_service.dart';
 import 'package:iworkr_mobile/core/services/telemetry_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/job_media.dart';
 import 'package:iworkr_mobile/models/telemetry_event.dart';
@@ -36,6 +44,12 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
 
   Future<void> _capturePhoto() async {
     if (_capturing) return;
+
+    // JIT camera permission gate with soft prompt
+    if (!mounted) return;
+    final hasCamera = await PermissionService.instance.requestCamera(context);
+    if (!hasCamera || !mounted) return;
+
     setState(() => _capturing = true);
     HapticFeedback.mediumImpact();
 
@@ -51,10 +65,41 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
         return;
       }
 
-      // Record the media entry (file URL would normally be from Supabase Storage upload)
+      // Upload to Supabase Storage
+      final orgId = ref.read(organizationIdProvider).valueOrNull;
+      if (orgId == null) {
+        if (mounted) setState(() => _capturing = false);
+        return;
+      }
+
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${photo.name}';
+      final storagePath = '$orgId/${widget.jobId}/$fileName';
+      final fileBytes = await photo.readAsBytes();
+
+      String remoteUrl = photo.path; // fallback to local path
+      try {
+        await SupabaseService.client.storage
+            .from('evidence')
+            .uploadBinary(storagePath, fileBytes,
+                fileOptions: const FileOptions(contentType: 'image/jpeg'));
+        remoteUrl = SupabaseService.client.storage
+            .from('evidence')
+            .getPublicUrl(storagePath);
+      } catch (_) {
+        // Offline: enqueue for background upload
+        final db = ref.read(appDatabaseProvider);
+        await db.enqueueUpload(UploadQueueCompanion(
+          id: Value(const Uuid().v4()),
+          jobId: Value(widget.jobId),
+          localPath: Value(photo.path),
+          remotePath: Value(storagePath),
+          createdAt: Value(DateTime.now()),
+        ));
+      }
+
       await recordJobMedia(
         jobId: widget.jobId,
-        fileUrl: photo.path,
+        fileUrl: remoteUrl,
         caption: 'Evidence photo',
       );
 
@@ -77,6 +122,7 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final mediaAsync = ref.watch(jobMediaProvider(widget.jobId));
     final mq = MediaQuery.of(context);
 
@@ -85,7 +131,7 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
       decoration: BoxDecoration(
         color: const Color(0xF5080808),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         children: [
@@ -97,7 +143,7 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
                 Container(
                   width: 36, height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: c.borderHover,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -119,7 +165,7 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
                         Text(
                           'EVIDENCE LOCKER',
                           style: GoogleFonts.jetBrainsMono(
-                            color: Colors.white,
+                            color: c.textPrimary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.5,
@@ -127,7 +173,7 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
                         ),
                         Text(
                           'Watermarked media capture',
-                          style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 11),
+                          style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11),
                         ),
                       ],
                     ),
@@ -161,7 +207,7 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
               .fadeIn(duration: 400.ms)
               .moveY(begin: -6, duration: 400.ms, curve: Curves.easeOutCubic),
 
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+          Divider(height: 1, color: c.border),
 
           // Media grid
           Expanded(
@@ -170,7 +216,7 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
                 child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
               ),
               error: (e, _) => Center(
-                child: Text('Failed to load', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary)),
+                child: Text('Failed to load', style: GoogleFonts.inter(color: c.textTertiary)),
               ),
               data: (media) {
                 if (media.isEmpty) {
@@ -199,16 +245,16 @@ class _EvidenceLockerSheetState extends ConsumerState<_EvidenceLockerSheet> {
           Container(
             padding: EdgeInsets.fromLTRB(20, 12, 20, mq.padding.bottom + 12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
-              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
+              color: c.hoverBg,
+              border: Border(top: BorderSide(color: c.border)),
             ),
             child: Row(
               children: [
-                Icon(PhosphorIconsLight.info, color: ObsidianTheme.textTertiary, size: 14),
+                Icon(PhosphorIconsLight.info, color: c.textTertiary, size: 14),
                 const SizedBox(width: 8),
                 Text(
                   'Photos are watermarked with time & location',
-                  style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 11),
+                  style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11),
                 ),
               ],
             ),
@@ -225,6 +271,7 @@ class _EmptyEvidence extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -233,22 +280,22 @@ class _EmptyEvidence extends StatelessWidget {
             width: 72, height: 72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.03),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              color: c.hoverBg,
+              border: Border.all(color: c.border),
             ),
-            child: Icon(PhosphorIconsLight.camera, color: ObsidianTheme.textTertiary, size: 28),
+            child: Icon(PhosphorIconsLight.camera, color: c.textTertiary, size: 28),
           )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scaleXY(begin: 1.0, end: 1.06, duration: 2500.ms, curve: Curves.easeInOut),
           const SizedBox(height: 16),
           Text(
             'No evidence captured',
-            style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
+            style: GoogleFonts.inter(color: c.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 6),
           Text(
             'Tap the camera to capture watermarked photos',
-            style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+            style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
           ),
           const SizedBox(height: 20),
           GestureDetector(
@@ -288,17 +335,18 @@ class _MediaThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        color: ObsidianTheme.surface2,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.surfaceSecondary,
+        border: Border.all(color: c.border),
       ),
       child: Stack(
         children: [
           // Placeholder (actual image would use CachedNetworkImage)
           Center(
-            child: Icon(PhosphorIconsLight.image, color: ObsidianTheme.textTertiary, size: 24),
+            child: Icon(PhosphorIconsLight.image, color: c.textTertiary, size: 24),
           ),
           // Watermark badge
           Positioned(

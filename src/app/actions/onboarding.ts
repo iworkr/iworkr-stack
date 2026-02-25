@@ -115,8 +115,9 @@ export async function sendTeamInvites(
       .single();
 
     if (!error && invite) {
-      // Send the invite email
-      const inviteUrl = `${baseUrl}/auth?invite=${invite.id}&email=${encodeURIComponent(email)}`;
+      // Universal link: works for both web (/accept-invite) and Flutter (app_links)
+      const inviteToken = invite.token || invite.id;
+      const inviteUrl = `${baseUrl}/accept-invite?token=${inviteToken}&email=${encodeURIComponent(email)}`;
       await sendInviteEmail({
         to: email,
         inviterName,

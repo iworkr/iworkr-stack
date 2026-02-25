@@ -33,12 +33,16 @@ import 'package:iworkr_mobile/features/scout/screens/scout_results_screen.dart';
 import 'package:iworkr_mobile/features/market/screens/market_index_screen.dart';
 import 'package:iworkr_mobile/features/stealth/screens/stealth_demo_screen.dart';
 import 'package:iworkr_mobile/features/workspace/screens/workspace_settings_screen.dart';
+import 'package:iworkr_mobile/features/team/screens/team_roster_screen.dart';
+import 'package:iworkr_mobile/features/organization/screens/org_settings_screen.dart';
 import 'package:iworkr_mobile/features/onboarding/screens/onboarding_screen.dart';
+import 'package:iworkr_mobile/features/onboarding/screens/invite_onboarding_screen.dart';
 import 'package:iworkr_mobile/features/onboarding/screens/paywall_screen.dart';
 import 'package:iworkr_mobile/features/hr/screens/time_clock_screen.dart';
 import 'package:iworkr_mobile/features/hr/screens/leave_request_screen.dart';
 import 'package:iworkr_mobile/features/assets/screens/asset_vault_screen.dart';
 import 'package:iworkr_mobile/features/assets/screens/asset_detail_screen.dart';
+import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/widgets/shell_scaffold.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -56,7 +60,8 @@ class AuthStateNotifier extends ChangeNotifier {
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = AuthStateNotifier();
 
-  return GoRouter(
+  late final GoRouter router;
+  router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: authNotifier,
@@ -65,8 +70,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isOnLogin = state.matchedLocation == '/login';
       final isOnOnboarding = state.matchedLocation == '/onboarding';
       final isOnPaywall = state.matchedLocation == '/paywall';
+      final isOnInvite = state.matchedLocation == '/accept-invite';
 
-      if (!isLoggedIn && !isOnLogin) return '/login';
+      if (!isLoggedIn && !isOnLogin && !isOnInvite) return '/login';
       if (isLoggedIn && isOnLogin) {
         // Check if onboarding is needed
         final profile = ref.read(profileProvider).valueOrNull;
@@ -77,8 +83,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/';
       }
 
-      // Allow onboarding and paywall routes
-      if (isOnOnboarding || isOnPaywall) return null;
+      // Allow onboarding, paywall, and invite routes
+      if (isOnOnboarding || isOnPaywall || isOnInvite) return null;
 
       // Route guard: check clearance for restricted routes
       if (isLoggedIn) {
@@ -95,6 +101,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               '/admin': Claims.adminView,
               '/fleet': Claims.fleetView,
               '/overwatch': Claims.dispatchView,
+              '/team': Claims.adminUsers,
+              '/organization': Claims.adminView,
             }.entries.firstWhere(
               (e) => path.startsWith(e.key),
               orElse: () => const MapEntry('', ''),
@@ -130,6 +138,82 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const PaywallScreen(),
           transitionsBuilder: _slideUpTransition,
         ),
+      ),
+      GoRoute(
+        path: '/accept-invite',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final token = state.uri.queryParameters['token'] ?? '';
+          return CustomTransitionPage(
+            child: InviteOnboardingScreen(token: token),
+            transitionsBuilder: _fadeTransition,
+          );
+        },
+      ),
+
+      // ── Deep Link Routes (workspace-scoped, no dock) ───────
+      GoRoute(
+        path: '/w/:workspaceId/jobs/:jobId',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final jobId = state.pathParameters['jobId']!;
+          ref.read(activeWorkspaceIdProvider.notifier).switchTo(workspaceId);
+          return CustomTransitionPage(
+            child: JobDetailScreen(jobId: jobId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/w/:workspaceId/finance/invoices/:invoiceId',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final invoiceId = state.pathParameters['invoiceId']!;
+          ref.read(activeWorkspaceIdProvider.notifier).switchTo(workspaceId);
+          return CustomTransitionPage(
+            child: FinanceScreen(invoiceId: invoiceId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/w/:workspaceId/schedule',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          ref.read(activeWorkspaceIdProvider.notifier).switchTo(workspaceId);
+          return CustomTransitionPage(
+            child: const ScheduleScreen(),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/w/:workspaceId/chat/:channelId',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          final channelId = state.pathParameters['channelId']!;
+          ref.read(activeWorkspaceIdProvider.notifier).switchTo(workspaceId);
+          return CustomTransitionPage(
+            child: ChatStreamScreen(channelId: channelId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/w/:workspaceId/team',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final workspaceId = state.pathParameters['workspaceId']!;
+          ref.read(activeWorkspaceIdProvider.notifier).switchTo(workspaceId);
+          return CustomTransitionPage(
+            child: const TeamRosterScreen(),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
       ),
 
       // ── Shell Routes (Dock visible) ────────────────────────
@@ -407,9 +491,58 @@ final routerProvider = Provider<GoRouter>((ref) {
           transitionsBuilder: _slideUpTransition,
         ),
       ),
+      GoRoute(
+        path: '/team',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const TeamRosterScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/organization/settings',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const OrgSettingsScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
     ],
   );
+
+  // Wire widget deep link handler
+  SupabaseService.onWidgetDeepLink = (path) {
+    _handleWidgetRoute(router, path);
+  };
+
+  // Handle any pending cold-start widget deep link
+  if (SupabaseService.pendingWidgetDeepLink != null) {
+    final pending = SupabaseService.pendingWidgetDeepLink!;
+    SupabaseService.pendingWidgetDeepLink = null;
+    Future.microtask(() => _handleWidgetRoute(router, pending));
+  }
+
+  return router;
 });
+
+void _handleWidgetRoute(GoRouter router, String path) {
+  // iworkr://job/JOB-882 → /job/JOB-882
+  // iworkr://job/JOB-882/execute → /jobs/JOB-882 (then start execution)
+  // iworkr://finance/dashboard → /finance
+  // iworkr://auth/login → /login
+  // iworkr://widget/dashboard → /
+
+  if (path.startsWith('/job/')) {
+    final jobId = path.replaceFirst('/job/', '').replaceAll('/execute', '');
+    router.go('/jobs/$jobId');
+  } else if (path.startsWith('/finance')) {
+    router.go('/finance');
+  } else if (path.startsWith('/auth/login')) {
+    router.go('/login');
+  } else {
+    router.go('/');
+  }
+}
 
 Widget _fadeTransition(
   BuildContext context,

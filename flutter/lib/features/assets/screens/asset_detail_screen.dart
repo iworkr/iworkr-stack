@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/asset_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
 
@@ -17,17 +18,18 @@ class AssetDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final assetAsync = ref.watch(assetDetailProvider(assetId));
     final historyAsync = ref.watch(assetHistoryProvider(assetId));
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: assetAsync.when(
           data: (asset) {
             if (asset == null) {
               return Center(
-                child: Text('Asset not found', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary)),
+                child: Text('Asset not found', style: GoogleFonts.inter(color: c.textTertiary)),
               );
             }
             return ListView(
@@ -35,13 +37,13 @@ class AssetDetailScreen extends ConsumerWidget {
               children: [
                 _buildHeader(context, asset),
                 const SizedBox(height: 20),
-                _buildInfoCard(asset),
+                _buildInfoCard(context, asset),
                 const SizedBox(height: 16),
-                _buildSpecsGrid(asset),
+                _buildSpecsGrid(context, asset),
                 const SizedBox(height: 24),
                 _buildActionButton(context, asset),
                 const SizedBox(height: 28),
-                _buildHistorySection(historyAsync),
+                _buildHistorySection(context, historyAsync),
               ],
             );
           },
@@ -56,7 +58,7 @@ class AssetDetailScreen extends ConsumerWidget {
             ),
           ),
           error: (e, _) => Center(
-            child: Text('Error: $e', style: const TextStyle(color: ObsidianTheme.rose)),
+            child: Text('Error: $e', style: TextStyle(color: ObsidianTheme.rose)),
           ),
         ),
       ),
@@ -64,6 +66,7 @@ class AssetDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, Map<String, dynamic> asset) {
+    final c = context.iColors;
     final name = asset['name'] as String? ?? 'Asset';
     final status = asset['status'] as String? ?? 'available';
     final category = asset['category'] as String? ?? 'other';
@@ -75,10 +78,10 @@ class AssetDetailScreen extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: ObsidianTheme.hoverBg,
+              color: c.hoverBg,
               borderRadius: ObsidianTheme.radiusMd,
             ),
-            child: const Icon(PhosphorIconsLight.arrowLeft, color: ObsidianTheme.textSecondary, size: 20),
+            child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
           ),
         ),
         const SizedBox(width: 14),
@@ -90,7 +93,7 @@ class AssetDetailScreen extends ConsumerWidget {
                 name,
                 style: GoogleFonts.inter(
                   fontSize: 20, fontWeight: FontWeight.w600,
-                  color: ObsidianTheme.textPrimary, letterSpacing: -0.3,
+                  color: c.textPrimary, letterSpacing: -0.3,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -99,7 +102,7 @@ class AssetDetailScreen extends ConsumerWidget {
                 children: [
                   Text(
                     category.toUpperCase(),
-                    style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1),
+                    style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -110,13 +113,13 @@ class AssetDetailScreen extends ConsumerWidget {
                           ? ObsidianTheme.emerald
                           : status == 'maintenance'
                               ? ObsidianTheme.amber
-                              : ObsidianTheme.textTertiary,
+                              : c.textTertiary,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     status.toUpperCase(),
-                    style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1),
+                    style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1),
                   ),
                 ],
               ),
@@ -133,9 +136,9 @@ class AssetDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
-                border: Border.all(color: ObsidianTheme.border),
+                border: Border.all(color: c.border),
               ),
-              child: const Icon(PhosphorIconsLight.qrCode, size: 18, color: ObsidianTheme.textSecondary),
+              child: Icon(PhosphorIconsLight.qrCode, size: 18, color: c.textSecondary),
             ),
           ),
       ],
@@ -144,7 +147,7 @@ class AssetDetailScreen extends ConsumerWidget {
         .fadeIn(duration: 300.ms, curve: ObsidianTheme.easeOutExpo);
   }
 
-  Widget _buildInfoCard(Map<String, dynamic> asset) {
+  Widget _buildInfoCard(BuildContext context, Map<String, dynamic> asset) {
     final serial = asset['serial_number'] as String?;
     final make = asset['make'] as String?;
     final model = asset['model'] as String?;
@@ -168,7 +171,8 @@ class AssetDetailScreen extends ConsumerWidget {
         .moveY(begin: 10, end: 0, delay: 100.ms, duration: 500.ms);
   }
 
-  Widget _buildSpecsGrid(Map<String, dynamic> asset) {
+  Widget _buildSpecsGrid(BuildContext context, Map<String, dynamic> asset) {
+    final c = context.iColors;
     final purchaseDate = asset['purchase_date'] != null
         ? DateTime.tryParse(asset['purchase_date'].toString())
         : null;
@@ -219,7 +223,7 @@ class AssetDetailScreen extends ConsumerWidget {
       children: [
         Text(
           'SPECIFICATIONS',
-          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
         ),
         const SizedBox(height: 10),
         ...specs.asMap().entries.map((e) {
@@ -230,21 +234,21 @@ class AssetDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: ObsidianTheme.radiusMd,
-              color: ObsidianTheme.surface1,
+              color: c.surface,
               border: Border.all(color: s.alertColor != null
                   ? s.alertColor!.withValues(alpha: 0.2)
-                  : ObsidianTheme.border),
+                  : c.border),
             ),
             child: Row(
               children: [
-                Icon(s.icon, size: 14, color: s.alertColor ?? ObsidianTheme.textTertiary),
+                Icon(s.icon, size: 14, color: s.alertColor ?? c.textTertiary),
                 const SizedBox(width: 10),
                 Text(s.label,
-                    style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary)),
+                    style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
                 const Spacer(),
                 Text(s.value,
                     style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w500,
-                        color: s.alertColor ?? ObsidianTheme.textPrimary)),
+                        color: s.alertColor ?? c.textPrimary)),
               ],
             ),
           )
@@ -290,13 +294,14 @@ class AssetDetailScreen extends ConsumerWidget {
         .fadeIn(delay: 300.ms, duration: 400.ms);
   }
 
-  Widget _buildHistorySection(AsyncValue<List<Map<String, dynamic>>> historyAsync) {
+  Widget _buildHistorySection(BuildContext context, AsyncValue<List<Map<String, dynamic>>> historyAsync) {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'SERVICE HISTORY',
-          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
         )
             .animate()
             .fadeIn(delay: 350.ms, duration: 300.ms),
@@ -308,17 +313,17 @@ class AssetDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusLg,
-                  color: ObsidianTheme.surface1,
-                  border: Border.all(color: ObsidianTheme.border),
+                  color: c.surface,
+                  border: Border.all(color: c.border),
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      const Icon(PhosphorIconsLight.clockCounterClockwise, size: 24, color: ObsidianTheme.textTertiary),
+                      Icon(PhosphorIconsLight.clockCounterClockwise, size: 24, color: c.textTertiary),
                       const SizedBox(height: 8),
                       Text(
                         'No service history yet',
-                        style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                        style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                       ),
                     ],
                   ),
@@ -341,10 +346,11 @@ class AssetDetailScreen extends ConsumerWidget {
   }
 
   void _showQRDialog(BuildContext context, String barcode) {
+    final c = context.iColors;
     showDialog(
       context: context,
       builder: (_) => Dialog(
-        backgroundColor: ObsidianTheme.surface1,
+        backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: ObsidianTheme.radiusLg),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -353,7 +359,7 @@ class AssetDetailScreen extends ConsumerWidget {
             children: [
               Text(
                 'Barcode',
-                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary),
+                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary),
               ),
               const SizedBox(height: 16),
               Container(
@@ -396,20 +402,21 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: ObsidianTheme.textTertiary),
+          Icon(icon, size: 14, color: c.textTertiary),
           const SizedBox(width: 10),
           Text(
             label,
-            style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary),
+            style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
           ),
           const Spacer(),
           Text(
             value,
-            style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+            style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary),
           ),
         ],
       ),
@@ -434,6 +441,7 @@ class _HistoryEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final action = audit['action'] as String? ?? 'updated';
     final details = audit['notes'] as String?;
     final performedBy = audit['user_name'] as String?;
@@ -442,7 +450,6 @@ class _HistoryEntry extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Timeline connector
         SizedBox(
           width: 24,
           child: Column(
@@ -458,7 +465,7 @@ class _HistoryEntry extends StatelessWidget {
               if (!isLast)
                 Container(
                   width: 1, height: 40,
-                  color: ObsidianTheme.border,
+                  color: c.border,
                 ),
             ],
           ),
@@ -470,13 +477,13 @@ class _HistoryEntry extends StatelessWidget {
             children: [
               Text(
                 action,
-                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary),
               ),
               if (details != null) ...[
                 const SizedBox(height: 2),
                 Text(
                   details,
-                  style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                  style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -487,14 +494,14 @@ class _HistoryEntry extends StatelessWidget {
                   if (performedBy != null) ...[
                     Text(
                       performedBy,
-                      style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary),
                     ),
                     const SizedBox(width: 6),
                   ],
                   if (createdAt != null)
                     Text(
                       DateFormat('d MMM yyyy').format(createdAt),
-                      style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary),
                     ),
                 ],
               ),

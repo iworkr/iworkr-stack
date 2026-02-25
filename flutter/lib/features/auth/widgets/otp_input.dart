@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// 6-digit OTP input — matches "The Secure Gateway" spec.
@@ -37,7 +38,6 @@ class _OtpInputState extends State<OtpInput> {
     _controllers = List.generate(widget.length, (_) => TextEditingController());
     _focusNodes = List.generate(widget.length, (_) => FocusNode());
 
-    // Auto-focus the first field
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNodes[0].requestFocus();
     });
@@ -55,7 +55,6 @@ class _OtpInputState extends State<OtpInput> {
   }
 
   void _onChanged(int index, String value) {
-    // Handle paste of full OTP code
     if (value.length > 1) {
       final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
       for (int i = 0; i < widget.length && i < digits.length; i++) {
@@ -70,7 +69,6 @@ class _OtpInputState extends State<OtpInput> {
     }
 
     if (value.isNotEmpty) {
-      // Auto-advance to next box
       if (index < widget.length - 1) {
         _focusNodes[index + 1].requestFocus();
       } else {
@@ -101,6 +99,7 @@ class _OtpInputState extends State<OtpInput> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(widget.length, (i) {
@@ -117,13 +116,13 @@ class _OtpInputState extends State<OtpInput> {
                 duration: ObsidianTheme.fast,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: ObsidianTheme.surface1,
+                  color: c.surface,
                   border: Border.all(
                     color: widget.hasError
                         ? ObsidianTheme.rose.withValues(alpha: 0.5)
                         : isFocused
                             ? ObsidianTheme.emerald.withValues(alpha: 0.5)
-                            : ObsidianTheme.borderMedium,
+                            : c.borderMedium,
                     width: isFocused ? 1.5 : 1,
                   ),
                   boxShadow: isFocused && !widget.hasError
@@ -142,7 +141,7 @@ class _OtpInputState extends State<OtpInput> {
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
-                    color: ObsidianTheme.textPrimary,
+                    color: c.textPrimary,
                   ),
                   decoration: const InputDecoration(
                     counterText: '',

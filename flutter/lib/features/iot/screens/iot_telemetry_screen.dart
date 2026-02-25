@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/iot_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/models/iot_device.dart';
@@ -43,8 +44,9 @@ class _IoTTelemetryScreenState extends ConsumerState<IoTTelemetryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -71,6 +73,7 @@ class _IoTTelemetryScreenState extends ConsumerState<IoTTelemetryScreen>
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
@@ -86,10 +89,10 @@ class _IoTTelemetryScreenState extends ConsumerState<IoTTelemetryScreen>
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
+              child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
             ),
           ),
           const SizedBox(width: 14),
@@ -99,7 +102,7 @@ class _IoTTelemetryScreenState extends ConsumerState<IoTTelemetryScreen>
               Text(
                 _selectedDevice != null ? _selectedDevice!.name.toUpperCase() : 'THE PULSE',
                 style: GoogleFonts.jetBrainsMono(
-                  color: Colors.white,
+                  color: c.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.5,
@@ -107,7 +110,7 @@ class _IoTTelemetryScreenState extends ConsumerState<IoTTelemetryScreen>
               ),
               Text(
                 _selectedDevice != null ? _selectedDevice!.typeLabel : 'IoT Telemetry',
-                style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
               ),
             ],
           ),
@@ -164,6 +167,7 @@ class _DeviceList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final devicesAsync = ref.watch(iotDevicesProvider);
 
     return devicesAsync.when(
@@ -186,7 +190,7 @@ class _DeviceList extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               'Scanning for devices...',
-              style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+              style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
             ),
           ],
         ),
@@ -217,13 +221,13 @@ class _DeviceList extends ConsumerWidget {
               const SizedBox(height: 24),
               Text(
                 'No IoT devices found',
-                style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 15, fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(color: c.textSecondary, fontSize: 15, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               Text(
                 'Bring BLE sensors within range\nand ensure Bluetooth is on',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
               ),
             ],
           );
@@ -266,6 +270,7 @@ class _DeviceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -273,7 +278,7 @@ class _DeviceCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: Colors.white.withValues(alpha: 0.03),
+          color: c.hoverBg,
           border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.08)),
         ),
         child: Row(
@@ -302,27 +307,27 @@ class _DeviceCard extends StatelessWidget {
                 children: [
                   Text(
                     device.name,
-                    style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 3),
                   Row(
                     children: [
                       Text(
                         device.typeLabel,
-                        style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 11),
+                        style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11),
                       ),
                       if (device.batteryLevel != null) ...[
                         const SizedBox(width: 8),
                         Icon(
                           device.lowBattery ? PhosphorIconsLight.batteryLow : PhosphorIconsLight.batteryFull,
-                          color: device.lowBattery ? ObsidianTheme.rose : ObsidianTheme.textTertiary,
+                          color: device.lowBattery ? ObsidianTheme.rose : c.textTertiary,
                           size: 12,
                         ),
                         const SizedBox(width: 3),
                         Text(
                           '${device.batteryLevel}%',
                           style: GoogleFonts.jetBrainsMono(
-                            color: device.lowBattery ? ObsidianTheme.rose : ObsidianTheme.textTertiary,
+                            color: device.lowBattery ? ObsidianTheme.rose : c.textTertiary,
                             fontSize: 10,
                           ),
                         ),
@@ -332,7 +337,7 @@ class _DeviceCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(PhosphorIconsLight.caretRight, color: ObsidianTheme.textTertiary, size: 16),
+            Icon(PhosphorIconsLight.caretRight, color: c.textTertiary, size: 16),
           ],
         ),
       ),
@@ -357,10 +362,11 @@ class _DeviceStream extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final readingsAsync = ref.watch(deviceReadingsProvider(device.id));
 
     return readingsAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
       ),
       error: (_, __) => const SizedBox.shrink(),
@@ -382,7 +388,7 @@ class _DeviceStream extends ConsumerWidget {
             Text(
               'READING HISTORY',
               style: GoogleFonts.jetBrainsMono(
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
                 fontSize: 9,
                 letterSpacing: 1.5,
               ),
@@ -396,7 +402,7 @@ class _DeviceStream extends ConsumerWidget {
                 child: Text(
                   'No readings yet.\nConnect sensor to start capturing.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                  style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                 ),
               )
             else
@@ -455,6 +461,7 @@ class _ReadingCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -477,7 +484,7 @@ class _ReadingCards extends StatelessWidget {
               Text(
                 r.typeLabel.toUpperCase(),
                 style: GoogleFonts.jetBrainsMono(
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                   fontSize: 8,
                   letterSpacing: 1.5,
                 ),
@@ -521,6 +528,7 @@ class _ReadingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final isAlert = reading.isOutOfRange;
 
     return Container(
@@ -528,7 +536,7 @@ class _ReadingRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: isAlert ? ObsidianTheme.rose.withValues(alpha: 0.04) : Colors.white.withValues(alpha: 0.02),
+        color: isAlert ? ObsidianTheme.rose.withValues(alpha: 0.04) : c.hoverBg,
       ),
       child: Row(
         children: [
@@ -543,13 +551,13 @@ class _ReadingRow extends StatelessWidget {
           Expanded(
             child: Text(
               reading.typeLabel,
-              style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 12),
+              style: GoogleFonts.inter(color: c.textSecondary, fontSize: 12),
             ),
           ),
           Text(
             reading.valueLabel,
             style: GoogleFonts.jetBrainsMono(
-              color: isAlert ? ObsidianTheme.rose : Colors.white,
+              color: isAlert ? ObsidianTheme.rose : c.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -557,7 +565,7 @@ class _ReadingRow extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             '${reading.recordedAt.hour.toString().padLeft(2, '0')}:${reading.recordedAt.minute.toString().padLeft(2, '0')}',
-            style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 10),
+            style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 10),
           ),
         ],
       ),

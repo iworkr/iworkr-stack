@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/fleet_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/vehicle.dart';
 
@@ -88,10 +89,11 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final vehicleAsync = ref.watch(myVehicleProvider);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -115,6 +117,8 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
@@ -124,10 +128,10 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
+              child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
             ),
           ),
           const SizedBox(width: 14),
@@ -137,7 +141,7 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
               Text(
                 'FLEET COMMAND',
                 style: GoogleFonts.jetBrainsMono(
-                  color: Colors.white,
+                  color: c.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.5,
@@ -145,7 +149,7 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
               ),
               Text(
                 'Pre-Start Vehicle Check',
-                style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
               ),
             ],
           ),
@@ -196,6 +200,8 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
   }
 
   Widget _buildNoVehicle() {
+    final c = context.iColors;
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -204,19 +210,19 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
             width: 72, height: 72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: ObsidianTheme.textTertiary.withValues(alpha: 0.08),
+              color: c.textTertiary.withValues(alpha: 0.08),
             ),
-            child: const Icon(PhosphorIconsLight.car, color: ObsidianTheme.textTertiary, size: 28),
+            child: Icon(PhosphorIconsLight.car, color: c.textTertiary, size: 28),
           ),
           const SizedBox(height: 16),
           Text(
             'No vehicle assigned',
-            style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 15, fontWeight: FontWeight.w500),
+            style: GoogleFonts.inter(color: c.textSecondary, fontSize: 15, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 6),
           Text(
             'Ask your admin to assign a fleet vehicle',
-            style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+            style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
           ),
         ],
       ),
@@ -224,6 +230,8 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
   }
 
   Widget _buildCheckContent(Vehicle vehicle) {
+    final c = context.iColors;
+
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
@@ -243,7 +251,7 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
         Text(
           'INSPECTION CHECKLIST',
           style: GoogleFonts.jetBrainsMono(
-            color: ObsidianTheme.textTertiary,
+            color: c.textTertiary,
             fontSize: 9,
             letterSpacing: 1.5,
           ),
@@ -290,13 +298,13 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
                   ? (_hasFails
                       ? ObsidianTheme.amber.withValues(alpha: 0.12)
                       : ObsidianTheme.emerald.withValues(alpha: 0.12))
-                  : Colors.white.withValues(alpha: 0.03),
+                  : c.hoverBg,
               border: Border.all(
                 color: _allChecked
                     ? (_hasFails
                         ? ObsidianTheme.amber.withValues(alpha: 0.3)
                         : ObsidianTheme.emerald.withValues(alpha: 0.3))
-                    : Colors.white.withValues(alpha: 0.06),
+                    : c.border,
               ),
             ),
             child: Center(
@@ -315,7 +323,7 @@ class _FleetCommandScreenState extends ConsumerState<FleetCommandScreen>
                       style: GoogleFonts.jetBrainsMono(
                         color: _allChecked
                             ? (_hasFails ? ObsidianTheme.amber : ObsidianTheme.emerald)
-                            : ObsidianTheme.textTertiary,
+                            : c.textTertiary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1,
@@ -343,11 +351,13 @@ class _VehicleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Column(
         children: [
@@ -361,7 +371,7 @@ class _VehicleCard extends StatelessWidget {
                 size: const Size(double.infinity, 120),
                 child: Center(
                   child: Icon(PhosphorIconsLight.van, color: Colors.white.withValues(alpha: 0.25), size: 64)
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
                       .scaleXY(begin: 1.0, end: 1.03, duration: 3000.ms),
                 ),
               ),
@@ -377,7 +387,7 @@ class _VehicleCard extends StatelessWidget {
                     children: [
                       Text(
                         vehicle.name,
-                        style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Row(
@@ -387,18 +397,18 @@ class _VehicleCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(4),
-                                color: Colors.white.withValues(alpha: 0.06),
+                                color: c.border,
                               ),
                               child: Text(
                                 vehicle.registration!,
-                                style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textSecondary, fontSize: 11),
+                                style: GoogleFonts.jetBrainsMono(color: c.textSecondary, fontSize: 11),
                               ),
                             ),
                             const SizedBox(width: 8),
                           ],
                           Text(
                             '${vehicle.odometerKm.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} km',
-                            style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 11),
+                            style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 11),
                           ),
                         ],
                       ),
@@ -444,16 +454,18 @@ class _OdometerInputState extends State<_OdometerInput> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: [
-          Icon(PhosphorIconsLight.gauge, color: ObsidianTheme.textTertiary, size: 18),
+          Icon(PhosphorIconsLight.gauge, color: c.textTertiary, size: 18),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,7 +473,7 @@ class _OdometerInputState extends State<_OdometerInput> {
               Text(
                 'ODOMETER',
                 style: GoogleFonts.jetBrainsMono(
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                   fontSize: 9,
                   letterSpacing: 1.5,
                 ),
@@ -473,7 +485,7 @@ class _OdometerInputState extends State<_OdometerInput> {
                   controller: _controller,
                   keyboardType: TextInputType.number,
                   style: GoogleFonts.jetBrainsMono(
-                    color: Colors.white,
+                    color: c.textPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 2,
@@ -481,7 +493,7 @@ class _OdometerInputState extends State<_OdometerInput> {
                   decoration: InputDecoration(
                     hintText: '000000',
                     hintStyle: GoogleFonts.jetBrainsMono(
-                      color: ObsidianTheme.textTertiary.withValues(alpha: 0.3),
+                      color: c.textTertiary.withValues(alpha: 0.3),
                       fontSize: 24,
                       letterSpacing: 2,
                     ),
@@ -499,7 +511,7 @@ class _OdometerInputState extends State<_OdometerInput> {
           const Spacer(),
           Text(
             'km',
-            style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 14),
+            style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 14),
           ),
         ],
       ),
@@ -527,27 +539,29 @@ class _CheckItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
         border: Border.all(
           color: result == null
-              ? Colors.white.withValues(alpha: 0.06)
+              ? c.border
               : (result! ? ObsidianTheme.emerald.withValues(alpha: 0.15) : ObsidianTheme.rose.withValues(alpha: 0.2)),
         ),
       ),
       child: Row(
         children: [
-          Icon(area.icon, color: ObsidianTheme.textTertiary, size: 18),
+          Icon(area.icon, color: c.textTertiary, size: 18),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               area.label,
               style: GoogleFonts.inter(
-                color: result == null ? Colors.white : (result! ? ObsidianTheme.emerald : ObsidianTheme.rose),
+                color: result == null ? c.textPrimary : (result! ? ObsidianTheme.emerald : ObsidianTheme.rose),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -561,15 +575,15 @@ class _CheckItemCard extends StatelessWidget {
               width: 36, height: 36,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: result == true ? ObsidianTheme.emerald.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
+                color: result == true ? ObsidianTheme.emerald.withValues(alpha: 0.15) : c.activeBg,
                 border: Border.all(
-                  color: result == true ? ObsidianTheme.emerald.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.08),
+                  color: result == true ? ObsidianTheme.emerald.withValues(alpha: 0.4) : c.borderMedium,
                 ),
               ),
               child: Icon(
                 PhosphorIconsBold.check,
                 size: 14,
-                color: result == true ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                color: result == true ? ObsidianTheme.emerald : c.textTertiary,
               ),
             ),
           ),
@@ -582,15 +596,15 @@ class _CheckItemCard extends StatelessWidget {
               width: 36, height: 36,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: result == false ? ObsidianTheme.rose.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
+                color: result == false ? ObsidianTheme.rose.withValues(alpha: 0.15) : c.activeBg,
                 border: Border.all(
-                  color: result == false ? ObsidianTheme.rose.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.08),
+                  color: result == false ? ObsidianTheme.rose.withValues(alpha: 0.4) : c.borderMedium,
                 ),
               ),
               child: Icon(
                 PhosphorIconsBold.x,
                 size: 14,
-                color: result == false ? ObsidianTheme.rose : ObsidianTheme.textTertiary,
+                color: result == false ? ObsidianTheme.rose : c.textTertiary,
               ),
             ),
           ),
@@ -659,7 +673,7 @@ class _ServiceSentinel extends StatelessWidget {
               height: 6,
               child: LinearProgressIndicator(
                 value: health,
-                backgroundColor: Colors.white.withValues(alpha: 0.06),
+                backgroundColor: context.iColors.border,
                 valueColor: AlwaysStoppedAnimation(color),
               ),
             ),

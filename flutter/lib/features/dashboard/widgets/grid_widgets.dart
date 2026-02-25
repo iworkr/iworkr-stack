@@ -15,6 +15,7 @@ import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/route_provider.dart';
 import 'package:iworkr_mobile/core/services/schedule_provider.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
 import 'package:iworkr_mobile/features/scan/screens/scanner_screen.dart';
@@ -26,7 +27,8 @@ import 'package:iworkr_mobile/features/dashboard/widgets/activity_timeline_widge
 import 'package:iworkr_mobile/models/schedule_block.dart';
 
 /// Builds the correct widget content for a given [config].
-Widget buildGridWidget(DashboardWidgetConfig config, WidgetRef ref) {
+Widget buildGridWidget(DashboardWidgetConfig config, WidgetRef ref, BuildContext context) {
+  final c = context.iColors;
   switch (config.type) {
     case 'revenue':
       return _RevenueWidget(size: config.size, ref: ref);
@@ -52,7 +54,7 @@ Widget buildGridWidget(DashboardWidgetConfig config, WidgetRef ref) {
       return ActivityTimelineWidget(expanded: config.size == WidgetSize.large);
     default:
       return Center(
-        child: Text(config.type, style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 10)),
+        child: Text(config.type, style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 10)),
       );
   }
 }
@@ -96,14 +98,15 @@ class _SmallRevenue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('REVENUE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+        Text('REVENUE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1.5)),
         Text(
           formatted,
-          style: GoogleFonts.jetBrainsMono(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1),
+          style: GoogleFonts.jetBrainsMono(fontSize: 22, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -1),
         ),
         SizedBox(height: 20, child: _MiniSparkline(color: ObsidianTheme.emerald)),
       ],
@@ -118,12 +121,13 @@ class _MediumRevenue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text('REVENUE MTD', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+            Text('REVENUE MTD', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -145,7 +149,7 @@ class _MediumRevenue extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           formatted,
-          style: GoogleFonts.jetBrainsMono(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1.5),
+          style: GoogleFonts.jetBrainsMono(fontSize: 32, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -1.5),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -166,12 +170,13 @@ class _LargeRevenue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text('REVENUE MTD', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+            Text('REVENUE MTD', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -183,7 +188,7 @@ class _LargeRevenue extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           formatted,
-          style: GoogleFonts.jetBrainsMono(fontSize: 36, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1.5),
+          style: GoogleFonts.jetBrainsMono(fontSize: 36, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -1.5),
         ),
         const SizedBox(height: 16),
         Expanded(child: _BarChart()),
@@ -203,6 +208,7 @@ class _StatsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final statsAsync = ref.watch(revenueStatsProvider);
 
     return statsAsync.when(
@@ -219,22 +225,22 @@ class _StatsWidget extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(PhosphorIconsLight.briefcase, size: 12, color: ObsidianTheme.textMuted),
+                  Icon(PhosphorIconsLight.briefcase, size: 12, color: c.textMuted),
                   const SizedBox(width: 4),
-                  Text('JOBS', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                  Text('JOBS', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1.5)),
                 ],
               ),
               Row(
                 children: [
-                  Text('$active', style: GoogleFonts.jetBrainsMono(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1)),
-                  Text(' active', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                  Text('$active', style: GoogleFonts.jetBrainsMono(fontSize: 24, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -1)),
+                  Text(' active', style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
                 ],
               ),
               Row(
                 children: [
                   Icon(PhosphorIconsBold.checkCircle, size: 10, color: ObsidianTheme.emerald),
                   const SizedBox(width: 4),
-                  Text('$completed done', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                  Text('$completed done', style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
                 ],
               ),
             ],
@@ -249,16 +255,16 @@ class _StatsWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(children: [
-                    Icon(PhosphorIconsLight.briefcase, size: 12, color: ObsidianTheme.textMuted),
+                    Icon(PhosphorIconsLight.briefcase, size: 12, color: c.textMuted),
                     const SizedBox(width: 4),
-                    Text('ACTIVE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+                    Text('ACTIVE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1)),
                   ]),
                   const SizedBox(height: 6),
-                  Text('$active', style: GoogleFonts.jetBrainsMono(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1)),
+                  Text('$active', style: GoogleFonts.jetBrainsMono(fontSize: 28, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -1)),
                 ],
               ),
             ),
-            Container(width: 1, height: 40, color: ObsidianTheme.border),
+            Container(width: 1, height: 40, color: c.border),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(left: 16),
@@ -269,10 +275,10 @@ class _StatsWidget extends StatelessWidget {
                     Row(children: [
                       Icon(PhosphorIconsLight.checkCircle, size: 12, color: ObsidianTheme.emerald),
                       const SizedBox(width: 4),
-                      Text('DONE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+                      Text('DONE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1)),
                     ]),
                     const SizedBox(height: 6),
-                    Text('$completed', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1)),
+                    Text('$completed', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -1)),
                   ],
                 ),
               ),
@@ -295,6 +301,7 @@ class _NextJobWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final blocksAsync = ref.watch(myTodayBlocksProvider);
 
     return blocksAsync.when(
@@ -321,9 +328,9 @@ class _NextJobWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('NEXT', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
-                Text(timeStr, style: GoogleFonts.jetBrainsMono(fontSize: 22, fontWeight: FontWeight.w700, color: isInProgress ? ObsidianTheme.emerald : Colors.white)),
-                Text(next.title, style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text('NEXT', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1.5)),
+                Text(timeStr, style: GoogleFonts.jetBrainsMono(fontSize: 22, fontWeight: FontWeight.w700, color: isInProgress ? ObsidianTheme.emerald : c.textPrimary)),
+                Text(next.title, style: GoogleFonts.inter(fontSize: 11, color: c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             );
 
@@ -339,21 +346,21 @@ class _NextJobWidget extends StatelessWidget {
                         margin: const EdgeInsets.only(right: 6),
                         decoration: BoxDecoration(shape: BoxShape.circle, color: ObsidianTheme.emerald),
                       ),
-                    Text(isInProgress ? 'IN PROGRESS' : 'NEXT JOB', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: isInProgress ? ObsidianTheme.emerald : ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                    Text(isInProgress ? 'IN PROGRESS' : 'NEXT JOB', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: isInProgress ? ObsidianTheme.emerald : c.textTertiary, letterSpacing: 1.5)),
                     const Spacer(),
-                    Text(timeStr, style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white70)),
+                    Text(timeStr, style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: c.textSecondary)),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(next.title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(next.title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
                 if (next.clientName != null || next.location != null)
                   Row(
                     children: [
-                      Icon(PhosphorIconsLight.mapPin, size: 11, color: ObsidianTheme.textTertiary),
+                      Icon(PhosphorIconsLight.mapPin, size: 11, color: c.textTertiary),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: Text(next.location ?? next.clientName ?? '', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(next.location ?? next.clientName ?? '', style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis),
                       ),
                     ],
                   ),
@@ -368,24 +375,24 @@ class _NextJobWidget extends StatelessWidget {
                   children: [
                     if (isInProgress)
                       Container(width: 6, height: 6, margin: const EdgeInsets.only(right: 6), decoration: BoxDecoration(shape: BoxShape.circle, color: ObsidianTheme.emerald)),
-                    Text(isInProgress ? 'IN PROGRESS' : 'NEXT JOB', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: isInProgress ? ObsidianTheme.emerald : ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                    Text(isInProgress ? 'IN PROGRESS' : 'NEXT JOB', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: isInProgress ? ObsidianTheme.emerald : c.textTertiary, letterSpacing: 1.5)),
                     const Spacer(),
-                    Text(timeStr, style: GoogleFonts.jetBrainsMono(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                    Text(timeStr, style: GoogleFonts.jetBrainsMono(fontSize: 13, fontWeight: FontWeight.w600, color: c.textPrimary)),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(next.title, style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
+                Text(next.title, style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600, color: c.textPrimary)),
                 if (next.clientName != null) ...[
                   const SizedBox(height: 4),
-                  Text(next.clientName!, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textSecondary)),
+                  Text(next.clientName!, style: GoogleFonts.inter(fontSize: 12, color: c.textSecondary)),
                 ],
                 if (next.location != null) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(PhosphorIconsLight.mapPin, size: 11, color: ObsidianTheme.textTertiary),
+                      Icon(PhosphorIconsLight.mapPin, size: 11, color: c.textTertiary),
                       const SizedBox(width: 4),
-                      Expanded(child: Text(next.location!, style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      Expanded(child: Text(next.location!, style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ],
                   ),
                 ],
@@ -400,8 +407,8 @@ class _NextJobWidget extends StatelessWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: ObsidianTheme.surface2, border: Border.all(color: ObsidianTheme.borderMedium)),
-                          child: Center(child: Text('View Job', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500))),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: c.surfaceSecondary, border: Border.all(color: c.borderMedium)),
+                          child: Center(child: Text('View Job', style: GoogleFonts.inter(fontSize: 12, color: c.textSecondary, fontWeight: FontWeight.w500))),
                         ),
                       ),
                     ),
@@ -449,6 +456,7 @@ class _QuickActionsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     if (size == WidgetSize.small) {
       return GestureDetector(
         onTap: () {
@@ -460,7 +468,7 @@ class _QuickActionsWidget extends StatelessWidget {
           children: [
             _AnimatedActionIcon(icon: PhosphorIconsLight.barcode, color: ObsidianTheme.emerald),
             const SizedBox(height: 6),
-            Text('SCAN', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+            Text('SCAN', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1)),
           ],
         ),
       );
@@ -486,7 +494,7 @@ class _QuickActionsWidget extends StatelessWidget {
             children: [
               _AnimatedActionIcon(icon: a.icon, color: a.color),
               const SizedBox(height: 6),
-              Text(a.label.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary, letterSpacing: 0.5)),
+              Text(a.label.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 0.5)),
             ],
           ),
         );
@@ -530,6 +538,7 @@ class _AnimatedActionIconState extends State<_AnimatedActionIcon>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
@@ -537,8 +546,8 @@ class _AnimatedActionIconState extends State<_AnimatedActionIcon>
           width: 40, height: 40,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: Colors.white.withValues(alpha: 0.03 + _ctrl.value * 0.02),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            color: Color.lerp(c.hoverBg, c.activeBg, _ctrl.value),
+            border: Border.all(color: c.border),
           ),
           child: Icon(widget.icon, size: 18, color: widget.color),
         );
@@ -558,6 +567,7 @@ class _TeamPulseWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final teamAsync = ref.watch(teamMembersProvider);
 
     return teamAsync.when(
@@ -572,7 +582,7 @@ class _TeamPulseWidget extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('TEAM PULSE', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+              Text('TEAM PULSE', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
               const SizedBox(height: 10),
               Row(
                 children: displayMembers.map((m) {
@@ -589,7 +599,7 @@ class _TeamPulseWidget extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('TEAM PULSE', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+            Text('TEAM PULSE', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
             const SizedBox(height: 10),
             ...displayMembers.asMap().entries.map((e) {
               final m = e.value;
@@ -604,8 +614,8 @@ class _TeamPulseWidget extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white)),
-                          Text('Active now', style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                          Text(name, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary)),
+                          Text('Active now', style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary)),
                         ],
                       ),
                     ),
@@ -629,6 +639,7 @@ class _TeamAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return Stack(
       children: [
@@ -636,16 +647,16 @@ class _TeamAvatar extends StatelessWidget {
           ? CircleAvatar(
               radius: size / 2,
               backgroundImage: NetworkImage(avatarUrl!),
-              backgroundColor: ObsidianTheme.surface2,
+              backgroundColor: c.surfaceSecondary,
             )
           : Container(
           width: size, height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: ObsidianTheme.surface2,
-            border: Border.all(color: ObsidianTheme.borderMedium),
+            color: c.surfaceSecondary,
+            border: Border.all(color: c.borderMedium),
           ),
-          child: Center(child: Text(initial, style: GoogleFonts.inter(fontSize: size * 0.36, fontWeight: FontWeight.w600, color: ObsidianTheme.textSecondary))),
+          child: Center(child: Text(initial, style: GoogleFonts.inter(fontSize: size * 0.36, fontWeight: FontWeight.w600, color: c.textSecondary))),
         ),
         if (isOnline)
           Positioned(
@@ -678,6 +689,7 @@ class _BreathingDotState extends State<_BreathingDot> with SingleTickerProviderS
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
@@ -686,7 +698,7 @@ class _BreathingDotState extends State<_BreathingDot> with SingleTickerProviderS
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: ObsidianTheme.emerald,
-            border: Border.all(color: ObsidianTheme.void_, width: 2),
+            border: Border.all(color: c.canvas, width: 2),
             boxShadow: [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.3 + _ctrl.value * 0.3), blurRadius: 4 + _ctrl.value * 4)],
           ),
         );
@@ -704,16 +716,17 @@ class _ScheduleWidget extends StatelessWidget {
   final WidgetRef ref;
   const _ScheduleWidget({required this.size, required this.ref});
 
-  Color _statusColor(dynamic status) {
+  Color _statusColor(dynamic status, IWorkrColors c) {
     final s = status.toString();
     if (s.contains('inProgress')) return ObsidianTheme.emerald;
     if (s.contains('enRoute')) return ObsidianTheme.emerald;
-    if (s.contains('complete')) return ObsidianTheme.textTertiary;
-    return ObsidianTheme.textMuted;
+    if (s.contains('complete')) return c.textTertiary;
+    return c.textMuted;
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final blocksAsync = ref.watch(myTodayBlocksProvider);
 
     return blocksAsync.when(
@@ -729,11 +742,11 @@ class _ScheduleWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text("TODAY'S SCHEDULE", style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                Text("TODAY'S SCHEDULE", style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
                 const Spacer(),
                 GestureDetector(
                   onTap: () => context.go('/schedule'),
-                  child: Text('View all', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textMuted, fontWeight: FontWeight.w500)),
+                  child: Text('View all', style: GoogleFonts.inter(fontSize: 11, color: c.textMuted, fontWeight: FontWeight.w500)),
                 ),
               ],
             ),
@@ -744,18 +757,18 @@ class _ScheduleWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
-                    Container(width: 3, height: 32, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: _statusColor(b.status))),
+                    Container(width: 3, height: 32, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: _statusColor(b.status, c))),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(b.title, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          Text(b.location ?? b.clientName ?? '', style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(b.title, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(b.location ?? b.clientName ?? '', style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),
-                    Text(time, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                    Text(time, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary)),
                   ],
                 ),
               );
@@ -778,6 +791,7 @@ class _RouteWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final routeAsync = ref.watch(todayRouteProvider);
 
     return routeAsync.when(
@@ -800,13 +814,13 @@ class _RouteWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ROUTE INTEL', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+              Text('ROUTE INTEL', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _RouteMiniStat(label: 'STOPS', value: '${route.jobSequence.length}', color: Colors.white),
-                  _RouteMiniStat(label: 'DRIVE', value: route.driveTimeLabel, color: Colors.white),
+                  _RouteMiniStat(label: 'STOPS', value: '${route.jobSequence.length}', color: c.textPrimary),
+                  _RouteMiniStat(label: 'DRIVE', value: route.driveTimeLabel, color: c.textPrimary),
                   _RouteMiniStat(label: 'DIST', value: route.distanceLabel, color: ObsidianTheme.emerald),
                 ],
               ),
@@ -816,7 +830,7 @@ class _RouteWidget extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: CustomPaint(
-                      painter: _MiniRouteMapPainter(stops: route.jobSequence),
+                      painter: _MiniRouteMapPainter(stops: route.jobSequence, canvasColor: c.canvas, gridColor: c.hoverBg),
                       size: const Size(double.infinity, double.infinity),
                     ),
                   ),
@@ -838,11 +852,12 @@ class _RouteMiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       children: [
         Text(value, style: GoogleFonts.jetBrainsMono(fontSize: 14, fontWeight: FontWeight.w700, color: color)),
         const SizedBox(height: 2),
-        Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 7, color: ObsidianTheme.textTertiary, letterSpacing: 1)),
+        Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 7, color: c.textTertiary, letterSpacing: 1)),
       ],
     );
   }
@@ -855,10 +870,11 @@ class _RouteMiniStat extends StatelessWidget {
 class _WidgetShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Center(
       child: SizedBox(
         width: 20, height: 20,
-        child: CircularProgressIndicator(color: ObsidianTheme.textTertiary, strokeWidth: 1.5),
+        child: CircularProgressIndicator(color: c.textTertiary, strokeWidth: 1.5),
       ),
     );
   }
@@ -869,13 +885,14 @@ class _WidgetError extends StatelessWidget {
   const _WidgetError({required this.label});
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(PhosphorIconsLight.warning, size: 16, color: ObsidianTheme.rose),
           const SizedBox(height: 4),
-          Text(label, style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
+          Text(label, style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary)),
         ],
       ),
     );
@@ -889,17 +906,18 @@ class _NoDataState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 36, height: 36,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: ObsidianTheme.surface2),
-            child: Icon(icon, size: 16, color: ObsidianTheme.textTertiary),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: c.surfaceSecondary),
+            child: Icon(icon, size: 16, color: c.textTertiary),
           ),
           const SizedBox(height: 6),
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
+          Text(label, style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
         ],
       ),
     );
@@ -1157,7 +1175,7 @@ class _BarChartState extends State<_BarChart>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(labels[i], style: GoogleFonts.jetBrainsMono(fontSize: 8, color: ObsidianTheme.textTertiary)),
+                    Text(labels[i], style: GoogleFonts.jetBrainsMono(fontSize: 8, color: context.iColors.textTertiary)),
                   ],
                 );
               }),
@@ -1172,13 +1190,15 @@ class _BarChartState extends State<_BarChart>
 /// Mini route map painter for the route widget
 class _MiniRouteMapPainter extends CustomPainter {
   final List stops;
-  _MiniRouteMapPainter({required this.stops});
+  final Color canvasColor;
+  final Color gridColor;
+  _MiniRouteMapPainter({required this.stops, required this.canvasColor, required this.gridColor});
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = const Color(0xFF080810));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = canvasColor);
 
-    final gridPaint = Paint()..color = Colors.white.withValues(alpha: 0.03)..strokeWidth = 0.5;
+    final gridPaint = Paint()..color = gridColor..strokeWidth = 0.5;
     for (double y = 0; y < size.height; y += 16) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }

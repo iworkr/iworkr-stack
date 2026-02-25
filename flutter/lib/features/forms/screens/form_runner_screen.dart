@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/forms_provider.dart';
 import 'package:iworkr_mobile/core/services/telemetry_provider.dart' show logTelemetryEvent;
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/form_template.dart';
 import 'package:iworkr_mobile/models/telemetry_event.dart';
@@ -175,10 +176,11 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final mq = MediaQuery.of(context);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: Stack(
         children: [
           // Main content
@@ -200,12 +202,13 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: BoxDecoration(
-        color: ObsidianTheme.void_,
+        color: c.canvas,
         border: Border(
-          bottom: BorderSide(color: ObsidianTheme.border),
+          bottom: BorderSide(color: c.border),
         ),
       ),
       child: Row(
@@ -220,11 +223,11 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: ObsidianTheme.hoverBg,
-                border: Border.all(color: ObsidianTheme.border),
+                color: c.hoverBg,
+                border: Border.all(color: c.border),
               ),
-              child: const Center(
-                child: Icon(PhosphorIconsLight.x, size: 16, color: ObsidianTheme.textSecondary),
+              child: Center(
+                child: Icon(PhosphorIconsLight.x, size: 16, color: c.textSecondary),
               ),
             ),
           ),
@@ -238,7 +241,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: c.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -248,7 +251,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                     widget.template.description!,
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -278,11 +281,12 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
   }
 
   Widget _buildProgressBar() {
+    final c = context.iColors;
     final pct = (_progress * 100).round();
     return Container(
       height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      color: ObsidianTheme.surface1,
+      color: c.surface,
       child: Row(
         children: [
           Expanded(
@@ -293,7 +297,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                 height: 4,
                 child: Stack(
                   children: [
-                    Container(color: Colors.white.withValues(alpha: 0.06)),
+                    Container(color: c.border),
                     FractionallySizedBox(
                       widthFactor: _progress,
                       child: Container(
@@ -329,16 +333,17 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
   }
 
   Widget _buildFormContent() {
+    final c = context.iColors;
     if (widget.template.sections.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(PhosphorIconsLight.fileText, size: 48, color: ObsidianTheme.textTertiary),
+            Icon(PhosphorIconsLight.fileText, size: 48, color: c.textTertiary),
             const SizedBox(height: 12),
             Text(
               'No fields configured',
-              style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textMuted),
+              style: GoogleFonts.inter(fontSize: 14, color: c.textMuted),
             ),
           ],
         ).animate().fadeIn(duration: 400.ms),
@@ -359,9 +364,9 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
               margin: EdgeInsets.only(top: sIdx == 0 ? 8 : 24, bottom: 12),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.03),
+                color: c.hoverBg,
                 borderRadius: ObsidianTheme.radiusMd,
-                border: Border.all(color: ObsidianTheme.border),
+                border: Border.all(color: c.border),
               ),
               child: Row(
                 children: [
@@ -379,7 +384,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textSecondary,
+                      color: c.textSecondary,
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -463,12 +468,13 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
   }
 
   Widget _buildFooter(MediaQueryData mq) {
+    final c = context.iColors;
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, mq.padding.bottom + 12),
       decoration: BoxDecoration(
-        color: ObsidianTheme.void_,
+        color: c.canvas,
         border: Border(
-          top: BorderSide(color: ObsidianTheme.border),
+          top: BorderSide(color: c.border),
         ),
       ),
       child: Column(
@@ -485,12 +491,12 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                 decoration: BoxDecoration(
                   color: _signatureSvg != null
                       ? ObsidianTheme.emeraldDim
-                      : Colors.white.withValues(alpha: 0.03),
+                      : c.hoverBg,
                   borderRadius: ObsidianTheme.radiusMd,
                   border: Border.all(
                     color: _signatureSvg != null
                         ? ObsidianTheme.emerald.withValues(alpha: 0.3)
-                        : ObsidianTheme.border,
+                        : c.border,
                   ),
                 ),
                 child: Row(
@@ -502,7 +508,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                           : PhosphorIconsLight.pen,
                       color: _signatureSvg != null
                           ? ObsidianTheme.emerald
-                          : ObsidianTheme.textSecondary,
+                          : c.textSecondary,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -513,7 +519,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                         fontWeight: FontWeight.w600,
                         color: _signatureSvg != null
                             ? ObsidianTheme.emerald
-                            : ObsidianTheme.textSecondary,
+                            : c.textSecondary,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -534,7 +540,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                 borderRadius: ObsidianTheme.radiusMd,
                 color: _canSubmit
                     ? ObsidianTheme.emerald
-                    : ObsidianTheme.shimmerBase,
+                    : c.shimmerBase,
               ),
               child: Center(
                 child: _submitting
@@ -552,7 +558,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                           Icon(
                             PhosphorIconsBold.paperPlaneTilt,
                             size: 18,
-                            color: _canSubmit ? Colors.white : ObsidianTheme.textTertiary,
+                            color: _canSubmit ? Colors.white : c.textTertiary,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -562,7 +568,7 @@ class _FormRunnerScreenState extends ConsumerState<FormRunnerScreen>
                               fontWeight: FontWeight.w600,
                               color: _canSubmit
                                   ? Colors.white
-                                  : ObsidianTheme.textTertiary,
+                                  : c.textTertiary,
                               letterSpacing: 1.5,
                             ),
                           ),
@@ -640,17 +646,18 @@ class _YesNoField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final options = ['Yes', 'No', if (hasNa) 'N/A'];
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: c.hoverBg,
         borderRadius: ObsidianTheme.radiusLg,
         border: Border.all(
           color: value != null
               ? ObsidianTheme.emerald.withValues(alpha: 0.15)
-              : ObsidianTheme.border,
+              : c.border,
         ),
       ),
       child: Column(
@@ -663,7 +670,7 @@ class _YesNoField extends StatelessWidget {
                   field.label,
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.white,
+                    color: c.textPrimary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -701,11 +708,11 @@ class _YesNoField extends StatelessWidget {
                         borderRadius: ObsidianTheme.radiusMd,
                         color: isSelected
                             ? activeColor.withValues(alpha: 0.15)
-                            : Colors.white.withValues(alpha: 0.04),
+                            : c.activeBg,
                         border: Border.all(
                           color: isSelected
                               ? activeColor.withValues(alpha: 0.4)
-                              : Colors.white.withValues(alpha: 0.08),
+                              : c.borderMedium,
                           width: isSelected ? 1.5 : 1,
                         ),
                       ),
@@ -715,7 +722,7 @@ class _YesNoField extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                            color: isSelected ? activeColor : ObsidianTheme.textSecondary,
+                            color: isSelected ? activeColor : c.textSecondary,
                           ),
                         ),
                       ),
@@ -745,27 +752,28 @@ class _TextInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: c.hoverBg,
         borderRadius: ObsidianTheme.radiusLg,
-        border: Border.all(color: ObsidianTheme.border),
+        border: Border.all(color: c.border),
       ),
       child: TextFormField(
         initialValue: value,
         onChanged: onChanged,
-        style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+        style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
         decoration: InputDecoration(
           labelText: field.label,
           labelStyle: GoogleFonts.inter(
             fontSize: 13,
-            color: ObsidianTheme.textMuted,
+            color: c.textMuted,
           ),
           hintText: field.hint,
           hintStyle: GoogleFonts.inter(
             fontSize: 13,
-            color: ObsidianTheme.textDisabled,
+            color: c.textDisabled,
           ),
           border: InputBorder.none,
           suffixIcon: field.required
@@ -801,21 +809,22 @@ class _NumberInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: c.hoverBg,
         borderRadius: ObsidianTheme.radiusLg,
-        border: Border.all(color: ObsidianTheme.border),
+        border: Border.all(color: c.border),
       ),
       child: TextFormField(
         initialValue: value,
         onChanged: onChanged,
         keyboardType: TextInputType.number,
-        style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+        style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
         decoration: InputDecoration(
           labelText: field.label,
-          labelStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted),
+          labelStyle: GoogleFonts.inter(fontSize: 13, color: c.textMuted),
           border: InputBorder.none,
         ),
       ),
@@ -837,15 +846,16 @@ class _PhotoField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: c.hoverBg,
         borderRadius: ObsidianTheme.radiusLg,
         border: Border.all(
           color: hasPhoto
               ? ObsidianTheme.emerald.withValues(alpha: 0.2)
-              : ObsidianTheme.border,
+              : c.border,
         ),
       ),
       child: Column(
@@ -858,7 +868,7 @@ class _PhotoField extends StatelessWidget {
                   field.label,
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.white,
+                    color: c.textPrimary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -888,11 +898,11 @@ class _PhotoField extends StatelessWidget {
                 borderRadius: ObsidianTheme.radiusMd,
                 color: hasPhoto
                     ? ObsidianTheme.emeraldDim
-                    : Colors.white.withValues(alpha: 0.04),
+                    : c.activeBg,
                 border: Border.all(
                   color: hasPhoto
                       ? ObsidianTheme.emerald.withValues(alpha: 0.3)
-                      : Colors.white.withValues(alpha: 0.08),
+                      : c.borderMedium,
                 ),
               ),
               child: Row(
@@ -904,7 +914,7 @@ class _PhotoField extends StatelessWidget {
                         : PhosphorIconsLight.camera,
                     color: hasPhoto
                         ? ObsidianTheme.emerald
-                        : ObsidianTheme.textSecondary,
+                        : c.textSecondary,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -915,7 +925,7 @@ class _PhotoField extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                       color: hasPhoto
                           ? ObsidianTheme.emerald
-                          : ObsidianTheme.textSecondary,
+                          : c.textSecondary,
                     ),
                   ),
                 ],
@@ -942,12 +952,13 @@ class _DropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: c.hoverBg,
         borderRadius: ObsidianTheme.radiusLg,
-        border: Border.all(color: ObsidianTheme.border),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -956,7 +967,7 @@ class _DropdownField extends StatelessWidget {
             field.label,
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: ObsidianTheme.textMuted,
+              color: c.textMuted,
             ),
           ),
           const SizedBox(height: 6),
@@ -965,15 +976,15 @@ class _DropdownField extends StatelessWidget {
             value: value,
             hint: Text(
               'Select...',
-              style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textDisabled),
+              style: GoogleFonts.inter(fontSize: 13, color: c.textDisabled),
             ),
             decoration: const InputDecoration(
               border: InputBorder.none,
               isDense: true,
               contentPadding: EdgeInsets.zero,
             ),
-            dropdownColor: ObsidianTheme.surface2,
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+            dropdownColor: c.surfaceSecondary,
+            style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
             items: field.options.map((opt) {
               return DropdownMenuItem(value: opt, child: Text(opt));
             }).toList(),
@@ -1004,6 +1015,7 @@ class _SignatureField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onSign,
       child: Container(
@@ -1011,12 +1023,12 @@ class _SignatureField extends StatelessWidget {
         decoration: BoxDecoration(
           color: hasSigned
               ? ObsidianTheme.emeraldDim
-              : Colors.white.withValues(alpha: 0.02),
+              : c.hoverBg,
           borderRadius: ObsidianTheme.radiusLg,
           border: Border.all(
             color: hasSigned
                 ? ObsidianTheme.emerald.withValues(alpha: 0.3)
-                : ObsidianTheme.border,
+                : c.border,
           ),
         ),
         child: Row(
@@ -1027,7 +1039,7 @@ class _SignatureField extends StatelessWidget {
                   : PhosphorIconsLight.pen,
               color: hasSigned
                   ? ObsidianTheme.emerald
-                  : ObsidianTheme.textSecondary,
+                  : c.textSecondary,
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -1038,7 +1050,7 @@ class _SignatureField extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: hasSigned
                     ? ObsidianTheme.emerald
-                    : Colors.white,
+                    : c.textPrimary,
               ),
             ),
             if (field.required) ...[
@@ -1073,6 +1085,7 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () async {
         final date = await showDatePicker(
@@ -1083,9 +1096,9 @@ class _DateField extends StatelessWidget {
           builder: (context, child) {
             return Theme(
               data: ThemeData.dark().copyWith(
-                colorScheme: const ColorScheme.dark(
+                colorScheme: ColorScheme.dark(
                   primary: ObsidianTheme.emerald,
-                  surface: ObsidianTheme.surface2,
+                  surface: c.surfaceSecondary,
                 ),
               ),
               child: child!,
@@ -1099,9 +1112,9 @@ class _DateField extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: c.hoverBg,
           borderRadius: ObsidianTheme.radiusLg,
-          border: Border.all(color: ObsidianTheme.border),
+          border: Border.all(color: c.border),
         ),
         child: Row(
           children: [
@@ -1109,7 +1122,7 @@ class _DateField extends StatelessWidget {
               PhosphorIconsLight.calendarBlank,
               color: value != null
                   ? ObsidianTheme.emerald
-                  : ObsidianTheme.textSecondary,
+                  : c.textSecondary,
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -1117,7 +1130,7 @@ class _DateField extends StatelessWidget {
               value ?? field.label,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: value != null ? Colors.white : ObsidianTheme.textMuted,
+                color: value != null ? c.textPrimary : c.textMuted,
               ),
             ),
           ],
@@ -1239,10 +1252,11 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final mq = MediaQuery.of(context);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Stack(
           children: [
@@ -1260,11 +1274,11 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
                           height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: ObsidianTheme.hoverBg,
-                            border: Border.all(color: ObsidianTheme.border),
+                            color: c.hoverBg,
+                            border: Border.all(color: c.border),
                           ),
-                          child: const Center(
-                            child: Icon(PhosphorIconsLight.x, size: 16, color: ObsidianTheme.textSecondary),
+                          child: Center(
+                            child: Icon(PhosphorIconsLight.x, size: 16, color: c.textSecondary),
                           ),
                         ),
                       ),
@@ -1274,7 +1288,7 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: c.textPrimary,
                         ),
                       ),
                       const Spacer(),
@@ -1284,7 +1298,7 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
                           'Clear',
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: ObsidianTheme.textTertiary,
+                            color: c.textTertiary,
                           ),
                         ),
                       ),
@@ -1300,8 +1314,8 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusLg,
-                      color: ObsidianTheme.surface1,
-                      border: Border.all(color: ObsidianTheme.borderMedium),
+                      color: c.surface,
+                      border: Border.all(color: c.borderMedium),
                     ),
                     child: ClipRRect(
                       borderRadius: ObsidianTheme.radiusLg,
@@ -1312,14 +1326,14 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
                             left: 20,
                             right: 20,
                             bottom: 60,
-                            child: Container(height: 1, color: ObsidianTheme.border),
+                            child: Container(height: 1, color: c.border),
                           ),
                           Positioned(
                             left: 20,
                             bottom: 68,
                             child: Text(
                               '×',
-                              style: GoogleFonts.inter(fontSize: 18, color: ObsidianTheme.textTertiary),
+                              style: GoogleFonts.inter(fontSize: 18, color: c.textTertiary),
                             ),
                           ),
                           GestureDetector(
@@ -1340,7 +1354,7 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
                                 'Sign with your finger',
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
-                                  color: ObsidianTheme.textDisabled,
+                                  color: c.textDisabled,
                                 ),
                               ),
                             ),
@@ -1362,7 +1376,7 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
                       height: 52,
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        color: _isEmpty ? ObsidianTheme.shimmerBase : ObsidianTheme.emerald,
+                        color: _isEmpty ? c.shimmerBase : ObsidianTheme.emerald,
                       ),
                       child: Center(
                         child: Text(
@@ -1370,7 +1384,7 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
                           style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: _isEmpty ? ObsidianTheme.textTertiary : Colors.white,
+                            color: _isEmpty ? c.textTertiary : Colors.white,
                           ),
                         ),
                       ),
@@ -1380,7 +1394,7 @@ class _WetInkSignaturePadState extends State<_WetInkSignaturePad>
 
                 Text(
                   'By signing, you acknowledge this compliance form.',
-                  style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary),
+                  style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary),
                 ),
                 SizedBox(height: mq.padding.bottom + 8),
               ],

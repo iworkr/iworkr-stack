@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 // ═══════════════════════════════════════════════════════════
@@ -81,9 +82,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
+    final c = context.iColors;
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: Stack(
         children: [
           // Background glow
@@ -123,7 +125,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                           'Skip',
                           style: GoogleFonts.inter(
                             fontSize: 14,
-                            color: ObsidianTheme.textTertiary,
+                            color: c.textTertiary,
                           ),
                         ),
                       ),
@@ -132,7 +134,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                         'Restore Purchases',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                         ),
                       ),
                     ],
@@ -166,7 +168,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                           style: GoogleFonts.inter(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
-                            color: ObsidianTheme.textPrimary,
+                            color: c.textPrimary,
                             letterSpacing: -0.5,
                           ),
                         )
@@ -179,7 +181,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                           'Unlock the full potential of your field operations.',
                           style: GoogleFonts.inter(
                             fontSize: 14,
-                            color: ObsidianTheme.textMuted,
+                            color: c.textMuted,
                           ),
                           textAlign: TextAlign.center,
                         )
@@ -210,7 +212,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                             '1 User',
                             'Standard Support',
                           ],
-                          accentColor: ObsidianTheme.textTertiary,
+                          accentColor: c.textTertiary,
                           isFeatured: false,
                           ctaLabel: 'Continue with Free',
                           onTap: _continueFree,
@@ -333,13 +335,14 @@ class _BillingToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       height: 40,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -382,6 +385,7 @@ class _TogglePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -392,13 +396,13 @@ class _TogglePill extends StatelessWidget {
           color: isActive
               ? (isEmerald
                   ? ObsidianTheme.emerald.withValues(alpha: 0.15)
-                  : ObsidianTheme.surface2)
+                  : c.surfaceSecondary)
               : Colors.transparent,
           border: Border.all(
             color: isActive
                 ? (isEmerald
                     ? ObsidianTheme.emerald.withValues(alpha: 0.3)
-                    : ObsidianTheme.borderMedium)
+                    : c.borderMedium)
                 : Colors.transparent,
           ),
         ),
@@ -410,8 +414,8 @@ class _TogglePill extends StatelessWidget {
             color: isActive
                 ? (isEmerald
                     ? ObsidianTheme.emerald
-                    : ObsidianTheme.textPrimary)
-                : ObsidianTheme.textMuted,
+                    : c.textPrimary)
+                : c.textMuted,
           ),
         ),
       ),
@@ -457,6 +461,7 @@ class _PlanCardState extends State<_PlanCard> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     Widget card = GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
@@ -473,11 +478,11 @@ class _PlanCardState extends State<_PlanCard> {
           borderRadius: BorderRadius.circular(16),
           color: widget.isFeatured
               ? ObsidianTheme.emerald.withValues(alpha: 0.04)
-              : ObsidianTheme.surface1,
+              : c.surface,
           border: Border.all(
             color: widget.isFeatured
                 ? ObsidianTheme.emerald.withValues(alpha: 0.4)
-                : ObsidianTheme.border,
+                : c.border,
             width: widget.isFeatured ? 1.5 : 1,
           ),
         ),
@@ -492,7 +497,7 @@ class _PlanCardState extends State<_PlanCard> {
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: ObsidianTheme.textPrimary,
+                    color: c.textPrimary,
                   ),
                 ),
                 const Spacer(),
@@ -531,7 +536,7 @@ class _PlanCardState extends State<_PlanCard> {
                     fontWeight: FontWeight.w700,
                     color: widget.isFeatured
                         ? ObsidianTheme.emerald
-                        : ObsidianTheme.textPrimary,
+                        : c.textPrimary,
                     letterSpacing: -1,
                   ),
                 ),
@@ -541,7 +546,7 @@ class _PlanCardState extends State<_PlanCard> {
                     widget.priceSubtitle,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: ObsidianTheme.textMuted,
+                      color: c.textMuted,
                     ),
                   ),
                 ),
@@ -558,8 +563,8 @@ class _PlanCardState extends State<_PlanCard> {
                       Icon(
                         PhosphorIconsBold.check,
                         size: 14,
-                        color: widget.accentColor == ObsidianTheme.textTertiary
-                            ? ObsidianTheme.textMuted
+                        color: !widget.isFeatured
+                            ? c.textMuted
                             : ObsidianTheme.emerald,
                       ),
                       const SizedBox(width: 10),
@@ -567,7 +572,7 @@ class _PlanCardState extends State<_PlanCard> {
                         f,
                         style: GoogleFonts.inter(
                           fontSize: 13,
-                          color: ObsidianTheme.textSecondary,
+                          color: c.textSecondary,
                         ),
                       ),
                     ],
@@ -588,7 +593,7 @@ class _PlanCardState extends State<_PlanCard> {
                 border: Border.all(
                   color: widget.isFeatured
                       ? ObsidianTheme.emerald
-                      : ObsidianTheme.borderMedium,
+                      : c.borderMedium,
                 ),
               ),
               child: Center(
@@ -599,7 +604,7 @@ class _PlanCardState extends State<_PlanCard> {
                     fontWeight: FontWeight.w600,
                     color: widget.isFeatured
                         ? Colors.black
-                        : ObsidianTheme.textSecondary,
+                        : c.textSecondary,
                   ),
                 ),
               ),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iworkr_mobile/core/theme/alabaster_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 
 /// The Obsidian Interface — unified design system matching iWorkr Web 1:1.
 ///
 /// All values sourced from src/app/globals.css CSS variables and component audits.
 /// This is the single source of truth for the mobile app's visual identity.
+/// Since v80.0, also serves both Obsidian (dark) and Alabaster (light) ThemeData.
 class ObsidianTheme {
   ObsidianTheme._();
 
@@ -174,6 +177,7 @@ class ObsidianTheme {
       ];
 
   // ── ThemeData ───────────────────────────────────────
+
   static ThemeData get darkTheme {
     final inter = GoogleFonts.inter();
     return ThemeData(
@@ -186,6 +190,7 @@ class ObsidianTheme {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       fontFamily: inter.fontFamily,
+      extensions: const [IWorkrColors.dark],
       textTheme: TextTheme(
         displayLarge: GoogleFonts.inter(
           fontWeight: FontWeight.w600,
@@ -263,7 +268,105 @@ class ObsidianTheme {
     );
   }
 
-  /// Generate a ThemeData with a custom brand color for white-labeling.
+  // ── Alabaster Light Theme ─────────────────────────────
+
+  static ThemeData get lightTheme {
+    final inter = GoogleFonts.inter();
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AlabasterTheme.canvas,
+      primaryColor: emerald,
+      cardColor: AlabasterTheme.surface1,
+      canvasColor: AlabasterTheme.canvas,
+      dividerColor: AlabasterTheme.border,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      fontFamily: inter.fontFamily,
+      extensions: const [IWorkrColors.light],
+      textTheme: TextTheme(
+        displayLarge: GoogleFonts.inter(
+          fontWeight: FontWeight.w600,
+          color: AlabasterTheme.textPrimary,
+          fontSize: 28,
+          letterSpacing: -0.5,
+        ),
+        displayMedium: GoogleFonts.inter(
+          fontWeight: FontWeight.w600,
+          color: AlabasterTheme.textPrimary,
+          fontSize: 22,
+          letterSpacing: -0.5,
+        ),
+        titleLarge: GoogleFonts.inter(
+          fontWeight: FontWeight.w600,
+          color: AlabasterTheme.textPrimary,
+          fontSize: 18,
+          letterSpacing: -0.3,
+        ),
+        titleMedium: GoogleFonts.inter(
+          fontWeight: FontWeight.w500,
+          color: AlabasterTheme.textPrimary,
+          fontSize: 15,
+        ),
+        bodyLarge: GoogleFonts.inter(color: AlabasterTheme.textSecondary, fontSize: 14),
+        bodyMedium: GoogleFonts.inter(color: AlabasterTheme.textSecondary, fontSize: 13),
+        bodySmall: GoogleFonts.inter(color: AlabasterTheme.textMuted, fontSize: 11),
+        labelSmall: GoogleFonts.jetBrainsMono(
+          color: AlabasterTheme.textTertiary,
+          fontSize: 10,
+          letterSpacing: 0.5,
+        ),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: AlabasterTheme.canvas,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: AlabasterTheme.textPrimary,
+          letterSpacing: -0.3,
+        ),
+        iconTheme: const IconThemeData(color: AlabasterTheme.textSecondary, size: 20),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Colors.transparent,
+        selectedItemColor: emerald,
+        unselectedItemColor: AlabasterTheme.textTertiary,
+        type: BottomNavigationBarType.fixed,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AlabasterTheme.border,
+        thickness: 1,
+        space: 0,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AlabasterTheme.surface2,
+        hintStyle: GoogleFonts.inter(color: AlabasterTheme.textDisabled, fontSize: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+      ),
+      colorScheme: const ColorScheme.light(
+        primary: emerald,
+        onPrimary: Colors.white,
+        secondary: AlabasterTheme.textSecondary,
+        surface: AlabasterTheme.surface1,
+        error: rose,
+      ),
+    );
+  }
+
+  // ── Branded Theme Factories ─────────────────────────
+
+  /// Apply workspace brand color to the dark (Obsidian) theme.
   static ThemeData darkThemeWith(Color brandColor) {
     final onBrand = brandColor.computeLuminance() > 0.5
         ? Colors.black
@@ -275,6 +378,23 @@ class ObsidianTheme {
         onPrimary: onBrand,
       ),
       bottomNavigationBarTheme: darkTheme.bottomNavigationBarTheme.copyWith(
+        selectedItemColor: brandColor,
+      ),
+    );
+  }
+
+  /// Apply workspace brand color to the light (Alabaster) theme.
+  static ThemeData lightThemeWith(Color brandColor) {
+    final onBrand = brandColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
+    return lightTheme.copyWith(
+      primaryColor: brandColor,
+      colorScheme: lightTheme.colorScheme.copyWith(
+        primary: brandColor,
+        onPrimary: onBrand,
+      ),
+      bottomNavigationBarTheme: lightTheme.bottomNavigationBarTheme.copyWith(
         selectedItemColor: brandColor,
       ),
     );

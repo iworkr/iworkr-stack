@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/admin_provider.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 import 'package:iworkr_mobile/models/profile.dart';
@@ -30,10 +31,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final membersAsync = ref.watch(orgMembersProvider);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -48,14 +50,14 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle, color: ObsidianTheme.hoverBg,
-                        border: Border.all(color: ObsidianTheme.border),
+                        shape: BoxShape.circle, color: c.hoverBg,
+                        border: Border.all(color: c.border),
                       ),
-                      child: const Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: ObsidianTheme.textSecondary)),
+                      child: Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: c.textSecondary)),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('Team', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                  Text('Team', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary)),
                   const Spacer(),
                   GestureDetector(
                     onTap: _showInviteSheet,
@@ -84,7 +86,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               child: membersAsync.when(
                 data: (members) {
                   if (members.isEmpty) {
-                    return Center(child: Text('No team members', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary)));
+                    return Center(child: Text('No team members', style: GoogleFonts.inter(color: c.textTertiary)));
                   }
 
                   return ListView.builder(
@@ -98,7 +100,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   );
                 },
                 loading: () => const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 1.5, color: ObsidianTheme.emerald))),
-                error: (_, __) => const Center(child: Text('Error loading team', style: TextStyle(color: ObsidianTheme.textTertiary))),
+                error: (_, __) => Center(child: Text('Error loading team', style: TextStyle(color: c.textTertiary))),
               ),
             ),
           ],
@@ -137,6 +139,7 @@ class _MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GlassCard(
       padding: const EdgeInsets.all(14),
       borderRadius: ObsidianTheme.radiusMd,
@@ -147,7 +150,7 @@ class _MemberCard extends StatelessWidget {
             width: 36, height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: ObsidianTheme.shimmerBase,
+              color: c.shimmerBase,
               border: Border.all(color: _statusColor.withValues(alpha: 0.3)),
             ),
             child: Center(
@@ -164,7 +167,7 @@ class _MemberCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(member.profile?.displayName ?? 'Unknown', style: GoogleFonts.inter(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500)),
+                Text(member.profile?.displayName ?? 'Unknown', style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
                 Row(
                   children: [
@@ -179,7 +182,7 @@ class _MemberCard extends StatelessWidget {
                     ),
                     if (member.branch != null) ...[
                       const SizedBox(width: 6),
-                      Text(member.branch!, style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                      Text(member.branch!, style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary)),
                     ],
                   ],
                 ),
@@ -198,7 +201,7 @@ class _MemberCard extends StatelessWidget {
             const SizedBox(width: 10),
             GestureDetector(
               onTap: () => _showActions(context),
-              child: const Icon(PhosphorIconsLight.dotsThreeVertical, size: 16, color: ObsidianTheme.textTertiary),
+              child: Icon(PhosphorIconsLight.dotsThreeVertical, size: 16, color: c.textTertiary),
             ),
           ],
         ],
@@ -210,23 +213,24 @@ class _MemberCard extends StatelessWidget {
   }
 
   void _showActions(BuildContext context) {
+    final c = context.iColors;
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         decoration: BoxDecoration(
-          color: ObsidianTheme.surface1,
+          color: c.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          border: const Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+          border: Border(top: BorderSide(color: c.borderMedium)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: ObsidianTheme.textTertiary)),
+            Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: c.textTertiary)),
             const SizedBox(height: 16),
-            Text(member.profile?.displayName ?? 'User', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+            Text(member.profile?.displayName ?? 'User', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary)),
             const SizedBox(height: 16),
             if (member.status == 'active')
               _ActionItem(
@@ -330,33 +334,34 @@ class _InviteSheetState extends State<_InviteSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 16),
       decoration: BoxDecoration(
-        color: ObsidianTheme.surface1,
+        color: c.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: const Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+        border: Border(top: BorderSide(color: c.borderMedium)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: ObsidianTheme.textTertiary))),
+          Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: c.textTertiary))),
           const SizedBox(height: 20),
-          Text('Invite Team Member', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+          Text('Invite Team Member', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary)),
           const SizedBox(height: 16),
 
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+            style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
             cursorColor: ObsidianTheme.emerald,
             decoration: InputDecoration(
               hintText: 'Email address',
-              hintStyle: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textDisabled),
-              prefixIcon: const Padding(
-                padding: EdgeInsets.only(right: 8),
-                child: Icon(PhosphorIconsLight.envelope, size: 16, color: ObsidianTheme.textTertiary),
+              hintStyle: GoogleFonts.inter(fontSize: 14, color: c.textDisabled),
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(PhosphorIconsLight.envelope, size: 16, color: c.textTertiary),
               ),
               prefixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 0),
             ),
@@ -364,7 +369,7 @@ class _InviteSheetState extends State<_InviteSheet> {
 
           const SizedBox(height: 16),
 
-          Text('ROLE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+          Text('ROLE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
           const SizedBox(height: 8),
 
           Wrap(
@@ -379,11 +384,11 @@ class _InviteSheetState extends State<_InviteSheet> {
                   decoration: BoxDecoration(
                     borderRadius: ObsidianTheme.radiusMd,
                     color: selected ? ObsidianTheme.emeraldDim : Colors.transparent,
-                    border: Border.all(color: selected ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.borderMedium),
+                    border: Border.all(color: selected ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.borderMedium),
                   ),
                   child: Text(r[0].toUpperCase() + r.substring(1), style: GoogleFonts.inter(
                     fontSize: 12, fontWeight: FontWeight.w500,
-                    color: selected ? ObsidianTheme.emerald : ObsidianTheme.textSecondary,
+                    color: selected ? ObsidianTheme.emerald : c.textSecondary,
                   )),
                 ),
               );

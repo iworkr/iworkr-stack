@@ -24,6 +24,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.iworkr.mobile</string>
+				<string>iworkr</string>
 			</array>
 		</dict>
 	</array>
@@ -41,21 +42,21 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>14</string>
+	<string>25</string>
 	<key>NSCameraUsageDescription</key>
-	<string>iWorkr needs camera access to scan barcodes, QR codes, and capture site evidence photos.</string>
+	<string>iWorkr requires camera access to scan equipment barcodes and capture mandatory photographic evidence for job completion.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>iWorkr needs microphone access for voice annotations during site inspections.</string>
+	<string>iWorkr requires microphone access to record voice annotations during site inspections and job walkthroughs.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>iWorkr needs photo library access to attach images to jobs and reports.</string>
+	<string>iWorkr requires photo library access so you can upload existing site photos and compliance documents to the job dossier.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>iWorkr needs your location to optimize routes, track job progress, and watermark evidence photos.</string>
+	<string>iWorkr requires your location while the app is open to display nearby jobs and calculate distance to the site.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>iWorkr uses background location to optimize routes and track job progress when you're in the field.</string>
+	<string>iWorkr requires background location tracking to automatically clock your travel time, provide dispatch with your live ETA, and trigger arrival geofences even when your phone is in your pocket. This tracking strictly ends when you clock out.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>iWorkr uses Bluetooth to connect to payment terminals and scanning devices.</string>
+	<string>iWorkr uses Bluetooth to connect to Stripe Tap to Pay terminals and compatible scanning devices on the job site.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>iWorkr uses Face ID to secure access to the app.</string>
+	<string>iWorkr uses Face ID to secure access to the app and authorize sensitive operations like payments.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>

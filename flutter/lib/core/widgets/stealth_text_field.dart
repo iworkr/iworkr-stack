@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Ghost Input — the "Stealth" text field.
@@ -158,6 +159,7 @@ class _StealthTextFieldState extends State<StealthTextField>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final showFloatingLabel = _focused || _hasText;
 
     Widget field = AnimatedBuilder(
@@ -215,7 +217,7 @@ class _StealthTextFieldState extends State<StealthTextField>
                     size: 16,
                     color: _focused
                         ? _spineColor
-                        : ObsidianTheme.textTertiary,
+                        : c.textTertiary,
                   ),
                 ),
 
@@ -237,7 +239,7 @@ class _StealthTextFieldState extends State<StealthTextField>
                             fontSize: 10,
                             color: _focused
                                 ? _spineColor
-                                : ObsidianTheme.textMuted,
+                                : c.textMuted,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0.5,
                           ),
@@ -407,10 +409,11 @@ class StealthDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       height: 1,
       margin: const EdgeInsets.only(left: 15),
-      color: Colors.white.withValues(alpha: 0.05),
+      color: c.border,
     );
   }
 }

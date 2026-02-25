@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/services/market_intelligence_provider.dart';
 import 'package:iworkr_mobile/models/market_benchmark.dart';
 
@@ -73,11 +74,11 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
   }
 
   Widget _buildGauge(MarketBenchmark benchmark) {
+    final c = context.iColors;
     final percentile = benchmark.percentileFor(widget.currentPrice);
     final winProb = benchmark.winProbabilityFor(widget.currentPrice);
     final position = benchmark.positionLabel(widget.currentPrice);
 
-    // Trigger haptic when needle crosses the median zone (45-55%)
     if (!_didHapticOnMedian && percentile >= 45 && percentile <= 55) {
       _didHapticOnMedian = true;
       HapticFeedback.mediumImpact();
@@ -85,13 +86,11 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
       _didHapticOnMedian = false;
     }
 
-    // Animate needle movement
     if ((_lastPercentile - percentile).abs() > 1) {
       _needleAnim.forward(from: 0);
       _lastPercentile = percentile;
     }
 
-    // Determine zone color
     Color zoneColor;
     if (percentile < 25) {
       zoneColor = ObsidianTheme.amber;
@@ -101,7 +100,6 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
       zoneColor = ObsidianTheme.violet;
     }
 
-    // Win rate badge color
     Color winColor;
     String winLabel;
     if (winProb >= 70) {
@@ -118,7 +116,6 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header row
         Row(
           children: [
             Icon(PhosphorIconsLight.chartLineUp, size: 14, color: zoneColor),
@@ -127,12 +124,11 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
               'THE INDEX',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 9,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
                 letterSpacing: 1.5,
               ),
             ),
             const Spacer(),
-            // Win rate badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
@@ -169,7 +165,6 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
 
         const SizedBox(height: 12),
 
-        // The gradient gauge bar
         SizedBox(
           height: 32,
           child: LayoutBuilder(builder: (context, constraints) {
@@ -179,7 +174,6 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
             return Stack(
               clipBehavior: Clip.none,
               children: [
-                // Gradient bar
                 Container(
                   height: 6,
                   margin: const EdgeInsets.only(top: 10),
@@ -196,40 +190,36 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
                   ),
                 ),
 
-                // Median tick mark
                 Positioned(
                   left: width * 0.5 - 0.5,
                   top: 6,
                   child: Container(
                     width: 1,
                     height: 14,
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: c.borderMedium,
                   ),
                 ),
 
-                // P25 tick mark
                 Positioned(
                   left: width * 0.25 - 0.5,
                   top: 8,
                   child: Container(
                     width: 1,
                     height: 10,
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: c.borderActive,
                   ),
                 ),
 
-                // P75 tick mark
                 Positioned(
                   left: width * 0.75 - 0.5,
                   top: 8,
                   child: Container(
                     width: 1,
                     height: 10,
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: c.borderActive,
                   ),
                 ),
 
-                // The needle
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 500),
                   curve: Curves.easeOutExpo,
@@ -237,12 +227,10 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
                   top: 0,
                   child: Column(
                     children: [
-                      // Needle head (triangle)
                       CustomPaint(
                         size: const Size(12, 6),
                         painter: _NeedlePainter(color: Colors.white),
                       ),
-                      // Needle line
                       Container(
                         width: 2,
                         height: 18,
@@ -267,7 +255,6 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
 
         const SizedBox(height: 6),
 
-        // Labels row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -298,7 +285,6 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
 
         const SizedBox(height: 10),
 
-        // Position insight
         Row(
           children: [
             Container(
@@ -318,7 +304,7 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
                 '$position • ${percentile.toStringAsFixed(0)}th percentile • ${benchmark.sampleSize} quotes in area',
                 style: GoogleFonts.inter(
                   fontSize: 10,
-                  color: ObsidianTheme.textMuted,
+                  color: c.textMuted,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -329,7 +315,6 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
       ],
     );
 
-    // Paywall blur for free users
     if (!widget.isProUser) {
       return _buildBlurredState(content);
     }
@@ -339,24 +324,24 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
       ),
       child: content,
     ).animate().fadeIn(duration: 400.ms).moveY(begin: 8, end: 0);
   }
 
   Widget _buildBlurredState(Widget content) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: ObsidianTheme.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
       ),
       child: Stack(
         children: [
-          // Blurred content
           ClipRRect(
             borderRadius: ObsidianTheme.radiusMd,
             child: ImageFiltered(
@@ -368,12 +353,11 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
             ),
           ),
 
-          // Overlay CTA
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
-                color: ObsidianTheme.void_.withValues(alpha: 0.6),
+                color: c.canvas.withValues(alpha: 0.6),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -385,13 +369,13 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: c.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Unlock The Index to see what competitors charge',
-                    style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textMuted),
+                    style: GoogleFonts.inter(fontSize: 10, color: c.textMuted),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
@@ -422,18 +406,19 @@ class _MarketGaugeWidgetState extends ConsumerState<MarketGaugeWidget>
   }
 
   Widget _buildShimmer() {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.only(top: 16),
       height: 80,
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusMd,
-        color: ObsidianTheme.shimmerBase,
+        color: c.shimmerBase,
       ),
     )
-        .animate(onPlay: (c) => c.repeat())
+        .animate(onPlay: (ctrl) => ctrl.repeat())
         .shimmer(
           duration: 1200.ms,
-          color: ObsidianTheme.shimmerHighlight.withValues(alpha: 0.3),
+          color: c.shimmerHighlight.withValues(alpha: 0.3),
         );
   }
 }

@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/state_machine_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 
 /// Activity Timeline — live feed of state changes across the organization.
 class ActivityTimelineWidget extends ConsumerWidget {
@@ -57,6 +58,7 @@ class _TimelineView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final display = expanded ? entries.take(8).toList() : entries.take(4).toList();
 
     return Column(
@@ -64,13 +66,13 @@ class _TimelineView extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(PhosphorIconsLight.pulse, size: 12, color: ObsidianTheme.textMuted),
+            Icon(PhosphorIconsLight.pulse, size: 12, color: c.textMuted),
             const SizedBox(width: 6),
             Text(
               'ACTIVITY',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 9,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
                 letterSpacing: 1.5,
               ),
             ),
@@ -79,7 +81,7 @@ class _TimelineView extends StatelessWidget {
               '${entries.length} events',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 9,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
               ),
             ),
           ],
@@ -124,13 +126,14 @@ class _TimelineEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final entityType = entry['entity_type'] as String? ?? 'unknown';
     final action = entry['action'] as String? ?? '';
     final newData = entry['new_data'] as Map<String, dynamic>? ?? {};
     final oldData = entry['old_data'] as Map<String, dynamic>? ?? {};
     final createdAt = DateTime.tryParse(entry['created_at']?.toString() ?? '');
 
-    final meta = _resolveEntryMeta(entityType, action, oldData, newData);
+    final meta = _resolveEntryMeta(entityType, action, oldData, newData, c);
     final timeAgo = createdAt != null ? _timeAgo(createdAt) : '';
 
     return IntrinsicHeight(
@@ -158,7 +161,7 @@ class _TimelineEntry extends StatelessWidget {
                   Expanded(
                     child: Container(
                       width: 1,
-                      color: ObsidianTheme.border,
+                      color: c.border,
                     ),
                   ),
               ],
@@ -181,7 +184,7 @@ class _TimelineEntry extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: c.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -191,7 +194,7 @@ class _TimelineEntry extends StatelessWidget {
                         timeAgo,
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 9,
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                         ),
                       ),
                     ],
@@ -203,7 +206,7 @@ class _TimelineEntry extends StatelessWidget {
                         meta.subtitle!,
                         style: GoogleFonts.inter(
                           fontSize: 10,
-                          color: ObsidianTheme.textTertiary,
+                          color: c.textTertiary,
                         ),
                       ),
                     ),
@@ -221,6 +224,7 @@ class _TimelineEntry extends StatelessWidget {
     String action,
     Map<String, dynamic> oldData,
     Map<String, dynamic> newData,
+    IWorkrColors c,
   ) {
     final fromStatus = oldData['status'] as String?;
     final toStatus = newData['status'] as String?;
@@ -228,7 +232,7 @@ class _TimelineEntry extends StatelessWidget {
     if (action == 'status_change' && fromStatus != null && toStatus != null) {
       return _EntryMeta(
         icon: _iconForEntity(entityType),
-        color: _colorForStatus(toStatus),
+        color: _colorForStatus(toStatus, c),
         title: '${_entityLabel(entityType)} → ${_statusLabel(toStatus)}',
         subtitle: 'Changed from ${_statusLabel(fromStatus)}',
       );
@@ -245,7 +249,7 @@ class _TimelineEntry extends StatelessWidget {
 
     return _EntryMeta(
       icon: PhosphorIconsLight.pencilSimple,
-      color: ObsidianTheme.textSecondary,
+      color: c.textSecondary,
       title: '${_entityLabel(entityType)} updated',
       subtitle: action,
     );
@@ -260,7 +264,7 @@ class _TimelineEntry extends StatelessWidget {
     }
   }
 
-  Color _colorForStatus(String status) {
+  Color _colorForStatus(String status, IWorkrColors c) {
     switch (status) {
       case 'done':
       case 'paid':
@@ -268,18 +272,18 @@ class _TimelineEntry extends StatelessWidget {
         return ObsidianTheme.emerald;
       case 'in_progress':
       case 'scheduled':
-        return ObsidianTheme.textSecondary;
+        return c.textSecondary;
       case 'overdue':
       case 'cancelled':
       case 'rejected':
         return ObsidianTheme.rose;
       case 'sent':
       case 'viewed':
-        return ObsidianTheme.textSecondary;
+        return c.textSecondary;
       case 'invoiced':
         return const Color(0xFFA78BFA);
       default:
-        return ObsidianTheme.textMuted;
+        return c.textMuted;
     }
   }
 
@@ -330,18 +334,20 @@ class _EmptyTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(PhosphorIconsLight.pulse, size: 12, color: ObsidianTheme.textMuted),
+            Icon(PhosphorIconsLight.pulse, size: 12, color: c.textMuted),
             const SizedBox(width: 6),
             Text(
               'ACTIVITY',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 9,
-                color: ObsidianTheme.textTertiary,
+                color: c.textTertiary,
                 letterSpacing: 1.5,
               ),
             ),
@@ -356,14 +362,14 @@ class _EmptyTimeline extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: ObsidianTheme.surface2,
+                  color: c.surfaceSecondary,
                 ),
-                child: Icon(PhosphorIconsLight.pulse, size: 16, color: ObsidianTheme.textTertiary),
+                child: Icon(PhosphorIconsLight.pulse, size: 16, color: c.textTertiary),
               ),
               const SizedBox(height: 6),
               Text(
                 'No activity yet',
-                style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
               ),
             ],
           ),
@@ -378,6 +384,8 @@ class _TimelineShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(3, (i) => Padding(
@@ -389,7 +397,7 @@ class _TimelineShimmer extends StatelessWidget {
               height: 8,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: ObsidianTheme.shimmerBase,
+                color: c.shimmerBase,
               ),
             ),
             const SizedBox(width: 12),
@@ -398,7 +406,7 @@ class _TimelineShimmer extends StatelessWidget {
                 height: 14,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
-                  color: ObsidianTheme.shimmerBase,
+                  color: c.shimmerBase,
                 ),
               ),
             ),

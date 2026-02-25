@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/quote_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/quote.dart';
 import 'package:iworkr_mobile/features/quotes/widgets/signature_pad.dart';
@@ -69,8 +70,9 @@ class _QuotePresentScreenState extends ConsumerState<QuotePresentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Stack(
           children: [
@@ -93,10 +95,10 @@ class _QuotePresentScreenState extends ConsumerState<QuotePresentScreen> {
                         child: Container(
                           width: 36, height: 36,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle, color: ObsidianTheme.hoverBg,
-                            border: Border.all(color: ObsidianTheme.border),
+                            shape: BoxShape.circle, color: c.hoverBg,
+                            border: Border.all(color: c.border),
                           ),
-                          child: const Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: ObsidianTheme.textSecondary)),
+                          child: Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: c.textSecondary)),
                         ),
                       ),
                       const Spacer(),
@@ -105,10 +107,10 @@ class _QuotePresentScreenState extends ConsumerState<QuotePresentScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             borderRadius: ObsidianTheme.radiusFull,
-                            color: ObsidianTheme.shimmerBase,
-                            border: Border.all(color: ObsidianTheme.border),
+                            color: c.shimmerBase,
+                            border: Border.all(color: c.border),
                           ),
-                          child: Text(widget.quote.displayId!, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                          child: Text(widget.quote.displayId!, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary)),
                         ),
                     ],
                   ),
@@ -134,7 +136,7 @@ class _QuotePresentScreenState extends ConsumerState<QuotePresentScreen> {
 
                   const SizedBox(height: 24),
 
-                  Text('Quote Accepted', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white))
+                  Text('Quote Accepted', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w600, color: c.textPrimary))
                       .animate().fadeIn(delay: 200.ms, duration: 400.ms),
 
                   const SizedBox(height: 8),
@@ -151,9 +153,9 @@ class _QuotePresentScreenState extends ConsumerState<QuotePresentScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: ObsidianTheme.borderMedium),
+                        border: Border.all(color: c.borderMedium),
                       ),
-                      child: Text('Done', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary)),
+                      child: Text('Done', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textSecondary)),
                     ),
                   ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
                 ]
@@ -163,12 +165,12 @@ class _QuotePresentScreenState extends ConsumerState<QuotePresentScreen> {
                   // Hero total
                   Text(
                     _formatCurrency(widget.quote.total),
-                    style: GoogleFonts.inter(fontSize: 56, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -2),
+                    style: GoogleFonts.inter(fontSize: 56, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -2),
                   ).animate().fadeIn(duration: 500.ms).moveY(begin: 10, end: 0),
 
                   if (widget.quote.title != null) ...[
                     const SizedBox(height: 6),
-                    Text(widget.quote.title!, style: GoogleFonts.inter(fontSize: 15, color: ObsidianTheme.textSecondary))
+                    Text(widget.quote.title!, style: GoogleFonts.inter(fontSize: 15, color: c.textSecondary))
                         .animate().fadeIn(delay: 100.ms, duration: 400.ms),
                   ],
 
@@ -180,8 +182,8 @@ class _QuotePresentScreenState extends ConsumerState<QuotePresentScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusLg,
-                      color: ObsidianTheme.surface1,
-                      border: Border.all(color: ObsidianTheme.border),
+                      color: c.surface,
+                      border: Border.all(color: c.border),
                     ),
                     child: Column(
                       children: [
@@ -191,18 +193,18 @@ class _QuotePresentScreenState extends ConsumerState<QuotePresentScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Row(
                               children: [
-                                Expanded(child: Text(item.description, style: GoogleFonts.inter(fontSize: 13, color: Colors.white))),
-                                Text('\$${item.lineTotal.toStringAsFixed(2)}', style: GoogleFonts.jetBrainsMono(fontSize: 12, color: ObsidianTheme.textSecondary)),
+                                Expanded(child: Text(item.description, style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary))),
+                                Text('\$${item.lineTotal.toStringAsFixed(2)}', style: GoogleFonts.jetBrainsMono(fontSize: 12, color: c.textSecondary)),
                               ],
                             ),
                           ).animate().fadeIn(delay: Duration(milliseconds: 200 + e.key * 60), duration: 400.ms);
                         }),
-                        const Divider(color: ObsidianTheme.border, height: 20),
+                        Divider(color: c.border, height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Tax (${widget.quote.taxRate.toStringAsFixed(0)}%)', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary)),
-                            Text('\$${widget.quote.tax.toStringAsFixed(2)}', style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary)),
+                            Text('Tax (${widget.quote.taxRate.toStringAsFixed(0)}%)', style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
+                            Text('\$${widget.quote.tax.toStringAsFixed(2)}', style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textTertiary)),
                           ],
                         ),
                       ],
@@ -270,6 +272,7 @@ class _SlideToAcceptState extends State<_SlideToAccept> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final progress = _position / _maxSlide;
 
     return Container(
@@ -277,8 +280,8 @@ class _SlideToAcceptState extends State<_SlideToAccept> {
       height: 60,
       decoration: BoxDecoration(
         borderRadius: ObsidianTheme.radiusXl,
-        color: ObsidianTheme.surface1,
-        border: Border.all(color: Color.lerp(ObsidianTheme.borderMedium, ObsidianTheme.emerald.withValues(alpha: 0.3), progress)!),
+        color: c.surface,
+        border: Border.all(color: Color.lerp(c.borderMedium, ObsidianTheme.emerald.withValues(alpha: 0.3), progress)!),
       ),
       child: Stack(
         alignment: Alignment.centerLeft,
@@ -303,7 +306,7 @@ class _SlideToAcceptState extends State<_SlideToAccept> {
               opacity: (1 - progress * 2).clamp(0, 1),
               child: Text(
                 'Slide to Accept',
-                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textTertiary),
+                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textTertiary),
               ),
             ),
           ),

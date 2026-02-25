@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:iworkr_mobile/core/services/revenuecat_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 
@@ -12,12 +13,15 @@ import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 //
 // Streams the workspace's plan_tier from Supabase Realtime
 // so that feature gates update instantly when an admin
-// upgrades via the web dashboard.
+// upgrades via the web dashboard or via native IAP.
 
 final planTierProvider = StreamProvider<String>((ref) {
   final orgIdAsync = ref.watch(activeWorkspaceIdProvider);
   final orgId = orgIdAsync;
   if (orgId == null) return Stream.value('free');
+
+  // Bind RevenueCat identity to this workspace (fire-and-forget)
+  RevenueCatService.instance.identifyWorkspace(orgId);
 
   final client = SupabaseService.client;
   final controller = StreamController<String>();

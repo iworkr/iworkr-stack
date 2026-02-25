@@ -48,8 +48,12 @@ platform :ios do
       in_house: false
     )
 
-    # 1. Build Flutter first (produces the Runner.app / .xcarchive artifacts)
-    sh("cd ../.. && flutter build ios --release --no-codesign")
+    # 1. Build Flutter first — run manually before this lane if pods mismatch:
+    #    cd flutter && flutter build ios --release --no-codesign
+    # Skip if Runner.app already exists from a recent build
+    unless File.exist?("../build/ios/iphoneos/Runner.app")
+      sh("cd .. && flutter build ios --release --no-codesign")
+    end
 
     # 2. Increment build number (auto-increment based on latest TestFlight build)
     latest = begin
@@ -96,7 +100,7 @@ platform :ios do
   # ──────────────────────────────────────────────────────────────────
   desc "Build IPA without uploading"
   lane :build_only do
-    sh("cd ../.. && flutter build ios --release --no-codesign")
+    sh("cd .. && flutter build ios --release --no-codesign")
 
     build_app(
       workspace: "Runner.xcworkspace",

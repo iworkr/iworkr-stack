@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:iworkr_mobile/core/services/chat_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/core/widgets/shimmer_loading.dart';
@@ -43,6 +44,7 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final channelsAsync = ref.watch(channelsProvider);
 
     return Scaffold(
@@ -60,7 +62,7 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textPrimary,
+                      color: c.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -76,11 +78,11 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
                       height: 32,
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: ObsidianTheme.border),
-                        color: ObsidianTheme.surface1,
+                        border: Border.all(color: c.border),
+                        color: c.surface,
                       ),
-                      child: const Center(
-                        child: Icon(PhosphorIconsLight.chatCircleDots, size: 16, color: ObsidianTheme.textSecondary),
+                      child: Center(
+                        child: Icon(PhosphorIconsLight.chatCircleDots, size: 16, color: c.textSecondary),
                       ),
                     ),
                   ),
@@ -96,11 +98,11 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
                       height: 32,
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: ObsidianTheme.border),
-                        color: ObsidianTheme.surface1,
+                        border: Border.all(color: c.border),
+                        color: c.surface,
                       ),
-                      child: const Center(
-                        child: Icon(PhosphorIconsLight.pencilSimpleLine, size: 16, color: ObsidianTheme.textSecondary),
+                      child: Center(
+                        child: Icon(PhosphorIconsLight.pencilSimpleLine, size: 16, color: c.textSecondary),
                       ),
                     ),
                   ),
@@ -117,21 +119,21 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
                 height: 38,
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusMd,
-                  color: ObsidianTheme.surface1,
-                  border: Border.all(color: ObsidianTheme.border),
+                  color: c.surface,
+                  border: Border.all(color: c.border),
                 ),
                 child: Row(
                   children: [
                     const SizedBox(width: 12),
-                    Icon(PhosphorIconsLight.magnifyingGlass, size: 14, color: ObsidianTheme.textTertiary),
+                    Icon(PhosphorIconsLight.magnifyingGlass, size: 14, color: c.textTertiary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
                         controller: _searchController,
-                        style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textPrimary),
+                        style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
                         decoration: InputDecoration(
                           hintText: 'Search conversations...',
-                          hintStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                          hintStyle: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
@@ -141,9 +143,9 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
                     if (_query.isNotEmpty)
                       GestureDetector(
                         onTap: () => _searchController.clear(),
-                        child: const Padding(
-                          padding: EdgeInsets.only(right: 10),
-                          child: Icon(PhosphorIconsLight.x, size: 14, color: ObsidianTheme.textTertiary),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: Icon(PhosphorIconsLight.x, size: 14, color: c.textTertiary),
                         ),
                       ),
                   ],
@@ -168,17 +170,17 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
                   // Filter by search
                   final filtered = _query.isEmpty
                       ? channels
-                      : channels.where((c) => c.displayName.toLowerCase().contains(_query)).toList();
+                      : channels.where((ch) => ch.displayName.toLowerCase().contains(_query)).toList();
 
                   // Split into DMs and channels
-                  final dms = filtered.where((c) => c.isDm).toList();
-                  final groups = filtered.where((c) => !c.isDm).toList();
+                  final dms = filtered.where((ch) => ch.isDm).toList();
+                  final groups = filtered.where((ch) => !ch.isDm).toList();
 
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
                         'No results for "$_query"',
-                        style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                        style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                       ),
                     );
                   }
@@ -262,11 +264,12 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
   // ── New Channel Sheet ─────────────────────────
 
   void _showNewChannelSheet(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final nameController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: ObsidianTheme.surface1,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -280,19 +283,19 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
             Center(
               child: Container(
                 width: 32, height: 4,
-                decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: c.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 16),
-            Text('New Channel', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+            Text('New Channel', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary)),
             const SizedBox(height: 16),
             TextField(
               controller: nameController,
               autofocus: true,
-              style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+              style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Channel name',
-                hintStyle: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textTertiary),
+                hintStyle: GoogleFonts.inter(fontSize: 14, color: c.textTertiary),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -377,14 +380,15 @@ class _NewDmSheetState extends ConsumerState<_NewDmSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final teammatesAsync = ref.watch(orgTeammatesProvider);
     final mq = MediaQuery.of(context);
 
     return Container(
       height: mq.size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: ObsidianTheme.surface1,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         children: [
@@ -393,7 +397,7 @@ class _NewDmSheetState extends ConsumerState<_NewDmSheet> {
           Center(
             child: Container(
               width: 32, height: 4,
-              decoration: BoxDecoration(color: ObsidianTheme.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: c.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 12),
@@ -405,7 +409,7 @@ class _NewDmSheetState extends ConsumerState<_NewDmSheet> {
               children: [
                 const Icon(PhosphorIconsLight.chatCircleDots, size: 18, color: ObsidianTheme.emerald),
                 const SizedBox(width: 10),
-                Text('New Message', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('New Message', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary)),
               ],
             ),
           ),
@@ -418,21 +422,21 @@ class _NewDmSheetState extends ConsumerState<_NewDmSheet> {
               height: 38,
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
-                color: ObsidianTheme.shimmerBase,
-                border: Border.all(color: ObsidianTheme.border),
+                color: c.shimmerBase,
+                border: Border.all(color: c.border),
               ),
               child: Row(
                 children: [
                   const SizedBox(width: 12),
-                  Icon(PhosphorIconsLight.magnifyingGlass, size: 14, color: ObsidianTheme.textTertiary),
+                  Icon(PhosphorIconsLight.magnifyingGlass, size: 14, color: c.textTertiary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       autofocus: true,
-                      style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textPrimary),
+                      style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Search people...',
-                        hintStyle: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                        hintStyle: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
@@ -469,7 +473,7 @@ class _NewDmSheetState extends ConsumerState<_NewDmSheet> {
                     return Center(
                       child: Text(
                         _search.isEmpty ? 'No teammates found' : 'No results for "$_search"',
-                        style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                        style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                       ),
                     );
                   }
@@ -516,19 +520,19 @@ class _NewDmSheetState extends ConsumerState<_NewDmSheet> {
                                   children: [
                                     Text(
                                       name,
-                                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary),
+                                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textPrimary),
                                       maxLines: 1, overflow: TextOverflow.ellipsis,
                                     ),
                                     if (email.isNotEmpty)
                                       Text(
                                         email,
-                                        style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                                        style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                                         maxLines: 1, overflow: TextOverflow.ellipsis,
                                       ),
                                   ],
                                 ),
                               ),
-                              const Icon(PhosphorIconsLight.chatCircle, size: 16, color: ObsidianTheme.textTertiary),
+                              Icon(PhosphorIconsLight.chatCircle, size: 16, color: c.textTertiary),
                             ],
                           ),
                         ),
@@ -588,20 +592,21 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Row(
         children: [
-          Icon(icon, size: 12, color: ObsidianTheme.textTertiary),
+          Icon(icon, size: 12, color: c.textTertiary),
           const SizedBox(width: 6),
           Text(
             label,
-            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5, fontWeight: FontWeight.w500),
+            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5, fontWeight: FontWeight.w500),
           ),
           const Spacer(),
           Text(
             '$count',
-            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary),
+            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary),
           ),
         ],
       ),
@@ -620,6 +625,7 @@ class _ChannelRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final currentUserId = SupabaseService.auth.currentUser?.id;
 
     return GestureDetector(
@@ -628,8 +634,8 @@ class _ChannelRow extends StatelessWidget {
       child: Container(
         height: 60,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: c.border)),
         ),
         child: Row(
           children: [
@@ -642,11 +648,11 @@ class _ChannelRow extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: ObsidianTheme.shimmerBase,
-                  border: Border.all(color: ObsidianTheme.border),
+                  color: c.shimmerBase,
+                  border: Border.all(color: c.border),
                 ),
-                child: const Center(
-                  child: Icon(PhosphorIconsLight.hash, size: 16, color: ObsidianTheme.textTertiary),
+                child: Center(
+                  child: Icon(PhosphorIconsLight.hash, size: 16, color: c.textTertiary),
                 ),
               ),
             const SizedBox(width: 12),
@@ -662,7 +668,7 @@ class _ChannelRow extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: channel.unreadCount > 0 ? FontWeight.w600 : FontWeight.w500,
-                      color: channel.unreadCount > 0 ? ObsidianTheme.textPrimary : ObsidianTheme.textSecondary,
+                      color: channel.unreadCount > 0 ? c.textPrimary : c.textSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -673,7 +679,7 @@ class _ChannelRow extends StatelessWidget {
                       channel.lastMessageContent!,
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: channel.unreadCount > 0 ? ObsidianTheme.textSecondary : ObsidianTheme.textTertiary,
+                        color: channel.unreadCount > 0 ? c.textSecondary : c.textTertiary,
                         fontWeight: channel.unreadCount > 0 ? FontWeight.w500 : FontWeight.w400,
                       ),
                       maxLines: 1,
@@ -682,7 +688,7 @@ class _ChannelRow extends StatelessWidget {
                   else
                     Text(
                       channel.isDm ? 'Direct Message' : (channel.description ?? 'No messages yet'),
-                      style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -694,7 +700,7 @@ class _ChannelRow extends StatelessWidget {
             if (channel.lastMessageAt != null)
               Text(
                 timeago.format(channel.lastMessageAt!, locale: 'en_short'),
-                style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary),
+                style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary),
               ),
             if (channel.unreadCount > 0) ...[
               const SizedBox(width: 8),

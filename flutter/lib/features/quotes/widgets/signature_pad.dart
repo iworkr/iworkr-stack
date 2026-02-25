@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 
 /// Opens full-screen signature pad. Returns SVG path data string or null.
 Future<String?> showSignaturePad(BuildContext context) async {
@@ -29,7 +30,7 @@ class _SignaturePadScreen extends StatefulWidget {
 
 class _SignaturePadScreenState extends State<_SignaturePadScreen> {
   final List<_StrokePoint> _points = [];
-  final List<int> _strokeBreaks = []; // indices where strokes end
+  final List<int> _strokeBreaks = [];
   bool _isEmpty = true;
   Offset? _lastPosition;
   DateTime? _lastTime;
@@ -46,14 +47,12 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
     final now = DateTime.now();
     final pos = details.localPosition;
 
-    // Calculate velocity-based width (fountain pen effect)
     double width = 2.0;
     if (_lastPosition != null && _lastTime != null) {
       final distance = (pos - _lastPosition!).distance;
       final elapsed = now.difference(_lastTime!).inMilliseconds.toDouble();
       if (elapsed > 0) {
         final velocity = distance / elapsed;
-        // Higher velocity = thinner line (fast strokes are thin)
         width = (3.5 - velocity * 2.5).clamp(0.8, 4.0);
       }
     }
@@ -83,7 +82,6 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
     if (_isEmpty) return;
     HapticFeedback.heavyImpact();
 
-    // Convert to simplified SVG path data
     final svgPath = _toSvgPath();
     Navigator.pop(context, svgPath);
   }
@@ -111,12 +109,12 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Row(
@@ -126,18 +124,18 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle, color: ObsidianTheme.hoverBg,
-                        border: Border.all(color: ObsidianTheme.border),
+                        shape: BoxShape.circle, color: c.hoverBg,
+                        border: Border.all(color: c.border),
                       ),
-                      child: const Center(child: Icon(PhosphorIconsLight.x, size: 16, color: ObsidianTheme.textSecondary)),
+                      child: Center(child: Icon(PhosphorIconsLight.x, size: 16, color: c.textSecondary)),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('Sign Below', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                  Text('Sign Below', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary)),
                   const Spacer(),
                   GestureDetector(
                     onTap: _clear,
-                    child: Text('Clear', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary)),
+                    child: Text('Clear', style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary)),
                   ),
                 ],
               ),
@@ -145,32 +143,28 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
 
             const SizedBox(height: 16),
 
-            // Signature canvas
             Expanded(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusLg,
-                  color: ObsidianTheme.surface1,
-                  border: Border.all(color: ObsidianTheme.borderMedium),
+                  color: c.surface,
+                  border: Border.all(color: c.borderMedium),
                 ),
                 child: ClipRRect(
                   borderRadius: ObsidianTheme.radiusLg,
                   child: Stack(
                     children: [
-                      // Baseline
                       Positioned(
                         left: 20, right: 20, bottom: 60,
-                        child: Container(height: 1, color: ObsidianTheme.border),
+                        child: Container(height: 1, color: c.border),
                       ),
 
-                      // "X" marker
                       Positioned(
                         left: 20, bottom: 68,
-                        child: Text('×', style: GoogleFonts.inter(fontSize: 18, color: ObsidianTheme.textTertiary)),
+                        child: Text('×', style: GoogleFonts.inter(fontSize: 18, color: c.textTertiary)),
                       ),
 
-                      // Drawing surface
                       GestureDetector(
                         onPanStart: _onPanStart,
                         onPanUpdate: _onPanUpdate,
@@ -181,12 +175,11 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
                         ),
                       ),
 
-                      // Hint text
                       if (_isEmpty)
                         Center(
                           child: Text(
                             'Sign with your finger',
-                            style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textDisabled),
+                            style: GoogleFonts.inter(fontSize: 14, color: c.textDisabled),
                           ),
                         ),
                     ],
@@ -197,7 +190,6 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
 
             const SizedBox(height: 16),
 
-            // Confirm button
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               child: GestureDetector(
@@ -207,14 +199,14 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
                   height: 52,
                   decoration: BoxDecoration(
                     borderRadius: ObsidianTheme.radiusMd,
-                    color: _isEmpty ? ObsidianTheme.shimmerBase : Colors.white,
+                    color: _isEmpty ? c.shimmerBase : Colors.white,
                   ),
                   child: Center(
                     child: Text(
                       'Confirm Signature',
                       style: GoogleFonts.inter(
                         fontSize: 15, fontWeight: FontWeight.w600,
-                        color: _isEmpty ? ObsidianTheme.textTertiary : Colors.black,
+                        color: _isEmpty ? c.textTertiary : Colors.black,
                       ),
                     ),
                   ),
@@ -224,7 +216,7 @@ class _SignaturePadScreenState extends State<_SignaturePadScreen> {
 
             Text(
               'By signing, you agree to the terms of this quote.',
-              style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary),
+              style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary),
             ),
             SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
           ],
@@ -262,7 +254,6 @@ class _SignaturePainter extends CustomPainter {
       final p1 = points[i];
       final p2 = points[i + 1];
 
-      // Smoothly interpolate width between adjacent points
       final avgWidth = (p1.width + p2.width) / 2;
 
       final paint = Paint()

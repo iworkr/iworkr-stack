@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 // ═══════════════════════════════════════════════════════════
@@ -96,44 +97,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     try {
       final companyName = _companyNameCtrl.text.trim();
-      final slug = companyName
-          .toLowerCase()
-          .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-          .replaceAll(RegExp(r'^-|-$'), '');
+      final slug =
+          '${companyName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-|-\$'), '')}-${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}';
 
-      // Create organization
-      final orgData = await SupabaseService.client
-          .from('organizations')
-          .insert({
-            'name': companyName,
-            'slug': slug,
-            'trade': _selectedIndustry,
-            'settings': {
-              'team_size': _selectedTeamSize,
-              'industry': _selectedIndustry,
-            },
-          })
-          .select()
-          .single();
+      // Atomic provisioning via RPC: creates org + owner membership + seeds industry data
+      final orgData = await SupabaseService.client.rpc(
+        'create_organization_with_owner',
+        params: {
+          'org_name': companyName,
+          'org_slug': slug,
+          'org_trade': _selectedIndustry,
+        },
+      );
 
-      final orgId = orgData['id'] as String;
-
-      // Create membership
-      await SupabaseService.client.from('organization_members').insert({
-        'organization_id': orgId,
-        'user_id': userId,
-        'role': _selectedRole == 'owner'
-            ? 'owner'
-            : _selectedRole == 'dispatcher'
-                ? 'admin'
-                : 'technician',
-        'status': 'active',
-      });
-
-      // Mark onboarding complete
-      await SupabaseService.client
-          .from('profiles')
-          .update({'onboarding_completed': true}).eq('id', userId);
+      // Update team_size in org settings
+      if (orgData != null) {
+        final orgId = orgData['id'] as String;
+        final existingSettings =
+            (orgData['settings'] as Map<String, dynamic>?) ?? {};
+        existingSettings['team_size'] = _selectedTeamSize;
+        await SupabaseService.client
+            .from('organizations')
+            .update({'settings': existingSettings}).eq('id', orgId);
+      }
 
       ref.invalidate(profileProvider);
       ref.invalidate(organizationProvider);
@@ -158,8 +144,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -190,7 +177,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                       letterSpacing: 1.8,
                     ),
                   ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
@@ -240,12 +227,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         height: 44,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: ObsidianTheme.border),
-                          color: ObsidianTheme.surface1,
+                          border: Border.all(color: c.border),
+                          color: c.surface,
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Icon(PhosphorIconsLight.arrowLeft,
-                              size: 18, color: ObsidianTheme.textSecondary),
+                              size: 18, color: c.textSecondary),
                         ),
                       ),
                     )
@@ -264,11 +251,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           borderRadius: BorderRadius.circular(10),
                           color: _canProceed
                               ? ObsidianTheme.emerald
-                              : ObsidianTheme.surface2,
+                              : c.surfaceSecondary,
                           border: Border.all(
                             color: _canProceed
                                 ? ObsidianTheme.emerald
-                                : ObsidianTheme.border,
+                                : c.border,
                           ),
                         ),
                         child: Center(
@@ -290,7 +277,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     fontWeight: FontWeight.w600,
                                     color: _canProceed
                                         ? Colors.black
-                                        : ObsidianTheme.textDisabled,
+                                        : c.textDisabled,
                                   ),
                                 ),
                         ),
@@ -318,6 +305,7 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Row(
       children: List.generate(totalSteps, (i) {
         final isActive = i <= currentStep;
@@ -331,7 +319,7 @@ class _ProgressBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
               color: isActive
                   ? ObsidianTheme.emerald
-                  : ObsidianTheme.surface2,
+                  : c.surfaceSecondary,
             ),
           ),
         );
@@ -351,6 +339,7 @@ class _StepRole extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
@@ -361,7 +350,7 @@ class _StepRole extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.w600,
-              color: ObsidianTheme.textPrimary,
+              color: c.textPrimary,
               letterSpacing: -0.5,
             ),
           ).animate().fadeIn(duration: 400.ms).moveY(begin: 10),
@@ -371,7 +360,7 @@ class _StepRole extends StatelessWidget {
           Text(
             'This configures your permissions and dashboard layout.',
             style: GoogleFonts.inter(
-                fontSize: 14, color: ObsidianTheme.textMuted),
+                fontSize: 14, color: c.textMuted),
           ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
 
           const SizedBox(height: 28),
@@ -448,6 +437,7 @@ class _RoleCardState extends State<_RoleCard> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -468,11 +458,11 @@ class _RoleCardState extends State<_RoleCard> {
           borderRadius: BorderRadius.circular(14),
           color: widget.isSelected
               ? widget.tagColor.withValues(alpha: 0.06)
-              : ObsidianTheme.surface1,
+              : c.surface,
           border: Border.all(
             color: widget.isSelected
                 ? widget.tagColor.withValues(alpha: 0.4)
-                : ObsidianTheme.border,
+                : c.border,
             width: widget.isSelected ? 1.5 : 1,
           ),
         ),
@@ -485,11 +475,11 @@ class _RoleCardState extends State<_RoleCard> {
                 borderRadius: BorderRadius.circular(12),
                 color: widget.isSelected
                     ? widget.tagColor.withValues(alpha: 0.12)
-                    : ObsidianTheme.surface2,
+                    : c.surfaceSecondary,
                 border: Border.all(
                   color: widget.isSelected
                       ? widget.tagColor.withValues(alpha: 0.25)
-                      : ObsidianTheme.borderMedium,
+                      : c.borderMedium,
                 ),
               ),
               child: Center(
@@ -498,7 +488,7 @@ class _RoleCardState extends State<_RoleCard> {
                   size: 20,
                   color: widget.isSelected
                       ? widget.tagColor
-                      : ObsidianTheme.textMuted,
+                      : c.textMuted,
                 ),
               ),
             ),
@@ -512,7 +502,7 @@ class _RoleCardState extends State<_RoleCard> {
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textPrimary,
+                      color: c.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -520,7 +510,7 @@ class _RoleCardState extends State<_RoleCard> {
                     widget.subtitle,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: ObsidianTheme.textMuted,
+                      color: c.textMuted,
                     ),
                   ),
                 ],
@@ -590,6 +580,7 @@ class _StepWorkspace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
@@ -600,7 +591,7 @@ class _StepWorkspace extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.w600,
-              color: ObsidianTheme.textPrimary,
+              color: c.textPrimary,
               letterSpacing: -0.5,
             ),
           ).animate().fadeIn(duration: 400.ms).moveY(begin: 10),
@@ -610,7 +601,7 @@ class _StepWorkspace extends StatelessWidget {
           Text(
             'This is how your company appears to your team.',
             style: GoogleFonts.inter(
-                fontSize: 14, color: ObsidianTheme.textMuted),
+                fontSize: 14, color: c.textMuted),
           ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
 
           const SizedBox(height: 24),
@@ -619,16 +610,16 @@ class _StepWorkspace extends StatelessWidget {
             controller: nameController,
             autofocus: true,
             style: GoogleFonts.inter(
-                fontSize: 16, color: ObsidianTheme.textPrimary),
+                fontSize: 16, color: c.textPrimary),
             onChanged: (_) => onChanged(),
             decoration: InputDecoration(
               hintText: 'e.g. Acme Electrical',
               hintStyle: GoogleFonts.inter(
-                  fontSize: 16, color: ObsidianTheme.textDisabled),
+                  fontSize: 16, color: c.textDisabled),
               prefixIcon: Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: Icon(PhosphorIconsLight.buildings,
-                    size: 18, color: ObsidianTheme.textTertiary),
+                    size: 18, color: c.textTertiary),
               ),
               prefixIconConstraints:
                   const BoxConstraints(minWidth: 30, minHeight: 0),
@@ -642,7 +633,7 @@ class _StepWorkspace extends StatelessWidget {
             style: GoogleFonts.jetBrainsMono(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
               letterSpacing: 1.5,
             ),
           ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
@@ -670,11 +661,11 @@ class _StepWorkspace extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     color: isSelected
                         ? ObsidianTheme.emerald.withValues(alpha: 0.08)
-                        : ObsidianTheme.surface1,
+                        : c.surface,
                     border: Border.all(
                       color: isSelected
                           ? ObsidianTheme.emerald.withValues(alpha: 0.4)
-                          : ObsidianTheme.border,
+                          : c.border,
                     ),
                   ),
                   child: Row(
@@ -685,7 +676,7 @@ class _StepWorkspace extends StatelessWidget {
                         size: 16,
                         color: isSelected
                             ? ObsidianTheme.emerald
-                            : ObsidianTheme.textMuted,
+                            : c.textMuted,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -694,8 +685,8 @@ class _StepWorkspace extends StatelessWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: isSelected
-                              ? ObsidianTheme.textPrimary
-                              : ObsidianTheme.textSecondary,
+                              ? c.textPrimary
+                              : c.textSecondary,
                         ),
                       ),
                     ],
@@ -739,6 +730,7 @@ class _StepTeamSize extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
@@ -749,7 +741,7 @@ class _StepTeamSize extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.w600,
-              color: ObsidianTheme.textPrimary,
+              color: c.textPrimary,
               letterSpacing: -0.5,
             ),
           ).animate().fadeIn(duration: 400.ms).moveY(begin: 10),
@@ -759,7 +751,7 @@ class _StepTeamSize extends StatelessWidget {
           Text(
             'We\'ll tailor your experience to match.',
             style: GoogleFonts.inter(
-                fontSize: 14, color: ObsidianTheme.textMuted),
+                fontSize: 14, color: c.textMuted),
           ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
 
           const SizedBox(height: 24),
@@ -822,6 +814,7 @@ class _TeamSizeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -831,11 +824,11 @@ class _TeamSizeCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           color: isSelected
               ? ObsidianTheme.emerald.withValues(alpha: 0.06)
-              : ObsidianTheme.surface1,
+              : c.surface,
           border: Border.all(
             color: isSelected
                 ? ObsidianTheme.emerald.withValues(alpha: 0.4)
-                : ObsidianTheme.border,
+                : c.border,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -846,7 +839,7 @@ class _TeamSizeCard extends StatelessWidget {
               size: 20,
               color: isSelected
                   ? ObsidianTheme.emerald
-                  : ObsidianTheme.textMuted,
+                  : c.textMuted,
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -858,7 +851,7 @@ class _TeamSizeCard extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: ObsidianTheme.textPrimary,
+                      color: c.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -866,7 +859,7 @@ class _TeamSizeCard extends StatelessWidget {
                     hint,
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                     ),
                   ),
                 ],

@@ -33,6 +33,7 @@ import { useOrg } from "@/lib/hooks/use-org";
 import { type BacklogJob } from "@/app/actions/schedule";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { timelineClockAnimation } from "@/components/dashboard/lottie-data-relay";
+import { createClient } from "@/lib/supabase/client";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -68,6 +69,15 @@ const statusColorMap: Record<string, {
     text: "text-amber-100",
     glow: "rgba(245, 158, 11, 0.15)",
   },
+  on_site: {
+    spine: "bg-violet-500",
+    bg: "bg-violet-500/[0.08]",
+    border: "border-l-2 border-violet-500",
+    dot: "bg-violet-400",
+    label: "text-violet-400",
+    text: "text-violet-100",
+    glow: "rgba(139, 92, 246, 0.15)",
+  },
   in_progress: {
     spine: "bg-emerald-500",
     bg: "bg-emerald-500/[0.08]",
@@ -91,6 +101,7 @@ const statusColorMap: Record<string, {
 const statusLabels: Record<string, string> = {
   scheduled: "Scheduled",
   en_route: "En Route",
+  on_site: "On Site",
   in_progress: "In Progress",
   complete: "Complete",
 };
@@ -194,6 +205,7 @@ export default function SchedulePage() {
     unscheduleBlock,
     assignBacklogJob,
     refresh,
+    handleRealtimeUpdate,
   } = useScheduleStore();
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
@@ -259,6 +271,51 @@ export default function SchedulePage() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleKey]);
+
+  /* ── Realtime subscription ───────────────────────────────── */
+  useEffect(() => {
+    if (!orgId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("schedule-dispatch")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "schedule_blocks",
+          filter: `organization_id=eq.${orgId}`,
+        },
+        () => {
+          handleRealtimeUpdate();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+          filter: `organization_id=eq.${orgId}`,
+        },
+        (payload) => {
+          // Job status changes should also refresh the schedule
+          if (payload.new && payload.old && payload.new.status !== payload.old.status) {
+            handleRealtimeUpdate();
+          }
+          // Job assignment changes
+          if (payload.new && payload.old && payload.new.assigned_tech_id !== payload.old.assigned_tech_id) {
+            handleRealtimeUpdate();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orgId, handleRealtimeUpdate]);
 
   /* ── Date navigation helpers ────────────────────────────── */
   const navigateDate = useCallback((direction: -1 | 1) => {
@@ -818,6 +875,21 @@ export default function SchedulePage() {
                             const isPeeking = peekBlockId === block.id;
                             const isInProgress = block.status === "in_progress";
                             const isUrgent = block.status === "en_route";
+                            const isOnSite = block.status === "on_site";
+
+                            // Cascading delay: upstream block overrunning its end_time
+                            const isCascadingDelay = block.status === "scheduled" && (() => {
+                              const now = new Date();
+                              const nowHour = now.getHours() + now.getMinutes() / 60;
+                              for (let j = i - 1; j >= 0; j--) {
+                                const prev = techBlocks[j];
+                                const prevEnd = prev.startHour + prev.duration;
+                                if (["in_progress", "en_route", "on_site"].includes(prev.status) && prevEnd < nowHour) {
+                                  return true;
+                                }
+                              }
+                              return false;
+                            })();
 
                             let blockLeft = hourToX(block.startHour);
                             let blockWidth = block.duration * HOUR_W;
@@ -866,9 +938,9 @@ export default function SchedulePage() {
                                   }}
                                   className={`schedule-block-hover absolute top-2 origin-left cursor-grab overflow-hidden rounded-lg ${colors.bg} ${colors.border} backdrop-blur-sm ${
                                     block.conflict ? "ring-1 ring-rose-500/30" : ""
-                                  } ${isPeeking ? "ring-1 ring-white/15" : ""} ${
+                                  } ${isCascadingDelay ? "ring-1 ring-amber-500/40" : ""} ${isPeeking ? "ring-1 ring-white/15" : ""} ${
                                     isInProgress ? "animate-capsule-glow" : ""
-                                  } ${isUrgent ? "diagonal-stripe" : ""}`}
+                                  } ${isUrgent || isOnSite ? "diagonal-stripe" : ""}`}
                                   style={{
                                     left: blockLeft,
                                     width: Math.max(24, blockWidth),
@@ -910,6 +982,35 @@ export default function SchedulePage() {
                                       transition={{ duration: 1.5, repeat: Infinity }}
                                       className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-[#050505]"
                                     />
+                                  )}
+
+                                  {/* Travel warning indicator */}
+                                  {block.travelTime && (() => {
+                                    const sortedTechBlocks = blocks
+                                      .filter(b => b.technicianId === block.technicianId && b.status !== "cancelled")
+                                      .sort((a, b) => a.startHour - b.startHour);
+                                    const idx = sortedTechBlocks.findIndex(b => b.id === block.id);
+                                    if (idx > 0) {
+                                      const prev = sortedTechBlocks[idx - 1];
+                                      const prevEnd = prev.startHour + prev.duration;
+                                      const gap = Math.round((block.startHour - prevEnd) * 60);
+                                      if (gap < (block.travelTime || 0)) {
+                                        return (
+                                          <div className="absolute -top-1 -left-1 z-10" title={`Travel warning: ${block.travelTime}min needed, ${gap}min gap`}>
+                                            <div className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
+                                          </div>
+                                        );
+                                      }
+                                    }
+                                    return null;
+                                  })()}
+
+                                  {/* Cascading delay indicator */}
+                                  {isCascadingDelay && (
+                                    <div className="absolute top-1 right-1 z-10 flex items-center gap-0.5 rounded bg-amber-500/20 px-1 py-px">
+                                      <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                                      <span className="text-[8px] font-medium text-amber-400">DELAYED</span>
+                                    </div>
                                   )}
 
                                   {/* Resize handle */}

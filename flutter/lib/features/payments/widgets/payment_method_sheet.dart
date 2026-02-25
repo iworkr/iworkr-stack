@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/payment_terminal_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/invoice.dart';
 import 'package:iworkr_mobile/features/payments/screens/terminal_screen.dart';
@@ -27,6 +28,7 @@ class _PaymentMethodSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final networkAsync = ref.watch(networkAvailableProvider);
     final isOnline = networkAsync.valueOrNull ?? false;
 
@@ -36,20 +38,18 @@ class _PaymentMethodSheet extends ConsumerWidget {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: ObsidianTheme.void_.withValues(alpha: 0.95),
+            color: c.canvas.withValues(alpha: 0.95),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: const Border(top: BorderSide(color: ObsidianTheme.borderMedium)),
+            border: Border(top: BorderSide(color: c.borderMedium)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle
               const SizedBox(height: 12),
-              Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: ObsidianTheme.textTertiary)),
+              Container(width: 36, height: 4, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: c.textTertiary)),
               const SizedBox(height: 20),
 
-              // Header
-              Text('Collect Payment', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text('Collect Payment', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary)),
               const SizedBox(height: 4),
               Text(
                 _formatAmount(invoice.total),
@@ -57,12 +57,11 @@ class _PaymentMethodSheet extends ConsumerWidget {
               ),
               if (invoice.clientName != null) ...[
                 const SizedBox(height: 2),
-                Text(invoice.clientName!, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary)),
+                Text(invoice.clientName!, style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
               ],
 
               const SizedBox(height: 24),
 
-              // Payment options
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -90,7 +89,6 @@ class _PaymentMethodSheet extends ConsumerWidget {
                       onTap: () {
                         HapticFeedback.lightImpact();
                         Navigator.pop(context);
-                        // In production: send payment link via email
                       },
                     ).animate().fadeIn(delay: 160.ms, duration: 400.ms).moveY(begin: 8, end: 0),
 
@@ -104,7 +102,6 @@ class _PaymentMethodSheet extends ConsumerWidget {
                       onTap: () {
                         HapticFeedback.lightImpact();
                         Navigator.pop(context);
-                        // In production: show card entry form
                       },
                     ).animate().fadeIn(delay: 220.ms, duration: 400.ms).moveY(begin: 8, end: 0),
 
@@ -119,9 +116,33 @@ class _PaymentMethodSheet extends ConsumerWidget {
                       onTap: () {
                         HapticFeedback.lightImpact();
                         Navigator.pop(context);
-                        // In production: mark paid via other method
                       },
                     ).animate().fadeIn(delay: 280.ms, duration: 400.ms).moveY(begin: 8, end: 0),
+
+                    // Offline warning
+                    if (!isOnline) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: ObsidianTheme.radiusMd,
+                          color: ObsidianTheme.amber.withValues(alpha: 0.08),
+                          border: Border.all(color: ObsidianTheme.amber.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(PhosphorIconsLight.wifiSlash, size: 16, color: ObsidianTheme.amber),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'No network connection. Tap to Pay is disabled. Use the payment link or QR code instead.',
+                                style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.amber, height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ).animate().fadeIn(delay: 340.ms, duration: 400.ms),
+                    ],
                   ],
                 ),
               ),
@@ -162,6 +183,7 @@ class _PaymentOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
@@ -169,11 +191,11 @@ class _PaymentOption extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
-          color: isPrimary ? ObsidianTheme.surface1 : Colors.transparent,
+          color: isPrimary ? c.surface : Colors.transparent,
           border: Border.all(
             color: isPrimary
-                ? (enabled ? ObsidianTheme.emerald.withValues(alpha: 0.3) : ObsidianTheme.border)
-                : isGhost ? ObsidianTheme.border : ObsidianTheme.borderMedium,
+                ? (enabled ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border)
+                : isGhost ? c.border : c.borderMedium,
           ),
         ),
         child: Row(
@@ -183,14 +205,14 @@ class _PaymentOption extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusMd,
                 color: isPrimary
-                    ? (enabled ? ObsidianTheme.emeraldDim : ObsidianTheme.shimmerBase)
-                    : ObsidianTheme.shimmerBase,
+                    ? (enabled ? ObsidianTheme.emeraldDim : c.shimmerBase)
+                    : c.shimmerBase,
               ),
               child: Center(child: Icon(
                 icon, size: 18,
                 color: isPrimary
-                    ? (enabled ? ObsidianTheme.emerald : ObsidianTheme.textTertiary)
-                    : ObsidianTheme.textSecondary,
+                    ? (enabled ? ObsidianTheme.emerald : c.textTertiary)
+                    : c.textSecondary,
               )),
             ),
             const SizedBox(width: 14),
@@ -202,23 +224,23 @@ class _PaymentOption extends StatelessWidget {
                     label,
                     style: GoogleFonts.inter(
                       fontSize: 14, fontWeight: FontWeight.w500,
-                      color: enabled ? Colors.white : ObsidianTheme.textTertiary,
+                      color: enabled ? c.textPrimary : c.textTertiary,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: !enabled ? ObsidianTheme.amber : ObsidianTheme.textTertiary,
+                      color: !enabled ? ObsidianTheme.amber : c.textTertiary,
                     ),
                   ),
                 ],
               ),
             ),
             if (!enabled)
-              Icon(PhosphorIconsLight.wifiSlash, size: 14, color: ObsidianTheme.amber)
+              const Icon(PhosphorIconsLight.wifiSlash, size: 14, color: ObsidianTheme.amber)
             else
-              Icon(PhosphorIconsLight.caretRight, size: 14, color: ObsidianTheme.textTertiary),
+              Icon(PhosphorIconsLight.caretRight, size: 14, color: c.textTertiary),
           ],
         ),
       ),

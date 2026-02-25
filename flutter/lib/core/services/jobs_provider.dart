@@ -348,3 +348,18 @@ class JobMutations {
     }
   }
 }
+
+// ═══════════════════════════════════════════════════════════
+// ── Job Media Count ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+final jobMediaCountProvider = FutureProvider.family<int, String>((ref, jobId) async {
+  final orgId = ref.watch(organizationIdProvider).valueOrNull;
+  if (orgId == null) return 0;
+
+  final result = await SupabaseService.client.storage
+      .from('evidence')
+      .list(path: '$orgId/$jobId');
+
+  return result.length;
+});

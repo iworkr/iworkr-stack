@@ -11,6 +11,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/route_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/obsidian_map.dart';
 import 'package:iworkr_mobile/features/routes/widgets/mission_card.dart';
@@ -32,8 +33,9 @@ class _FlightPathScreenState extends ConsumerState<FlightPathScreen> {
     final routeAsync = ref.watch(todayRouteProvider);
     final mq = MediaQuery.of(context);
 
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: routeAsync.when(
         loading: () => _LoadingState(),
         error: (e, _) => _ErrorState(onRetry: () => ref.invalidate(todayRouteProvider)),
@@ -170,6 +172,7 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
+    final c = context.iColors;
 
     return ClipRRect(
       child: BackdropFilter(
@@ -177,9 +180,9 @@ class _TopBar extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.fromLTRB(16, mq.padding.top + 8, 16, 12),
           decoration: BoxDecoration(
-            color: ObsidianTheme.void_.withValues(alpha: 0.75),
+            color: c.canvas.withValues(alpha: 0.75),
             border: Border(
-              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+              bottom: BorderSide(color: c.border),
             ),
           ),
           child: Row(
@@ -189,7 +192,7 @@ class _TopBar extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: c.border,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 18),
@@ -202,7 +205,7 @@ class _TopBar extends StatelessWidget {
                   Text(
                     'FLIGHT PATH',
                     style: GoogleFonts.jetBrainsMono(
-                      color: Colors.white,
+                      color: c.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
@@ -210,7 +213,7 @@ class _TopBar extends StatelessWidget {
                   ),
                   Text(
                     "Today's optimized route",
-                    style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 11),
+                    style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11),
                   ),
                 ],
               ),
@@ -293,7 +296,7 @@ class _LoadingState extends StatelessWidget {
           Text(
             'Computing flight path…',
             style: GoogleFonts.jetBrainsMono(
-              color: ObsidianTheme.textTertiary,
+              color: context.iColors.textTertiary,
               fontSize: 12,
               letterSpacing: 1,
             ),
@@ -312,13 +315,14 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(PhosphorIconsLight.warning, color: ObsidianTheme.amber, size: 36),
           const SizedBox(height: 12),
-          Text('Failed to load route', style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 14)),
+          Text('Failed to load route', style: GoogleFonts.inter(color: c.textSecondary, fontSize: 14)),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: onRetry,
@@ -326,8 +330,8 @@ class _ErrorState extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: ObsidianTheme.surface2,
-                border: Border.all(color: ObsidianTheme.borderMedium),
+                color: c.surfaceSecondary,
+                border: Border.all(color: c.borderMedium),
               ),
               child: Text('Retry', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
             ),
@@ -344,6 +348,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -356,7 +361,7 @@ class _EmptyState extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: c.border,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 18),
@@ -368,13 +373,13 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'No route planned yet',
-              style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               'Optimize your schedule to generate\nan efficient flight path for today.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13, height: 1.5),
+              style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 28),
             GestureDetector(

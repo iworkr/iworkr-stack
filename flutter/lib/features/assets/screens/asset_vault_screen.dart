@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/asset_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/core/widgets/stealth_text_field.dart';
 
@@ -18,7 +19,7 @@ class AssetVaultScreen extends ConsumerStatefulWidget {
 }
 
 class _AssetVaultScreenState extends ConsumerState<AssetVaultScreen> {
-  int _viewMode = 0; // 0 = List, 1 = Tree (by location)
+  int _viewMode = 0;
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
 
@@ -31,8 +32,9 @@ class _AssetVaultScreenState extends ConsumerState<AssetVaultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -54,6 +56,7 @@ class _AssetVaultScreenState extends ConsumerState<AssetVaultScreen> {
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Row(
@@ -63,10 +66,10 @@ class _AssetVaultScreenState extends ConsumerState<AssetVaultScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: ObsidianTheme.hoverBg,
+                color: c.hoverBg,
                 borderRadius: ObsidianTheme.radiusMd,
               ),
-              child: const Icon(PhosphorIconsLight.arrowLeft, color: ObsidianTheme.textSecondary, size: 20),
+              child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
             ),
           ),
           const SizedBox(width: 14),
@@ -78,12 +81,12 @@ class _AssetVaultScreenState extends ConsumerState<AssetVaultScreen> {
                   'The Vault',
                   style: GoogleFonts.inter(
                     fontSize: 20, fontWeight: FontWeight.w600,
-                    color: ObsidianTheme.textPrimary, letterSpacing: -0.3,
+                    color: c.textPrimary, letterSpacing: -0.3,
                   ),
                 ),
                 Text(
                   'Asset Registry',
-                  style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary),
+                  style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textTertiary),
                 ),
               ],
             ),
@@ -96,12 +99,12 @@ class _AssetVaultScreenState extends ConsumerState<AssetVaultScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusFull,
-                  color: ObsidianTheme.hoverBg,
-                  border: Border.all(color: ObsidianTheme.border),
+                  color: c.hoverBg,
+                  border: Border.all(color: c.border),
                 ),
                 child: Text(
                   '$count',
-                  style: GoogleFonts.jetBrainsMono(fontSize: 11, fontWeight: FontWeight.w600, color: ObsidianTheme.textSecondary),
+                  style: GoogleFonts.jetBrainsMono(fontSize: 11, fontWeight: FontWeight.w600, color: c.textSecondary),
                 ),
               );
             },
@@ -178,6 +181,7 @@ class _ViewToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -185,21 +189,21 @@ class _ViewToggleButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
-          color: isActive ? ObsidianTheme.activeBg : Colors.transparent,
+          color: isActive ? c.activeBg : Colors.transparent,
           border: Border.all(
-            color: isActive ? ObsidianTheme.borderActive : ObsidianTheme.border,
+            color: isActive ? c.borderActive : c.border,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: isActive ? ObsidianTheme.textPrimary : ObsidianTheme.textTertiary),
+            Icon(icon, size: 14, color: isActive ? c.textPrimary : c.textTertiary),
             const SizedBox(width: 6),
             Text(
               label,
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 9, fontWeight: FontWeight.w600,
-                color: isActive ? ObsidianTheme.textPrimary : ObsidianTheme.textTertiary,
+                color: isActive ? c.textPrimary : c.textTertiary,
                 letterSpacing: 1,
               ),
             ),
@@ -217,6 +221,7 @@ class _AssetListView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final assetsAsync = ref.watch(filteredAssetsProvider);
 
     return assetsAsync.when(
@@ -230,7 +235,7 @@ class _AssetListView extends ConsumerWidget {
         }
         return RefreshIndicator(
           color: ObsidianTheme.emerald,
-          backgroundColor: ObsidianTheme.surface1,
+          backgroundColor: c.surface,
           onRefresh: () async => ref.invalidate(assetsProvider),
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
@@ -239,7 +244,7 @@ class _AssetListView extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
       ),
       error: (_, __) => const SizedBox.shrink(),
@@ -279,7 +284,7 @@ class _AssetTreeView extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
       ),
       error: (_, __) => const SizedBox.shrink(),
@@ -307,6 +312,7 @@ class _LocationTreeNodeState extends State<_LocationTreeNode> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -320,7 +326,7 @@ class _LocationTreeNodeState extends State<_LocationTreeNode> {
             margin: const EdgeInsets.only(bottom: 4),
             decoration: BoxDecoration(
               borderRadius: ObsidianTheme.radiusMd,
-              color: ObsidianTheme.hoverBg,
+              color: c.hoverBg,
             ),
             child: Row(
               children: [
@@ -335,7 +341,7 @@ class _LocationTreeNodeState extends State<_LocationTreeNode> {
                     widget.location,
                     style: GoogleFonts.inter(
                       fontSize: 13, fontWeight: FontWeight.w500,
-                      color: ObsidianTheme.textPrimary,
+                      color: c.textPrimary,
                     ),
                   ),
                 ),
@@ -343,18 +349,18 @@ class _LocationTreeNodeState extends State<_LocationTreeNode> {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
-                    color: ObsidianTheme.hoverBg,
+                    color: c.hoverBg,
                   ),
                   child: Text(
                     '${widget.assets.length}',
-                    style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                    style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                   ),
                 ),
                 const SizedBox(width: 8),
                 AnimatedRotation(
                   turns: _expanded ? 0.25 : 0,
                   duration: ObsidianTheme.fast,
-                  child: const Icon(PhosphorIconsLight.caretRight, size: 14, color: ObsidianTheme.textTertiary),
+                  child: Icon(PhosphorIconsLight.caretRight, size: 14, color: c.textTertiary),
                 ),
               ],
             ),
@@ -430,6 +436,7 @@ class _AssetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final name = asset['name'] as String? ?? 'Unnamed Asset';
     final serial = asset['serial_number'] as String?;
     final status = asset['status'] as String? ?? 'available';
@@ -451,16 +458,15 @@ class _AssetCard extends StatelessWidget {
         padding: EdgeInsets.all(compact ? 10 : 14),
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusLg,
-          color: ObsidianTheme.surface1,
+          color: c.surface,
           border: Border.all(
             color: isOverdue
                 ? ObsidianTheme.rose.withValues(alpha: 0.15)
-                : ObsidianTheme.border,
+                : c.border,
           ),
         ),
         child: Row(
           children: [
-            // Category icon
             Container(
               width: compact ? 36 : 44,
               height: compact ? 36 : 44,
@@ -487,7 +493,7 @@ class _AssetCard extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: compact ? 12 : 14,
                       fontWeight: FontWeight.w500,
-                      color: ObsidianTheme.textPrimary,
+                      color: c.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -498,14 +504,14 @@ class _AssetCard extends StatelessWidget {
                       if (serial != null) ...[
                         Text(
                           serial,
-                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary),
+                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary),
                         ),
                         const SizedBox(width: 8),
                       ],
                       if (make != null || model != null)
                         Text(
                           [make, model].where((s) => s != null).join(' '),
-                          style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary),
+                          style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary),
                         ),
                     ],
                   ),
@@ -526,7 +532,6 @@ class _AssetCard extends StatelessWidget {
               ),
             ),
 
-            // Status pip
             Container(
               width: 8, height: 8,
               decoration: BoxDecoration(

@@ -11,4 +11,8 @@ export {
   sendJobAssignedEmail,
   sendInvoiceSentEmail,
   sendWeeklyDigestEmail,
+  queueEmail,
+  queueJobAssignedEmail,
+  queueJobCancelledEmail,
+  queueComplianceWarningEmail,
 } from "./events";

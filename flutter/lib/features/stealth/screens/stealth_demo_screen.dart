@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/stealth_text_field.dart';
 import 'package:iworkr_mobile/core/widgets/keyboard_command_rail.dart';
 import 'package:iworkr_mobile/core/widgets/glass_sheet.dart';
@@ -59,6 +60,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
   }
 
   void _showDemoSheet() {
+    final c = context.iColors;
     showGlassSheet(
       context: context,
       title: 'Glass Sheet Demo',
@@ -71,7 +73,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
               'This is a Glass Sheet with ghost inputs inside. The keyboard command rail appears when you focus a field.',
               style: GoogleFonts.inter(
                 fontSize: 13,
-                color: ObsidianTheme.textSecondary,
+                color: c.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -127,8 +129,9 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: StealthFieldScope(
           child: KeyboardCommandRail(
@@ -140,7 +143,6 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
                     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                     children: [
-                      // Section: Ghost Inputs
                       _buildSection('GHOST INPUTS', 'Laser Spine • Floating Labels'),
                       const SizedBox(height: 12),
 
@@ -193,7 +195,6 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Validate button
                       GestureDetector(
                         onTap: _validate,
                         child: Container(
@@ -217,7 +218,6 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
 
                       const SizedBox(height: 32),
 
-                      // Section: Glass Sheets
                       _buildSection('GLASS SHEETS', 'Physics-Based Bottom Modals'),
                       const SizedBox(height: 12),
 
@@ -240,7 +240,6 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
 
                       const SizedBox(height: 32),
 
-                      // Section: Stealth Toasts
                       _buildSection('STEALTH TOASTS', 'Non-Blocking Capsule Alerts'),
                       const SizedBox(height: 12),
 
@@ -309,6 +308,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
   // ── Header ─────────────────────────────────────────
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
@@ -323,12 +323,12 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: ObsidianTheme.hoverBg,
-                border: Border.all(color: ObsidianTheme.border),
+                color: c.hoverBg,
+                border: Border.all(color: c.border),
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(PhosphorIconsLight.arrowLeft,
-                    size: 16, color: ObsidianTheme.textSecondary),
+                    size: 16, color: c.textSecondary),
               ),
             ),
           ),
@@ -342,7 +342,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: c.textPrimary,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -351,7 +351,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
                   'The Ghost & The Rail',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: ObsidianTheme.textMuted,
+                    color: c.textMuted,
                   ),
                 ),
               ],
@@ -381,6 +381,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
   // ── Section Header ─────────────────────────────────
 
   Widget _buildSection(String title, String subtitle) {
+    final c = context.iColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -388,7 +389,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
           title,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 10,
-            color: ObsidianTheme.textTertiary,
+            color: c.textTertiary,
             letterSpacing: 1.5,
           ),
         ),
@@ -397,7 +398,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
           subtitle,
           style: GoogleFonts.inter(
             fontSize: 11,
-            color: ObsidianTheme.textMuted,
+            color: c.textMuted,
           ),
         ),
       ],
@@ -413,6 +414,7 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
     required VoidCallback onTap,
     Color? color,
   }) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
@@ -422,8 +424,8 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
-          color: ObsidianTheme.surface1,
-          border: Border.all(color: ObsidianTheme.border),
+          color: c.surface,
+          border: Border.all(color: c.border),
         ),
         child: Row(
           children: [
@@ -452,23 +454,23 @@ class _StealthDemoScreenState extends State<StealthDemoScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: c.textPrimary,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: ObsidianTheme.textMuted,
+                      color: c.textMuted,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               PhosphorIconsLight.caretRight,
               size: 14,
-              color: ObsidianTheme.textTertiary,
+              color: c.textTertiary,
             ),
           ],
         ),

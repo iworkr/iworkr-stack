@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/admin_provider.dart';
 import 'package:iworkr_mobile/core/services/quote_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
 
@@ -16,13 +17,14 @@ class AdminDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final revenueAsync = ref.watch(revenueTodayProvider);
     final outstandingAsync = ref.watch(outstandingProvider);
     final winRateAsync = ref.watch(quoteWinRateProvider);
     final membersAsync = ref.watch(orgMembersProvider);
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -37,14 +39,14 @@ class AdminDashboardScreen extends ConsumerWidget {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle, color: ObsidianTheme.hoverBg,
-                        border: Border.all(color: ObsidianTheme.border),
+                        shape: BoxShape.circle, color: c.hoverBg,
+                        border: Border.all(color: c.border),
                       ),
-                      child: const Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: ObsidianTheme.textSecondary)),
+                      child: Center(child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: c.textSecondary)),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('Command Center', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: -0.3)),
+                  Text('Command Center', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3)),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -71,7 +73,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
                 children: [
                   // ── Business Pulse ─────────────────────
-                  Text('BUSINESS PULSE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                  Text('BUSINESS PULSE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
                   const SizedBox(height: 10),
 
                   // Revenue card
@@ -83,7 +85,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            Text('REV TODAY', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                            Text('REV TODAY', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
                             const Spacer(),
                             Container(
                               width: 6, height: 6,
@@ -97,8 +99,8 @@ class AdminDashboardScreen extends ConsumerWidget {
                             _formatCurrency(rev),
                             style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w700, color: ObsidianTheme.emerald, letterSpacing: -1.5),
                           ),
-                          loading: () => Text('...', style: GoogleFonts.inter(fontSize: 36, color: ObsidianTheme.textTertiary)),
-                          error: (_, __) => Text('\$-', style: GoogleFonts.inter(fontSize: 36, color: ObsidianTheme.textTertiary)),
+                          loading: () => Text('...', style: GoogleFonts.inter(fontSize: 36, color: c.textTertiary)),
+                          error: (_, __) => Text('\$-', style: GoogleFonts.inter(fontSize: 36, color: c.textTertiary)),
                         ),
                         const SizedBox(height: 16),
                         // Sparkline
@@ -143,7 +145,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                   // ── Team ───────────────────────────────
                   Row(
                     children: [
-                      Text('TEAM', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                      Text('TEAM', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
                       const Spacer(),
                       GestureDetector(
                         onTap: () { HapticFeedback.lightImpact(); context.push('/admin/users'); },
@@ -171,13 +173,13 @@ class AdminDashboardScreen extends ConsumerWidget {
                                       width: 28, height: 28,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: ObsidianTheme.shimmerBase,
-                                        border: Border.all(color: ObsidianTheme.border),
+                                        color: c.shimmerBase,
+                                        border: Border.all(color: c.border),
                                       ),
                                       child: Center(
                                         child: Text(
                                           (m.profile?.displayName ?? 'U')[0].toUpperCase(),
-                                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: ObsidianTheme.textSecondary),
+                                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: c.textSecondary),
                                         ),
                                       ),
                                     ),
@@ -186,8 +188,8 @@ class AdminDashboardScreen extends ConsumerWidget {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(m.profile?.displayName ?? 'User', style: GoogleFonts.inter(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500)),
-                                          Text(m.role, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                                          Text(m.profile?.displayName ?? 'User', style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary, fontWeight: FontWeight.w500)),
+                                          Text(m.role, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary)),
                                         ],
                                       ),
                                     ),
@@ -210,7 +212,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 28),
 
                   // ── Quick Links ────────────────────────
-                  Text('QUICK LINKS', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+                  Text('QUICK LINKS', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
                   const SizedBox(height: 10),
 
                   _AdminLink(icon: PhosphorIconsLight.currencyDollar, label: 'Finance', onTap: () => context.push('/finance'))
@@ -246,18 +248,19 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GlassCard(
       padding: const EdgeInsets.all(16),
       borderRadius: ObsidianTheme.radiusMd,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+          Text(label, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
           const SizedBox(height: 8),
           asyncValue.when(
             data: (v) => Text(format(v), style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w600, color: color, letterSpacing: -0.5)),
-            loading: () => Text('...', style: GoogleFonts.inter(fontSize: 22, color: ObsidianTheme.textTertiary)),
-            error: (_, __) => Text('-', style: GoogleFonts.inter(fontSize: 22, color: ObsidianTheme.textTertiary)),
+            loading: () => Text('...', style: GoogleFonts.inter(fontSize: 22, color: c.textTertiary)),
+            error: (_, __) => Text('-', style: GoogleFonts.inter(fontSize: 22, color: c.textTertiary)),
           ),
           const SizedBox(height: 8),
           SizedBox(
@@ -283,17 +286,18 @@ class _AdminLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () { HapticFeedback.lightImpact(); onTap(); },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: ObsidianTheme.border))),
+        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.border))),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: ObsidianTheme.textTertiary),
+            Icon(icon, size: 16, color: c.textTertiary),
             const SizedBox(width: 10),
-            Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500))),
-            const Icon(PhosphorIconsLight.caretRight, size: 12, color: ObsidianTheme.textTertiary),
+            Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary, fontWeight: FontWeight.w500))),
+            Icon(PhosphorIconsLight.caretRight, size: 12, color: c.textTertiary),
           ],
         ),
       ),

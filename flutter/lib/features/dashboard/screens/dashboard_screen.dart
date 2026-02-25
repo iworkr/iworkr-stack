@@ -15,6 +15,7 @@ import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/services/schedule_provider.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/database/sync_engine.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
 import 'package:iworkr_mobile/features/scan/screens/scanner_screen.dart';
@@ -57,13 +58,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final wsAsync = ref.watch(activeWorkspaceProvider);
 
     return WormholeTransition(
       trigger: _wormholeTrigger,
       onComplete: () => setState(() => _wormholeTrigger = false),
       child: Scaffold(
-        backgroundColor: ObsidianTheme.void_,
+        backgroundColor: c.canvas,
         body: NotificationListener<ScrollNotification>(
           onNotification: (n) {
             final scrolled = n.metrics.pixels > 4;
@@ -74,7 +76,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               RefreshIndicator(
                 color: ObsidianTheme.emerald,
-                backgroundColor: ObsidianTheme.surface1,
+                backgroundColor: c.surface,
                 onRefresh: _refresh,
                 edgeOffset: 100,
                 child: CustomScrollView(
@@ -136,6 +138,7 @@ class _GlassAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final topPad = MediaQuery.of(context).padding.top;
 
     return ClipRect(
@@ -149,7 +152,7 @@ class _GlassAppBar extends StatelessWidget {
             border: Border(
               bottom: BorderSide(
                 color: scrolled
-                    ? Colors.white.withValues(alpha: 0.05)
+                    ? c.border
                     : Colors.transparent,
               ),
             ),
@@ -169,14 +172,14 @@ class _GlassAppBar extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: c.textPrimary,
                       ),
                     ),
                     const SizedBox(width: 4),
                     Icon(
                       PhosphorIconsBold.caretDown,
                       size: 10,
-                      color: ObsidianTheme.textMuted,
+                      color: c.textMuted,
                     ),
                   ],
                 ),
@@ -203,6 +206,7 @@ class _SyncStatusIndicator extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final status = ref.watch(syncStatusProvider);
 
     if (status == SyncStatus.synced) return const SizedBox.shrink();
@@ -215,10 +219,10 @@ class _SyncStatusIndicator extends ConsumerWidget {
     };
 
     final color = switch (status) {
-      SyncStatus.offline => ObsidianTheme.textMuted,
+      SyncStatus.offline => c.textMuted,
       SyncStatus.syncing => ObsidianTheme.emerald,
       SyncStatus.failed => ObsidianTheme.amber,
-      _ => ObsidianTheme.textMuted,
+      _ => c.textMuted,
     };
 
     return Padding(
@@ -234,13 +238,14 @@ class _WorkspaceLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       width: 28,
       height: 28,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: ObsidianTheme.surface2,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: c.surfaceSecondary,
+        border: Border.all(color: c.borderMedium),
         image: workspace?.logoUrl != null
             ? DecorationImage(
                 image: NetworkImage(workspace!.logoUrl!),
@@ -271,6 +276,7 @@ class _GhostIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -281,9 +287,9 @@ class _GhostIconButton extends StatelessWidget {
         height: 34,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: Colors.white.withValues(alpha: 0.04),
+          color: c.activeBg,
         ),
-        child: Icon(icon, size: 17, color: ObsidianTheme.textSecondary),
+        child: Icon(icon, size: 17, color: c.textSecondary),
       ),
     );
   }
@@ -295,6 +301,7 @@ class _NotificationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -305,12 +312,12 @@ class _NotificationButton extends StatelessWidget {
         height: 34,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: Colors.white.withValues(alpha: 0.04),
+          color: c.activeBg,
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Icon(CupertinoIcons.bell, size: 17, color: ObsidianTheme.textSecondary),
+            Icon(CupertinoIcons.bell, size: 17, color: c.textSecondary),
             Positioned(
               top: 7,
               right: 8,
@@ -340,6 +347,7 @@ class _RevenueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final statsAsync = ref.watch(revenueStatsProvider);
 
     return _TapCard(
@@ -348,7 +356,7 @@ class _RevenueCard extends StatelessWidget {
         loading: () => const SizedBox(height: 80, child: Center(child: CupertinoActivityIndicator())),
         error: (_, __) => SizedBox(
           height: 80,
-          child: Center(child: Text('Revenue unavailable', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12))),
+          child: Center(child: Text('Revenue unavailable', style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12))),
         ),
         data: (stats) {
           final revenue = stats['totalRevenue'] ?? 0;
@@ -363,7 +371,7 @@ class _RevenueCard extends StatelessWidget {
                     'REVENUE MTD',
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 9,
-                      color: ObsidianTheme.textTertiary,
+                      color: c.textTertiary,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -384,7 +392,7 @@ class _RevenueCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text('vs last month', style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
+                  Text('vs last month', style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -393,7 +401,7 @@ class _RevenueCard extends StatelessWidget {
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 36,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: c.textPrimary,
                   letterSpacing: -1.5,
                 ),
               ),
@@ -420,6 +428,7 @@ class _RevenueCard extends StatelessWidget {
 class _DispatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return _TapCard(
       padding: EdgeInsets.zero,
       onTap: () => context.push('/overwatch'),
@@ -444,14 +453,14 @@ class _DispatchCard extends StatelessWidget {
                   'LIVE DISPATCH',
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 9,
-                    color: ObsidianTheme.textTertiary,
+                    color: c.textTertiary,
                     letterSpacing: 1.5,
                   ),
                 ),
                 const Spacer(),
                 Text(
                   'View Map →',
-                  style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textMuted),
+                  style: GoogleFonts.inter(fontSize: 11, color: c.textMuted),
                 ),
               ],
             ),
@@ -461,7 +470,7 @@ class _DispatchCard extends StatelessWidget {
             child: SizedBox(
               height: 180,
               width: double.infinity,
-              child: CustomPaint(painter: _DarkEarthMapPainter()),
+              child: CustomPaint(painter: _DarkEarthMapPainter(canvas: c.canvas, roadColor: c.shimmerBase)),
             ),
           ),
         ],
@@ -483,6 +492,7 @@ class _ScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final blocksAsync = ref.watch(myTodayBlocksProvider);
 
     return _TapCard(
@@ -496,12 +506,12 @@ class _ScheduleCard extends StatelessWidget {
                 "TODAY'S SCHEDULE",
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                   letterSpacing: 1.5,
                 ),
               ),
               const Spacer(),
-              Text('View all →', style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textMuted)),
+              Text('View all →', style: GoogleFonts.inter(fontSize: 11, color: c.textMuted)),
             ],
           ),
           const SizedBox(height: 12),
@@ -509,7 +519,7 @@ class _ScheduleCard extends StatelessWidget {
             loading: () => const SizedBox(height: 60, child: Center(child: CupertinoActivityIndicator())),
             error: (_, __) => SizedBox(
               height: 60,
-              child: Center(child: Text('Schedule unavailable', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12))),
+              child: Center(child: Text('Schedule unavailable', style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12))),
             ),
             data: (blocks) {
               if (blocks.isEmpty) {
@@ -518,7 +528,7 @@ class _ScheduleCard extends StatelessWidget {
                   child: Center(
                     child: Text(
                       'Clear day ahead',
-                      style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                     ),
                   ),
                 );
@@ -550,6 +560,7 @@ class _ScheduleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final time = '${block.startTime.hour.toString().padLeft(2, '0')}:${block.startTime.minute.toString().padLeft(2, '0')}';
     final isLive = block.status.toString().contains('inProgress');
 
@@ -570,7 +581,7 @@ class _ScheduleRow extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(2),
-                color: isLive ? ObsidianTheme.emerald : ObsidianTheme.textMuted,
+                color: isLive ? ObsidianTheme.emerald : c.textMuted,
               ),
             ),
             const SizedBox(width: 12),
@@ -580,7 +591,7 @@ class _ScheduleRow extends StatelessWidget {
                 time,
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 12,
-                  color: ObsidianTheme.textMuted,
+                  color: c.textMuted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -595,7 +606,7 @@ class _ScheduleRow extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: c.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -603,7 +614,7 @@ class _ScheduleRow extends StatelessWidget {
                   if (block.location != null || block.clientName != null)
                     Text(
                       block.location ?? block.clientName ?? '',
-                      style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -644,6 +655,7 @@ class _TriageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return _TapCard(
       onTap: () => context.push('/inbox'),
       child: Row(
@@ -653,9 +665,9 @@ class _TriageCard extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: Colors.white.withValues(alpha: 0.04),
+              color: c.activeBg,
             ),
-            child: const Icon(PhosphorIconsLight.tray, size: 18, color: ObsidianTheme.textSecondary),
+            child: Icon(PhosphorIconsLight.tray, size: 18, color: c.textSecondary),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -667,12 +679,12 @@ class _TriageCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: c.textPrimary,
                   ),
                 ),
                 Text(
                   'Priority messages & alerts',
-                  style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                  style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                 ),
               ],
             ),
@@ -694,7 +706,7 @@ class _TriageCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(PhosphorIconsLight.caretRight, size: 14, color: ObsidianTheme.textMuted),
+          Icon(PhosphorIconsLight.caretRight, size: 14, color: c.textMuted),
         ],
       ),
     )
@@ -761,6 +773,7 @@ class _QuickActionTileState extends State<_QuickActionTile> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -776,19 +789,19 @@ class _QuickActionTileState extends State<_QuickActionTile> {
         transformAlignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: Colors.white.withValues(alpha: _pressed ? 0.06 : 0.03),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          color: _pressed ? c.border : c.hoverBg,
+          border: Border.all(color: c.border),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(widget.action.icon, size: 20, color: Colors.white),
+            Icon(widget.action.icon, size: 20, color: c.textPrimary),
             const SizedBox(height: 6),
             Text(
               widget.action.label,
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 8,
-                color: ObsidianTheme.textMuted,
+                color: c.textMuted,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 1.2,
               ),
@@ -819,6 +832,7 @@ class _TapCardState extends State<_TapCard> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -833,13 +847,13 @@ class _TapCardState extends State<_TapCard> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: _pressed
-              ? const Color(0xFF09090B).withValues(alpha: 0.95)
-              : const Color(0xFF09090B),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              ? c.surface.withValues(alpha: 0.95)
+              : c.surface,
+          border: Border.all(color: c.border),
         ),
         foregroundDecoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: _pressed ? Colors.white.withValues(alpha: 0.02) : Colors.transparent,
+          color: _pressed ? c.hoverBg : Colors.transparent,
         ),
         child: widget.child,
       ),
@@ -939,33 +953,35 @@ class _SparklinePainter extends CustomPainter {
 
 /// Dark Earth tactical map painter
 class _DarkEarthMapPainter extends CustomPainter {
+  final Color canvas;
+  final Color roadColor;
+  _DarkEarthMapPainter({required this.canvas, required this.roadColor});
+
   @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
+  void paint(Canvas canvasObj, Size size) {
+    canvasObj.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = const Color(0xFF050508),
+      Paint()..color = canvas,
     );
 
     final gridPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.025)
       ..strokeWidth = 0.5;
     for (double y = 0; y < size.height; y += 20) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      canvasObj.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
     for (double x = 0; x < size.width; x += 20) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      canvasObj.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
     }
 
-    // Simulated roads
     final roadPaint = Paint()
-      ..color = const Color(0xFF18181B)
+      ..color = roadColor
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(size.width * 0.1, size.height * 0.5), Offset(size.width * 0.9, size.height * 0.3), roadPaint);
-    canvas.drawLine(Offset(size.width * 0.3, size.height * 0.1), Offset(size.width * 0.4, size.height * 0.9), roadPaint);
-    canvas.drawLine(Offset(size.width * 0.6, size.height * 0.2), Offset(size.width * 0.8, size.height * 0.8), roadPaint);
+    canvasObj.drawLine(Offset(size.width * 0.1, size.height * 0.5), Offset(size.width * 0.9, size.height * 0.3), roadPaint);
+    canvasObj.drawLine(Offset(size.width * 0.3, size.height * 0.1), Offset(size.width * 0.4, size.height * 0.9), roadPaint);
+    canvasObj.drawLine(Offset(size.width * 0.6, size.height * 0.2), Offset(size.width * 0.8, size.height * 0.8), roadPaint);
 
-    // Emerald tech dots
     final dots = [
       Offset(size.width * 0.25, size.height * 0.35),
       Offset(size.width * 0.55, size.height * 0.45),
@@ -975,8 +991,8 @@ class _DarkEarthMapPainter extends CustomPainter {
     ];
 
     for (final dot in dots) {
-      canvas.drawCircle(dot, 6, Paint()..color = ObsidianTheme.emerald.withValues(alpha: 0.15));
-      canvas.drawCircle(dot, 4, Paint()..color = ObsidianTheme.emerald);
+      canvasObj.drawCircle(dot, 6, Paint()..color = ObsidianTheme.emerald.withValues(alpha: 0.15));
+      canvasObj.drawCircle(dot, 4, Paint()..color = ObsidianTheme.emerald);
     }
   }
 

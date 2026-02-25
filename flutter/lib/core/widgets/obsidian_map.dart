@@ -26,6 +26,27 @@ const _darkMapStyle = '''
 ]
 ''';
 
+const _lightMapStyle = '''
+[
+  {"elementType":"geometry","stylers":[{"color":"#f4f4f5"}]},
+  {"elementType":"labels.text.fill","stylers":[{"color":"#71717a"}]},
+  {"elementType":"labels.text.stroke","stylers":[{"color":"#fafafa"}]},
+  {"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#e4e4e7"}]},
+  {"featureType":"administrative.land_parcel","stylers":[{"visibility":"off"}]},
+  {"featureType":"administrative.neighborhood","stylers":[{"visibility":"off"}]},
+  {"featureType":"landscape","elementType":"geometry","stylers":[{"color":"#f4f4f5"}]},
+  {"featureType":"poi","stylers":[{"visibility":"off"}]},
+  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#ffffff"}]},
+  {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#e4e4e7"}]},
+  {"featureType":"road","elementType":"labels","stylers":[{"visibility":"off"}]},
+  {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#ffffff"}]},
+  {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#d4d4d8"}]},
+  {"featureType":"transit","stylers":[{"visibility":"off"}]},
+  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#e4e4e7"}]},
+  {"featureType":"water","elementType":"labels","stylers":[{"visibility":"off"}]}
+]
+''';
+
 class ObsidianMap extends StatefulWidget {
   final LatLng center;
   final double zoom;
@@ -55,6 +76,7 @@ class _ObsidianMapState extends State<ObsidianMap> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GoogleMap(
       initialCameraPosition: CameraPosition(
         target: widget.center,
@@ -73,7 +95,7 @@ class _ObsidianMapState extends State<ObsidianMap> {
       scrollGesturesEnabled: widget.interactive,
       zoomGesturesEnabled: widget.interactive,
       tiltGesturesEnabled: false,
-      style: _darkMapStyle,
+      style: isDark ? _darkMapStyle : _lightMapStyle,
       onMapCreated: (controller) {
         _controller.complete(controller);
         widget.onMapCreated?.call(controller);

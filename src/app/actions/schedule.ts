@@ -15,7 +15,7 @@ export interface ScheduleBlock {
   location: string | null;
   start_time: string;
   end_time: string;
-  status: "scheduled" | "en_route" | "in_progress" | "complete" | "cancelled";
+  status: "scheduled" | "en_route" | "on_site" | "in_progress" | "complete" | "cancelled";
   travel_minutes: number | null;
   is_conflict: boolean;
   notes: string | null;
@@ -65,7 +65,7 @@ export interface CreateScheduleBlockParams {
   location?: string | null;
   start_time: string;
   end_time: string;
-  status?: "scheduled" | "en_route" | "in_progress" | "complete" | "cancelled";
+  status?: "scheduled" | "en_route" | "on_site" | "in_progress" | "complete" | "cancelled";
   travel_minutes?: number | null;
   notes?: string | null;
   metadata?: Record<string, any> | null;
@@ -79,7 +79,7 @@ export interface UpdateScheduleBlockParams {
   location?: string | null;
   start_time?: string;
   end_time?: string;
-  status?: "scheduled" | "en_route" | "in_progress" | "complete" | "cancelled";
+  status?: "scheduled" | "en_route" | "on_site" | "in_progress" | "complete" | "cancelled";
   travel_minutes?: number | null;
   is_conflict?: boolean;
   notes?: string | null;
@@ -845,5 +845,74 @@ export async function checkScheduleConflicts(orgId: string) {
   } catch (error: any) {
     logger.error("Failed to check conflicts", "schedule", error);
     return { data: [], error: error.message || "Failed to check conflicts" };
+  }
+}
+
+export interface CascadingDelay {
+  block_id: string;
+  title: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  delay_minutes: number;
+  caused_by_block: string;
+}
+
+export async function getCascadingDelays(
+  orgId: string,
+  technicianId: string,
+  date?: string
+): Promise<{ data: CascadingDelay[]; error: string | null }> {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data, error } = await supabase.rpc("get_cascading_delays", {
+      p_org_id: orgId,
+      p_technician_id: technicianId,
+      ...(date ? { p_date: date } : {}),
+    });
+
+    if (error) {
+      logger.error("get_cascading_delays RPC failed", "schedule", undefined, { error: error.message });
+      return { data: [], error: null };
+    }
+
+    return { data: data || [], error: null };
+  } catch (error: any) {
+    logger.error("Failed to get cascading delays", "schedule", error);
+    return { data: [], error: error.message || "Failed to get cascading delays" };
+  }
+}
+
+export async function validateScheduleDrop(
+  orgId: string,
+  technicianId: string,
+  startTime: string,
+  endTime: string,
+  excludeBlockId?: string,
+  locationLat?: number,
+  locationLng?: number
+) {
+  try {
+    const supabase = await createServerSupabaseClient() as any;
+
+    const { data, error } = await supabase.rpc("validate_schedule_drop", {
+      p_org_id: orgId,
+      p_technician_id: technicianId,
+      p_start_time: startTime,
+      p_end_time: endTime,
+      ...(excludeBlockId ? { p_exclude_block: excludeBlockId } : {}),
+      ...(locationLat ? { p_location_lat: locationLat } : {}),
+      ...(locationLng ? { p_location_lng: locationLng } : {}),
+    });
+
+    if (error) {
+      logger.error("validate_schedule_drop RPC failed", "schedule", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (error: any) {
+    logger.error("Failed to validate schedule drop", "schedule", error);
+    return { data: null, error: error.message || "Failed to validate" };
   }
 }

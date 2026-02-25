@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Shows a Glass Sheet — our replacement for system AlertDialogs.
@@ -64,6 +65,7 @@ class _GlassSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final bottomPad = MediaQuery.of(context).padding.bottom;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
@@ -80,32 +82,28 @@ class _GlassSheetBody extends StatelessWidget {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black,
+                color: c.canvas,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(24),
                 ),
-                border: const Border(
+                border: Border(
                   top: BorderSide(
-                    color: Color(0x1AFFFFFF), // white/10
+                    color: c.borderActive,
                   ),
                 ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Drag handle
-                  _buildDragHandle(),
+                  _buildDragHandle(context),
 
-                  // Header
                   _buildHeader(context),
 
-                  // Divider
                   Container(
                     height: 1,
-                    color: ObsidianTheme.border,
+                    color: c.border,
                   ),
 
-                  // Body (scrollable)
                   Expanded(
                     child: ListView(
                       controller: scrollController,
@@ -121,7 +119,6 @@ class _GlassSheetBody extends StatelessWidget {
                     ),
                   ),
 
-                  // Footer (pinned)
                   if (footer != null)
                     _buildFooter(context, bottomPad),
                 ],
@@ -133,7 +130,8 @@ class _GlassSheetBody extends StatelessWidget {
     );
   }
 
-  Widget _buildDragHandle() {
+  Widget _buildDragHandle(BuildContext context) {
+    final c = context.iColors;
     return Center(
       child: Container(
         margin: const EdgeInsets.only(top: 10, bottom: 6),
@@ -141,13 +139,14 @@ class _GlassSheetBody extends StatelessWidget {
         height: 4,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(2),
-          color: ObsidianTheme.textDisabled,
+          color: c.textDisabled,
         ),
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 12, 12),
       child: Row(
@@ -158,7 +157,7 @@ class _GlassSheetBody extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: c.textPrimary,
                 letterSpacing: -0.3,
               ),
             ),
@@ -173,14 +172,14 @@ class _GlassSheetBody extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: ObsidianTheme.hoverBg,
-                border: Border.all(color: ObsidianTheme.border),
+                color: c.hoverBg,
+                border: Border.all(color: c.border),
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(
                   PhosphorIconsLight.x,
                   size: 14,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                 ),
               ),
             ),
@@ -191,14 +190,14 @@ class _GlassSheetBody extends StatelessWidget {
   }
 
   Widget _buildFooter(BuildContext context, double bottomPad) {
+    final c = context.iColors;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, bottomPad + 16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: Color(0x0DFFFFFF)),
+          top: BorderSide(color: c.border),
         ),
-        // Subtle surface for safe zone
-        color: Color(0xFF0A0A0A),
+        color: c.surface,
       ),
       child: footer!,
     );
@@ -233,6 +232,7 @@ class _GlassSheetButtonState extends State<GlassSheetButton> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final enabled = widget.onTap != null && !widget.loading;
     final color = widget.color ?? Colors.white;
 
@@ -255,7 +255,7 @@ class _GlassSheetButtonState extends State<GlassSheetButton> {
         transformAlignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: ObsidianTheme.radiusMd,
-          color: enabled ? color : ObsidianTheme.shimmerBase,
+          color: enabled ? color : c.shimmerBase,
         ),
         child: Center(
           child: widget.loading
@@ -278,7 +278,7 @@ class _GlassSheetButtonState extends State<GlassSheetButton> {
                         ? (color == Colors.white
                             ? Colors.black
                             : Colors.white)
-                        : ObsidianTheme.textTertiary,
+                        : c.textTertiary,
                   ),
                 ),
         ),
@@ -311,6 +311,7 @@ Future<bool> showConfirmGlassSheet({
   String cancelLabel = 'Cancel',
   Color? confirmColor,
 }) async {
+  final c = context.iColors;
   final result = await showGlassSheet<bool>(
     context: context,
     title: title,
@@ -321,7 +322,7 @@ Future<bool> showConfirmGlassSheet({
       message,
       style: GoogleFonts.inter(
         fontSize: 14,
-        color: ObsidianTheme.textSecondary,
+        color: c.textSecondary,
         height: 1.5,
       ),
     ),
@@ -330,7 +331,7 @@ Future<bool> showConfirmGlassSheet({
         Expanded(
           child: GlassSheetButton(
             label: cancelLabel,
-            color: ObsidianTheme.shimmerBase,
+            color: c.shimmerBase,
             onTap: () => Navigator.of(context).pop(false),
           ),
         ),

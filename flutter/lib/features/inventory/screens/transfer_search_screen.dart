@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/inventory_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 /// Van-to-Van transfer search — find parts across the org.
@@ -28,10 +29,11 @@ class _TransferSearchScreenState extends ConsumerState<TransferSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final resultsAsync = ref.watch(orgStockSearchProvider(_query));
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -45,10 +47,10 @@ class _TransferSearchScreenState extends ConsumerState<TransferSearchScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: c.border,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
+                      child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -58,7 +60,7 @@ class _TransferSearchScreenState extends ConsumerState<TransferSearchScreen> {
                       Text(
                         'FIND PARTS',
                         style: GoogleFonts.jetBrainsMono(
-                          color: Colors.white,
+                          color: c.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.5,
@@ -66,7 +68,7 @@ class _TransferSearchScreenState extends ConsumerState<TransferSearchScreen> {
                       ),
                       Text(
                         'Search nearby vans & warehouse',
-                        style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                        style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -83,20 +85,20 @@ class _TransferSearchScreenState extends ConsumerState<TransferSearchScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: Colors.white.withValues(alpha: 0.04),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  color: c.activeBg,
+                  border: Border.all(color: c.borderMedium),
                 ),
                 child: Row(
                   children: [
-                    const Icon(PhosphorIconsLight.magnifyingGlass, color: Colors.white38, size: 18),
+                    Icon(PhosphorIconsLight.magnifyingGlass, color: c.textTertiary, size: 18),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         controller: _controller,
-                        style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                        style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14),
                         decoration: InputDecoration(
                           hintText: 'Search item name...',
-                          hintStyle: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 14),
+                          hintStyle: GoogleFonts.inter(color: c.textTertiary, fontSize: 14),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(vertical: 14),
                         ),
@@ -109,7 +111,7 @@ class _TransferSearchScreenState extends ConsumerState<TransferSearchScreen> {
                           _controller.clear();
                           setState(() => _query = '');
                         },
-                        child: const Icon(PhosphorIconsLight.x, color: Colors.white38, size: 16),
+                        child: Icon(PhosphorIconsLight.x, color: c.textTertiary, size: 16),
                       ),
                   ],
                 ),
@@ -125,12 +127,12 @@ class _TransferSearchScreenState extends ConsumerState<TransferSearchScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(PhosphorIconsLight.magnifyingGlass, color: ObsidianTheme.textTertiary, size: 28),
+                          Icon(PhosphorIconsLight.magnifyingGlass, color: c.textTertiary, size: 28),
                           const SizedBox(height: 12),
                           Text(
                             'Search for a part to find\nnearby availability',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                            style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                           ),
                         ],
                       ),
@@ -145,7 +147,7 @@ class _TransferSearchScreenState extends ConsumerState<TransferSearchScreen> {
                           return Center(
                             child: Text(
                               'No results for "$_query"',
-                              style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+                              style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
                             ),
                           );
                         }
@@ -217,13 +219,15 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.03),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: c.hoverBg,
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: [
@@ -243,7 +247,7 @@ class _ResultCard extends StatelessWidget {
               children: [
                 Text(
                   userName,
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 2),
                 Row(

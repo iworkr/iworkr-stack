@@ -14,6 +14,7 @@ import 'package:iworkr_mobile/core/database/sync_engine.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/slide_to_act.dart';
 
 /// The Active Job HUD — a persistent, glassmorphic bottom bar that shows
@@ -130,6 +131,7 @@ class _HudBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return Positioned(
@@ -142,7 +144,7 @@ class _HudBar extends StatelessWidget {
           child: Container(
             padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPad + 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF09090B).withValues(alpha: 0.92),
+              color: c.surface.withValues(alpha: 0.92),
               border: const Border(
                 top: BorderSide(color: Color(0x0DFFFFFF)),
               ),
@@ -171,10 +173,10 @@ class _HudBar extends StatelessWidget {
                           height: 36,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
-                            color: Colors.white.withValues(alpha: 0.04),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                            color: c.activeBg,
+                            border: Border.all(color: c.border),
                           ),
-                          child: const Icon(PhosphorIconsLight.pause, size: 16, color: ObsidianTheme.textSecondary),
+                          child: Icon(PhosphorIconsLight.pause, size: 16, color: c.textSecondary),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -194,7 +196,7 @@ class _HudBar extends StatelessWidget {
                           ),
                           Text(
                             'Job in progress',
-                            style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                            style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                           ),
                         ],
                       ),

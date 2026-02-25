@@ -84,81 +84,92 @@ enum JobStatus {
   backlog,
   todo,
   scheduled,
+  enRoute,
+  onSite,
   inProgress,
   done,
+  completed,
   invoiced,
+  archived,
   cancelled;
 
   static JobStatus fromString(String s) {
     switch (s) {
-      case 'in_progress':
-        return JobStatus.inProgress;
-      case 'todo':
-        return JobStatus.todo;
-      case 'scheduled':
-        return JobStatus.scheduled;
-      case 'done':
-        return JobStatus.done;
-      case 'invoiced':
-        return JobStatus.invoiced;
-      case 'cancelled':
-        return JobStatus.cancelled;
-      default:
-        return JobStatus.backlog;
+      case 'en_route': return JobStatus.enRoute;
+      case 'on_site': return JobStatus.onSite;
+      case 'in_progress': return JobStatus.inProgress;
+      case 'todo': return JobStatus.todo;
+      case 'scheduled': return JobStatus.scheduled;
+      case 'done': return JobStatus.done;
+      case 'completed': return JobStatus.completed;
+      case 'invoiced': return JobStatus.invoiced;
+      case 'archived': return JobStatus.archived;
+      case 'cancelled': return JobStatus.cancelled;
+      default: return JobStatus.backlog;
     }
   }
 
   String get value {
     switch (this) {
-      case JobStatus.inProgress:
-        return 'in_progress';
-      default:
-        return name;
+      case JobStatus.enRoute: return 'en_route';
+      case JobStatus.onSite: return 'on_site';
+      case JobStatus.inProgress: return 'in_progress';
+      default: return name;
     }
   }
 
   String get label {
     switch (this) {
-      case JobStatus.backlog:
-        return 'Draft';
-      case JobStatus.todo:
-        return 'To Do';
-      case JobStatus.scheduled:
-        return 'Scheduled';
-      case JobStatus.inProgress:
-        return 'In Progress';
-      case JobStatus.done:
-        return 'Completed';
-      case JobStatus.invoiced:
-        return 'Invoiced';
-      case JobStatus.cancelled:
-        return 'Cancelled';
+      case JobStatus.backlog: return 'Draft';
+      case JobStatus.todo: return 'To Do';
+      case JobStatus.scheduled: return 'Scheduled';
+      case JobStatus.enRoute: return 'En Route';
+      case JobStatus.onSite: return 'On Site';
+      case JobStatus.inProgress: return 'In Progress';
+      case JobStatus.done: return 'Completed';
+      case JobStatus.completed: return 'Completed';
+      case JobStatus.invoiced: return 'Invoiced';
+      case JobStatus.archived: return 'Archived';
+      case JobStatus.cancelled: return 'Cancelled';
     }
   }
 
-  /// The stage index in the Lead-to-Cash pipeline (0-based).
-  /// Returns -1 for terminal states like cancelled.
   int get pipelineStage {
     switch (this) {
-      case JobStatus.backlog:
-        return 0;
-      case JobStatus.todo:
-        return 1;
-      case JobStatus.scheduled:
-        return 2;
-      case JobStatus.inProgress:
-        return 3;
-      case JobStatus.done:
-        return 4;
-      case JobStatus.invoiced:
-        return 5;
-      case JobStatus.cancelled:
-        return -1;
+      case JobStatus.backlog: return 0;
+      case JobStatus.todo: return 1;
+      case JobStatus.scheduled: return 2;
+      case JobStatus.enRoute: return 3;
+      case JobStatus.onSite: return 4;
+      case JobStatus.inProgress: return 5;
+      case JobStatus.done: return 6;
+      case JobStatus.completed: return 6;
+      case JobStatus.invoiced: return 7;
+      case JobStatus.archived: return 8;
+      case JobStatus.cancelled: return -1;
     }
   }
 
-  bool get isTerminal => this == done || this == invoiced || this == cancelled;
-  bool get isActive => this == inProgress || this == scheduled;
+  bool get isTerminal => this == done || this == completed || this == invoiced || this == archived || this == cancelled;
+  bool get isActive => this == enRoute || this == onSite || this == inProgress;
+  bool get isFieldState => this == enRoute || this == onSite || this == inProgress;
+
+  /// Valid next states from current state
+  List<JobStatus> get validTransitions {
+    switch (this) {
+      case JobStatus.backlog: return [todo, scheduled, cancelled];
+      case JobStatus.todo: return [scheduled, backlog, cancelled];
+      case JobStatus.scheduled: return [enRoute, inProgress, cancelled];
+      case JobStatus.enRoute: return [onSite, inProgress, scheduled, cancelled];
+      case JobStatus.onSite: return [inProgress, cancelled];
+      case JobStatus.inProgress: return [done, completed, cancelled];
+      case JobStatus.done: return [invoiced, completed, archived];
+      case JobStatus.completed: return [invoiced, archived];
+      case JobStatus.invoiced: return [archived];
+      case JobStatus.archived: return [];
+      case JobStatus.cancelled: return [backlog, todo];
+    }
+  }
 }
 
 enum JobPriority {

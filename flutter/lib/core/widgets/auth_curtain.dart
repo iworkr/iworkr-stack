@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iworkr_mobile/core/services/biometric_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 // ═══════════════════════════════════════════════════════════
@@ -135,8 +136,9 @@ class _BootSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: Center(
         child: Image.asset(
           'assets/logos/icon.png',
@@ -298,10 +300,11 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
   // ── Cold Start (Full screen) ───────────────────────────
 
   Widget _buildColdStart(BuildContext context) {
+    final c = context.iColors;
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         bottom: false,
         child: SizedBox.expand(
@@ -456,6 +459,7 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
   // ── Lock Glyph ─────────────────────────────────────────
 
   Widget _buildLockGlyph() {
+    final c = context.iColors;
     final IconData icon;
     final Color iconColor;
 
@@ -483,20 +487,20 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: _state == _VaultState.prompting
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.white.withValues(alpha: 0.03),
+              ? c.border
+              : c.hoverBg,
           border: Border.all(
             color: _state == _VaultState.success
                 ? ObsidianTheme.emerald.withValues(alpha: 0.5)
                 : _state == _VaultState.error
                     ? ObsidianTheme.rose.withValues(alpha: 0.3)
-                    : Colors.white.withValues(alpha: 0.06),
+                    : c.border,
             width: 1,
           ),
           boxShadow: _state == _VaultState.success
               ? [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.25), blurRadius: 20)]
               : _state == _VaultState.prompting
-                  ? [BoxShadow(color: Colors.white.withValues(alpha: 0.05), blurRadius: 16)]
+                  ? [BoxShadow(color: c.border, blurRadius: 16)]
                   : null,
         ),
         child: AnimatedSwitcher(
@@ -536,7 +540,7 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
             },
             child: Text(
               'Enter PIN Instead',
-              style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted, fontWeight: FontWeight.w500),
+              style: GoogleFonts.inter(fontSize: 13, color: c.textMuted, fontWeight: FontWeight.w500),
             ),
           ).animate().fadeIn(duration: 300.ms),
         ],
@@ -547,6 +551,7 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
   // ── Try Again Button ───────────────────────────────────
 
   Widget _buildRetryButton() {
+    final c = context.iColors;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -558,7 +563,7 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-          color: Colors.white.withValues(alpha: 0.03),
+          color: c.hoverBg,
         ),
         child: Text(
           'Try Again',
@@ -571,13 +576,14 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
   // ── Logout Escape Hatch ────────────────────────────────
 
   Widget _buildLogoutEscape() {
+    final c = context.iColors;
     return GestureDetector(
       onTap: _logout,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
         child: Text(
           'Log out instead',
-          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted),
+          style: GoogleFonts.inter(fontSize: 13, color: c.textMuted),
         ),
       ),
     );
@@ -586,6 +592,7 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
   // ── PIN Pad ────────────────────────────────────────────
 
   Widget _buildPinPad() {
+    final c = context.iColors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -609,9 +616,9 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
                 height: filled ? 14 : 12,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: filled ? ObsidianTheme.emerald : Colors.transparent,
+                    color: filled ? ObsidianTheme.emerald : Colors.transparent,
                   border: Border.all(
-                    color: filled ? ObsidianTheme.emerald : Colors.white.withValues(alpha: 0.15),
+                    color: filled ? ObsidianTheme.emerald : c.borderHover,
                     width: 1.5,
                   ),
                   boxShadow: filled
@@ -652,6 +659,7 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
   }
 
   Widget _buildPinRow(List<String> keys) {
+    final c = context.iColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: keys.map((key) {
@@ -668,7 +676,7 @@ class _VaultLockOverlayState extends State<_VaultLockOverlay>
         if (key == 'del') {
           return _PinKey(
             onTap: _onPinDelete,
-            child: const Icon(CupertinoIcons.delete_left, size: 20, color: ObsidianTheme.textSecondary),
+            child: Icon(CupertinoIcons.delete_left, size: 20, color: c.textSecondary),
           );
         }
         return _PinKey(
@@ -701,6 +709,7 @@ class _PinKeyState extends State<_PinKey> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -714,9 +723,9 @@ class _PinKeyState extends State<_PinKey> {
         height: 72,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: _pressed ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.03),
+          color: _pressed ? c.borderMedium : c.hoverBg,
           border: Border.all(
-            color: _pressed ? Colors.white.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.06),
+            color: _pressed ? c.borderHover : c.border,
           ),
         ),
         child: Center(child: widget.child),

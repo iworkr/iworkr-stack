@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/scout_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/models/site_scan.dart';
 
 /// Scout Results — Site Health Dashboard with circular gauge,
@@ -23,7 +24,7 @@ class ScoutResultsScreen extends ConsumerStatefulWidget {
 
 class _ScoutResultsScreenState extends ConsumerState<ScoutResultsScreen>
     with TickerProviderStateMixin {
-  int _tabIndex = 0; // 0=Health, 1=Detections, 2=Opportunities
+  int _tabIndex = 0;
   late AnimationController _gaugeAnim;
 
   @override
@@ -41,8 +42,9 @@ class _ScoutResultsScreenState extends ConsumerState<ScoutResultsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: ObsidianTheme.void_,
+      backgroundColor: c.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -65,6 +67,7 @@ class _ScoutResultsScreenState extends ConsumerState<ScoutResultsScreen>
   }
 
   Widget _buildHeader() {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
@@ -74,10 +77,10 @@ class _ScoutResultsScreenState extends ConsumerState<ScoutResultsScreen>
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: c.border,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(PhosphorIconsLight.arrowLeft, color: Colors.white70, size: 20),
+              child: Icon(PhosphorIconsLight.arrowLeft, color: c.textSecondary, size: 20),
             ),
           ),
           const SizedBox(width: 14),
@@ -87,7 +90,7 @@ class _ScoutResultsScreenState extends ConsumerState<ScoutResultsScreen>
               Text(
                 'SITE REPORT',
                 style: GoogleFonts.jetBrainsMono(
-                  color: Colors.white,
+                  color: c.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.5,
@@ -95,7 +98,7 @@ class _ScoutResultsScreenState extends ConsumerState<ScoutResultsScreen>
               ),
               Text(
                 'Scout Analysis Results',
-                style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+                style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
               ),
             ],
           ),
@@ -108,11 +111,12 @@ class _ScoutResultsScreenState extends ConsumerState<ScoutResultsScreen>
   }
 
   Widget _buildTabs() {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
       ),
       child: Row(
         children: [
@@ -135,6 +139,7 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -146,13 +151,13 @@ class _Tab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: active ? Colors.white.withValues(alpha: 0.06) : Colors.transparent,
+            color: active ? c.activeBg : Colors.transparent,
           ),
           child: Center(
             child: Text(
               label,
               style: GoogleFonts.jetBrainsMono(
-                color: active ? Colors.white : ObsidianTheme.textTertiary,
+                color: active ? c.textPrimary : c.textTertiary,
                 fontSize: 9,
                 fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                 letterSpacing: 1,
@@ -173,10 +178,11 @@ class _HealthTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final healthAsync = ref.watch(scanHealthProvider(scanId));
 
     return healthAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: ObsidianTheme.gold, strokeWidth: 2),
       ),
       error: (_, __) => const SizedBox.shrink(),
@@ -185,7 +191,7 @@ class _HealthTab extends ConsumerWidget {
           return Center(
             child: Text(
               'No health data available',
-              style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 13),
+              style: GoogleFonts.inter(color: c.textTertiary, fontSize: 13),
             ),
           );
         }
@@ -193,7 +199,6 @@ class _HealthTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           children: [
-            // Circular gauge
             Center(
               child: SizedBox(
                 width: 200,
@@ -206,6 +211,8 @@ class _HealthTab extends ConsumerWidget {
                         score: score.overallScore,
                         grade: score.grade,
                         progress: gaugeAnim.value,
+                        bgArcColor: c.border,
+                        scoreTextColor: c.textPrimary,
                       ),
                     );
                   },
@@ -218,17 +225,15 @@ class _HealthTab extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // Breakdown scores
             _ScoreBar(label: 'SAFETY', score: score.safetyScore, color: _scoreColor(score.safetyScore), delay: 400),
             _ScoreBar(label: 'EFFICIENCY', score: score.efficiencyScore, color: _scoreColor(score.efficiencyScore), delay: 500),
             _ScoreBar(label: 'COMPLIANCE', score: score.complianceScore, color: _scoreColor(score.complianceScore), delay: 600),
 
             const SizedBox(height: 24),
 
-            // Summary stats
             Row(
               children: [
-                _SummaryChip(label: 'DETECTIONS', value: '${score.totalDetections}', color: ObsidianTheme.textSecondary),
+                _SummaryChip(label: 'DETECTIONS', value: '${score.totalDetections}', color: c.textSecondary),
                 const SizedBox(width: 8),
                 _SummaryChip(label: 'CRITICAL', value: '${score.criticalCount}', color: ObsidianTheme.rose),
                 const SizedBox(width: 8),
@@ -259,6 +264,7 @@ class _ScoreBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -268,7 +274,7 @@ class _ScoreBar extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 9, letterSpacing: 1.5),
+                style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 9, letterSpacing: 1.5),
               ),
               const Spacer(),
               Text(
@@ -284,7 +290,7 @@ class _ScoreBar extends StatelessWidget {
               height: 6,
               child: LinearProgressIndicator(
                 value: score / 100,
-                backgroundColor: Colors.white.withValues(alpha: 0.06),
+                backgroundColor: c.border,
                 valueColor: AlwaysStoppedAnimation(color),
               ),
             ),
@@ -306,6 +312,7 @@ class _SummaryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -318,7 +325,7 @@ class _SummaryChip extends StatelessWidget {
           children: [
             Text(value, style: GoogleFonts.jetBrainsMono(color: color, fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 2),
-            Text(label, style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 7, letterSpacing: 1)),
+            Text(label, style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 7, letterSpacing: 1)),
           ],
         ),
       ),
@@ -333,15 +340,16 @@ class _DetectionsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final detsAsync = ref.watch(scanDetectionsProvider(scanId));
 
     return detsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: ObsidianTheme.gold, strokeWidth: 2)),
+      loading: () => Center(child: CircularProgressIndicator(color: ObsidianTheme.gold, strokeWidth: 2)),
       error: (_, __) => const SizedBox.shrink(),
       data: (detections) {
         if (detections.isEmpty) {
           return Center(
-            child: Text('No detections', style: GoogleFonts.inter(color: ObsidianTheme.textTertiary)),
+            child: Text('No detections', style: GoogleFonts.inter(color: c.textTertiary)),
           );
         }
 
@@ -371,17 +379,17 @@ class _DetectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
         border: Border.all(color: _typeColor.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [
-          // Type indicator
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
@@ -402,7 +410,7 @@ class _DetectionCard extends StatelessWidget {
               children: [
                 Text(
                   detection.label,
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 3),
                 Row(
@@ -421,15 +429,15 @@ class _DetectionCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       detection.confidenceLabel,
-                      style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 10),
+                      style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 10),
                     ),
                     if (detection.make != null) ...[
                       const SizedBox(width: 6),
-                      Text(detection.make!, style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 10)),
+                      Text(detection.make!, style: GoogleFonts.inter(color: c.textTertiary, fontSize: 10)),
                     ],
                     if (detection.estimatedAgeYears != null) ...[
                       const SizedBox(width: 6),
-                      Text('${detection.estimatedAgeYears}yo', style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 10)),
+                      Text('${detection.estimatedAgeYears}yo', style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 10)),
                     ],
                   ],
                 ),
@@ -457,10 +465,11 @@ class _OpportunitiesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final oppsAsync = ref.watch(scanOpportunitiesProvider(scanId));
 
     return oppsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: ObsidianTheme.gold, strokeWidth: 2)),
+      loading: () => Center(child: CircularProgressIndicator(color: ObsidianTheme.gold, strokeWidth: 2)),
       error: (_, __) => const SizedBox.shrink(),
       data: (opportunities) {
         if (opportunities.isEmpty) {
@@ -470,7 +479,7 @@ class _OpportunitiesTab extends ConsumerWidget {
               children: [
                 Icon(PhosphorIconsLight.currencyDollar, color: ObsidianTheme.gold.withValues(alpha: 0.4), size: 32),
                 const SizedBox(height: 12),
-                Text('No opportunities found', style: GoogleFonts.inter(color: ObsidianTheme.textSecondary, fontSize: 14)),
+                Text('No opportunities found', style: GoogleFonts.inter(color: c.textSecondary, fontSize: 14)),
               ],
             ),
           );
@@ -481,7 +490,6 @@ class _OpportunitiesTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           children: [
-            // Revenue hero
             Container(
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.only(bottom: 16),
@@ -509,8 +517,8 @@ class _OpportunitiesTab extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('${opportunities.length}', style: GoogleFonts.jetBrainsMono(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
-                      Text('ITEMS', style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.textTertiary, fontSize: 8, letterSpacing: 1)),
+                      Text('${opportunities.length}', style: GoogleFonts.jetBrainsMono(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.w600)),
+                      Text('ITEMS', style: GoogleFonts.jetBrainsMono(color: c.textTertiary, fontSize: 8, letterSpacing: 1)),
                     ],
                   ),
                 ],
@@ -520,7 +528,6 @@ class _OpportunitiesTab extends ConsumerWidget {
                 .fadeIn(duration: 400.ms)
                 .scaleXY(begin: 0.97, duration: 400.ms, curve: Curves.easeOutCubic),
 
-            // Opportunity cards
             ...opportunities.asMap().entries.map((e) {
               return _OpportunityCard(opportunity: e.value, index: e.key, ref: ref);
             }),
@@ -539,6 +546,7 @@ class _OpportunityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final isAccepted = opportunity.isAccepted;
 
     return Container(
@@ -546,11 +554,11 @@ class _OpportunityCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.03),
+        color: c.hoverBg,
         border: Border.all(
           color: isAccepted
               ? ObsidianTheme.emerald.withValues(alpha: 0.15)
-              : (opportunity.isCritical ? ObsidianTheme.rose.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.06)),
+              : (opportunity.isCritical ? ObsidianTheme.rose.withValues(alpha: 0.15) : c.border),
         ),
       ),
       child: Column(
@@ -561,7 +569,7 @@ class _OpportunityCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   opportunity.title,
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                 ),
               ),
               Text(
@@ -572,7 +580,7 @@ class _OpportunityCard extends StatelessWidget {
           ),
           if (opportunity.description != null) ...[
             const SizedBox(height: 4),
-            Text(opportunity.description!, style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12)),
+            Text(opportunity.description!, style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12)),
           ],
           const SizedBox(height: 10),
           Row(
@@ -639,34 +647,39 @@ class _HealthGaugePainter extends CustomPainter {
   final int score;
   final String grade;
   final double progress;
+  final Color bgArcColor;
+  final Color scoreTextColor;
 
-  _HealthGaugePainter({required this.score, required this.grade, required this.progress});
+  _HealthGaugePainter({
+    required this.score,
+    required this.grade,
+    required this.progress,
+    required this.bgArcColor,
+    required this.scoreTextColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 12;
 
-    // Background arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       math.pi * 0.75,
       math.pi * 1.5,
       false,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.06)
+        ..color = bgArcColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8
         ..strokeCap = StrokeCap.round,
     );
 
-    // Score arc (animated)
     final scoreAngle = (score / 100) * math.pi * 1.5 * progress;
     final color = score >= 80
         ? ObsidianTheme.emerald
         : (score >= 60 ? ObsidianTheme.amber : ObsidianTheme.rose);
 
-    // Glow arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       math.pi * 0.75,
@@ -679,7 +692,6 @@ class _HealthGaugePainter extends CustomPainter {
         ..strokeCap = StrokeCap.round,
     );
 
-    // Main arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       math.pi * 0.75,
@@ -692,13 +704,12 @@ class _HealthGaugePainter extends CustomPainter {
         ..strokeCap = StrokeCap.round,
     );
 
-    // Score text
     final displayScore = (score * progress).round();
     final scoreTp = TextPainter(
       text: TextSpan(
         text: '$displayScore',
         style: TextStyle(
-          color: Colors.white,
+          color: scoreTextColor,
           fontSize: 42,
           fontWeight: FontWeight.w700,
           fontFamily: 'JetBrains Mono',
@@ -708,7 +719,6 @@ class _HealthGaugePainter extends CustomPainter {
     )..layout();
     scoreTp.paint(canvas, Offset(center.dx - scoreTp.width / 2, center.dy - scoreTp.height / 2 - 6));
 
-    // Grade text
     final gradeTp = TextPainter(
       text: TextSpan(
         text: 'Grade $grade',

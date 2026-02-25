@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/route_run.dart';
 
@@ -320,6 +321,7 @@ class _DarkMatterPainter extends CustomPainter {
 class _EmptyMapState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -334,13 +336,13 @@ class _EmptyMapState extends StatelessWidget {
             ),
             child: const Icon(PhosphorIconsLight.mapTrifold, color: ObsidianTheme.emerald, size: 28),
           )
-              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
               .scaleXY(begin: 1.0, end: 1.06, duration: 2500.ms),
           const SizedBox(height: 16),
           Text(
             'No waypoints plotted',
             style: GoogleFonts.inter(
-              color: ObsidianTheme.textSecondary,
+              color: c.textSecondary,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -348,7 +350,7 @@ class _EmptyMapState extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Optimize a route to see the flight path',
-            style: GoogleFonts.inter(color: ObsidianTheme.textTertiary, fontSize: 12),
+            style: GoogleFonts.inter(color: c.textTertiary, fontSize: 12),
           ),
         ],
       ),

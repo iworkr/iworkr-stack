@@ -299,6 +299,7 @@ struct RevenueMediumView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(16)
             .background(Color.vantablack)
+            .widgetURL(URL(string: "iworkr://finance/dashboard"))
         } else if let data = entry.data, data.isLoggedIn {
             emptyState("Revenue data unavailable")
         } else {
@@ -361,6 +362,7 @@ struct ScheduleMediumView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(16)
             .background(Color.vantablack)
+            .widgetURL(URL(string: "iworkr://widget/dashboard"))
         } else {
             loggedOutState()
         }
@@ -404,6 +406,7 @@ private func emptyState(_ message: String) -> some View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .padding(14)
     .background(Color.vantablack)
+    .widgetURL(URL(string: "iworkr://widget/dashboard"))
 }
 
 private func loggedOutState() -> some View {
@@ -419,6 +422,7 @@ private func loggedOutState() -> some View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .padding(14)
     .background(Color.vantablack)
+    .widgetURL(URL(string: "iworkr://auth/login"))
 }
 
 // MARK: - Widget Configurations

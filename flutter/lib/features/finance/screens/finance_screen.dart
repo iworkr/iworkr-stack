@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/invoice_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
@@ -12,10 +13,13 @@ import 'package:iworkr_mobile/models/invoice.dart';
 import 'package:iworkr_mobile/features/finance/screens/invoice_detail_screen.dart';
 
 class FinanceScreen extends ConsumerWidget {
-  const FinanceScreen({super.key});
+  const FinanceScreen({super.key, this.invoiceId});
+
+  final String? invoiceId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
     final invoicesAsync = ref.watch(invoicesProvider);
 
     return Scaffold(
@@ -38,18 +42,18 @@ class FinanceScreen extends ConsumerWidget {
                       height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: ObsidianTheme.hoverBg,
-                        border: Border.all(color: ObsidianTheme.border),
+                        color: c.hoverBg,
+                        border: Border.all(color: c.border),
                       ),
-                      child: const Center(
-                        child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: ObsidianTheme.textSecondary),
+                      child: Center(
+                        child: Icon(PhosphorIconsLight.arrowLeft, size: 16, color: c.textSecondary),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'Finance',
-                    style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, color: ObsidianTheme.textPrimary, letterSpacing: -0.5),
+                    style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.5),
                   ),
                   const Spacer(),
                   // Create invoice button
@@ -59,14 +63,14 @@ class FinanceScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        border: Border.all(color: ObsidianTheme.borderMedium),
-                        color: ObsidianTheme.hoverBg,
+                        border: Border.all(color: c.borderMedium),
+                        color: c.hoverBg,
                       ),
                       child: Row(
                         children: [
-                          const Icon(PhosphorIconsLight.plus, size: 14, color: ObsidianTheme.textSecondary),
+                          Icon(PhosphorIconsLight.plus, size: 14, color: c.textSecondary),
                           const SizedBox(width: 6),
-                          Text('Invoice', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: ObsidianTheme.textPrimary)),
+                          Text('Invoice', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary)),
                         ],
                       ),
                     ),
@@ -98,14 +102,14 @@ class FinanceScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
                     children: [
                       // ── Hero Revenue Card ────────────
-                      _buildRevenueCard(totalRevenue, outstanding, overdueCount),
+                      _buildRevenueCard(totalRevenue, outstanding, overdueCount, c),
 
                       const SizedBox(height: 24),
 
                       // ── Invoice List ─────────────────
                       Text(
                         'INVOICES',
-                        style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+                        style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
                       ),
                       const SizedBox(height: 10),
 
@@ -116,7 +120,7 @@ class FinanceScreen extends ConsumerWidget {
                   );
                 },
                 loading: () => Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 1.5, color: ObsidianTheme.emerald))),
-                error: (_, __) => const Center(child: Text('Error loading invoices', style: TextStyle(color: ObsidianTheme.textTertiary))),
+                error: (_, __) => Center(child: Text('Error loading invoices', style: TextStyle(color: c.textTertiary))),
               ),
             ),
           ],
@@ -125,25 +129,25 @@ class FinanceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRevenueCard(double revenue, double outstanding, int overdue) {
+  Widget _buildRevenueCard(double revenue, double outstanding, int overdue, IWorkrColors c) {
     return GlassCard(
       padding: const EdgeInsets.all(20),
       borderRadius: ObsidianTheme.radiusLg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('REVENUE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5)),
+          Text('REVENUE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
           const SizedBox(height: 8),
           Text(
             _formatCurrency(revenue),
-            style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -1.5),
+            style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -1.5),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               _MetricChip(label: 'Outstanding', value: _formatCurrency(outstanding), color: ObsidianTheme.amber),
               const SizedBox(width: 8),
-              _MetricChip(label: 'Overdue', value: '$overdue', color: overdue > 0 ? ObsidianTheme.rose : ObsidianTheme.textTertiary),
+              _MetricChip(label: 'Overdue', value: '$overdue', color: overdue > 0 ? ObsidianTheme.rose : c.textTertiary),
             ],
           ),
         ],
@@ -165,6 +169,7 @@ class _MetricChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -175,7 +180,7 @@ class _MetricChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textTertiary)),
+          Text(label, style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary)),
           const SizedBox(width: 6),
           Text(value, style: GoogleFonts.jetBrainsMono(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
         ],
@@ -189,18 +194,20 @@ class _InvoiceRow extends StatelessWidget {
   final int index;
   const _InvoiceRow({required this.invoice, required this.index});
 
-  Color get _statusColor {
+  Color _statusColor(IWorkrColors c) {
     switch (invoice.status) {
       case 'paid': return ObsidianTheme.emerald;
       case 'overdue': return ObsidianTheme.rose;
       case 'sent': return ObsidianTheme.blue;
-      case 'draft': return ObsidianTheme.textTertiary;
-      default: return ObsidianTheme.textTertiary;
+      case 'draft': return c.textTertiary;
+      default: return c.textTertiary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
+    final sc = _statusColor(c);
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -208,40 +215,36 @@ class _InvoiceRow extends StatelessWidget {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: c.border)),
         ),
         child: Row(
           children: [
-            // Status dot
             Container(
               width: 6, height: 6,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: _statusColor),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: sc),
             ),
             const SizedBox(width: 12),
 
-            // ID
             SizedBox(
               width: 64,
               child: Text(
                 invoice.displayId ?? 'INV',
-                style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary),
+                style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textTertiary),
               ),
             ),
 
-            // Client
             Expanded(
               child: Text(
                 invoice.clientName ?? 'No Client',
-                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white),
+                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary),
                 maxLines: 1, overflow: TextOverflow.ellipsis,
               ),
             ),
 
-            // Amount
             Text(
               _formatAmount(invoice.total),
-              style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+              style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary),
             ),
           ],
         ),
