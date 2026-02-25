@@ -1,17 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY not configured");
+  return new Stripe(key, {
     apiVersion: "2026-01-28.clover" as Stripe.LatestApiVersion,
   });
 }
 
 /**
- * Creates a PaymentIntent on behalf of a connected Stripe account.
- * Used by both the public invoice page and the mobile Tap-to-Pay flow.
+ * Creates a PaymentIntent for invoice payments.
+ * Supports both Stripe Connect (connected accounts) and direct charges.
+ * Public endpoint — uses anon key since callers may not be authenticated.
  */
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -26,7 +29,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing orgId or amountCents" }, { status: 400 });
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
 
   const { data: org } = await (supabase as any)
     .from("organizations")
@@ -38,40 +45,72 @@ export async function POST(req: NextRequest) {
   const stripeAccountId = settings.stripe_account_id as string | undefined;
   const chargesEnabled = settings.charges_enabled as boolean | undefined;
 
-  if (!stripeAccountId || !chargesEnabled) {
-    return NextResponse.json({ error: "Payments not enabled for this workspace" }, { status: 400 });
+  let stripe: Stripe;
+  try {
+    stripe = getStripe();
+  } catch (e: any) {
+    console.error("[payment-intent]", e.message);
+    return NextResponse.json({ error: "Payment processing not configured" }, { status: 500 });
   }
 
-  const stripe = getStripe();
-  const feePercent = parseFloat((settings.platform_fee_percent as string) || "0") || 1.0;
-  const applicationFee = Math.round(amountCents * (feePercent / 100));
+  const cur = currency || "aud";
 
-  const paymentIntent = await stripe.paymentIntents.create(
-    {
-      amount: amountCents,
-      currency: currency || "usd",
-      application_fee_amount: applicationFee,
-      metadata: {
-        organization_id: orgId,
-        invoice_id: invoiceId || "",
+  if (stripeAccountId && chargesEnabled) {
+    const feePercent = parseFloat((settings.platform_fee_percent as string) || "0") || 1.0;
+    const applicationFee = Math.round(amountCents * (feePercent / 100));
+
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: amountCents,
+        currency: cur,
+        application_fee_amount: applicationFee,
+        metadata: {
+          organization_id: orgId,
+          invoice_id: invoiceId || "",
+        },
       },
+      { stripeAccount: stripeAccountId }
+    );
+
+    await (supabase as any).from("payments").insert({
+      organization_id: orgId,
+      invoice_id: invoiceId || null,
+      stripe_payment_intent_id: paymentIntent.id,
+      amount_cents: amountCents,
+      currency: cur,
+      platform_fee_cents: applicationFee,
+      status: "pending",
+    }).then(() => {}).catch(() => {});
+
+    return NextResponse.json({
+      clientSecret: paymentIntent.client_secret,
+      stripeAccountId,
+      paymentIntentId: paymentIntent.id,
+    });
+  }
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amountCents,
+    currency: cur,
+    metadata: {
+      organization_id: orgId,
+      invoice_id: invoiceId || "",
     },
-    { stripeAccount: stripeAccountId }
-  );
+  });
 
   await (supabase as any).from("payments").insert({
     organization_id: orgId,
     invoice_id: invoiceId || null,
     stripe_payment_intent_id: paymentIntent.id,
     amount_cents: amountCents,
-    currency: currency || "usd",
-    platform_fee_cents: applicationFee,
+    currency: cur,
+    platform_fee_cents: 0,
     status: "pending",
-  });
+  }).then(() => {}).catch(() => {});
 
   return NextResponse.json({
     clientSecret: paymentIntent.client_secret,
-    stripeAccountId,
+    stripeAccountId: "",
     paymentIntentId: paymentIntent.id,
   });
 }

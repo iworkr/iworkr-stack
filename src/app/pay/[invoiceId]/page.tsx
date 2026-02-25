@@ -214,7 +214,7 @@ function PaymentSection({ invoice }: { invoice: InvoiceData }) {
     );
   }
 
-  if (!clientSecret || !stripeAccountId) {
+  if (!clientSecret) {
     return (
       <div className="text-center py-8">
         <p className="text-sm text-rose-400">Unable to initialize payment. Please try again later.</p>
@@ -222,9 +222,10 @@ function PaymentSection({ invoice }: { invoice: InvoiceData }) {
     );
   }
 
-  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
-    stripeAccount: stripeAccountId,
-  });
+  const stripePromise = loadStripe(
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+    stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
+  );
 
   return (
     <Elements
