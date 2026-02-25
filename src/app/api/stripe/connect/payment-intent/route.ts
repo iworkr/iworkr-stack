@@ -6,9 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY not configured");
-  return new Stripe(key, {
-    apiVersion: "2026-01-28.clover" as Stripe.LatestApiVersion,
-  });
+  return new Stripe(key);
 }
 
 /**
@@ -55,22 +53,50 @@ export async function POST(req: NextRequest) {
 
   const cur = currency || "aud";
 
-  if (stripeAccountId && chargesEnabled) {
-    const feePercent = parseFloat((settings.platform_fee_percent as string) || "0") || 1.0;
-    const applicationFee = Math.round(amountCents * (feePercent / 100));
+  try {
+    if (stripeAccountId && chargesEnabled) {
+      const feePercent = parseFloat((settings.platform_fee_percent as string) || "0") || 1.0;
+      const applicationFee = Math.round(amountCents * (feePercent / 100));
 
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: amountCents,
-        currency: cur,
-        application_fee_amount: applicationFee,
-        metadata: {
-          organization_id: orgId,
-          invoice_id: invoiceId || "",
+      const paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: amountCents,
+          currency: cur,
+          application_fee_amount: applicationFee,
+          metadata: {
+            organization_id: orgId,
+            invoice_id: invoiceId || "",
+          },
         },
+        { stripeAccount: stripeAccountId }
+      );
+
+      await (supabase as any).from("payments").insert({
+        organization_id: orgId,
+        invoice_id: invoiceId || null,
+        stripe_payment_intent_id: paymentIntent.id,
+        amount_cents: amountCents,
+        currency: cur,
+        platform_fee_cents: applicationFee,
+        status: "pending",
+      }).then(() => {}).catch(() => {});
+
+      return NextResponse.json({
+        clientSecret: paymentIntent.client_secret,
+        stripeAccountId,
+        paymentIntentId: paymentIntent.id,
+      });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountCents,
+      currency: cur,
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        organization_id: orgId,
+        invoice_id: invoiceId || "",
       },
-      { stripeAccount: stripeAccountId }
-    );
+    });
 
     await (supabase as any).from("payments").insert({
       organization_id: orgId,
@@ -78,39 +104,20 @@ export async function POST(req: NextRequest) {
       stripe_payment_intent_id: paymentIntent.id,
       amount_cents: amountCents,
       currency: cur,
-      platform_fee_cents: applicationFee,
+      platform_fee_cents: 0,
       status: "pending",
     }).then(() => {}).catch(() => {});
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
-      stripeAccountId,
+      stripeAccountId: "",
       paymentIntentId: paymentIntent.id,
     });
+  } catch (e: any) {
+    console.error("[payment-intent] Stripe error:", e.message || e);
+    return NextResponse.json(
+      { error: e.message || "Failed to create payment" },
+      { status: 500 }
+    );
   }
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amountCents,
-    currency: cur,
-    metadata: {
-      organization_id: orgId,
-      invoice_id: invoiceId || "",
-    },
-  });
-
-  await (supabase as any).from("payments").insert({
-    organization_id: orgId,
-    invoice_id: invoiceId || null,
-    stripe_payment_intent_id: paymentIntent.id,
-    amount_cents: amountCents,
-    currency: cur,
-    platform_fee_cents: 0,
-    status: "pending",
-  }).then(() => {}).catch(() => {});
-
-  return NextResponse.json({
-    clientSecret: paymentIntent.client_secret,
-    stripeAccountId: "",
-    paymentIntentId: paymentIntent.id,
-  });
 }
