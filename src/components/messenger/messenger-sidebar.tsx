@@ -21,18 +21,16 @@ interface MessengerSidebarProps {
 }
 
 export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
-  const {
-    channels,
-    activeChannelId,
-    activeView,
-    setActiveChannel,
-    setActiveView,
-  } = useMessengerStore();
+  const channels = useMessengerStore((s) => s.channels);
+  const activeChannelId = useMessengerStore((s) => s.activeChannelId);
+  const activeView = useMessengerStore((s) => s.activeView);
+  const setActiveChannel = useMessengerStore((s) => s.setActiveChannel);
+  const setActiveView = useMessengerStore((s) => s.setActiveView);
   const [newMessageOpen, setNewMessageOpen] = useState(false);
   const unreadInbox = useInboxStore((s) =>
     (s.items ?? []).filter((i) => !i.read && !i.archived).length
   );
-  const members = useTeamStore((s) => s.members ?? []);
+  const members = useTeamStore((s) => s.members) ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);

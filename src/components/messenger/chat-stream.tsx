@@ -139,7 +139,9 @@ interface ChatStreamProps {
 }
 
 export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
-  const { messages: allMessages, messagesLoading, toggleReaction } = useMessengerStore();
+  const allMessages = useMessengerStore((s) => s.messages);
+  const messagesLoading = useMessengerStore((s) => s.messagesLoading);
+  const toggleReaction = useMessengerStore((s) => s.toggleReaction);
   const messages = allMessages[channel.id] || [];
   const bottomRef = useRef<HTMLDivElement>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);

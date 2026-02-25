@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, type CSSProperties } from "react";
+import { useRef, useCallback, useMemo, type CSSProperties } from "react";
 import { useLottie } from "lottie-react";
 
 export interface LottieIconInnerProps {
@@ -14,11 +14,6 @@ export interface LottieIconInnerProps {
   onComplete?: () => void;
 }
 
-/**
- * Client-only Lottie renderer using useLottie hook so the View always renders
- * without depending on the default Lottie component's interactivity layer.
- * Loaded via dynamic import with ssr: false from lottie-icon.tsx.
- */
 export function LottieIconInner({
   animationData,
   size = 24,
@@ -31,6 +26,8 @@ export function LottieIconInner({
 }: LottieIconInnerProps) {
   const lottieRef = useRef<any>(null);
 
+  const lottieStyle = useMemo(() => ({ width: size, height: size }), [size]);
+
   const { View } = useLottie(
     {
       animationData,
@@ -39,7 +36,7 @@ export function LottieIconInner({
       lottieRef,
       onComplete: onComplete ?? undefined,
     },
-    { width: size, height: size }
+    lottieStyle
   );
 
   const handleMouseEnter = useCallback(() => {

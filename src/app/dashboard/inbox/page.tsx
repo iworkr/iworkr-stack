@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Radio } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
@@ -79,30 +79,33 @@ function EmptyStateRadar() {
 }
 
 export default function InboxPage() {
-  const { user, profile, currentOrg } = useAuthStore();
-  const {
-    channels,
-    activeChannelId,
-    activeView,
-    channelsLoaded,
-    loadChannels,
-    addRealtimeMessage,
-  } = useMessengerStore();
+  const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
+  const currentOrg = useAuthStore((s) => s.currentOrg);
+
+  const channels = useMessengerStore((s) => s.channels);
+  const activeChannelId = useMessengerStore((s) => s.activeChannelId);
+  const activeView = useMessengerStore((s) => s.activeView);
+  const channelsLoaded = useMessengerStore((s) => s.channelsLoaded);
 
   const orgId = currentOrg?.id;
   const userId = user?.id;
 
   useEffect(() => {
     if (orgId && !channelsLoaded) {
-      loadChannels(orgId);
+      useMessengerStore.getState().loadChannels(orgId);
     }
-  }, [orgId, channelsLoaded, loadChannels]);
+  }, [orgId, channelsLoaded]);
+
+  const channelIdsRef = useRef<string[]>([]);
+  useEffect(() => {
+    channelIdsRef.current = channels.map((c) => c.id);
+  }, [channels]);
 
   useEffect(() => {
     if (!userId || channels.length === 0) return;
 
     const supabase = createClient();
-    const channelIds = channels.map((c) => c.id);
 
     const subscription = supabase
       .channel(`messenger:${userId}`)
@@ -124,7 +127,7 @@ export default function InboxPage() {
             )
               return;
             if (
-              !channelIds.includes(newMsg.channel_id) ||
+              !channelIdsRef.current.includes(newMsg.channel_id) ||
               newMsg.sender_id === userId
             )
               return;
@@ -134,7 +137,7 @@ export default function InboxPage() {
               .eq("id", newMsg.id)
               .single()
               .then(({ data }) => {
-                if (data) addRealtimeMessage(data as Message);
+                if (data) useMessengerStore.getState().addRealtimeMessage(data as Message);
               });
           } catch {
             // ignore malformed payloads
@@ -146,14 +149,15 @@ export default function InboxPage() {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [userId, channels, addRealtimeMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, channels.length]);
 
   const activeChannel = channels.find((c) => c.id === activeChannelId);
-  const userProfile = {
+  const userProfile = useMemo(() => ({
     id: userId || "",
     full_name: profile?.full_name || "You",
     avatar_url: profile?.avatar_url || null,
-  };
+  }), [userId, profile?.full_name, profile?.avatar_url]);
 
   // Avoid rendering messenger until we have a user (prevents undefined access downstream)
   if (!userId) {
