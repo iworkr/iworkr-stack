@@ -13,22 +13,10 @@ export async function GET(
 ) {
   const { invoiceId } = await params;
 
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  if (!supabaseUrl) {
-    console.error("[public-invoice] NEXT_PUBLIC_SUPABASE_URL is not set");
-    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-  }
-
-  const key = serviceKey || anonKey;
-  if (!key) {
-    console.error("[public-invoice] Neither SUPABASE_SERVICE_ROLE_KEY nor NEXT_PUBLIC_SUPABASE_ANON_KEY is set");
-    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-  }
-
-  const supabase = createClient(supabaseUrl, key, {
+  const supabase = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false },
   });
 
