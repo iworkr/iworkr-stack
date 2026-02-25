@@ -9,10 +9,12 @@ Complete steps to go live with Supabase + Polar.sh billing.
 Your Supabase project (`olqjuadvseoxpfjzlghb`) uses IPv6-only direct connections. Run the bundled migration through the **Supabase Dashboard SQL Editor**.
 
 1. Go to: **https://supabase.com/dashboard/project/olqjuadvseoxpfjzlghb/sql/new**
-2. Copy the contents of `supabase/migrations/BUNDLED_ALL_MIGRATIONS.sql`
+2. Copy the contents of `supabase/migrations/BUNDLED_ALL_MIGRATIONS.sql` (includes migrations 001–043).
 3. Paste and click **Run**
 
 This creates all core tables, enums, RLS policies, and helper functions.
+
+**If the live DB already has schema:** run only the new migration files (039–043) in order in the SQL Editor, or use `supabase link` + `supabase db push` if you use the Supabase CLI.
 
 ---
 
@@ -77,7 +79,12 @@ POLAR_WEBHOOK_SECRET=whsec_...your-webhook-secret
 
 ---
 
-## 6. Redeploy
+## 6. Migrations and seed (production)
+
+- **Migrations:** Run `supabase/migrations/BUNDLED_ALL_MIGRATIONS.sql` in the [SQL Editor](https://supabase.com/dashboard/project/olqjuadvseoxpfjzlghb/sql/new) (covers 001–043). If the DB already has schema, run only new files (039–043) or use `supabase db push` with the CLI.
+- **Seed:** After at least one org exists (from onboarding), run `supabase/seed/seed.sql` then `supabase/seed.sql` in the SQL Editor, or run `bash scripts/seed-demo-data.sh` (requires `SUPABASE_ACCESS_TOKEN` for `scripts/push-migrations-live.sh`).
+
+## 7. Redeploy
 
 After setting all environment variables in Vercel:
 
