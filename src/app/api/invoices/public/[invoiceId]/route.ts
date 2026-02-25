@@ -23,49 +23,81 @@ export async function GET(
     .from("invoices")
     .select(`
       id,
-      invoice_number,
+      display_id,
       client_name,
       client_email,
-      line_items,
       subtotal,
       tax_rate,
-      tax_amount,
+      tax,
       total,
-      currency,
       status,
       due_date,
+      notes,
+      payment_link,
       organization_id,
       organizations (
         name,
         logo_url,
         brand_color_hex
+      ),
+      invoice_line_items (
+        id,
+        description,
+        quantity,
+        unit_price,
+        sort_order
       )
     `)
     .eq("id", invoiceId)
+    .is("deleted_at", null)
     .single();
 
   if (error || !invoice) {
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
+  if (invoice.status === "sent") {
+    await (supabase as any)
+      .from("invoices")
+      .update({ status: "viewed" })
+      .eq("id", invoiceId)
+      .eq("status", "sent");
+
+    await (supabase as any)
+      .from("invoice_events")
+      .insert({
+        invoice_id: invoiceId,
+        type: "viewed",
+        text: "Client viewed invoice",
+      });
+  }
+
   const org = invoice.organizations as any;
+  const lineItems = ((invoice.invoice_line_items || []) as any[])
+    .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
 
   return NextResponse.json({
     id: invoice.id,
-    invoice_number: invoice.invoice_number,
+    invoice_number: invoice.display_id,
     organization_name: org?.name || "Business",
     organization_logo: org?.logo_url || null,
     brand_color: org?.brand_color_hex || "#10B981",
     client_name: invoice.client_name,
     client_email: invoice.client_email,
-    line_items: invoice.line_items || [],
+    line_items: lineItems.map((li: any) => ({
+      description: li.description,
+      quantity: li.quantity,
+      unit_price: li.unit_price,
+    })),
     subtotal: invoice.subtotal || 0,
     tax_rate: invoice.tax_rate || 0,
-    tax_amount: invoice.tax_amount || 0,
+    tax_amount: invoice.tax || 0,
     total: invoice.total || 0,
-    currency: invoice.currency || "usd",
+    currency: "aud",
     status: invoice.status,
     due_date: invoice.due_date,
     org_id: invoice.organization_id,
+    notes: invoice.notes,
+    payment_link: invoice.payment_link,
   });
 }

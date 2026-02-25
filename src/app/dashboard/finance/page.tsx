@@ -45,6 +45,7 @@ import { useOrg } from "@/lib/hooks/use-org";
 const statusConfig: Record<string, { label: string; dot: string; text: string; bg: string }> = {
   draft: { label: "Draft", dot: "bg-zinc-500", text: "text-zinc-400", bg: "bg-zinc-500/10" },
   sent: { label: "Sent", dot: "bg-sky-400", text: "text-sky-400", bg: "bg-sky-500/10" },
+  viewed: { label: "Viewed", dot: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-500/10" },
   paid: { label: "Paid", dot: "bg-emerald-400", text: "text-emerald-400", bg: "bg-emerald-500/10" },
   overdue: { label: "Overdue", dot: "bg-rose-400", text: "text-rose-400", bg: "bg-rose-500/10" },
   voided: { label: "Voided", dot: "bg-zinc-600", text: "text-zinc-600", bg: "bg-zinc-600/10" },
@@ -293,8 +294,9 @@ export default function FinancePage() {
     } else if (actionId === "send") {
       updateInvoiceStatusServer(inv.id, inv.dbId || inv.id, "sent");
       addToast(`${inv.id} sent to ${inv.clientEmail}`);
-    } else if (actionId === "copy" && inv.paymentLink) {
-      navigator.clipboard?.writeText(inv.paymentLink);
+    } else if (actionId === "copy") {
+      const payLink = inv.paymentLink || `https://iworkrapp.com/pay/${inv.dbId || inv.id}`;
+      navigator.clipboard?.writeText(payLink);
       addToast("Payment link copied");
     } else if (actionId === "void") {
       updateInvoiceStatusServer(inv.id, inv.dbId || inv.id, "voided");

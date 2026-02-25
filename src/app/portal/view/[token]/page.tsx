@@ -384,8 +384,7 @@ export default function PortalPage() {
           {!isQuote && !isPaid && doc.status !== "voided" && (
             <button
               onClick={() => {
-                // In production, this would redirect to a Polar checkout URL
-                window.location.href = `/portal/view/${token}?payment=success`;
+                window.location.href = `/pay/${doc.id}`;
               }}
               className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00E676] to-emerald-600 px-8 py-3 text-[14px] font-semibold text-black shadow-[0_0_30px_-5px_rgba(0,230,118,0.3)]"
             >

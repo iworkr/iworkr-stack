@@ -53,6 +53,7 @@ import { ForensicTimeline } from "@/components/finance/forensic-timeline";
 const statusConfig: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
   draft: { label: "Draft", dot: "bg-zinc-500", text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-600/30" },
   sent: { label: "Sent", dot: "bg-[#00E676]", text: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.3)]" },
+  viewed: { label: "Viewed", dot: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30" },
   paid: { label: "Paid", dot: "bg-emerald-400", text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30" },
   overdue: { label: "Overdue", dot: "bg-red-400", text: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30" },
   voided: { label: "Voided", dot: "bg-zinc-600", text: "text-zinc-600", bg: "bg-zinc-600/10", border: "border-zinc-700/30" },
@@ -145,8 +146,9 @@ export default function InvoiceDetailPage() {
   /* ── Context menu ───────────────────────────────────────── */
   function handleHeaderContextAction(actionId: string) {
     if (!invoice) return;
-    if (actionId === "copy_link" && invoice.paymentLink) {
-      navigator.clipboard?.writeText(invoice.paymentLink);
+    if (actionId === "copy_link") {
+      const payLink = invoice.paymentLink || `https://iworkrapp.com/pay/${invoice.dbId || invoice.id}`;
+      navigator.clipboard?.writeText(payLink);
       addToast("Payment link copied");
     } else if (actionId === "download") {
       downloadReactPdf(invoice.dbId || invoice.id).then(() => {
@@ -276,7 +278,7 @@ export default function InvoiceDetailPage() {
               </motion.button>
             )}
 
-            {(invoice.status === "sent" || invoice.status === "overdue") && (
+            {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
               <motion.button
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
@@ -579,26 +581,50 @@ export default function InvoiceDetailPage() {
             </div>
 
             {/* Payment Link */}
-            {invoice.paymentLink && (
+            {!isVoided && (
               <div className="mb-6">
                 <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
                   Payment Link
                 </h4>
-                <div className="flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
-                  <CreditCard size={12} className="shrink-0 text-zinc-600" />
-                  <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-500">
-                    {invoice.paymentLink}
-                  </span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(invoice.paymentLink!);
-                      addToast("Payment link copied");
-                    }}
-                    className="shrink-0 rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
-                  >
-                    <Copy size={11} />
-                  </button>
-                </div>
+                {(() => {
+                  const payLink = invoice.paymentLink || `https://iworkrapp.com/pay/${invoice.dbId || invoice.id}`;
+                  return (
+                    <>
+                      <div className="flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
+                        <CreditCard size={12} className="shrink-0 text-zinc-600" />
+                        <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-500">
+                          {payLink}
+                        </span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard?.writeText(payLink);
+                            addToast("Payment link copied");
+                          }}
+                          className="shrink-0 rounded-md p-1 text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+                        >
+                          <Copy size={11} />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(payLink);
+                          addToast("Payment link copied");
+                        }}
+                        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] py-2 text-[11px] font-medium text-zinc-400 transition-colors hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-400"
+                      >
+                        <Copy size={11} />
+                        Copy Payment Link
+                      </button>
+                      <button
+                        onClick={() => window.open(payLink, "_blank")}
+                        className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] text-zinc-600 transition-colors hover:text-zinc-400"
+                      >
+                        <ExternalLink size={11} />
+                        Open Payment Portal
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -634,7 +660,7 @@ export default function InvoiceDetailPage() {
                 </motion.button>
               )}
 
-              {(invoice.status === "sent" || invoice.status === "overdue") && (
+              {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleMarkPaid}

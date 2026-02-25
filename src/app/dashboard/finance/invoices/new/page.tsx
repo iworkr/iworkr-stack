@@ -12,6 +12,7 @@ import {
   CreditCard,
   ChevronDown,
   Check,
+  CheckCircle,
   GripVertical,
   Save,
   Eye,
@@ -20,6 +21,9 @@ import {
   Percent,
   DollarSign,
   Loader2,
+  Copy,
+  ExternalLink,
+  Link2,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useAuthStore } from "@/lib/auth-store";
@@ -128,6 +132,8 @@ export default function InvoiceBuilderPage() {
 
   const [saving, setSaving] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
+  const [savedInvoice, setSavedInvoice] = useState<{ displayId: string; invoiceId: string; paymentLink: string } | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   /* ── Auto-select client from query ──────────────────────── */
   useEffect(() => {
@@ -269,7 +275,15 @@ export default function InvoiceBuilderPage() {
             unit_price: li.rate,
           })),
         });
-        if (result.success) {
+        if (result.success && result.invoiceId) {
+          const payLink = `https://iworkrapp.com/pay/${result.invoiceId}`;
+          setSavedInvoice({
+            displayId: result.displayId || "Invoice",
+            invoiceId: result.invoiceId,
+            paymentLink: payLink,
+          });
+          addToast(mode === "send" ? "Invoice sent" : "Invoice saved as draft");
+        } else if (result.success) {
           addToast(mode === "send" ? "Invoice sent" : "Invoice saved as draft");
           router.push("/dashboard/finance");
         } else {
@@ -282,7 +296,85 @@ export default function InvoiceBuilderPage() {
     [isValid, saving, orgId, selectedClient, prefillJobId, issueDate, dueDate, taxRate, notes, lineItems, createInvoiceServer, addToast, router],
   );
 
+  function handleCopyLink() {
+    if (!savedInvoice) return;
+    navigator.clipboard?.writeText(savedInvoice.paymentLink);
+    setLinkCopied(true);
+    addToast("Payment link copied");
+    setTimeout(() => setLinkCopied(false), 2000);
+  }
+
   /* ── Render ─────────────────────────────────────────────── */
+
+  if (savedInvoice) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center bg-[#0a0a0a] px-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md text-center"
+        >
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <CheckCircle size={32} className="text-emerald-500" />
+          </div>
+          <h2 className="mb-1 text-xl font-semibold text-zinc-100">
+            {savedInvoice.displayId} Created
+          </h2>
+          <p className="mb-6 text-sm text-zinc-500">
+            Your invoice is ready. Share the payment link with your client.
+          </p>
+
+          <div className="mb-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+            <label className="mb-2 block text-left font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
+              Payment Link
+            </label>
+            <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-zinc-950 px-3 py-2.5">
+              <Link2 size={13} className="shrink-0 text-zinc-600" />
+              <span className="min-w-0 flex-1 truncate text-left text-[12px] text-zinc-400">
+                {savedInvoice.paymentLink}
+              </span>
+              <button
+                onClick={handleCopyLink}
+                className="shrink-0 rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
+              >
+                {linkCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+              </button>
+            </div>
+            <button
+              onClick={handleCopyLink}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-emerald-400"
+            >
+              <Copy size={13} />
+              {linkCopied ? "Copied!" : "Copy Payment Link"}
+            </button>
+            <button
+              onClick={() => window.open(savedInvoice.paymentLink, "_blank")}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.08] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+            >
+              <ExternalLink size={13} />
+              Preview Payment Portal
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(`/dashboard/finance/invoices/${savedInvoice.displayId}`)}
+              className="flex-1 rounded-lg border border-white/[0.06] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+            >
+              View Invoice
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/finance")}
+              className="flex-1 rounded-lg border border-white/[0.06] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+            >
+              Back to Finance
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#0a0a0a]">
       {/* ── Top Bar ─────────────────────────────────────────── */}

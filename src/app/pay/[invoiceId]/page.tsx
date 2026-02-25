@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { CheckCircle, AlertTriangle, Loader2, Lock } from "lucide-react";
+import { CheckCircle, AlertTriangle, Loader2, Lock, FileText, Download } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════
 // ── Public Invoice Payment — Obsidian Checkout ───────────
@@ -27,13 +27,17 @@ interface InvoiceData {
   status: string;
   due_date: string;
   org_id: string;
+  notes?: string | null;
 }
 
 export default function PayInvoicePage() {
   const { invoiceId } = useParams();
+  const searchParams = useSearchParams();
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const justPaid = searchParams.get("success") === "true";
 
   useEffect(() => {
     fetchInvoice();
@@ -80,15 +84,24 @@ export default function PayInvoicePage() {
     );
   }
 
-  if (invoice.status === "paid") {
+  if (invoice.status === "paid" || justPaid) {
     return (
-      <Shell>
+      <Shell brandColor={invoice.brand_color} logo={invoice.organization_logo} orgName={invoice.organization_name}>
         <div className="flex flex-col items-center gap-4 py-16">
           <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
             <CheckCircle className="w-8 h-8 text-emerald-500" />
           </div>
-          <h2 className="text-lg font-semibold text-white">Already Paid</h2>
-          <p className="text-sm text-zinc-500">This invoice has been paid. Thank you!</p>
+          <h2 className="text-lg font-semibold text-white">
+            {justPaid ? "Payment Successful" : "Already Paid"}
+          </h2>
+          <p className="text-sm text-zinc-500 text-center max-w-xs">
+            {justPaid
+              ? `Thank you for your payment of ${formatCurrency(invoice.total, invoice.currency)}. You will receive a confirmation email shortly.`
+              : "This invoice has been paid. Thank you!"}
+          </p>
+          <p className="text-[10px] font-mono text-zinc-700 mt-2">
+            {invoice.invoice_number}
+          </p>
         </div>
       </Shell>
     );
@@ -105,7 +118,9 @@ export default function PayInvoicePage() {
           <h1 className="text-2xl font-bold text-white tracking-tight">
             {formatCurrency(invoice.total, invoice.currency)}
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">Due {new Date(invoice.due_date).toLocaleDateString()}</p>
+          <p className="text-sm text-zinc-500 mt-1">
+            Due {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : "on receipt"}
+          </p>
         </div>
 
         {/* Line Items */}
@@ -141,6 +156,14 @@ export default function PayInvoicePage() {
             </div>
           </div>
         </div>
+
+        {/* Notes */}
+        {invoice.notes && (
+          <div className="bg-zinc-950 border border-white/5 rounded-xl p-4 mb-6">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-2">NOTES</p>
+            <p className="text-xs text-zinc-400 leading-relaxed">{invoice.notes}</p>
+          </div>
+        )}
 
         {/* Payment */}
         <PaymentSection invoice={invoice} />

@@ -16,7 +16,7 @@ export interface Invoice {
   client_name: string | null;
   client_email: string | null;
   client_address: string | null;
-  status: "draft" | "sent" | "paid" | "overdue" | "voided";
+  status: "draft" | "sent" | "viewed" | "paid" | "overdue" | "voided";
   issue_date: string | null;
   due_date: string | null;
   paid_date: string | null;
@@ -25,6 +25,7 @@ export interface Invoice {
   tax: number;
   total: number;
   payment_link: string | null;
+  secure_token: string | null;
   notes: string | null;
   metadata: Record<string, any> | null;
   created_by: string;
@@ -445,7 +446,7 @@ export async function updateInvoice(invoiceId: string, updates: UpdateInvoicePar
  */
 export async function updateInvoiceStatus(
   invoiceId: string,
-  newStatus: "draft" | "sent" | "paid" | "overdue" | "voided"
+  newStatus: "draft" | "sent" | "viewed" | "paid" | "overdue" | "voided"
 ) {
   try {
     const supabase = await createServerSupabaseClient() as any;
@@ -486,6 +487,7 @@ export async function updateInvoiceStatus(
     // Create event based on status change
     const eventType = newStatus === "paid" ? "paid" : 
                      newStatus === "sent" ? "sent" :
+                     newStatus === "viewed" ? "viewed" :
                      newStatus === "voided" ? "voided" : 
                      "created";
 
@@ -493,6 +495,8 @@ export async function updateInvoiceStatus(
       ? `Invoice ${currentInvoice.display_id} was marked as paid`
       : newStatus === "sent"
       ? `Invoice ${currentInvoice.display_id} was sent`
+      : newStatus === "viewed"
+      ? `Client viewed invoice ${currentInvoice.display_id}`
       : newStatus === "voided"
       ? `Invoice ${currentInvoice.display_id} was voided`
       : `Invoice ${currentInvoice.display_id} status changed to ${newStatus}`;

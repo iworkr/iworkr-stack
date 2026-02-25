@@ -526,7 +526,7 @@ export const scheduleBlocks: ScheduleBlock[] = [
 
 /* ── Finance ─────────────────────────────────────────── */
 
-export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "voided";
+export type InvoiceStatus = "draft" | "sent" | "viewed" | "paid" | "overdue" | "voided";
 
 export interface LineItem {
   id: string;
