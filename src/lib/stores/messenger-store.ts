@@ -101,9 +101,12 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
   sendingMessage: false,
 
   loadChannels: async (orgId: string) => {
-    const result = await getChannels(orgId);
-    if (result.data) {
-      set({ channels: result.data, channelsLoaded: true });
+    if (get().channelsLoaded) return;
+    try {
+      const result = await getChannels(orgId);
+      set({ channels: result.data ?? [], channelsLoaded: true });
+    } catch {
+      set({ channelsLoaded: true });
     }
   },
 

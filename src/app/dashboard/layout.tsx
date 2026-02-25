@@ -34,18 +34,16 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const {
-    sidebarCollapsed,
-    slideOverOpen,
-    toggleSidebar,
-    commandMenuOpen,
-    createJobModalOpen,
-    setCreateJobModalOpen,
-    createClientModalOpen,
-    setCreateClientModalOpen,
-    createInvoiceModalOpen,
-    setCreateInvoiceModalOpen,
-  } = useShellStore();
+  const sidebarCollapsed = useShellStore((s) => s.sidebarCollapsed);
+  const slideOverOpen = useShellStore((s) => s.slideOverOpen);
+  const toggleSidebar = useShellStore((s) => s.toggleSidebar);
+  const commandMenuOpen = useShellStore((s) => s.commandMenuOpen);
+  const createJobModalOpen = useShellStore((s) => s.createJobModalOpen);
+  const setCreateJobModalOpen = useShellStore((s) => s.setCreateJobModalOpen);
+  const createClientModalOpen = useShellStore((s) => s.createClientModalOpen);
+  const setCreateClientModalOpen = useShellStore((s) => s.setCreateClientModalOpen);
+  const createInvoiceModalOpen = useShellStore((s) => s.createInvoiceModalOpen);
+  const setCreateInvoiceModalOpen = useShellStore((s) => s.setCreateInvoiceModalOpen);
 
   const createModalOpen = createJobModalOpen;
   const setCreateModalOpen = setCreateJobModalOpen;
@@ -248,7 +246,7 @@ export default function DashboardLayout({
 }
 
 function PastDueBannerWrapper() {
-  const { currentOrg } = useAuthStore();
+  const currentOrg = useAuthStore((s) => s.currentOrg);
   if (!currentOrg?.id) return null;
   return <PastDueBanner orgId={currentOrg.id} />;
 }

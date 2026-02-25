@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
 import { useOrg } from "@/lib/hooks/use-org";
@@ -10,10 +10,17 @@ import { getDashboardSnapshot, loadDashboardLayout } from "@/app/actions/dashboa
 import type { DashboardSnapshot } from "@/lib/dashboard-store";
 import { motion } from "framer-motion";
 
-export default function DashboardPage() {
+function formatDate() {
   const now = new Date();
-  const dayName = now.toLocaleDateString("en-US", { weekday: "long" });
-  const monthDay = now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  return {
+    dayName: now.toLocaleDateString("en-US", { weekday: "long" }),
+    monthDay: now.toLocaleDateString("en-US", { month: "long", day: "numeric" }),
+  };
+}
+
+export default function DashboardPage() {
+  const [dateLabel, setDateLabel] = useState({ dayName: "", monthDay: "" });
+  useEffect(() => { setDateLabel(formatDate()); }, []);
 
   const { orgId } = useOrg();
   const jobsLoaded = useJobsStore((s) => s.loaded);
@@ -65,7 +72,7 @@ export default function DashboardPage() {
             Dashboard
           </h1>
           <p className="mt-0.5 text-[12px] text-zinc-600">
-            {dayName}, {monthDay}
+            {dateLabel.dayName}{dateLabel.dayName && `, ${dateLabel.monthDay}`}
             {activeJobCount !== null ? ` — ${activeJobCount} active job${activeJobCount !== 1 ? "s" : ""}` : ""}
           </p>
         </div>

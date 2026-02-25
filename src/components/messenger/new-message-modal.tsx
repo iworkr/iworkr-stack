@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Search, User } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useMessengerStore } from "@/lib/stores/messenger-store";
 import { useTeamStore } from "@/lib/team-store";
 
@@ -20,10 +20,13 @@ export function NewMessageModal({
   currentUserId,
 }: NewMessageModalProps) {
   const openDM = useMessengerStore((s) => s.openDM);
-  const members = useTeamStore((s) =>
-    (s.members ?? []).filter(
-      (m) => m.id !== currentUserId && (m.status === "active" || !m.status)
-    )
+  const allMembers = useTeamStore((s) => s.members);
+  const members = useMemo(
+    () =>
+      (allMembers ?? []).filter(
+        (m) => m.id !== currentUserId && (m.status === "active" || !m.status),
+      ),
+    [allMembers, currentUserId],
   );
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useCallback, useMemo, type CSSProperties } from "react";
-import { useLottie } from "lottie-react";
+import { useRef, useEffect, useCallback, memo, type CSSProperties } from "react";
+import lottie, { type AnimationItem } from "lottie-web";
 
 export interface LottieIconInnerProps {
   animationData: object;
@@ -14,7 +14,7 @@ export interface LottieIconInnerProps {
   onComplete?: () => void;
 }
 
-export function LottieIconInner({
+export const LottieIconInner = memo(function LottieIconInner({
   animationData,
   size = 24,
   loop = false,
@@ -24,33 +24,38 @@ export function LottieIconInner({
   style,
   onComplete,
 }: LottieIconInnerProps) {
-  const lottieRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animRef = useRef<AnimationItem | null>(null);
 
-  const lottieStyle = useMemo(() => ({ width: size, height: size }), [size]);
-
-  const lottieOptions = useMemo(
-    () => ({
+  useEffect(() => {
+    if (!containerRef.current) return;
+    animRef.current = lottie.loadAnimation({
+      container: containerRef.current,
       animationData,
+      renderer: "svg",
       loop,
       autoplay: playOnHover ? false : autoplay,
-      lottieRef,
-      onComplete: onComplete ?? undefined,
-    }),
-    // lottieRef is stable (useRef); animationData is a module-level constant
+    });
+    if (onComplete) {
+      animRef.current.addEventListener("complete", onComplete);
+    }
+    return () => {
+      animRef.current?.destroy();
+      animRef.current = null;
+    };
+    // animationData is a module-level constant; other deps are primitive
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [animationData, loop, autoplay, playOnHover, onComplete],
-  );
-
-  const { View } = useLottie(lottieOptions, lottieStyle);
+  }, [animationData, loop, autoplay, playOnHover]);
 
   const handleMouseEnter = useCallback(() => {
-    if (playOnHover && lottieRef.current) {
-      lottieRef.current.goToAndPlay(0);
+    if (playOnHover && animRef.current) {
+      animRef.current.goToAndPlay(0, true);
     }
   }, [playOnHover]);
 
   return (
     <div
+      ref={containerRef}
       className={`lottie-icon-wrapper ${className}`.trim()}
       style={{
         width: size,
@@ -61,8 +66,6 @@ export function LottieIconInner({
         ...style,
       }}
       onMouseEnter={handleMouseEnter}
-    >
-      {View}
-    </div>
+    />
   );
-}
+});

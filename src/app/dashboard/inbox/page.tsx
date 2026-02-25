@@ -86,16 +86,9 @@ export default function InboxPage() {
   const channels = useMessengerStore((s) => s.channels);
   const activeChannelId = useMessengerStore((s) => s.activeChannelId);
   const activeView = useMessengerStore((s) => s.activeView);
-  const channelsLoaded = useMessengerStore((s) => s.channelsLoaded);
 
   const orgId = currentOrg?.id;
   const userId = user?.id;
-
-  useEffect(() => {
-    if (orgId && !channelsLoaded) {
-      useMessengerStore.getState().loadChannels(orgId);
-    }
-  }, [orgId, channelsLoaded]);
 
   const channelIdsRef = useRef<string[]>([]);
   useEffect(() => {

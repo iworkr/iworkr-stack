@@ -217,7 +217,7 @@ interface PastDueBannerProps {
 }
 
 export function PastDueBanner({ orgId }: PastDueBannerProps) {
-  const { subscription } = useBillingStore();
+  const subscription = useBillingStore((s) => s.subscription);
   const [loading, setLoading] = useState(false);
 
   if (subscription?.status !== "past_due") return null;
