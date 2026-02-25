@@ -33,7 +33,8 @@ const slashCommands = [
 ];
 
 export function MessageInput({ channelId, userId, userProfile }: MessageInputProps) {
-  const { sendMessage, sendingMessage } = useMessengerStore();
+  const sendMessage = useMessengerStore((s) => s.sendMessage);
+  const sendingMessage = useMessengerStore((s) => s.sendingMessage);
   const [content, setContent] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);

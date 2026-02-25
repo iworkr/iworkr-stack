@@ -192,7 +192,7 @@ function NotificationsPopover({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { items } = useInboxStore();
+  const items = useInboxStore((s) => s.items);
   const unreadItems = items.filter((i) => !i.read && !i.archived).slice(0, 4);
   const unreadCount = items.filter((i) => !i.read && !i.archived).length;
 

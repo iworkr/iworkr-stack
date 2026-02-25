@@ -54,7 +54,9 @@ function ZenEmptyState() {
 
 export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
-  const { items, markAsRead, archive } = useInboxStore();
+  const items = useInboxStore((s) => s.items);
+  const markAsRead = useInboxStore((s) => s.markAsRead);
+  const archive = useInboxStore((s) => s.archive);
   const inboxLoaded = useInboxStore((s) => s.loaded);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 

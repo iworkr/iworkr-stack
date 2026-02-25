@@ -10,7 +10,7 @@ interface PollMessageProps {
 }
 
 export function PollMessage({ message, userId }: PollMessageProps) {
-  const { votePoll } = useMessengerStore();
+  const votePoll = useMessengerStore((s) => s.votePoll);
   const options: string[] = message.metadata?.options || [];
   const votes: Record<string, string[]> = message.metadata?.votes || {};
 

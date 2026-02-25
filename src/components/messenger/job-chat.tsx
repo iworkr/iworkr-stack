@@ -14,13 +14,13 @@ interface JobChatProps {
 }
 
 export function JobChat({ jobId, jobTitle }: JobChatProps) {
-  const { user, profile, currentOrg } = useAuthStore();
-  const {
-    messages: allMessages,
-    loadMessages,
-    sendMessage,
-    addRealtimeMessage,
-  } = useMessengerStore();
+  const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
+  const currentOrg = useAuthStore((s) => s.currentOrg);
+  const allMessages = useMessengerStore((s) => s.messages);
+  const loadMessages = useMessengerStore((s) => s.loadMessages);
+  const sendMessage = useMessengerStore((s) => s.sendMessage);
+  const addRealtimeMessage = useMessengerStore((s) => s.addRealtimeMessage);
   const [channelId, setChannelId] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);

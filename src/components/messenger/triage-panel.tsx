@@ -101,16 +101,14 @@ function TriageEmptyState({ tab }: { tab: InboxTab }) {
 
 export function TriagePanel() {
   const router = useRouter();
-  const {
-    items,
-    activeTab: tab,
-    setActiveTab: setTab,
-    markAsRead,
-    archive,
-    snooze,
-    selectedId,
-    setSelectedId,
-  } = useInboxStore();
+  const items = useInboxStore((s) => s.items);
+  const tab = useInboxStore((s) => s.activeTab);
+  const setTab = useInboxStore((s) => s.setActiveTab);
+  const markAsRead = useInboxStore((s) => s.markAsRead);
+  const archive = useInboxStore((s) => s.archive);
+  const snooze = useInboxStore((s) => s.snooze);
+  const selectedId = useInboxStore((s) => s.selectedId);
+  const setSelectedId = useInboxStore((s) => s.setSelectedId);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 

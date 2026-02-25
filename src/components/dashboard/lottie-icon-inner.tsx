@@ -28,16 +28,20 @@ export function LottieIconInner({
 
   const lottieStyle = useMemo(() => ({ width: size, height: size }), [size]);
 
-  const { View } = useLottie(
-    {
+  const lottieOptions = useMemo(
+    () => ({
       animationData,
       loop,
       autoplay: playOnHover ? false : autoplay,
       lottieRef,
       onComplete: onComplete ?? undefined,
-    },
-    lottieStyle
+    }),
+    // lottieRef is stable (useRef); animationData is a module-level constant
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [animationData, loop, autoplay, playOnHover, onComplete],
   );
+
+  const { View } = useLottie(lottieOptions, lottieStyle);
 
   const handleMouseEnter = useCallback(() => {
     if (playOnHover && lottieRef.current) {

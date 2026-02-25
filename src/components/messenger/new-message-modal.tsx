@@ -19,7 +19,7 @@ export function NewMessageModal({
   orgId,
   currentUserId,
 }: NewMessageModalProps) {
-  const { openDM } = useMessengerStore();
+  const openDM = useMessengerStore((s) => s.openDM);
   const members = useTeamStore((s) =>
     (s.members ?? []).filter(
       (m) => m.id !== currentUserId && (m.status === "active" || !m.status)
