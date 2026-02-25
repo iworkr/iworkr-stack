@@ -56,6 +56,7 @@ function mapServerJob(sj: any): Job {
     assignee: sj.assignee_name || sj.profiles?.full_name || "Unassigned",
     assigneeInitials: getInitials(sj.assignee_name || sj.profiles?.full_name || ""),
     client: sj.client_name || sj.clients?.name || "",
+    clientId: sj.client_id ?? undefined,
     due: sj.due_date ? formatRelativeDate(sj.due_date) : "",
     labels: sj.labels || [],
     created: formatRelativeDate(sj.created_at),

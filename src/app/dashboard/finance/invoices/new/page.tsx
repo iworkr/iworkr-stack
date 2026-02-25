@@ -651,18 +651,15 @@ export default function InvoiceBuilderPage() {
           </div>
           <div className="flex-1 overflow-auto p-4">
             {pdfReady && (
-              <PDFViewer
-                width="100%"
-                height="100%"
-                showToolbar={false}
-                style={{
-                  border: "none",
-                  borderRadius: 8,
-                  background: "#1a1a1a",
-                }}
-              >
+              <div className="rounded-lg bg-zinc-900/50" style={{ height: "100%", minHeight: 720 }}>
+                <PDFViewer
+                  width="100%"
+                  height="100%"
+                  showToolbar={false}
+                >
                 <InvoiceDocument data={invoiceData} workspace={workspace} />
-              </PDFViewer>
+                </PDFViewer>
+              </div>
             )}
           </div>
         </div>

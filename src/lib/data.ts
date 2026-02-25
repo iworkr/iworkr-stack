@@ -28,6 +28,7 @@ export interface Job {
   assignee: string;
   assigneeInitials: string;
   client: string;
+  clientId?: string | null;
   due: string;
   labels: string[];
   created: string;

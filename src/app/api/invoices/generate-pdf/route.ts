@@ -134,7 +134,8 @@ export async function POST(request: NextRequest) {
       data: invoiceData,
       workspace: workspaceData,
     });
-    const pdfBuffer = await renderToBuffer(element);
+    // InvoiceDocument renders <Document> at root; renderToBuffer expects DocumentProps at type level
+    const pdfBuffer = await renderToBuffer(element as Parameters<typeof renderToBuffer>[0]);
 
     if (body.save_to_storage && body.invoice_id) {
       const supabase = (await createServerSupabaseClient()) as any;
@@ -159,7 +160,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ url: publicUrl });
     }
 
-    return new NextResponse(pdfBuffer, {
+    // NextResponse expects BodyInit; Node Buffer isn't in the type def. Use Uint8Array.
+    const pdfBody = new Uint8Array(
+      typeof pdfBuffer === "object" && "length" in pdfBuffer
+        ? (pdfBuffer as ArrayLike<number>)
+        : (pdfBuffer as ArrayBuffer),
+    );
+    return new NextResponse(pdfBody, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${invoiceData.display_id}.pdf"`,

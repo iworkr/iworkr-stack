@@ -349,7 +349,7 @@ export default function JobDetailPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => router.push(`/dashboard/finance/invoices/new?job_id=${job.id}&client_id=${job.client_id || ""}`)}
+                onClick={() => router.push(`/dashboard/finance/invoices/new?job_id=${job.dbId}&client_id=${job.clientId || ""}`)}
                 className="ml-2 flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-[12px] font-semibold text-emerald-400 transition-all duration-200 hover:bg-emerald-500/20"
               >
                 <Receipt size={13} />
