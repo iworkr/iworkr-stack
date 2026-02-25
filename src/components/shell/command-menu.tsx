@@ -87,7 +87,7 @@ export function CommandMenu() {
       } else if (cmd.id === "create-client") {
         setCreateClientModalOpen(true);
       } else if (cmd.id === "create-invoice") {
-        setCreateInvoiceModalOpen(true);
+        router.push("/dashboard/finance/invoices/new");
       } else if (cmd.id === "create-job") {
         setCreateJobModalOpen(true);
       }

@@ -28,6 +28,24 @@ import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu
 import { downloadInvoicePDF } from "@/lib/pdf/generate-invoice";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getOrgSettings } from "@/app/actions/finance";
+
+async function downloadReactPdf(invoiceId: string) {
+  const resp = await fetch("/api/invoices/generate-pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ invoice_id: invoiceId }),
+  });
+  if (!resp.ok) throw new Error("PDF generation failed");
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `invoice.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 import { ForensicTimeline } from "@/components/finance/forensic-timeline";
 
 /* ── Constants ────────────────────────────────────────────── */
@@ -131,14 +149,18 @@ export default function InvoiceDetailPage() {
       navigator.clipboard?.writeText(invoice.paymentLink);
       addToast("Payment link copied");
     } else if (actionId === "download") {
-      downloadInvoicePDF(
-        invoice,
-        orgSettings?.name || "iWorkr",
-        orgSettings?.settings?.tax_id,
-        orgSettings?.settings?.address || "",
-        orgSettings?.settings?.email || ""
-      );
-      addToast("PDF downloaded");
+      downloadReactPdf(invoice.dbId || invoice.id).then(() => {
+        addToast("PDF downloaded");
+      }).catch(() => {
+        downloadInvoicePDF(
+          invoice,
+          orgSettings?.name || "iWorkr",
+          orgSettings?.settings?.tax_id,
+          orgSettings?.settings?.address || "",
+          orgSettings?.settings?.email || "",
+        );
+        addToast("PDF downloaded (legacy)");
+      });
     } else if (actionId === "print") {
       window.print();
     } else if (actionId === "void") {
@@ -639,14 +661,18 @@ export default function InvoiceDetailPage() {
               <button
                 onClick={() => {
                   if (!invoice) return;
-                  downloadInvoicePDF(
-                    invoice,
-                    orgSettings?.name || "iWorkr",
-                    orgSettings?.settings?.tax_id,
-                    orgSettings?.settings?.address || "",
-                    orgSettings?.settings?.email || ""
-                  );
-                  addToast("PDF downloaded");
+                  downloadReactPdf(invoice.dbId || invoice.id).then(() => {
+                    addToast("PDF downloaded");
+                  }).catch(() => {
+                    downloadInvoicePDF(
+                      invoice,
+                      orgSettings?.name || "iWorkr",
+                      orgSettings?.settings?.tax_id,
+                      orgSettings?.settings?.address || "",
+                      orgSettings?.settings?.email || "",
+                    );
+                    addToast("PDF downloaded (legacy)");
+                  });
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(255,255,255,0.06)] py-2.5 text-[12px] text-zinc-500 transition-colors hover:border-[rgba(255,255,255,0.1)] hover:text-zinc-400"
               >

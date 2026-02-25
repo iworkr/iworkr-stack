@@ -404,7 +404,7 @@ export default function FinancePage() {
             ) : (
               <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setCreateInvoiceModalOpen(true)}
+                onClick={() => router.push("/dashboard/finance/invoices/new")}
                 className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500"
               >
                 <Plus size={12} />
@@ -800,7 +800,7 @@ export default function FinancePage() {
                     title="The ledger is empty"
                     subtitle={search ? "Try a different search term." : "Start earning."}
                     cta={!search ? "Create First Invoice" : undefined}
-                    onCta={!search ? () => setCreateInvoiceModalOpen(true) : undefined}
+                    onCta={!search ? () => router.push("/dashboard/finance/invoices/new") : undefined}
                   />
                 ) : (
                 <AnimatePresence>
