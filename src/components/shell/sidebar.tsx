@@ -13,7 +13,6 @@ import {
   UserPlus,
   PanelLeftClose,
   PanelLeftOpen,
-  Pencil,
   Command,
   Warehouse,
   Plug,
@@ -94,20 +93,19 @@ function NavLink({
       title={collapsed ? item.label : undefined}
       className={`group relative flex items-center gap-2.5 rounded-lg px-2 py-[7px] transition-all duration-150 ${
         collapsed ? "justify-center" : ""
-      } ${active ? "text-white" : "text-zinc-500 hover:text-white"}`}
+      } ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
     >
-      {/* Floating Glass Pill — active state (Obsidian: white/zinc only) */}
       {active && (
         <motion.div
           layoutId="sidebar-glass-pill"
-          className="absolute inset-0 rounded-lg bg-white/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+          className="absolute inset-0 rounded-lg shadow-[inset_0_0_0_1px_var(--border-active)]"
+          style={{ background: "var(--surface-2)" }}
           transition={{ type: "spring", stiffness: 350, damping: 28 }}
         />
       )}
 
-      {/* Hover glow */}
       {!active && (
-        <div className="absolute inset-0 rounded-lg opacity-0 transition-opacity duration-150 group-hover:opacity-100 bg-white/[0.02]" />
+        <div className="absolute inset-0 rounded-lg opacity-0 transition-opacity duration-150 group-hover:opacity-100 bg-[var(--surface-2)]" />
       )}
 
       <Icon
@@ -134,7 +132,7 @@ function NavLink({
                 </span>
               )}
               {item.shortcut && !proBadge && (
-                <kbd className="hidden rounded border border-white/[0.05] bg-white/[0.02] px-1 py-0.5 font-mono text-[9px] text-zinc-700 group-hover:inline-block">
+                <kbd className="hidden rounded border px-1 py-0.5 font-mono text-[9px] text-[var(--text-muted)] group-hover:inline-block" style={{ borderColor: "var(--border-base)", background: "var(--surface-1)" }}>
                   {item.shortcut}
                 </kbd>
               )}
@@ -148,11 +146,7 @@ function NavLink({
 
 /* ── Main Sidebar ─────────────────────────────────────── */
 
-interface SidebarProps {
-  onCreateClick?: () => void;
-}
-
-export function Sidebar({ onCreateClick }: SidebarProps = {}) {
+export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useShellStore();
@@ -241,8 +235,8 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
         }`}
         style={{
           width: sidebarCollapsed ? 64 : 240,
-          background: "#090909",
-          borderColor: "rgba(255,255,255,0.06)",
+          background: "var(--surface-0)",
+          borderColor: "var(--border-base)",
           paddingTop: typeof window !== "undefined" && (window as any).iworkr ? 6 : 0,
         }}
       >
@@ -252,10 +246,10 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
         )}
 
         {/* ── Workspace Switcher ── */}
-        <div className="flex h-12 items-center border-b border-white/[0.06] px-3">
+        <div className="flex h-12 items-center border-b px-3" style={{ borderColor: "var(--border-base)" }}>
           <button
             onClick={() => useShellStore.getState().setCommandMenuOpen(true)}
-            className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-white/[0.04]"
+            className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[var(--surface-2)]"
           >
             <img
               src="/logos/logo-dark-streamline.png"
@@ -271,47 +265,17 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                   transition={{ duration: 0.15 }}
                   className="flex flex-1 items-center justify-between overflow-hidden"
                 >
-                  <span className="truncate text-[13px] font-medium text-zinc-200">
+                  <span className="truncate text-[13px] font-medium text-[var(--text-primary)]">
                     {companyName || <Shimmer className="h-3 w-24" />}
                   </span>
                   <div className="flex items-center gap-0.5">
-                    <kbd className="rounded border border-white/[0.05] bg-white/[0.02] px-1 py-0.5 font-mono text-[9px] text-zinc-600">⌘</kbd>
-                    <kbd className="rounded border border-white/[0.05] bg-white/[0.02] px-1 py-0.5 font-mono text-[9px] text-zinc-600">K</kbd>
+                    <kbd className="rounded border px-1 py-0.5 font-mono text-[9px] text-[var(--text-muted)]" style={{ borderColor: "var(--border-base)", background: "var(--surface-1)" }}>⌘</kbd>
+                    <kbd className="rounded border px-1 py-0.5 font-mono text-[9px] text-[var(--text-muted)]" style={{ borderColor: "var(--border-base)", background: "var(--surface-1)" }}>K</kbd>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </button>
-        </div>
-
-        {/* ── New Item — Monochrome CTA (Obsidian) ── */}
-        <div className="px-2 pt-2.5 pb-0.5">
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={onCreateClick}
-            className={`group/create flex items-center gap-2 rounded-lg bg-white font-medium text-black transition-all duration-200 hover:bg-zinc-200 ${
-              sidebarCollapsed
-                ? "w-10 justify-center p-2"
-                : "w-full px-2.5 py-[7px]"
-            }`}
-          >
-            <Pencil size={13} className="shrink-0" />
-            <AnimatePresence>
-              {!sidebarCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-1 items-center justify-between text-[13px]"
-                >
-                  New Item
-                  <kbd className="rounded border border-black/10 bg-black/5 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
-                    C
-                  </kbd>
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
         </div>
 
         {/* ── Navigation ── */}
@@ -324,7 +288,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                 exit={{ opacity: 0 }}
                 className="mb-1 px-2"
               >
-                <span className="text-[9px] font-bold tracking-widest text-zinc-700 uppercase">
+                <span className="text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
                   Workspace
                 </span>
               </motion.div>
@@ -354,7 +318,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                 className="mt-5 overflow-hidden"
               >
                 <div className="mb-1 px-2">
-                  <span className="text-[9px] font-bold tracking-widest text-zinc-700 uppercase">
+                  <span className="text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
                     Your Team
                   </span>
                 </div>
@@ -366,30 +330,31 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
                       <ShimmerTeamRow />
                     </>
                   ) : teamMembers.length === 0 ? (
-                    <p className="px-2 py-2 text-[11px] text-zinc-700">No team members online</p>
+                    <p className="px-2 py-2 text-[11px] text-[var(--text-muted)]">No team members online</p>
                   ) : (
                     teamMembers.map((member) => (
                       <button
                         key={member.name}
                         onClick={() => router.push("/dashboard/team")}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-[5px] text-left transition-colors hover:bg-white/[0.03]"
+                        className="flex w-full items-center gap-2 rounded-lg px-2 py-[5px] text-left transition-colors hover:bg-[var(--surface-2)]"
                       >
-                        <div className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-500">
+                        <div className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] text-[8px] font-medium text-[var(--text-muted)]">
                           {member.initials}
                           <div
-                            className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] border-[#090909] ${
+                            className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] ${
                               member.status === "online"
                                 ? "bg-emerald-500"
                                 : "bg-zinc-600"
                             }`}
+                            style={{ borderColor: "var(--surface-0)" }}
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-[13px] text-zinc-400">
+                          <div className="truncate text-[13px] text-[var(--text-muted)]">
                             {member.name}
                           </div>
                         </div>
-                        <span className="font-mono text-[9px] text-zinc-600">
+                        <span className="font-mono text-[9px] text-[var(--text-muted)]">
                           {member.role}
                         </span>
                       </button>
@@ -402,62 +367,80 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
         </nav>
 
         {/* ── System Tray ── */}
-        <div className="border-t border-white/[0.06] px-2 py-1.5">
-          <AnimatePresence>
-            {!sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-px"
-              >
-                {systemItems.map((item) => {
-                  const Icon = item.icon;
-                  if (item.action === "invite") {
-                    if (!roleDef?.scopes.canManageTeam) return null;
-                    return (
-                      <button
-                        key={item.label}
-                        onClick={() => setInviteModalOpen(true)}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-white/[0.03] hover:text-zinc-400"
-                      >
-                        <Icon size={14} strokeWidth={1.5} />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  }
-                  if (item.href?.startsWith("mailto:") || item.href?.startsWith("http")) {
-                    return (
-                      <a
-                        key={item.label}
-                        href={item.href}
-                        className="flex items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-white/[0.03] hover:text-zinc-400"
-                      >
-                        <Icon size={14} strokeWidth={1.5} />
-                        <span>{item.label}</span>
-                      </a>
-                    );
-                  }
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href || "#"}
-                      className="flex items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-white/[0.03] hover:text-zinc-400"
-                    >
-                      <Icon size={14} strokeWidth={1.5} />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="border-t px-2 py-1.5" style={{ borderColor: "var(--border-base)" }}>
+          <div className="space-y-px">
+            {systemItems.map((item) => {
+              const Icon = item.icon;
+              if (item.action === "invite") {
+                if (!roleDef?.scopes.canManageTeam) return null;
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => setInviteModalOpen(true)}
+                    title={sidebarCollapsed ? item.label : undefined}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
+                      sidebarCollapsed ? "justify-center" : ""
+                    }`}
+                  >
+                    <Icon size={14} strokeWidth={1.5} className="shrink-0" />
+                    <AnimatePresence>
+                      {!sidebarCollapsed && (
+                        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </button>
+                );
+              }
+              if (item.href?.startsWith("mailto:") || item.href?.startsWith("http")) {
+                return (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    title={sidebarCollapsed ? item.label : undefined}
+                    className={`flex items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
+                      sidebarCollapsed ? "justify-center" : ""
+                    }`}
+                  >
+                    <Icon size={14} strokeWidth={1.5} className="shrink-0" />
+                    <AnimatePresence>
+                      {!sidebarCollapsed && (
+                        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </a>
+                );
+              }
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href || "#"}
+                  title={sidebarCollapsed ? item.label : undefined}
+                  className={`flex items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
+                    sidebarCollapsed ? "justify-center" : ""
+                  }`}
+                >
+                  <Icon size={14} strokeWidth={1.5} className="shrink-0" />
+                  <AnimatePresence>
+                    {!sidebarCollapsed && (
+                      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Link>
+              );
+            })}
+          </div>
 
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
             title={sidebarCollapsed ? (theme === "dark" ? "Light Mode" : "Dark Mode") : undefined}
-            className={`flex items-center gap-2 rounded-lg px-2 py-[5px] text-zinc-600 transition-colors hover:bg-white/[0.03] hover:text-zinc-400 ${
+            className={`flex items-center gap-2 rounded-lg px-2 py-[5px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
               sidebarCollapsed ? "w-full justify-center" : "w-full"
             }`}
           >
@@ -484,7 +467,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
           <button
             onClick={toggleSidebar}
             title={sidebarCollapsed ? "Expand sidebar (⌘[)" : undefined}
-            className={`mt-0.5 flex items-center gap-2 rounded-lg px-2 py-[5px] text-zinc-600 transition-colors hover:bg-white/[0.03] hover:text-zinc-400 ${
+            className={`mt-0.5 flex items-center gap-2 rounded-lg px-2 py-[5px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
               sidebarCollapsed ? "w-full justify-center" : "w-full"
             }`}
           >
@@ -494,7 +477,7 @@ export function Sidebar({ onCreateClick }: SidebarProps = {}) {
               <>
                 <PanelLeftClose size={14} strokeWidth={1.5} />
                 <span className="text-[13px]">Collapse</span>
-                <kbd className="ml-auto rounded border border-white/[0.05] bg-white/[0.02] px-1 py-0.5 font-mono text-[9px] text-zinc-700">
+                <kbd className="ml-auto rounded border px-1 py-0.5 font-mono text-[9px] text-[var(--text-muted)]" style={{ borderColor: "var(--border-base)", background: "var(--surface-1)" }}>
                   ⌘[
                 </kbd>
               </>

@@ -163,7 +163,7 @@ export default function DashboardLayout({
   return (
     <GoogleMapsProvider>
     <HydrationGate>
-    <div className="flex h-screen overflow-hidden bg-black">
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
       {/* Noise grain */}
       <div
         className="pointer-events-none fixed inset-0 z-[9999] opacity-[0.012] mix-blend-overlay"
@@ -174,7 +174,7 @@ export default function DashboardLayout({
         }}
       />
 
-      <Sidebar onCreateClick={() => setCreateModalOpen(true)} />
+      <Sidebar />
 
       {/* Main area — no margin on mobile (sidebar overlays), sidebar width on md+ */}
       <div
@@ -192,7 +192,8 @@ export default function DashboardLayout({
               : { scale: 1, filter: "brightness(1)" }
           }
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="flex-1 overflow-y-auto overflow-x-hidden bg-[#050505]"
+          className="flex-1 overflow-y-auto overflow-x-hidden"
+          style={{ background: "var(--surface-0)" }}
         >
           <DataProvider>
             <AnimatePresence mode="wait">

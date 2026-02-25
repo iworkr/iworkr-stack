@@ -101,17 +101,17 @@ function WorkspaceDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={onToggle}
-        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-[var(--surface-2)]"
       >
         <img
           src="/logos/logo-dark-streamline.png"
           alt="Logo"
           className="h-[18px] w-[18px] object-contain"
         />
-        <span className="hidden text-[13px] font-medium text-zinc-300 sm:inline">
+        <span className="hidden text-[13px] font-medium text-[var(--text-primary)] sm:inline">
           {companyName || <Shimmer className="h-3 w-20" />}
         </span>
-        <ChevronDown size={11} className="text-zinc-600" />
+        <ChevronDown size={11} className="text-[var(--text-muted)]" />
       </button>
 
       <AnimatePresence>
@@ -441,7 +441,7 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="relative z-30 flex h-12 shrink-0 items-center border-b border-white/[0.05] bg-[#050505]/80 px-3 backdrop-blur-xl md:px-4">
+    <header className="relative z-30 flex h-12 shrink-0 items-center border-b px-3 backdrop-blur-xl md:px-4" style={{ borderColor: "var(--border-base)", background: "color-mix(in srgb, var(--surface-0) 80%, transparent)" }}>
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileSidebarOpen(true)}
