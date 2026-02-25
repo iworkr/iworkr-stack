@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, type LucideIcon } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   Briefcase,
   XCircle,
@@ -84,7 +85,7 @@ export default function CommunicationsPage() {
     const supabase = createClient();
 
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("workspace_email_templates")
         .select("*")
         .eq("organization_id", orgId);
@@ -114,7 +115,7 @@ export default function CommunicationsPage() {
         body_html: existing?.body_html ?? null,
       };
 
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("workspace_email_templates")
         .upsert(
           {
@@ -142,7 +143,7 @@ export default function CommunicationsPage() {
       const supabase = createClient();
       const existing = templates[event];
 
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("workspace_email_templates")
         .upsert(
           {

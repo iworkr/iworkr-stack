@@ -301,11 +301,11 @@ export default function SchedulePage() {
         },
         (payload) => {
           // Job status changes should also refresh the schedule
-          if (payload.new && payload.old && payload.new.status !== payload.old.status) {
+          if (payload.new && payload.old && (payload.new as { status?: string }).status !== (payload.old as { status?: string }).status) {
             handleRealtimeUpdate();
           }
-          // Job assignment changes
-          if (payload.new && payload.old && payload.new.assigned_tech_id !== payload.old.assigned_tech_id) {
+          // Job assignment changes (assignee_id in DB)
+          if (payload.new && payload.old && (payload.new as Record<string, unknown>).assignee_id !== (payload.old as Record<string, unknown>).assignee_id) {
             handleRealtimeUpdate();
           }
         }

@@ -54,7 +54,7 @@ function AcceptInviteContent() {
 
   async function validateToken() {
     try {
-      const { data, error: rpcError } = await supabase.rpc("validate_invite_token", {
+      const { data, error: rpcError } = await (supabase as any).rpc("validate_invite_token", {
         p_token: token!,
       });
 
@@ -134,6 +134,7 @@ function AcceptInviteContent() {
       // Update profile
       await supabase.from("profiles").upsert({
         id: user.id,
+        email: user.email ?? "",
         full_name: fullName.trim(),
         phone: phone.trim() || null,
       });

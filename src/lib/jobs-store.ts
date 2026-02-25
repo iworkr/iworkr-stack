@@ -171,7 +171,7 @@ export const useJobsStore = create<JobsState>()(
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, status: typedStatus } : j)),
     }));
     try {
-      await updateJobAction(dbId, { status: typedStatus });
+      await updateJobAction(dbId, { status: typedStatus as "backlog" | "todo" | "in_progress" | "done" | "cancelled" });
     } catch (err) {
       console.error("Failed to persist status:", err);
       if (prevStatus !== undefined) {

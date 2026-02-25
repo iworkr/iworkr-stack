@@ -188,11 +188,11 @@ export default function CRMPipelinePage() {
     }
     setClients(
       (data ?? []).map((c) => ({
-        ...c,
-        pipeline_status: c.pipeline_status || "new_lead",
-        tags: c.tags || [],
-        type: c.type as "residential" | "commercial" | null,
-      }))
+        ...(c as object),
+        pipeline_status: (c as { pipeline_status?: string }).pipeline_status || "new_lead",
+        tags: (c as { tags?: string[] | null }).tags || [],
+        type: (c as { type?: string | null }).type as "residential" | "commercial" | null,
+      })) as PipelineClient[]
     );
     setLoading(false);
   }, [orgId]);
@@ -303,8 +303,7 @@ export default function CRMPipelinePage() {
       );
 
       const supabase = createClient();
-      const { error } = await supabase
-        .from("clients")
+      const { error } = await (supabase.from("clients") as any)
         .update({
           pipeline_status: newStatus,
           pipeline_updated_at: new Date().toISOString(),
@@ -342,8 +341,7 @@ export default function CRMPipelinePage() {
       setSaving(true);
 
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from("clients")
+      const { data, error } = await (supabase.from("clients") as any)
         .insert({
           organization_id: orgId,
           name: form.name.trim(),

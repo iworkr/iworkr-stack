@@ -273,7 +273,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
           organization_id: orgId,
           title: title.trim(),
           description: description.trim() || null,
-          status: estimateMode ? "backlog" : status,
+          status: (estimateMode ? "backlog" : status) as "urgent" | "backlog" | "todo" | "in_progress" | "done" | "cancelled",
           priority,
           client_id: selectedClient?.id || null,
           assignee_id: (assigneeMember as any)?.id || null,

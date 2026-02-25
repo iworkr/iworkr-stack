@@ -1125,10 +1125,10 @@ function ConnectPaymentsTab() {
   useEffect(() => {
     loadConnectStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [org?.id]);
+  }, [org?.orgId]);
 
   async function loadConnectStatus() {
-    if (!org?.id) return;
+    if (!org?.orgId) return;
     setLoading(true);
     try {
       const { createClient } = await import("@/lib/supabase/client");
@@ -1136,7 +1136,7 @@ function ConnectPaymentsTab() {
       const { data } = await supabase
         .from("organizations")
         .select("settings")
-        .eq("id", org.id)
+        .eq("id", org.orgId)
         .single();
       if (data) {
         const s = (data.settings as Record<string, unknown>) ?? {};
@@ -1148,10 +1148,10 @@ function ConnectPaymentsTab() {
         });
 
         if (s.charges_enabled) {
-          const { data: payments } = await supabase
+          const { data: payments } = await (supabase as any)
             .from("payments")
             .select("id, amount_cents, currency, status, payment_method, client_name, created_at")
-            .eq("organization_id", org.id)
+            .eq("organization_id", org.orgId)
             .order("created_at", { ascending: false })
             .limit(20);
           if (payments) setRecentPayments(payments);
@@ -1162,37 +1162,37 @@ function ConnectPaymentsTab() {
   }
 
   async function handleSetupConnect() {
-    if (!org?.id) return;
+    if (!org?.orgId) return;
     setActionLoading(true);
     try {
       const res = await fetch("/api/stripe/connect/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId: org.id }),
+        body: JSON.stringify({ orgId: org.orgId }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
-      else toast.addToast("error", "Failed to start setup");
+      else toast.addToast("Failed to start setup");
     } catch {
-      toast.addToast("error", "Something went wrong");
+      toast.addToast("Something went wrong");
     }
     setActionLoading(false);
   }
 
   async function handleOpenDashboard() {
-    if (!org?.id) return;
+    if (!org?.orgId) return;
     setActionLoading(true);
     try {
       const res = await fetch("/api/stripe/connect/dashboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId: org.id }),
+        body: JSON.stringify({ orgId: org.orgId }),
       });
       const data = await res.json();
       if (data.url) window.open(data.url, "_blank");
-      else toast.addToast("error", "Failed to open dashboard");
+      else toast.addToast("Failed to open dashboard");
     } catch {
-      toast.addToast("error", "Something went wrong");
+      toast.addToast("Something went wrong");
     }
     setActionLoading(false);
   }

@@ -36,6 +36,19 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Allow public routes (auth, invite acceptance, landing, api)
+  const publicPaths = ["/auth", "/accept-invite", "/invite", "/api"];
+  if (publicPaths.some((p) => pathname.startsWith(p)) || pathname === "/") {
+    if (pathname === "/auth" && user) {
+      const next = request.nextUrl.searchParams.get("next");
+      const url = request.nextUrl.clone();
+      url.pathname = next || "/dashboard";
+      url.searchParams.delete("next");
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
   // Protected routes: redirect to /auth if not signed in
   const protectedPaths = ["/dashboard", "/setup", "/settings"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
@@ -47,22 +60,14 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If signed in and visiting /auth, redirect to dashboard
-  if (pathname === "/auth" && user) {
-    const next = request.nextUrl.searchParams.get("next");
-    const url = request.nextUrl.clone();
-    url.pathname = next || "/dashboard";
-    url.searchParams.delete("next");
-    return NextResponse.redirect(url);
-  }
-
   // If signed in and visiting /dashboard, check if user has an org
   // Redirect to /setup if they haven't completed onboarding (no org membership)
   if (user && pathname.startsWith("/dashboard")) {
     const { data: membership } = await (supabase as any)
       .from("organization_members")
-      .select("organization_id")
+      .select("organization_id, role")
       .eq("user_id", user.id)
+      .eq("status", "active")
       .limit(1)
       .maybeSingle();
 
@@ -70,6 +75,25 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/setup";
       return NextResponse.redirect(url);
+    }
+
+    // RBAC enforcement at the Edge
+    const RBAC_ROUTES: Record<string, string[]> = {
+      "/dashboard/finance": ["owner", "admin", "manager", "office_admin"],
+      "/dashboard/team": ["owner", "admin", "manager"],
+      "/dashboard/settings": ["owner", "admin"],
+      "/dashboard/integrations": ["owner", "admin", "manager"],
+      "/dashboard/billing": ["owner"],
+    };
+    const role = (membership as { role?: string }).role as string | undefined;
+    if (role) {
+      for (const [routePrefix, allowedRoles] of Object.entries(RBAC_ROUTES)) {
+        if (pathname.startsWith(routePrefix) && !allowedRoles.includes(role)) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/dashboard";
+          return NextResponse.redirect(url);
+        }
+      }
     }
   }
 

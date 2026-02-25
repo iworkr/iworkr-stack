@@ -1062,13 +1062,17 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           email: string | null
+          estimated_value: number | null
           id: string
           last_active_at: string | null
+          lead_source: string | null
           metadata: Json | null
           name: string
           notes: string | null
           organization_id: string
           phone: string | null
+          pipeline_status: string | null
+          pipeline_updated_at: string | null
           since: string | null
           status: Database["public"]["Enums"]["client_status"] | null
           tags: string[] | null
@@ -1083,13 +1087,17 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           email?: string | null
+          estimated_value?: number | null
           id?: string
           last_active_at?: string | null
+          lead_source?: string | null
           metadata?: Json | null
           name: string
           notes?: string | null
           organization_id: string
           phone?: string | null
+          pipeline_status?: string | null
+          pipeline_updated_at?: string | null
           since?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
           tags?: string[] | null
@@ -1104,13 +1112,17 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           email?: string | null
+          estimated_value?: number | null
           id?: string
           last_active_at?: string | null
+          lead_source?: string | null
           metadata?: Json | null
           name?: string
           notes?: string | null
           organization_id?: string
           phone?: string | null
+          pipeline_status?: string | null
+          pipeline_updated_at?: string | null
           since?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
           tags?: string[] | null
@@ -1173,6 +1185,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "document_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_logs: {
+        Row: {
+          event_type: string
+          id: string
+          job_id: string | null
+          metadata: Json | null
+          organization_id: string
+          recipient_email: string
+          resend_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["email_status"] | null
+          subject: string | null
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          job_id?: string | null
+          metadata?: Json | null
+          organization_id: string
+          recipient_email: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["email_status"] | null
+          subject?: string | null
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          job_id?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          recipient_email?: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["email_status"] | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -3194,6 +3260,53 @@ export type Database = {
           },
         ]
       }
+      mail_queue: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          organization_id: string
+          payload: Json
+          processed_at: string | null
+          recipient_email: string
+          retry_count: number | null
+          status: Database["public"]["Enums"]["mail_queue_status"] | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          organization_id: string
+          payload?: Json
+          processed_at?: string | null
+          recipient_email: string
+          retry_count?: number | null
+          status?: Database["public"]["Enums"]["mail_queue_status"] | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          organization_id?: string
+          payload?: Json
+          processed_at?: string | null
+          recipient_email?: string
+          retry_count?: number | null
+          status?: Database["public"]["Enums"]["mail_queue_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_benchmarks: {
         Row: {
           created_at: string
@@ -3765,39 +3878,147 @@ export type Database = {
       }
       organizations: {
         Row: {
+          billing_provider: string
+          brand_color_hex: string | null
+          brand_logo_url: string | null
+          charges_enabled: boolean
+          connect_onboarded_at: string | null
           created_at: string | null
           id: string
           logo_url: string | null
           name: string
+          payouts_enabled: boolean
+          plan_tier: string
+          platform_fee_percent: number
           polar_customer_id: string | null
+          rc_original_app_user_id: string | null
           settings: Json | null
           slug: string
+          stripe_account_id: string | null
+          stripe_customer_id: string | null
+          subscription_active_until: string | null
           trade: string | null
           updated_at: string | null
         }
         Insert: {
+          billing_provider?: string
+          brand_color_hex?: string | null
+          brand_logo_url?: string | null
+          charges_enabled?: boolean
+          connect_onboarded_at?: string | null
           created_at?: string | null
           id?: string
           logo_url?: string | null
           name: string
+          payouts_enabled?: boolean
+          plan_tier?: string
+          platform_fee_percent?: number
           polar_customer_id?: string | null
+          rc_original_app_user_id?: string | null
           settings?: Json | null
           slug: string
+          stripe_account_id?: string | null
+          stripe_customer_id?: string | null
+          subscription_active_until?: string | null
           trade?: string | null
           updated_at?: string | null
         }
         Update: {
+          billing_provider?: string
+          brand_color_hex?: string | null
+          brand_logo_url?: string | null
+          charges_enabled?: boolean
+          connect_onboarded_at?: string | null
           created_at?: string | null
           id?: string
           logo_url?: string | null
           name?: string
+          payouts_enabled?: boolean
+          plan_tier?: string
+          platform_fee_percent?: number
           polar_customer_id?: string | null
+          rc_original_app_user_id?: string | null
           settings?: Json | null
           slug?: string
+          stripe_account_id?: string | null
+          stripe_customer_id?: string | null
+          subscription_active_until?: string | null
           trade?: string | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount_cents: number
+          client_email: string | null
+          client_name: string | null
+          collected_by: string | null
+          created_at: string
+          currency: string
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          organization_id: string
+          payment_method: string
+          platform_fee_cents: number
+          status: string
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          client_email?: string | null
+          client_name?: string | null
+          collected_by?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          organization_id: string
+          payment_method?: string
+          platform_fee_cents?: number
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          client_email?: string | null
+          client_name?: string | null
+          collected_by?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          payment_method?: string
+          platform_fee_cents?: number
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payouts: {
         Row: {
@@ -3836,6 +4057,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "payouts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pipeline_events: {
+        Row: {
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          error: string | null
+          event_type: string
+          id: string
+          idempotency_key: string | null
+          organization_id: string
+          payload: Json | null
+          source: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          error?: string | null
+          event_type: string
+          id?: string
+          idempotency_key?: string | null
+          organization_id: string
+          payload?: Json | null
+          source?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          error?: string | null
+          event_type?: string
+          id?: string
+          idempotency_key?: string | null
+          organization_id?: string
+          payload?: Json | null
+          source?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_events_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -3983,12 +4254,15 @@ export type Database = {
           created_at: string | null
           dashboard_layout: Json | null
           email: string
+          email_bounced: boolean | null
+          fcm_token: string | null
           full_name: string | null
           id: string
           notification_preferences: Json | null
           onboarding_completed: boolean | null
           phone: string | null
           preferences: Json | null
+          push_enabled: boolean | null
           timezone: string | null
           updated_at: string | null
         }
@@ -3997,12 +4271,15 @@ export type Database = {
           created_at?: string | null
           dashboard_layout?: Json | null
           email: string
+          email_bounced?: boolean | null
+          fcm_token?: string | null
           full_name?: string | null
           id: string
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           phone?: string | null
           preferences?: Json | null
+          push_enabled?: boolean | null
           timezone?: string | null
           updated_at?: string | null
         }
@@ -4011,12 +4288,15 @@ export type Database = {
           created_at?: string | null
           dashboard_layout?: Json | null
           email?: string
+          email_bounced?: boolean | null
+          fcm_token?: string | null
           full_name?: string | null
           id?: string
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           phone?: string | null
           preferences?: Json | null
+          push_enabled?: boolean | null
           timezone?: string | null
           updated_at?: string | null
         }
@@ -4083,7 +4363,7 @@ export type Database = {
           signature_url: string | null
           signed_at: string | null
           signed_by: string | null
-          status: string
+          status: Database["public"]["Enums"]["quote_status"]
           subtotal: number | null
           tax: number | null
           tax_rate: number | null
@@ -4112,7 +4392,7 @@ export type Database = {
           signature_url?: string | null
           signed_at?: string | null
           signed_by?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number | null
           tax?: number | null
           tax_rate?: number | null
@@ -4141,7 +4421,7 @@ export type Database = {
           signature_url?: string | null
           signed_at?: string | null
           signed_by?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number | null
           tax?: number | null
           tax_rate?: number | null
@@ -5009,6 +5289,8 @@ export type Database = {
           polar_product_id: string | null
           polar_subscription_id: string
           status: Database["public"]["Enums"]["subscription_status"]
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -5024,6 +5306,8 @@ export type Database = {
           polar_product_id?: string | null
           polar_subscription_id: string
           status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -5039,6 +5323,8 @@ export type Database = {
           polar_product_id?: string | null
           polar_subscription_id?: string
           status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -5138,6 +5424,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      terminal_connection_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          secret: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          secret: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          secret?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terminal_connection_tokens_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -5429,11 +5744,53 @@ export type Database = {
           },
         ]
       }
+      workspace_email_templates: {
+        Row: {
+          body_html: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          is_active: boolean | null
+          organization_id: string
+          subject_line: string
+          updated_at: string | null
+        }
+        Insert: {
+          body_html?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          is_active?: boolean | null
+          organization_id: string
+          subject_line: string
+          updated_at?: string | null
+        }
+        Update: {
+          body_html?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string
+          subject_line?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_email_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      archive_completed_jobs: { Args: never; Returns: undefined }
       assign_job_to_schedule: {
         Args: {
           p_end_time: string
@@ -5595,6 +5952,17 @@ export type Database = {
         Args: { p_flow_id?: string; p_org_id: string }
         Returns: Json
       }
+      get_cascading_delays: {
+        Args: { p_date?: string; p_org_id: string; p_technician_id: string }
+        Returns: {
+          block_id: string
+          caused_by_block: string
+          delay_minutes: number
+          scheduled_end: string
+          scheduled_start: string
+          title: string
+        }[]
+      }
       get_client_details: { Args: { p_client_id: string }; Returns: Json }
       get_clients_with_stats: {
         Args: {
@@ -5642,6 +6010,15 @@ export type Database = {
       get_invoice_pipeline: { Args: { p_org_id: string }; Returns: Json }
       get_job_details: { Args: { p_job_id: string }; Returns: Json }
       get_job_pipeline: { Args: { p_org_id: string }; Returns: Json }
+      get_last_messages_for_channels: {
+        Args: { p_channel_ids: string[] }
+        Returns: {
+          channel_id: string
+          content: string
+          sender_name: string
+          unread_count: number
+        }[]
+      }
       get_live_dispatch: { Args: { p_org_id: string }; Returns: Json }
       get_member_stats: {
         Args: { p_org_id: string; p_user_id: string }
@@ -5666,6 +6043,7 @@ export type Database = {
       get_team_status: { Args: { p_org_id: string }; Returns: Json }
       get_user_channel_ids: { Args: never; Returns: string[] }
       get_user_org_ids: { Args: never; Returns: string[] }
+      get_user_org_role: { Args: { p_org_id: string }; Returns: string }
       get_user_role: {
         Args: { org_id: string }
         Returns: Database["public"]["Enums"]["org_role"]
@@ -5673,6 +6051,10 @@ export type Database = {
       has_permission: {
         Args: { p_action: string; p_module: string; p_org_id: string }
         Returns: boolean
+      }
+      increment_field: {
+        Args: { field_name: string; row_id: string; table_name: string }
+        Returns: undefined
       }
       increment_form_submissions: {
         Args: { form_id: string }
@@ -5694,6 +6076,10 @@ export type Database = {
         Returns: Json
       }
       mark_inbox_read: { Args: { p_ids: string[] }; Returns: undefined }
+      mark_invoice_sent_with_link: {
+        Args: { p_base_url?: string; p_invoice_id: string }
+        Returns: Json
+      }
       mark_overdue_invoices: { Args: { p_org_id?: string }; Returns: Json }
       move_schedule_block: {
         Args: {
@@ -5713,6 +6099,10 @@ export type Database = {
       save_form_draft: {
         Args: { p_data: Json; p_submission_id: string }
         Returns: Json
+      }
+      seed_industry_defaults: {
+        Args: { p_org_id: string; p_trade: string }
+        Returns: undefined
       }
       set_all_flows_status: {
         Args: { p_org_id: string; p_pause: boolean }
@@ -5767,6 +6157,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_schedule_drop: {
+        Args: {
+          p_end_time: string
+          p_exclude_block?: string
+          p_location_lat?: number
+          p_location_lng?: number
+          p_org_id: string
+          p_start_time: string
+          p_technician_id: string
+        }
+        Returns: Json
+      }
       verify_document_hash: { Args: { p_hash: string }; Returns: Json }
     }
     Enums: {
@@ -5783,6 +6185,13 @@ export type Database = {
       channel_type: "dm" | "group" | "job_context" | "broadcast" | "triage"
       client_status: "active" | "lead" | "churned" | "inactive"
       client_type: "residential" | "commercial"
+      email_status:
+        | "queued"
+        | "sent"
+        | "delivered"
+        | "bounced"
+        | "complained"
+        | "failed"
       flow_status: "active" | "paused" | "draft" | "archived"
       form_status: "draft" | "published" | "archived"
       integration_status: "connected" | "disconnected" | "error" | "syncing"
@@ -5814,6 +6223,7 @@ export type Database = {
         | "invoiced"
         | "archived"
         | "cancelled"
+      mail_queue_status: "pending" | "processing" | "failed" | "failed_fatal"
       member_status: "active" | "pending" | "suspended" | "archived"
       message_type:
         | "text"
@@ -5833,6 +6243,10 @@ export type Database = {
         | "schedule_conflict"
         | "form_signed"
         | "team_invite"
+        | "job_cancelled"
+        | "job_rescheduled"
+        | "message_received"
+        | "compliance_warning"
       org_role:
         | "owner"
         | "admin"
@@ -5843,6 +6257,13 @@ export type Database = {
         | "subcontractor"
         | "office_admin"
       payout_status: "completed" | "pending" | "processing"
+      quote_status:
+        | "draft"
+        | "sent"
+        | "viewed"
+        | "accepted"
+        | "rejected"
+        | "expired"
       schedule_block_status:
         | "scheduled"
         | "en_route"
@@ -6000,6 +6421,14 @@ export const Constants = {
       channel_type: ["dm", "group", "job_context", "broadcast", "triage"],
       client_status: ["active", "lead", "churned", "inactive"],
       client_type: ["residential", "commercial"],
+      email_status: [
+        "queued",
+        "sent",
+        "delivered",
+        "bounced",
+        "complained",
+        "failed",
+      ],
       flow_status: ["active", "paused", "draft", "archived"],
       form_status: ["draft", "published", "archived"],
       integration_status: ["connected", "disconnected", "error", "syncing"],
@@ -6034,6 +6463,7 @@ export const Constants = {
         "archived",
         "cancelled",
       ],
+      mail_queue_status: ["pending", "processing", "failed", "failed_fatal"],
       member_status: ["active", "pending", "suspended", "archived"],
       message_type: [
         "text",
@@ -6054,6 +6484,10 @@ export const Constants = {
         "schedule_conflict",
         "form_signed",
         "team_invite",
+        "job_cancelled",
+        "job_rescheduled",
+        "message_received",
+        "compliance_warning",
       ],
       org_role: [
         "owner",
@@ -6066,6 +6500,14 @@ export const Constants = {
         "office_admin",
       ],
       payout_status: ["completed", "pending", "processing"],
+      quote_status: [
+        "draft",
+        "sent",
+        "viewed",
+        "accepted",
+        "rejected",
+        "expired",
+      ],
       schedule_block_status: [
         "scheduled",
         "en_route",
@@ -6087,18 +6529,3 @@ export const Constants = {
     },
   },
 } as const
-
-export type OrgRole = Database["public"]["Enums"]["org_role"]
-export type InviteStatus = Database["public"]["Enums"]["invite_status"]
-export type SubscriptionStatus = Database["public"]["Enums"]["subscription_status"]
-export type MemberStatus = Database["public"]["Enums"]["member_status"]
-export type JobStatus = Database["public"]["Enums"]["job_status"]
-export type JobPriority = Database["public"]["Enums"]["job_priority"]
-export type InvoiceStatus = Database["public"]["Enums"]["invoice_status"]
-export type ClientStatus = Database["public"]["Enums"]["client_status"]
-export type ClientType = Database["public"]["Enums"]["client_type"]
-export type MessageType = Database["public"]["Enums"]["message_type"]
-export type NotificationType = Database["public"]["Enums"]["notification_type"]
-export type FormStatus = Database["public"]["Enums"]["form_status"]
-export type AssetStatus = Database["public"]["Enums"]["asset_status"]
-export type AssetCategory = Database["public"]["Enums"]["asset_category"]

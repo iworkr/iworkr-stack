@@ -258,7 +258,7 @@ export async function queueEmail(params: {
 }) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.from("mail_queue").insert({
+    const { error } = await (supabase as any).from("mail_queue").insert({
       organization_id: params.organizationId,
       event_type: params.eventType,
       recipient_email: params.recipientEmail,
