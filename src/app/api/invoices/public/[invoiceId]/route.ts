@@ -19,42 +19,33 @@ export async function GET(
     { auth: { persistSession: false } }
   );
 
-  const { data: invoice, error } = await (supabase as any)
+  const { data: invoice, error: invError } = await (supabase as any)
     .from("invoices")
-    .select(`
-      id,
-      display_id,
-      client_name,
-      client_email,
-      subtotal,
-      tax_rate,
-      tax,
-      total,
-      status,
-      due_date,
-      notes,
-      payment_link,
-      organization_id,
-      organizations (
-        name,
-        logo_url,
-        brand_color_hex
-      ),
-      invoice_line_items (
-        id,
-        description,
-        quantity,
-        unit_price,
-        sort_order
-      )
-    `)
+    .select("id, display_id, client_name, client_email, subtotal, tax_rate, tax, total, status, due_date, notes, payment_link, organization_id")
     .eq("id", invoiceId)
     .is("deleted_at", null)
-    .single();
+    .maybeSingle();
 
-  if (error || !invoice) {
+  if (invError || !invoice) {
+    console.error("[public-invoice] query error:", invError?.message || "not found", invoiceId);
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
+
+  const [orgResult, itemsResult] = await Promise.all([
+    (supabase as any)
+      .from("organizations")
+      .select("name, logo_url, brand_color_hex")
+      .eq("id", invoice.organization_id)
+      .maybeSingle(),
+    (supabase as any)
+      .from("invoice_line_items")
+      .select("id, description, quantity, unit_price, sort_order")
+      .eq("invoice_id", invoice.id)
+      .order("sort_order", { ascending: true }),
+  ]);
+
+  const org = orgResult.data;
+  const lineItems = itemsResult.data || [];
 
   if (invoice.status === "sent") {
     await (supabase as any)
@@ -69,12 +60,10 @@ export async function GET(
         invoice_id: invoiceId,
         type: "viewed",
         text: "Client viewed invoice",
-      });
+      })
+      .then(() => {})
+      .catch(() => {});
   }
-
-  const org = invoice.organizations as any;
-  const lineItems = ((invoice.invoice_line_items || []) as any[])
-    .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
 
   return NextResponse.json({
     id: invoice.id,
