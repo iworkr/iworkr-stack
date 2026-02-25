@@ -13,11 +13,24 @@ export async function GET(
 ) {
   const { invoiceId } = await params;
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl) {
+    console.error("[public-invoice] NEXT_PUBLIC_SUPABASE_URL is not set");
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
+  const key = serviceKey || anonKey;
+  if (!key) {
+    console.error("[public-invoice] Neither SUPABASE_SERVICE_ROLE_KEY nor NEXT_PUBLIC_SUPABASE_ANON_KEY is set");
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
+  const supabase = createClient(supabaseUrl, key, {
+    auth: { persistSession: false },
+  });
 
   const { data: invoice, error: invError } = await (supabase as any)
     .from("invoices")
@@ -26,8 +39,13 @@ export async function GET(
     .is("deleted_at", null)
     .maybeSingle();
 
-  if (invError || !invoice) {
-    console.error("[public-invoice] query error:", invError?.message || "not found", invoiceId);
+  if (invError) {
+    console.error("[public-invoice] query error:", invError.message, invError.code, invoiceId);
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
+
+  if (!invoice) {
+    console.error("[public-invoice] no invoice found for id:", invoiceId);
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
