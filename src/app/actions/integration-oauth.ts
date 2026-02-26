@@ -3,6 +3,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────────── */
+
+const ExchangeOAuthCodeSchema = z.object({
+  code: z.string().min(1, "OAuth code is required").max(5000),
+  provider: z.string().min(1).max(50),
+  integrationId: z.string().uuid(),
+});
+
+const ConnectWithApiKeySchema = z.object({
+  integrationId: z.string().uuid(),
+  apiKey: z.string().min(1, "API key is required").max(1000),
+  extraConfig: z.record(z.string(), z.unknown()).optional(),
+});
+
+const UpdateProviderSettingsSchema = z.record(z.string(), z.unknown());
 
 /* ── OAuth Provider Config ────────────────────────────── */
 
@@ -107,6 +124,12 @@ export async function getOAuthUrl(integrationId: string, provider: string): Prom
 /* ── Exchange Code for Tokens ─────────────────────────── */
 
 export async function exchangeOAuthCode(code: string, provider: string, integrationId: string): Promise<{ error?: string }> {
+  // Validate input
+  const parsed = ExchangeOAuthCodeSchema.safeParse({ code, provider, integrationId });
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const config = PROVIDERS[provider];
   if (!config) return { error: "Unknown provider" };
 
@@ -282,6 +305,12 @@ export async function connectWithApiKey(
   apiKey: string,
   extraConfig?: Record<string, any>
 ): Promise<{ error?: string }> {
+  // Validate input
+  const parsed = ConnectWithApiKeySchema.safeParse({ integrationId, apiKey, extraConfig });
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -325,6 +354,12 @@ export async function updateProviderSettings(
   integrationId: string,
   settings: Record<string, any>
 ): Promise<{ error?: string }> {
+  // Validate input
+  const parsed = UpdateProviderSettingsSchema.safeParse(settings);
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
 
   const { data: { user } } = await supabase.auth.getUser();

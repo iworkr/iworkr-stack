@@ -4,6 +4,18 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const CreateIntegrationSchema = z.object({
+  organization_id: z.string().uuid(),
+  provider: z.string().min(1, "Provider is required").max(100),
+  config: z.record(z.string(), z.unknown()).optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
+});
+
+const UpdateIntegrationSettingsSchema = z.record(z.string(), z.unknown());
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -115,6 +127,12 @@ export async function updateIntegrationSettings(
   settings: any
 ) {
   try {
+    // Validate input
+    const parsed = UpdateIntegrationSettingsSchema.safeParse(settings);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("update_integration_settings", {
@@ -145,6 +163,12 @@ export async function createIntegration(params: {
   settings?: any;
 }) {
   try {
+    // Validate input
+    const parsed = CreateIntegrationSchema.safeParse(params);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase

@@ -4,6 +4,15 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { randomBytes, createHash } from "crypto";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const GenerateApiKeySchema = z.object({
+  organization_id: z.string().uuid(),
+  name: z.string().min(1, "Name is required").max(100),
+  scopes: z.array(z.string().max(50)).optional(),
+});
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -38,6 +47,12 @@ export async function generateApiKey(params: {
   name: string;
   scopes?: string[];
 }): Promise<{ key: string | null; data: ApiKey | null; error?: string }> {
+  // Validate input
+  const parsed = GenerateApiKeySchema.safeParse(params);
+  if (!parsed.success) {
+    return { key: null, data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
 
   // Get current user

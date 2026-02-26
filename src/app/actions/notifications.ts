@@ -4,6 +4,34 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────────── */
+
+const notificationTypeSchema = z.enum([
+  "job_assigned", "quote_approved", "mention", "system",
+  "review", "invoice_paid", "schedule_conflict", "form_signed", "team_invite",
+]);
+
+const CreateNotificationSchema = z.object({
+  organization_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  type: notificationTypeSchema,
+  title: z.string().min(1, "Title is required").max(200),
+  body: z.string().max(2000).optional().nullable(),
+  sender_id: z.string().uuid().optional().nullable(),
+  sender_name: z.string().max(200).optional().nullable(),
+  context: z.string().max(500).optional().nullable(),
+  related_job_id: z.string().uuid().optional().nullable(),
+  related_client_id: z.string().uuid().optional().nullable(),
+  related_entity_type: z.string().max(50).optional().nullable(),
+  related_entity_id: z.string().uuid().optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+});
+
+const SendReplySchema = z.object({
+  body: z.string().min(1, "Reply cannot be empty").max(5000),
+});
 
 /* ── Types ───────────────────────────────────────────── */
 
@@ -262,6 +290,12 @@ export async function unsnoozeNotification(notificationId: string) {
 
 export async function createNotification(params: CreateNotificationParams) {
   try {
+    // Validate input
+    const parsed = CreateNotificationSchema.safeParse(params);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
@@ -302,6 +336,12 @@ export async function createNotification(params: CreateNotificationParams) {
 
 export async function sendReplyAction(notificationId: string, body: string) {
   try {
+    // Validate input
+    const parsed = SendReplySchema.safeParse({ body });
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };

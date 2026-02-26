@@ -3,6 +3,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────────── */
+
+const CreateThreadSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  content: z.string().min(1, "Content is required").max(10000),
+  category: z.string().min(1).max(100),
+});
+
+const CreateTicketSchema = z.object({
+  subject: z.string().min(1, "Subject is required").max(200),
+  severity: z.string().min(1).max(50),
+  message: z.string().min(1, "Message is required").max(10000),
+  orgId: z.string().uuid().optional(),
+});
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -95,6 +111,12 @@ export async function getHelpThreads(): Promise<{ data: HelpThread[]; error?: st
 }
 
 export async function createThread(title: string, content: string, category: string): Promise<{ data: HelpThread | null; error?: string }> {
+  // Validate input
+  const parsed = CreateThreadSchema.safeParse({ title, content, category });
+  if (!parsed.success) {
+    return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: "Not authenticated" };
@@ -144,6 +166,12 @@ export async function createTicket(params: {
   message: string;
   orgId?: string;
 }): Promise<{ data: HelpTicket | null; error?: string }> {
+  // Validate input
+  const parsed = CreateTicketSchema.safeParse(params);
+  if (!parsed.success) {
+    return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: "Not authenticated" };

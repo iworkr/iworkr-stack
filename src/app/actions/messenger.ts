@@ -295,6 +295,12 @@ export async function sendMessage(channelId: string, content: string, type = "te
 
 export async function editMessage(messageId: string, content: string) {
   try {
+    // Validate input
+    const parsed = EditMessageSchema.safeParse({ content });
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
