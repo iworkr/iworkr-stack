@@ -259,7 +259,7 @@ export async function getDashboardSnapshot(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: data as any, error: null };
+    return { data, error: null };
   } catch (error: any) {
     logger.error("Dashboard snapshot error", "dashboard", error);
     return { data: null, error: error.message || "Failed to fetch dashboard snapshot" };

@@ -4,7 +4,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
-import { Events, dispatch, dispatchAndWait } from "@/lib/automation";
+import { Events, dispatch, dispatchAndWait, type EventCategory } from "@/lib/automation";
 import { z } from "zod";
 import { validate, createFlowSchema } from "@/lib/validation";
 
@@ -546,7 +546,7 @@ export async function testAutomationFlow(flowId: string) {
     const testEvent = {
       id: `test_${Date.now()}`,
       type: eventType,
-      category: eventType.split(".")[0] as any,
+      category: eventType.split(".")[0] as EventCategory,
       organization_id: flow.organization_id,
       user_id: user?.id,
       entity_type: "test",
@@ -721,9 +721,9 @@ export async function dryRunAutomationFlow(flowId: string) {
           entity_id: recentJob.id,
           new_record: recentJob,
           old_record: { ...recentJob, status: "in_progress" },
-          client_name: (recentJob as any).clients?.name,
-          client_email: (recentJob as any).clients?.email,
-          client_phone: (recentJob as any).clients?.phone,
+          client_name: recentJob.clients?.name,
+          client_email: recentJob.clients?.email,
+          client_phone: recentJob.clients?.phone,
           job_title: recentJob.title,
           job_status: recentJob.status,
         };
@@ -744,8 +744,8 @@ export async function dryRunAutomationFlow(flowId: string) {
           new_record: recentInvoice,
           invoice_number: recentInvoice.invoice_number,
           invoice_total: recentInvoice.total,
-          client_name: (recentInvoice as any).clients?.name,
-          client_email: (recentInvoice as any).clients?.email,
+          client_name: recentInvoice.clients?.name,
+          client_email: recentInvoice.clients?.email,
         };
       }
     }
