@@ -160,7 +160,7 @@ export default function QuoteDetailPage() {
               whileTap={{ scale: 0.98 }}
               onClick={handleSend}
               disabled={sending}
-              className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-[#00E676] to-emerald-600 px-3 py-1.5 text-[12px] font-medium text-black shadow-[0_0_20px_-5px_rgba(0,230,118,0.3)]"
+              className="flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[12px] font-medium text-black transition-colors duration-200 hover:bg-[#00C853]"
             >
               {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
               Send to Client

@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
-import { Marker } from "@vis.gl/react-google-maps";
+import { AdvancedMarker } from "@vis.gl/react-google-maps";
 
 export interface JobMarkerData {
   id: string;
@@ -17,64 +16,40 @@ interface JobLayerProps {
   onJobClick: (jobId: string, title: string) => void;
 }
 
-function getJobIcons(): Record<JobMarkerData["variant"], google.maps.Symbol> | null {
-  if (typeof globalThis === "undefined") return null;
-  const g = (globalThis as { google?: { maps?: { SymbolPath?: typeof google.maps.SymbolPath } } }).google;
-  if (!g?.maps?.SymbolPath) return null;
-  return {
-    unassigned: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 7,
-      fillColor: "#050505",
-      fillOpacity: 1,
-      strokeColor: "#ffffff",
-      strokeWeight: 2,
-    },
-    scheduled: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 6,
-      fillColor: "#ffffff",
-      fillOpacity: 1,
-      strokeColor: "#27272a",
-      strokeWeight: 1,
-    },
-    in_progress: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 6,
-      fillColor: "#8b5cf6",
-      fillOpacity: 1,
-      strokeColor: "#27272a",
-      strokeWeight: 1,
-    },
-    urgent: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 6,
-      fillColor: "#f43f5e",
-      fillOpacity: 1,
-      strokeColor: "#27272a",
-      strokeWeight: 1,
-    },
-  };
-}
+/* ── PRD §5.2: Job Site Marker — "The Target" ───────────
+   White dot (w-2.5 h-2.5 = 10px), border-2 border-zinc-900.
+   Urgent/overdue → bg-rose-500. In-progress → bg-violet-500.
+   Unassigned → dark fill + white border (inverted).
+   ─────────────────────────────────────────────────────── */
+
+const variantStyles: Record<JobMarkerData["variant"], string> = {
+  unassigned: "h-3 w-3 border-2 border-white bg-zinc-950",
+  scheduled:  "h-2.5 w-2.5 border-2 border-zinc-900 bg-white",
+  in_progress: "h-2.5 w-2.5 border-2 border-zinc-900 bg-violet-500",
+  urgent:     "h-2.5 w-2.5 border-2 border-zinc-900 bg-rose-500",
+};
 
 export function JobLayer({ jobs, visible, onJobClick }: JobLayerProps) {
-  const jobIcons = useMemo(() => getJobIcons(), []);
-  if (!visible || jobs.length === 0 || !jobIcons) return null;
+  if (!visible || jobs.length === 0) return null;
 
+  /* PRD §4.1: z-20 for all map markers. Urgent/in_progress get +2 priority */
   const zIndex = (variant: JobMarkerData["variant"]) =>
-    variant === "in_progress" || variant === "urgent" ? 400 : 300;
+    variant === "in_progress" || variant === "urgent" ? 22 : 20;
 
   return (
     <>
       {jobs.map((job) => (
-        <Marker
+        <AdvancedMarker
           key={job.id}
           position={{ lat: job.lat, lng: job.lng }}
-          icon={jobIcons[job.variant]}
           title={job.title}
           zIndex={zIndex(job.variant)}
           onClick={() => onJobClick(job.id, job.title)}
-        />
+        >
+          <div
+            className={`cursor-pointer rounded-full shadow-sm transition-transform duration-100 hover:scale-125 ${variantStyles[job.variant]}`}
+          />
+        </AdvancedMarker>
       ))}
     </>
   );

@@ -79,10 +79,15 @@ export default function CommunicationsPage() {
 
   const orgId = currentOrg?.id;
 
-  // Fetch templates on mount
+  // Ref to read current templates without adding to dependency arrays
+  const templatesRef = useRef(templates);
+  templatesRef.current = templates;
+
+  // Fetch templates on mount — with abort controller for cleanup
   useEffect(() => {
     if (!orgId) return;
     const supabase = createClient();
+    let cancelled = false;
 
     (async () => {
       const { data } = await (supabase as any)
@@ -90,6 +95,7 @@ export default function CommunicationsPage() {
         .select("*")
         .eq("organization_id", orgId);
 
+      if (cancelled) return;
       const map: Record<string, TemplateRow> = {};
       for (const row of data ?? []) {
         map[row.event_type] = row;
@@ -97,13 +103,16 @@ export default function CommunicationsPage() {
       setTemplates(map);
       setLoading(false);
     })();
+
+    return () => { cancelled = true; };
   }, [orgId]);
 
+  // Use ref to read templates — removes `templates` from dependency arrays
   const toggleActive = useCallback(
     async (event: string) => {
       if (!orgId) return;
       const supabase = createClient();
-      const existing = templates[event];
+      const existing = templatesRef.current[event];
       const newActive = existing ? !existing.is_active : true;
 
       const row: TemplateRow = {
@@ -134,14 +143,14 @@ export default function CommunicationsPage() {
         setTemplates((prev) => ({ ...prev, [event]: data }));
       }
     },
-    [orgId, templates]
+    [orgId]
   );
 
   const saveTemplate = useCallback(
     async (event: string, subject: string, body: string) => {
       if (!orgId) return;
       const supabase = createClient();
-      const existing = templates[event];
+      const existing = templatesRef.current[event];
 
       const { data } = await (supabase as any)
         .from("workspace_email_templates")
@@ -163,7 +172,7 @@ export default function CommunicationsPage() {
       }
       setEditingEvent(null);
     },
-    [orgId, templates]
+    [orgId]
   );
 
   const editingType = EMAIL_TYPES.find((t) => t.event === editingEvent);

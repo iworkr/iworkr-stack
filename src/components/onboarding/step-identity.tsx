@@ -122,7 +122,7 @@ export function StepIdentity() {
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="e.g. Apex Plumbing"
-            className="w-full border-b border-[rgba(255,255,255,0.1)] bg-transparent py-3 text-xl font-medium text-zinc-100 outline-none transition-colors duration-300 placeholder:text-zinc-700 focus:border-white"
+            className="w-full border-b border-[rgba(255,255,255,0.1)] bg-transparent py-3 text-xl font-medium text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-700 focus:border-white"
             autoComplete="off"
           />
 

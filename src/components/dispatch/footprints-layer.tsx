@@ -16,7 +16,8 @@ interface FootprintsLayerProps {
 }
 
 /** PRD: Ghost trail — Zinc-500, strokeOpacity 0.3, strokeWeight 2; snap to roads via parent. */
-const FOOTPRINT_Z_INDEX = 100;
+/* PRD §4.1: z-10 for geographic overlays (routes, footprints) */
+const FOOTPRINT_Z_INDEX = 10;
 
 export function FootprintsLayer({ trails, visible }: FootprintsLayerProps) {
   if (!visible || trails.length === 0) return null;

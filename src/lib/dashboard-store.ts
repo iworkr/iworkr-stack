@@ -20,15 +20,15 @@ export interface WidgetDef {
 }
 
 export const WIDGET_REGISTRY: WidgetDef[] = [
-  { id: "revenue",   label: "Revenue",       description: "Monthly revenue with sparkline chart",  icon: "TrendingUp",    defaultW: 2, defaultH: 2, minW: 1, minH: 1 },
-  { id: "dispatch",  label: "Live Dispatch",  description: "Real-time technician locations",       icon: "Radio",         defaultW: 2, defaultH: 3, minW: 1, minH: 2 },
-  { id: "inbox",     label: "Inbox",          description: "Unread notifications triage",          icon: "Inbox",         defaultW: 1, defaultH: 2, minW: 1, minH: 1 },
-  { id: "schedule",  label: "My Schedule",    description: "Today's job schedule",                 icon: "Calendar",      defaultW: 1, defaultH: 2, minW: 1, minH: 1 },
-  { id: "actions",   label: "Quick Actions",  description: "Create jobs, invoices, clients",       icon: "Zap",           defaultW: 1, defaultH: 2, minW: 1, minH: 1 },
-  { id: "insights",  label: "AI Insights",    description: "Smart recommendations",                icon: "Sparkles",      defaultW: 1, defaultH: 2, minW: 1, minH: 1 },
-  { id: "team",      label: "Team Status",    description: "Who's online and working",             icon: "Users",         defaultW: 1, defaultH: 2, minW: 1, minH: 1 },
-  { id: "links",     label: "Quick Links",    description: "Custom shortcut buttons",              icon: "Link",          defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
-  { id: "notepad",   label: "Notepad",        description: "Scratch notes and reminders",          icon: "FileText",      defaultW: 1, defaultH: 2, minW: 1, minH: 1 },
+  { id: "revenue",   label: "Revenue",       description: "Monthly revenue with sparkline chart",  icon: "TrendingUp",    defaultW: 8, defaultH: 4, minW: 4, minH: 2 },
+  { id: "dispatch",  label: "Live Dispatch",  description: "Real-time technician locations",       icon: "Radio",         defaultW: 4, defaultH: 4, minW: 4, minH: 3 },
+  { id: "inbox",     label: "Inbox",          description: "Unread notifications triage",          icon: "Inbox",         defaultW: 4, defaultH: 3, minW: 3, minH: 2 },
+  { id: "schedule",  label: "My Schedule",    description: "Today's job schedule",                 icon: "Calendar",      defaultW: 4, defaultH: 3, minW: 3, minH: 2 },
+  { id: "actions",   label: "Quick Actions",  description: "Create jobs, invoices, clients",       icon: "Zap",           defaultW: 4, defaultH: 3, minW: 3, minH: 2 },
+  { id: "insights",  label: "AI Insights",    description: "Smart recommendations",                icon: "Sparkles",      defaultW: 4, defaultH: 3, minW: 3, minH: 2 },
+  { id: "team",      label: "Team Status",    description: "Who's online and working",             icon: "Users",         defaultW: 4, defaultH: 3, minW: 3, minH: 2 },
+  { id: "links",     label: "Quick Links",    description: "Custom shortcut buttons",              icon: "Link",          defaultW: 4, defaultH: 2, minW: 3, minH: 1 },
+  { id: "notepad",   label: "Notepad",        description: "Scratch notes and reminders",          icon: "FileText",      defaultW: 4, defaultH: 3, minW: 3, minH: 2 },
 ];
 
 /* ── Widget Size (for responsive rendering) ─────────────── */
@@ -37,13 +37,14 @@ export type WidgetSize = "small" | "medium" | "large";
 
 /* ── Default Layout ─────────────────────────────────────── */
 
+/* 12-column Bento Box: Row 1 = Revenue + Dispatch, Row 2 = Inbox + Schedule + Actions */
 export const DEFAULT_LAYOUT: LayoutItem[] = [
-  { i: "revenue",  x: 0, y: 0, w: 2, h: 2, minW: 1, minH: 1 },
-  { i: "dispatch", x: 2, y: 0, w: 2, h: 3, minW: 1, minH: 2 },
-  { i: "inbox",    x: 0, y: 2, w: 1, h: 2, minW: 1, minH: 1 },
-  { i: "schedule", x: 1, y: 2, w: 1, h: 2, minW: 1, minH: 1 },
-  { i: "actions",  x: 2, y: 3, w: 1, h: 2, minW: 1, minH: 1 },
-  { i: "insights", x: 3, y: 3, w: 1, h: 2, minW: 1, minH: 1 },
+  { i: "revenue",  x: 0, y: 0, w: 8, h: 4, minW: 4, minH: 2 },
+  { i: "dispatch", x: 8, y: 0, w: 4, h: 4, minW: 4, minH: 3 },
+  { i: "inbox",    x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "schedule", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "actions",  x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "insights", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
 ];
 
 /* ── Snapshot Types ─────────────────────────────────────── */

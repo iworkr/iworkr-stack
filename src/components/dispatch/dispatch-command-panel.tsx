@@ -29,7 +29,7 @@ export function DispatchCommandPanel({
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
-      className="absolute left-4 top-4 z-10 w-52 rounded-xl border border-white/5 bg-zinc-950/80 p-3 shadow-xl backdrop-blur-md"
+      className="w-52 rounded-xl border border-white/5 bg-zinc-950/80 p-3 shadow-xl backdrop-blur-md"
     >
       <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
         Layers

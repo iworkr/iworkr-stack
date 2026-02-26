@@ -240,7 +240,7 @@ export function MessageInput({ channelId, userId, userProfile }: MessageInputPro
                 </button>
                 <button
                   onClick={handleSendPoll}
-                  className="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-[11px] font-semibold text-white transition-all duration-150 hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-900/30"
+                  className="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-[11px] font-semibold text-white transition-colors duration-200 hover:bg-emerald-500"
                 >
                   Send Poll
                 </button>

@@ -31,8 +31,8 @@ import "react-grid-layout/css/styles.css";
 
 function classifySize(w: number, h: number): WidgetSize {
   const area = w * h;
-  if (area <= 1) return "small";
-  if (area <= 4) return "medium";
+  if (area <= 6) return "small";
+  if (area <= 16) return "medium";
   return "large";
 }
 
@@ -55,10 +55,10 @@ function renderWidget(id: string, size: WidgetSize) {
 
 /* ── Grid Component ─────────────────────────────────── */
 
-const ROW_HEIGHT = 100;
-const MARGIN: [number, number] = [20, 20];
+const ROW_HEIGHT = 64;
+const MARGIN: [number, number] = [24, 24];
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
-const COLS = { lg: 4, md: 4, sm: 2, xs: 1, xxs: 1 };
+const COLS = { lg: 12, md: 12, sm: 6, xs: 4, xxs: 4 };
 
 export function DashboardGrid() {
   const { orgId } = useOrg();
@@ -129,7 +129,7 @@ export function DashboardGrid() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="mb-4 flex items-center justify-between rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2.5 backdrop-blur-sm"
+            className="mb-4 flex items-center justify-between rounded-xl border border-white/[0.08] bg-zinc-900/60 px-4 py-2.5 backdrop-blur-xl"
           >
             <div className="flex items-center gap-2">
               <Pencil size={14} className="text-zinc-300" />
@@ -197,7 +197,7 @@ export function DashboardGrid() {
             <div key={widgetId} className="relative">
               {/* Edit mode overlay */}
               {editMode && (
-                <div className="pointer-events-none absolute inset-0 z-20 rounded-xl ring-2 ring-white/20 ring-offset-1 ring-offset-black/50" />
+                <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl ring-1 ring-white/[0.12] ring-offset-1 ring-offset-black/40" />
               )}
 
               {/* Drag handle + remove button (edit mode only) */}
@@ -222,7 +222,7 @@ export function DashboardGrid() {
               )}
 
               {/* Widget content */}
-              <div className="h-full overflow-hidden rounded-xl">
+              <div className="h-full overflow-hidden rounded-2xl">
                 {renderWidget(widgetId, sizeMap[widgetId] || "medium")}
               </div>
             </div>

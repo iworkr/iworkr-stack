@@ -201,17 +201,20 @@ export async function getClients(orgId: string) {
 /**
  * Get a single client with contacts, recent activity, and spend history
  */
-export async function getClient(clientId: string) {
+export async function getClient(clientId: string, orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient() as any;
 
-    // Get client
-    const { data: client, error: clientError } = await supabase
+    // Get client — filter by org when provided to enforce ownership
+    let query = supabase
       .from("clients")
       .select("*")
       .eq("id", clientId)
-      .is("deleted_at", null)
-      .maybeSingle();
+      .is("deleted_at", null);
+
+    if (orgId) query = query.eq("organization_id", orgId);
+
+    const { data: client, error: clientError } = await query.maybeSingle();
 
     if (clientError) {
       return { data: null, error: clientError.message };
@@ -378,9 +381,9 @@ export async function createClient(params: CreateClientParams) {
 }
 
 /**
- * Update a client
+ * Update a client (orgId optional but recommended for ownership verification)
  */
-export async function updateClient(clientId: string, updates: UpdateClientParams) {
+export async function updateClient(clientId: string, updates: UpdateClientParams, orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient() as any;
 
@@ -390,6 +393,18 @@ export async function updateClient(clientId: string, updates: UpdateClientParams
 
     if (!user) {
       return { data: null, error: "Not authenticated" };
+    }
+
+    // Verify org ownership when orgId is provided
+    if (orgId) {
+      const { data: existing } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("id", clientId)
+        .eq("organization_id", orgId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (!existing) return { data: null, error: "Client not found in organization" };
     }
 
     const updateData: any = {};
@@ -408,13 +423,15 @@ export async function updateClient(clientId: string, updates: UpdateClientParams
 
     updateData.updated_at = new Date().toISOString();
 
-    const { data: client, error } = await supabase
+    let query = supabase
       .from("clients")
       .update(updateData)
       .eq("id", clientId)
-      .is("deleted_at", null)
-      .select()
-      .single();
+      .is("deleted_at", null);
+
+    if (orgId) query = query.eq("organization_id", orgId);
+
+    const { data: client, error } = await query.select().single();
 
     if (error) {
       return { data: null, error: error.message };
@@ -428,9 +445,9 @@ export async function updateClient(clientId: string, updates: UpdateClientParams
 }
 
 /**
- * Soft delete a client
+ * Soft delete a client (orgId optional but recommended for ownership verification)
  */
-export async function deleteClient(clientId: string) {
+export async function deleteClient(clientId: string, orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient() as any;
 
@@ -442,11 +459,15 @@ export async function deleteClient(clientId: string) {
       return { data: null, error: "Not authenticated" };
     }
 
-    const { error } = await supabase
+    let query = supabase
       .from("clients")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", clientId)
       .is("deleted_at", null);
+
+    if (orgId) query = query.eq("organization_id", orgId);
+
+    const { error } = await query;
 
     if (error) {
       return { data: null, error: error.message };
@@ -691,11 +712,23 @@ export async function createClientFull(params: CreateClientParams) {
 }
 
 /**
- * Get full client details via RPC
+ * Get full client details via RPC (orgId enforces ownership — PRD §2.1)
  */
-export async function getClientDetails(clientId: string) {
+export async function getClientDetails(clientId: string, orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient() as any;
+
+    // Security: verify org ownership before calling security-definer RPC
+    if (orgId) {
+      const { data: exists } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("id", clientId)
+        .eq("organization_id", orgId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (!exists) return { data: null, error: "Client not found in organization" };
+    }
 
     const { data, error } = await supabase.rpc("get_client_details", {
       p_client_id: clientId,
@@ -703,7 +736,7 @@ export async function getClientDetails(clientId: string) {
 
     if (error) {
       logger.error("get_client_details RPC failed, falling back", "clients", undefined, { error: error.message });
-      return getClient(clientId);
+      return getClient(clientId, orgId);
     }
 
     return { data, error: null };

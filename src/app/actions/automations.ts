@@ -338,7 +338,7 @@ export async function setAllFlowsStatusRpc(orgId: string, pause: boolean) {
   }
 }
 
-/* ── Test a flow (manual trigger) ─────────────────────── */
+/* ── Test a flow (manual trigger — legacy) ────────────── */
 
 export async function testAutomationFlow(flowId: string) {
   try {
@@ -388,6 +388,212 @@ export async function testAutomationFlow(flowId: string) {
       },
       error: result.errors.length > 0 ? result.errors.join("; ") : null,
     };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   Project Automata — New Actions
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Publish Flow (bumps version, sets live) ──────────── */
+
+export async function publishAutomationFlow(flowId: string) {
+  try {
+    const supabase = (await createServerSupabaseClient()) as any;
+
+    const { data, error } = await supabase.rpc("publish_automation_flow", {
+      p_flow_id: flowId,
+    });
+
+    if (error) {
+      logger.error("publishAutomationFlow RPC error", error.message);
+      return { data: null, error: error.message };
+    }
+    if (data?.error) return { data: null, error: data.error };
+
+    revalidatePath("/dashboard/automations");
+    return { data, error: null };
+  } catch (err: any) {
+    logger.error("publishAutomationFlow exception", err.message);
+    return { data: null, error: err.message };
+  }
+}
+
+/* ── Update flow conditions (JSON Logic AST) ──────────── */
+
+export async function updateFlowConditions(
+  flowId: string,
+  conditions: Record<string, unknown> | null
+) {
+  try {
+    const supabase = (await createServerSupabaseClient()) as any;
+
+    const { data, error } = await supabase
+      .from("automation_flows")
+      .update({ conditions })
+      .eq("id", flowId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+/* ── Dry Run Test (via automation-worker Edge Function) ── */
+
+export async function dryRunAutomationFlow(flowId: string) {
+  try {
+    const supabase = (await createServerSupabaseClient()) as any;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // Fetch the flow to get trigger config
+    const { data: flow, error: fetchErr } = await supabase
+      .from("automation_flows")
+      .select("*")
+      .eq("id", flowId)
+      .single();
+
+    if (fetchErr) return { data: null, error: fetchErr.message };
+
+    // Build a realistic mock payload based on the trigger
+    const triggerEvent = flow.trigger_config?.event || "system.webhook_received";
+    const entityType = flow.trigger_config?.entity || triggerEvent.split(".")[0];
+
+    // Attempt to fetch a recent real record for realistic test data
+    let mockPayload: Record<string, unknown> = {
+      event_type: triggerEvent,
+      entity_type: entityType,
+      test: true,
+      timestamp: new Date().toISOString(),
+      user_id: user?.id,
+      user_email: user?.email,
+    };
+
+    if (entityType === "job") {
+      const { data: recentJob } = await supabase
+        .from("jobs")
+        .select("id, title, status, priority, client_id, assignee_id, organization_id, display_id, clients(name, email, phone)")
+        .eq("organization_id", flow.organization_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentJob) {
+        mockPayload = {
+          ...mockPayload,
+          entity_id: recentJob.id,
+          new_record: recentJob,
+          old_record: { ...recentJob, status: "in_progress" },
+          client_name: (recentJob as any).clients?.name,
+          client_email: (recentJob as any).clients?.email,
+          client_phone: (recentJob as any).clients?.phone,
+          job_title: recentJob.title,
+          job_status: recentJob.status,
+        };
+      }
+    } else if (entityType === "invoice") {
+      const { data: recentInvoice } = await supabase
+        .from("invoices")
+        .select("id, invoice_number, total, status, client_id, organization_id, clients(name, email)")
+        .eq("organization_id", flow.organization_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentInvoice) {
+        mockPayload = {
+          ...mockPayload,
+          entity_id: recentInvoice.id,
+          new_record: recentInvoice,
+          invoice_number: recentInvoice.invoice_number,
+          invoice_total: recentInvoice.total,
+          client_name: (recentInvoice as any).clients?.name,
+          client_email: (recentInvoice as any).clients?.email,
+        };
+      }
+    }
+
+    // Call the automation-worker with X-Dry-Run header
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return { data: null, error: "Supabase not configured" };
+    }
+
+    const workerUrl = `${supabaseUrl}/functions/v1/automation-worker`;
+    const res = await fetch(workerUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+        "X-Dry-Run": "true",
+      },
+      body: JSON.stringify({
+        flow_id: flowId,
+        mock_payload: mockPayload,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return { data: null, error: `Worker error: ${errText}` };
+    }
+
+    const result = await res.json();
+    return { data: result, error: null };
+  } catch (err: any) {
+    logger.error("dryRunAutomationFlow exception", err.message);
+    return { data: null, error: err.message };
+  }
+}
+
+/* ── Get execution runs (idempotency ledger) ──────────── */
+
+export async function getAutomationRuns(orgId: string, flowId?: string, limit = 50) {
+  try {
+    const supabase = (await createServerSupabaseClient()) as any;
+
+    let query = supabase
+      .from("automation_runs")
+      .select("*, automation_flows:automation_id (name, category)")
+      .eq("workspace_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (flowId) {
+      query = query.eq("automation_id", flowId);
+    }
+
+    const { data, error } = await query;
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+/* ── Get a single run with full trace ─────────────────── */
+
+export async function getAutomationRunTrace(runId: string) {
+  try {
+    const supabase = (await createServerSupabaseClient()) as any;
+
+    const { data, error } = await supabase
+      .from("automation_runs")
+      .select("*, automation_flows:automation_id (name, blocks, conditions)")
+      .eq("id", runId)
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
   }

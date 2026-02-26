@@ -154,7 +154,7 @@ function DepotEmptyState({
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={onCta}
-          className="mt-4 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500"
+          className="mt-4 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
         >
           <Plus size={12} />
           {cta}
@@ -443,7 +443,7 @@ export default function AssetsPage() {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={handleNewItem}
-              className="flex h-7 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500"
+              className="flex h-7 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
             >
               <Plus size={13} strokeWidth={2.5} />
               New Item
@@ -458,7 +458,7 @@ export default function AssetsPage() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05, duration: 0.3 }}
-            className="group flex items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-300 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
+            className="group flex items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
               <DollarSign size={14} className="text-zinc-500 transition-colors group-hover:text-emerald-400" />
@@ -478,7 +478,7 @@ export default function AssetsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.3 }}
             onClick={handleLowStockClick}
-            className={`group flex cursor-pointer items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-300 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
+            className={`group flex cursor-pointer items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
               lowStockCount > 0 ? "animate-lowstock-pulse" : ""
             } ${kpiFilter === "low_stock" ? "ring-1 ring-amber-500/30" : ""}`}
           >
@@ -507,7 +507,7 @@ export default function AssetsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.3 }}
             onClick={handleMaintenanceClick}
-            className={`group flex cursor-pointer items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-300 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
+            className={`group flex cursor-pointer items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
               kpiFilter === "maintenance" ? "ring-1 ring-rose-500/30" : ""
             }`}
           >

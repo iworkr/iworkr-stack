@@ -237,7 +237,7 @@ export function TriagePanel() {
                           {item.title}
                         </span>
                         {!item.read && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         )}
                       </div>
                       <p className="mt-0.5 text-[12px] leading-relaxed text-zinc-600 line-clamp-2">

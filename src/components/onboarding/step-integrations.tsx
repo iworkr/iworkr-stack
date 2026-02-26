@@ -94,7 +94,7 @@ function IntegrationRow({
       <button
         onClick={handleConnect}
         disabled={state !== "idle"}
-        className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-300 ${
+        className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
           state === "connected"
             ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
             : state === "connecting"

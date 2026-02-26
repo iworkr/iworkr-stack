@@ -230,7 +230,7 @@ export function Sidebar() {
       <motion.aside
         layout
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className={`fixed top-0 left-0 z-50 flex h-screen flex-col border-r transition-transform duration-300 md:z-30 md:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 flex h-screen flex-col border-r transition-transform duration-200 md:z-30 md:translate-x-0 ${
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
         style={{

@@ -217,7 +217,7 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
           disabled={!content.trim()}
           className={`rounded-lg p-1.5 transition-all duration-200 ${
             content.trim()
-              ? "bg-emerald-600 text-white shadow-sm shadow-emerald-900/30 hover:bg-emerald-500"
+              ? "bg-emerald-600 text-white hover:bg-emerald-500"
               : "text-zinc-700"
           }`}
         >

@@ -115,8 +115,9 @@ export const useClientsStore = create<ClientsState>()(
       clients: s.clients.map((c) => (c.id === id ? { ...c, ...patch } : c)),
     })),
 
-  /** Optimistic update + server persist */
+  /** Optimistic update + server persist (with rollback) */
   updateClientServer: async (id, patch) => {
+    const previousClients = [...get().clients];
     // Optimistic
     set((s) => ({
       clients: s.clients.map((c) => (c.id === id ? { ...c, ...patch } : c)),
@@ -131,10 +132,19 @@ export const useClientsStore = create<ClientsState>()(
     if (patch.phone !== undefined) serverPatch.phone = patch.phone;
     if (patch.address !== undefined) serverPatch.address = patch.address;
     if (patch.type !== undefined) serverPatch.type = patch.type;
-    // Server sync
-    updateClientAction(id, serverPatch as any).catch((err) => {
-      console.error("Failed to persist client update:", err);
-    });
+    // Server sync — pass orgId for ownership verification
+    const orgId = get().orgId;
+    updateClientAction(id, serverPatch as any, orgId || undefined)
+      .then((result) => {
+        if (result.error) {
+          set({ clients: previousClients });
+          console.error("Client update failed:", result.error);
+        }
+      })
+      .catch((err) => {
+        set({ clients: previousClients });
+        console.error("Failed to persist client update:", err);
+      });
   },
 
   archiveClient: (id) =>
@@ -142,16 +152,26 @@ export const useClientsStore = create<ClientsState>()(
       clients: s.clients.filter((c) => c.id !== id),
     })),
 
-  /** Optimistic archive + server persist */
+  /** Optimistic archive + server persist (with rollback) */
   archiveClientServer: async (id) => {
+    const previousClients = [...get().clients];
     // Optimistic
     set((s) => ({
       clients: s.clients.filter((c) => c.id !== id),
     }));
-    // Server sync
-    deleteClientAction(id).catch((err) => {
-      console.error("Failed to persist client archive:", err);
-    });
+    // Server sync — pass orgId for ownership verification
+    const orgId = get().orgId;
+    deleteClientAction(id, orgId || undefined)
+      .then((result) => {
+        if (result.error) {
+          set({ clients: previousClients });
+          console.error("Client archive failed:", result.error);
+        }
+      })
+      .catch((err) => {
+        set({ clients: previousClients });
+        console.error("Failed to persist client archive:", err);
+      });
   },
 
   restoreClient: (client) =>

@@ -22,10 +22,14 @@ export default function ProfilePage() {
   const [phoneVal, setPhoneVal] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync from store ONCE on initial load — no nameVal in deps to prevent feedback loop
+  const hasSynced = useRef(false);
   useEffect(() => {
-    if (fullName && !nameVal) setNameVal(fullName);
+    if (hasSynced.current) return;
+    if (fullName) setNameVal(fullName);
     if (phone !== undefined) setPhoneVal(phone);
-  }, [fullName, phone, nameVal]);
+    if (fullName || phone) hasSynced.current = true;
+  }, [fullName, phone]);
 
   function handleNameBlur() {
     if (nameVal.trim() && nameVal !== fullName) {

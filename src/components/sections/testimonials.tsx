@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 import { useRef } from "react";
 import { FadeIn } from "@/components/ui/fade-in";
 import { Section, SectionHeader } from "@/components/ui/section";
@@ -57,40 +57,40 @@ function TestimonialCard({
 }) {
   return (
     <div
-      className={`flex h-full w-[320px] flex-shrink-0 flex-col rounded-xl border border-[rgba(255,255,255,0.08)] bg-zinc-900/80 p-6 transition-all duration-300 sm:w-[380px] ${
+      className={`flex h-full w-[320px] flex-shrink-0 flex-col rounded-xl border border-[var(--card-border)] bg-[var(--testimonial-bg)] p-6 backdrop-blur-sm transition-all duration-300 sm:w-[380px] ${
         isCenter ? "opacity-100" : "opacity-50 scale-[0.97]"
       }`}
     >
       {/* Quote mark */}
-      <span className="mb-4 block font-serif text-4xl leading-none text-zinc-700">
+      <span className="mb-4 block font-serif text-4xl leading-none text-[var(--text-dim)]">
         &ldquo;
       </span>
 
       {/* Quote */}
-      <p className="flex-1 text-sm leading-relaxed text-zinc-300">
+      <p className="flex-1 text-sm leading-relaxed text-[var(--text-heading)]">
         {testimonial.quote}
       </p>
 
       {/* Metric badge */}
       <div className="my-4">
-        <span className="inline-block rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-3 py-1 text-[10px] font-medium text-zinc-400">
+        <span className="inline-block rounded-full border border-[var(--card-border)] bg-[var(--subtle-bg)] px-3 py-1 text-[10px] font-medium text-[var(--text-muted)]">
           {testimonial.metric}
         </span>
       </div>
 
       {/* Author */}
-      <div className="flex items-center gap-3 border-t border-[rgba(255,255,255,0.06)] pt-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-400">
+      <div className="flex items-center gap-3 border-t border-[var(--card-border)] pt-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-xs font-medium text-[var(--text-muted)]">
           {testimonial.name
             .split(" ")
             .map((n) => n[0])
             .join("")}
         </div>
         <div>
-          <div className="text-sm font-medium text-zinc-200">
+          <div className="text-sm font-medium text-[var(--text-primary)]">
             {testimonial.name}
           </div>
-          <div className="text-[11px] text-zinc-500">
+          <div className="text-[11px] text-[var(--text-muted)]">
             {testimonial.role}, {testimonial.company}
           </div>
         </div>
@@ -143,7 +143,7 @@ export function Testimonials() {
 
         {/* Drag hint */}
         <FadeIn delay={0.5} className="mt-6 text-center">
-          <span className="text-xs text-zinc-600">
+          <span className="text-xs text-[var(--text-dim)]">
             Drag to explore
             <span className="ml-2 inline-block animate-pulse">←→</span>
           </span>

@@ -49,13 +49,13 @@ function BentoCard({
       onMouseLeave={handleMouseLeave}
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
-      className={`group relative overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] ${className}`}
+      className={`group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] ${className}`}
     >
       {/* Spotlight gradient */}
       <motion.div
         className="pointer-events-none absolute -inset-px z-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
         style={{
-          background: `radial-gradient(${spotlightSize}px circle at var(--mouse-x, -1000px) var(--mouse-y, -1000px), rgba(255,255,255,0.06), transparent 80%)`,
+          background: `radial-gradient(${spotlightSize}px circle at var(--mouse-x, -1000px) var(--mouse-y, -1000px), var(--subtle-bg-hover), transparent 80%)`,
           // @ts-expect-error CSS custom properties
           "--mouse-x": springX,
           "--mouse-y": springY,
@@ -70,19 +70,19 @@ function BentoCard({
 
 function SchedulerVisual() {
   const slots = [
-    { time: "8:00", job: "Pipe repair", tech: "Mike T.", color: "blue" },
+    { time: "8:00", job: "Pipe repair", tech: "Mike T.", color: "emerald" },
     { time: "9:30", job: "Travel", tech: "", color: "zinc" },
-    { time: "10:00", job: "Boiler install", tech: "Sarah C.", color: "emerald" },
+    { time: "10:00", job: "Boiler install", tech: "Sarah C.", color: "green" },
     { time: "12:00", job: "Emergency call", tech: "James O.", color: "amber" },
     { time: "2:00", job: "Inspection", tech: "Mike T.", color: "violet" },
   ];
 
   const colorMap: Record<string, string> = {
-    blue: "bg-[rgba(0,230,118,0.08)] border-[rgba(0,230,118,0.2)] text-[#00E676]",
-    emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-300",
-    amber: "bg-amber-500/10 border-amber-500/20 text-amber-300",
-    violet: "bg-zinc-500/10 border-zinc-500/20 text-zinc-300",
-    zinc: "bg-zinc-800/50 border-zinc-700/30 text-zinc-500 italic",
+    emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+    green: "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+    amber: "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300",
+    violet: "bg-zinc-500/10 border-zinc-500/20 text-zinc-600 dark:text-zinc-300",
+    zinc: "bg-[var(--subtle-bg)] border-[var(--card-border)] text-[var(--text-muted)] italic",
   };
 
   return (
@@ -115,24 +115,24 @@ function MobileVisual() {
       <motion.div
         whileHover={{ rotateY: 5, rotateX: -5 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className="relative h-[260px] w-[130px] rounded-[22px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-1.5"
+        className="relative h-[260px] w-[130px] rounded-[22px] border border-[var(--card-border-hover)] bg-[var(--subtle-bg)] p-1.5"
         style={{ transformStyle: "preserve-3d" }}
       >
         {/* Notch */}
-        <div className="mx-auto mb-2 h-4 w-14 rounded-full bg-black" />
+        <div className="mx-auto mb-2 h-4 w-14 rounded-full bg-[var(--surface-2)]" />
         {/* Screen */}
-        <div className="flex h-full flex-col items-center justify-center rounded-[16px] bg-black/50 p-3">
+        <div className="flex h-full flex-col items-center justify-center rounded-[16px] bg-[var(--surface-1)] p-3">
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
             className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20"
           >
-            <Check size={24} className="text-emerald-400" />
+            <Check size={24} className="text-emerald-500" />
           </motion.div>
-          <span className="text-[10px] font-medium text-zinc-300">
+          <span className="text-[10px] font-medium text-[var(--text-heading)]">
             Tap to Clock In
           </span>
-          <span className="mt-1 text-[8px] text-zinc-600">
+          <span className="mt-1 text-[8px] text-[var(--text-dim)]">
             8:02 AM · On Site
           </span>
         </div>
@@ -158,7 +158,7 @@ function AIWaveformVisual() {
                 delay: i * 0.05,
                 ease: "easeInOut",
               }}
-              className="w-1 rounded-full bg-gradient-to-t from-zinc-700 to-zinc-400"
+              className="w-1 rounded-full bg-gradient-to-t from-zinc-400/40 to-zinc-500/80 dark:from-zinc-700 dark:to-zinc-400"
               style={{ height }}
             />
           );
@@ -171,7 +171,7 @@ function AIWaveformVisual() {
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.3 }}
-        className="rounded-lg rounded-bl-none bg-[rgba(255,255,255,0.06)] px-3 py-2 text-xs text-zinc-300"
+        className="rounded-lg rounded-bl-none bg-[var(--subtle-bg-hover)] px-3 py-2 text-xs text-[var(--text-heading)]"
       >
         &ldquo;I need a plumber for tomorrow&rdquo;
       </motion.div>
@@ -180,7 +180,7 @@ function AIWaveformVisual() {
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.6 }}
-        className="ml-auto rounded-lg rounded-br-none bg-[rgba(0,230,118,0.08)] px-3 py-2 text-xs text-[#00E676]"
+        className="ml-auto rounded-lg rounded-br-none bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400"
       >
         Booking set for Tuesday at 9:00 AM
       </motion.div>
@@ -206,21 +206,21 @@ function CRMVisual() {
           viewport={{ once: true }}
           transition={{ delay: i * 0.1 }}
           whileHover={{ x: 4 }}
-          className="group/client flex cursor-default items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+          className="group/client flex cursor-default items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[var(--subtle-bg)]"
         >
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-medium text-zinc-400">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-[10px] font-medium text-[var(--text-muted)]">
             {client.name
               .split(" ")
               .map((n) => n[0])
               .join("")}
           </div>
           <div className="flex-1">
-            <div className="text-xs text-zinc-300">{client.name}</div>
-            <div className="text-[10px] text-zinc-600">
+            <div className="text-xs text-[var(--text-heading)]">{client.name}</div>
+            <div className="text-[10px] text-[var(--text-dim)]">
               {client.jobs} jobs
             </div>
           </div>
-          <span className="font-mono text-xs text-zinc-500 opacity-0 transition-opacity group-hover/client:opacity-100">
+          <span className="font-mono text-xs text-[var(--text-muted)] opacity-0 transition-opacity group-hover/client:opacity-100">
             {client.value}
           </span>
         </motion.div>
@@ -237,25 +237,25 @@ function QuotesVisual() {
         whileInView={{ rotateY: 360 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8, delay: 0.3 }}
-        className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)]"
+        className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--card-border-hover)] bg-[var(--subtle-bg)]"
       >
-        <FileText size={20} className="text-zinc-400" />
+        <FileText size={20} className="text-[var(--text-muted)]" />
       </motion.div>
 
-      <div className="w-full space-y-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
+      <div className="w-full space-y-2 rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] p-3">
         <div className="flex justify-between text-[10px]">
-          <span className="text-zinc-500">Quote #1247</span>
-          <span className="text-zinc-500">Feb 14, 2026</span>
+          <span className="text-[var(--text-muted)]">Quote #1247</span>
+          <span className="text-[var(--text-muted)]">Feb 14, 2026</span>
         </div>
-        <div className="text-xs font-medium text-zinc-300">
+        <div className="text-xs font-medium text-[var(--text-heading)]">
           Kitchen renovation — full re-pipe
         </div>
-        <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.06)] pt-2">
-          <span className="text-sm font-medium text-zinc-200">$4,850.00</span>
+        <div className="flex items-center justify-between border-t border-[var(--card-border)] pt-2">
+          <span className="text-sm font-medium text-[var(--text-primary)]">$4,850.00</span>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="rounded-md bg-emerald-500/20 px-3 py-1 text-[10px] font-medium text-emerald-400"
+            className="rounded-md bg-emerald-500/20 px-3 py-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400"
           >
             Accepted
           </motion.button>
@@ -286,17 +286,17 @@ function FinancialsVisual() {
     <div className="mt-6">
       <div className="mb-4 flex flex-wrap items-end gap-4 md:gap-6">
         <div>
-          <div className="text-[10px] text-zinc-500">Monthly Revenue</div>
-          <div className="text-2xl font-medium tracking-tight text-zinc-200">
+          <div className="text-[10px] text-[var(--text-muted)]">Monthly Revenue</div>
+          <div className="text-2xl font-medium tracking-tight text-[var(--text-primary)]">
             $127,400
           </div>
-          <div className="text-[10px] text-emerald-400">+23% vs last month</div>
+          <div className="text-[10px] text-emerald-600 dark:text-emerald-400">+23% vs last month</div>
         </div>
         <div className="flex gap-2">
           {["Xero", "Stripe", "QuickBooks"].map((label) => (
             <span
               key={label}
-              className="rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] px-2 py-0.5 text-[9px] text-zinc-500"
+              className="rounded-md border border-[var(--card-border)] bg-[var(--card-bg)] px-2 py-0.5 text-[9px] text-[var(--text-muted)]"
             >
               {label}
             </span>
@@ -313,14 +313,14 @@ function FinancialsVisual() {
               y1={h * frac}
               x2={w}
               y2={h * frac}
-              stroke="rgba(255,255,255,0.04)"
+              stroke="var(--grid-line)"
               strokeWidth="0.3"
             />
           ))}
           <defs>
             <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+              <stop offset="0%" stopColor="var(--subtle-bg-hover)" />
+              <stop offset="100%" stopColor="transparent" />
             </linearGradient>
           </defs>
           <path
@@ -331,8 +331,9 @@ function FinancialsVisual() {
           <path
             d={pathD}
             fill="none"
-            stroke="rgba(255,255,255,0.4)"
+            stroke="var(--text-muted)"
             strokeWidth="0.8"
+            strokeOpacity="0.5"
             className="animate-line-draw"
           />
         </svg>
@@ -361,16 +362,16 @@ export function BentoGrid() {
         {/* Row A */}
         <StaggerItem className="md:col-span-8">
           <BentoCard className="h-full p-6">
-            <div className="flex items-center gap-2 text-zinc-500">
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
               <Calendar size={16} />
               <span className="text-xs font-medium uppercase tracking-wider">
                 Scheduling
               </span>
             </div>
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-zinc-100">
+            <h3 className="mt-3 text-xl font-medium tracking-tight text-[var(--text-heading)]">
               Smart Scheduling.
             </h3>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Conflict-free dispatching with intelligent travel-time routing.
             </p>
             <SchedulerVisual />
@@ -379,16 +380,16 @@ export function BentoGrid() {
 
         <StaggerItem className="md:col-span-4">
           <BentoCard className="h-full p-6">
-            <div className="flex items-center gap-2 text-zinc-500">
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
               <Smartphone size={16} />
               <span className="text-xs font-medium uppercase tracking-wider">
                 Mobile
               </span>
             </div>
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-zinc-100">
+            <h3 className="mt-3 text-xl font-medium tracking-tight text-[var(--text-heading)]">
               Offline-First Mobile.
             </h3>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               For the field. Works without signal.
             </p>
             <MobileVisual />
@@ -398,16 +399,16 @@ export function BentoGrid() {
         {/* Row B */}
         <StaggerItem className="md:col-span-4">
           <BentoCard className="h-full p-6">
-            <div className="flex items-center gap-2 text-zinc-500">
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
               <Bot size={16} />
               <span className="text-xs font-medium uppercase tracking-wider">
                 AI Agent
               </span>
             </div>
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-zinc-100">
+            <h3 className="mt-3 text-xl font-medium tracking-tight text-[var(--text-heading)]">
               AI Phone Agent.
             </h3>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Answers calls. Books jobs. 24/7.
             </p>
             <AIWaveformVisual />
@@ -416,16 +417,16 @@ export function BentoGrid() {
 
         <StaggerItem className="md:col-span-4">
           <BentoCard className="h-full p-6">
-            <div className="flex items-center gap-2 text-zinc-500">
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
               <Users size={16} />
               <span className="text-xs font-medium uppercase tracking-wider">
                 CRM
               </span>
             </div>
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-zinc-100">
+            <h3 className="mt-3 text-xl font-medium tracking-tight text-[var(--text-heading)]">
               Client History.
             </h3>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Full lifetime value. Every interaction tracked.
             </p>
             <CRMVisual />
@@ -434,16 +435,16 @@ export function BentoGrid() {
 
         <StaggerItem className="md:col-span-4">
           <BentoCard className="h-full p-6">
-            <div className="flex items-center gap-2 text-zinc-500">
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
               <FileText size={16} />
               <span className="text-xs font-medium uppercase tracking-wider">
                 Quotes
               </span>
             </div>
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-zinc-100">
+            <h3 className="mt-3 text-xl font-medium tracking-tight text-[var(--text-heading)]">
               Instant Quotes.
             </h3>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Generate, send, and convert in minutes.
             </p>
             <QuotesVisual />
@@ -453,16 +454,16 @@ export function BentoGrid() {
         {/* Row C */}
         <StaggerItem className="md:col-span-12">
           <BentoCard className="p-6 md:p-8">
-            <div className="flex items-center gap-2 text-zinc-500">
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
               <TrendingUp size={16} />
               <span className="text-xs font-medium uppercase tracking-wider">
                 Financials
               </span>
             </div>
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-zinc-100">
+            <h3 className="mt-3 text-xl font-medium tracking-tight text-[var(--text-heading)]">
               End-to-End Financials.
             </h3>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Stripe Connect, Xero Sync, automatic payouts. Revenue visibility from
               quote to settlement.
             </p>

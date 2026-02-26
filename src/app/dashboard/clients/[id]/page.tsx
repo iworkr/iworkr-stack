@@ -33,7 +33,7 @@ import {
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
-import { type Client, type ClientActivity } from "@/lib/data";
+import { type Client, type ClientActivity, type ClientActivityLog, type ClientJob, type ClientInvoice } from "@/lib/data";
 import { InlineMap } from "@/components/maps/inline-map";
 import { useToastStore } from "@/components/app/action-toast";
 import { useClientsStore } from "@/lib/clients-store";
@@ -65,8 +65,11 @@ const activityIcons: Record<string, typeof Briefcase> = {
   invoice_sent: Receipt,
   quote_sent: FileText,
   note: StickyNote,
+  note_updated: StickyNote,
   job_created: Briefcase,
   call: PhoneCall,
+  status_changed: Activity,
+  contact_added: User,
 };
 
 const activityColors: Record<string, string> = {
@@ -75,8 +78,11 @@ const activityColors: Record<string, string> = {
   invoice_sent: "text-amber-400",
   quote_sent: "text-sky-400",
   note: "text-yellow-400",
+  note_updated: "text-yellow-400",
   job_created: "text-zinc-400",
   call: "text-emerald-400",
+  status_changed: "text-sky-400",
+  contact_added: "text-zinc-400",
 };
 
 const gradients = [
@@ -152,13 +158,13 @@ export default function ClientDossierPage() {
   const [activeTab, setActiveTab] = useState<DossierTab>("activity");
 
   useEffect(() => {
-    if (!clientId || detailLoading || serverDetail) return;
+    if (!clientId || !orgId || detailLoading || serverDetail) return;
     setDetailLoading(true);
-    getClientDetails(clientId).then(({ data }) => {
+    getClientDetails(clientId, orgId).then(({ data }) => {
       if (data) setServerDetail(data);
       setDetailLoading(false);
     }).catch(() => setDetailLoading(false));
-  }, [clientId, detailLoading, serverDetail]);
+  }, [clientId, orgId, detailLoading, serverDetail]);
 
   const client: Client | undefined = storeClient
     ? {
@@ -171,13 +177,20 @@ export default function ClientDossierPage() {
           email: cc.email || "",
           phone: cc.phone || "",
         })) || storeClient.contacts,
+        // New: polymorphic activity from client_activity_logs
+        activityLog: serverDetail?.activity_log || [],
+        // Legacy fallback for old data
         activity: serverDetail?.recent_activity?.map((a: any) => ({
           id: a.id,
           type: a.action_type || "note",
           text: a.metadata?.description || a.action_type || "",
           time: a.created_at ? new Date(a.created_at).toLocaleDateString("en-AU", { month: "short", day: "numeric" }) : "",
-          user: a.user_name || "System",
+          actor: a.user_name || "System",
         })) || storeClient.activity,
+        // Inline jobs for Jobs tab
+        jobs: serverDetail?.jobs || [],
+        // Inline invoices for Invoices tab
+        invoices: serverDetail?.spend_history || [],
         spendHistory: serverDetail?.spend_history?.map((inv: any) => ({
           month: new Date(inv.created_at).toLocaleDateString("en-AU", { month: "short" }),
           amount: Number(inv.total || 0),
@@ -401,203 +414,10 @@ export default function ClientDossierPage() {
         </div>
       </div>
 
-      {/* ── 2-Column Body ──────────────────────────────────── */}
+      {/* ── 2-Column Body (PRD §3: 30/70 HUD | Canvas) ──── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* ── Canvas (Left ~65%) ─────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto scrollbar-none">
-          {/* ── Financial Stats Strip ────────────────────────── */}
-          <div className="grid grid-cols-3 gap-3 border-b border-white/[0.03] px-6 py-5">
-            <StatCard
-              label="Total Spent"
-              icon={<DollarSign size={10} />}
-              value={`$${totalSpend.toLocaleString()}`}
-              subtext="last 12 months"
-              accent="emerald"
-            />
-            <StatCard
-              label="Outstanding"
-              icon={<AlertCircle size={10} />}
-              value={outstandingBalance > 0 ? `$${outstandingBalance.toLocaleString()}` : "$0"}
-              subtext={outstandingBalance > 0 ? "unpaid" : "all clear"}
-              accent={outstandingBalance > 0 ? "rose" : "zinc"}
-            />
-            <StatCard
-              label="Total Jobs"
-              icon={<Briefcase size={10} />}
-              value={String(client.totalJobs)}
-              subtext={client.lastJob !== "Never" ? `Last: ${client.lastJob}` : "No jobs yet"}
-              accent="zinc"
-            />
-          </div>
-
-          {/* ── Spend Pulse Graph ────────────────────────────── */}
-          {spendData.length > 0 && (
-            <div className="border-b border-white/[0.03] px-6 py-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
-                  <TrendingUp size={10} />
-                  Revenue Trend
-                </h3>
-                <span className="font-mono text-[13px] font-medium text-emerald-400">
-                  {client.lifetimeValue}
-                  <span className="ml-1 text-[9px] text-zinc-600">lifetime</span>
-                </span>
-              </div>
-
-              <div className="relative overflow-hidden rounded-lg border border-white/[0.03] bg-white/[0.01] p-3">
-                <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ height: 100 }}>
-                  <defs>
-                    <linearGradient id={`spend-grad-${client.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#34d399" stopOpacity="0.15" />
-                      <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <motion.path
-                    d={areaPath}
-                    fill={`url(#spend-grad-${client.id})`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.3 }}
-                  />
-                  <motion.path
-                    d={linePath}
-                    fill="none"
-                    stroke="#34d399"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1 }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                  />
-                  {points.map((p, i) => (
-                    <motion.circle
-                      key={i}
-                      cx={p.x}
-                      cy={p.y}
-                      r={spendData[i].amount > 0 ? 2.5 : 0}
-                      fill="#050505"
-                      stroke="#34d399"
-                      strokeWidth="1.5"
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3 + i * 0.06, duration: 0.2 }}
-                    />
-                  ))}
-                </svg>
-                <div className="mt-1 flex justify-between px-1">
-                  {spendData.map((d) => (
-                    <span key={d.month} className="text-[8px] text-zinc-700">{d.month}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Dossier Tabs ────────────────────────────────── */}
-          <div className="border-b border-white/[0.03] px-6">
-            <div className="flex items-center gap-0.5 pt-1">
-              {dossierTabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative flex items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-medium transition-colors ${
-                      isActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    <Icon size={12} />
-                    {tab.label}
-                    {isActive && (
-                      <motion.div
-                        layoutId="dossier-tab-indicator"
-                        className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-emerald-500"
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Tab Content ─────────────────────────────────── */}
-          <div className="px-6 py-5">
-            <AnimatePresence mode="wait">
-              {activeTab === "activity" && (
-                <motion.div
-                  key="activity"
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ActivityTimeline activity={client.activity || []} router={router} />
-                </motion.div>
-              )}
-              {activeTab === "jobs" && (
-                <motion.div
-                  key="jobs"
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 8 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-center py-12"
-                >
-                  <Briefcase size={24} className="mx-auto mb-3 text-zinc-700" />
-                  <p className="text-[13px] text-zinc-500">{client.totalJobs} total jobs</p>
-                  <button
-                    onClick={() => router.push(`/dashboard/jobs?clientId=${client.id}`)}
-                    className="mt-3 text-[11px] text-emerald-500 transition-colors hover:text-emerald-400"
-                  >
-                    View all jobs →
-                  </button>
-                </motion.div>
-              )}
-              {activeTab === "invoices" && (
-                <motion.div
-                  key="invoices"
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 8 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-center py-12"
-                >
-                  <Receipt size={24} className="mx-auto mb-3 text-zinc-700" />
-                  <p className="text-[13px] text-zinc-500">{spendData.length} invoices</p>
-                  <p className="mt-1 text-[11px] text-zinc-600">
-                    ${totalSpend.toLocaleString()} total
-                  </p>
-                </motion.div>
-              )}
-              {activeTab === "notes" && (
-                <motion.div
-                  key="notes"
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <textarea
-                    value={localNotes}
-                    onChange={(e) => setLocalNotes(e.target.value)}
-                    onBlur={() => {
-                      useClientsStore.getState().updateClientServer(clientId, { notes: localNotes });
-                      addToast("Notes saved");
-                    }}
-                    placeholder="Add notes about this client..."
-                    className="h-48 w-full resize-none rounded-lg border border-white/[0.04] bg-white/[0.01] p-4 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500/30"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* ── HUD Panel (Right ~35%) ──────────────────────────── */}
-        <div className="w-[320px] shrink-0 overflow-y-auto border-l border-white/[0.04] bg-white/[0.01] scrollbar-none">
+        {/* ── HUD Panel (Left ~30%) ─────────────────────────── */}
+        <div className="w-[340px] shrink-0 overflow-y-auto border-r border-white/[0.04] bg-white/[0.01] scrollbar-none">
           <div className="p-5">
             {/* ── LTV Spotlight ──────────────────────────────── */}
             <div className="mb-6 rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
@@ -816,6 +636,199 @@ export default function ClientDossierPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Canvas (Right ~70%) ─────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto scrollbar-none">
+          {/* ── Financial Stats Strip ────────────────────────── */}
+          <div className="grid grid-cols-3 gap-3 border-b border-white/[0.03] px-6 py-5">
+            <StatCard
+              label="Total Spent"
+              icon={<DollarSign size={10} />}
+              value={`$${totalSpend.toLocaleString()}`}
+              subtext="last 12 months"
+              accent="emerald"
+            />
+            <StatCard
+              label="Outstanding"
+              icon={<AlertCircle size={10} />}
+              value={outstandingBalance > 0 ? `$${outstandingBalance.toLocaleString()}` : "$0"}
+              subtext={outstandingBalance > 0 ? "unpaid" : "all clear"}
+              accent={outstandingBalance > 0 ? "rose" : "zinc"}
+            />
+            <StatCard
+              label="Total Jobs"
+              icon={<Briefcase size={10} />}
+              value={String(client.totalJobs)}
+              subtext={client.lastJob !== "Never" ? `Last: ${client.lastJob}` : "No jobs yet"}
+              accent="zinc"
+            />
+          </div>
+
+          {/* ── Spend Pulse Graph ────────────────────────────── */}
+          {spendData.length > 0 && (
+            <div className="border-b border-white/[0.03] px-6 py-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+                  <TrendingUp size={10} />
+                  Revenue Trend
+                </h3>
+                <span className="font-mono text-[13px] font-medium text-emerald-400">
+                  {client.lifetimeValue}
+                  <span className="ml-1 text-[9px] text-zinc-600">lifetime</span>
+                </span>
+              </div>
+
+              <div className="relative overflow-hidden rounded-lg border border-white/[0.03] bg-white/[0.01] p-3">
+                <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ height: 100 }}>
+                  <defs>
+                    <linearGradient id={`spend-grad-${client.id}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#34d399" stopOpacity="0.15" />
+                      <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <motion.path
+                    d={areaPath}
+                    fill={`url(#spend-grad-${client.id})`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
+                  />
+                  <motion.path
+                    d={linePath}
+                    fill="none"
+                    stroke="#34d399"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                  />
+                  {points.map((p, i) => (
+                    <motion.circle
+                      key={i}
+                      cx={p.x}
+                      cy={p.y}
+                      r={spendData[i].amount > 0 ? 2.5 : 0}
+                      fill="#050505"
+                      stroke="#34d399"
+                      strokeWidth="1.5"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3 + i * 0.06, duration: 0.2 }}
+                    />
+                  ))}
+                </svg>
+                <div className="mt-1 flex justify-between px-1">
+                  {spendData.map((d) => (
+                    <span key={d.month} className="text-[8px] text-zinc-700">{d.month}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Dossier Tabs ────────────────────────────────── */}
+          <div className="border-b border-white/[0.03] px-6">
+            <div className="flex items-center gap-0.5 pt-1">
+              {dossierTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative flex items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-medium transition-colors ${
+                      isActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    <Icon size={12} />
+                    {tab.label}
+                    {isActive && (
+                      <motion.div
+                        layoutId="dossier-tab-indicator"
+                        className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-emerald-500"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Tab Content ─────────────────────────────────── */}
+          <div className="px-6 py-5">
+            <AnimatePresence mode="wait">
+              {activeTab === "activity" && (
+                <motion.div
+                  key="activity"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <PolymorphicTimeline
+                    activityLog={client.activityLog || []}
+                    legacyActivity={client.activity || []}
+                    router={router}
+                  />
+                </motion.div>
+              )}
+              {activeTab === "jobs" && (
+                <motion.div
+                  key="jobs"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <InlineJobsList
+                    jobs={client.jobs || []}
+                    totalJobs={client.totalJobs}
+                    clientId={client.id}
+                    clientName={client.name}
+                    router={router}
+                  />
+                </motion.div>
+              )}
+              {activeTab === "invoices" && (
+                <motion.div
+                  key="invoices"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <InlineInvoicesList
+                    invoices={client.invoices || []}
+                    totalSpend={totalSpend}
+                    router={router}
+                  />
+                </motion.div>
+              )}
+              {activeTab === "notes" && (
+                <motion.div
+                  key="notes"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <NotesEditor
+                    value={localNotes}
+                    onChange={setLocalNotes}
+                    onSave={(notes) => {
+                      useClientsStore.getState().updateClientServer(clientId, { notes });
+                      addToast("Notes saved");
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
       </div>
 
       <ContextMenu
@@ -859,10 +872,58 @@ function StatCard({ label, icon, value, subtext, accent }: {
   );
 }
 
-/* ── Activity Timeline Component ──────────────────────────── */
+/* ── Polymorphic Activity Timeline (PRD §2 — Helix) ─────── */
 
-function ActivityTimeline({ activity, router }: { activity: ClientActivity[]; router: any }) {
-  if (activity.length === 0) {
+/** Format activity log event_type + metadata into human-readable text */
+function formatActivityEvent(eventType: string, metadata: Record<string, any>): string {
+  switch (eventType) {
+    case "job_created":
+      return `Job created: ${metadata.title || "Untitled"}`;
+    case "job_completed":
+      return `Job completed: ${metadata.title || "Untitled"}`;
+    case "invoice_sent":
+      return `Invoice ${metadata.invoice_number || ""} sent — $${Number(metadata.total || 0).toLocaleString()}`;
+    case "invoice_paid":
+      return `Invoice ${metadata.invoice_number || ""} paid — $${Number(metadata.total || 0).toLocaleString()}`;
+    case "note_updated":
+      return metadata.preview ? `Note updated: "${metadata.preview.slice(0, 80)}${metadata.preview.length > 80 ? "…" : ""}"` : "Note updated";
+    case "status_changed":
+      return `Status changed from ${metadata.from || "?"} to ${metadata.to || "?"}`;
+    case "contact_added":
+      return `Contact added: ${metadata.name || ""}`;
+    default:
+      return eventType.replace(/_/g, " ");
+  }
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}h ago`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `${diffD}d ago`;
+  return d.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
+}
+
+function PolymorphicTimeline({
+  activityLog,
+  legacyActivity,
+  router,
+}: {
+  activityLog: ClientActivityLog[];
+  legacyActivity: ClientActivity[];
+  router: any;
+}) {
+  // Use new activity_log if available, otherwise fall back to legacy
+  const hasNewLog = activityLog.length > 0;
+  const entries = hasNewLog ? activityLog : [];
+
+  if (entries.length === 0 && legacyActivity.length === 0) {
     return (
       <div className="py-12 text-center">
         <Clock size={24} className="mx-auto mb-3 text-zinc-700" />
@@ -872,16 +933,87 @@ function ActivityTimeline({ activity, router }: { activity: ClientActivity[]; ro
     );
   }
 
+  // If we have the new log, render polymorphic timeline
+  if (hasNewLog) {
+    return (
+      <div className="relative pl-6">
+        <div className="absolute top-2 bottom-2 left-[7px] w-px bg-white/[0.04]" />
+        <div className="space-y-3">
+          {entries.map((entry, i) => {
+            const Icon = activityIcons[entry.event_type] || Briefcase;
+            const iconColor = activityColors[entry.event_type] || "text-zinc-500";
+            const isNote = entry.event_type === "note_updated";
+            const isInvoice = entry.event_type === "invoice_paid" || entry.event_type === "invoice_sent";
+            const text = formatActivityEvent(entry.event_type, entry.metadata || {});
+            const jobId = entry.metadata?.job_id;
+
+            return (
+              <motion.div
+                key={entry.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03, duration: 0.2 }}
+                className="relative flex gap-3"
+              >
+                <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/[0.06] bg-[#080808]">
+                  <Icon size={8} className={iconColor} />
+                </div>
+                <div
+                  className={`flex-1 rounded-lg p-3 ${
+                    isNote
+                      ? "border border-yellow-500/10 bg-yellow-500/[0.03]"
+                      : isInvoice
+                        ? "border border-emerald-500/10 bg-emerald-500/[0.02]"
+                        : "border border-white/[0.03] bg-white/[0.01]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="text-[12px] text-zinc-400">{text}</div>
+                    {isInvoice && entry.metadata?.total && (
+                      <span className={`ml-2 shrink-0 rounded-md px-2 py-0.5 text-[10px] font-medium ${
+                        entry.event_type === "invoice_paid"
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-amber-500/10 text-amber-400"
+                      }`}>
+                        {entry.event_type === "invoice_paid" ? "Paid" : "Sent"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-[10px] text-zinc-700">{formatTimeAgo(entry.created_at)}</span>
+                    {entry.actor_name && (
+                      <span className="text-[10px] text-zinc-600">by {entry.actor_name}</span>
+                    )}
+                    {jobId && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/dashboard/jobs/${jobId}`);
+                        }}
+                        className="flex items-center gap-0.5 text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
+                      >
+                        <ExternalLink size={8} />
+                        View job
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Legacy fallback
   return (
     <div className="relative pl-6">
       <div className="absolute top-2 bottom-2 left-[7px] w-px bg-white/[0.04]" />
       <div className="space-y-3">
-        {activity.map((entry, i) => {
+        {legacyActivity.map((entry, i) => {
           const Icon = activityIcons[entry.type] || Briefcase;
           const iconColor = activityColors[entry.type] || "text-zinc-500";
-          const isNote = entry.type === "note";
-          const isInvoice = entry.type === "invoice_paid" || entry.type === "invoice_sent";
-
           return (
             <motion.div
               key={entry.id || i}
@@ -893,25 +1025,8 @@ function ActivityTimeline({ activity, router }: { activity: ClientActivity[]; ro
               <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/[0.06] bg-[#080808]">
                 <Icon size={8} className={iconColor} />
               </div>
-              <div
-                className={`flex-1 rounded-lg p-3 ${
-                  isNote
-                    ? "border border-yellow-500/10 bg-yellow-500/[0.03]"
-                    : "border border-white/[0.03] bg-white/[0.01]"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="text-[12px] text-zinc-400">{entry.text}</div>
-                  {isInvoice && entry.amount && (
-                    <span className={`ml-2 shrink-0 rounded-md px-2 py-0.5 text-[10px] font-medium ${
-                      entry.type === "invoice_paid"
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : "bg-amber-500/10 text-amber-400"
-                    }`}>
-                      {entry.type === "invoice_paid" ? "Paid" : "Sent"} {entry.amount}
-                    </span>
-                  )}
-                </div>
+              <div className="flex-1 rounded-lg border border-white/[0.03] bg-white/[0.01] p-3">
+                <div className="text-[12px] text-zinc-400">{entry.text}</div>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="text-[10px] text-zinc-700">{entry.time}</span>
                   {entry.jobRef && (
@@ -932,6 +1047,230 @@ function ActivityTimeline({ activity, router }: { activity: ClientActivity[]; ro
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ── Inline Jobs List (PRD §3 — real data) ──────────────── */
+
+const jobStatusStyles: Record<string, { dot: string; text: string; label: string }> = {
+  pending: { dot: "bg-zinc-500", text: "text-zinc-400", label: "Pending" },
+  scheduled: { dot: "bg-sky-400", text: "text-sky-400", label: "Scheduled" },
+  in_progress: { dot: "bg-violet-400", text: "text-violet-400", label: "In Progress" },
+  done: { dot: "bg-emerald-400", text: "text-emerald-400", label: "Completed" },
+  cancelled: { dot: "bg-rose-400", text: "text-rose-400", label: "Cancelled" },
+};
+
+function InlineJobsList({
+  jobs,
+  totalJobs,
+  clientId,
+  clientName,
+  router,
+}: {
+  jobs: ClientJob[];
+  totalJobs: number;
+  clientId: string;
+  clientName: string;
+  router: any;
+}) {
+  if (jobs.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <Briefcase size={24} className="mx-auto mb-3 text-zinc-700" />
+        <p className="text-[13px] text-zinc-500">No jobs yet</p>
+        <p className="mt-1 text-[11px] text-zinc-600">Create a job to get started.</p>
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => router.push(`/dashboard/jobs?clientId=${clientId}&clientName=${encodeURIComponent(clientName)}`)}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-[12px] font-medium text-black transition-all hover:bg-zinc-200"
+        >
+          <Plus size={12} />
+          Create Job
+        </motion.button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[10px] text-zinc-600">{totalJobs} total</span>
+        <button
+          onClick={() => router.push(`/dashboard/jobs?clientId=${clientId}`)}
+          className="flex items-center gap-0.5 text-[10px] text-emerald-500 transition-colors hover:text-emerald-400"
+        >
+          View all <ExternalLink size={8} />
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {jobs.map((job, i) => {
+          const status = jobStatusStyles[job.status] || jobStatusStyles.pending;
+          return (
+            <motion.button
+              key={job.id}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              onClick={() => router.push(`/dashboard/jobs/${job.id}`)}
+              className="group flex w-full items-center gap-3 rounded-lg border border-white/[0.03] bg-white/[0.01] p-3 text-left transition-colors hover:border-white/[0.06] hover:bg-white/[0.02]"
+            >
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${status.dot}`} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[12px] font-medium text-zinc-300 group-hover:text-zinc-100">
+                  {job.title}
+                </div>
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className={`text-[10px] ${status.text}`}>{status.label}</span>
+                  {job.scheduled_start && (
+                    <span className="text-[10px] text-zinc-600">
+                      {new Date(job.scheduled_start).toLocaleDateString("en-AU", { month: "short", day: "numeric" })}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <ExternalLink size={10} className="shrink-0 text-zinc-700 opacity-0 transition-opacity group-hover:opacity-100" />
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Inline Invoices List (PRD §3 — real data) ──────────── */
+
+const invoiceStatusStyles: Record<string, { dot: string; text: string; label: string }> = {
+  draft: { dot: "bg-zinc-500", text: "text-zinc-400", label: "Draft" },
+  sent: { dot: "bg-amber-400", text: "text-amber-400", label: "Sent" },
+  paid: { dot: "bg-emerald-400", text: "text-emerald-400", label: "Paid" },
+  overdue: { dot: "bg-rose-400", text: "text-rose-400", label: "Overdue" },
+  void: { dot: "bg-zinc-600", text: "text-zinc-500", label: "Void" },
+};
+
+function InlineInvoicesList({
+  invoices,
+  totalSpend,
+  router,
+}: {
+  invoices: ClientInvoice[];
+  totalSpend: number;
+  router: any;
+}) {
+  if (invoices.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <Receipt size={24} className="mx-auto mb-3 text-zinc-700" />
+        <p className="text-[13px] text-zinc-500">No invoices yet</p>
+        <p className="mt-1 text-[11px] text-zinc-600">Invoices will appear here once created for this client.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[10px] text-zinc-600">{invoices.length} invoices</span>
+        <span className="font-mono text-[11px] text-emerald-400">${totalSpend.toLocaleString()}</span>
+      </div>
+      <div className="space-y-1.5">
+        {invoices.map((inv, i) => {
+          const status = invoiceStatusStyles[inv.status] || invoiceStatusStyles.draft;
+          return (
+            <motion.div
+              key={inv.id}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="flex items-center gap-3 rounded-lg border border-white/[0.03] bg-white/[0.01] p-3"
+            >
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${status.dot}`} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-medium text-zinc-300">
+                    {inv.invoice_number || `#${inv.id.slice(0, 6)}`}
+                  </span>
+                  <span className={`text-[10px] ${status.text}`}>{status.label}</span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-600">
+                    {new Date(inv.created_at).toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                  {inv.due_date && (
+                    <span className="text-[10px] text-zinc-700">
+                      Due {new Date(inv.due_date).toLocaleDateString("en-AU", { month: "short", day: "numeric" })}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <span className={`shrink-0 font-mono text-[12px] font-medium ${
+                inv.status === "paid" ? "text-emerald-400" : "text-zinc-400"
+              }`}>
+                ${Number(inv.total || 0).toLocaleString()}
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Notes Editor with Optimistic Save (PRD §3) ─────────── */
+
+function NotesEditor({
+  value,
+  onChange,
+  onSave,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSave: (notes: string) => void;
+}) {
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Auto-save after 1.5s of inactivity
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    onChange(val);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      setSaving(true);
+      onSave(val);
+      setTimeout(() => setSaving(false), 1000);
+    }, 1500);
+  };
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[10px] text-zinc-600">Client notes</span>
+        <AnimatePresence>
+          {saving && (
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-1 text-[10px] text-emerald-400"
+            >
+              <Check size={10} /> Saved
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </div>
+      <textarea
+        value={value}
+        onChange={handleChange}
+        onBlur={() => {
+          if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            onSave(value);
+          }
+        }}
+        placeholder="Add notes about this client..."
+        className="h-64 w-full resize-none rounded-lg border border-white/[0.04] bg-white/[0.01] p-4 text-[13px] leading-relaxed text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500/30"
+      />
     </div>
   );
 }

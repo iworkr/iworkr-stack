@@ -406,7 +406,7 @@ export default function ClientsPage() {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => setCreateClientModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500 hover:shadow-emerald-900/30"
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
             >
               <Plus size={12} />
               Add Client
@@ -473,7 +473,7 @@ export default function ClientsPage() {
             ) : (
               <button
                 onClick={() => setCreateClientModalOpen(true)}
-                className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500"
+                className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
               >
                 <Plus size={14} />
                 Add First Client

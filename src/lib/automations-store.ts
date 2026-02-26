@@ -4,12 +4,16 @@ import { isFresh } from "./cache-utils";
 import {
   type AutomationFlow,
   type ExecutionLog,
+  type ExecutionRun,
+  type TraceStep,
   type FlowStatus,
 } from "./automations-data";
 import {
   getAutomationFlows,
   getAutomationLogs,
   getAutomationStats,
+  getAutomationRuns,
+  getAutomationRunTrace,
   toggleFlowStatusRpc,
   setAllFlowsStatusRpc,
   archiveAutomationFlow as archiveFlowServer,
@@ -23,17 +27,19 @@ import {
 
 /* ── Store ────────────────────────────────────────────── */
 
-export type AutomationsTab = "flows" | "activity";
+export type AutomationsTab = "flows" | "activity" | "executions";
 
 interface AutomationsState {
   flows: AutomationFlow[];
   logs: ExecutionLog[];
+  runs: ExecutionRun[];
   stats: AutomationStats | null;
   activeTab: AutomationsTab;
   searchQuery: string;
   masterPaused: boolean;
   loaded: boolean;
   loading: boolean;
+  runsLoading: boolean;
   orgId: string | null;
   _stale: boolean;
   _lastFetchedAt: number | null;
@@ -47,6 +53,8 @@ interface AutomationsState {
   duplicateFlow: (id: string) => void;
 
   loadFromServer: (orgId: string) => Promise<void>;
+  loadRuns: (flowId?: string) => Promise<void>;
+  fetchRunTrace: (runId: string) => Promise<{ trace: TraceStep[]; error: string | null }>;
   refresh: () => Promise<void>;
   handleRealtimeUpdate: () => void;
 
@@ -72,9 +80,11 @@ function mapServerFlow(sf: any): AutomationFlow {
     description: sf.description || "",
     category: (sf.category || "operations") as "marketing" | "billing" | "operations",
     status: sf.status as FlowStatus,
-    version: 1,
+    version: sf.version || 1,
+    isPublished: sf.is_published || false,
     icon: sf.category === "marketing" ? "MessageSquare" : sf.category === "billing" ? "Receipt" : "Zap",
     blocks,
+    conditions: sf.conditions || null,
     metrics: {
       runs24h: sf.run_count || 0,
       successRate: 98,
@@ -83,6 +93,20 @@ function mapServerFlow(sf: any): AutomationFlow {
     createdBy: sf.created_by || "System",
     lastEdited: sf.updated_at ? formatRelativeDate(sf.updated_at) : "Just now",
     createdAt: sf.created_at ? new Date(sf.created_at).toLocaleDateString("en-AU", { month: "short", year: "numeric" }) : "",
+  };
+}
+
+function mapServerRun(sr: any): ExecutionRun {
+  return {
+    id: sr.id,
+    automationId: sr.automation_id,
+    flowTitle: sr.automation_flows?.name || "Unknown Flow",
+    triggerEventId: sr.trigger_event_id || "",
+    status: sr.execution_status === "success" ? "success" : sr.execution_status === "skipped" ? "skipped" : "failed",
+    executionTimeMs: sr.execution_time_ms || 0,
+    errorDetails: sr.error_details || undefined,
+    trace: (sr.trace || []) as TraceStep[],
+    timestamp: sr.created_at ? formatTimestamp(sr.created_at) : "",
   };
 }
 
@@ -123,12 +147,14 @@ export const useAutomationsStore = create<AutomationsState>()(
     (set, get) => ({
   flows: [],
   logs: [],
+  runs: [],
   stats: null,
   activeTab: "flows",
   searchQuery: "",
   masterPaused: false,
   loaded: false,
   loading: false,
+  runsLoading: false,
   orgId: null,
   _stale: true,
   _lastFetchedAt: null,
@@ -194,18 +220,21 @@ export const useAutomationsStore = create<AutomationsState>()(
     const hasCache = state.flows.length > 0 && state.orgId === orgId;
     set({ loading: !hasCache, orgId });
     try {
-      const [flowsResult, logsResult, statsResult] = await Promise.all([
+      const [flowsResult, logsResult, statsResult, runsResult] = await Promise.all([
         getAutomationFlows(orgId),
         getAutomationLogs(orgId),
         getAutomationStats(orgId),
+        getAutomationRuns(orgId),
       ]);
 
       const serverFlows = flowsResult.data ? (flowsResult.data as any[]).map(mapServerFlow) : [];
       const serverLogs = logsResult.data ? (logsResult.data as any[]).map(mapServerLog) : [];
+      const serverRuns = runsResult.data ? (runsResult.data as any[]).map(mapServerRun) : [];
 
       set({
         flows: serverFlows,
         logs: serverLogs,
+        runs: serverRuns,
         stats: statsResult.data || null,
         loaded: true,
         loading: false,
@@ -217,15 +246,42 @@ export const useAutomationsStore = create<AutomationsState>()(
     }
   },
 
+  loadRuns: async (flowId?: string) => {
+    const orgId = get().orgId;
+    if (!orgId) return;
+    set({ runsLoading: true });
+    try {
+      const res = await getAutomationRuns(orgId, flowId, 100);
+      if (res.data) {
+        set({ runs: (res.data as any[]).map(mapServerRun) });
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      set({ runsLoading: false });
+    }
+  },
+
+  fetchRunTrace: async (runId: string) => {
+    try {
+      const res = await getAutomationRunTrace(runId);
+      if (res.error || !res.data) return { trace: [], error: res.error || "Not found" };
+      return { trace: (res.data.trace || []) as TraceStep[], error: null };
+    } catch (err: any) {
+      return { trace: [], error: err.message };
+    }
+  },
+
   refresh: async () => {
     const orgId = get().orgId;
     if (!orgId) return;
 
     try {
-      const [flowsResult, logsResult, statsResult] = await Promise.all([
+      const [flowsResult, logsResult, statsResult, runsResult] = await Promise.all([
         getAutomationFlows(orgId),
         getAutomationLogs(orgId),
         getAutomationStats(orgId),
+        getAutomationRuns(orgId),
       ]);
 
       if (flowsResult.data) {
@@ -233,6 +289,9 @@ export const useAutomationsStore = create<AutomationsState>()(
       }
       if (logsResult.data) {
         set({ logs: (logsResult.data as any[]).map(mapServerLog) });
+      }
+      if (runsResult.data) {
+        set({ runs: (runsResult.data as any[]).map(mapServerRun) });
       }
       if (statsResult.data) set({ stats: statsResult.data });
       set({ _lastFetchedAt: Date.now(), _stale: false });
@@ -317,6 +376,7 @@ export const useAutomationsStore = create<AutomationsState>()(
       partialize: (state) => ({
         flows: state.flows,
         logs: state.logs,
+        runs: state.runs,
         stats: state.stats,
         orgId: state.orgId,
         _lastFetchedAt: state._lastFetchedAt,

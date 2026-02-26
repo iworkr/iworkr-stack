@@ -1,37 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
-import { Marker } from "@vis.gl/react-google-maps";
+import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import type { DispatchPin } from "@/app/actions/dashboard";
 
 /** Heading in degrees (0 = N). Not provided by API; stub 0 or pass from future location stream. */
 export interface FleetTech extends DispatchPin {
   heading?: number;
   speedKmh?: number;
-}
-
-function getFleetIcons(): { normal: google.maps.Symbol; hover: google.maps.Symbol } | null {
-  if (typeof globalThis === "undefined") return null;
-  const g = (globalThis as { google?: { maps?: { SymbolPath?: typeof google.maps.SymbolPath } } }).google;
-  if (!g?.maps?.SymbolPath) return null;
-  return {
-    normal: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: "#10B981",
-      fillOpacity: 1,
-      strokeColor: "#050505",
-      strokeWeight: 1,
-    },
-    hover: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 10,
-      fillColor: "#10B981",
-      fillOpacity: 1,
-      strokeColor: "#ffffff",
-      strokeWeight: 2,
-    },
-  };
 }
 
 interface FleetLayerProps {
@@ -45,6 +20,11 @@ interface FleetLayerProps {
   rippleTechId?: string | null;
 }
 
+/* ── PRD §5.2: Technician Marker — "The Pulse" ──────────
+   Emerald-500 dot (w-3 h-3 = 12px), border-2 border-zinc-900,
+   with animate-ping sonar aura for live assets.
+   ─────────────────────────────────────────────────────── */
+
 export function FleetLayer({
   techs,
   visible,
@@ -53,8 +33,7 @@ export function FleetLayer({
   onHoverTechDetail,
   rippleTechId,
 }: FleetLayerProps) {
-  const icons = useMemo(() => getFleetIcons(), []);
-  if (!visible || techs.length === 0 || !icons) return null;
+  if (!visible || techs.length === 0) return null;
 
   return (
     <>
@@ -65,25 +44,47 @@ export function FleetLayer({
           const isHovered = hoveredId === tid;
           const isRipple = rippleTechId === tid;
           return (
-            <Marker
+            <AdvancedMarker
               key={tech.id}
               position={{ lat: tech.location_lat!, lng: tech.location_lng! }}
-              icon={isHovered ? icons.hover : icons.normal}
               title={
                 [tech.name || "Technician", tech.speedKmh != null ? `${tech.speedKmh} km/h` : null, tech.dispatch_status === "on_job" ? "On Job" : "En Route"]
                   .filter(Boolean)
                   .join(" · ")
               }
-              onMouseOver={() => {
+              zIndex={isRipple ? 21 : 20}
+              onClick={() => {
                 onHover(tid);
                 onHoverTechDetail?.(tech, { lat: tech.location_lat!, lng: tech.location_lng! });
               }}
-              onMouseOut={() => {
-                onHover(null);
-                onHoverTechDetail?.(null, null);
-              }}
-              zIndex={isRipple ? 501 : 500}
-            />
+            >
+              <div
+                className="relative flex items-center justify-center"
+                onMouseEnter={() => {
+                  onHover(tid);
+                  onHoverTechDetail?.(tech, { lat: tech.location_lat!, lng: tech.location_lng! });
+                }}
+                onMouseLeave={() => {
+                  onHover(null);
+                  onHoverTechDetail?.(null, null);
+                }}
+              >
+                {/* Sonar ping aura */}
+                <div
+                  className={`absolute h-6 w-6 rounded-full bg-emerald-500/30 ${
+                    isRipple || isHovered ? "animate-ping" : "animate-pulse"
+                  }`}
+                />
+                {/* Core dot */}
+                <div
+                  className={`relative rounded-full border-2 shadow-lg transition-transform duration-150 ${
+                    isHovered
+                      ? "h-4 w-4 border-white bg-emerald-500"
+                      : "h-3 w-3 border-zinc-900 bg-emerald-500"
+                  }`}
+                />
+              </div>
+            </AdvancedMarker>
           );
         })}
     </>

@@ -64,9 +64,10 @@ export async function sendTeamInviteEmail(params: {
     .eq("id", user.id)
     .maybeSingle();
 
+  // Fetch org with branding fields (Project Genesis)
   const { data: org } = await (supabase as any)
     .from("organizations")
-    .select("name")
+    .select("name, logo_url, brand_color_hex")
     .eq("id", params.orgId)
     .maybeSingle();
 
@@ -90,7 +91,9 @@ export async function sendTeamInviteEmail(params: {
 
   if (error) return { error: error.message };
 
-  const inviteUrl = `${baseUrl}/auth?invite=${invite.id}&email=${encodeURIComponent(params.email)}`;
+  // Genesis: use /join route with token-based validation (replaces /auth?invite=)
+  const inviteToken = invite.token || invite.id;
+  const inviteUrl = `${baseUrl}/join?token=${inviteToken}`;
 
   const result = await sendInviteEmail({
     to: params.email,
@@ -98,6 +101,8 @@ export async function sendTeamInviteEmail(params: {
     companyName: org?.name || "your team",
     role: params.role.charAt(0).toUpperCase() + params.role.slice(1),
     inviteUrl,
+    brandColorHex: org?.brand_color_hex || undefined,
+    logoUrl: org?.logo_url || undefined,
   });
 
   return result;

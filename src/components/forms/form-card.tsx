@@ -85,9 +85,8 @@ export function FormCard({ template, index }: FormCardProps) {
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setMenuOpen(false); }}
-      className="group relative cursor-pointer overflow-hidden rounded-xl border border-white/[0.05] bg-zinc-950/40 transition-all duration-300 hover:border-emerald-500/20 hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.08)]"
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-white/[0.05] bg-zinc-950/40 transition-[border-color] duration-200 hover:border-white/10"
       style={{ aspectRatio: "3 / 4" }}
-      whileHover={{ scale: 1.02 }}
     >
       {/* ── Document Preview (Blueprint wireframe) ──── */}
       <div className="relative flex flex-col items-center justify-center px-4 pt-5 pb-4 bg-[#0A0A0A]" style={{ height: "55%" }}>

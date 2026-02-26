@@ -34,7 +34,7 @@ export function WidgetNotepad({ size = "medium" }: { size?: WidgetSize }) {
       header={
         <div className="flex items-center gap-2">
           <FileText size={14} className="text-zinc-500" />
-          <span className="text-[13px] font-medium text-zinc-300">Notepad</span>
+          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Notepad</span>
           {content.trim() && (
             <span className="text-[10px] text-zinc-700">
               {content.trim().split("\n").length} line{content.trim().split("\n").length !== 1 ? "s" : ""}

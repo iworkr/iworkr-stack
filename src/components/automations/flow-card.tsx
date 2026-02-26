@@ -83,7 +83,7 @@ function FlowToggle({
       disabled={loading}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-all duration-200 ${
         loading ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
-      } ${checked ? "bg-[#00E676] shadow-[0_0_8px_rgba(0,230,118,0.3)]" : "bg-zinc-800"}`}
+      } ${checked ? "bg-[#00E676]" : "bg-zinc-800"}`}
     >
       <motion.span
         animate={{ x: checked ? 18 : 2 }}
@@ -149,10 +149,9 @@ export function FlowCard({ flow, index }: FlowCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       onClick={() => router.push(`/dashboard/automations/${flow.id}`)}
-      whileHover={{ y: -4, boxShadow: "0 10px 40px -10px rgba(0, 230, 118, 0.2)" }}
-      className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-zinc-900/40 backdrop-blur-sm transition-all duration-300 hover:border-[#00E676]/30 ${
-        borderFlash ? "border-[#00E676]/60 shadow-[0_0_30px_-8px_rgba(0,230,118,0.5)]" : ""
-      } ${isActive && !borderFlash ? "border-[#00E676]/20" : ""} ${
+      className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-zinc-900/40 backdrop-blur-sm transition-[border-color,box-shadow] duration-200 hover:border-[#00E676]/20 ${
+        borderFlash ? "border-[#00E676]/40 shadow-[0_0_20px_-8px_rgba(0,230,118,0.25)]" : ""
+      } ${isActive && !borderFlash ? "border-[#00E676]/10" : ""} ${
         !isActive && !borderFlash ? "border-white/5" : ""
       } ${isPaused ? "opacity-60" : ""} ${isDraft ? "opacity-50" : ""}`}
       style={{ aspectRatio: "3 / 2" }}

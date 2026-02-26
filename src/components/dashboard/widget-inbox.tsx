@@ -97,7 +97,7 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
       header={
         <div className="flex items-center gap-2">
           <Inbox size={14} className="text-zinc-600" />
-          <span className="text-[13px] font-medium text-zinc-300">Triage</span>
+          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Triage</span>
           {unreadCount > 0 && (
             <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500/[0.08] px-1.5 font-mono text-[9px] font-medium text-emerald-400">
               {unreadCount}
@@ -108,7 +108,7 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
       action={
         <button
           onClick={() => router.push("/dashboard/inbox")}
-          className="flex items-center gap-1 text-[11px] text-zinc-700 transition-colors hover:text-zinc-300"
+          className="flex items-center gap-1 text-[11px] text-zinc-600 transition-colors hover:text-zinc-300"
         >
           View all <ArrowRight size={11} />
         </button>

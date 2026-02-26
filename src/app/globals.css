@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ── iWorkr Design System: "Stealth Mode" ────────────── */
 
 @theme inline {
@@ -25,6 +28,20 @@
   --color-brand-glow: rgba(16, 185, 129, 0.4);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Project Monolith: Custom transition timing functions */
+  --ease-snappy: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Monolith: Strict radius scale */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Monolith: Inset bevel for elevated surfaces */
+  --shadow-inset-bevel: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
 /* ── Dark Theme (Default) ────────────────────────────── */
@@ -45,6 +62,26 @@
   --selection-bg: rgba(16, 185, 129, 0.15);
   --scrollbar-thumb: rgba(255, 255, 255, 0.06);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.12);
+  /* Landing page tokens */
+  --card-bg: rgba(255, 255, 255, 0.02);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-border-hover: rgba(255, 255, 255, 0.15);
+  --subtle-bg: rgba(255, 255, 255, 0.04);
+  --subtle-bg-hover: rgba(255, 255, 255, 0.06);
+  --overlay-bg: rgba(0, 0, 0, 0.95);
+  --overlay-border: rgba(255, 255, 255, 0.08);
+  --glow-soft: rgba(255, 255, 255, 0.03);
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --grid-line-strong: rgba(255, 255, 255, 0.1);
+  --hero-grad-from: #ffffff;
+  --hero-grad-to: #71717a;
+  --section-fade: #050505;
+  --text-heading: #ededed;
+  --text-body: #a1a1aa;
+  --text-dim: #52525b;
+  --avatar-bg: #27272a;
+  --testimonial-bg: rgba(24, 24, 27, 0.8);
+  --cta-bg-text: rgba(39, 39, 42, 0.3);
   color-scheme: dark;
 }
 
@@ -58,13 +95,33 @@
   --border-active: rgba(0, 0, 0, 0.15);
   --text-primary: #18181b;
   --text-muted: #71717a;
-  --brand: #00C853;
-  --brand-hover: #00A844;
-  --brand-glow: 0 0 15px rgba(0, 200, 83, 0.2);
-  --brand-glow-subtle: 0 0 10px -5px rgba(0, 200, 83, 0.15);
-  --selection-bg: rgba(0, 200, 83, 0.15);
+  --brand: #059669;
+  --brand-hover: #047857;
+  --brand-glow: 0 0 15px rgba(5, 150, 105, 0.15);
+  --brand-glow-subtle: 0 0 10px -5px rgba(5, 150, 105, 0.1);
+  --selection-bg: rgba(5, 150, 105, 0.15);
   --scrollbar-thumb: rgba(0, 0, 0, 0.12);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
+  /* Landing page tokens */
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: rgba(0, 0, 0, 0.08);
+  --card-border-hover: rgba(0, 0, 0, 0.15);
+  --subtle-bg: rgba(0, 0, 0, 0.03);
+  --subtle-bg-hover: rgba(0, 0, 0, 0.05);
+  --overlay-bg: rgba(255, 255, 255, 0.95);
+  --overlay-border: rgba(0, 0, 0, 0.08);
+  --glow-soft: rgba(0, 0, 0, 0.02);
+  --grid-line: rgba(0, 0, 0, 0.04);
+  --grid-line-strong: rgba(0, 0, 0, 0.08);
+  --hero-grad-from: #18181b;
+  --hero-grad-to: #71717a;
+  --section-fade: #f9fafb;
+  --text-heading: #18181b;
+  --text-body: #52525b;
+  --text-dim: #a1a1aa;
+  --avatar-bg: #e4e4e7;
+  --testimonial-bg: rgba(255, 255, 255, 0.8);
+  --cta-bg-text: rgba(0, 0, 0, 0.04);
   color-scheme: light;
 }
 
@@ -88,8 +145,8 @@
 
 /* ── Selection (Emerald highlight) ───────────────────── */
 ::selection {
-  background: rgba(16, 185, 129, 0.2);
-  color: white;
+  background: var(--selection-bg);
+  color: var(--text-primary);
 }
 
 /* ── Interactive cursors ─────────────────────────────── */
@@ -301,6 +358,14 @@ img, video, svg, canvas {
   background-size: 48px 48px;
 }
 
+.light .bg-line-grid {
+  background-image: linear-gradient(
+      rgba(0, 0, 0, 0.04) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+}
+
 .bg-noise {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
@@ -343,12 +408,19 @@ img, video, svg, canvas {
 .widget-glass {
   background: linear-gradient(to bottom, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
   border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: var(--shadow-inset-bevel);
+}
+
+.light .widget-glass {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
 /* ── React Grid Layout ───────────────────────────────── */
 
 .react-grid-item {
-  transition: all 200ms ease;
+  transition: all 200ms var(--ease-snappy);
   transition-property: left, top, width, height;
 }
 
@@ -456,7 +528,7 @@ img, video, svg, canvas {
 .schedule-block-hover:hover {
   transform: scale(1.02);
   z-index: 30 !important;
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--card-border);
 }
 
 .tech-avatar-grayscale {
@@ -547,21 +619,29 @@ img, video, svg, canvas {
   animation: subtle-bounce 0.4s ease-out;
 }
 
-/* Button micro-interactions */
+/* Button micro-interactions — Monolith: snappy curve, no layout-shifting transforms on large elements */
 .btn-micro {
-  transition: transform 100ms ease-out, box-shadow 200ms ease-out;
+  transition: transform 150ms var(--ease-snappy), box-shadow 200ms var(--ease-snappy);
 }
 .btn-micro:hover {
-  transform: scale(1.02);
+  transform: scale(1.01);
 }
 .btn-micro:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+}
+
+/* Monolith: Global snappy transition utility */
+.ease-snappy {
+  transition-timing-function: var(--ease-snappy);
+}
+.ease-spring {
+  transition-timing-function: var(--ease-spring);
 }
 
 /* Focus ring for keyboard users */
 .focus-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px #050505, 0 0 0 4px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px rgba(16, 185, 129, 0.4);
 }
 
 /* Smooth toggle track */
@@ -593,6 +673,16 @@ img, video, svg, canvas {
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.light .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.03) 25%,
+    rgba(0, 0, 0, 0.06) 50%,
+    rgba(0, 0, 0, 0.03) 75%
+  );
+  background-size: 200% 100%;
 }
 
 /* ── Desktop Ghost Mode (Offline) ─────────────────────── */

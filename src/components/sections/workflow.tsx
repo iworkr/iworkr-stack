@@ -48,16 +48,16 @@ function InboxVisual() {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ delay: i * 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="flex items-center gap-3 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
+          className="flex items-center gap-3 rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-3"
         >
-          <div className="h-2 w-2 rounded-full bg-[#00E676]" />
+          <div className="h-2 w-2 rounded-full bg-emerald-500" />
           <div className="flex-1">
-            <div className="text-xs font-medium text-zinc-300">{item.from}</div>
-            <div className="text-[10px] text-zinc-600">{item.type}</div>
+            <div className="text-xs font-medium text-[var(--text-heading)]">{item.from}</div>
+            <div className="text-[10px] text-[var(--text-dim)]">{item.type}</div>
           </div>
-          <span className="text-[10px] text-zinc-600">{item.time}</span>
+          <span className="text-[10px] text-[var(--text-dim)]">{item.time}</span>
           {item.count && (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[rgba(0,230,118,0.12)] text-[9px] text-[#00E676]">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/12 text-[9px] text-emerald-600 dark:text-emerald-400">
               {item.count}
             </span>
           )}
@@ -70,11 +70,11 @@ function InboxVisual() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.5 }}
-          className="font-mono text-2xl font-medium text-zinc-200"
+          className="font-mono text-2xl font-medium text-[var(--text-primary)]"
         >
           12
         </motion.span>
-        <span className="ml-1 text-xs text-zinc-600">new leads today</span>
+        <span className="ml-1 text-xs text-[var(--text-dim)]">new leads today</span>
       </div>
     </div>
   );
@@ -88,7 +88,7 @@ function MapVisual() {
 
   return (
     <div className="relative">
-      <div className="relative h-64 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+      <div className="relative h-64 overflow-hidden rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)]">
         {staticMapUrl ? (
           <img
             src={staticMapUrl}
@@ -98,7 +98,7 @@ function MapVisual() {
           />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <MapPin size={24} strokeWidth={1} className="text-zinc-700" />
+            <MapPin size={24} strokeWidth={1} className="text-[var(--text-dim)]" />
           </div>
         )}
 
@@ -117,12 +117,15 @@ function MapVisual() {
           />
         </svg>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#050505] to-transparent" />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-12"
+          style={{ background: `linear-gradient(to top, var(--section-fade), transparent)` }}
+        />
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-[10px] text-zinc-500">
+      <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--text-muted)]">
         <span>Optimized route: 3 jobs</span>
-        <span className="text-emerald-400">Saving 47 min</span>
+        <span className="text-emerald-600 dark:text-emerald-400">Saving 47 min</span>
       </div>
     </div>
   );
@@ -136,7 +139,7 @@ function PaymentVisual() {
         whileInView={{ opacity: 1, y: 0, scale: 1 }}
         viewport={{ once: true }}
         transition={{ delay: 0.2, type: "spring" }}
-        className="w-full max-w-xs rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-5 backdrop-blur-sm"
+        className="w-full max-w-xs rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 backdrop-blur-sm"
       >
         <div className="mb-4 text-center">
           <motion.div
@@ -146,26 +149,26 @@ function PaymentVisual() {
             transition={{ delay: 0.5, type: "spring" }}
             className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20"
           >
-            <CreditCard size={20} className="text-emerald-400" />
+            <CreditCard size={20} className="text-emerald-500" />
           </motion.div>
-          <div className="text-xs text-zinc-500">Payment Successful</div>
-          <div className="mt-1 text-2xl font-medium tracking-tight text-zinc-100">
+          <div className="text-xs text-[var(--text-muted)]">Payment Successful</div>
+          <div className="mt-1 text-2xl font-medium tracking-tight text-[var(--text-primary)]">
             $1,240.00
           </div>
         </div>
 
-        <div className="space-y-2 border-t border-[rgba(255,255,255,0.06)] pt-3">
+        <div className="space-y-2 border-t border-[var(--card-border)] pt-3">
           <div className="flex justify-between text-[10px]">
-            <span className="text-zinc-500">Invoice</span>
-            <span className="text-zinc-400">#INV-1247</span>
+            <span className="text-[var(--text-muted)]">Invoice</span>
+            <span className="text-[var(--text-body)]">#INV-1247</span>
           </div>
           <div className="flex justify-between text-[10px]">
-            <span className="text-zinc-500">Client</span>
-            <span className="text-zinc-400">Sarah Mitchell</span>
+            <span className="text-[var(--text-muted)]">Client</span>
+            <span className="text-[var(--text-body)]">Sarah Mitchell</span>
           </div>
           <div className="flex justify-between text-[10px]">
-            <span className="text-zinc-500">Method</span>
-            <span className="text-zinc-400">Tap to Pay</span>
+            <span className="text-[var(--text-muted)]">Method</span>
+            <span className="text-[var(--text-body)]">Tap to Pay</span>
           </div>
         </div>
       </motion.div>
@@ -175,7 +178,7 @@ function PaymentVisual() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.8 }}
-        className="mt-3 text-center text-[10px] text-zinc-600"
+        className="mt-3 text-center text-[10px] text-[var(--text-dim)]"
       >
         Funds available by 6:00 AM
       </motion.div>
@@ -202,7 +205,12 @@ export function Workflow() {
       {/* Line grid texture */}
       <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-50" />
       {/* Radial fade overlay */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,black_100%)]" />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at center, transparent 40%, var(--section-fade) 100%)`,
+        }}
+      />
 
       <FadeIn>
         <SectionHeader
@@ -215,9 +223,9 @@ export function Workflow() {
 
       <div ref={containerRef} className="relative">
         {/* Progress line */}
-        <div className="absolute top-0 left-1/2 hidden h-full w-px -translate-x-1/2 bg-[rgba(255,255,255,0.06)] md:block">
+        <div className="absolute top-0 left-1/2 hidden h-full w-px -translate-x-1/2 bg-[var(--card-border)] md:block">
           <motion.div
-            className="w-full bg-gradient-to-b from-white/20 to-white/5"
+            className="w-full bg-gradient-to-b from-[var(--text-muted)] to-[var(--card-border)]"
             style={{ height: progressHeight }}
           />
         </div>
@@ -237,17 +245,17 @@ export function Workflow() {
                   {/* Text */}
                   <div className="flex-1 space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)]">
-                        <step.icon size={16} className="text-zinc-400" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--card-border-hover)] bg-[var(--subtle-bg)]">
+                        <step.icon size={16} className="text-[var(--text-muted)]" />
                       </div>
-                      <span className="font-mono text-[11px] tracking-wider text-zinc-600 uppercase">
+                      <span className="font-mono text-[11px] tracking-wider text-[var(--text-dim)] uppercase">
                         {step.label}
                       </span>
                     </div>
-                    <h3 className="text-2xl font-medium tracking-tight text-zinc-100 md:text-3xl">
+                    <h3 className="text-2xl font-medium tracking-tight text-[var(--text-heading)] md:text-3xl">
                       {step.title}
                     </h3>
-                    <p className="text-sm leading-relaxed text-zinc-500">
+                    <p className="text-sm leading-relaxed text-[var(--text-muted)]">
                       {step.description}
                     </p>
                   </div>

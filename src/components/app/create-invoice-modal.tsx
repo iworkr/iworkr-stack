@@ -650,7 +650,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSubmit("send")}
                     disabled={!isValid}
-                    className="flex items-center gap-2 rounded-l-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-3.5 py-1.5 text-[12px] font-medium text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] disabled:opacity-30"
+                    className="flex items-center gap-2 rounded-l-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-3.5 py-1.5 text-[12px] font-medium text-black transition-all duration-200 hover:brightness-110 disabled:opacity-30"
                   >
                     {sent ? (
                       <motion.div
@@ -674,7 +674,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                   <button
                     onClick={() => setSplitMenuOpen(!splitMenuOpen)}
                     disabled={!isValid}
-                    className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(0,0,0,0.15)] bg-gradient-to-b from-[#00E676] to-[#00C853] px-1.5 text-black transition-colors hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] disabled:opacity-30"
+                    className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(0,0,0,0.15)] bg-gradient-to-b from-[#00E676] to-[#00C853] px-1.5 text-black transition-colors duration-200 hover:brightness-110 disabled:opacity-30"
                   >
                     <ChevronDown size={11} />
                   </button>

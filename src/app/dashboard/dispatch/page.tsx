@@ -242,24 +242,18 @@ export default function DispatchPage() {
       featureTitle="God Mode Dispatch"
       featureDescription="Unlock real-time fleet tracking, road-snapped routing, and GPS footprint trails for your entire operation."
     >
+    {/* ── PRD §4.1 Z-Index Registry ────────────────────────
+         z-0:  Map canvas (GoogleMap)
+         z-10: Routes / Footprints (geographic overlays)
+         z-20: Markers (Fleet & Job pins)
+         z-30: Hover tooltips
+         z-40: Floating widgets (Command Panel, Roster)
+         z-50: Global navigation (handled by shell)
+         z-60: Modals / Drawers (handled by shell)
+         z-70: Toasts (handled by ActionToastContainer)
+    ─────────────────────────────────────────────────────── */}
     <div className="relative h-full w-full overflow-hidden bg-zinc-950">
-      <DispatchCommandPanel
-        showFleet={showFleet}
-        showUnassignedJobs={showUnassignedJobs}
-        showActiveRoutes={showActiveRoutes}
-        showFootprints={showFootprints}
-        onToggleFleet={() => setShowFleet((v) => !v)}
-        onToggleUnassignedJobs={() => setShowUnassignedJobs((v) => !v)}
-        onToggleActiveRoutes={() => setShowActiveRoutes((v) => !v)}
-        onToggleFootprints={() => setShowFootprints((v) => !v)}
-      />
-
-      <DispatchSearch
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onSearch={handleSearch}
-      />
-
+      {/* ── z-0: Map Canvas ─────────────────────────────── */}
       <GoogleMap
         defaultCenter={DEFAULT_MAP_CENTER}
         defaultZoom={12}
@@ -276,18 +270,15 @@ export default function DispatchPage() {
         <MapDevelopmentDetector onDevelopmentMode={() => setDevelopmentMode(true)} />
         <FitBoundsToData techs={dispatchPins} jobs={jobMarkers} />
 
-        <DispatchRoster
-          pins={dispatchPins}
-          hoveredTechId={hoveredTechId}
-          onHoverTech={setHoveredTechId}
-          onLocateTech={handleLocateTech}
-          onOpenJobDossier={handleJobClick}
-          onRippleTech={setRippleTechId}
-          visible
+        {/* z-10: Geographic overlays (routes, footprints) */}
+        <RoutingLayer
+          dispatchPins={dispatchPins}
+          jobs={jobsWithCoords}
+          visible={showActiveRoutes}
         />
+        <FootprintsLayer trails={footprintsToRender} visible={showFootprints} />
 
-        <HoverDialog tech={hoverDialogTech} anchor={hoverAnchor} />
-
+        {/* z-20: Map markers (fleet + jobs) */}
         <FleetLayer
           techs={fleetTechs}
           visible={showFleet}
@@ -305,13 +296,46 @@ export default function DispatchPage() {
           visible={jobMarkers.length > 0}
           onJobClick={handleJobClick}
         />
-        <RoutingLayer
-          dispatchPins={dispatchPins}
-          jobs={jobsWithCoords}
-          visible={showActiveRoutes}
-        />
-        <FootprintsLayer trails={footprintsToRender} visible={showFootprints} />
+
+        {/* z-30: Hover tooltip (inside map for projection) */}
+        <HoverDialog tech={hoverDialogTech} anchor={hoverAnchor} />
       </GoogleMap>
+
+      {/* ── z-40: Floating UI Widgets ───────────────────── */}
+      {/* PRD §4.2: pointer-events-none wrapper lets clicks pass
+          through to map; widgets reclaim with pointer-events-auto */}
+      <div className="pointer-events-none absolute inset-0 z-40">
+        <div className="pointer-events-auto absolute left-4 top-4">
+          <DispatchCommandPanel
+            showFleet={showFleet}
+            showUnassignedJobs={showUnassignedJobs}
+            showActiveRoutes={showActiveRoutes}
+            showFootprints={showFootprints}
+            onToggleFleet={() => setShowFleet((v) => !v)}
+            onToggleUnassignedJobs={() => setShowUnassignedJobs((v) => !v)}
+            onToggleActiveRoutes={() => setShowActiveRoutes((v) => !v)}
+            onToggleFootprints={() => setShowFootprints((v) => !v)}
+          />
+        </div>
+        <div className="pointer-events-auto absolute left-4 top-20" style={{ height: "calc(100vh - 6rem)" }}>
+          <DispatchRoster
+            pins={dispatchPins}
+            hoveredTechId={hoveredTechId}
+            onHoverTech={setHoveredTechId}
+            onLocateTech={handleLocateTech}
+            onOpenJobDossier={handleJobClick}
+            onRippleTech={setRippleTechId}
+            visible
+          />
+        </div>
+      </div>
+
+      {/* z-60: Search modal overlay */}
+      <DispatchSearch
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSearch={handleSearch}
+      />
     </div>
     </FeatureGate>
   );

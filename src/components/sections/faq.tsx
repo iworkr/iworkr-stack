@@ -42,20 +42,20 @@ function FAQItem({ faq, index }: { faq: (typeof faqs)[0]; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="border-b border-[rgba(255,255,255,0.06)]"
+      className="border-b border-[var(--card-border)]"
     >
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between py-5 text-left"
       >
-        <span className="pr-4 text-sm font-medium text-zinc-200 md:text-base">
+        <span className="pr-4 text-sm font-medium text-[var(--text-primary)] md:text-base">
           {faq.q}
         </span>
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)]">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[var(--card-border-hover)] bg-[var(--subtle-bg)]">
           {open ? (
-            <Minus size={12} className="text-zinc-400" />
+            <Minus size={12} className="text-[var(--text-muted)]" />
           ) : (
-            <Plus size={12} className="text-zinc-400" />
+            <Plus size={12} className="text-[var(--text-muted)]" />
           )}
         </span>
       </button>
@@ -68,7 +68,7 @@ function FAQItem({ faq, index }: { faq: (typeof faqs)[0]; index: number }) {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <p className="pb-5 text-sm leading-relaxed text-zinc-500">
+            <p className="pb-5 text-sm leading-relaxed text-[var(--text-muted)]">
               {faq.a}
             </p>
           </motion.div>

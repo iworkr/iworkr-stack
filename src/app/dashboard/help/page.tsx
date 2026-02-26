@@ -304,7 +304,7 @@ export default function HelpHubPage() {
             return (
               <motion.button
                 key={cat.id}
-                whileHover={{ y: -4, boxShadow: "0 10px 30px -10px rgba(0, 230, 118, 0.15)" }}
+                whileHover={{ borderColor: "rgba(255,255,255,0.1)" }}
                 onClick={() => {
                   const first = grouped[cat.id]?.[0];
                   if (first) setSelectedArticle(first);
@@ -319,7 +319,7 @@ export default function HelpHubPage() {
           })}
           {/* Support card */}
           <motion.button
-            whileHover={{ y: -4, boxShadow: "0 10px 30px -10px rgba(0, 230, 118, 0.15)" }}
+            whileHover={{ borderColor: "rgba(255,255,255,0.1)" }}
             onClick={() => setTicketDrawer(true)}
             className="group cursor-pointer rounded-xl border border-white/5 bg-zinc-950 p-6 text-left transition-all hover:border-[#00E676]/20"
           >
@@ -594,7 +594,7 @@ function TicketDrawer({ onClose }: { onClose: () => void }) {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
-                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#00E676] shadow-[0_0_40px_-8px_rgba(0,230,118,0.5)]"
+                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#00E676] shadow-[0_0_20px_-6px_rgba(0,230,118,0.15)]"
                 >
                   <Send size={20} className="text-black" />
                 </motion.div>

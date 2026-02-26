@@ -37,7 +37,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Allow public routes (auth, invite acceptance, landing, api)
-  const publicPaths = ["/auth", "/accept-invite", "/invite", "/api"];
+  const publicPaths = ["/auth", "/accept-invite", "/join", "/invite", "/api"];
   if (publicPaths.some((p) => pathname.startsWith(p)) || pathname === "/") {
     if (pathname === "/auth" && user) {
       const next = request.nextUrl.searchParams.get("next");

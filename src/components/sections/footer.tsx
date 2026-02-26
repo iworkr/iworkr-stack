@@ -60,13 +60,13 @@ const footerLinks = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-[rgba(255,255,255,0.06)]">
+    <footer className="border-t border-[var(--card-border)]">
       <div className="mx-auto max-w-[1200px] px-6 py-16 md:px-12">
         <FadeIn>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-6">
             {footerLinks.map((group) => (
               <div key={group.title}>
-                <h4 className="mb-4 text-xs font-medium tracking-wider text-zinc-400 uppercase">
+                <h4 className="mb-4 text-xs font-medium tracking-wider text-[var(--text-muted)] uppercase">
                   {group.title}
                 </h4>
                 <ul className="space-y-2.5">
@@ -74,7 +74,7 @@ export function Footer() {
                     <li key={link.label}>
                       <a
                         href={link.href}
-                        className="text-sm text-zinc-600 transition-colors duration-200 hover:text-zinc-300"
+                        className="text-sm text-[var(--text-dim)] transition-colors duration-200 hover:text-[var(--text-primary)]"
                       >
                         {link.label}
                       </a>
@@ -87,17 +87,31 @@ export function Footer() {
         </FadeIn>
 
         {/* Bottom bar */}
-        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-[rgba(255,255,255,0.06)] pt-8 sm:flex-row">
+        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-[var(--card-border)] pt-8 sm:flex-row">
           {/* Logo */}
           <div className="flex items-center gap-3">
+            {/* Use dark logo in dark mode, light in light - CSS swap */}
+            <picture>
+              <source
+                srcSet="/logos/logo-dark-full.png"
+                media="(prefers-color-scheme: dark)"
+              />
+              <Image
+                src="/logos/logo-dark-full.png"
+                alt="iWorkr"
+                width={96}
+                height={24}
+                className="hidden h-5 w-auto object-contain dark:block"
+              />
+            </picture>
             <Image
-              src="/logos/logo-dark-full.png"
+              src="/logos/logo-light-full.png"
               alt="iWorkr"
               width={96}
               height={24}
-              className="h-5 w-auto object-contain"
+              className="block h-5 w-auto object-contain dark:hidden"
             />
-            <span className="text-sm text-zinc-500">
+            <span className="text-sm text-[var(--text-muted)]">
               &copy; {new Date().getFullYear()} All rights reserved.
             </span>
           </div>
@@ -108,7 +122,7 @@ export function Footer() {
               <span className="animate-pulse-dot absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            <span className="text-xs text-zinc-600">System Operational</span>
+            <span className="text-xs text-[var(--text-dim)]">System Operational</span>
           </div>
         </div>
       </div>

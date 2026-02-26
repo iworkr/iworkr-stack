@@ -669,7 +669,7 @@ export default function TeamPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.03, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className={`group cursor-pointer overflow-hidden rounded-xl bg-zinc-900/30 transition-all duration-300 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${isPending ? "opacity-60" : ""}`}
+                        className={`group cursor-pointer overflow-hidden rounded-xl bg-zinc-900/30 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${isPending ? "opacity-60" : ""}`}
                       >
                         {/* Card body */}
                         <div className="flex flex-col items-center px-4 pb-4 pt-6">

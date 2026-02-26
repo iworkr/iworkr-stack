@@ -551,7 +551,7 @@ export function MemberDrawer() {
                             <button
                               onClick={handleSetPassword}
                               disabled={passwordLoading || passwordValue.length < 6}
-                              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-500 disabled:opacity-40"
+                              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-medium text-white shadow-none transition-all hover:bg-emerald-500 disabled:opacity-40"
                             >
                               {passwordLoading ? (
                                 <Loader2 size={10} className="animate-spin" />

@@ -35,15 +35,14 @@ export function GlassCard({
     <MotionTag
       ref={ref}
       onMouseMove={handleMouseMove}
-      whileHover={{ scale: 1.005, y: -1 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      className={`group relative overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] ${className}`}
+      transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+      className={`group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[border-color] duration-200 hover:border-white/10 ${className}`}
     >
       {/* Spotlight */}
       <motion.div
-        className="pointer-events-none absolute -inset-px z-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute -inset-px z-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
         style={{
-          background: `radial-gradient(${spotlightSize}px circle at ${springX.get()}px ${springY.get()}px, rgba(255,255,255,0.06), transparent 80%)`,
+          background: `radial-gradient(${spotlightSize}px circle at ${springX.get()}px ${springY.get()}px, var(--subtle-bg-hover), transparent 80%)`,
         }}
       />
       <div className="relative z-10">{children}</div>

@@ -53,7 +53,7 @@ export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
       header={
         <div className="flex items-center gap-2">
           <Users size={14} strokeWidth={1.5} className="text-zinc-500" />
-          <span className="text-[13px] font-medium text-zinc-300">Team Status</span>
+          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Team Status</span>
           <span className="text-[11px] text-zinc-600">{onlineMembers.length} online</span>
         </div>
       }

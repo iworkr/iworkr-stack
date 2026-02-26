@@ -18,7 +18,7 @@ function PriceDisplay({
 }) {
   return (
     <div className="flex items-baseline gap-1">
-      <span className="text-sm font-medium text-zinc-500 align-super">$</span>
+      <span className="text-sm font-medium text-[var(--text-muted)] align-super">$</span>
       <AnimatePresence mode="wait">
         <motion.span
           key={price}
@@ -26,12 +26,12 @@ function PriceDisplay({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="text-5xl font-medium tracking-tight text-zinc-100"
+          className="text-5xl font-medium tracking-tight text-[var(--text-primary)]"
         >
           {price}
         </motion.span>
       </AnimatePresence>
-      <span className="text-sm text-zinc-500">/mo</span>
+      <span className="text-sm text-[var(--text-muted)]">/mo</span>
     </div>
   );
 }
@@ -55,13 +55,13 @@ export function Pricing() {
 
       {/* Toggle */}
       <FadeIn delay={0.1} className="mb-12 flex justify-center">
-        <div className="inline-flex items-center gap-3 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-1">
+        <div className="inline-flex items-center gap-3 rounded-full border border-[var(--card-border)] bg-[var(--card-bg)] p-1">
           <button
             onClick={() => setIsYearly(false)}
             className={`rounded-full px-4 py-1.5 text-sm transition-all duration-200 ${
               !isYearly
-                ? "bg-white text-black"
-                : "text-zinc-400 hover:text-zinc-200"
+                ? "bg-[var(--text-primary)] text-[var(--background)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
             }`}
           >
             Monthly
@@ -70,12 +70,12 @@ export function Pricing() {
             onClick={() => setIsYearly(true)}
             className={`rounded-full px-4 py-1.5 text-sm transition-all duration-200 ${
               isYearly
-                ? "bg-white text-black"
-                : "text-zinc-400 hover:text-zinc-200"
+                ? "bg-[var(--text-primary)] text-[var(--background)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
             }`}
           >
             Yearly
-            <span className="ml-1.5 text-[10px] font-medium text-emerald-500">
+            <span className="ml-1.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-500">
               Save 20%
             </span>
           </button>
@@ -94,25 +94,25 @@ export function Pricing() {
               transition={{ duration: 0.2 }}
               className={`relative flex h-full flex-col rounded-xl border p-6 md:p-8 ${
                 plan.highlighted
-                  ? "border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.04)]"
-                  : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]"
+                  ? "border-[var(--card-border-hover)] bg-[var(--subtle-bg)]"
+                  : "border-[var(--card-border)] bg-[var(--card-bg)]"
               }`}
             >
               {/* Top glow for highlighted */}
               {plan.highlighted && (
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--text-muted)] to-transparent" />
               )}
 
               {/* Badge */}
               {plan.badge && (
-                <span className="mb-4 inline-block w-fit rounded-full bg-white/10 px-3 py-1 text-[10px] font-medium text-zinc-300">
+                <span className="mb-4 inline-block w-fit rounded-full bg-[var(--subtle-bg-hover)] px-3 py-1 text-[10px] font-medium text-[var(--text-heading)]">
                   {plan.badge}
                 </span>
               )}
 
               {/* Plan name */}
-              <h3 className="text-lg font-medium text-zinc-100">{plan.name}</h3>
-              <p className="mt-1 text-sm text-zinc-500">{plan.description}</p>
+              <h3 className="text-lg font-medium text-[var(--text-primary)]">{plan.name}</h3>
+              <p className="mt-1 text-sm text-[var(--text-muted)]">{plan.description}</p>
 
               {/* Price */}
               <div className="my-6">
@@ -121,7 +121,7 @@ export function Pricing() {
                   isYearly={isYearly}
                 />
                 {isYearly && (
-                  <p className="mt-1 text-[11px] text-zinc-600">
+                  <p className="mt-1 text-[11px] text-[var(--text-dim)]">
                     Billed annually ($
                     {plan.yearlyPrice * 12}
                     /yr)
@@ -147,11 +147,11 @@ export function Pricing() {
               </SpotlightButton>
 
               {/* Features */}
-              <div className="grid grid-cols-1 gap-2.5 border-t border-[rgba(255,255,255,0.06)] pt-6">
+              <div className="grid grid-cols-1 gap-2.5 border-t border-[var(--card-border)] pt-6">
                 {plan.features.map((feature) => (
                   <div key={feature} className="flex items-center gap-2.5">
-                    <Check size={14} className="shrink-0 text-zinc-500" />
-                    <span className="text-sm text-zinc-400">{feature}</span>
+                    <Check size={14} className="shrink-0 text-[var(--text-muted)]" />
+                    <span className="text-sm text-[var(--text-body)]">{feature}</span>
                   </div>
                 ))}
               </div>

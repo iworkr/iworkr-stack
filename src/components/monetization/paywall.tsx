@@ -245,7 +245,7 @@ function ShimmerButton({
       disabled={loading}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
-      className="relative mt-8 flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg border border-white/[0.08] bg-zinc-900 py-3 text-[13px] font-medium text-white transition-all duration-300 hover:border-emerald-500/20 hover:text-white disabled:opacity-60"
+      className="relative mt-8 flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg border border-white/[0.08] bg-zinc-900 py-3 text-[13px] font-medium text-white transition-all duration-200 hover:border-white/15 hover:text-white disabled:opacity-60"
     >
       {/* Shimmer sweep on hover */}
       <div className="pointer-events-none absolute inset-0 -translate-x-full transition-transform duration-700 group-hover:translate-x-full">

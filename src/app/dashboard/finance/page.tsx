@@ -164,7 +164,7 @@ function LedgerEmptyState({ title, subtitle, cta, onCta }: { title: string; subt
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={onCta}
-          className="mt-4 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500"
+          className="mt-4 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
         >
           <Plus size={12} />
           {cta}
@@ -398,7 +398,7 @@ export default function FinancePage() {
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/finance/quotes/new")}
-                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500"
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
               >
                 <Plus size={12} />
                 New Quote
@@ -407,7 +407,7 @@ export default function FinancePage() {
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/finance/invoices/new")}
-                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500"
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
               >
                 <Plus size={12} />
                 New Invoice
@@ -616,7 +616,7 @@ export default function FinancePage() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, duration: 0.3 }}
-                  className="group rounded-xl bg-zinc-900/30 p-5 transition-all duration-300 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
+                  className="group rounded-xl bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
                 >
                   <div className="mb-3 flex items-center gap-2 text-[10px] font-bold tracking-widest text-zinc-600 uppercase">
                     <CreditCard size={11} className="transition-colors duration-200 group-hover:text-zinc-400" />
@@ -654,7 +654,7 @@ export default function FinancePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15, duration: 0.3 }}
                   onClick={() => { if (totalOverdue > 0) { setActiveTab("invoices"); } }}
-                  className={`group rounded-xl bg-zinc-900/30 p-5 transition-all duration-300 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${totalOverdue > 0 ? "cursor-pointer animate-overdue-pulse" : ""}`}
+                  className={`group rounded-xl bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${totalOverdue > 0 ? "cursor-pointer animate-overdue-pulse" : ""}`}
                 >
                   <div className={`mb-3 flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase ${totalOverdue > 0 ? "text-rose-400/70" : "text-zinc-600"}`}>
                     <AlertTriangle size={11} />
@@ -692,7 +692,7 @@ export default function FinancePage() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
-                  className="group rounded-xl bg-zinc-900/30 p-5 transition-all duration-300 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
+                  className="group rounded-xl bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
                 >
                   <div className="mb-3 flex items-center gap-2 text-[10px] font-bold tracking-widest text-zinc-600 uppercase">
                     <Clock size={11} />
@@ -997,7 +997,7 @@ export default function FinancePage() {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05, duration: 0.2 }}
-                      className="overflow-hidden rounded-xl bg-zinc-900/30 transition-all duration-300 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
+                      className="overflow-hidden rounded-xl bg-zinc-900/30 transition-all duration-200 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
                     >
                       <button
                         onClick={() => setExpandedPayout(isExpanded ? null : payout.id)}

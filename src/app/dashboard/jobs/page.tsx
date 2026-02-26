@@ -557,17 +557,17 @@ export default function JobsPage() {
       </div>
 
       {/* ── Sticky Column Headers ──────────────────────────── */}
-      <div className="relative z-10 flex items-center border-b border-white/5 bg-[#080808] px-5 py-2">
-        <div className="w-8" />
-        <div className="w-8 px-1" />
-        <div className="w-[80px] px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">ID</div>
-        <div className="w-[72px] px-1 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Status</div>
-        <div className="min-w-0 flex-1 px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Title</div>
-        <div className="w-28 px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Client</div>
-        <div className="w-28 px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Location</div>
-        <div className="w-10 px-1 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase"></div>
-        <div className="w-20 px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Due</div>
-        <div className="w-24" />
+      <div className="jobs-grid relative z-10 grid items-center border-b border-white/5 bg-[#080808] px-5 py-2" style={{ gridTemplateColumns: "32px 32px 80px 100px minmax(200px,1fr) 112px 112px 40px 80px 96px" }}>
+        <div />
+        <div />
+        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">ID</div>
+        <div className="px-1 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Status</div>
+        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Title</div>
+        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Client</div>
+        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Location</div>
+        <div />
+        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Due</div>
+        <div />
       </div>
 
       {/* ── Rows ──────────────────────────────────────────── */}
@@ -599,14 +599,14 @@ export default function JobsPage() {
                 onContextMenu={(e) => handleContextMenu(e, job.id)}
                 onMouseEnter={() => setHoveredRowId(job.id)}
                 onMouseLeave={() => setHoveredRowId(null)}
-                className={`group relative flex cursor-pointer items-center border-b border-white/5 px-5 transition-all duration-100 ${
+                className={`group relative grid cursor-pointer items-center border-b border-white/5 px-5 transition-all duration-100 ${
                   isSelected
                     ? "bg-white/[0.06]"
                     : isFocused
                       ? "bg-white/[0.03]"
                       : "hover:bg-white/[0.02]"
                 }`}
-                style={{ height: 42 }}
+                style={{ height: 56, gridTemplateColumns: "32px 32px 80px 100px minmax(200px,1fr) 112px 112px 40px 80px 96px" }}
               >
                 {/* Selected spine — monochrome */}
                 {isSelected && (
@@ -614,7 +614,7 @@ export default function JobsPage() {
                 )}
 
                 {/* Checkbox */}
-                <div className="w-8 shrink-0">
+                <div className="shrink-0">
                   <motion.div
                     whileTap={{ scale: 0.9 }}
                     className={`flex h-3.5 w-3.5 items-center justify-center rounded border transition-all duration-150 ${
@@ -633,17 +633,17 @@ export default function JobsPage() {
                 </div>
 
                 {/* Priority icon */}
-                <div className="w-8 px-1">
+                <div className="px-1">
                   <PriorityIcon priority={job.priority} size={14} />
                 </div>
 
                 {/* ID — monospace */}
-                <div className="w-[80px] px-2">
+                <div className="truncate px-2">
                   <span className="font-mono text-[11px] text-zinc-600 transition-colors duration-150 group-hover:text-zinc-400">{job.id}</span>
                 </div>
 
                 {/* Status Pill */}
-                <div className="w-[72px] px-1">
+                <div className="overflow-hidden px-1">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -657,7 +657,7 @@ export default function JobsPage() {
                 </div>
 
                 {/* Title */}
-                <div className="min-w-0 flex-1 px-2">
+                <div className="min-w-0 overflow-hidden px-2">
                   <span className={`truncate text-[13px] font-medium transition-colors duration-150 ${isFocused ? "text-white" : "text-zinc-200 group-hover:text-white"}`}>
                     {job.title}
                   </span>
@@ -667,17 +667,17 @@ export default function JobsPage() {
                 </div>
 
                 {/* Client */}
-                <div className="w-28 px-2">
-                  {job.client && <span className="truncate text-[12px] text-zinc-500">{job.client}</span>}
+                <div className="overflow-hidden px-2">
+                  {job.client && <span className="block truncate text-[12px] text-zinc-500">{job.client}</span>}
                 </div>
 
                 {/* Location */}
-                <div className="w-28 px-2">
-                  {job.location && <span className="truncate text-[11px] text-zinc-600">{job.location?.split(",")[0]}</span>}
+                <div className="overflow-hidden px-2">
+                  {job.location && <span className="block truncate text-[11px] text-zinc-600">{job.location?.split(",")[0]}</span>}
                 </div>
 
                 {/* Assignee avatar */}
-                <div className="w-10 px-1">
+                <div className="px-1">
                   {job.assigneeInitials && (
                     <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-zinc-800/80 text-[7px] font-semibold text-zinc-400 transition-colors duration-150 group-hover:bg-zinc-700 group-hover:text-zinc-300">
                       {job.assigneeInitials}
@@ -686,7 +686,7 @@ export default function JobsPage() {
                 </div>
 
                 {/* Due */}
-                <div className="w-20 px-2">
+                <div className="px-2">
                   <span className={`font-mono text-[11px] ${
                     due.isOverdue ? "font-semibold text-rose-400" : due.label === "Today" ? "text-amber-400/80" : "text-zinc-600"
                   }`}>
@@ -695,7 +695,7 @@ export default function JobsPage() {
                 </div>
 
                 {/* Quick Actions — fade in from right on hover */}
-                <div className="w-24">
+                <div>
                   <AnimatePresence>
                     {isHovered && (
                       <motion.div

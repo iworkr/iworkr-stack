@@ -79,10 +79,10 @@ export async function sendTeamInvites(
     return { error: "Not authenticated" };
   }
 
-  // Get org name and inviter profile for the email
+  // Get org name + branding and inviter profile for the email (Project Genesis)
   const { data: org } = await (supabase as any)
     .from("organizations")
-    .select("name")
+    .select("name, logo_url, brand_color_hex")
     .eq("id", orgId)
     .maybeSingle();
 
@@ -115,15 +115,17 @@ export async function sendTeamInvites(
       .single();
 
     if (!error && invite) {
-      // Universal link: works for both web (/accept-invite) and Flutter (app_links)
+      // Genesis: use /join route with token-based SSR validation
       const inviteToken = invite.token || invite.id;
-      const inviteUrl = `${baseUrl}/accept-invite?token=${inviteToken}&email=${encodeURIComponent(email)}`;
+      const inviteUrl = `${baseUrl}/join?token=${inviteToken}`;
       await sendInviteEmail({
         to: email,
         inviterName,
         companyName,
         role: "Technician",
         inviteUrl,
+        brandColorHex: org?.brand_color_hex || undefined,
+        logoUrl: org?.logo_url || undefined,
       }).catch((err) => console.error("[Email] Invite send failed:", err));
     }
 

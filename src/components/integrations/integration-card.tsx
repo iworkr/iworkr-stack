@@ -73,8 +73,7 @@ export function IntegrationCard({ integration: int, index }: IntegrationCardProp
         ease: [0.16, 1, 0.3, 1],
       }}
       onClick={handleClick}
-      whileHover={{ y: -4 }}
-      className={`group relative flex aspect-[4/3] w-full flex-col items-center justify-between overflow-hidden rounded-xl border bg-[#0F0F0F] p-5 text-left transition-all duration-300 ${
+      className={`group relative flex aspect-[4/3] w-full flex-col items-center justify-between overflow-hidden rounded-xl border bg-[#0F0F0F] p-5 text-left transition-[border-color] duration-200 ${
         isError
           ? "border-red-500/20 hover:border-red-500/40"
           : isConnected
@@ -85,7 +84,7 @@ export function IntegrationCard({ integration: int, index }: IntegrationCardProp
       {/* Brand icon */}
       <div className="flex flex-1 items-center justify-center">
         <div
-          className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br transition-all duration-300 ${int.iconBg} ${
+          className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br transition-all duration-200 ${int.iconBg} ${
             isConnected
               ? "opacity-100 saturate-100"
               : isError

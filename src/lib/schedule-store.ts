@@ -19,8 +19,14 @@ import {
   type BacklogJob,
   type ScheduleEvent,
 } from "@/app/actions/schedule";
+import { useToastStore } from "@/components/app/action-toast";
 
 export type ViewScale = "day" | "week" | "month";
+
+/* ── Toast helper (callable outside React) ────────────── */
+function showToast(message: string, type: "success" | "error" | "info" = "error", undoAction?: () => void) {
+  useToastStore.getState().addToast(message, undoAction, type);
+}
 
 /* ── Helper function to generate initials ─────────────── */
 function getInitials(name: string): string {
@@ -47,12 +53,15 @@ function calculateDuration(startTime: string, endTime: string): number {
   return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 }
 
-/* ── Convert decimal hour to ISO timestamp for a given date ── */
+/* ── Convert decimal hour to strict UTC ISO timestamp ──── */
+/* PRD §2.2: All mutation timestamps MUST be UTC. We construct
+   the Date in UTC explicitly so .toISOString() yields the
+   exact intended hour regardless of browser timezone offset. */
 function decimalHourToISO(date: string, hour: number): string {
-  const d = new Date(date);
+  const [year, month, day] = date.split("-").map(Number);
   const h = Math.floor(hour);
   const m = Math.round((hour - h) * 60);
-  d.setHours(h, m, 0, 0);
+  const d = new Date(Date.UTC(year, month - 1, day, h, m, 0, 0));
   return d.toISOString();
 }
 
@@ -246,7 +255,10 @@ export const useScheduleStore = create<ScheduleState>()(
     if (!block) return;
     const snappedHour = Math.round(newStartHour * 4) / 4;
 
-    // Optimistic local update
+    /* ── Step 1: onMutate — Clone previous state ───────── */
+    const previousBlocks = [...get().blocks];
+
+    /* ── Step 2: Optimistic local update ───────────────── */
     set((s) => ({
       blocks: s.blocks.map((b) =>
         b.id === blockId
@@ -259,15 +271,36 @@ export const useScheduleStore = create<ScheduleState>()(
       ),
     }));
 
-    // Persist to server
+    /* ── Step 3: Persist to server (UTC-normalized) ────── */
     const date = get().selectedDate;
     const startISO = decimalHourToISO(date, snappedHour);
     const endISO = decimalHourToISO(date, snappedHour + block.duration);
     const techId = newTechId || block.technicianId;
 
-    moveScheduleBlockServer(blockId, techId, startISO, endISO).catch((err) => {
-      console.error("Failed to persist block move:", err);
-    });
+    moveScheduleBlockServer(blockId, techId, startISO, endISO)
+      .then((result) => {
+        if (result.error) {
+          /* ── onError — Rollback to cloned state ──────── */
+          set({ blocks: previousBlocks });
+          const isConflict = result.error.includes("conflict") || result.error.includes("overlap");
+          showToast(
+            isConflict
+              ? `Scheduling Conflict: ${result.error}`
+              : `Failed to move block: ${result.error}`,
+            "error",
+            undefined
+          );
+          return;
+        }
+        /* ── onSettled — Reconcile with server truth ──── */
+        get().refresh();
+      })
+      .catch((err) => {
+        /* ── Network error — Rollback ──────────────────── */
+        set({ blocks: previousBlocks });
+        showToast("Network error — move was not saved. Please try again.", "error");
+        console.error("Failed to persist block move:", err);
+      });
 
     // Re-validate travel time after reposition
     const orgId = get().orgId;
@@ -304,6 +337,9 @@ export const useScheduleStore = create<ScheduleState>()(
     if (!block) return;
     const snapped = Math.max(0.25, Math.round(newDuration * 4) / 4);
 
+    /* ── Clone previous state for rollback ──────────────── */
+    const previousBlocks = [...get().blocks];
+
     // Optimistic local update
     set((s) => ({
       blocks: s.blocks.map((b) =>
@@ -311,26 +347,52 @@ export const useScheduleStore = create<ScheduleState>()(
       ),
     }));
 
-    // Persist to server
+    // Persist to server (UTC-normalized)
     const date = get().selectedDate;
     const endISO = decimalHourToISO(date, block.startHour + snapped);
-    resizeScheduleBlockServer(blockId, endISO).catch((err) => {
-      console.error("Failed to persist block resize:", err);
-    });
+    resizeScheduleBlockServer(blockId, endISO)
+      .then((result) => {
+        if (result.error) {
+          set({ blocks: previousBlocks });
+          showToast(`Failed to resize block: ${result.error}`, "error");
+          return;
+        }
+        get().refresh();
+      })
+      .catch((err) => {
+        set({ blocks: previousBlocks });
+        showToast("Network error — resize was not saved.", "error");
+        console.error("Failed to persist block resize:", err);
+      });
   },
 
   deleteBlock: (blockId) => {
     const block = get().blocks.find((b) => b.id === blockId);
     if (!block) return;
+
+    /* ── Clone for rollback ────────────────────────────── */
+    const previousBlocks = [...get().blocks];
+
     // Optimistic local delete
     set((s) => ({
       blocks: s.blocks.filter((b) => b.id !== blockId),
     }));
 
     // Persist to server
-    deleteBlockServer(blockId).catch((err) => {
-      console.error("Failed to persist block delete:", err);
-    });
+    deleteBlockServer(blockId)
+      .then((result) => {
+        if (result.error) {
+          set({ blocks: previousBlocks });
+          showToast(`Failed to delete block: ${result.error}`, "error");
+          return;
+        }
+        get().refresh();
+      })
+      .catch((err) => {
+        set({ blocks: previousBlocks });
+        showToast("Network error — deletion was not saved.", "error");
+        console.error("Failed to persist block delete:", err);
+      });
   },
 
   restoreBlock: (block) =>
@@ -428,13 +490,22 @@ export const useScheduleStore = create<ScheduleState>()(
     ]);
 
     if (result.error) {
+      /* ── Conflict/Error Rollback — snap back to backlog ── */
       set((s) => ({
         blocks: s.blocks.filter((b) => b.id !== tempBlock.id),
         backlogJobs: [...s.backlogJobs, job],
       }));
+      const isConflict = result.error.includes("conflict") || result.error.includes("overlap");
+      showToast(
+        isConflict
+          ? `Scheduling Conflict: Cannot assign "${job.title}". ${result.error}`
+          : `Failed to assign "${job.title}": ${result.error}`,
+        "error"
+      );
       return;
     }
 
+    showToast(`"${job.title}" assigned to schedule`, "success");
     get().refresh();
   },
 

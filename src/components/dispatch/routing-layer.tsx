@@ -6,7 +6,8 @@ import { MapPolyline } from "./map-polyline";
 import type { DispatchPin } from "@/app/actions/dashboard";
 
 const DEVIATION_METERS = 500;
-const ROUTE_Z_INDEX = 100;
+/* PRD §4.1: z-10 for geographic overlays (routes, footprints) */
+const ROUTE_Z_INDEX = 10;
 
 interface JobWithCoords {
   id: string;

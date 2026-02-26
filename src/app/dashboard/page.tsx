@@ -84,7 +84,7 @@ export default function DashboardPage() {
         >
           <button
             onClick={() => setEditMode(!editMode)}
-            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-medium transition-all duration-300 ${
+            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-medium transition-all duration-200 ${
               editMode
                 ? "border border-white/20 bg-white/10 text-white shadow-[0_0_20px_-6px_rgba(255,255,255,0.08)]"
                 : "border border-white/[0.04] text-zinc-600 hover:border-white/[0.08] hover:text-zinc-400"

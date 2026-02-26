@@ -94,7 +94,7 @@ export function StepTrade() {
               }
               whileTap={!selected ? { scale: 0.97 } : {}}
               onClick={() => !selected && handleSelect(trade.id)}
-              className={`group relative flex flex-col items-center justify-center gap-3 rounded-xl border px-4 py-6 transition-all duration-300 ${
+              className={`group relative flex flex-col items-center justify-center gap-3 rounded-xl border px-4 py-6 transition-all duration-200 ${
                 isSelected
                   ? "border-white bg-white text-black"
                   : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] text-zinc-400"
@@ -109,7 +109,7 @@ export function StepTrade() {
                 <Icon
                   size={24}
                   strokeWidth={1.5}
-                  className={`transition-all duration-300 ${
+                  className={`transition-all duration-200 ${
                     isSelected
                       ? "text-black"
                       : "text-zinc-500 group-hover:scale-110 group-hover:text-zinc-300"

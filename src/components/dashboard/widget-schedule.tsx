@@ -13,9 +13,9 @@ import { emptyCalendarAnimation } from "./lottie-data";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const statusAccent: Record<string, { bar: string; dot: string; text: string; glow: string }> = {
-  scheduled:   { bar: "bg-emerald-500", dot: "bg-emerald-500", text: "text-emerald-400", glow: "shadow-[0_0_8px_-2px_rgba(16,185,129,0.4)]" },
-  en_route:    { bar: "bg-amber-500",   dot: "bg-amber-500",   text: "text-amber-400",   glow: "shadow-[0_0_8px_-2px_rgba(245,158,11,0.4)]" },
-  in_progress: { bar: "bg-blue-500",    dot: "bg-blue-500",    text: "text-blue-400",    glow: "shadow-[0_0_8px_-2px_rgba(59,130,246,0.4)]" },
+  scheduled:   { bar: "bg-emerald-500", dot: "bg-emerald-500", text: "text-emerald-400", glow: "" },
+  en_route:    { bar: "bg-amber-500",   dot: "bg-amber-500",   text: "text-amber-400",   glow: "" },
+  in_progress: { bar: "bg-blue-500",    dot: "bg-blue-500",    text: "text-blue-400",    glow: "" },
   complete:    { bar: "bg-zinc-700",     dot: "bg-zinc-700",    text: "text-zinc-600",    glow: "" },
 };
 
@@ -167,14 +167,14 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
       header={
         <div className="flex items-center gap-2">
           <CalendarDays size={14} className="text-zinc-600" />
-          <span className="text-[13px] font-medium text-zinc-300">My Schedule</span>
+          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">My Schedule</span>
           <span className="text-[11px] text-zinc-700">Today</span>
         </div>
       }
       action={
         <button
           onClick={() => router.push("/dashboard/schedule")}
-          className="flex items-center gap-1 text-[11px] text-zinc-700 transition-colors hover:text-zinc-300"
+          className="flex items-center gap-1 text-[11px] text-zinc-600 transition-colors hover:text-zinc-300"
         >
           Full View <ArrowRight size={11} />
         </button>
@@ -211,7 +211,7 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 + i * 0.07, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 onClick={() => block.jobId && router.push(`/dashboard/jobs/${block.jobId}`)}
-                className={`group relative flex w-full items-start gap-3 overflow-hidden rounded-xl px-3 py-3 text-left transition-all duration-300 ${
+                className={`group relative flex w-full items-start gap-3 overflow-hidden rounded-xl px-3 py-3 text-left transition-all duration-200 ${
                   isComplete || isPast
                     ? "opacity-35"
                     : "hover:bg-white/[0.02]"

@@ -323,7 +323,7 @@ export default function AssetDetailPage() {
                 </div>
                 <button
                   onClick={() => setCustodyOpen(true)}
-                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-colors hover:bg-emerald-500"
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-none transition-colors hover:bg-emerald-500"
                 >
                   <UserCheck size={12} className="mr-1 inline" />
                   Assign

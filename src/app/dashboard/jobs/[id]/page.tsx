@@ -103,7 +103,7 @@ export default function JobDetailPage() {
     ? [...teamMembers.map((m) => m.name || "Team Member"), "Unassigned"]
     : ["Unassigned"];
 
-  const job = jobs.find((j) => j.id === jobId);
+  const job = jobs.find((j) => j.id === jobId || j.dbId === jobId);
 
   /* Local editable state */
   const [editingTitle, setEditingTitle] = useState(false);

@@ -72,7 +72,6 @@ function AgentCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
       className={`group relative overflow-hidden rounded-xl border bg-zinc-900/40 p-5 transition-all duration-200 ${
         isActive

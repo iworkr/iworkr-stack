@@ -83,7 +83,7 @@ export function HoverDialog({ tech, anchor }: HoverDialogProps) {
 
   return (
     <div
-      className="pointer-events-none absolute z-[1000] w-56 rounded-lg border border-white/10 bg-zinc-950/90 p-3 shadow-2xl backdrop-blur-md"
+      className="pointer-events-none absolute z-30 w-56 rounded-lg border border-white/10 bg-zinc-950/90 p-3 shadow-2xl backdrop-blur-md"
       style={{
         left: pixel.x,
         top: pixel.y - 10,

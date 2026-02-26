@@ -21,8 +21,11 @@ export interface AutomationFlow {
   category: FlowCategory;
   status: FlowStatus;
   version: number;
+  isPublished: boolean;
   icon: string; // lucide icon name
   blocks: FlowBlock[];
+  /** JSON Logic AST for global condition evaluation */
+  conditions: JsonLogicRule | null;
   metrics: {
     runs24h: number;
     successRate: number;
@@ -35,6 +38,9 @@ export interface AutomationFlow {
   createdAt: string;
 }
 
+/** JSON Logic AST node — recursive tree structure */
+export type JsonLogicRule = Record<string, unknown>;
+
 export interface ExecutionLog {
   id: string;
   flowId: string;
@@ -44,6 +50,186 @@ export interface ExecutionLog {
   status: ExecutionStatus;
   errorMessage?: string;
   duration: string;
+}
+
+/** Dry-run / execution trace step */
+export interface TraceStep {
+  step: string;
+  status: "passed" | "failed" | "simulated" | "skipped" | "error";
+  description?: string;
+  evaluation?: string;
+  data?: unknown;
+  duration_ms?: number;
+}
+
+/** Execution run from the idempotency ledger */
+export interface ExecutionRun {
+  id: string;
+  automationId: string;
+  flowTitle: string;
+  triggerEventId: string;
+  status: "success" | "failed" | "skipped";
+  executionTimeMs: number;
+  errorDetails?: string;
+  trace: TraceStep[];
+  timestamp: string;
+}
+
+/** Condition rule for the UI builder */
+export interface ConditionRule {
+  id: string;
+  field: string;
+  operator: "==" | "!=" | ">" | ">=" | "<" | "<=" | "in" | "exists" | "not_exists";
+  value: string;
+}
+
+/** Condition group (AND/OR collection of rules) */
+export interface ConditionGroup {
+  id: string;
+  logic: "and" | "or";
+  rules: ConditionRule[];
+}
+
+/** Available trigger events for the builder */
+export const triggerEvents = [
+  { value: "job.created", label: "Job Created", entity: "job" },
+  { value: "job.status_change", label: "Job Status Changed", entity: "job" },
+  { value: "job.completed", label: "Job Completed", entity: "job" },
+  { value: "job.assigned", label: "Job Assigned", entity: "job" },
+  { value: "job.cancelled", label: "Job Cancelled", entity: "job" },
+  { value: "job.overdue", label: "Job Overdue", entity: "job" },
+  { value: "invoice.created", label: "Invoice Created", entity: "invoice" },
+  { value: "invoice.sent", label: "Invoice Sent", entity: "invoice" },
+  { value: "invoice.paid", label: "Invoice Paid", entity: "invoice" },
+  { value: "invoice.overdue", label: "Invoice Overdue", entity: "invoice" },
+  { value: "client.created", label: "New Client Created", entity: "client" },
+  { value: "client.status_change", label: "Client Status Changed", entity: "client" },
+  { value: "schedule.reminder", label: "Schedule Reminder", entity: "schedule" },
+  { value: "inventory.low_stock", label: "Low Stock Alert", entity: "inventory" },
+  { value: "form.submitted", label: "Form Submitted", entity: "form" },
+  { value: "team.member_joined", label: "Team Member Joined", entity: "team" },
+] as const;
+
+/** Available condition operators */
+export const conditionOperators = [
+  { value: "==", label: "equals" },
+  { value: "!=", label: "does not equal" },
+  { value: ">", label: "greater than" },
+  { value: ">=", label: "greater or equal" },
+  { value: "<", label: "less than" },
+  { value: "<=", label: "less or equal" },
+  { value: "in", label: "contains" },
+  { value: "exists", label: "is not empty" },
+  { value: "not_exists", label: "is empty" },
+] as const;
+
+/** Available context variables per entity type */
+export const contextVariables: Record<string, { value: string; label: string }[]> = {
+  job: [
+    { value: "trigger.new_record.status", label: "Job → Status" },
+    { value: "trigger.new_record.title", label: "Job → Title" },
+    { value: "trigger.new_record.priority", label: "Job → Priority" },
+    { value: "trigger.client_name", label: "Job → Client Name" },
+    { value: "trigger.client_email", label: "Job → Client Email" },
+    { value: "trigger.client_phone", label: "Job → Client Phone" },
+    { value: "trigger.new_record.grand_total_cents", label: "Job → Total (cents)" },
+  ],
+  invoice: [
+    { value: "trigger.new_record.status", label: "Invoice → Status" },
+    { value: "trigger.new_record.total", label: "Invoice → Total" },
+    { value: "trigger.invoice_number", label: "Invoice → Number" },
+    { value: "trigger.client_name", label: "Invoice → Client Name" },
+    { value: "trigger.client_email", label: "Invoice → Client Email" },
+  ],
+  client: [
+    { value: "trigger.new_record.status", label: "Client → Status" },
+    { value: "trigger.new_record.name", label: "Client → Name" },
+    { value: "trigger.new_record.email", label: "Client → Email" },
+    { value: "trigger.new_record.type", label: "Client → Type" },
+  ],
+  schedule: [
+    { value: "trigger.new_record.status", label: "Schedule → Status" },
+    { value: "trigger.new_record.start_time", label: "Schedule → Start Time" },
+  ],
+  inventory: [
+    { value: "trigger.new_record.current_qty", label: "Stock → Current Qty" },
+    { value: "trigger.new_record.reorder_point", label: "Stock → Reorder Point" },
+    { value: "trigger.new_record.name", label: "Stock → Name" },
+  ],
+  form: [
+    { value: "trigger.new_record.status", label: "Form → Status" },
+    { value: "trigger.new_record.title", label: "Form → Title" },
+  ],
+  team: [
+    { value: "trigger.new_record.role", label: "Member → Role" },
+    { value: "trigger.new_record.email", label: "Member → Email" },
+  ],
+};
+
+/** Convert UI ConditionGroups to JSON Logic AST */
+export function conditionGroupsToJsonLogic(groups: ConditionGroup[]): JsonLogicRule | null {
+  if (groups.length === 0) return null;
+
+  const groupRules = groups.map((group) => {
+    const rules = group.rules.map((rule) => {
+      if (rule.operator === "exists") {
+        return { "!=": [{ var: rule.field }, null] };
+      }
+      if (rule.operator === "not_exists") {
+        return { "==": [{ var: rule.field }, null] };
+      }
+      // Numeric operators
+      if ([">", ">=", "<", "<="].includes(rule.operator)) {
+        return { [rule.operator]: [{ var: rule.field }, Number(rule.value)] };
+      }
+      return { [rule.operator]: [{ var: rule.field }, rule.value] };
+    });
+
+    if (rules.length === 1) return rules[0];
+    return { [group.logic]: rules };
+  });
+
+  if (groupRules.length === 1) return groupRules[0] as JsonLogicRule;
+  return { and: groupRules };
+}
+
+/** Convert JSON Logic AST back to UI ConditionGroups */
+export function jsonLogicToConditionGroups(logic: JsonLogicRule | null): ConditionGroup[] {
+  if (!logic) return [];
+
+  function parseRule(rule: Record<string, unknown>): ConditionRule | null {
+    const op = Object.keys(rule)[0];
+    const args = rule[op] as unknown[];
+    if (!args || !Array.isArray(args) || args.length < 2) return null;
+
+    const first = args[0] as Record<string, unknown>;
+    const field = first?.var as string;
+    if (!field) return null;
+
+    return {
+      id: `rule-${Math.random().toString(36).slice(2, 6)}`,
+      field,
+      operator: op as ConditionRule["operator"],
+      value: String(args[1] ?? ""),
+    };
+  }
+
+  function parseGroup(node: Record<string, unknown>): ConditionGroup | null {
+    const op = Object.keys(node)[0];
+    if (op === "and" || op === "or") {
+      const children = node[op] as Record<string, unknown>[];
+      const rules = children.map(parseRule).filter(Boolean) as ConditionRule[];
+      if (rules.length === 0) return null;
+      return { id: `group-${Math.random().toString(36).slice(2, 6)}`, logic: op, rules };
+    }
+    // Single rule at top level
+    const rule = parseRule(node);
+    if (!rule) return null;
+    return { id: `group-${Math.random().toString(36).slice(2, 6)}`, logic: "and", rules: [rule] };
+  }
+
+  const group = parseGroup(logic);
+  return group ? [group] : [];
 }
 
 export interface FlowTemplate {
@@ -66,12 +252,14 @@ export const automationFlows: AutomationFlow[] = [
     category: "marketing",
     status: "active",
     version: 3,
+    isPublished: true,
     icon: "Star",
     blocks: [
       { id: "b1", type: "trigger", label: "Job Status → Completed", config: { event: "status_change", entity: "job", value: "completed" } },
       { id: "b2", type: "delay", label: "Wait 2 Hours", config: { duration: "2h" } },
       { id: "b3", type: "action", label: "Send SMS to Client", config: { channel: "sms", template: "Hi {Client.FirstName}, thanks for choosing {Company.Name}! We'd love your feedback: {Review.Link}" } },
     ],
+    conditions: null,
     metrics: { runs24h: 8, successRate: 94, openRate: 45, replies: 12 },
     sparkline: [2, 1, 3, 0, 1, 2, 4, 3, 1, 0, 0, 1, 2, 3, 5, 4, 2, 1, 3, 2, 1, 0, 2, 1],
     createdBy: "Mike Thompson",
@@ -85,6 +273,7 @@ export const automationFlows: AutomationFlow[] = [
     category: "billing",
     status: "active",
     version: 2,
+    isPublished: true,
     icon: "Receipt",
     blocks: [
       { id: "b1", type: "trigger", label: "Invoice Status → Overdue", config: { event: "status_change", entity: "invoice", value: "overdue" } },
@@ -93,6 +282,7 @@ export const automationFlows: AutomationFlow[] = [
       { id: "b4", type: "action", label: "Send VIP Follow-up Email", config: { channel: "email", template: "Hi {Client.FirstName}, your invoice #{Invoice.Number} for {Invoice.Total} is now 7 days overdue..." } },
       { id: "b5", type: "action", label: "Send Standard Reminder", config: { channel: "email", template: "Hi {Client.FirstName}, a friendly reminder about invoice #{Invoice.Number}..." } },
     ],
+    conditions: null,
     metrics: { runs24h: 3, successRate: 88, openRate: 62 },
     sparkline: [1, 0, 0, 1, 2, 0, 1, 0, 0, 0, 1, 1, 2, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0],
     createdBy: "Emma Walsh",
@@ -106,11 +296,13 @@ export const automationFlows: AutomationFlow[] = [
     category: "operations",
     status: "active",
     version: 1,
+    isPublished: true,
     icon: "Clock",
     blocks: [
       { id: "b1", type: "trigger", label: "Schedule → 24h Before Job", config: { event: "schedule_before", entity: "job", value: "24h" } },
       { id: "b2", type: "action", label: "Send SMS to Client", config: { channel: "sms", template: "Hi {Client.FirstName}, just a reminder that {Tech.FirstName} will be arriving tomorrow at {Job.Time} for your {Job.Title}." } },
     ],
+    conditions: null,
     metrics: { runs24h: 12, successRate: 100 },
     sparkline: [1, 0, 1, 2, 1, 0, 1, 1, 0, 0, 1, 2, 1, 0, 1, 1, 2, 0, 1, 0, 1, 1, 0, 1],
     createdBy: "Sarah Chen",
@@ -124,11 +316,13 @@ export const automationFlows: AutomationFlow[] = [
     category: "operations",
     status: "active",
     version: 1,
+    isPublished: true,
     icon: "UserCheck",
     blocks: [
       { id: "b1", type: "trigger", label: "Job → Assigned to Technician", config: { event: "assignment", entity: "job", value: "assigned" } },
       { id: "b2", type: "action", label: "Send Push to Technician", config: { channel: "internal", template: "New job assigned: {Job.Title} at {Job.Address}. Scheduled for {Job.Date}." } },
     ],
+    conditions: null,
     metrics: { runs24h: 6, successRate: 100 },
     sparkline: [0, 1, 0, 1, 1, 0, 0, 1, 2, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0],
     createdBy: "Mike Thompson",
@@ -142,6 +336,7 @@ export const automationFlows: AutomationFlow[] = [
     category: "marketing",
     status: "active",
     version: 2,
+    isPublished: true,
     icon: "FileText",
     blocks: [
       { id: "b1", type: "trigger", label: "Quote Status → Sent", config: { event: "status_change", entity: "quote", value: "sent" } },
@@ -149,6 +344,7 @@ export const automationFlows: AutomationFlow[] = [
       { id: "b3", type: "condition", label: "If Quote Status ≠ Accepted", config: { field: "quote.status", operator: "neq", value: "accepted" } },
       { id: "b4", type: "action", label: "Send Follow-up Email", config: { channel: "email", template: "Hi {Client.FirstName}, just checking in about the quote we sent for {Quote.Title}. Happy to answer any questions!" } },
     ],
+    conditions: null,
     metrics: { runs24h: 2, successRate: 92, openRate: 38 },
     sparkline: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
     createdBy: "Emma Walsh",
@@ -162,11 +358,13 @@ export const automationFlows: AutomationFlow[] = [
     category: "operations",
     status: "active",
     version: 1,
+    isPublished: true,
     icon: "Package",
     blocks: [
       { id: "b1", type: "trigger", label: "Stock Level → Below Reorder Point", config: { event: "threshold", entity: "stock", value: "below_reorder" } },
       { id: "b2", type: "action", label: "Send Email to Office", config: { channel: "email", template: "{Stock.Name} (SKU: {Stock.SKU}) is running low — {Stock.CurrentQty} remaining. Reorder point: {Stock.ReorderPoint}." } },
     ],
+    conditions: null,
     metrics: { runs24h: 4, successRate: 100 },
     sparkline: [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
     createdBy: "Sarah Chen",
@@ -180,11 +378,13 @@ export const automationFlows: AutomationFlow[] = [
     category: "marketing",
     status: "paused",
     version: 1,
+    isPublished: false,
     icon: "Mail",
     blocks: [
       { id: "b1", type: "trigger", label: "Client → Created", config: { event: "created", entity: "client", value: "new" } },
       { id: "b2", type: "action", label: "Send Welcome Email", config: { channel: "email", template: "Welcome to {Company.Name}, {Client.FirstName}! We're excited to work with you." } },
     ],
+    conditions: null,
     metrics: { runs24h: 0, successRate: 0 },
     sparkline: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     createdBy: "Mike Thompson",
@@ -198,6 +398,7 @@ export const automationFlows: AutomationFlow[] = [
     category: "operations",
     status: "draft",
     version: 1,
+    isPublished: false,
     icon: "FileCheck",
     blocks: [
       { id: "b1", type: "trigger", label: "Job Status → Completed", config: { event: "status_change", entity: "job", value: "completed" } },
@@ -205,6 +406,7 @@ export const automationFlows: AutomationFlow[] = [
       { id: "b3", type: "action", label: "Generate PDF Report", config: { channel: "internal", template: "Generate job completion report for {Job.Id}" } },
       { id: "b4", type: "action", label: "Email Report to Client", config: { channel: "email", template: "Hi {Client.FirstName}, please find attached the completion report for {Job.Title}." } },
     ],
+    conditions: null,
     metrics: { runs24h: 0, successRate: 0 },
     sparkline: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     createdBy: "Mike Thompson",

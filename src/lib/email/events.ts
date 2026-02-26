@@ -39,6 +39,9 @@ export async function sendInviteEmail(params: {
   companyName: string;
   role: string;
   inviteUrl: string;
+  /** Project Genesis — dynamic workspace branding */
+  brandColorHex?: string;
+  logoUrl?: string;
 }) {
   return sendEmail({
     to: params.to,

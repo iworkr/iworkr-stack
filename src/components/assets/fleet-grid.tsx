@@ -54,8 +54,7 @@ function AssetCard({ asset, index }: { asset: Asset; index: number }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => router.push(`/dashboard/assets/${asset.id}`)}
-      className="group relative cursor-pointer overflow-hidden rounded-xl bg-zinc-900/40 transition-all duration-300 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_0_30px_-8px_rgba(255,255,255,0.03)]"
-      whileHover={{ scale: 1.015 }}
+      className="group relative cursor-pointer overflow-hidden rounded-xl bg-zinc-900/40 transition-[border-color,box-shadow] duration-200 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
     >
       {/* Image area — dark gradient with wireframe icon */}
       <div className="relative flex aspect-video items-center justify-center bg-gradient-to-br from-zinc-800 to-black">

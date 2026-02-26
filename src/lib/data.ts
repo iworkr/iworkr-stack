@@ -72,11 +72,40 @@ export interface ClientContact {
 
 export interface ClientActivity {
   id: string;
-  type: "job_completed" | "invoice_paid" | "invoice_sent" | "quote_sent" | "note" | "job_created" | "call";
+  type: "job_completed" | "invoice_paid" | "invoice_sent" | "quote_sent" | "note" | "note_updated" | "job_created" | "call" | "status_changed" | "contact_added";
   text: string;
   amount?: string;
   jobRef?: string;
   time: string;
+  actor?: string;
+}
+
+export interface ClientActivityLog {
+  id: string;
+  event_type: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface ClientJob {
+  id: string;
+  title: string;
+  status: string;
+  priority: string | null;
+  created_at: string;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+}
+
+export interface ClientInvoice {
+  id: string;
+  status: string;
+  total: number;
+  created_at: string;
+  due_date: string | null;
+  invoice_number: string | null;
 }
 
 export interface SpendDataPoint {
@@ -104,6 +133,9 @@ export interface Client {
   contacts?: ClientContact[];
   spendHistory?: SpendDataPoint[];
   activity?: ClientActivity[];
+  activityLog?: ClientActivityLog[];
+  jobs?: ClientJob[];
+  invoices?: ClientInvoice[];
   notes?: string;
   since?: string;
 }

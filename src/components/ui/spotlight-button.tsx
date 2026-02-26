@@ -15,11 +15,11 @@ interface SpotlightButtonProps {
 
 const variants = {
   primary:
-    "bg-white text-black hover:bg-zinc-200 border border-transparent",
+    "bg-[var(--text-primary)] text-[var(--background)] hover:opacity-90 border border-transparent",
   secondary:
-    "bg-transparent text-zinc-100 border border-[rgba(255,255,255,0.15)] hover:border-[rgba(255,255,255,0.3)] hover:bg-[rgba(255,255,255,0.05)]",
+    "bg-transparent text-[var(--text-primary)] border border-[var(--card-border)] hover:border-[var(--card-border-hover)] hover:bg-[var(--subtle-bg)]",
   ghost:
-    "bg-transparent text-zinc-400 hover:text-zinc-100 border border-transparent",
+    "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-transparent",
 };
 
 const sizes = {
@@ -52,9 +52,8 @@ export function SpotlightButton({
     return (
       <motion.a
         href={href}
-        whileHover={{ scale: 1.02, y: -1 }}
         whileTap={{ scale: 0.98 }}
-        transition={{ duration: 0.15 }}
+        transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
         className={baseClasses}
       >
         {children}
@@ -65,9 +64,8 @@ export function SpotlightButton({
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ scale: 1.02, y: -1 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.15 }}
+      transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
       className={baseClasses}
     >
       {children}

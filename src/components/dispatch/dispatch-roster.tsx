@@ -101,8 +101,7 @@ export function DispatchRoster({
 
   return (
     <div
-      className="absolute left-4 top-20 z-[500] w-80 rounded-xl border border-white/5 bg-zinc-950/80 shadow-2xl backdrop-blur-xl"
-      style={{ height: "calc(100vh - 6rem)", maxHeight: "calc(100vh - 6rem)" }}
+      className="h-full w-80 rounded-xl border border-white/5 bg-zinc-950/80 shadow-2xl backdrop-blur-xl"
     >
       <div className="flex h-full flex-col border-b border-white/10 p-3">
         <h2 className="font-display text-sm font-semibold text-white">Active Fleet</h2>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Map, Marker, useMap } from "@vis.gl/react-google-maps";
+import { Map, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import { ArrowRight, MapPin, Radio } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -22,42 +22,7 @@ const statusConfig = {
   idle: { color: "bg-zinc-600", label: "Idle" },
 };
 
-/** Icon configs for legacy Marker — created only when Maps API is loaded to avoid "google is not defined" on dashboard. */
-function getWidgetMapIcons(): {
-  emerald: google.maps.Symbol;
-  white: google.maps.Symbol;
-  zinc: google.maps.Symbol;
-} | null {
-  if (typeof globalThis === "undefined") return null;
-  const g = (globalThis as { google?: { maps?: { SymbolPath?: typeof google.maps.SymbolPath } } }).google;
-  if (!g?.maps?.SymbolPath) return null;
-  return {
-    emerald: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: "#10B981",
-      fillOpacity: 1,
-      strokeColor: "#050505",
-      strokeWeight: 1,
-    },
-    white: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 6,
-      fillColor: "#ffffff",
-      fillOpacity: 1,
-      strokeColor: "#27272a",
-      strokeWeight: 1,
-    },
-    zinc: {
-      path: g.maps.SymbolPath.CIRCLE,
-      scale: 6,
-      fillColor: "#52525b",
-      fillOpacity: 1,
-      strokeColor: "#27272a",
-      strokeWeight: 1,
-    },
-  };
-}
+/* PRD §5.2: Custom branded markers — emerald pulse for active, zinc for idle */
 
 interface Pin {
   id: string;
@@ -93,7 +58,6 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
   const [dispatchData, setDispatchData] = useState<DispatchPin[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [developmentMode, setDevelopmentMode] = useState(false);
-  const icons = useMemo(() => getWidgetMapIcons(), [isLoaded]);
 
   useEffect(() => {
     if (!orgId) return;
@@ -183,7 +147,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
     );
   }
 
-  if (!loaded || !isLoaded || !icons) {
+  if (!loaded || !isLoaded) {
     return (
       <WidgetShell delay={0.05}>
         <div className="relative h-full min-h-[120px] overflow-hidden p-4">
@@ -218,7 +182,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           header={
             <div className="flex items-center gap-2">
               <Radio size={14} className="text-zinc-400" />
-              <span className="text-[13px] font-medium text-zinc-300">
+              <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
                 Dispatch
               </span>
               <span className="text-[10px] text-zinc-600">Offline</span>
@@ -243,7 +207,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         header={
           <div className="flex items-center gap-2">
             <Radio size={14} className="text-zinc-400" />
-            <span className="text-[13px] font-medium text-zinc-300">
+            <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
               Live Dispatch
             </span>
             <span className="text-[10px] text-zinc-600">Map unavailable</span>
@@ -270,7 +234,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         header={
           <div className="flex items-center gap-2">
             <Radio size={14} className="text-zinc-400" />
-            <span className="text-[13px] font-medium text-zinc-300">
+            <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
               Dispatch
             </span>
             <span className="text-[10px] text-emerald-500">
@@ -307,12 +271,15 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
               <MapDevelopmentDetector onDevelopmentMode={() => setDevelopmentMode(true)} />
               <FitBoundsToPins pins={pins} />
               {pins.map((pin) => (
-                <Marker
+                <AdvancedMarker
                   key={pin.id}
                   position={{ lat: pin.lat, lng: pin.lng }}
-                  icon={pin.status === "idle" ? icons.zinc : icons.emerald}
                   title={pin.name ? `${pin.name} · ${pin.task}` : pin.task}
-                />
+                >
+                  <div className={`h-2.5 w-2.5 rounded-full border-2 border-zinc-900 ${
+                    pin.status === "idle" ? "bg-zinc-600" : "bg-emerald-500"
+                  }`} />
+                </AdvancedMarker>
               ))}
             </Map>
           </div>
@@ -351,7 +318,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         <div className="flex items-center gap-2">
           <div className="relative flex items-center gap-1.5">
             <Radio size={14} className="text-zinc-400" />
-            <span className="text-[13px] font-medium text-zinc-300">
+            <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
               Live Dispatch
             </span>
           </div>
@@ -396,12 +363,20 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
               const cfg = statusConfig[pin.status];
               const isLive = pin.status !== "idle";
               return (
-                <Marker
+                <AdvancedMarker
                   key={pin.id}
                   position={{ lat: pin.lat, lng: pin.lng }}
-                  icon={isLive ? icons.emerald : icons.zinc}
                   title={pin.name ? `${pin.name} · ${pin.task} · ${cfg.label}` : `${pin.task} · ${cfg.label}`}
-                />
+                >
+                  <div className="relative flex items-center justify-center">
+                    {isLive && (
+                      <div className="absolute h-5 w-5 animate-pulse rounded-full bg-emerald-500/20" />
+                    )}
+                    <div className={`relative h-3 w-3 rounded-full border-2 border-zinc-900 shadow-lg ${
+                      isLive ? "bg-emerald-500" : "bg-zinc-600"
+                    }`} />
+                  </div>
+                </AdvancedMarker>
               );
             })}
           </Map>

@@ -37,6 +37,7 @@ function getBreadcrumbs(pathname: string, companyName: string) {
   const labelMap: Record<string, string> = {
     dashboard: "Dashboard",
     inbox: "Inbox",
+    messages: "Messages",
     jobs: "My Jobs",
     schedule: "Schedule",
     clients: "Clients",
@@ -207,8 +208,7 @@ function NotificationsPopover({
   return (
     <div ref={ref} className="relative">
       <motion.button
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.92 }}
+        whileTap={{ scale: 0.96 }}
         onClick={onToggle}
         className="relative flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-300"
       >

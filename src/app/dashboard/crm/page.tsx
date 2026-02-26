@@ -431,7 +431,7 @@ export default function CRMPipelinePage() {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => setAddModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500 hover:shadow-emerald-900/30"
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
             >
               <Plus size={12} />
               Add Lead
@@ -946,7 +946,7 @@ function AddLeadModal({
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={!form.name.trim() || saving}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <Loader2 size={12} className="animate-spin" />

@@ -381,22 +381,21 @@ export async function resendInvite(inviteId: string) {
   try {
     const supabase = (await createServerSupabaseClient()) as any;
 
-    const { data: invite, error } = await supabase
-      .from("organization_invites")
-      .select("*")
-      .eq("id", inviteId)
-      .maybeSingle();
+    // Use the Genesis RPC — resets expiry to +7 days and status back to 'pending'
+    const { data, error } = await supabase.rpc("resend_invite", {
+      p_invite_id: inviteId,
+    });
 
-    if (error) return { data: null, error: error.message };
-
-    await supabase
-      .from("organization_invites")
-      .update({ created_at: new Date().toISOString() })
-      .eq("id", inviteId);
+    if (error) {
+      logger.error("resendInvite RPC error", error.message);
+      return { data: null, error: error.message };
+    }
+    if (data?.error) return { data: null, error: data.error };
 
     revalidatePath("/dashboard/team");
-    return { data: invite, error: null };
+    return { data, error: null };
   } catch (err: any) {
+    logger.error("resendInvite exception", err.message);
     return { data: null, error: err.message };
   }
 }
@@ -405,15 +404,22 @@ export async function cancelInvite(inviteId: string) {
   try {
     const supabase = (await createServerSupabaseClient()) as any;
 
-    const { error } = await supabase
-      .from("organization_invites")
-      .update({ status: "expired" })
-      .eq("id", inviteId);
+    // Use the Genesis RPC — sets status to 'revoked' (not 'expired')
+    // so we distinguish admin cancellation from time-based expiry
+    const { data, error } = await supabase.rpc("revoke_invite", {
+      p_invite_id: inviteId,
+    });
 
-    if (error) return { data: null, error: error.message };
+    if (error) {
+      logger.error("cancelInvite (revoke) RPC error", error.message);
+      return { data: null, error: error.message };
+    }
+    if (data?.error) return { data: null, error: data.error };
+
     revalidatePath("/dashboard/team");
     return { data: { success: true }, error: null };
   } catch (err: any) {
+    logger.error("cancelInvite exception", err.message);
     return { data: null, error: err.message };
   }
 }

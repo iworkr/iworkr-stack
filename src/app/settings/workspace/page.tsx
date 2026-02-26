@@ -50,14 +50,20 @@ export default function WorkspacePage() {
   const [taxId, setTaxId] = useState("");
   const [address, setAddress] = useState("");
 
-  // Sync from store on load
+  // Sync from store on load — use specific primitives, NOT the orgSettings object
+  const storeTaxId = orgSettings?.tax_id ?? "";
+  const storeAddress = orgSettings?.address ?? "";
+
+  const hasSynced = useRef(false);
   useEffect(() => {
+    if (hasSynced.current) return;
     if (orgName) setName(orgName);
     if (orgSlug) setSlug(orgSlug);
     if (orgTrade) setTrade(orgTrade);
-    if (orgSettings?.tax_id) setTaxId(orgSettings.tax_id);
-    if (orgSettings?.address) setAddress(orgSettings.address);
-  }, [orgName, orgSlug, orgTrade, orgSettings]);
+    if (storeTaxId) setTaxId(storeTaxId);
+    if (storeAddress) setAddress(storeAddress);
+    if (orgName || orgSlug) hasSynced.current = true;
+  }, [orgName, orgSlug, orgTrade, storeTaxId, storeAddress]);
 
   // Debounced save helpers
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
