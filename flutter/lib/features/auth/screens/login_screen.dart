@@ -592,10 +592,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         const SizedBox(height: 16),
 
-        // Forgot Password (placeholder for tests; implement reset flow later)
+        // Forgot Password
         GestureDetector(
           key: const Key('link_forgot_password'),
-          onTap: () {},
+          onTap: () async {
+            final email = _emailController.text.trim();
+            if (email.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Enter your email address first')),
+              );
+              return;
+            }
+            try {
+              await Supabase.instance.client.auth.resetPasswordForEmail(email);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Password reset email sent. Check your inbox.')),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to send reset email: $e')),
+                );
+              }
+            }
+          },
           child: Text(
             'Forgot password?',
             style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary, fontWeight: FontWeight.w500),

@@ -118,7 +118,7 @@ export interface UpdateJobParams {
  */
 export async function getJobs(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: jobs, error } = await supabase
       .from("jobs")
@@ -164,7 +164,7 @@ export async function getJobs(orgId: string) {
  */
 export async function getJob(jobId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: job, error } = await supabase
       .from("jobs")
@@ -222,7 +222,7 @@ export async function createJob(params: CreateJobParams) {
       return { data: null, error: validated.error };
     }
 
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -351,7 +351,7 @@ export async function updateJob(jobId: string, updates: UpdateJobParams) {
       return { data: null, error: validated.error };
     }
 
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -425,7 +425,7 @@ export async function updateJob(jobId: string, updates: UpdateJobParams) {
  */
 export async function deleteJob(jobId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -453,7 +453,7 @@ export async function deleteJob(jobId: string) {
  */
 export async function createSubtask(jobId: string, title: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -499,7 +499,7 @@ export async function createSubtask(jobId: string, title: string) {
  */
 export async function toggleSubtask(subtaskId: string, completed: boolean) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -529,7 +529,7 @@ export async function toggleSubtask(subtaskId: string, completed: boolean) {
  */
 export async function deleteSubtask(subtaskId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -563,7 +563,7 @@ export async function addJobActivity(
   photos?: string[]
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -603,7 +603,7 @@ export async function addJobActivity(
  */
 export async function assignJob(jobId: string, assigneeId: string | null, assigneeName: string | null) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -662,7 +662,7 @@ export async function assignJob(jobId: string, assigneeId: string | null, assign
  */
 export async function getJobLineItems(jobId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
       .from("job_line_items")
@@ -683,7 +683,7 @@ export async function getJobLineItems(jobId: string) {
  */
 export async function addJobLineItem(jobId: string, input: CreateJobLineItemInput) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -728,7 +728,7 @@ export async function updateJobLineItem(
   updates: { description?: string; quantity?: number; unit_price_cents?: number }
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -755,7 +755,7 @@ export async function updateJobLineItem(
  */
 export async function deleteJobLineItem(lineItemId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -792,7 +792,7 @@ export interface JobFilters {
  */
 export async function getFilteredJobs(orgId: string, filters: JobFilters = {}) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_filtered_jobs", {
       p_org_id: orgId,
@@ -822,7 +822,7 @@ export async function getFilteredJobs(orgId: string, filters: JobFilters = {}) {
  */
 export async function getJobDetails(jobId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_job_details", {
       p_job_id: jobId,

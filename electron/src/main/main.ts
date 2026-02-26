@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from "electron";
+import { app, BrowserWindow, safeStorage, session } from "electron";
 import path from "path";
 import log from "electron-log/main";
 import { createMainWindow, getMainWindow } from "./window";
@@ -15,6 +15,15 @@ const PROD_URL = "https://www.iworkrapp.com/dashboard";
 const DEV_URL = "http://localhost:3000/dashboard";
 const IS_DEV = !app.isPackaged;
 const APP_URL = IS_DEV ? DEV_URL : PROD_URL;
+
+// For the store encryption key, use safeStorage if available, otherwise generate from machine-specific data
+const getEncryptionKey = () => {
+  if (safeStorage.isEncryptionAvailable()) {
+    // Use safeStorage to encrypt a known seed - this is machine-specific
+    return safeStorage.encryptString('iworkr-store-key').toString('hex').slice(0, 32);
+  }
+  return undefined; // Fall back to no encryption in dev/unsupported environments
+};
 
 log.initialize();
 initSentry();
@@ -36,7 +45,7 @@ export const store = new Store<{
     "prefs.updateChannel": "latest",
     "prefs.launchAtLogin": false,
   },
-  encryptionKey: IS_DEV ? undefined : "iworkr-desktop-v1",
+  encryptionKey: IS_DEV ? undefined : getEncryptionKey(),
 });
 
 let deepLinkUrl: string | null = null;
@@ -68,6 +77,14 @@ app.on("open-url", (_event, url) => {
 
 app.whenReady().then(async () => {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const allowedHosts = ['iworkrapp.com', 'www.iworkrapp.com', 'localhost'];
+    // Only modify headers for our own domains
+    const url = new URL(details.url);
+    if (!allowedHosts.some(h => url.hostname === h || url.hostname.endsWith('.' + h))) {
+      callback({ responseHeaders: details.responseHeaders });
+      return;
+    }
+
     const headers = { ...details.responseHeaders };
     delete headers["x-frame-options"];
     delete headers["X-Frame-Options"];

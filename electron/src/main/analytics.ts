@@ -38,8 +38,9 @@ export function initAnalytics(): void {
   });
 }
 
-function flushEvents(): void {
+async function flushEvents() {
   if (eventQueue.length === 0) return;
-  log.info(`[Analytics] Flushing ${eventQueue.length} events`);
+  // TODO: Implement analytics endpoint (e.g., POST to https://analytics.iworkrapp.com/events)
+  console.warn(`[analytics] ${eventQueue.length} events discarded - analytics endpoint not configured`);
   eventQueue.length = 0;
 }

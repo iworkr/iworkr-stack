@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const nextConfig: NextConfig = {
   // ── Security Headers ──────────────────────────────────
   async headers() {
@@ -35,7 +37,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://apis.google.com https://js.stripe.com",
+              `script-src 'self'${isDev ? " 'unsafe-eval'" : ""} 'unsafe-inline' https://maps.googleapis.com https://apis.google.com https://js.stripe.com`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' blob: data: https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com https://*.stripe.com",
               "font-src 'self' https://fonts.gstatic.com",

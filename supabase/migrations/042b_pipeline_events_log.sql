@@ -1,0 +1,11 @@
+-- ============================================================================
+-- Migration 042b: Pipeline Events Log (SUPERSEDED)
+-- ============================================================================
+-- IMPORTANT: This migration has been fully merged into 042_pipeline_resilience.sql.
+-- This file is kept as a no-op for migration history. All content (table, indexes,
+-- RLS, and function definitions) now lives in 042_pipeline_resilience.sql.
+-- ============================================================================
+
+-- No-op: all statements from the original 042_pipeline_events_log.sql have been
+-- merged into 042_pipeline_resilience.sql with idempotent (IF NOT EXISTS /
+-- CREATE OR REPLACE) guards. Running this file is safe but does nothing.

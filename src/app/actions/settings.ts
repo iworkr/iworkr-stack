@@ -11,7 +11,7 @@ import { revalidatePath } from "next/cache";
  */
 export async function getOrganization(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -33,7 +33,7 @@ export async function getOrganization(orgId: string) {
  */
 export async function updateOrganization(orgId: string, updates: Record<string, any>) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -58,7 +58,7 @@ export async function updateOrganization(orgId: string, updates: Record<string, 
  */
 export async function updateOrgSettings(orgId: string, settingsUpdate: Record<string, any>) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -96,9 +96,10 @@ export async function updateOrgSettings(orgId: string, settingsUpdate: Record<st
  */
 export async function getProfile(userId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+    if (userId !== user.id) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("profiles")
@@ -118,9 +119,10 @@ export async function getProfile(userId: string) {
  */
 export async function updateProfile(userId: string, updates: Record<string, any>) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+    if (userId !== user.id) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("profiles")
@@ -142,9 +144,10 @@ export async function updateProfile(userId: string, updates: Record<string, any>
  */
 export async function updateProfilePreferences(userId: string, prefsUpdate: Record<string, any>) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+    if (userId !== user.id) return { data: null, error: "Unauthorized" };
 
     // Get current preferences first
     const { data: profile, error: fetchError } = await supabase
@@ -178,9 +181,10 @@ export async function updateProfilePreferences(userId: string, prefsUpdate: Reco
  */
 export async function updateNotificationPreferences(userId: string, prefsUpdate: Record<string, any>) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+    if (userId !== user.id) return { data: null, error: "Unauthorized" };
 
     const { data: profile, error: fetchError } = await supabase
       .from("profiles")

@@ -4,17 +4,25 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const ALLOWED_ORIGINS = [
+  Deno.env.get("APP_URL") || "https://iworkrapp.com",
+  "http://localhost:3000",
+];
 
-function jsonResponse(body: Record<string, unknown>, status = 200) {
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
+function jsonResponse(req: Request, body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
   });
 }
 
@@ -53,12 +61,12 @@ const ALLOWED_TABLES = new Set([
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return jsonResponse({ error: "Missing authorization" }, 401);
+    if (!authHeader) return jsonResponse(req, { error: "Missing authorization" }, 401);
 
     const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
@@ -68,12 +76,12 @@ Deno.serve(async (req: Request) => {
     const {
       data: { user },
     } = await userSupabase.auth.getUser();
-    if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
+    if (!user) return jsonResponse(req, { error: "Unauthorized" }, 401);
 
     const { mutations } = (await req.json()) as { mutations: Mutation[] };
 
     if (!Array.isArray(mutations) || mutations.length === 0) {
-      return jsonResponse({ error: "mutations array is required" }, 400);
+      return jsonResponse(req, { error: "mutations array is required" }, 400);
     }
 
     const svc = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -87,10 +95,10 @@ Deno.serve(async (req: Request) => {
       results.push(result);
     }
 
-    return jsonResponse({ success: true, data: results });
+    return jsonResponse(req, { success: true, data: results });
   } catch (err) {
     console.error("process-sync-queue error:", err);
-    return jsonResponse({ error: "Internal server error" }, 500);
+    return jsonResponse(req, { error: "Internal server error" }, 500);
   }
 });
 

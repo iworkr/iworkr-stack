@@ -276,7 +276,7 @@ export default function InvoiceBuilderPage() {
           })),
         });
         if (result.success && result.invoiceId) {
-          const payLink = `https://iworkrapp.com/pay/${result.invoiceId}`;
+          const payLink = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || ""}/pay/${result.invoiceId}`;
           setSavedInvoice({
             displayId: result.displayId || "Invoice",
             invoiceId: result.invoiceId,

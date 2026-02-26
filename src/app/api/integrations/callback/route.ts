@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeOAuthCode } from "@/app/actions/integration-oauth";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://iworkr-stack.vercel.app";
+if (!process.env.NEXT_PUBLIC_APP_URL) console.warn("[integrations/callback] NEXT_PUBLIC_APP_URL is not set");
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

@@ -3,7 +3,12 @@
 -- ============================================================================
 -- Adds:
 --   1. pipeline_events table — audit log for all pipeline automations
---   2. mark_invoice_sent_with_link() RPC — sends invoice via link when POS fails
+--   2. convert_accepted_quote() — enhanced with event logging + idempotency
+--   3. mark_invoice_sent_with_link() RPC — sends invoice via link when POS fails
+-- ============================================================================
+-- NOTE: This migration supersedes the former 042_pipeline_events_log.sql
+--       (now renamed to 042b_pipeline_events_log.sql). All content has been
+--       merged here. All statements are idempotent.
 -- ============================================================================
 
 -- --------------------------------------------------------------------------
@@ -21,20 +26,31 @@ CREATE TABLE IF NOT EXISTS public.pipeline_events (
   status          text NOT NULL DEFAULT 'completed',
   error           text,
   created_at      timestamptz DEFAULT now(),
-  
+
   CONSTRAINT uq_pipeline_idempotency UNIQUE (idempotency_key)
 );
 
-CREATE INDEX idx_pipeline_events_org ON public.pipeline_events (organization_id, event_type);
-CREATE INDEX idx_pipeline_events_entity ON public.pipeline_events (entity_type, entity_id);
+-- Indexes (idempotent via IF NOT EXISTS)
+CREATE INDEX IF NOT EXISTS idx_pipeline_events_org ON public.pipeline_events (organization_id, event_type);
+CREATE INDEX IF NOT EXISTS idx_pipeline_events_entity ON public.pipeline_events (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_pipeline_events_type ON public.pipeline_events (event_type);
 
 ALTER TABLE public.pipeline_events ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Members can read pipeline events"
-  ON public.pipeline_events FOR SELECT
-  USING (organization_id IN (
-    SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
-  ));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'pipeline_events'
+      AND policyname = 'Members can read pipeline events'
+  ) THEN
+    CREATE POLICY "Members can read pipeline events"
+      ON public.pipeline_events FOR SELECT
+      USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
+      ));
+  END IF;
+END $$;
 
 -- --------------------------------------------------------------------------
 -- 2. Log pipeline events from convert_accepted_quote trigger
@@ -174,7 +190,7 @@ DECLARE
   _link     text;
 BEGIN
   SELECT * INTO _inv FROM public.invoices WHERE id = p_invoice_id;
-  
+
   IF _inv IS NULL THEN
     RAISE EXCEPTION 'Invoice not found';
   END IF;

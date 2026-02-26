@@ -147,7 +147,7 @@ export default function InvoiceDetailPage() {
   function handleHeaderContextAction(actionId: string) {
     if (!invoice) return;
     if (actionId === "copy_link") {
-      const payLink = invoice.paymentLink || `https://iworkrapp.com/pay/${invoice.dbId || invoice.id}`;
+      const payLink = invoice.paymentLink || `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || ""}/pay/${invoice.dbId || invoice.id}`;
       navigator.clipboard?.writeText(payLink);
       addToast("Payment link copied");
     } else if (actionId === "download") {
@@ -587,7 +587,7 @@ export default function InvoiceDetailPage() {
                   Payment Link
                 </h4>
                 {(() => {
-                  const payLink = invoice.paymentLink || `https://iworkrapp.com/pay/${invoice.dbId || invoice.id}`;
+                  const payLink = invoice.paymentLink || `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || ""}/pay/${invoice.dbId || invoice.id}`;
                   return (
                     <>
                       <div className="flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5">

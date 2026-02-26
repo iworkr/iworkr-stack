@@ -19,8 +19,16 @@ serve(async (req) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
+  if (!RC_WEBHOOK_SECRET) {
+    console.error("REVENUECAT_WEBHOOK_SECRET is not set");
+    return new Response(
+      JSON.stringify({ error: "Webhook secret not configured" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   const authHeader = req.headers.get("authorization") ?? "";
-  if (RC_WEBHOOK_SECRET && authHeader !== `Bearer ${RC_WEBHOOK_SECRET}`) {
+  if (authHeader !== `Bearer ${RC_WEBHOOK_SECRET}`) {
     return new Response("Unauthorized", { status: 401 });
   }
 

@@ -258,7 +258,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
       } else if (mode === "draft") {
         addToast(`${invId} saved as draft`);
       } else if (mode === "link") {
-        const payLink = `https://iworkrapp.com/pay/${result.invoiceId || invId}`;
+        const payLink = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || ""}/pay/${result.invoiceId || invId}`;
         navigator.clipboard?.writeText(payLink);
         addToast(`${invId} created — Payment link copied`);
       }

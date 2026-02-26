@@ -106,8 +106,13 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     return store.get(key as keyof typeof store.store);
   });
 
+  const ALLOWED_PREF_KEYS = ['theme', 'language', 'notifications', 'autoUpdate', 'minimizeToTray', 'startMinimized'];
+
   ipcMain.handle("prefs:set", async (_event, key: string, value: unknown) => {
-    store.set(key as keyof typeof store.store, value as never);
+    if (!ALLOWED_PREF_KEYS.includes(key)) {
+      throw new Error(`Setting preference key "${key}" is not allowed`);
+    }
+    store.set(`prefs.${key}`, value);
     return true;
   });
 
@@ -128,6 +133,7 @@ function createBadgeIcon(count: number): Electron.NativeImage {
       </text>
     </svg>
   `;
+  // NOTE: SVG support in nativeImage is unreliable on some platforms. Consider using a pre-rendered PNG.
   return nativeImage.createFromBuffer(
     Buffer.from(canvas)
   );

@@ -4,6 +4,28 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+import { validate, uuidSchema } from "@/lib/validation";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const CreateFormSchema = z.object({
+  organization_id: uuidSchema,
+  title: z.string().min(1, "Title is required").max(200),
+  description: z.string().max(2000).optional(),
+  category: z.string().max(100).optional(),
+  blocks: z.array(z.record(z.string(), z.unknown())).optional(),
+});
+
+const UpdateFormSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  status: z.string().max(50).optional(),
+  blocks: z.array(z.record(z.string(), z.unknown())).optional(),
+  category: z.string().max(100).optional(),
+  layout_config: z.record(z.string(), z.unknown()).optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
+});
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -20,7 +42,7 @@ export interface FormsOverview {
 
 export async function getForms(orgId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
       .from("forms")
@@ -38,7 +60,7 @@ export async function getForms(orgId: string) {
 
 export async function getForm(formId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
       .from("forms")
@@ -61,11 +83,24 @@ export async function createForm(params: {
   blocks?: any[];
 }) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    // Validate input
+    const validated = validate(CreateFormSchema, params);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("forms")
@@ -98,7 +133,29 @@ export async function updateForm(
   }
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    // Validate input
+    const validated = validate(UpdateFormSchema, updates);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: form } = await supabase
+      .from("forms")
+      .select("organization_id")
+      .eq("id", formId)
+      .maybeSingle();
+    if (!form) return { data: null, error: "Form not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", form.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("forms")
@@ -117,7 +174,25 @@ export async function updateForm(
 
 export async function deleteForm(formId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: form } = await supabase
+      .from("forms")
+      .select("organization_id")
+      .eq("id", formId)
+      .maybeSingle();
+    if (!form) return { data: null, error: "Form not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", form.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("forms")
@@ -136,7 +211,7 @@ export async function deleteForm(formId: string) {
 
 export async function publishForm(formId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("publish_form", {
       p_form_id: formId,
@@ -160,7 +235,7 @@ export async function publishForm(formId: string) {
 
 export async function getFormSubmissions(orgId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
       .from("form_submissions")
@@ -182,7 +257,7 @@ export async function getFormSubmissions(orgId: string) {
 
 export async function getFormSubmission(submissionId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
       .from("form_submissions")
@@ -210,7 +285,7 @@ export async function createFormSubmission(params: {
   data: any;
 }) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -250,7 +325,7 @@ export async function createFormSubmission(params: {
 
 export async function saveFormDraft(submissionId: string, formData: any) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("save_form_draft", {
       p_submission_id: submissionId,
@@ -283,7 +358,7 @@ export async function signAndLockSubmission(
   }
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("sign_and_lock_submission", {
       p_submission_id: submissionId,
@@ -315,7 +390,7 @@ export async function signAndLockSubmission(
 
 export async function verifyDocumentHash(hash: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("verify_document_hash", {
       p_hash: hash,
@@ -339,7 +414,7 @@ export async function getFormsOverview(
   orgId: string
 ): Promise<{ data: FormsOverview | null; error: string | null }> {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_forms_overview", {
       p_org_id: orgId,

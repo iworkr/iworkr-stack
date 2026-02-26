@@ -71,7 +71,8 @@ const PROVIDERS: Record<string, {
   },
 };
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://iworkr-stack.vercel.app";
+if (!process.env.NEXT_PUBLIC_APP_URL) console.warn("[integration-oauth] NEXT_PUBLIC_APP_URL is not set");
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 /* ── Generate OAuth URL ───────────────────────────────── */
 
@@ -116,6 +117,25 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
   const redirectUri = `${APP_URL}/api/integrations/callback`;
 
   try {
+    // Verify the caller owns this integration
+    const supabaseAuth = await createServerSupabaseClient();
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
+
+    const { data: integration } = await supabaseAuth
+      .from("integrations")
+      .select("organization_id")
+      .eq("id", integrationId)
+      .maybeSingle();
+    if (!integration) return { error: "Integration not found" };
+
+    const { data: membership } = await supabaseAuth
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", integration.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
     const tokenRes = await fetch(config.tokenUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -159,7 +179,7 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
       connectedAs = "QuickBooks Company";
     }
 
-    await (supabase as any)
+    await supabase
       .from("integrations")
       .update({
         status: "connected",
@@ -186,13 +206,25 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
 
 export async function refreshIntegrationToken(integrationId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data: int } = await (supabase as any)
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { data: int } = await supabase
     .from("integrations")
-    .select("provider, refresh_token")
+    .select("provider, refresh_token, organization_id")
     .eq("id", integrationId)
     .maybeSingle();
 
   if (!int?.refresh_token) return { error: "No refresh token" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", int.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
 
   const config = PROVIDERS[int.provider];
   if (!config) return { error: "Unknown provider" };
@@ -215,7 +247,7 @@ export async function refreshIntegrationToken(integrationId: string): Promise<{ 
 
     const tokens = await tokenRes.json();
     if (tokens.error) {
-      await (supabase as any)
+      await supabase
         .from("integrations")
         .update({ status: "error", error_message: "Token refresh failed. Re-authenticate required." })
         .eq("id", integrationId);
@@ -226,7 +258,7 @@ export async function refreshIntegrationToken(integrationId: string): Promise<{ 
       ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
       : null;
 
-    await (supabase as any)
+    await supabase
       .from("integrations")
       .update({
         access_token: tokens.access_token,
@@ -252,7 +284,25 @@ export async function connectWithApiKey(
 ): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
 
-  await (supabase as any)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { data: integration } = await supabase
+    .from("integrations")
+    .select("organization_id")
+    .eq("id", integrationId)
+    .maybeSingle();
+  if (!integration) return { error: "Integration not found" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", integration.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
+
+  await supabase
     .from("integrations")
     .update({
       status: "connected",
@@ -277,16 +327,28 @@ export async function updateProviderSettings(
 ): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
   // Merge with existing settings
-  const { data: current } = await (supabase as any)
+  const { data: current } = await supabase
     .from("integrations")
-    .select("settings")
+    .select("settings, organization_id")
     .eq("id", integrationId)
     .maybeSingle();
+  if (!current) return { error: "Integration not found" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", current.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
 
   const merged = { ...(current?.settings || {}), ...settings };
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("integrations")
     .update({ settings: merged, updated_at: new Date().toISOString() })
     .eq("id", integrationId);
@@ -301,7 +363,25 @@ export async function updateProviderSettings(
 export async function disconnectProvider(integrationId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
 
-  const { error } = await (supabase as any)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { data: integration } = await supabase
+    .from("integrations")
+    .select("organization_id")
+    .eq("id", integrationId)
+    .maybeSingle();
+  if (!integration) return { error: "Integration not found" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", integration.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
+
+  const { error } = await supabase
     .from("integrations")
     .update({
       status: "disconnected",
@@ -325,7 +405,26 @@ export async function disconnectProvider(integrationId: string): Promise<{ error
 
 export async function getSyncLog(integrationId: string, limit = 20): Promise<{ data: any[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: "Unauthorized" };
+
+  const { data: integration } = await supabase
+    .from("integrations")
+    .select("organization_id")
+    .eq("id", integrationId)
+    .maybeSingle();
+  if (!integration) return { data: [], error: "Integration not found" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", integration.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { data: [], error: "Unauthorized" };
+
+  const { data, error } = await supabase
     .from("integration_sync_log")
     .select("*")
     .eq("integration_id", integrationId)
@@ -350,5 +449,5 @@ export async function logSyncEvent(params: {
   metadata?: Record<string, any>;
 }): Promise<void> {
   const supabase = await createServerSupabaseClient();
-  await (supabase as any).from("integration_sync_log").insert(params);
+  await supabase.from("integration_sync_log").insert(params);
 }

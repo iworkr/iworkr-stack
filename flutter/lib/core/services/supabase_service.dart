@@ -11,14 +11,25 @@ class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
   static GoTrueClient get auth => client.auth;
 
+  static const String _supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: '',
+  );
+  static const String _supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: '',
+  );
+
   static WidgetDeepLinkHandler? onWidgetDeepLink;
   static String? pendingWidgetDeepLink;
 
   static Future<void> initialize() async {
+    assert(_supabaseUrl.isNotEmpty, 'SUPABASE_URL must be provided via --dart-define');
+    assert(_supabaseAnonKey.isNotEmpty, 'SUPABASE_ANON_KEY must be provided via --dart-define');
+
     await Supabase.initialize(
-      url: 'https://olqjuadvseoxpfjzlghb.supabase.co',
-      anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9scWp1YWR2c2VveHBmanpsZ2hiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4ODQ4ODcsImV4cCI6MjA4NzQ2MDg4N30.1-109HFf0IrDugPm7GPpYoAc_RVBXLDpz1zyojs8kZY',
+      url: _supabaseUrl,
+      anonKey: _supabaseAnonKey,
     );
   }
 

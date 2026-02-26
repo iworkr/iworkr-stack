@@ -4,11 +4,20 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_WEBHOOK_SECRET = Deno.env.get("RESEND_WEBHOOK_SECRET");
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, resend-signature, svix-id, svix-timestamp, svix-signature",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const ALLOWED_ORIGINS = [
+  Deno.env.get("APP_URL") || "https://iworkrapp.com",
+  "http://localhost:3000",
+];
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, resend-signature, svix-id, svix-timestamp, svix-signature",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
 
 async function verifyResendSignature(
   body: string,
@@ -45,34 +54,49 @@ function extractTag(tags: { name: string; value: string }[] | undefined, tagName
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(req) });
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+    return new Response("Method not allowed", { status: 405, headers: corsHeaders(req) });
   }
 
   const body = await req.text();
 
-  if (RESEND_WEBHOOK_SECRET) {
-    const svixId = req.headers.get("svix-id") ?? "";
-    const svixTimestamp = req.headers.get("svix-timestamp") ?? "";
-    const svixSignature = req.headers.get("svix-signature") ?? "";
+  if (!RESEND_WEBHOOK_SECRET) {
+    console.error("RESEND_WEBHOOK_SECRET is not set");
+    return new Response(JSON.stringify({ error: "Webhook secret not configured" }), {
+      status: 500,
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+    });
+  }
 
-    if (svixId && svixTimestamp && svixSignature) {
-      try {
-        const valid = await verifyResendSignature(body, svixId, svixTimestamp, svixSignature, RESEND_WEBHOOK_SECRET);
-        if (!valid) {
-          console.error("Invalid Resend webhook signature");
-          return new Response(JSON.stringify({ received: true }), {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-      } catch (err) {
-        console.error("Signature verification error:", err);
-      }
+  const svixId = req.headers.get("svix-id") ?? "";
+  const svixTimestamp = req.headers.get("svix-timestamp") ?? "";
+  const svixSignature = req.headers.get("svix-signature") ?? "";
+
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    return new Response(JSON.stringify({ error: "Invalid signature" }), {
+      status: 401,
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const valid = await verifyResendSignature(body, svixId, svixTimestamp, svixSignature, RESEND_WEBHOOK_SECRET);
+    if (!valid) {
+      console.error("Invalid Resend webhook signature");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
     }
+  } catch (err) {
+    console.error("Signature verification error:", err);
+    return new Response(JSON.stringify({ error: "Invalid signature" }), {
+      status: 401,
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+    });
   }
 
   let webhook: { type: string; data: { email_id?: string; to?: string[]; tags?: { name: string; value: string }[] } };
@@ -81,7 +105,7 @@ Deno.serve(async (req: Request) => {
   } catch {
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
     });
   }
 
@@ -158,7 +182,7 @@ Deno.serve(async (req: Request) => {
 
   return new Response(JSON.stringify({ received: true }), {
     status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
   });
 });
 

@@ -58,6 +58,9 @@ export interface IWorkrAPI {
   network: {
     reportStatus: (isOnline: boolean) => void;
   };
+  analytics: {
+    track: (event: string, properties?: Record<string, unknown>) => void;
+  };
 }
 
 declare global {

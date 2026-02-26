@@ -76,7 +76,18 @@ export interface DispatchPin {
 
 export async function getDashboardStats(orgId: string, rangeStart?: string, rangeEnd?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_dashboard_stats", {
       p_org_id: orgId,
@@ -100,7 +111,18 @@ export async function getDashboardStats(orgId: string, rangeStart?: string, rang
 
 export async function getDailyRevenueChart(orgId: string, days: number = 30) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_daily_revenue_chart", {
       p_org_id: orgId,
@@ -123,7 +145,7 @@ export async function getDailyRevenueChart(orgId: string, days: number = 30) {
 
 export async function getMySchedule(limit: number = 5) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -149,7 +171,18 @@ export async function getMySchedule(limit: number = 5) {
 
 export async function getAIInsights(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_ai_insights", {
       p_org_id: orgId,
@@ -171,7 +204,18 @@ export async function getAIInsights(orgId: string) {
 
 export async function getTeamStatus(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_team_status", {
       p_org_id: orgId,
@@ -193,7 +237,18 @@ export async function getTeamStatus(orgId: string) {
 
 export async function getDashboardSnapshot(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_dashboard_snapshot", {
       p_org_id: orgId,
@@ -215,7 +270,7 @@ export async function getDashboardSnapshot(orgId: string) {
 
 export async function saveDashboardLayout(layout: any) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { error } = await supabase.rpc("save_dashboard_layout", {
       p_layout: layout,
@@ -235,7 +290,7 @@ export async function saveDashboardLayout(layout: any) {
 
 export async function loadDashboardLayout() {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_dashboard_layout");
 
@@ -255,7 +310,18 @@ export async function loadDashboardLayout() {
 
 export async function getLiveDispatch(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_live_dispatch", {
       p_org_id: orgId,
@@ -288,7 +354,7 @@ export async function updateFleetPosition(
   }
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.rpc("update_fleet_position", {
       p_org_id: orgId,
       p_lat: lat,
@@ -319,7 +385,7 @@ export interface FootprintTrailRow {
 
 export async function getFootprintTrails(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("footprint_trails")
       .select("technician_id, path, timestamps")

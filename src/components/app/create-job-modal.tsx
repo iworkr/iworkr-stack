@@ -27,7 +27,8 @@ import { useToastStore } from "./action-toast";
 import { useJobsStore } from "@/lib/jobs-store";
 import { useClientsStore } from "@/lib/clients-store";
 import { useOrg } from "@/lib/hooks/use-org";
-import { team, type Client, type Priority, type JobStatus, type Job } from "@/lib/data";
+import { type Client, type Priority, type JobStatus, type Job } from "@/lib/data";
+import { createClient } from "@/lib/supabase/client";
 
 /* ── Types & Config ───────────────────────────────────────── */
 
@@ -117,6 +118,31 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   const { orgId } = useOrg();
   const [saving, setSaving] = useState(false);
   const searchParams = useSearchParams();
+  const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; initials: string }[]>([]);
+
+  /* ── Fetch team members from DB ──────────────────────── */
+  useEffect(() => {
+    if (!orgId) return;
+    const supabase = createClient();
+    (supabase as any)
+      .from("org_members")
+      .select("profile_id, profiles(id, full_name, avatar_url)")
+      .eq("organization_id", orgId)
+      .then(({ data }: any) => {
+        if (!data) return;
+        const members = data
+          .filter((m: any) => m.profiles?.full_name)
+          .map((m: any) => {
+            const name = m.profiles.full_name;
+            const parts = name.trim().split(/\s+/);
+            const initials = parts.length >= 2
+              ? (parts[0][0] + parts[1][0]).toUpperCase()
+              : name.slice(0, 2).toUpperCase();
+            return { id: m.profile_id, name, initials };
+          });
+        setTeamMembers(members);
+      });
+  }, [orgId]);
 
   /* ── Derived ────────────────────────────────────────────── */
   const allClients = storeClients;
@@ -144,7 +170,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
 
   const quoteTotal = lineItems.reduce((sum, li) => sum + li.cost, 0);
 
-  const assigneeTeam = team.map((t) => ({
+  const assigneeTeam = teamMembers.map((t) => ({
     value: t.name,
     label: t.name,
     icon: (
@@ -255,7 +281,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
     if (!title.trim() || saving) return;
 
     // Find the team member to get their profile id for assignment
-    const assigneeMember = assignee !== "Unassigned" ? team.find((t) => t.name === assignee) : null;
+    const assigneeMember = assignee !== "Unassigned" ? teamMembers.find((t) => t.name === assignee) : null;
 
     if (orgId) {
       // Server-synced path

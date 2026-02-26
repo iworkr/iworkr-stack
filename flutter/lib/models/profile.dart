@@ -1,5 +1,8 @@
 /// Profile model — maps to public.profiles
 class Profile {
+  // Default timezone for Australian-focused app; overridden by user profile settings
+  static const String defaultTimezone = 'Australia/Brisbane';
+
   final String id;
   final String email;
   final String? fullName;
@@ -15,7 +18,7 @@ class Profile {
     this.fullName,
     this.avatarUrl,
     this.phone,
-    this.timezone = 'Australia/Brisbane',
+    this.timezone = defaultTimezone,
     this.onboardingCompleted = false,
     required this.createdAt,
   });
@@ -36,7 +39,7 @@ class Profile {
       fullName: json['full_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       phone: json['phone'] as String?,
-      timezone: json['timezone'] as String? ?? 'Australia/Brisbane',
+      timezone: json['timezone'] as String? ?? defaultTimezone,
       onboardingCompleted: json['onboarding_completed'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
     );

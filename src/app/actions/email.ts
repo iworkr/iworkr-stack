@@ -22,7 +22,7 @@ export async function sendJobAssignment(params: {
 
   if (!user) return { error: "Not authenticated" };
 
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
@@ -58,14 +58,14 @@ export async function sendTeamInviteEmail(params: {
 
   if (!user) return { error: "Not authenticated" };
 
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
     .maybeSingle();
 
   // Fetch org with branding fields (Project Genesis)
-  const { data: org } = await (supabase as any)
+  const { data: org } = await supabase
     .from("organizations")
     .select("name, logo_url, brand_color_hex")
     .eq("id", params.orgId)
@@ -74,7 +74,7 @@ export async function sendTeamInviteEmail(params: {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iworkrapp.com";
 
   // Create/update the invite record
-  const { data: invite, error } = await (supabase as any)
+  const { data: invite, error } = await supabase
     .from("organization_invites")
     .upsert(
       {

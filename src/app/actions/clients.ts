@@ -112,7 +112,7 @@ export interface UpdateClientContactParams {
  */
 export async function getClients(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     // Get all clients
     const { data: clients, error: clientsError } = await supabase
@@ -203,7 +203,7 @@ export async function getClients(orgId: string) {
  */
 export async function getClient(clientId: string, orgId?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     // Get client — filter by org when provided to enforce ownership
     let query = supabase
@@ -307,7 +307,7 @@ export async function createClient(params: CreateClientParams) {
       return { data: null, error: validated.error };
     }
 
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -385,7 +385,7 @@ export async function createClient(params: CreateClientParams) {
  */
 export async function updateClient(clientId: string, updates: UpdateClientParams, orgId?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -449,7 +449,7 @@ export async function updateClient(clientId: string, updates: UpdateClientParams
  */
 export async function deleteClient(clientId: string, orgId?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -485,7 +485,7 @@ export async function deleteClient(clientId: string, orgId?: string) {
  */
 export async function addClientContact(clientId: string, contact: CreateClientContactParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -535,7 +535,7 @@ export async function addClientContact(clientId: string, contact: CreateClientCo
  */
 export async function updateClientContact(contactId: string, updates: UpdateClientContactParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -596,7 +596,7 @@ export async function updateClientContact(contactId: string, updates: UpdateClie
  */
 export async function deleteClientContact(contactId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -629,7 +629,7 @@ export async function deleteClientContact(contactId: string) {
  */
 export async function getClientsWithStats(orgId: string, filters: ClientFilters = {}) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_clients_with_stats", {
       p_org_id: orgId,
@@ -659,7 +659,7 @@ export async function getClientsWithStats(orgId: string, filters: ClientFilters 
  */
 export async function createClientFull(params: CreateClientParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
@@ -716,7 +716,7 @@ export async function createClientFull(params: CreateClientParams) {
  */
 export async function getClientDetails(clientId: string, orgId?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     // Security: verify org ownership before calling security-definer RPC
     if (orgId) {

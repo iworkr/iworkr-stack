@@ -3,6 +3,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const UpsertAgentConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  voice_id: z.string().max(100).optional(),
+  business_hours_mode: z.enum(["after_hours", "24_7", "custom"]).optional(),
+  business_hours_start: z.string().max(10).optional(),
+  business_hours_end: z.string().max(10).optional(),
+  knowledge_base: z.string().max(50000).optional(),
+  greeting_message: z.string().max(1000).optional(),
+  escalation_number: z.string().max(30).optional().nullable(),
+  transfer_enabled: z.boolean().optional(),
+  booking_enabled: z.boolean().optional(),
+  max_call_duration_seconds: z.number().min(30).max(3600).optional(),
+});
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -38,7 +55,19 @@ export interface AIAgentCall {
 /* ── Config CRUD ──────────────────────────────────── */
 
 export async function getAgentConfig(orgId: string): Promise<{ data: AIAgentConfig | null; error?: string }> {
-  const supabase = (await createServerSupabaseClient()) as any;
+  const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: "Unauthorized" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { data: null, error: "Unauthorized" };
+
   const { data, error } = await supabase
     .from("ai_agent_config")
     .select("*")
@@ -53,7 +82,24 @@ export async function upsertAgentConfig(
   orgId: string,
   config: Partial<Omit<AIAgentConfig, "id" | "organization_id">>
 ): Promise<{ error?: string }> {
-  const supabase = (await createServerSupabaseClient()) as any;
+  // Validate input
+  const parsed = UpsertAgentConfigSchema.safeParse(config);
+  if (!parsed.success) {
+    return { error: JSON.stringify(parsed.error.flatten().fieldErrors) };
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
 
   // Check if config exists
   const { data: existing } = await supabase
@@ -85,7 +131,19 @@ export async function getAgentCalls(
   orgId: string,
   limit = 50
 ): Promise<{ data: AIAgentCall[]; error?: string }> {
-  const supabase = (await createServerSupabaseClient()) as any;
+  const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: "Unauthorized" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { data: [], error: "Unauthorized" };
+
   const { data, error } = await supabase
     .from("ai_agent_calls")
     .select("*")
@@ -98,7 +156,26 @@ export async function getAgentCalls(
 }
 
 export async function getCallTranscript(callId: string): Promise<{ transcript: string | null; error?: string }> {
-  const supabase = (await createServerSupabaseClient()) as any;
+  const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { transcript: null, error: "Unauthorized" };
+
+  const { data: call } = await supabase
+    .from("ai_agent_calls")
+    .select("organization_id")
+    .eq("id", callId)
+    .maybeSingle();
+  if (!call) return { transcript: null, error: "Call not found" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", call.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { transcript: null, error: "Unauthorized" };
+
   const { data, error } = await supabase
     .from("ai_agent_calls")
     .select("transcript")

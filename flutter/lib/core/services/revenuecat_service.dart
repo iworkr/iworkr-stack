@@ -16,12 +16,12 @@ import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 // business, not individual users.
 
 const _kRcAppleKey = String.fromEnvironment(
-  'RC_APPLE_API_KEY',
-  defaultValue: 'appl_YOUR_REVENUECAT_APPLE_KEY',
+  'REVENUECAT_APPLE_KEY',
+  defaultValue: '',
 );
 const _kRcGoogleKey = String.fromEnvironment(
-  'RC_GOOGLE_API_KEY',
-  defaultValue: 'goog_YOUR_REVENUECAT_GOOGLE_KEY',
+  'REVENUECAT_GOOGLE_KEY',
+  defaultValue: '',
 );
 
 class RevenueCatService {

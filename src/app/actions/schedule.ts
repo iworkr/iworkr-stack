@@ -91,7 +91,18 @@ export interface UpdateScheduleBlockParams {
  */
 export async function getScheduleBlocks(orgId: string, date: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // Parse date to get start and end of day
     const startDate = new Date(date);
@@ -145,7 +156,7 @@ export async function getScheduleBlocks(orgId: string, date: string) {
  */
 export async function createScheduleBlock(params: CreateScheduleBlockParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -242,7 +253,7 @@ export async function createScheduleBlock(params: CreateScheduleBlockParams) {
  */
 export async function updateScheduleBlock(blockId: string, updates: UpdateScheduleBlockParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -327,7 +338,7 @@ export async function updateScheduleBlock(blockId: string, updates: UpdateSchedu
  */
 export async function deleteScheduleBlock(blockId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -358,7 +369,18 @@ export async function deleteScheduleBlock(blockId: string) {
  */
 export async function getOrgTechnicians(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data: members, error } = await supabase
       .from("organization_members")
@@ -399,7 +421,7 @@ export async function getOrgTechnicians(orgId: string) {
  */
 export async function getScheduleView(orgId: string, date: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_schedule_view", {
       p_org_id: orgId,
@@ -456,7 +478,7 @@ export async function moveScheduleBlockServer(
   endTime: string
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -499,7 +521,7 @@ export async function moveScheduleBlockServer(
  */
 export async function resizeScheduleBlockServer(blockId: string, endTime: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -533,7 +555,7 @@ export async function assignJobToSchedule(
   endTime: string
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -633,7 +655,7 @@ export async function assignJobToSchedule(
  */
 export async function unscheduleJob(blockId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -677,7 +699,18 @@ export async function unscheduleJob(blockId: string) {
  */
 export async function getBacklogJobs(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("jobs")
@@ -732,7 +765,18 @@ export interface CreateScheduleEventParams {
  */
 export async function getScheduleEvents(orgId: string, date: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const startDate = new Date(date);
     startDate.setHours(0, 0, 0, 0);
@@ -770,7 +814,7 @@ export async function getScheduleEvents(orgId: string, date: string) {
  */
 export async function createScheduleEvent(params: CreateScheduleEventParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -804,7 +848,7 @@ export async function createScheduleEvent(params: CreateScheduleEventParams) {
  */
 export async function deleteScheduleEvent(eventId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -831,7 +875,7 @@ export async function deleteScheduleEvent(eventId: string) {
  */
 export async function checkScheduleConflicts(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("check_schedule_conflicts", {
       p_org_id: orgId,
@@ -864,7 +908,7 @@ export async function getCascadingDelays(
   date?: string
 ): Promise<{ data: CascadingDelay[]; error: string | null }> {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_cascading_delays", {
       p_org_id: orgId,
@@ -894,7 +938,7 @@ export async function validateScheduleDrop(
   locationLng?: number
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("validate_schedule_drop", {
       p_org_id: orgId,

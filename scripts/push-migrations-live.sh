@@ -8,8 +8,10 @@
 
 set -euo pipefail
 
+read -p "WARNING: This will modify the PRODUCTION database. Type 'yes' to continue: " confirm; if [ "$confirm" != "yes" ]; then echo "Aborted."; exit 1; fi
+
 SUPABASE_TOKEN="${SUPABASE_ACCESS_TOKEN:-}"
-PROJECT_ID="olqjuadvseoxpfjzlghb"
+PROJECT_ID="${SUPABASE_PROJECT:?Error: SUPABASE_PROJECT environment variable is required}"
 API_URL="https://api.supabase.com/v1/projects/${PROJECT_ID}/database/query"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
@@ -53,7 +55,7 @@ echo ""
 echo "=== 2. Seeding base org (seed/seed.sql) ==="
 BASE_SEED_JSON=$(python3 -c "
 import json
-with open('supabase/seed/seed.sql') as f:
+with open('supabase/seed.sql') as f:
     sql = f.read()
 print(json.dumps({'query': sql}))
 ")
@@ -64,6 +66,8 @@ echo "$BASE_SEED_JSON" | curl -s -X POST \
   -d @- | python3 -m json.tool 2>/dev/null || true
 echo ""
 
+# WARNING: The following inserts demo data using the first organization found
+# (SELECT id FROM public.organizations LIMIT 1). Review before running in production.
 echo "=== 3. Seeding demo/production data (seed.sql) ==="
 DEMO_SEED_JSON=$(python3 -c "
 import json

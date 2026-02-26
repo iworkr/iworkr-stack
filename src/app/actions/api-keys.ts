@@ -22,7 +22,7 @@ export interface ApiKey {
 /* ── CRUD ─────────────────────────────────────────── */
 
 export async function getApiKeys(orgId: string): Promise<{ data: ApiKey[]; error?: string }> {
-  const supabase = (await createServerSupabaseClient()) as any;
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("api_keys")
     .select("id, name, key_prefix, last_used_at, expires_at, scopes, status, created_at, revoked_at")
@@ -38,7 +38,7 @@ export async function generateApiKey(params: {
   name: string;
   scopes?: string[];
 }): Promise<{ key: string | null; data: ApiKey | null; error?: string }> {
-  const supabase = (await createServerSupabaseClient()) as any;
+  const supabase = await createServerSupabaseClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
@@ -69,7 +69,7 @@ export async function generateApiKey(params: {
 }
 
 export async function revokeApiKey(keyId: string): Promise<{ error?: string }> {
-  const supabase = (await createServerSupabaseClient()) as any;
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase
     .from("api_keys")
     .update({ status: "revoked", revoked_at: new Date().toISOString() })

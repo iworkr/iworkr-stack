@@ -28,6 +28,7 @@ import { useFormsStore } from "@/lib/forms-store";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getForm } from "@/app/actions/forms";
 import type { FormBlock, BlockType } from "@/lib/forms-data";
+import { useToastStore } from "@/components/app/action-toast";
 import { makeBlock } from "@/components/forms/document-forge/forge-config";
 import { BlockRow } from "@/components/forms/document-forge/block-row";
 import { EmptyBlock } from "@/components/forms/document-forge/empty-block";
@@ -55,6 +56,7 @@ export default function FormBuilderPage() {
   const router = useRouter();
   const { orgId } = useOrg();
   const { updateFormServer, createFormServer, publishFormServer } = useFormsStore();
+  const { addToast } = useToastStore();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -249,7 +251,7 @@ export default function FormBuilderPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => {}}
+            onClick={() => { addToast("Form preview coming soon"); }}
             className="flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
           >
             <Eye size={13} /> Preview

@@ -106,7 +106,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   /// Sign in with Google OAuth.
   /// Uses redirectTo so Supabase sends the user back to the app after login (not the website).
   /// Supabase Dashboard must have: Redirect URLs = com.iworkr.mobile://login-callback
-  /// Google OAuth client: 1043967222535-08d24sh3u4lvuvt337lcin0pn8em8jk9.apps.googleusercontent.com
+  /// Google OAuth client ID is configured in the Google Cloud Console and Supabase Dashboard.
   Future<void> signInWithGoogle() async {
     await SupabaseService.auth.signInWithOAuth(
       OAuthProvider.google,

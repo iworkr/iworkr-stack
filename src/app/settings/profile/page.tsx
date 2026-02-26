@@ -5,6 +5,8 @@ import { Camera } from "lucide-react";
 import { useSettingsStore } from "@/lib/stores/settings-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
+import { useToastStore } from "@/components/app/action-toast";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ProfilePage() {
   const { currentOrg, currentMembership } = useAuthStore();
@@ -21,6 +23,7 @@ export default function ProfilePage() {
   const [nameVal, setNameVal] = useState("");
   const [phoneVal, setPhoneVal] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToastStore();
 
   // Sync from store ONCE on initial load — no nameVal in deps to prevent feedback loop
   const hasSynced = useRef(false);
@@ -81,8 +84,26 @@ export default function ProfilePage() {
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={() => {
-              // Avatar upload handling would go here with Supabase Storage
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) { addToast("Not authenticated"); return; }
+                const ext = file.name.split(".").pop() || "png";
+                const path = `${user.id}/avatar.${ext}`;
+                const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+                if (error) { addToast(`Upload failed: ${error.message}`); return; }
+                const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                if (urlData?.publicUrl) {
+                  updateProfileField("avatar_url", urlData.publicUrl);
+                  addToast("Avatar updated");
+                }
+              } catch {
+                addToast("Avatar upload failed");
+              }
+              e.target.value = "";
             }}
           />
         </div>

@@ -4,6 +4,8 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+import { validate, uuidSchema, emailSchema } from "@/lib/validation";
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -20,11 +22,52 @@ export interface MemberStats {
   avg_rating: number;
 }
 
+/* ── Schemas ───────────────────────────────────────── */
+
+const UpdateMemberRoleSchema = z.object({
+  role: z.string().min(1, "Role is required").max(50),
+  roleId: uuidSchema.optional(),
+});
+
+const UpdateMemberDetailsSchema = z.object({
+  branch: z.string().max(100).optional(),
+  skills: z.array(z.string().max(50)).max(30).optional(),
+  hourly_rate: z.number().min(0).max(9999).optional(),
+  status: z.enum(["active", "pending", "suspended"]).optional(),
+});
+
+const InviteMemberSchema = z.object({
+  organization_id: uuidSchema,
+  email: emailSchema,
+  role: z.string().min(1, "Role is required").max(50),
+  role_id: uuidSchema.optional(),
+  branch: z.string().max(100).optional(),
+});
+
+const CreateRoleSchema = z.object({
+  organization_id: uuidSchema,
+  name: z.string().min(1, "Name is required").max(50),
+  color: z.string().min(1).max(30),
+  permissions: z.record(z.string(), z.unknown()),
+  scopes: z.record(z.string(), z.unknown()).optional(),
+});
+
 /* ── Members ───────────────────────────────────────── */
 
 export async function getTeamMembers(orgId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("organization_members")
@@ -74,7 +117,17 @@ export async function updateMemberRole(
   roleId?: string
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    // Validate input
+    const validated = validate(UpdateMemberRoleSchema, { role, roleId });
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const hasPermission = await checkPermission(orgId, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const updates: any = { role };
     if (roleId) updates.role_id = roleId;
@@ -104,7 +157,17 @@ export async function updateMemberDetails(
   }
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    // Validate input
+    const validated = validate(UpdateMemberDetailsSchema, updates);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const hasPermission = await checkPermission(orgId, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("organization_members")
@@ -122,7 +185,13 @@ export async function updateMemberDetails(
 
 export async function suspendMember(orgId: string, userId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const hasPermission = await checkPermission(orgId, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("organization_members")
@@ -140,7 +209,13 @@ export async function suspendMember(orgId: string, userId: string) {
 
 export async function reactivateMember(orgId: string, userId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const hasPermission = await checkPermission(orgId, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("organization_members")
@@ -158,7 +233,13 @@ export async function reactivateMember(orgId: string, userId: string) {
 
 export async function removeMember(orgId: string, userId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const hasPermission = await checkPermission(orgId, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("organization_members")
@@ -178,7 +259,18 @@ export async function removeMember(orgId: string, userId: string) {
 
 export async function getRoles(orgId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("organization_roles")
@@ -196,7 +288,18 @@ export async function getRoles(orgId: string) {
 
 export async function getRolesWithCounts(orgId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_roles_with_counts", {
       p_org_id: orgId,
@@ -222,7 +325,13 @@ export async function createRole(params: {
   scopes?: any;
 }) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const hasPermission = await checkPermission(params.organization_id, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("organization_roles")
@@ -248,7 +357,20 @@ export async function updateRole(
   }
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: role } = await supabase
+      .from("organization_roles")
+      .select("organization_id")
+      .eq("id", roleId)
+      .maybeSingle();
+    if (!role) return { data: null, error: "Role not found" };
+
+    const hasPermission = await checkPermission(role.organization_id, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("organization_roles")
@@ -271,7 +393,20 @@ export async function updateRolePermissions(
   scopes?: any
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: role } = await supabase
+      .from("organization_roles")
+      .select("organization_id")
+      .eq("id", roleId)
+      .maybeSingle();
+    if (!role) return { data: null, error: "Role not found" };
+
+    const hasPermission = await checkPermission(role.organization_id, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("update_role_permissions", {
       p_role_id: roleId,
@@ -295,16 +430,24 @@ export async function updateRolePermissions(
 
 export async function deleteRole(roleId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     // Prevent deletion of system roles
     const { data: role } = await supabase
       .from("organization_roles")
-      .select("is_system_role")
+      .select("is_system_role, organization_id")
       .eq("id", roleId)
       .maybeSingle();
 
-    if (role?.is_system_role) {
+    if (!role) return { data: null, error: "Role not found" };
+
+    const hasPermission = await checkPermission(role.organization_id, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
+
+    if (role.is_system_role) {
       return { data: null, error: "Cannot delete system roles" };
     }
 
@@ -325,7 +468,18 @@ export async function deleteRole(roleId: string) {
 
 export async function getTeamInvites(orgId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("organization_invites")
@@ -348,11 +502,19 @@ export async function inviteMember(params: {
   branch?: string;
 }) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    // Validate input
+    const validated = validate(InviteMemberSchema, params);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const hasPermission = await checkPermission(params.organization_id, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("invite_member", {
       p_org_id: params.organization_id,
@@ -379,7 +541,20 @@ export async function inviteMember(params: {
 
 export async function resendInvite(inviteId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: invite } = await supabase
+      .from("organization_invites")
+      .select("organization_id")
+      .eq("id", inviteId)
+      .maybeSingle();
+    if (!invite) return { data: null, error: "Invite not found" };
+
+    const hasPermission = await checkPermission(invite.organization_id, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     // Use the Genesis RPC — resets expiry to +7 days and status back to 'pending'
     const { data, error } = await supabase.rpc("resend_invite", {
@@ -402,7 +577,20 @@ export async function resendInvite(inviteId: string) {
 
 export async function cancelInvite(inviteId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: invite } = await supabase
+      .from("organization_invites")
+      .select("organization_id")
+      .eq("id", inviteId)
+      .maybeSingle();
+    if (!invite) return { data: null, error: "Invite not found" };
+
+    const hasPermission = await checkPermission(invite.organization_id, "team", "manage");
+    if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     // Use the Genesis RPC — sets status to 'revoked' (not 'expired')
     // so we distinguish admin cancellation from time-based expiry
@@ -432,7 +620,7 @@ export async function checkPermission(
   action: string
 ): Promise<boolean> {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.rpc("has_permission", {
       p_org_id: orgId,
       p_module: module,
@@ -453,7 +641,18 @@ export async function checkPermission(
 
 export async function getMemberStats(orgId: string, userId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_member_stats", {
       p_org_id: orgId,
@@ -476,7 +675,18 @@ export async function getTeamOverview(
   orgId: string
 ): Promise<{ data: TeamOverview | null; error: string | null }> {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_team_overview", {
       p_org_id: orgId,

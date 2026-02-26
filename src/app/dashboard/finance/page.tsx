@@ -295,7 +295,7 @@ export default function FinancePage() {
       updateInvoiceStatusServer(inv.id, inv.dbId || inv.id, "sent");
       addToast(`${inv.id} sent to ${inv.clientEmail}`);
     } else if (actionId === "copy") {
-      const payLink = inv.paymentLink || `https://iworkrapp.com/pay/${inv.dbId || inv.id}`;
+      const payLink = inv.paymentLink || `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || ""}/pay/${inv.dbId || inv.id}`;
       navigator.clipboard?.writeText(payLink);
       addToast("Payment link copied");
     } else if (actionId === "void") {

@@ -42,7 +42,7 @@ export interface HelpTicket {
 
 export async function getHelpArticles(): Promise<{ data: HelpArticle[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("help_articles")
     .select("id, title, slug, content, summary, category, icon, sort_order")
     .eq("published", true)
@@ -54,7 +54,7 @@ export async function getHelpArticles(): Promise<{ data: HelpArticle[]; error?: 
 
 export async function getArticleBySlug(slug: string): Promise<{ data: HelpArticle | null; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("help_articles")
     .select("id, title, slug, content, summary, category, icon, sort_order")
     .eq("slug", slug)
@@ -68,7 +68,7 @@ export async function getArticleBySlug(slug: string): Promise<{ data: HelpArticl
 export async function searchArticles(query: string): Promise<{ data: HelpArticle[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
   const q = `%${query}%`;
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("help_articles")
     .select("id, title, slug, content, summary, category, icon, sort_order")
     .eq("published", true)
@@ -84,7 +84,7 @@ export async function searchArticles(query: string): Promise<{ data: HelpArticle
 
 export async function getHelpThreads(): Promise<{ data: HelpThread[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("help_threads")
     .select("id, author_id, title, content, category, is_solved, upvotes, reply_count, created_at")
     .order("created_at", { ascending: false })
@@ -99,7 +99,7 @@ export async function createThread(title: string, content: string, category: str
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: "Not authenticated" };
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("help_threads")
     .insert({ title, content, category, author_id: user.id })
     .select()
@@ -112,16 +112,24 @@ export async function createThread(title: string, content: string, category: str
 
 export async function upvoteThread(threadId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { error } = await (supabase as any).rpc("increment_field", {
+  const { error } = await supabase.rpc("increment_field", {
     table_name: "help_threads",
     field_name: "upvotes",
     row_id: threadId,
   });
-  
+
   if (error) {
-    const { error: updateError } = await (supabase as any)
+    // Fallback: manually read current value and increment
+    const { data: thread, error: fetchError } = await supabase
       .from("help_threads")
-      .update({ upvotes: (supabase as any).rpc ? undefined : 1 })
+      .select("upvotes")
+      .eq("id", threadId)
+      .maybeSingle();
+    if (fetchError) return { error: fetchError.message };
+    const currentUpvotes = thread?.upvotes ?? 0;
+    const { error: updateError } = await supabase
+      .from("help_threads")
+      .update({ upvotes: currentUpvotes + 1 })
       .eq("id", threadId);
     if (updateError) return { error: updateError.message };
   }
@@ -140,7 +148,7 @@ export async function createTicket(params: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: "Not authenticated" };
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("help_tickets")
     .insert({
       user_id: user.id,
@@ -161,7 +169,7 @@ export async function getMyTickets(): Promise<{ data: HelpTicket[]; error?: stri
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: [], error: "Not authenticated" };
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("help_tickets")
     .select("id, subject, severity, message, status, created_at")
     .eq("user_id", user.id)

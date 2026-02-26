@@ -19,7 +19,7 @@ export interface IntegrationsOverview {
 
 export async function getIntegrations(orgId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
       .from("integrations")
@@ -38,7 +38,7 @@ export async function getIntegrationsOverview(
   orgId: string
 ): Promise<{ data: IntegrationsOverview | null; error: string | null }> {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_integrations_overview", {
       p_org_id: orgId,
@@ -63,7 +63,7 @@ export async function connectIntegration(
   connectionId?: string
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("toggle_integration_status", {
       p_integration_id: integrationId,
@@ -87,7 +87,7 @@ export async function connectIntegration(
 
 export async function disconnectIntegration(integrationId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("toggle_integration_status", {
       p_integration_id: integrationId,
@@ -115,7 +115,7 @@ export async function updateIntegrationSettings(
   settings: any
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("update_integration_settings", {
       p_integration_id: integrationId,
@@ -145,7 +145,7 @@ export async function createIntegration(params: {
   settings?: any;
 }) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
       .from("integrations")
@@ -168,7 +168,7 @@ export async function createIntegration(params: {
 
 export async function syncIntegration(integrationId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
 
     // Mark as syncing
     await supabase

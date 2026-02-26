@@ -34,7 +34,7 @@ export async function createOrganization(data: {
   slug = `${slug}-${Date.now().toString(36)}`;
 
   // Use the SECURITY DEFINER function to atomically create org + owner membership
-  const { data: result, error } = await (supabase as any).rpc(
+  const { data: result, error } = await supabase.rpc(
     "create_organization_with_owner",
     {
       org_name: data.name,
@@ -53,7 +53,25 @@ export async function createOrganization(data: {
 export async function updateOrganizationTrade(orgId: string, trade: string) {
   const supabase = await createServerSupabaseClient();
 
-  const { error } = await (supabase as any)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) {
+    return { error: "Unauthorized" };
+  }
+
+  const { error } = await supabase
     .from("organizations")
     .update({ trade })
     .eq("id", orgId);
@@ -80,13 +98,13 @@ export async function sendTeamInvites(
   }
 
   // Get org name + branding and inviter profile for the email (Project Genesis)
-  const { data: org } = await (supabase as any)
+  const { data: org } = await supabase
     .from("organizations")
     .select("name, logo_url, brand_color_hex")
     .eq("id", orgId)
     .maybeSingle();
 
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
@@ -99,7 +117,7 @@ export async function sendTeamInvites(
   const results: { email: string; success: boolean; error?: string }[] = [];
 
   for (const email of emails) {
-    const { data: invite, error } = await (supabase as any)
+    const { data: invite, error } = await supabase
       .from("organization_invites")
       .upsert(
         {
@@ -150,7 +168,7 @@ export async function completeOnboarding() {
     return { error: "Not authenticated" };
   }
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("profiles")
     .update({ onboarding_completed: true })
     .eq("id", user.id);
@@ -160,14 +178,14 @@ export async function completeOnboarding() {
   }
 
   // Send welcome email
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
     .maybeSingle();
 
   // Get the user's first org
-  const { data: membership } = await (supabase as any)
+  const { data: membership } = await supabase
     .from("organization_members")
     .select("organization_id, organizations(name)")
     .eq("user_id", user.id)

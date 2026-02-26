@@ -295,7 +295,11 @@ class _WebManagedSheet extends StatelessWidget {
 
   Future<void> _openBillingWeb(BuildContext context) async {
     HapticFeedback.lightImpact();
-    final uri = Uri.parse('https://app.iworkr.com/settings/billing');
+    final billingUrl = const String.fromEnvironment(
+      'APP_BILLING_URL',
+      defaultValue: 'https://app.iworkr.com/settings/billing',
+    );
+    final uri = Uri.parse(billingUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

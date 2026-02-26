@@ -53,6 +53,7 @@ async function verifyStripeSignature(
   return JSON.parse(body);
 }
 
+// TODO: Replace with indexed lookup: SELECT org_id FROM org_settings WHERE stripe_customer_id = $1
 async function findOrgByStripeCustomer(
   supabase: ReturnType<typeof createClient>,
   customerId: string,

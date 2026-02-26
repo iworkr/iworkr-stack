@@ -8,19 +8,28 @@ const FROM_ADDRESS = "iWorkr <noreply@iworkrapp.com>";
 const MAX_RETRIES = 5;
 const BATCH_SIZE = 20;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const ALLOWED_ORIGINS = [
+  Deno.env.get("APP_URL") || "https://iworkrapp.com",
+  "http://localhost:3000",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-function jsonResponse(body: Record<string, unknown>, status = 200) {
+function jsonResponse(req: Request, body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
   });
 }
 
@@ -257,11 +266,11 @@ function buildEmailHtml(params: {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return jsonResponse(req, { error: "Method not allowed" }, 405);
   }
 
   const supabase = serviceClient();
@@ -278,7 +287,7 @@ Deno.serve(async (req: Request) => {
 
     if (fetchErr) throw fetchErr;
     if (!queue || queue.length === 0) {
-      return jsonResponse({ ...stats, message: "No pending mail" });
+      return jsonResponse(req, { ...stats, message: "No pending mail" });
     }
 
     const queueIds = queue.map((item: Record<string, unknown>) => item.id);
@@ -465,9 +474,9 @@ Deno.serve(async (req: Request) => {
       `process-mail complete: ${stats.processed} processed, ${stats.sent} sent, ${stats.failed} failed`,
     );
 
-    return jsonResponse(stats);
+    return jsonResponse(req, stats);
   } catch (err) {
     console.error("process-mail fatal error:", err);
-    return jsonResponse({ error: (err as Error).message, ...stats }, 500);
+    return jsonResponse(req, { error: (err as Error).message, ...stats }, 500);
   }
 });

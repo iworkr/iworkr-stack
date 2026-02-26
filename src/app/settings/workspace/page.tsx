@@ -7,6 +7,8 @@ import { useSettingsStore } from "@/lib/stores/settings-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useTeamStore } from "@/lib/team-store";
 import { Shimmer } from "@/components/ui/shimmer";
+import { useToastStore } from "@/components/app/action-toast";
+import { createClient } from "@/lib/supabase/client";
 
 const timezones = [
   { value: "Australia/Brisbane", label: "Australia/Brisbane (AEST, UTC+10)" },
@@ -42,6 +44,9 @@ export default function WorkspacePage() {
     orgName, orgSlug, orgLogoUrl, orgTrade, orgSettings, loading,
     updateOrgField, updateOrgSettingsField, updateOrgSettingsBatch,
   } = useSettingsStore();
+
+  const { addToast } = useToastStore();
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Local state for controlled inputs
   const [name, setName] = useState("");
@@ -123,9 +128,37 @@ export default function WorkspacePage() {
             alt={name || "Workspace"}
             className="h-14 w-14 rounded-xl object-contain"
           />
-          <button className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.15)] bg-[#141414] text-zinc-400 transition-colors hover:text-zinc-200">
+          <button
+            onClick={() => logoInputRef.current?.click()}
+            className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.15)] bg-[#141414] text-zinc-400 transition-colors hover:text-zinc-200"
+          >
             <Camera size={11} />
           </button>
+          <input
+            ref={logoInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file || !currentOrg?.id) return;
+              try {
+                const supabase = createClient();
+                const ext = file.name.split(".").pop() || "png";
+                const path = `${currentOrg.id}/logo.${ext}`;
+                const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+                if (error) { addToast(`Upload failed: ${error.message}`); return; }
+                const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                if (urlData?.publicUrl) {
+                  updateOrgField("logo_url", urlData.publicUrl);
+                  addToast("Logo updated");
+                }
+              } catch {
+                addToast("Logo upload failed");
+              }
+              e.target.value = "";
+            }}
+          />
         </div>
         <div>
           <div className="text-[14px] font-medium text-zinc-200">
@@ -245,7 +278,12 @@ export default function WorkspacePage() {
           <p className="mb-3 text-[12px] text-zinc-600">
             Permanently delete this workspace and all of its data. This action cannot be undone.
           </p>
-          <button className="rounded-md border border-red-500/30 px-3 py-1.5 text-[12px] text-red-400/80 transition-colors hover:bg-red-500/10">
+          <button
+            onClick={() => {
+              addToast("Contact support to delete your workspace");
+            }}
+            className="rounded-md border border-red-500/30 px-3 py-1.5 text-[12px] text-red-400/80 transition-colors hover:bg-red-500/10"
+          >
             Delete workspace
           </button>
         </div>

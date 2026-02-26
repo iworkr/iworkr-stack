@@ -106,7 +106,7 @@ export function initMenu(win: BrowserWindow): void {
       submenu: [
         {
           label: "iWorkr Help Center",
-          click: () => shell.openExternal("https://iworkr.com/help"),
+          click: () => shell.openExternal("https://iworkrapp.com/help"),
         },
         {
           label: "Keyboard Shortcuts",
@@ -116,7 +116,7 @@ export function initMenu(win: BrowserWindow): void {
         { type: "separator" },
         {
           label: "Report Issue",
-          click: () => shell.openExternal("https://iworkr.com/support"),
+          click: () => shell.openExternal("https://iworkrapp.com/changelog"),
         },
       ],
     },

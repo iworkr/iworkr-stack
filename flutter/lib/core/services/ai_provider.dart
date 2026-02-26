@@ -87,7 +87,8 @@ Future<AiChatMessage?> sendAiMessage({
     }
   }
 
-  // For now, generate a placeholder response (real LLM integration via Edge Function)
+  // TODO: Replace with actual AI API call (e.g., POST to /api/ai/chat)
+  // This generates a local placeholder response until the Edge Function LLM is wired.
   final response = _generateLocalResponse(content, contextData);
 
   // Store AI response
@@ -106,33 +107,34 @@ Future<AiChatMessage?> sendAiMessage({
   return AiChatMessage.fromJson(row);
 }
 
-/// Local response generation (placeholder until Edge Function LLM is wired)
+/// Local response generation (placeholder until Edge Function LLM is wired).
+/// All responses are prefixed with [Demo] to make it clear this is not a real AI.
 String _generateLocalResponse(String query, String context) {
   final lower = query.toLowerCase();
 
   if (lower.contains('code') || lower.contains('gate') || lower.contains('pin')) {
     if (context.isNotEmpty) {
-      return 'Based on job history:\n$context\nI found relevant access information above.';
+      return '[Demo] Based on job history:\n$context\nI found relevant access information above.';
     }
-    return 'I don\'t have access code information for this site yet. Check the job notes or ask the dispatcher.';
+    return '[Demo] I don\'t have access code information for this site yet. Check the job notes or ask the dispatcher.';
   }
 
   if (lower.contains('history') || lower.contains('previous') || lower.contains('last time')) {
     if (context.isNotEmpty) {
-      return 'Here\'s what I found from previous visits:\n$context';
+      return '[Demo] Here\'s what I found from previous visits:\n$context';
     }
-    return 'No previous visit records found for this job. This may be a first visit.';
+    return '[Demo] No previous visit records found for this job. This may be a first visit.';
   }
 
   if (lower.contains('quote') || lower.contains('price') || lower.contains('cost')) {
-    return 'I can help you draft a quote. Navigate to the job and tap "Create Quote" to get started with itemized pricing.';
+    return '[Demo] I can help you draft a quote. Navigate to the job and tap "Create Quote" to get started with itemized pricing.';
   }
 
   if (lower.contains('note') || lower.contains('log')) {
-    return 'I\'ll format that as a professional note and add it to the job diary. Just speak or type your observations.';
+    return '[Demo] I\'ll format that as a professional note and add it to the job diary. Just speak or type your observations.';
   }
 
-  return 'I\'m your AI Field Agent. I can help with:\n• Retrieving site access codes\n• Reviewing job history\n• Drafting quotes\n• Taking formatted notes\n\nWhat do you need?';
+  return '[Demo] I\'m your AI Field Agent. I can help with:\n• Retrieving site access codes\n• Reviewing job history\n• Drafting quotes\n• Taking formatted notes\n\nWhat do you need?';
 }
 
 /// Knowledge articles for the org

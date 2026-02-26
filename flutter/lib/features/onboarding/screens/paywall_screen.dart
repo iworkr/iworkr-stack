@@ -25,6 +25,11 @@ class PaywallScreen extends ConsumerStatefulWidget {
 
 class _PaywallScreenState extends ConsumerState<PaywallScreen>
     with SingleTickerProviderStateMixin {
+  static const String _checkoutUrl = String.fromEnvironment(
+    'POLAR_CHECKOUT_URL',
+    defaultValue: 'https://buy.polar.sh/iworkr/pro',
+  );
+
   bool _isYearly = true;
   late AnimationController _glowCtrl;
 
@@ -57,7 +62,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
 
     // Polar.sh checkout URL with org metadata
     final checkoutUrl = Uri.parse(
-      'https://buy.polar.sh/iworkr/pro'
+      _checkoutUrl
       '?metadata[organization_id]=$orgId'
       '&metadata[user_id]=${user.id}'
       '&customer_email=${Uri.encodeComponent(user.email ?? '')}'

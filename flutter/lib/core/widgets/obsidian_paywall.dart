@@ -190,11 +190,14 @@ class _ObsidianPaywallSheetState
                 offeringAsync.when(
                   data: (offering) {
                     final package = offering?.availablePackages.firstOrNull;
+                    // Fallback price shown when RevenueCat offering data is unavailable
                     final priceStr = package?.storeProduct.priceString ?? '\$69.99';
 
                     return _buildCta(priceStr, package);
                   },
+                  // Fallback price shown when RevenueCat offering data is unavailable
                   loading: () => _buildCta('\$69.99', null, loading: true),
+                  // Fallback price shown when RevenueCat offering data is unavailable
                   error: (_, __) => _buildCta('\$69.99', null),
                 ),
 
@@ -231,12 +234,12 @@ class _ObsidianPaywallSheetState
                     _dot(),
                     _GhostLink(
                       label: 'Terms',
-                      onTap: () => _openUrl('https://iworkr.com/terms'),
+                      onTap: () => _openUrl('https://iworkrapp.com/terms'),
                     ),
                     _dot(),
                     _GhostLink(
                       label: 'Privacy',
-                      onTap: () => _openUrl('https://iworkr.com/privacy'),
+                      onTap: () => _openUrl('https://iworkrapp.com/privacy'),
                     ),
                   ],
                 ),

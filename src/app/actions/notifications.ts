@@ -50,7 +50,7 @@ const INBOX_PATH = "/dashboard/inbox";
 
 export async function getNotifications() {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -92,7 +92,7 @@ export async function getNotifications() {
 
 export async function getSnoozedNotifications() {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -116,7 +116,7 @@ export async function getSnoozedNotifications() {
 
 export async function markRead(notificationId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -141,7 +141,7 @@ export async function markRead(notificationId: string) {
 
 export async function markAllRead() {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -164,7 +164,7 @@ export async function markAllRead() {
 
 export async function archiveNotification(notificationId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -189,7 +189,7 @@ export async function archiveNotification(notificationId: string) {
 
 export async function unarchiveNotification(notificationId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -213,7 +213,7 @@ export async function unarchiveNotification(notificationId: string) {
 
 export async function snoozeNotification(notificationId: string, until: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -238,7 +238,7 @@ export async function snoozeNotification(notificationId: string, until: string) 
 
 export async function unsnoozeNotification(notificationId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -262,7 +262,7 @@ export async function unsnoozeNotification(notificationId: string) {
 
 export async function createNotification(params: CreateNotificationParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -302,7 +302,7 @@ export async function createNotification(params: CreateNotificationParams) {
 
 export async function sendReplyAction(notificationId: string, body: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 
@@ -333,7 +333,7 @@ export async function sendReplyAction(notificationId: string, body: string) {
 
 export async function getUnreadCount() {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
 

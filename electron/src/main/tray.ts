@@ -87,5 +87,6 @@ function createStatusDot(color: string): Electron.NativeImage {
       <circle cx="6" cy="6" r="4" fill="${color}"/>
     </svg>
   `;
+  // NOTE: SVG support in nativeImage is unreliable on some platforms. Consider using a pre-rendered PNG.
   return nativeImage.createFromBuffer(Buffer.from(svg));
 }

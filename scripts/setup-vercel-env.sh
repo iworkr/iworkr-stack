@@ -39,9 +39,9 @@ set_env "NEXT_PUBLIC_SITE_NAME" "iWorkr"
 set_env "NEXT_PUBLIC_APP_URL" "https://iworkrapp.com"
 
 # ── Supabase (set in Vercel or use .env.local values) ──
-set_env "NEXT_PUBLIC_SUPABASE_URL" "${NEXT_PUBLIC_SUPABASE_URL:-https://your-project.supabase.co}"
-set_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-your-anon-key}"
-set_env "SUPABASE_SERVICE_ROLE_KEY" "${SUPABASE_SERVICE_ROLE_KEY:-your-service-role-key}"
+set_env "NEXT_PUBLIC_SUPABASE_URL" "${NEXT_PUBLIC_SUPABASE_URL:?Error: NEXT_PUBLIC_SUPABASE_URL environment variable is required}"
+set_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${NEXT_PUBLIC_SUPABASE_ANON_KEY:?Error: NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is required}"
+set_env "SUPABASE_SERVICE_ROLE_KEY" "${SUPABASE_SERVICE_ROLE_KEY:?Error: SUPABASE_SERVICE_ROLE_KEY environment variable is required}"
 
 # ── Polar.sh ──
 set_env "POLAR_ACCESS_TOKEN" "${POLAR_ACCESS_TOKEN:-}"
@@ -50,7 +50,7 @@ set_env "POLAR_ORGANIZATION_ID" "${POLAR_ORGANIZATION_ID:-}"
 set_env "POLAR_SUCCESS_URL" "https://iworkrapp.com/dashboard?checkout=success&checkout_id={CHECKOUT_ID}"
 
 # ── Email (Resend) ──
-set_env "ADMIN_EMAIL" "${ADMIN_EMAIL:-admin@example.com}"
+set_env "ADMIN_EMAIL" "${ADMIN_EMAIL:?Error: ADMIN_EMAIL environment variable is required}"
 set_env "RESEND_API_KEY" "${RESEND_API_KEY:-}"
 
 # ── Google Maps ──

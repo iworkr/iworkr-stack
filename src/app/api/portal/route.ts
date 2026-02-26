@@ -1,11 +1,12 @@
 import { CustomerPortal } from "@polar-sh/nextjs";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+if (!appUrl) console.warn("[portal] NEXT_PUBLIC_APP_URL is not set, falling back to localhost");
+
 export const GET = CustomerPortal({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
   server: "production",
-  returnUrl: process.env.NEXT_PUBLIC_APP_URL
-    ? `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing`
-    : "https://iworkr-stack.vercel.app/settings/billing",
+  returnUrl: `${appUrl || "http://localhost:3000"}/settings/billing`,
   getCustomerId: async (req) => {
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get("customerId");

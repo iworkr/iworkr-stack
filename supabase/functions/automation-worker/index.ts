@@ -206,7 +206,7 @@ async function executeAction(
       }
 
       // TODO: Wire to Twilio/SMS provider
-      return { success: true, output: { sms_queued: phone } };
+      return { success: false, error: "SMS provider not configured. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables." };
     }
 
     case "send_notification":

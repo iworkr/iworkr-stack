@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
-import { Spinner, CheckmarkDraw } from "./spinner";
+import { CheckmarkDraw } from "./spinner";
 
 interface Integration {
   id: string;
@@ -62,11 +62,8 @@ function IntegrationRow({
 
   function handleConnect() {
     if (state !== "idle") return;
-    setState("connecting");
-    setTimeout(() => {
-      setState("connected");
-      toggleIntegration(integration.id);
-    }, 1500);
+    setState("connected");
+    toggleIntegration(integration.id);
   }
 
   return (
@@ -102,19 +99,13 @@ function IntegrationRow({
               : "border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] text-zinc-200 hover:bg-[rgba(255,255,255,0.1)]"
         }`}
       >
-        {state === "connecting" && (
-          <>
-            <Spinner size={14} />
-            <span>Connecting...</span>
-          </>
-        )}
         {state === "connected" && (
           <>
             <CheckmarkDraw size={14} />
-            <span>Linked</span>
+            <span>Configure in Settings</span>
           </>
         )}
-        {state === "idle" && <span>Connect</span>}
+        {state === "idle" && <span>Enable</span>}
       </button>
     </motion.div>
   );

@@ -97,6 +97,9 @@ export interface UpdateInvoiceParams {
   issue_date?: string | null;
   due_date?: string | null;
   tax_rate?: number;
+  subtotal?: number;
+  tax?: number;
+  total?: number;
   payment_link?: string | null;
   notes?: string | null;
   metadata?: Record<string, any> | null;
@@ -130,7 +133,7 @@ export interface FinanceOverview {
  */
 export async function getOrgSettings(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("organizations")
       .select("name, settings")
@@ -149,7 +152,7 @@ export async function getOrgSettings(orgId: string) {
  */
 export async function getInvoices(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: invoices, error } = await supabase
       .from("invoices")
@@ -184,7 +187,7 @@ export async function getInvoices(orgId: string) {
  */
 export async function getInvoice(invoiceId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: invoice, error } = await supabase
       .from("invoices")
@@ -271,7 +274,7 @@ export async function createInvoice(params: CreateInvoiceParams) {
       return { data: null, error: validated.error };
     }
 
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -366,7 +369,7 @@ export async function createInvoice(params: CreateInvoiceParams) {
  */
 export async function deleteInvoice(invoiceId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -394,7 +397,7 @@ export async function deleteInvoice(invoiceId: string) {
  */
 export async function updateInvoice(invoiceId: string, updates: UpdateInvoiceParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -419,7 +422,7 @@ export async function updateInvoice(invoiceId: string, updates: UpdateInvoicePar
           subtotal,
           tax,
           total,
-        } as any;
+        };
       }
     }
 
@@ -449,7 +452,7 @@ export async function updateInvoiceStatus(
   newStatus: "draft" | "sent" | "viewed" | "paid" | "overdue" | "voided"
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -541,7 +544,7 @@ export async function updateInvoiceStatus(
  */
 export async function addLineItem(invoiceId: string, item: AddLineItemParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -613,7 +616,7 @@ export async function updateLineItem(
   updates: { description?: string; quantity?: number; unit_price?: number }
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -661,7 +664,7 @@ export async function updateLineItem(
  */
 export async function removeLineItem(lineItemId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -727,7 +730,7 @@ export async function removeLineItem(lineItemId: string) {
  */
 export async function getPayouts(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     const { data: payouts, error } = await supabase
       .from("payouts")
@@ -750,7 +753,7 @@ export async function getPayouts(orgId: string) {
  */
 export async function getRevenueStats(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     
     // Calculate date range (last 30 days)
     const endDate = new Date();
@@ -813,7 +816,7 @@ export async function getRevenueStats(orgId: string) {
  */
 export async function getFinanceOverview(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_finance_overview", {
       p_org_id: orgId,
@@ -835,7 +838,7 @@ export async function getFinanceOverview(orgId: string) {
  */
 export async function createInvoiceFull(params: CreateInvoiceParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -898,7 +901,7 @@ export async function createInvoiceFull(params: CreateInvoiceParams) {
  */
 export async function getInvoiceDetail(invoiceId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_invoice_detail", {
       p_invoice_id: invoiceId,
@@ -920,7 +923,7 @@ export async function getInvoiceDetail(invoiceId: string) {
  */
 export async function runOverdueWatchdog(orgId?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("mark_overdue_invoices", {
       p_org_id: orgId || null,

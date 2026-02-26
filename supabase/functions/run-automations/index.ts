@@ -376,7 +376,7 @@ serve(async (req) => {
       // Update flow run count and last_run
       await adminClient
         .from("automation_flows")
-        .update({ run_count: (flow as Record<string, unknown>).run_count as number + 1 || 1, last_run: now })
+        .update({ run_count: (((flow as Record<string, unknown>).run_count as number) || 0) + 1, last_run: now })
         .eq("id", flow.id);
 
       scheduledRuns++;

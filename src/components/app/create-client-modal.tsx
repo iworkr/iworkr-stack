@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   MapPin,
@@ -21,7 +21,8 @@ import { useToastStore } from "./action-toast";
 import { useClientsStore } from "@/lib/clients-store";
 import { InlineMap } from "@/components/maps/inline-map";
 import { useOrg } from "@/lib/hooks/use-org";
-import { clients as existingClients, type Client, type ClientStatus } from "@/lib/data";
+import { type Client, type ClientStatus } from "@/lib/data";
+import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 /* ── Types & Config ───────────────────────────────────────── */
 
@@ -67,21 +68,7 @@ function makeInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-/* ── Simulated enrichment results ─────────────────────────── */
-const enrichmentDB: Record<string, { address: string; coords: { lat: number; lng: number }; email?: string; phone?: string; type?: "residential" | "commercial" }> = {
-  "apex building": { address: "100 Edward St, Brisbane City 4000", coords: { lat: -27.468, lng: 153.025 }, email: "admin@apexbuilding.com.au", phone: "+61 7 3000 1234", type: "commercial" },
-  "greenfield": { address: "88 Stanley St, South Brisbane 4101", coords: { lat: -27.477, lng: 153.019 }, email: "hello@greenfield.com.au", phone: "+61 7 3100 5678", type: "commercial" },
-  "martinez": { address: "22 Wickham Tce, Spring Hill 4000", coords: { lat: -27.463, lng: 153.024 }, email: "j.martinez@gmail.com", phone: "+61 422 100 200", type: "residential" },
-  "chen property": { address: "5/120 Melbourne St, South Brisbane 4101", coords: { lat: -27.475, lng: 153.017 }, email: "info@chenproperty.com.au", phone: "+61 7 3200 9876", type: "commercial" },
-};
-
-function simulateEnrich(query: string) {
-  const q = query.toLowerCase();
-  for (const [key, data] of Object.entries(enrichmentDB)) {
-    if (q.includes(key)) return data;
-  }
-  return null;
-}
+// TODO: Integrate with ABN Lookup API for client enrichment
 
 /* ── Component ────────────────────────────────────────────── */
 
@@ -116,7 +103,7 @@ export function CreateClientModal({
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const contactNameRef = useRef<HTMLInputElement>(null);
-  const enrichTimerRef = useRef<NodeJS.Timeout | null>(null);
+
 
   const { addToast } = useToastStore();
   const { createClientServer } = useClientsStore();
@@ -127,13 +114,27 @@ export function CreateClientModal({
   const initials = clientName ? makeInitials(clientName) : "";
   const isValid = clientName.trim().length >= 2;
 
-  /* Existing client match warning */
-  const existingMatch = useMemo(() => {
-    if (!clientName || clientName.length < 3) return null;
-    return existingClients.find(
-      (c) => c.name.toLowerCase() === clientName.toLowerCase()
-    );
-  }, [clientName]);
+  /* Existing client match warning — query DB for duplicates */
+  const [existingMatch, setExistingMatch] = useState<{ name: string } | null>(null);
+  useEffect(() => {
+    if (!clientName || clientName.length < 3 || !orgId) {
+      setExistingMatch(null);
+      return;
+    }
+    const supabase = createBrowserSupabaseClient();
+    const timeout = setTimeout(() => {
+      (supabase as any)
+        .from("clients")
+        .select("name")
+        .eq("organization_id", orgId)
+        .ilike("name", clientName)
+        .limit(1)
+        .then(({ data }: any) => {
+          setExistingMatch(data && data.length > 0 ? data[0] : null);
+        });
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [clientName, orgId]);
 
   /* ── Reset on open ──────────────────────────────────────── */
   useEffect(() => {
@@ -160,29 +161,12 @@ export function CreateClientModal({
     }
   }, [open]);
 
-  /* ── Simulated enrichment ───────────────────────────────── */
+  /* ── Name change handler ────────────────────────────────── */
+  // TODO: Integrate with ABN Lookup API for client enrichment
   function handleNameChange(val: string) {
     setNameQuery(val);
     if (isLocked) return;
-
-    if (enrichTimerRef.current) clearTimeout(enrichTimerRef.current);
-
-    if (val.length >= 3) {
-      setIsEnriching(true);
-      enrichTimerRef.current = setTimeout(() => {
-        const result = simulateEnrich(val);
-        if (result) {
-          setAddress(result.address);
-          setAddressCoords(result.coords);
-          if (result.email) setContactEmail(result.email);
-          if (result.phone) setContactPhone(result.phone);
-          if (result.type) setClientType(result.type);
-        }
-        setIsEnriching(false);
-      }, 600);
-    } else {
-      setIsEnriching(false);
-    }
+    setIsEnriching(false);
   }
 
   function lockIdentity() {

@@ -5,6 +5,24 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { Events, dispatch, dispatchAndWait } from "@/lib/automation";
+import { z } from "zod";
+import { validate, createFlowSchema } from "@/lib/validation";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const UpdateFlowSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  category: z.enum(["marketing", "billing", "operations"]).optional(),
+  status: z.string().max(50).optional(),
+  trigger_config: z.record(z.string(), z.unknown()).optional(),
+  blocks: z.array(z.object({
+    id: z.string(),
+    type: z.enum(["trigger", "delay", "action", "condition"]),
+    label: z.string(),
+    config: z.record(z.string(), z.unknown()),
+  })).optional(),
+});
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -20,7 +38,18 @@ export interface AutomationStats {
 
 export async function getAutomationFlows(orgId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_flows")
@@ -39,7 +68,10 @@ export async function getAutomationFlows(orgId: string) {
 
 export async function getAutomationFlow(flowId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_flows")
@@ -48,6 +80,15 @@ export async function getAutomationFlow(flowId: string) {
       .single();
 
     if (error) return { data: null, error: error.message };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", data.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     return { data, error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
@@ -65,10 +106,23 @@ export async function createAutomationFlow(params: {
   blocks?: any[];
 }) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    // Validate input
+    const validated = validate(createFlowSchema, params);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_flows")
@@ -107,7 +161,29 @@ export async function updateAutomationFlow(
   }
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    // Validate input
+    const validated = validate(UpdateFlowSchema, updates);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: flow } = await supabase
+      .from("automation_flows")
+      .select("organization_id")
+      .eq("id", flowId)
+      .maybeSingle();
+    if (!flow) return { data: null, error: "Flow not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", flow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_flows")
@@ -128,15 +204,26 @@ export async function updateAutomationFlow(
 
 export async function toggleFlowStatus(flowId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data: flow, error: fetchError } = await supabase
       .from("automation_flows")
-      .select("status")
+      .select("status, organization_id")
       .eq("id", flowId)
       .single();
 
     if (fetchError) return { data: null, error: fetchError.message };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", flow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const newStatus = flow.status === "active" ? "paused" : "active";
 
@@ -159,7 +246,25 @@ export async function toggleFlowStatus(flowId: string) {
 
 export async function archiveAutomationFlow(flowId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: flow } = await supabase
+      .from("automation_flows")
+      .select("organization_id")
+      .eq("id", flowId)
+      .maybeSingle();
+    if (!flow) return { data: null, error: "Flow not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", flow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_flows")
@@ -180,10 +285,11 @@ export async function archiveAutomationFlow(flowId: string) {
 
 export async function duplicateAutomationFlow(flowId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data: original, error: fetchError } = await supabase
       .from("automation_flows")
@@ -192,6 +298,14 @@ export async function duplicateAutomationFlow(flowId: string) {
       .single();
 
     if (fetchError) return { data: null, error: fetchError.message };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", original.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_flows")
@@ -220,7 +334,18 @@ export async function duplicateAutomationFlow(flowId: string) {
 
 export async function setAllFlowsStatus(orgId: string, pause: boolean) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const targetStatus = pause ? "paused" : "active";
 
@@ -242,7 +367,18 @@ export async function setAllFlowsStatus(orgId: string, pause: boolean) {
 
 export async function getAutomationLogs(orgId: string, limit = 50) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_logs")
@@ -270,7 +406,18 @@ export async function getAutomationStats(
   flowId?: string
 ): Promise<{ data: AutomationStats | null; error: string | null }> {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_automation_stats", {
       p_org_id: orgId,
@@ -293,7 +440,25 @@ export async function getAutomationStats(
 
 export async function toggleFlowStatusRpc(flowId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: flow } = await supabase
+      .from("automation_flows")
+      .select("organization_id")
+      .eq("id", flowId)
+      .maybeSingle();
+    if (!flow) return { data: null, error: "Flow not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", flow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("toggle_flow_status", {
       p_flow_id: flowId,
@@ -317,7 +482,18 @@ export async function toggleFlowStatusRpc(flowId: string) {
 
 export async function setAllFlowsStatusRpc(orgId: string, pause: boolean) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("set_all_flows_status", {
       p_org_id: orgId,
@@ -342,10 +518,11 @@ export async function setAllFlowsStatusRpc(orgId: string, pause: boolean) {
 
 export async function testAutomationFlow(flowId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data: flow, error: fetchError } = await supabase
       .from("automation_flows")
@@ -354,6 +531,14 @@ export async function testAutomationFlow(flowId: string) {
       .single();
 
     if (fetchError) return { data: null, error: fetchError.message };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", flow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // Create a test event based on the flow's trigger
     const eventType = flow.trigger_config?.event || "system.webhook_received";
@@ -401,7 +586,25 @@ export async function testAutomationFlow(flowId: string) {
 
 export async function publishAutomationFlow(flowId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: flow } = await supabase
+      .from("automation_flows")
+      .select("organization_id")
+      .eq("id", flowId)
+      .maybeSingle();
+    if (!flow) return { data: null, error: "Flow not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", flow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("publish_automation_flow", {
       p_flow_id: flowId,
@@ -428,7 +631,25 @@ export async function updateFlowConditions(
   conditions: Record<string, unknown> | null
 ) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: flow } = await supabase
+      .from("automation_flows")
+      .select("organization_id")
+      .eq("id", flowId)
+      .maybeSingle();
+    if (!flow) return { data: null, error: "Flow not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", flow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_flows")
@@ -448,10 +669,11 @@ export async function updateFlowConditions(
 
 export async function dryRunAutomationFlow(flowId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     // Fetch the flow to get trigger config
     const { data: flow, error: fetchErr } = await supabase
@@ -461,6 +683,14 @@ export async function dryRunAutomationFlow(flowId: string) {
       .single();
 
     if (fetchErr) return { data: null, error: fetchErr.message };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", flow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // Build a realistic mock payload based on the trigger
     const triggerEvent = flow.trigger_config?.event || "system.webhook_received";
@@ -559,7 +789,18 @@ export async function dryRunAutomationFlow(flowId: string) {
 
 export async function getAutomationRuns(orgId: string, flowId?: string, limit = 50) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     let query = supabase
       .from("automation_runs")
@@ -584,7 +825,10 @@ export async function getAutomationRuns(orgId: string, flowId?: string, limit = 
 
 export async function getAutomationRunTrace(runId: string) {
   try {
-    const supabase = (await createServerSupabaseClient()) as any;
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("automation_runs")
@@ -593,6 +837,15 @@ export async function getAutomationRunTrace(runId: string) {
       .single();
 
     if (error) return { data: null, error: error.message };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", data.workspace_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     return { data, error: null };
   } catch (err: any) {
     return { data: null, error: err.message };

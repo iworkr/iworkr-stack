@@ -7,7 +7,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function getChannels(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -28,7 +28,7 @@ export async function getChannels(orgId: string) {
 
 export async function getChannel(channelId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -54,7 +54,7 @@ export async function createChannel(orgId: string, params: {
   member_ids?: string[];
 }) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -92,7 +92,7 @@ export async function createChannel(orgId: string, params: {
 
 export async function getOrCreateDM(orgId: string, otherUserId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -126,7 +126,7 @@ export async function getOrCreateDM(orgId: string, otherUserId: string) {
 
 export async function getOrCreateJobChannel(orgId: string, jobId: string, jobTitle: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -178,7 +178,7 @@ export async function getOrCreateJobChannel(orgId: string, jobId: string, jobTit
 
 export async function getChannelMembers(channelId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -198,7 +198,7 @@ export async function getChannelMembers(channelId: string) {
 
 export async function getMessages(channelId: string, limit = 50, before?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -225,7 +225,7 @@ export async function getMessages(channelId: string, limit = 50, before?: string
 
 export async function sendMessage(channelId: string, content: string, type = "text", metadata?: any, replyToId?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -259,7 +259,7 @@ export async function sendMessage(channelId: string, content: string, type = "te
 
 export async function editMessage(messageId: string, content: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -280,7 +280,7 @@ export async function editMessage(messageId: string, content: string) {
 
 export async function deleteMessage(messageId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -299,7 +299,7 @@ export async function deleteMessage(messageId: string) {
 
 export async function toggleReaction(messageId: string, emoji: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -338,7 +338,7 @@ export async function toggleReaction(messageId: string, emoji: string) {
 
 export async function markChannelRead(channelId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: null };
 
@@ -358,7 +358,7 @@ export async function markChannelRead(channelId: string) {
 
 export async function votePoll(messageId: string, optionIndex: number) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 

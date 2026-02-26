@@ -45,6 +45,7 @@ class Workspace {
     this.unreadCount = 0,
     this.joinedAt,
     this.settings,
+    // Default brand color (emerald green); overridden by workspace settings
     this.brandColorHex = '#10B981',
   });
 
@@ -74,6 +75,7 @@ class Workspace {
           ? DateTime.tryParse(json['joined_at'] as String)
           : null,
       settings: org['settings'] as Map<String, dynamic>?,
+      // Default brand color (emerald green); overridden by workspace settings
       brandColorHex: org['brand_color_hex'] as String? ?? '#10B981',
     );
   }

@@ -65,7 +65,7 @@ export interface DocumentEvent {
 
 export async function getQuotes(orgId: string): Promise<{ data: Quote[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("quotes")
     .select("*")
     .eq("organization_id", orgId)
@@ -77,7 +77,7 @@ export async function getQuotes(orgId: string): Promise<{ data: Quote[]; error?:
 
 export async function getQuote(quoteId: string): Promise<{ data: Quote | null; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data: quote, error } = await (supabase as any)
+  const { data: quote, error } = await supabase
     .from("quotes")
     .select("*")
     .eq("id", quoteId)
@@ -85,7 +85,7 @@ export async function getQuote(quoteId: string): Promise<{ data: Quote | null; e
 
   if (error) return { data: null, error: error.message };
 
-  const { data: items } = await (supabase as any)
+  const { data: items } = await supabase
     .from("quote_line_items")
     .select("*")
     .eq("quote_id", quoteId)
@@ -117,7 +117,7 @@ export async function createQuote(params: {
   const tax = subtotal * (taxRate / 100);
   const total = subtotal + tax;
 
-  const { data: quote, error } = await (supabase as any)
+  const { data: quote, error } = await supabase
     .from("quotes")
     .insert({
       ...quoteData,
@@ -134,7 +134,7 @@ export async function createQuote(params: {
   if (error) return { data: null, error: error.message };
 
   if (line_items.length > 0) {
-    await (supabase as any).from("quote_line_items").insert(
+    await supabase.from("quote_line_items").insert(
       line_items.map((li, i) => ({
         quote_id: quote.id,
         description: li.description,
@@ -156,7 +156,7 @@ export async function updateQuote(
   updates: Partial<Omit<Quote, "id" | "display_id" | "secure_token" | "created_at" | "updated_at">>
 ): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("quotes")
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("id", quoteId);
@@ -171,7 +171,7 @@ export async function addQuoteLineItem(
   item: { description: string; quantity: number; unit_price: number }
 ): Promise<{ data: QuoteLineItem | null; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("quote_line_items")
     .insert({ quote_id: quoteId, ...item })
     .select()
@@ -184,7 +184,7 @@ export async function addQuoteLineItem(
 
 export async function removeQuoteLineItem(lineItemId: string, quoteId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("quote_line_items")
     .delete()
     .eq("id", lineItemId);
@@ -196,12 +196,12 @@ export async function removeQuoteLineItem(lineItemId: string, quoteId: string): 
 
 async function recalcQuoteTotals(quoteId: string) {
   const supabase = await createServerSupabaseClient();
-  const { data: items } = await (supabase as any)
+  const { data: items } = await supabase
     .from("quote_line_items")
     .select("quantity, unit_price")
     .eq("quote_id", quoteId);
 
-  const { data: quote } = await (supabase as any)
+  const { data: quote } = await supabase
     .from("quotes")
     .select("tax_rate")
     .eq("id", quoteId)
@@ -211,7 +211,7 @@ async function recalcQuoteTotals(quoteId: string) {
   const taxRate = quote?.tax_rate || 10;
   const tax = subtotal * (taxRate / 100);
 
-  await (supabase as any)
+  await supabase
     .from("quotes")
     .update({ subtotal, tax, total: subtotal + tax, updated_at: new Date().toISOString() })
     .eq("id", quoteId);
@@ -221,7 +221,7 @@ async function recalcQuoteTotals(quoteId: string) {
 
 export async function sendQuote(quoteId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data: quote } = await (supabase as any)
+  const { data: quote } = await supabase
     .from("quotes")
     .select("*, organization:organizations(name, logo_url)")
     .eq("id", quoteId)
@@ -230,7 +230,8 @@ export async function sendQuote(quoteId: string): Promise<{ error?: string }> {
   if (!quote) return { error: "Quote not found" };
   if (!quote.client_email) return { error: "No client email set" };
 
-  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://iworkr-stack.vercel.app"}/portal/view/${quote.secure_token}`;
+  if (!process.env.NEXT_PUBLIC_APP_URL) console.warn("[quotes] NEXT_PUBLIC_APP_URL is not set");
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/portal/view/${quote.secure_token}`;
 
   await sendEmail({
     to: quote.client_email,
@@ -256,7 +257,7 @@ export async function sendQuote(quoteId: string): Promise<{ error?: string }> {
     tags: [{ name: "type", value: "quote" }, { name: "quote_id", value: quoteId }],
   });
 
-  await (supabase as any)
+  await supabase
     .from("quotes")
     .update({ status: "sent", updated_at: new Date().toISOString() })
     .eq("id", quoteId);
@@ -280,14 +281,14 @@ export async function getDocumentByToken(token: string): Promise<{
   const supabase = await createServerSupabaseClient();
 
   // Try quotes first
-  const { data: quote } = await (supabase as any)
+  const { data: quote } = await supabase
     .from("quotes")
     .select("*, organization:organizations(name, logo_url)")
     .eq("secure_token", token)
     .maybeSingle();
 
   if (quote) {
-    const { data: items } = await (supabase as any)
+    const { data: items } = await supabase
       .from("quote_line_items")
       .select("*")
       .eq("quote_id", quote.id)
@@ -295,7 +296,7 @@ export async function getDocumentByToken(token: string): Promise<{
 
     // Log view event
     if (quote.status === "sent") {
-      await (supabase as any).from("quotes").update({ status: "viewed" }).eq("id", quote.id);
+      await supabase.from("quotes").update({ status: "viewed" }).eq("id", quote.id);
     }
     await logDocumentEvent(quote.organization_id, "quote", quote.id, "viewed", "Client viewed quote");
 
@@ -309,14 +310,14 @@ export async function getDocumentByToken(token: string): Promise<{
   }
 
   // Try invoices
-  const { data: invoice } = await (supabase as any)
+  const { data: invoice } = await supabase
     .from("invoices")
     .select("*, organization:organizations(name, logo_url)")
     .eq("secure_token", token)
     .maybeSingle();
 
   if (invoice) {
-    const { data: items } = await (supabase as any)
+    const { data: items } = await supabase
       .from("invoice_line_items")
       .select("*")
       .eq("invoice_id", invoice.id)
@@ -339,7 +340,7 @@ export async function getDocumentByToken(token: string): Promise<{
 export async function approveQuote(token: string, signatureDataUrl: string, signerName: string): Promise<{ invoiceToken?: string; error?: string }> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: quote } = await (supabase as any)
+  const { data: quote } = await supabase
     .from("quotes")
     .select("*")
     .eq("secure_token", token)
@@ -351,7 +352,7 @@ export async function approveQuote(token: string, signatureDataUrl: string, sign
   // Update quote to accepted — the DB trigger (trg_convert_accepted_quote)
   // automatically creates both a job AND a draft invoice with copied line items,
   // and sets job_id / invoice_id on the quote row.
-  const { data: updated, error: updateErr } = await (supabase as any).from("quotes").update({
+  const { data: updated, error: updateErr } = await supabase.from("quotes").update({
     status: "accepted",
     signature_url: signatureDataUrl,
     signed_at: new Date().toISOString(),
@@ -366,7 +367,7 @@ export async function approveQuote(token: string, signatureDataUrl: string, sign
 
   // Read back the invoice to get its secure_token for the portal redirect
   if (updated?.invoice_id) {
-    const { data: invoice } = await (supabase as any)
+    const { data: invoice } = await supabase
       .from("invoices")
       .select("secure_token")
       .eq("id", updated.invoice_id)
@@ -381,7 +382,7 @@ export async function approveQuote(token: string, signatureDataUrl: string, sign
 
 export async function rejectQuote(token: string, reason: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data: quote } = await (supabase as any)
+  const { data: quote } = await supabase
     .from("quotes")
     .select("id, organization_id")
     .eq("secure_token", token)
@@ -389,7 +390,7 @@ export async function rejectQuote(token: string, reason: string): Promise<{ erro
 
   if (!quote) return { error: "Quote not found" };
 
-  await (supabase as any).from("quotes").update({ status: "rejected", updated_at: new Date().toISOString() }).eq("id", quote.id);
+  await supabase.from("quotes").update({ status: "rejected", updated_at: new Date().toISOString() }).eq("id", quote.id);
   await logDocumentEvent(quote.organization_id, "quote", quote.id, "rejected", `Declined: ${reason}`);
   return {};
 }
@@ -398,7 +399,7 @@ export async function rejectQuote(token: string, reason: string): Promise<{ erro
 
 export async function getDocumentEvents(docType: "quote" | "invoice", docId: string): Promise<{ data: DocumentEvent[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("document_events")
     .select("*")
     .eq("document_type", docType)
@@ -419,7 +420,7 @@ async function logDocumentEvent(
   recipientEmail?: string | null,
 ) {
   const supabase = await createServerSupabaseClient();
-  await (supabase as any).from("document_events").insert({
+  await supabase.from("document_events").insert({
     organization_id: orgId,
     document_type: docType,
     document_id: docId,

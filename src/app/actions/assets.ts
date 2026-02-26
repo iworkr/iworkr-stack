@@ -145,7 +145,7 @@ export interface UpdateInventoryItemParams {
  */
 export async function getAssets(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: assets, error } = await supabase
       .from("assets")
@@ -180,7 +180,7 @@ export async function getAssets(orgId: string) {
  */
 export async function createAsset(params: CreateAssetParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -251,7 +251,7 @@ export async function createAsset(params: CreateAssetParams) {
  */
 export async function updateAsset(assetId: string, updates: UpdateAssetParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -350,7 +350,7 @@ export async function updateAsset(assetId: string, updates: UpdateAssetParams) {
  */
 export async function getInventoryItems(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: items, error } = await supabase
       .from("inventory_items")
@@ -373,7 +373,7 @@ export async function getInventoryItems(orgId: string) {
  */
 export async function updateInventoryItem(itemId: string, updates: UpdateInventoryItemParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -461,7 +461,7 @@ export async function updateInventoryItem(itemId: string, updates: UpdateInvento
  */
 export async function createInventoryItem(params: CreateInventoryItemParams) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -535,7 +535,7 @@ export async function createInventoryItem(params: CreateInventoryItemParams) {
  */
 export async function getAssetAudits(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: audits, error } = await supabase
       .from("asset_audits")
@@ -573,7 +573,7 @@ export interface AssetsOverview {
  */
 export async function getAssetsOverview(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("get_assets_overview", {
       p_org_id: orgId,
@@ -599,7 +599,7 @@ export async function toggleAssetCustody(
   notes?: string
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
@@ -637,7 +637,7 @@ export async function consumeInventory(
   notes?: string
 ) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
@@ -692,7 +692,7 @@ export async function consumeInventory(
  */
 export async function scanLookup(orgId: string, barcode: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     // Check assets first
     const { data: asset } = await supabase
@@ -730,7 +730,7 @@ export async function scanLookup(orgId: string, barcode: string) {
  */
 export async function getEntityAudits(entityId: string, entityType: "asset" | "inventory") {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
     const column = entityType === "asset" ? "asset_id" : "inventory_id";
 
     const { data: audits, error } = await supabase
@@ -752,7 +752,7 @@ export async function getEntityAudits(entityId: string, entityType: "asset" | "i
  */
 export async function logAssetService(assetId: string, notes?: string) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };

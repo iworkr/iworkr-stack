@@ -14,6 +14,7 @@ import { useMessengerStore, type Channel } from "@/lib/stores/messenger-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { useTeamStore } from "@/lib/team-store";
 import { NewMessageModal } from "./new-message-modal";
+import { useToastStore } from "@/components/app/action-toast";
 
 interface MessengerSidebarProps {
   userId: string;
@@ -31,6 +32,7 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
     (s.items ?? []).filter((i) => !i.read && !i.archived).length
   );
   const members = useTeamStore((s) => s.members) ?? [];
+  const { addToast } = useToastStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -145,7 +147,7 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
           />
           <SidebarItem
             active={false}
-            onClick={() => {}}
+            onClick={() => { addToast("Mentions coming soon"); }}
             icon={<AtSign size={15} strokeWidth={1.5} />}
             label="Mentions"
           />
@@ -212,7 +214,7 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
                 <SidebarItem
                   key={m.id}
                   active={false}
-                  onClick={() => {}}
+                  onClick={() => { addToast("Direct messages coming soon"); }}
                   icon={
                     <DMAvatar
                       name={m.name || "??"}

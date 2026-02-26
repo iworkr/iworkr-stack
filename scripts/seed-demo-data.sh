@@ -7,9 +7,9 @@
 
 set -euo pipefail
 
-SUPABASE_TOKEN="sbp_24aca6cd0b786b769a4256d395928f026a4d71d4"
-PROJECT_ID="olqjuadvseoxpfjzlghb"
-API_URL="https://api.supabase.com/v1/projects/${PROJECT_ID}/database/query"
+SUPABASE_TOKEN="${SUPABASE_TOKEN:?Error: SUPABASE_TOKEN environment variable is required}"
+SUPABASE_PROJECT="${SUPABASE_PROJECT:?Error: SUPABASE_PROJECT environment variable is required}"
+API_URL="https://api.supabase.com/v1/projects/${SUPABASE_PROJECT}/database/query"
 
 echo "Running seed data on Supabase..."
 

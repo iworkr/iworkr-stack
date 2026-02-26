@@ -4,7 +4,9 @@ import type { ReactElement } from "react";
 let _resend: Resend | null = null;
 function getResend(): Resend {
   if (!_resend) {
-    _resend = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) throw new Error("RESEND_API_KEY environment variable is required");
+    _resend = new Resend(resendApiKey);
   }
   return _resend;
 }

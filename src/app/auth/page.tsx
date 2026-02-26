@@ -24,7 +24,8 @@ function AuthPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setAuth } = useOnboardingStore();
-  const [mode, setMode] = useState<AuthMode>("choice");
+  const urlMode = searchParams.get("mode");
+  const [mode, setMode] = useState<AuthMode>(urlMode === "signup" ? "email" : "choice");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -191,7 +192,7 @@ function AuthPageInner() {
                 </motion.div>
                 <div className="text-center">
                   <h1 className="text-xl font-medium tracking-tight text-zinc-100">
-                    Sign in to your workspace
+                    {urlMode === "signup" ? "Create your workspace" : "Sign in to your workspace"}
                   </h1>
                   <p className="mt-1.5 text-[13px] text-zinc-600">
                     The operating system for service work.
@@ -262,11 +263,11 @@ function AuthPageInner() {
               {/* Terms */}
               <p className="text-center text-[11px] text-zinc-600">
                 By continuing, you agree to our{" "}
-                <a href="#" className="text-zinc-500 underline hover:text-zinc-400">
+                <a href="https://iworkrapp.com/terms" className="text-zinc-500 underline hover:text-zinc-400">
                   Terms of Service
                 </a>{" "}
                 and{" "}
-                <a href="#" className="text-zinc-500 underline hover:text-zinc-400">
+                <a href="https://iworkrapp.com/privacy" className="text-zinc-500 underline hover:text-zinc-400">
                   Privacy Policy
                 </a>
                 .
