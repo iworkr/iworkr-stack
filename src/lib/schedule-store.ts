@@ -253,6 +253,13 @@ export const useScheduleStore = create<ScheduleState>()(
   moveBlock: (blockId, newStartHour, newTechId) => {
     const block = get().blocks.find((b) => b.id === blockId);
     if (!block) return;
+
+    // Guard: temp blocks haven't been persisted to DB yet — wait for assignment to finish
+    if (blockId.startsWith("temp-")) {
+      showToast("This block is still being assigned — try again in a moment.", "error");
+      return;
+    }
+
     const snappedHour = Math.round(newStartHour * 4) / 4;
 
     /* ── Step 1: onMutate — Clone previous state ───────── */
@@ -335,6 +342,10 @@ export const useScheduleStore = create<ScheduleState>()(
   resizeBlock: (blockId, newDuration) => {
     const block = get().blocks.find((b) => b.id === blockId);
     if (!block) return;
+    if (blockId.startsWith("temp-")) {
+      showToast("This block is still being assigned — try again in a moment.", "error");
+      return;
+    }
     const snapped = Math.max(0.25, Math.round(newDuration * 4) / 4);
 
     /* ── Clone previous state for rollback ──────────────── */
@@ -505,11 +516,24 @@ export const useScheduleStore = create<ScheduleState>()(
       return;
     }
 
+    // Replace temp block with real server ID if returned
+    if (result.data?.id) {
+      set((s) => ({
+        blocks: s.blocks.map((b) =>
+          b.id === tempBlock.id ? { ...b, id: result.data.id } : b
+        ),
+      }));
+    }
+
     showToast(`"${job.title}" assigned to schedule`, "success");
     get().refresh();
   },
 
   unscheduleBlock: (blockId: string) => {
+    if (blockId.startsWith("temp-")) {
+      showToast("This block is still being assigned — try again in a moment.", "error");
+      return;
+    }
     const block = get().blocks.find((b) => b.id === blockId);
     // Optimistic: remove block from schedule
     set((s) => ({
