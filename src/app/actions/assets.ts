@@ -5,6 +5,90 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { Events, dispatch } from "@/lib/automation";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const assetCategorySchema = z.enum(["vehicle", "tool", "equipment", "other"]);
+const assetStatusSchema = z.enum(["available", "assigned", "maintenance", "retired"]);
+
+const CreateAssetSchema = z.object({
+  organization_id: z.string().uuid(),
+  name: z.string().min(1, "Name is required").max(200),
+  category: assetCategorySchema,
+  status: assetStatusSchema.optional(),
+  assigned_to: z.string().uuid().optional().nullable(),
+  serial_number: z.string().max(200).optional().nullable(),
+  barcode: z.string().max(200).optional().nullable(),
+  make: z.string().max(100).optional().nullable(),
+  model: z.string().max(100).optional().nullable(),
+  year: z.number().min(1900).max(2100).optional().nullable(),
+  location: z.string().max(500).optional().nullable(),
+  location_lat: z.number().min(-90).max(90).optional().nullable(),
+  location_lng: z.number().min(-180).max(180).optional().nullable(),
+  purchase_date: z.string().optional().nullable(),
+  purchase_cost: z.number().min(0).max(99999999).optional().nullable(),
+  warranty_expiry: z.string().optional().nullable(),
+  last_service: z.string().optional().nullable(),
+  next_service: z.string().optional().nullable(),
+  notes: z.string().max(5000).optional().nullable(),
+  image_url: z.string().url().max(2000).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+  ingestion_method: z.enum(["manual", "scan"]).optional(),
+});
+
+const UpdateAssetSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  category: assetCategorySchema.optional(),
+  status: assetStatusSchema.optional(),
+  assigned_to: z.string().uuid().optional().nullable(),
+  serial_number: z.string().max(200).optional().nullable(),
+  barcode: z.string().max(200).optional().nullable(),
+  make: z.string().max(100).optional().nullable(),
+  model: z.string().max(100).optional().nullable(),
+  year: z.number().min(1900).max(2100).optional().nullable(),
+  location: z.string().max(500).optional().nullable(),
+  location_lat: z.number().min(-90).max(90).optional().nullable(),
+  location_lng: z.number().min(-180).max(180).optional().nullable(),
+  purchase_date: z.string().optional().nullable(),
+  purchase_cost: z.number().min(0).max(99999999).optional().nullable(),
+  warranty_expiry: z.string().optional().nullable(),
+  last_service: z.string().optional().nullable(),
+  next_service: z.string().optional().nullable(),
+  notes: z.string().max(5000).optional().nullable(),
+  image_url: z.string().url().max(2000).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+});
+
+const CreateInventoryItemSchema = z.object({
+  organization_id: z.string().uuid(),
+  name: z.string().min(1, "Name is required").max(200),
+  sku: z.string().max(100).optional().nullable(),
+  barcode: z.string().max(200).optional().nullable(),
+  category: z.string().max(100).optional().nullable(),
+  quantity: z.number().min(0).max(999999).optional(),
+  min_quantity: z.number().min(0).max(999999).optional(),
+  unit_cost: z.number().min(0).max(99999999).optional().nullable(),
+  location: z.string().max(500).optional().nullable(),
+  bin_location: z.string().max(200).optional().nullable(),
+  supplier: z.string().max(200).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+  ingestion_method: z.enum(["manual", "scan"]).optional(),
+});
+
+const UpdateInventoryItemSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  sku: z.string().max(100).optional().nullable(),
+  barcode: z.string().max(200).optional().nullable(),
+  category: z.string().max(100).optional().nullable(),
+  quantity: z.number().min(0).max(999999).optional(),
+  min_quantity: z.number().min(0).max(999999).optional(),
+  unit_cost: z.number().min(0).max(99999999).optional().nullable(),
+  location: z.string().max(500).optional().nullable(),
+  bin_location: z.string().max(200).optional().nullable(),
+  supplier: z.string().max(200).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+});
 
 export interface Asset {
   id: string;
@@ -180,6 +264,12 @@ export async function getAssets(orgId: string) {
  */
 export async function createAsset(params: CreateAssetParams) {
   try {
+    // Validate input
+    const parsed = CreateAssetSchema.safeParse(params);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -251,6 +341,12 @@ export async function createAsset(params: CreateAssetParams) {
  */
 export async function updateAsset(assetId: string, updates: UpdateAssetParams) {
   try {
+    // Validate input
+    const parsed = UpdateAssetSchema.safeParse(updates);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -373,6 +469,12 @@ export async function getInventoryItems(orgId: string) {
  */
 export async function updateInventoryItem(itemId: string, updates: UpdateInventoryItemParams) {
   try {
+    // Validate input
+    const parsed = UpdateInventoryItemSchema.safeParse(updates);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -461,6 +563,12 @@ export async function updateInventoryItem(itemId: string, updates: UpdateInvento
  */
 export async function createInventoryItem(params: CreateInventoryItemParams) {
   try {
+    // Validate input
+    const parsed = CreateInventoryItemSchema.safeParse(params);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
 
     const {

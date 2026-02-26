@@ -2,6 +2,30 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────────── */
+
+const CreateChannelSchema = z.object({
+  type: z.string().min(1).max(50),
+  name: z.string().max(200).optional(),
+  description: z.string().max(2000).optional(),
+  context_id: z.string().uuid().optional(),
+  context_type: z.string().max(50).optional(),
+  member_ids: z.array(z.string().uuid()).optional(),
+});
+
+const SendMessageSchema = z.object({
+  channelId: z.string().uuid(),
+  content: z.string().min(1, "Message cannot be empty").max(10000),
+  type: z.string().max(50).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  replyToId: z.string().uuid().optional(),
+});
+
+const EditMessageSchema = z.object({
+  content: z.string().min(1, "Message cannot be empty").max(10000),
+});
 
 /* ── Channels ──────────────────────────────────────────── */
 
@@ -54,6 +78,12 @@ export async function createChannel(orgId: string, params: {
   member_ids?: string[];
 }) {
   try {
+    // Validate input
+    const parsed = CreateChannelSchema.safeParse(params);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -225,6 +255,12 @@ export async function getMessages(channelId: string, limit = 50, before?: string
 
 export async function sendMessage(channelId: string, content: string, type = "text", metadata?: any, replyToId?: string) {
   try {
+    // Validate input
+    const parsed = SendMessageSchema.safeParse({ channelId, content, type, metadata, replyToId });
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };

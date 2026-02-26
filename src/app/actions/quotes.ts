@@ -5,6 +5,43 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sendEmail } from "@/lib/email/send";
 import { createElement } from "react";
+import { z } from "zod";
+import { validate } from "@/lib/validation";
+
+/* ── Schemas ──────────────────────────────────────────── */
+
+const CreateQuoteSchema = z.object({
+  organization_id: z.string().uuid(),
+  client_id: z.string().uuid().optional().nullable(),
+  job_id: z.string().uuid().optional().nullable(),
+  client_name: z.string().max(200).optional().nullable(),
+  client_email: z.string().email().max(255).optional().nullable().or(z.literal("")),
+  client_address: z.string().max(500).optional().nullable(),
+  title: z.string().max(200).optional().nullable(),
+  valid_until: z.string().optional().nullable(),
+  tax_rate: z.number().min(0).max(100).optional(),
+  terms: z.string().max(5000).optional(),
+  notes: z.string().max(5000).optional().nullable(),
+  line_items: z.array(z.object({
+    description: z.string().min(1).max(500),
+    quantity: z.number().min(0.01).max(99999),
+    unit_price: z.number().min(0).max(99999999),
+  })).min(1, "At least one line item is required"),
+});
+
+const UpdateQuoteSchema = z.object({
+  client_id: z.string().uuid().optional().nullable(),
+  job_id: z.string().uuid().optional().nullable(),
+  client_name: z.string().max(200).optional().nullable(),
+  client_email: z.string().email().max(255).optional().nullable().or(z.literal("")),
+  client_address: z.string().max(500).optional().nullable(),
+  title: z.string().max(200).optional().nullable(),
+  status: z.enum(["draft", "sent", "viewed", "accepted", "rejected", "expired"]).optional(),
+  valid_until: z.string().optional().nullable(),
+  tax_rate: z.number().min(0).max(100).optional(),
+  terms: z.string().max(5000).optional().nullable(),
+  notes: z.string().max(5000).optional().nullable(),
+}).passthrough();
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -108,6 +145,10 @@ export async function createQuote(params: {
   notes?: string | null;
   line_items: Array<{ description: string; quantity: number; unit_price: number }>;
 }): Promise<{ data: Quote | null; error?: string }> {
+  // Validate input
+  const validated = validate(CreateQuoteSchema, params);
+  if (validated.error) return { data: null, error: validated.error };
+
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -155,6 +196,10 @@ export async function updateQuote(
   quoteId: string,
   updates: Partial<Omit<Quote, "id" | "display_id" | "secure_token" | "created_at" | "updated_at">>
 ): Promise<{ error?: string }> {
+  // Validate input
+  const validated = validate(UpdateQuoteSchema, updates);
+  if (validated.error) return { error: validated.error };
+
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase
     .from("quotes")

@@ -3,6 +3,45 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────────── */
+
+const UpdateOrganizationSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  slug: z.string().min(1).max(100).optional(),
+  logo_url: z.string().url().max(2000).optional().nullable(),
+  trade: z.string().max(100).optional().nullable(),
+  brand_color_hex: z.string().max(10).optional().nullable(),
+}).strict();
+
+const UpdateProfileSchema = z.object({
+  full_name: z.string().min(1, "Name is required").max(100).optional(),
+  phone: z.string().max(30).optional().nullable(),
+  avatar_url: z.string().url().max(2000).optional().nullable(),
+  timezone: z.string().max(50).optional(),
+  email: z.string().email("Invalid email").max(255).optional(),
+}).strict();
+
+const UpdatePreferencesSchema = z.object({
+  theme: z.enum(["light", "dark", "system"]).optional(),
+  home_view: z.string().max(50).optional(),
+  display_names: z.enum(["full", "first", "initials"]).optional(),
+  compact_mode: z.boolean().optional(),
+  sidebar_collapsed: z.boolean().optional(),
+}).passthrough();
+
+const UpdateNotificationPreferencesSchema = z.object({
+  email_enabled: z.boolean().optional(),
+  push_enabled: z.boolean().optional(),
+  sms_enabled: z.boolean().optional(),
+  job_assigned: z.boolean().optional(),
+  quote_approved: z.boolean().optional(),
+  invoice_paid: z.boolean().optional(),
+  mention: z.boolean().optional(),
+  schedule_conflict: z.boolean().optional(),
+  form_signed: z.boolean().optional(),
+}).passthrough();
 
 /* ── Organization Settings ─────────────────────────────── */
 
@@ -33,6 +72,12 @@ export async function getOrganization(orgId: string) {
  */
 export async function updateOrganization(orgId: string, updates: Record<string, any>) {
   try {
+    // Validate input
+    const parsed = UpdateOrganizationSchema.safeParse(updates);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -119,6 +164,12 @@ export async function getProfile(userId: string) {
  */
 export async function updateProfile(userId: string, updates: Record<string, any>) {
   try {
+    // Validate input
+    const parsed = UpdateProfileSchema.safeParse(updates);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -144,6 +195,12 @@ export async function updateProfile(userId: string, updates: Record<string, any>
  */
 export async function updateProfilePreferences(userId: string, prefsUpdate: Record<string, any>) {
   try {
+    // Validate input
+    const parsed = UpdatePreferencesSchema.safeParse(prefsUpdate);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
@@ -181,6 +238,12 @@ export async function updateProfilePreferences(userId: string, prefsUpdate: Reco
  */
 export async function updateNotificationPreferences(userId: string, prefsUpdate: Record<string, any>) {
   try {
+    // Validate input
+    const parsed = UpdateNotificationPreferencesSchema.safeParse(prefsUpdate);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };

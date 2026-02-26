@@ -3,6 +3,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sendJobAssignedEmail, sendInviteEmail } from "@/lib/email";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const SendJobAssignmentSchema = z.object({
+  technicianEmail: z.string().email("Invalid technician email").max(255),
+  technicianName: z.string().min(1).max(200),
+  jobTitle: z.string().min(1).max(200),
+  clientName: z.string().max(200),
+  clientAddress: z.string().max(500),
+  scheduledDate: z.string().min(1),
+  scheduledTime: z.string().min(1),
+  notes: z.string().max(2000).optional(),
+  jobId: z.string().uuid(),
+});
+
+const SendTeamInviteSchema = z.object({
+  email: z.string().email("Invalid email address").max(255),
+  orgId: z.string().uuid(),
+  role: z.string().min(1).max(50),
+});
 
 export async function sendJobAssignment(params: {
   technicianEmail: string;
@@ -15,6 +36,12 @@ export async function sendJobAssignment(params: {
   notes?: string;
   jobId: string;
 }) {
+  // Validate input
+  const parsed = SendJobAssignmentSchema.safeParse(params);
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -51,6 +78,12 @@ export async function sendTeamInviteEmail(params: {
   orgId: string;
   role: string;
 }) {
+  // Validate input
+  const parsed = SendTeamInviteSchema.safeParse(params);
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },

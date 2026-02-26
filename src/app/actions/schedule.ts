@@ -4,6 +4,25 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+import { validate, createScheduleBlockSchema } from "@/lib/validation";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const UpdateScheduleBlockSchema = z.object({
+  job_id: z.string().uuid().optional().nullable(),
+  technician_id: z.string().uuid().optional(),
+  title: z.string().min(1).max(200).optional(),
+  client_name: z.string().max(200).optional().nullable(),
+  location: z.string().max(500).optional().nullable(),
+  start_time: z.string().optional(),
+  end_time: z.string().optional(),
+  status: z.enum(["scheduled", "en_route", "in_progress", "complete", "cancelled"]).optional(),
+  travel_minutes: z.number().min(0).max(480).optional().nullable(),
+  is_conflict: z.boolean().optional(),
+  notes: z.string().max(2000).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+});
 
 export interface ScheduleBlock {
   id: string;
@@ -156,6 +175,10 @@ export async function getScheduleBlocks(orgId: string, date: string) {
  */
 export async function createScheduleBlock(params: CreateScheduleBlockParams) {
   try {
+    // Validate input
+    const validated = validate(createScheduleBlockSchema, params);
+    if (validated.error) return { data: null, error: validated.error };
+
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -253,6 +276,10 @@ export async function createScheduleBlock(params: CreateScheduleBlockParams) {
  */
 export async function updateScheduleBlock(blockId: string, updates: UpdateScheduleBlockParams) {
   try {
+    // Validate input
+    const validated = validate(UpdateScheduleBlockSchema, updates);
+    if (validated.error) return { data: null, error: validated.error };
+
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -814,6 +841,19 @@ export async function getScheduleEvents(orgId: string, date: string) {
  */
 export async function createScheduleEvent(params: CreateScheduleEventParams) {
   try {
+    // Validate input
+    const CreateScheduleEventSchema = z.object({
+      organization_id: z.string().uuid(),
+      user_id: z.string().uuid(),
+      type: z.enum(["break", "meeting", "personal", "unavailable"]),
+      title: z.string().min(1).max(200),
+      start_time: z.string().min(1),
+      end_time: z.string().min(1),
+      notes: z.string().max(2000).optional().nullable(),
+    });
+    const validated = validate(CreateScheduleEventSchema, params);
+    if (validated.error) return { data: null, error: validated.error };
+
     const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();

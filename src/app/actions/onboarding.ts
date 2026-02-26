@@ -3,6 +3,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { sendWelcomeEmail, sendInviteEmail } from "@/lib/email";
+import { z } from "zod";
+
+/* ── Schemas ──────────────────────────────────────── */
+
+const CreateOrganizationSchema = z.object({
+  name: z.string().min(1, "Organization name is required").max(100),
+  trade: z.string().max(100).optional().nullable(),
+});
+
+const UpdateTradeSchema = z.string().min(1, "Trade is required").max(100);
 
 function slugify(text: string): string {
   return text
@@ -17,6 +27,12 @@ export async function createOrganization(data: {
   name: string;
   trade: string | null;
 }) {
+  // Validate input
+  const parsed = CreateOrganizationSchema.safeParse(data);
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -51,6 +67,12 @@ export async function createOrganization(data: {
 }
 
 export async function updateOrganizationTrade(orgId: string, trade: string) {
+  // Validate input
+  const parsed = UpdateTradeSchema.safeParse(trade);
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map(e => e.message).join("; ") };
+  }
+
   const supabase = await createServerSupabaseClient();
 
   const {
