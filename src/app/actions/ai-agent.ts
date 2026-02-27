@@ -75,7 +75,7 @@ export async function getAgentConfig(orgId: string): Promise<{ data: AIAgentConf
     .maybeSingle();
 
   if (error) return { data: null, error: error.message };
-  return { data };
+  return { data: data as AIAgentConfig | null };
 }
 
 export async function upsertAgentConfig(
@@ -152,7 +152,7 @@ export async function getAgentCalls(
     .limit(limit);
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as AIAgentCall[] };
 }
 
 export async function getCallTranscript(callId: string): Promise<{ transcript: string | null; error?: string }> {
@@ -183,5 +183,5 @@ export async function getCallTranscript(callId: string): Promise<{ transcript: s
     .maybeSingle();
 
   if (error) return { transcript: null, error: error.message };
-  return { transcript: data?.transcript };
+  return { transcript: data?.transcript ?? null };
 }

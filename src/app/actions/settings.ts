@@ -116,7 +116,7 @@ export async function updateOrgSettings(orgId: string, settingsUpdate: Record<st
 
     if (fetchError) return { data: null, error: fetchError.message };
 
-    const currentSettings = org?.settings || {};
+    const currentSettings = (org?.settings || {}) as Record<string, unknown>;
     const mergedSettings = { ...currentSettings, ...settingsUpdate };
 
     const { data, error } = await supabase
@@ -215,7 +215,7 @@ export async function updateProfilePreferences(userId: string, prefsUpdate: Reco
 
     if (fetchError) return { data: null, error: fetchError.message };
 
-    const current = profile?.preferences || {};
+    const current = (profile?.preferences || {}) as Record<string, unknown>;
     const merged = { ...current, ...prefsUpdate };
 
     const { data, error } = await supabase
@@ -257,7 +257,7 @@ export async function updateNotificationPreferences(userId: string, prefsUpdate:
 
     if (fetchError) return { data: null, error: fetchError.message };
 
-    const current = profile?.notification_preferences || {};
+    const current = (profile?.notification_preferences || {}) as Record<string, unknown>;
     const merged = { ...current, ...prefsUpdate };
 
     const { data, error } = await supabase

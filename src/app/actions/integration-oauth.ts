@@ -381,7 +381,7 @@ export async function updateProviderSettings(
     .maybeSingle();
   if (!membership) return { error: "Unauthorized" };
 
-  const merged = { ...(current?.settings || {}), ...settings };
+  const merged = { ...((current?.settings || {}) as Record<string, unknown>), ...settings };
 
   const { error } = await supabase
     .from("integrations")

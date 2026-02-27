@@ -191,14 +191,15 @@ export async function getJob(jobId: string) {
       return { data: null, error: error.message };
     }
 
+    const rawJob = job as Record<string, unknown>;
     const formattedJob = {
       ...job,
-      client_name: job.clients?.name || null,
-      assignee_name: job.profiles?.full_name || null,
-      job_subtasks: (job.job_subtasks || []).sort((a: JobSubtask, b: JobSubtask) => 
+      client_name: (rawJob.clients as any)?.name || null,
+      assignee_name: (rawJob.profiles as any)?.full_name || null,
+      job_subtasks: ((job.job_subtasks || []) as JobSubtask[]).sort((a: JobSubtask, b: JobSubtask) =>
         a.sort_order - b.sort_order
       ),
-      job_activity: (job.job_activity || []).sort((a: JobActivity, b: JobActivity) => 
+      job_activity: ((job.job_activity || []) as JobActivity[]).sort((a: JobActivity, b: JobActivity) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ),
       clients: undefined,
@@ -242,16 +243,16 @@ export async function createJob(params: CreateJobParams) {
       p_description: params.description || null,
       p_status: params.status || "backlog",
       p_priority: params.priority || "none",
-      p_client_id: params.client_id || null,
-      p_assignee_id: params.assignee_id || null,
-      p_due_date: params.due_date || null,
-      p_location: params.location || null,
-      p_location_lat: params.location_lat || null,
-      p_location_lng: params.location_lng || null,
+      p_client_id: params.client_id ?? undefined,
+      p_assignee_id: params.assignee_id ?? undefined,
+      p_due_date: params.due_date ?? undefined,
+      p_location: params.location ?? undefined,
+      p_location_lat: params.location_lat ?? undefined,
+      p_location_lng: params.location_lng ?? undefined,
       p_labels: params.labels || [],
       p_revenue: params.revenue || 0,
       p_line_items: JSON.stringify(lineItems),
-    });
+    } as any);
 
     if (rpcError) {
       logger.error("RPC create_job_with_estimate failed", "jobs", undefined, { error: rpcError.message });
@@ -260,9 +261,10 @@ export async function createJob(params: CreateJobParams) {
       return await createJobDirect(params, user, supabase);
     }
 
+    const rpcResult = result as Record<string, unknown>;
     // Dispatch automation event
-    dispatch(Events.jobCreated(params.organization_id, result.id, {
-      display_id: result.display_id,
+    dispatch(Events.jobCreated(params.organization_id, rpcResult.id as string, {
+      display_id: rpcResult.display_id as string,
       title: params.title,
       status: params.status || "backlog",
       priority: params.priority || "none",
@@ -274,7 +276,7 @@ export async function createJob(params: CreateJobParams) {
     const { data: job } = await supabase
       .from("jobs")
       .select("*")
-      .eq("id", result.id)
+      .eq("id", rpcResult.id as string)
       .single();
 
     revalidatePath("/dashboard/jobs");
@@ -371,7 +373,7 @@ export async function updateJob(jobId: string, updates: UpdateJobParams) {
 
     const { data: job, error: updateError } = await supabase
       .from("jobs")
-      .update(updates)
+      .update(updates as any)
       .eq("id", jobId)
       .select()
       .single();
@@ -399,7 +401,7 @@ export async function updateJob(jobId: string, updates: UpdateJobParams) {
 
       // Dispatch automation events for status changes
       dispatch(Events.jobStatusChange(
-        job.organization_id, jobId, currentJob.status, updates.status, user.id
+        job.organization_id, jobId, currentJob.status!, updates.status, user.id
       ));
 
       // Special event for completion
@@ -469,7 +471,7 @@ export async function createSubtask(jobId: string, title: string) {
       .limit(1);
 
     const sortOrder = existingSubtasks && existingSubtasks.length > 0
-      ? existingSubtasks[0].sort_order + 1
+      ? (existingSubtasks[0].sort_order ?? 0) + 1
       : 0;
 
     const { data: subtask, error } = await supabase
@@ -578,7 +580,7 @@ export async function addJobActivity(
       .insert({
         job_id: jobId,
         type,
-        text,
+        text: text || "",
         user_id: activityUserId,
         user_name: userName,
         photos: photos || [],
@@ -796,14 +798,14 @@ export async function getFilteredJobs(orgId: string, filters: JobFilters = {}) {
 
     const { data, error } = await supabase.rpc("get_filtered_jobs", {
       p_org_id: orgId,
-      p_status: filters.status || null,
-      p_priority: filters.priority || null,
-      p_assignee_id: filters.assignee_id || null,
-      p_search: filters.search || null,
-      p_labels: filters.labels || null,
+      p_status: filters.status ?? undefined,
+      p_priority: filters.priority ?? undefined,
+      p_assignee_id: filters.assignee_id ?? undefined,
+      p_search: filters.search ?? undefined,
+      p_labels: filters.labels ?? undefined,
       p_limit: filters.limit || 100,
       p_offset: filters.offset || 0,
-    });
+    } as any);
 
     if (error) {
       logger.error("get_filtered_jobs RPC failed, falling back", "jobs", undefined, { error: error.message });

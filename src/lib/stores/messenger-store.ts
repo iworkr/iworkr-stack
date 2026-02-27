@@ -104,7 +104,7 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
     if (get().channelsLoaded) return;
     try {
       const result = await getChannels(orgId);
-      set({ channels: result.data ?? [], channelsLoaded: true });
+      set({ channels: (result.data ?? []) as Channel[], channelsLoaded: true });
     } catch {
       set({ channelsLoaded: true });
     }
@@ -118,7 +118,7 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
     const result = await getMessages(channelId);
     if (result.data) {
       set((s) => ({
-        messages: { ...s.messages, [channelId]: result.data },
+        messages: { ...s.messages, [channelId]: result.data as Message[] },
         messagesLoading: false,
       }));
     } else {
@@ -130,7 +130,7 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
     const result = await getChannelMembers(channelId);
     if (result.data) {
       set((s) => ({
-        members: { ...s.members, [channelId]: result.data },
+        members: { ...s.members, [channelId]: result.data as ChannelMember[] },
       }));
     }
   },
@@ -179,7 +179,7 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
         messages: {
           ...s.messages,
           [channelId]: (s.messages[channelId] || []).map((m) =>
-            m.id === tempId ? { ...result.data, status: "sent" } : m
+            m.id === tempId ? { ...result.data, status: "sent" } as Message : m
           ),
         },
         sendingMessage: false,
@@ -216,7 +216,7 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
         const updated: Record<string, Message[]> = {};
         for (const [chId, msgs] of Object.entries(s.messages)) {
           updated[chId] = msgs.map((m) =>
-            m.id === messageId ? { ...m, reactions: result.data.reactions } : m
+            m.id === messageId ? { ...m, reactions: result.data!.reactions as Message["reactions"] } : m
           );
         }
         return { messages: updated };
@@ -246,8 +246,9 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
   createGroupChannel: async (orgId: string, name: string, memberIds: string[]) => {
     const result = await createChannelServer(orgId, { type: "group", name, member_ids: memberIds });
     if (result.data) {
-      set((s) => ({ channels: [result.data, ...s.channels] }));
-      return result.data;
+      const channel = result.data as Channel;
+      set((s) => ({ channels: [channel, ...s.channels] }));
+      return channel;
     }
     return null;
   },
@@ -255,14 +256,15 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
   openDM: async (orgId: string, otherUserId: string) => {
     const result = await getOrCreateDM(orgId, otherUserId);
     if (result.data) {
+      const channel = result.data as Channel;
       set((s) => {
-        const exists = s.channels.some((c) => c.id === result.data.id);
+        const exists = s.channels.some((c) => c.id === channel.id);
         return {
-          channels: exists ? s.channels : [result.data, ...s.channels],
-          activeChannelId: result.data.id,
+          channels: exists ? s.channels : [channel, ...s.channels],
+          activeChannelId: channel.id,
         };
       });
-      return result.data;
+      return channel;
     }
     return null;
   },

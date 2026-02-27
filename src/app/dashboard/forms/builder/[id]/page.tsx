@@ -83,7 +83,7 @@ export default function FormBuilderPage() {
         setTitle(data.title || "");
         setDescription(data.description || "");
         setCategory(data.category || "custom");
-        setBlocks(Array.isArray(data.blocks) ? data.blocks : []);
+        setBlocks(Array.isArray(data.blocks) ? data.blocks as unknown as FormBlock[] : []);
       }
       setLoadingForm(false);
     });

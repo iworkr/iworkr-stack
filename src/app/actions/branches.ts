@@ -82,7 +82,7 @@ export async function getBranches(orgId: string): Promise<{ data: Branch[]; erro
     .order("name");
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as Branch[] };
 }
 
 export async function createBranch(params: {
@@ -122,7 +122,7 @@ export async function createBranch(params: {
 
   if (error) return { data: null, error: error.message };
   revalidatePath("/settings/branches");
-  return { data };
+  return { data: data as Branch };
 }
 
 export async function updateBranch(

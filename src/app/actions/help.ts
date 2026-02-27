@@ -65,7 +65,7 @@ export async function getHelpArticles(): Promise<{ data: HelpArticle[]; error?: 
     .order("sort_order", { ascending: true });
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as HelpArticle[] };
 }
 
 export async function getArticleBySlug(slug: string): Promise<{ data: HelpArticle | null; error?: string }> {
@@ -78,7 +78,7 @@ export async function getArticleBySlug(slug: string): Promise<{ data: HelpArticl
     .maybeSingle();
 
   if (error) return { data: null, error: error.message };
-  return { data };
+  return { data: data as HelpArticle | null };
 }
 
 export async function searchArticles(query: string): Promise<{ data: HelpArticle[]; error?: string }> {
@@ -93,7 +93,7 @@ export async function searchArticles(query: string): Promise<{ data: HelpArticle
     .limit(10);
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as HelpArticle[] };
 }
 
 /* ── Threads ──────────────────────────────────────────── */
@@ -107,7 +107,7 @@ export async function getHelpThreads(): Promise<{ data: HelpThread[]; error?: st
     .limit(20);
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as HelpThread[] };
 }
 
 export async function createThread(title: string, content: string, category: string): Promise<{ data: HelpThread | null; error?: string }> {
@@ -129,7 +129,7 @@ export async function createThread(title: string, content: string, category: str
 
   if (error) return { data: null, error: error.message };
   revalidatePath("/dashboard/help");
-  return { data };
+  return { data: data as HelpThread };
 }
 
 export async function upvoteThread(threadId: string): Promise<{ error?: string }> {
@@ -189,7 +189,7 @@ export async function createTicket(params: {
     .single();
 
   if (error) return { data: null, error: error.message };
-  return { data };
+  return { data: data as HelpTicket };
 }
 
 export async function getMyTickets(): Promise<{ data: HelpTicket[]; error?: string }> {
@@ -204,7 +204,7 @@ export async function getMyTickets(): Promise<{ data: HelpTicket[]; error?: stri
     .order("created_at", { ascending: false });
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as HelpTicket[] };
 }
 
 /* ── AI Search (Text-based with smart matching) ───────── */

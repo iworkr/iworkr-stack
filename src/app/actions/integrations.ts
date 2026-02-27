@@ -61,7 +61,7 @@ export async function getIntegrationsOverview(
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+    return { data: data as IntegrationsOverview | null, error: null };
   } catch (err: any) {
     logger.error("getIntegrationsOverview exception", err.message);
     return { data: null, error: err.message };
@@ -80,14 +80,15 @@ export async function connectIntegration(
     const { data, error } = await supabase.rpc("toggle_integration_status", {
       p_integration_id: integrationId,
       p_connect: true,
-      p_connection_id: connectionId || null,
+      p_connection_id: (connectionId || null) as string | undefined,
     });
 
     if (error) {
       logger.error("connectIntegration RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    const rpcResult = data as { error?: string } | null;
+    if (rpcResult?.error) return { data: null, error: rpcResult.error };
 
     revalidatePath("/dashboard/integrations");
     return { data, error: null };
@@ -110,7 +111,8 @@ export async function disconnectIntegration(integrationId: string) {
       logger.error("disconnectIntegration RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    const rpcResult = data as { error?: string } | null;
+    if (rpcResult?.error) return { data: null, error: rpcResult.error };
 
     revalidatePath("/dashboard/integrations");
     return { data, error: null };
@@ -144,7 +146,8 @@ export async function updateIntegrationSettings(
       logger.error("updateIntegrationSettings RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    const rpcResult = data as { error?: string } | null;
+    if (rpcResult?.error) return { data: null, error: rpcResult.error };
 
     revalidatePath("/dashboard/integrations");
     return { data, error: null };

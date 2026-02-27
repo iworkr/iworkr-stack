@@ -171,7 +171,7 @@ export async function updateMemberDetails(
 
     const { error } = await supabase
       .from("organization_members")
-      .update(updates)
+      .update(updates as any)
       .eq("organization_id", orgId)
       .eq("user_id", userId);
 
@@ -418,7 +418,7 @@ export async function updateRolePermissions(
       logger.error("updateRolePermissions RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    if ((data as any)?.error) return { data: null, error: (data as any).error };
 
     revalidatePath("/dashboard/team");
     return { data, error: null };
@@ -523,13 +523,13 @@ export async function inviteMember(params: {
       p_role_id: params.role_id || null,
       p_branch: params.branch || "HQ",
       p_actor_id: user?.id || null,
-    });
+    } as any);
 
     if (error) {
       logger.error("inviteMember RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    if ((data as any)?.error) return { data: null, error: (data as any).error };
 
     revalidatePath("/dashboard/team");
     return { data, error: null };
@@ -557,7 +557,7 @@ export async function resendInvite(inviteId: string) {
     if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     // Use the Genesis RPC — resets expiry to +7 days and status back to 'pending'
-    const { data, error } = await supabase.rpc("resend_invite", {
+    const { data, error } = await supabase.rpc("resend_invite" as any, {
       p_invite_id: inviteId,
     });
 
@@ -565,7 +565,7 @@ export async function resendInvite(inviteId: string) {
       logger.error("resendInvite RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    if ((data as any)?.error) return { data: null, error: (data as any).error };
 
     revalidatePath("/dashboard/team");
     return { data, error: null };
@@ -594,7 +594,7 @@ export async function cancelInvite(inviteId: string) {
 
     // Use the Genesis RPC — sets status to 'revoked' (not 'expired')
     // so we distinguish admin cancellation from time-based expiry
-    const { data, error } = await supabase.rpc("revoke_invite", {
+    const { data, error } = await supabase.rpc("revoke_invite" as any, {
       p_invite_id: inviteId,
     });
 
@@ -602,7 +602,7 @@ export async function cancelInvite(inviteId: string) {
       logger.error("cancelInvite (revoke) RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    if ((data as any)?.error) return { data: null, error: (data as any).error };
 
     revalidatePath("/dashboard/team");
     return { data: { success: true }, error: null };
@@ -664,7 +664,7 @@ export async function getMemberStats(orgId: string, userId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: data as MemberStats, error: null };
+    return { data: data as unknown as MemberStats, error: null };
   } catch (err: any) {
     logger.error("getMemberStats exception", err.message);
     return { data: null, error: err.message };
@@ -697,7 +697,7 @@ export async function getTeamOverview(
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+    return { data: data as unknown as TeamOverview, error: null };
   } catch (err: any) {
     logger.error("getTeamOverview exception", err.message);
     return { data: null, error: err.message };

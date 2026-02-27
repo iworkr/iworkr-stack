@@ -175,14 +175,15 @@ export const useScheduleStore = create<ScheduleState>()(
       const { data } = await getScheduleView(orgId, date);
 
       if (data) {
-        const mappedBlocks = (data.blocks || []).map(mapServerBlock);
-        const mappedTechs = (data.technicians || []).map(mapServerTechnician);
+        const d = data as { blocks: any[]; technicians: any[]; backlog: BacklogJob[]; events: ScheduleEvent[] };
+        const mappedBlocks = (d.blocks || []).map(mapServerBlock);
+        const mappedTechs = (d.technicians || []).map(mapServerTechnician);
 
         set({
           blocks: mappedBlocks,
           technicians: mappedTechs,
-          backlogJobs: data.backlog || [],
-          scheduleEvents: data.events || [],
+          backlogJobs: d.backlog || [],
+          scheduleEvents: d.events || [],
           loaded: true,
           loading: false,
           _stale: false,
@@ -226,13 +227,14 @@ export const useScheduleStore = create<ScheduleState>()(
     try {
       const { data } = await getScheduleView(orgId, selectedDate);
       if (data) {
-        const mappedBlocks = (data.blocks || []).map(mapServerBlock);
-        const mappedTechs = (data.technicians || []).map(mapServerTechnician);
+        const d = data as { blocks: any[]; technicians: any[]; backlog: BacklogJob[]; events: ScheduleEvent[] };
+        const mappedBlocks = (d.blocks || []).map(mapServerBlock);
+        const mappedTechs = (d.technicians || []).map(mapServerTechnician);
         set({
           blocks: mappedBlocks,
           technicians: mappedTechs,
-          backlogJobs: data.backlog || [],
-          scheduleEvents: data.events || [],
+          backlogJobs: d.backlog || [],
+          scheduleEvents: d.events || [],
           _lastFetchedAt: Date.now(),
           _stale: false,
         });
@@ -517,10 +519,11 @@ export const useScheduleStore = create<ScheduleState>()(
     }
 
     // Replace temp block with real server ID if returned
-    if (result.data?.id) {
+    const resultData = result.data as { id: string } | null;
+    if (resultData?.id) {
       set((s) => ({
         blocks: s.blocks.map((b) =>
-          b.id === tempBlock.id ? { ...b, id: result.data.id } : b
+          b.id === tempBlock.id ? { ...b, id: resultData!.id } : b
         ),
       }));
     }

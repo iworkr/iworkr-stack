@@ -256,7 +256,7 @@ export async function createScheduleBlock(params: CreateScheduleBlockParams) {
 
     const { data: block, error: insertError } = await supabase
       .from("schedule_blocks")
-      .insert(blockData)
+      .insert(blockData as any)
       .select()
       .single();
 

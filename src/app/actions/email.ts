@@ -113,7 +113,7 @@ export async function sendTeamInviteEmail(params: {
       {
         organization_id: params.orgId,
         email: params.email,
-        role: params.role,
+        role: params.role as any,
         status: "pending",
         invited_by: user.id,
       },

@@ -109,7 +109,7 @@ export async function getQuotes(orgId: string): Promise<{ data: Quote[]; error?:
     .order("created_at", { ascending: false });
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as Quote[] };
 }
 
 export async function getQuote(quoteId: string): Promise<{ data: Quote | null; error?: string }> {
@@ -128,7 +128,8 @@ export async function getQuote(quoteId: string): Promise<{ data: Quote | null; e
     .eq("quote_id", quoteId)
     .order("sort_order", { ascending: true });
 
-  return { data: { ...quote, line_items: items || [] } };
+  if (!quote) return { data: null };
+  return { data: { ...quote, line_items: (items || []) as QuoteLineItem[] } as Quote };
 }
 
 export async function createQuote(params: {
@@ -189,7 +190,7 @@ export async function createQuote(params: {
   await logDocumentEvent(quote.organization_id, "quote", quote.id, "created", "Quote created", user?.email);
 
   revalidatePath("/dashboard/finance");
-  return { data: quote };
+  return { data: quote as Quote };
 }
 
 export async function updateQuote(
@@ -224,7 +225,7 @@ export async function addQuoteLineItem(
 
   if (error) return { data: null, error: error.message };
   await recalcQuoteTotals(quoteId);
-  return { data };
+  return { data: data as QuoteLineItem };
 }
 
 export async function removeQuoteLineItem(lineItemId: string, quoteId: string): Promise<{ error?: string }> {
@@ -419,7 +420,7 @@ export async function approveQuote(token: string, signatureDataUrl: string, sign
       .maybeSingle();
 
     await logDocumentEvent(quote.organization_id, "invoice", updated.invoice_id, "created", "Auto-created from approved quote");
-    return { invoiceToken: invoice?.secure_token };
+    return { invoiceToken: invoice?.secure_token ?? undefined };
   }
 
   return {};
@@ -452,7 +453,7 @@ export async function getDocumentEvents(docType: "quote" | "invoice", docId: str
     .order("created_at", { ascending: false });
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as DocumentEvent[] };
 }
 
 async function logDocumentEvent(

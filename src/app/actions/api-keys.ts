@@ -39,7 +39,7 @@ export async function getApiKeys(orgId: string): Promise<{ data: ApiKey[]; error
     .order("created_at", { ascending: false });
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  return { data: (data || []) as ApiKey[] };
 }
 
 export async function generateApiKey(params: {
@@ -80,7 +80,7 @@ export async function generateApiKey(params: {
 
   if (error) return { key: null, data: null, error: error.message };
   revalidatePath("/settings/developers");
-  return { key: fullKey, data };
+  return { key: fullKey, data: data as ApiKey };
 }
 
 export async function revokeApiKey(keyId: string): Promise<{ error?: string }> {

@@ -224,7 +224,7 @@ export const useClientsStore = create<ClientsState>()(
       // Map and prepend to local store
       const mapped = mapServerClient(data);
       set((s) => ({ clients: [mapped, ...s.clients] }));
-      return { success: true, clientId: data.id };
+      return { success: true, clientId: (data as any).id };
     } catch (err: any) {
       return { success: false, error: err.message || "Unexpected error" };
     }

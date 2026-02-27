@@ -56,7 +56,7 @@ export function AuditTimeline({ entityId, entityType }: AuditTimelineProps) {
       setLoading(true);
       const result = await getEntityAudits(entityId, entityType);
       if (!cancelled && result.data) {
-        setAudits(result.data);
+        setAudits(result.data as AssetAudit[]);
       }
       if (!cancelled) setLoading(false);
     }

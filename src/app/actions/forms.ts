@@ -159,7 +159,7 @@ export async function updateForm(
 
     const { data, error } = await supabase
       .from("forms")
-      .update(updates)
+      .update(updates as any)
       .eq("id", formId)
       .select()
       .single();
@@ -221,7 +221,8 @@ export async function publishForm(formId: string) {
       logger.error("publishForm RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    const result = data as { error?: string } | null;
+    if (result?.error) return { data: null, error: result.error };
 
     revalidatePath("/dashboard/forms");
     return { data, error: null };
@@ -294,7 +295,7 @@ export async function createFormSubmission(params: {
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name")
-      .eq("id", user?.id)
+      .eq("id", user!.id)
       .maybeSingle();
 
     const { data, error } = await supabase
@@ -336,7 +337,8 @@ export async function saveFormDraft(submissionId: string, formData: any) {
       logger.error("saveFormDraft RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    const result = data as { error?: string } | null;
+    if (result?.error) return { data: null, error: result.error };
 
     return { data, error: null };
   } catch (err: any) {
@@ -371,11 +373,12 @@ export async function signAndLockSubmission(
       logger.error("signAndLockSubmission RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error)
+    const result = data as { error?: string; missing_fields?: string[] } | null;
+    if (result?.error)
       return {
         data: null,
-        error: data.error,
-        missingFields: data.missing_fields,
+        error: result.error,
+        missingFields: result.missing_fields,
       };
 
     revalidatePath("/dashboard/forms");
@@ -425,7 +428,7 @@ export async function getFormsOverview(
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+    return { data: data as unknown as FormsOverview, error: null };
   } catch (err: any) {
     logger.error("getFormsOverview exception", err.message);
     return { data: null, error: err.message };

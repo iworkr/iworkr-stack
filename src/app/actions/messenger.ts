@@ -2,7 +2,11 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { Database } from "@/lib/supabase/types";
 import { z } from "zod";
+
+type ChannelType = Database["public"]["Enums"]["channel_type"];
+type MessageType = Database["public"]["Enums"]["message_type"];
 
 /* ── Schemas ──────────────────────────────────────────── */
 
@@ -92,7 +96,7 @@ export async function createChannel(orgId: string, params: {
       .from("channels")
       .insert({
         organization_id: orgId,
-        type: params.type,
+        type: params.type as ChannelType,
         name: params.name || null,
         description: params.description || null,
         context_id: params.context_id || null,
@@ -271,7 +275,7 @@ export async function sendMessage(channelId: string, content: string, type = "te
         channel_id: channelId,
         sender_id: user.id,
         content,
-        type,
+        type: type as MessageType,
         metadata: metadata || {},
         reply_to_id: replyToId || null,
       })
@@ -353,8 +357,9 @@ export async function toggleReaction(messageId: string, emoji: string) {
       .maybeSingle();
 
     if (fetchErr) return { data: null, error: fetchErr.message };
+    if (!msg) return { data: null, error: "Message not found" };
 
-    const reactions = msg.reactions || {};
+    const reactions = (msg.reactions || {}) as Record<string, string[]>;
     const users: string[] = reactions[emoji] || [];
 
     if (users.includes(user.id)) {
@@ -366,7 +371,7 @@ export async function toggleReaction(messageId: string, emoji: string) {
 
     const { data, error } = await supabase
       .from("messages")
-      .update({ reactions })
+      .update({ reactions: reactions as unknown as Database["public"]["Tables"]["messages"]["Update"]["reactions"] })
       .eq("id", messageId)
       .select()
       .single();
@@ -411,9 +416,10 @@ export async function votePoll(messageId: string, optionIndex: number) {
       .maybeSingle();
 
     if (fetchErr) return { data: null, error: fetchErr.message };
+    if (!msg) return { data: null, error: "Message not found" };
 
-    const meta = msg.metadata || {};
-    const votes: Record<string, number[]> = meta.votes || {};
+    const meta = (msg.metadata || {}) as Record<string, any>;
+    const votes: Record<string, string[]> = meta.votes || {};
 
     // Remove user from all options first
     for (const key of Object.keys(votes)) {
@@ -426,7 +432,7 @@ export async function votePoll(messageId: string, optionIndex: number) {
 
     const { data, error } = await supabase
       .from("messages")
-      .update({ metadata: { ...meta, votes } })
+      .update({ metadata: { ...meta, votes } as unknown as Database["public"]["Tables"]["messages"]["Update"]["metadata"] })
       .eq("id", messageId)
       .select()
       .single();

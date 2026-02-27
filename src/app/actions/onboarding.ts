@@ -55,7 +55,7 @@ export async function createOrganization(data: {
     {
       org_name: data.name,
       org_slug: slug,
-      org_trade: data.trade || null,
+      org_trade: (data.trade || null) as string | undefined,
     }
   );
 

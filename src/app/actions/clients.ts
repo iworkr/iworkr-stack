@@ -556,6 +556,10 @@ export async function updateClientContact(contactId: string, updates: UpdateClie
       return { data: null, error: fetchError.message };
     }
 
+    if (!currentContact) {
+      return { data: null, error: "Contact not found" };
+    }
+
     // If setting as primary, unset other primary contacts for this client
     if (updates.is_primary === true && !currentContact.is_primary) {
       await supabase
@@ -633,9 +637,9 @@ export async function getClientsWithStats(orgId: string, filters: ClientFilters 
 
     const { data, error } = await supabase.rpc("get_clients_with_stats", {
       p_org_id: orgId,
-      p_search: filters.search || null,
-      p_status: filters.status || null,
-      p_type: filters.type || null,
+      p_search: filters.search ?? undefined,
+      p_status: filters.status ?? undefined,
+      p_type: filters.type ?? undefined,
       p_sort_by: filters.sort_by || "name",
       p_sort_asc: filters.sort_asc ?? true,
       p_limit: filters.limit || 200,
@@ -669,18 +673,18 @@ export async function createClientFull(params: CreateClientParams) {
       p_name: params.name,
       p_type: params.type || "residential",
       p_status: params.status || "active",
-      p_email: params.email || null,
-      p_phone: params.phone || null,
-      p_address: params.address || null,
-      p_address_lat: params.address_lat || null,
-      p_address_lng: params.address_lng || null,
+      p_email: params.email ?? undefined,
+      p_phone: params.phone ?? undefined,
+      p_address: params.address ?? undefined,
+      p_address_lat: params.address_lat ?? undefined,
+      p_address_lng: params.address_lng ?? undefined,
       p_tags: params.tags || [],
-      p_notes: params.notes || null,
+      p_notes: params.notes ?? undefined,
       p_billing_terms: params.billing_terms || "due_on_receipt",
-      p_contact_name: params.initial_contact?.name || null,
-      p_contact_role: params.initial_contact?.role || null,
-      p_contact_email: params.initial_contact?.email || null,
-      p_contact_phone: params.initial_contact?.phone || null,
+      p_contact_name: params.initial_contact?.name ?? undefined,
+      p_contact_role: params.initial_contact?.role ?? undefined,
+      p_contact_email: params.initial_contact?.email ?? undefined,
+      p_contact_phone: params.initial_contact?.phone ?? undefined,
     });
 
     if (rpcError) {
@@ -688,8 +692,10 @@ export async function createClientFull(params: CreateClientParams) {
       return createClient(params);
     }
 
+    const rpcResult = result as unknown as { client_id: string };
+
     // Dispatch automation event
-    dispatch(Events.clientCreated(params.organization_id, result.client_id, {
+    dispatch(Events.clientCreated(params.organization_id, rpcResult.client_id, {
       name: params.name,
       email: params.email,
       status: params.status || "active",
@@ -700,7 +706,7 @@ export async function createClientFull(params: CreateClientParams) {
     const { data: client } = await supabase
       .from("clients")
       .select("*")
-      .eq("id", result.client_id)
+      .eq("id", rpcResult.client_id)
       .maybeSingle();
 
     revalidatePath("/dashboard/clients");

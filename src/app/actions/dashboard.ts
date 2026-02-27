@@ -100,7 +100,7 @@ export async function getDashboardStats(orgId: string, rangeStart?: string, rang
       return { data: null, error: error.message };
     }
 
-    return { data: data as DashboardStats, error: null };
+    return { data: data as unknown as DashboardStats, error: null };
   } catch (error: any) {
     logger.error("Dashboard stats error", "dashboard", error);
     return { data: null, error: error.message || "Failed to fetch dashboard stats" };
@@ -134,7 +134,7 @@ export async function getDailyRevenueChart(orgId: string, days: number = 30) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as DailyRevenuePoint[], error: null };
+    return { data: (data || []) as unknown as DailyRevenuePoint[], error: null };
   } catch (error: any) {
     logger.error("Revenue chart error", "dashboard", error);
     return { data: null, error: error.message || "Failed to fetch revenue chart" };
@@ -160,7 +160,7 @@ export async function getMySchedule(limit: number = 5) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as ScheduleItem[], error: null };
+    return { data: (data || []) as unknown as ScheduleItem[], error: null };
   } catch (error: any) {
     logger.error("Schedule error", "dashboard", error);
     return { data: null, error: error.message || "Failed to fetch schedule" };
@@ -193,7 +193,7 @@ export async function getAIInsights(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as AIInsight[], error: null };
+    return { data: (data || []) as unknown as AIInsight[], error: null };
   } catch (error: any) {
     logger.error("Insights error", "dashboard", error);
     return { data: null, error: error.message || "Failed to fetch insights" };
@@ -226,7 +226,7 @@ export async function getTeamStatus(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as TeamMemberStatus[], error: null };
+    return { data: (data || []) as unknown as TeamMemberStatus[], error: null };
   } catch (error: any) {
     logger.error("Team status error", "dashboard", error);
     return { data: null, error: error.message || "Failed to fetch team status" };
@@ -332,7 +332,7 @@ export async function getLiveDispatch(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as DispatchPin[], error: null };
+    return { data: (data || []) as unknown as DispatchPin[], error: null };
   } catch (error: any) {
     logger.error("Dispatch error", "dashboard", error);
     return { data: null, error: error.message || "Failed to fetch dispatch data" };
@@ -355,7 +355,7 @@ export async function updateFleetPosition(
 ) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.rpc("update_fleet_position", {
+    const { data, error } = await supabase.rpc("update_fleet_position" as any, {
       p_org_id: orgId,
       p_lat: lat,
       p_lng: lng,

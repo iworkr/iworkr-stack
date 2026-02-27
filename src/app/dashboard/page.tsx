@@ -41,7 +41,7 @@ export default function DashboardPage() {
     if (!snapshot || !isFresh) {
       if (!snapshot) setSnapshotLoading(true);
       getDashboardSnapshot(orgId).then(({ data }) => {
-        if (data) setSnapshot(data as DashboardSnapshot);
+        if (data) setSnapshot(data as unknown as DashboardSnapshot);
       });
     }
   }, [orgId, snapshot, snapshotFetchedAt, setSnapshot, setSnapshotLoading]);
@@ -49,8 +49,8 @@ export default function DashboardPage() {
   useEffect(() => {
     loadDashboardLayout().then(({ data }) => {
       if (data && Array.isArray(data) && data.length > 0) {
-        setLayouts({ lg: data });
-        setActiveWidgets(data.map((l: { i: string }) => l.i));
+        setLayouts({ lg: data as any });
+        setActiveWidgets((data as any[]).map((l: { i: string }) => l.i));
       }
     });
   }, [setLayouts, setActiveWidgets]);

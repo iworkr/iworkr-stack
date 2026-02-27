@@ -266,7 +266,7 @@ export const useAutomationsStore = create<AutomationsState>()(
     try {
       const res = await getAutomationRunTrace(runId);
       if (res.error || !res.data) return { trace: [], error: res.error || "Not found" };
-      return { trace: (res.data.trace || []) as TraceStep[], error: null };
+      return { trace: ((res.data as any).trace || []) as TraceStep[], error: null };
     } catch (err: any) {
       return { trace: [], error: err.message };
     }

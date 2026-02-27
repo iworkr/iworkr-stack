@@ -117,13 +117,13 @@ export const useFinanceStore = create<FinanceState>()(
           if (result.data) {
             const fullInvoice = result.data;
             mappedInvoices.push({
-              id: fullInvoice.display_id || fullInvoice.id,
+              id: (fullInvoice.display_id || fullInvoice.id) as string,
               dbId: fullInvoice.id,
               clientId: fullInvoice.client_id || "",
               clientName: fullInvoice.client_name || "",
               clientEmail: fullInvoice.client_email || "",
               clientAddress: fullInvoice.client_address || "",
-              status: fullInvoice.status,
+              status: fullInvoice.status as InvoiceStatus,
               issueDate: fullInvoice.issue_date
                 ? new Date(fullInvoice.issue_date).toLocaleDateString("en-US", {
                     month: "short",
@@ -151,9 +151,9 @@ export const useFinanceStore = create<FinanceState>()(
                 quantity: li.quantity,
                 unitPrice: li.unit_price,
               })),
-              subtotal: fullInvoice.subtotal,
-              tax: fullInvoice.tax,
-              total: fullInvoice.total,
+              subtotal: (fullInvoice.subtotal ?? 0) as number,
+              tax: (fullInvoice.tax ?? 0) as number,
+              total: (fullInvoice.total ?? 0) as number,
               paymentLink: fullInvoice.payment_link || undefined,
               events: (fullInvoice.invoice_events || []).map((ev: any) => ({
                 id: ev.id,
@@ -241,20 +241,20 @@ export const useFinanceStore = create<FinanceState>()(
           if (result.data) {
             const fi = result.data;
             mappedInvoices.push({
-              id: fi.display_id || fi.id,
+              id: (fi.display_id || fi.id) as string,
               dbId: fi.id,
               clientId: fi.client_id || "",
               clientName: fi.client_name || "",
               clientEmail: fi.client_email || "",
               clientAddress: fi.client_address || "",
-              status: fi.status,
+              status: fi.status as InvoiceStatus,
               issueDate: fi.issue_date ? new Date(fi.issue_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
               dueDate: fi.due_date ? new Date(fi.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
               paidDate: fi.paid_date ? new Date(fi.paid_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : undefined,
               lineItems: (fi.invoice_line_items || []).map((li: any) => ({ id: li.id, description: li.description, quantity: li.quantity, unitPrice: li.unit_price })),
-              subtotal: fi.subtotal,
-              tax: fi.tax,
-              total: fi.total,
+              subtotal: (fi.subtotal ?? 0) as number,
+              tax: (fi.tax ?? 0) as number,
+              total: (fi.total ?? 0) as number,
               paymentLink: fi.payment_link || undefined,
               events: (fi.invoice_events || []).map((ev: any) => ({ id: ev.id, type: ev.type, text: ev.text || "", time: new Date(ev.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) })),
               notes: fi.notes || undefined,
@@ -472,7 +472,8 @@ export const useFinanceStore = create<FinanceState>()(
       }
       // Refresh to get the full mapped invoice
       await get().refresh();
-      return { success: true, displayId: data.display_id, invoiceId: data.invoice_id };
+      const result = data as { display_id: string; invoice_id: string };
+      return { success: true, displayId: result.display_id, invoiceId: result.invoice_id };
     } catch (err: any) {
       return { success: false, error: err.message || "Unexpected error" };
     }

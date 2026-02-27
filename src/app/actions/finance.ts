@@ -141,7 +141,7 @@ export async function getOrgSettings(orgId: string) {
       .maybeSingle();
 
     if (error) return { data: null, error: error.message };
-    return { data: { name: data.name, settings: data.settings || {} }, error: null };
+    return { data: { name: data!.name, settings: (data as any).settings || {} }, error: null };
   } catch (error: any) {
     return { data: null, error: error.message || "Failed to fetch org settings" };
   }
@@ -209,12 +209,12 @@ export async function getInvoice(invoiceId: string) {
     }
 
     const formattedInvoice = {
-      ...invoice,
-      invoice_line_items: (invoice.invoice_line_items || []).sort(
-        (a: InvoiceLineItem, b: InvoiceLineItem) => a.sort_order - b.sort_order
+      ...invoice!,
+      invoice_line_items: (invoice!.invoice_line_items || []).sort(
+        (a: any, b: any) => a.sort_order - b.sort_order
       ),
-      invoice_events: (invoice.invoice_events || []).sort(
-        (a: InvoiceEvent, b: InvoiceEvent) => 
+      invoice_events: (invoice!.invoice_events || []).sort(
+        (a: any, b: any) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ),
     };
@@ -312,7 +312,7 @@ export async function createInvoice(params: CreateInvoiceParams) {
 
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
-      .insert(invoiceData)
+      .insert(invoiceData as any)
       .select()
       .single();
 
@@ -414,7 +414,7 @@ export async function updateInvoice(invoiceId: string, updates: UpdateInvoicePar
 
       if (currentInvoice?.invoice_line_items) {
         const { subtotal, tax, total } = calculateTotals(
-          currentInvoice.invoice_line_items,
+          currentInvoice.invoice_line_items as { quantity: number; unit_price: number }[],
           updates.tax_rate
         );
         updates = {
@@ -428,7 +428,7 @@ export async function updateInvoice(invoiceId: string, updates: UpdateInvoicePar
 
     const { data: invoice, error } = await supabase
       .from("invoices")
-      .update(updates)
+      .update(updates as any)
       .eq("id", invoiceId)
       .select()
       .single();
@@ -466,8 +466,8 @@ export async function updateInvoiceStatus(
       .eq("id", invoiceId)
       .maybeSingle();
 
-    if (fetchError) {
-      return { data: null, error: fetchError.message };
+    if (fetchError || !currentInvoice) {
+      return { data: null, error: fetchError?.message || "Invoice not found" };
     }
 
     // Prepare update data
@@ -558,8 +558,8 @@ export async function addLineItem(invoiceId: string, item: AddLineItemParams) {
       .eq("id", invoiceId)
       .maybeSingle();
 
-    if (invoiceError) {
-      return { data: null, error: invoiceError.message };
+    if (invoiceError || !invoice) {
+      return { data: null, error: invoiceError?.message || "Invoice not found" };
     }
 
     // Get max sort_order
@@ -588,8 +588,8 @@ export async function addLineItem(invoiceId: string, item: AddLineItemParams) {
     const allLineItems = [
       ...(invoice.invoice_line_items || []),
       { quantity: item.quantity, unit_price: item.unit_price },
-    ];
-    const { subtotal, tax, total } = calculateTotals(allLineItems, invoice.tax_rate);
+    ] as { quantity: number; unit_price: number }[];
+    const { subtotal, tax, total } = calculateTotals(allLineItems, invoice.tax_rate ?? undefined);
 
     // Update invoice totals
     const { error: updateError } = await supabase
@@ -643,8 +643,8 @@ export async function updateLineItem(
 
     if (!invoiceError && invoice) {
       const { subtotal, tax, total } = calculateTotals(
-        invoice.invoice_line_items || [],
-        invoice.tax_rate
+        (invoice.invoice_line_items || []) as { quantity: number; unit_price: number }[],
+        invoice.tax_rate ?? undefined
       );
       await supabase
         .from("invoices")
@@ -678,8 +678,8 @@ export async function removeLineItem(lineItemId: string) {
       .eq("id", lineItemId)
       .maybeSingle();
 
-    if (lineItemError) {
-      return { data: null, error: lineItemError.message };
+    if (lineItemError || !lineItem) {
+      return { data: null, error: lineItemError?.message || "Line item not found" };
     }
 
     // Delete line item
@@ -699,13 +699,13 @@ export async function removeLineItem(lineItemId: string) {
       .eq("id", lineItem.invoice_id)
       .maybeSingle();
 
-    if (invoiceError) {
-      return { data: null, error: invoiceError.message };
+    if (invoiceError || !invoice) {
+      return { data: null, error: invoiceError?.message || "Invoice not found" };
     }
 
     const { subtotal, tax, total } = calculateTotals(
-      invoice.invoice_line_items || [],
-      invoice.tax_rate
+      (invoice.invoice_line_items || []) as { quantity: number; unit_price: number }[],
+      invoice.tax_rate ?? undefined
     );
 
     // Update invoice totals
@@ -827,7 +827,7 @@ export async function getFinanceOverview(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: data as FinanceOverview, error: null };
+    return { data: data as unknown as FinanceOverview, error: null };
   } catch (error: any) {
     return { data: null, error: error.message || "Failed to fetch finance overview" };
   }
@@ -851,16 +851,16 @@ export async function createInvoiceFull(params: CreateInvoiceParams) {
 
     const { data: result, error: rpcError } = await supabase.rpc("create_invoice_full", {
       p_org_id: params.organization_id,
-      p_client_id: params.client_id || null,
-      p_client_name: params.client_name || null,
-      p_client_email: params.client_email || null,
-      p_client_address: params.client_address || null,
+      p_client_id: params.client_id || undefined,
+      p_client_name: params.client_name || undefined,
+      p_client_email: params.client_email || undefined,
+      p_client_address: params.client_address || undefined,
       p_status: params.status || "draft",
       p_issue_date: params.issue_date || new Date().toISOString().split("T")[0],
-      p_due_date: params.due_date || null,
+      p_due_date: params.due_date || undefined,
       p_tax_rate: params.tax_rate ?? 10,
-      p_notes: params.notes || null,
-      p_payment_link: params.payment_link || null,
+      p_notes: params.notes || undefined,
+      p_payment_link: params.payment_link || undefined,
       p_items: JSON.stringify(items),
       p_created_by: user.id,
     });
@@ -870,26 +870,28 @@ export async function createInvoiceFull(params: CreateInvoiceParams) {
       return createInvoice(params);
     }
 
+    const rpcResult = result as Record<string, any>;
+
     // Dispatch automation events
-    dispatch(Events.invoiceCreated(params.organization_id, result.invoice_id, {
-      display_id: result.display_id,
+    dispatch(Events.invoiceCreated(params.organization_id, rpcResult.invoice_id, {
+      display_id: rpcResult.display_id,
       client_id: params.client_id,
       client_name: params.client_name,
-      total: result.total,
+      total: rpcResult.total,
     }));
 
     if (params.status === "sent") {
-      dispatch(Events.invoiceSent(params.organization_id, result.invoice_id, {
-        display_id: result.display_id,
+      dispatch(Events.invoiceSent(params.organization_id, rpcResult.invoice_id, {
+        display_id: rpcResult.display_id,
         client_id: params.client_id,
         client_name: params.client_name,
         client_email: params.client_email,
-        total: result.total,
+        total: rpcResult.total,
       }));
     }
 
     revalidatePath("/dashboard/finance");
-    return { data: result, error: null };
+    return { data: rpcResult, error: null };
   } catch (error: any) {
     logger.error("Failed to create invoice (full)", "finance", error);
     return { data: null, error: error.message || "Failed to create invoice" };
@@ -926,7 +928,7 @@ export async function runOverdueWatchdog(orgId?: string) {
     const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase.rpc("mark_overdue_invoices", {
-      p_org_id: orgId || null,
+      p_org_id: orgId || undefined,
     });
 
     if (error) {
@@ -934,11 +936,12 @@ export async function runOverdueWatchdog(orgId?: string) {
       return { data: null, error: error.message };
     }
 
-    if (data?.marked_overdue > 0) {
+    const rpcData = data as Record<string, any> | null;
+    if (rpcData?.marked_overdue > 0) {
       revalidatePath("/dashboard/finance");
     }
 
-    return { data, error: null };
+    return { data: rpcData, error: null };
   } catch (error: any) {
     return { data: null, error: error.message || "Failed to run overdue watchdog" };
   }

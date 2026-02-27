@@ -7,6 +7,7 @@ import { logger } from "@/lib/logger";
 import { Events, dispatch, dispatchAndWait, type EventCategory } from "@/lib/automation";
 import { z } from "zod";
 import { validate, createFlowSchema } from "@/lib/validation";
+import type { Database, Json } from "@/lib/supabase/types";
 
 /* ── Schemas ──────────────────────────────────────── */
 
@@ -131,9 +132,9 @@ export async function createAutomationFlow(params: {
         name: params.name,
         description: params.description || null,
         category: params.category || "operations",
-        status: "draft",
-        trigger_config: params.trigger_config || {},
-        blocks: params.blocks || [],
+        status: "draft" as Database["public"]["Enums"]["flow_status"],
+        trigger_config: (params.trigger_config || {}) as unknown as Json,
+        blocks: (params.blocks || []) as unknown as Json,
         created_by: user?.id,
       })
       .select()
@@ -187,7 +188,7 @@ export async function updateAutomationFlow(
 
     const { data, error } = await supabase
       .from("automation_flows")
-      .update(updates)
+      .update(updates as unknown as Database["public"]["Tables"]["automation_flows"]["Update"])
       .eq("id", flowId)
       .select()
       .single();
@@ -421,7 +422,7 @@ export async function getAutomationStats(
 
     const { data, error } = await supabase.rpc("get_automation_stats", {
       p_org_id: orgId,
-      p_flow_id: flowId || null,
+      p_flow_id: flowId || undefined,
     });
 
     if (error) {
@@ -429,7 +430,7 @@ export async function getAutomationStats(
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+    return { data: data as unknown as AutomationStats, error: null };
   } catch (err: any) {
     logger.error("getAutomationStats exception", err.message);
     return { data: null, error: err.message };
@@ -468,7 +469,7 @@ export async function toggleFlowStatusRpc(flowId: string) {
       logger.error("toggleFlowStatusRpc error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    if ((data as any)?.error) return { data: null, error: (data as any).error };
 
     revalidatePath("/dashboard/automations");
     return { data, error: null };
@@ -504,7 +505,7 @@ export async function setAllFlowsStatusRpc(orgId: string, pause: boolean) {
       logger.error("setAllFlowsStatusRpc error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    if ((data as any)?.error) return { data: null, error: (data as any).error };
 
     revalidatePath("/dashboard/automations");
     return { data, error: null };
@@ -540,8 +541,8 @@ export async function testAutomationFlow(flowId: string) {
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
-    // Create a test event based on the flow's trigger
-    const eventType = flow.trigger_config?.event || "system.webhook_received";
+    const triggerCfg = flow.trigger_config as Record<string, any> | null;
+    const eventType = triggerCfg?.event || "system.webhook_received";
 
     const testEvent = {
       id: `test_${Date.now()}`,
@@ -554,7 +555,7 @@ export async function testAutomationFlow(flowId: string) {
       payload: {
         test: true,
         flow_id: flowId,
-        new_status: flow.trigger_config?.condition?.split("=")?.[1] || "done",
+        new_status: triggerCfg?.condition?.split("=")?.[1] || "done",
         old_status: "in_progress",
         title: "Test Job",
         client_email: user?.email,
@@ -606,7 +607,7 @@ export async function publishAutomationFlow(flowId: string) {
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data, error } = await supabase.rpc("publish_automation_flow", {
+    const { data, error } = await (supabase.rpc as any)("publish_automation_flow", {
       p_flow_id: flowId,
     });
 
@@ -614,7 +615,7 @@ export async function publishAutomationFlow(flowId: string) {
       logger.error("publishAutomationFlow RPC error", error.message);
       return { data: null, error: error.message };
     }
-    if (data?.error) return { data: null, error: data.error };
+    if ((data as any)?.error) return { data: null, error: (data as any).error };
 
     revalidatePath("/dashboard/automations");
     return { data, error: null };
@@ -653,7 +654,7 @@ export async function updateFlowConditions(
 
     const { data, error } = await supabase
       .from("automation_flows")
-      .update({ conditions })
+      .update({ conditions } as any)
       .eq("id", flowId)
       .select()
       .single();
@@ -692,9 +693,9 @@ export async function dryRunAutomationFlow(flowId: string) {
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
-    // Build a realistic mock payload based on the trigger
-    const triggerEvent = flow.trigger_config?.event || "system.webhook_received";
-    const entityType = flow.trigger_config?.entity || triggerEvent.split(".")[0];
+    const dryTriggerCfg = flow.trigger_config as Record<string, any> | null;
+    const triggerEvent = dryTriggerCfg?.event || "system.webhook_received";
+    const entityType = dryTriggerCfg?.entity || triggerEvent.split(".")[0];
 
     // Attempt to fetch a recent real record for realistic test data
     let mockPayload: Record<string, unknown> = {
@@ -731,7 +732,7 @@ export async function dryRunAutomationFlow(flowId: string) {
     } else if (entityType === "invoice") {
       const { data: recentInvoice } = await supabase
         .from("invoices")
-        .select("id, invoice_number, total, status, client_id, organization_id, clients(name, email)")
+        .select("id, display_id, total, status, client_id, organization_id, clients(name, email)")
         .eq("organization_id", flow.organization_id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -742,10 +743,10 @@ export async function dryRunAutomationFlow(flowId: string) {
           ...mockPayload,
           entity_id: recentInvoice.id,
           new_record: recentInvoice,
-          invoice_number: recentInvoice.invoice_number,
+          invoice_number: recentInvoice.display_id,
           invoice_total: recentInvoice.total,
-          client_name: recentInvoice.clients?.name,
-          client_email: recentInvoice.clients?.email,
+          client_name: (recentInvoice.clients as any)?.name,
+          client_email: (recentInvoice.clients as any)?.email,
         };
       }
     }
@@ -802,8 +803,7 @@ export async function getAutomationRuns(orgId: string, flowId?: string, limit = 
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
-    let query = supabase
-      .from("automation_runs")
+    let query = (supabase.from as any)("automation_runs")
       .select("*, automation_flows:automation_id (name, category)")
       .eq("workspace_id", orgId)
       .order("created_at", { ascending: false })
@@ -830,8 +830,7 @@ export async function getAutomationRunTrace(runId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
-    const { data, error } = await supabase
-      .from("automation_runs")
+    const { data, error } = await (supabase.from as any)("automation_runs")
       .select("*, automation_flows:automation_id (name, blocks, conditions)")
       .eq("id", runId)
       .single();
@@ -841,7 +840,7 @@ export async function getAutomationRunTrace(runId: string) {
     const { data: membership } = await supabase
       .from("organization_members")
       .select("user_id")
-      .eq("organization_id", data.workspace_id)
+      .eq("organization_id", (data as any).workspace_id)
       .eq("user_id", user.id)
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };

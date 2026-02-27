@@ -2,6 +2,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/types";
 import { revalidatePath } from "next/cache";
 import { Events, dispatch } from "@/lib/automation";
 import { logger } from "@/lib/logger";
@@ -430,7 +431,7 @@ export async function updateAsset(assetId: string, updates: UpdateAssetParams) {
           notes: auditNotes.join("; "),
           user_id: user.id,
           user_name: userName,
-          metadata: { updates },
+          metadata: { updates } as unknown as Json,
         });
     }
 
@@ -510,8 +511,8 @@ export async function updateInventoryItem(itemId: string, updates: UpdateInvento
     if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
 
     // Auto-calculate stock_level based on quantity vs min_quantity
-    const quantity = updates.quantity !== undefined ? updates.quantity : currentItem.quantity;
-    const minQuantity = updates.min_quantity !== undefined ? updates.min_quantity : currentItem.min_quantity;
+    const quantity = updates.quantity !== undefined ? updates.quantity : (currentItem.quantity ?? 0);
+    const minQuantity = updates.min_quantity !== undefined ? updates.min_quantity : (currentItem.min_quantity ?? 0);
 
     if (quantity <= 0) {
       updateData.stock_level = "critical";
@@ -692,7 +693,7 @@ export async function getAssetsOverview(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: data as AssetsOverview, error: null };
+    return { data: data as unknown as AssetsOverview, error: null };
   } catch (error: any) {
     return { data: null, error: error.message || "Failed to fetch assets overview" };
   }
@@ -714,9 +715,9 @@ export async function toggleAssetCustody(
 
     const { data, error } = await supabase.rpc("toggle_asset_custody", {
       p_asset_id: assetId,
-      p_target_user_id: targetUserId,
+      p_target_user_id: targetUserId ?? undefined,
       p_actor_id: user.id,
-      p_notes: notes || null,
+      p_notes: notes || undefined,
     });
 
     if (error) {
@@ -724,8 +725,9 @@ export async function toggleAssetCustody(
       return { data: null, error: error.message };
     }
 
-    if (data?.error) {
-      return { data: null, error: data.error };
+    const rpcResult = data as Record<string, any> | null;
+    if (rpcResult?.error) {
+      return { data: null, error: rpcResult.error };
     }
 
     revalidatePath("/dashboard/assets");
@@ -753,9 +755,9 @@ export async function consumeInventory(
     const { data, error } = await supabase.rpc("consume_inventory", {
       p_inventory_id: inventoryId,
       p_quantity: quantity,
-      p_job_id: jobId || null,
+      p_job_id: jobId || undefined,
       p_actor_id: user.id,
-      p_notes: notes || null,
+      p_notes: notes || undefined,
     });
 
     if (error) {
@@ -763,12 +765,13 @@ export async function consumeInventory(
       return { data: null, error: error.message };
     }
 
-    if (data?.error) {
-      return { data: null, error: data.error };
+    const rpcResult = data as Record<string, any> | null;
+    if (rpcResult?.error) {
+      return { data: null, error: rpcResult.error };
     }
 
     // Dispatch low stock alerts
-    if (data?.low_stock_alert) {
+    if (rpcResult?.low_stock_alert) {
       const { data: item } = await supabase
         .from("inventory_items")
         .select("name, quantity, min_quantity, organization_id")
@@ -776,13 +779,13 @@ export async function consumeInventory(
         .single();
 
       if (item) {
-        if (data.stock_level === "critical") {
+        if (rpcResult.stock_level === "critical") {
           dispatch(Events.inventoryCriticalStock(item.organization_id, inventoryId, {
-            name: item.name, quantity: data.new_quantity, min_quantity: item.min_quantity, stock_level: "critical",
+            name: item.name, quantity: rpcResult.new_quantity, min_quantity: item.min_quantity, stock_level: "critical",
           }));
         } else {
           dispatch(Events.inventoryLowStock(item.organization_id, inventoryId, {
-            name: item.name, quantity: data.new_quantity, min_quantity: item.min_quantity, stock_level: "low",
+            name: item.name, quantity: rpcResult.new_quantity, min_quantity: item.min_quantity, stock_level: "low",
           }));
         }
       }
@@ -868,7 +871,7 @@ export async function logAssetService(assetId: string, notes?: string) {
     const { data, error } = await supabase.rpc("log_asset_service", {
       p_asset_id: assetId,
       p_actor_id: user.id,
-      p_notes: notes || null,
+      p_notes: notes || undefined,
     });
 
     if (error) {
@@ -876,8 +879,9 @@ export async function logAssetService(assetId: string, notes?: string) {
       return { data: null, error: error.message };
     }
 
-    if (data?.error) {
-      return { data: null, error: data.error };
+    const rpcResult = data as Record<string, any> | null;
+    if (rpcResult?.error) {
+      return { data: null, error: rpcResult.error };
     }
 
     revalidatePath("/dashboard/assets");
