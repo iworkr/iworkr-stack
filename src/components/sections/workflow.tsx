@@ -81,32 +81,249 @@ function InboxVisual() {
 }
 
 function MapVisual() {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  // Encoded polyline following Brisbane roads: Central → New Farm → South Brisbane
-  const routePath = "fetfD{u~d\\{@sD{@oFoAgE_D_DgE_DoFgEcGgEkHgEkHgEkH_DkHwBgE{@jHbBfJfErInFrIbGfJjHfJfJrIrIbGbGnFnFjHjHjHbGjHnFnKfE";
-  const staticMapUrl = apiKey
-    ? `https://maps.googleapis.com/maps/api/staticmap?center=-27.4698,153.0251&zoom=13&size=640x400&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&path=color:0x10B98180%7Cweight:3%7Cenc:${encodeURIComponent(routePath)}&markers=color:0x10B981%7C-27.4698,153.0251&markers=color:0x10B981%7C-27.4575,153.0355&markers=color:0x10B981%7C-27.4785,153.0190&key=${apiKey}`
-    : null;
-
   return (
     <div className="relative">
-      <div className="relative h-64 overflow-hidden rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)]">
-        {staticMapUrl ? (
-          <img
-            src={staticMapUrl}
-            alt="Route optimization map"
-            className="h-full w-full object-cover"
-            loading="lazy"
+      <div className="relative h-64 overflow-hidden rounded-lg border border-[var(--card-border)]">
+        <svg
+          viewBox="0 0 640 400"
+          className="h-full w-full"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <defs>
+            <filter id="routeGlow">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Map background */}
+          <rect width="640" height="400" fill="#09090b" />
+
+          {/* City blocks */}
+          {[
+            [22, 22, 85, 62],
+            [117, 22, 85, 62],
+            [22, 94, 85, 62],
+            [117, 94, 85, 62],
+            [22, 166, 85, 48],
+            [117, 166, 85, 48],
+            [232, 22, 120, 62],
+            [232, 94, 120, 62],
+            [232, 166, 120, 48],
+            [382, 22, 120, 62],
+            [382, 94, 120, 62],
+            [382, 166, 120, 48],
+            [532, 22, 90, 62],
+            [532, 94, 90, 62],
+            [532, 166, 90, 48],
+          ].map(([x, y, w, h], i) => (
+            <rect
+              key={i}
+              x={x}
+              y={y}
+              width={w}
+              height={h}
+              rx="1"
+              fill="#0c0c0e"
+            />
+          ))}
+
+          {/* Brisbane River */}
+          <path
+            d="M -20 340 C 80 295, 160 320, 260 280 C 340 250, 400 270, 490 240 C 560 218, 610 235, 670 220"
+            fill="none"
+            stroke="#060608"
+            strokeWidth="55"
+            strokeLinecap="round"
           />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <MapPin size={24} strokeWidth={1} className="text-[var(--text-dim)]" />
-          </div>
-        )}
+
+          {/* River banks (subtle edge) */}
+          <path
+            d="M -20 340 C 80 295, 160 320, 260 280 C 340 250, 400 270, 490 240 C 560 218, 610 235, 670 220"
+            fill="none"
+            stroke="#0e0e11"
+            strokeWidth="57"
+            strokeLinecap="round"
+            strokeOpacity="0.5"
+          />
+
+          {/* Arterial roads (major) */}
+          <line x1="0" y1="88" x2="640" y2="88" stroke="#18181b" strokeWidth="4" />
+          <line x1="0" y1="160" x2="640" y2="160" stroke="#18181b" strokeWidth="4" />
+          <line x1="0" y1="220" x2="640" y2="220" stroke="#16161a" strokeWidth="3" />
+          <line x1="212" y1="0" x2="212" y2="290" stroke="#18181b" strokeWidth="4" />
+          <line x1="362" y1="0" x2="362" y2="280" stroke="#18181b" strokeWidth="4" />
+          <line x1="112" y1="0" x2="112" y2="260" stroke="#18181b" strokeWidth="3" />
+          <line x1="512" y1="0" x2="512" y2="260" stroke="#16161a" strokeWidth="3" />
+
+          {/* Local streets (minor) */}
+          {[16, 160, 310, 460, 610].map((x, i) => (
+            <line
+              key={`vh${i}`}
+              x1={x}
+              y1="0"
+              x2={x}
+              y2="250"
+              stroke="#111114"
+              strokeWidth="1"
+            />
+          ))}
+          {[16, 55, 128, 195].map((y, i) => (
+            <line
+              key={`hh${i}`}
+              x1="0"
+              y1={y}
+              x2="640"
+              y2={y}
+              stroke="#111114"
+              strokeWidth="1"
+            />
+          ))}
+
+          {/* Diagonal road */}
+          <line
+            x1="362"
+            y1="160"
+            x2="512"
+            y2="88"
+            stroke="#15151a"
+            strokeWidth="2.5"
+          />
+
+          {/* Bridge across river */}
+          <line
+            x1="362"
+            y1="240"
+            x2="362"
+            y2="350"
+            stroke="#18181b"
+            strokeWidth="3"
+          />
+
+          {/* Street labels */}
+          <text x="130" y="84" fill="#3f3f46" fontSize="6" fontFamily="system-ui">
+            ANN ST
+          </text>
+          <text x="270" y="156" fill="#3f3f46" fontSize="6" fontFamily="system-ui">
+            WICKHAM TCE
+          </text>
+          <text
+            x="215"
+            y="50"
+            fill="#3f3f46"
+            fontSize="6"
+            fontFamily="system-ui"
+            transform="rotate(90 215 50)"
+          >
+            EDWARD ST
+          </text>
+          <text
+            x="365"
+            y="50"
+            fill="#3f3f46"
+            fontSize="6"
+            fontFamily="system-ui"
+            transform="rotate(90 365 50)"
+          >
+            ALBERT ST
+          </text>
+          <text x="435" y="84" fill="#3f3f46" fontSize="6" fontFamily="system-ui">
+            COMMERCIAL RD
+          </text>
+
+          {/* Optimized route polyline — follows roads precisely */}
+          <polyline
+            points="112,195 112,160 212,160 212,88 362,88 362,160 437,124 512,88 512,160"
+            fill="none"
+            stroke="#10B981"
+            strokeWidth="3.5"
+            strokeOpacity="0.65"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#routeGlow)"
+          />
+
+          {/* Route direction dots */}
+          {[
+            [162, 160],
+            [290, 88],
+            [400, 141],
+            [475, 106],
+          ].map(([cx, cy], i) => (
+            <circle
+              key={`d${i}`}
+              cx={cx}
+              cy={cy}
+              r="1.5"
+              fill="#10B981"
+              fillOpacity="0.4"
+            />
+          ))}
+
+          {/* Marker A — start */}
+          <circle cx="112" cy="195" r="12" fill="#10B981" fillOpacity="0.15" />
+          <circle cx="112" cy="195" r="7" fill="#10B981" />
+          <text
+            x="112"
+            y="199"
+            textAnchor="middle"
+            fill="white"
+            fontSize="9"
+            fontWeight="bold"
+            fontFamily="system-ui"
+          >
+            A
+          </text>
+
+          {/* Marker B — midpoint */}
+          <circle cx="362" cy="160" r="12" fill="#10B981" fillOpacity="0.15" />
+          <circle cx="362" cy="160" r="7" fill="#10B981" />
+          <text
+            x="362"
+            y="164"
+            textAnchor="middle"
+            fill="white"
+            fontSize="9"
+            fontWeight="bold"
+            fontFamily="system-ui"
+          >
+            B
+          </text>
+
+          {/* Marker C — end */}
+          <circle cx="512" cy="160" r="12" fill="#10B981" fillOpacity="0.15" />
+          <circle cx="512" cy="160" r="7" fill="#10B981" />
+          <text
+            x="512"
+            y="164"
+            textAnchor="middle"
+            fill="white"
+            fontSize="9"
+            fontWeight="bold"
+            fontFamily="system-ui"
+          >
+            C
+          </text>
+
+          {/* ETA labels */}
+          <rect x="142" y="147" width="32" height="12" rx="2" fill="#10B981" fillOpacity="0.12" />
+          <text x="158" y="156" textAnchor="middle" fill="#10B981" fontSize="7" fontFamily="system-ui">
+            8 min
+          </text>
+          <rect x="410" y="100" width="36" height="12" rx="2" fill="#10B981" fillOpacity="0.12" />
+          <text x="428" y="109" textAnchor="middle" fill="#10B981" fontSize="7" fontFamily="system-ui">
+            12 min
+          </text>
+        </svg>
 
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-12"
-          style={{ background: `linear-gradient(to top, var(--section-fade), transparent)` }}
+          style={{
+            background: `linear-gradient(to top, var(--section-fade), transparent)`,
+          }}
         />
       </div>
 

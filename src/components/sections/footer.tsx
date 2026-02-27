@@ -91,18 +91,11 @@ export function Footer() {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <Image
-              src="/logos/logo-dark-full.png"
-              alt="iWorkr"
-              width={102}
-              height={32}
-              className="hidden h-5 w-auto object-contain dark:block"
-            />
-            <Image
               src="/logos/logo-light-full.png"
               alt="iWorkr"
               width={102}
               height={32}
-              className="block h-5 w-auto object-contain dark:hidden"
+              className="h-6 w-auto object-contain"
             />
             <span className="text-sm text-[var(--text-muted)]">
               &copy; {new Date().getFullYear()} All rights reserved.
