@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:iworkr_mobile/core/services/directions_service.dart';
 import 'package:iworkr_mobile/core/services/route_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -27,6 +28,25 @@ class FlightPathScreen extends ConsumerStatefulWidget {
 
 class _FlightPathScreenState extends ConsumerState<FlightPathScreen> {
   int? _selectedStopIndex;
+  List<LatLng>? _roadPolyline;
+  String? _lastRouteId;
+
+  /// Fetch road-following polyline from Google Directions API.
+  void _resolveRoadPolyline(RouteRun route) {
+    if (route.id == _lastRouteId) return; // already resolved for this route
+    _lastRouteId = route.id;
+
+    final validStops = route.jobSequence
+        .where((s) => s.lat != null && s.lng != null)
+        .toList();
+    if (validStops.length < 2) return;
+
+    final stopCoords = validStops.map((s) => LatLng(s.lat!, s.lng!)).toList();
+
+    fetchRoutePolyline(stopCoords).then((points) {
+      if (mounted) setState(() => _roadPolyline = points);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +69,9 @@ class _FlightPathScreenState extends ConsumerState<FlightPathScreen> {
           final selectedStop = selectedIdx != null && selectedIdx < route.jobSequence.length
               ? route.jobSequence[selectedIdx]
               : null;
+
+          // Kick off road-following polyline fetch
+          _resolveRoadPolyline(route);
 
           final validStops = route.jobSequence.where((s) => s.lat != null && s.lng != null).toList();
           final center = validStops.isNotEmpty
@@ -77,7 +100,9 @@ class _FlightPathScreenState extends ConsumerState<FlightPathScreen> {
             ));
           }
 
-          final polylinePoints = validStops.map((s) => LatLng(s.lat!, s.lng!)).toList();
+          // Use road-following polyline from Directions API, fall back to straight lines
+          final polylinePoints = _roadPolyline ??
+              validStops.map((s) => LatLng(s.lat!, s.lng!)).toList();
           final polylines = <Polyline>{
             if (polylinePoints.length >= 2)
               Polyline(

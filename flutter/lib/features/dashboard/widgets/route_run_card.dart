@@ -268,16 +268,34 @@ class _RouteMapPainter extends CustomPainter {
 
     if (stops.isEmpty) return;
 
-    // Generate positions along a nice path
+    // Map actual lat/lng to widget coordinates
     final points = <Offset>[];
-    final rng = math.Random(42);
-    final padding = 24.0;
+    const padding = 24.0;
     final usableWidth = size.width - padding * 2;
     final usableHeight = size.height - padding * 2;
 
-    for (int i = 0; i < stops.length; i++) {
-      final x = padding + (usableWidth / (stops.length - 1).clamp(1, 99)) * i;
-      final y = padding + usableHeight * 0.3 + rng.nextDouble() * usableHeight * 0.4;
+    final validStops = stops.where((s) => s.lat != null && s.lng != null).toList();
+    if (validStops.isEmpty) return;
+
+    double minLat = double.infinity, maxLat = -double.infinity;
+    double minLng = double.infinity, maxLng = -double.infinity;
+    for (final s in validStops) {
+      minLat = math.min(minLat, s.lat!);
+      maxLat = math.max(maxLat, s.lat!);
+      minLng = math.min(minLng, s.lng!);
+      maxLng = math.max(maxLng, s.lng!);
+    }
+    final latRange = maxLat - minLat == 0 ? 0.01 : maxLat - minLat;
+    final lngRange = maxLng - minLng == 0 ? 0.01 : maxLng - minLng;
+
+    for (final s in stops) {
+      if (s.lat == null || s.lng == null) {
+        points.add(Offset(size.width / 2, size.height / 2));
+        continue;
+      }
+      final x = padding + ((s.lng! - minLng) / lngRange) * usableWidth;
+      // Invert Y: lat increases north but screen Y increases downward
+      final y = padding + ((maxLat - s.lat!) / latRange) * usableHeight;
       points.add(Offset(x, y));
     }
 

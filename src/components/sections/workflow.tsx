@@ -82,8 +82,10 @@ function InboxVisual() {
 
 function MapVisual() {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  // Encoded polyline following Brisbane roads: Central → New Farm → South Brisbane
+  const routePath = "fetfD{u~d\\{@sD{@oFoAgE_D_DgE_DoFgEcGgEkHgEkHgEkH_DkHwBgE{@jHbBfJfErInFrIbGfJjHfJfJrIrIbGbGnFnFjHjHjHbGjHnFnKfE";
   const staticMapUrl = apiKey
-    ? `https://maps.googleapis.com/maps/api/staticmap?center=-27.4698,153.0251&zoom=13&size=640x400&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&markers=color:0x10B981%7C-27.4698,153.0251&markers=color:0x10B981%7C-27.4575,153.0355&markers=color:0x10B981%7C-27.4785,153.0190&key=${apiKey}`
+    ? `https://maps.googleapis.com/maps/api/staticmap?center=-27.4698,153.0251&zoom=13&size=640x400&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&path=color:0x10B98180%7Cweight:3%7Cenc:${encodeURIComponent(routePath)}&markers=color:0x10B981%7C-27.4698,153.0251&markers=color:0x10B981%7C-27.4575,153.0355&markers=color:0x10B981%7C-27.4785,153.0190&key=${apiKey}`
     : null;
 
   return (
@@ -101,21 +103,6 @@ function MapVisual() {
             <MapPin size={24} strokeWidth={1} className="text-[var(--text-dim)]" />
           </div>
         )}
-
-        {/* Route overlay line */}
-        <svg className="pointer-events-none absolute inset-0 h-full w-full">
-          <motion.path
-            d="M 60 180 C 100 180, 120 100, 160 90 S 240 60, 300 50"
-            fill="none"
-            stroke="rgba(16,185,129,0.5)"
-            strokeWidth="2"
-            strokeDasharray="8 4"
-            initial={{ pathLength: 0 }}
-            whileInView={{ pathLength: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.5, delay: 0.3, ease: "easeOut" }}
-          />
-        </svg>
 
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-12"
