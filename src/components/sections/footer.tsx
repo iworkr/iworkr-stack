@@ -90,25 +90,18 @@ export function Footer() {
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-[var(--card-border)] pt-8 sm:flex-row">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            {/* Use dark logo in dark mode, light in light - CSS swap */}
-            <picture>
-              <source
-                srcSet="/logos/logo-dark-full.png"
-                media="(prefers-color-scheme: dark)"
-              />
-              <Image
-                src="/logos/logo-dark-full.png"
-                alt="iWorkr"
-                width={96}
-                height={24}
-                className="hidden h-5 w-auto object-contain dark:block"
-              />
-            </picture>
+            <Image
+              src="/logos/logo-dark-full.png"
+              alt="iWorkr"
+              width={102}
+              height={32}
+              className="hidden h-5 w-auto object-contain dark:block"
+            />
             <Image
               src="/logos/logo-light-full.png"
               alt="iWorkr"
-              width={96}
-              height={24}
+              width={102}
+              height={32}
               className="block h-5 w-auto object-contain dark:hidden"
             />
             <span className="text-sm text-[var(--text-muted)]">
