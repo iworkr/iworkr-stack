@@ -91,7 +91,7 @@ export function Footer() {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <Image
-              src="/logos/logo-light-full.png"
+              src="/logos/logo-dark-full.png"
               alt="iWorkr"
               width={102}
               height={32}
