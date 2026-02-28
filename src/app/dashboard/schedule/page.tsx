@@ -34,6 +34,8 @@ import { type BacklogJob } from "@/app/actions/schedule";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { timelineClockAnimation } from "@/components/dashboard/lottie-data-relay";
 import { createClient } from "@/lib/supabase/client";
+import { ScheduleWeekView } from "@/components/schedule/schedule-week-view";
+import { ScheduleMonthView } from "@/components/schedule/schedule-month-view";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -573,23 +575,18 @@ export default function SchedulePage() {
           )}
 
           {/* View Switcher — Sliding Pill */}
-          {/* INCOMPLETE:PARTIAL — Schedule only supports "day" view; week and month views are disabled. Done when week view renders a 7-day timeline and month view renders a calendar grid with blocks. */}
           <div className="relative flex items-center gap-0.5 rounded-lg p-0.5">
             {(["day", "week", "month"] as ViewScale[]).map((scale) => {
-              const isDisabled = scale !== "day";
               const isActive = viewScale === scale;
               return (
                 <button
                   key={scale}
-                  onClick={() => !isDisabled && setViewScale(scale)}
-                  disabled={isDisabled}
-                  title={isDisabled ? "Coming soon" : viewScaleLabels[scale]}
+                  onClick={() => setViewScale(scale)}
+                  title={viewScaleLabels[scale]}
                   className={`relative z-10 rounded-md px-3.5 py-1.5 text-[11px] font-medium transition-colors duration-150 ${
-                    isDisabled
-                      ? "cursor-not-allowed text-zinc-800"
-                      : isActive
-                        ? "text-white"
-                        : "text-zinc-500 hover:text-zinc-300"
+                    isActive
+                      ? "text-white"
+                      : "text-zinc-500 hover:text-zinc-300"
                   }`}
                 >
                   {isActive && (
@@ -629,6 +626,19 @@ export default function SchedulePage() {
       </div>
 
       {/* ── Main area ──────────────────────────────────────── */}
+      {viewScale === "week" ? (
+        <ScheduleWeekView
+          blocks={blocks}
+          technicians={technicians}
+          selectedDate={selectedDate}
+          onBlockClick={(id) => setPeekBlockId(id)}
+        />
+      ) : viewScale === "month" ? (
+        <ScheduleMonthView
+          blocks={blocks}
+          selectedDate={selectedDate}
+        />
+      ) : (
       <div className="flex flex-1 overflow-hidden border-t border-white/[0.04]">
         {/* ── Timeline area ────────────────────────────────── */}
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -1172,6 +1182,7 @@ export default function SchedulePage() {
           )}
         </AnimatePresence>
       </div>
+      )}
 
       {/* ── Drag Ghost Overlay ────────────────────────────────── */}
       {dragState && dragState.mode === "move" && (

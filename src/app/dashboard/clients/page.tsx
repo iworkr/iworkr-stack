@@ -24,6 +24,8 @@ import {
 import { useToastStore } from "@/components/app/action-toast";
 import { useShellStore } from "@/lib/shell-store";
 import { useClientsStore } from "@/lib/clients-store";
+import { useOrg } from "@/lib/hooks/use-org";
+import { importClientsFromCSV } from "@/app/actions/clients";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
@@ -104,6 +106,8 @@ export default function ClientsPage() {
   const router = useRouter();
   const { addToast } = useToastStore();
   const { setCreateClientModalOpen } = useShellStore();
+  const { orgId } = useOrg();
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const {
     clients: clientsList,
     loading,
@@ -393,9 +397,27 @@ export default function ClientsPage() {
               </AnimatePresence>
             </div>
 
-            {/* INCOMPLETE:TODO — CSV client import not implemented; should open an import modal that parses CSV and upserts clients via server action. Done when a CSV file upload creates client records. */}
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !orgId) return;
+                e.target.value = "";
+                addToast("Importing clients...");
+                const text = await file.text();
+                const result = await importClientsFromCSV(orgId, text);
+                if (result.error) {
+                  addToast(`Import error: ${result.error}`);
+                } else {
+                  addToast(`Imported ${result.imported} clients (${result.skipped} skipped)`);
+                }
+              }}
+            />
             <button
-              onClick={() => addToast("CSV import coming soon")}
+              onClick={() => csvInputRef.current?.click()}
               className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.03] hover:text-zinc-400"
               title="Import CSV"
             >

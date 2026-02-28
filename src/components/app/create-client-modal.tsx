@@ -23,6 +23,7 @@ import { InlineMap } from "@/components/maps/inline-map";
 import { useOrg } from "@/lib/hooks/use-org";
 import { type Client, type ClientStatus } from "@/lib/data";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { lookupABN, getDistanceFromHQ } from "@/app/actions/clients";
 
 /* ── Types & Config ───────────────────────────────────────── */
 
@@ -68,8 +69,6 @@ function makeInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-// INCOMPLETE:TODO — ABN Lookup API integration not implemented; handleNameChange should query ABN Lookup to auto-populate address, ABN number, and company classification. The isEnriching state and Sparkles spinner exist but never activate. Done when typing a business name triggers ABN lookup and populates client fields.
-
 /* ── Component ────────────────────────────────────────────── */
 
 export function CreateClientModal({
@@ -100,6 +99,8 @@ export function CreateClientModal({
   const [activePill, setActivePill] = useState<string | null>(null);
   const [splitMenuOpen, setSplitMenuOpen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [abnResult, setAbnResult] = useState<{ abn: string; name: string; type: string; address: string; status: string } | null>(null);
+  const [driveTime, setDriveTime] = useState<string | null>(null);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const contactNameRef = useRef<HTMLInputElement>(null);
@@ -157,21 +158,45 @@ export function CreateClientModal({
       setSplitMenuOpen(false);
       setSaved(false);
       setSaving(false);
+      setAbnResult(null);
+      setDriveTime(null);
       setTimeout(() => nameInputRef.current?.focus(), 120);
     }
   }, [open]);
+
+  /* ── ABN Lookup on name change ──────────────────────────── */
+  useEffect(() => {
+    if (isLocked || nameQuery.length < 4) return;
+    const timer = setTimeout(async () => {
+      setIsEnriching(true);
+      const result = await lookupABN(nameQuery);
+      setAbnResult(result);
+      setIsEnriching(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [nameQuery, isLocked]);
+
+  /* ── Drive time from HQ ─────────────────────────────────── */
+  useEffect(() => {
+    if (!address || !orgId) { setDriveTime(null); return; }
+    const timer = setTimeout(async () => {
+      const result = await getDistanceFromHQ(orgId, address);
+      setDriveTime(result);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [address, orgId]);
 
   /* ── Name change handler ────────────────────────────────── */
   function handleNameChange(val: string) {
     setNameQuery(val);
     if (isLocked) return;
-    setIsEnriching(false);
   }
 
   function lockIdentity() {
     if (!nameQuery.trim()) return;
     setClientName(nameQuery.trim());
     setIsLocked(true);
+    if (abnResult?.address) setAddress(abnResult.address);
     setTimeout(() => contactNameRef.current?.focus(), 80);
   }
 
@@ -419,10 +444,11 @@ export function CreateClientModal({
                               <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-300">
                                 {address}
                               </span>
-                              {/* INCOMPLETE:TODO — "12 min from HQ" is hardcoded; should calculate actual driving time from org HQ address using Google Maps Distance Matrix API. Done when drive time is dynamically computed. */}
-                              <span className="shrink-0 text-[9px] text-zinc-600">
-                                12 min from HQ
-                              </span>
+                              {driveTime && (
+                                <span className="shrink-0 text-[9px] text-zinc-600">
+                                  {driveTime} from HQ
+                                </span>
+                              )}
                             </motion.div>
                           )}
                         </div>

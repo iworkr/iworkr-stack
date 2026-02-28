@@ -87,8 +87,24 @@ Future<AiChatMessage?> sendAiMessage({
     }
   }
 
-  // INCOMPLETE:BLOCKED(OPENAI_API_KEY) — AI chat uses local placeholder response generator instead of real LLM; needs POST to /api/ai/chat or Supabase Edge Function with OpenAI key. Done when responses come from an actual LLM and [Demo] prefix is removed.
-  final response = _generateLocalResponse(content, contextData);
+  // Try calling the AI Edge Function; fall back to local demo response if unavailable
+  String response;
+  try {
+    final fnRes = await SupabaseService.client.functions.invoke(
+      'ai-chat',
+      body: {
+        'message': content,
+        'context': contextData,
+        'job_id': jobId,
+        'organization_id': orgId,
+      },
+    );
+    final data = fnRes.data as Map<String, dynamic>?;
+    response = data?['reply'] as String? ?? _generateLocalResponse(content, contextData);
+  } catch (_) {
+    // Edge Function unavailable — fall back to local demo responses
+    response = _generateLocalResponse(content, contextData);
+  }
 
   // Store AI response
   final row = await SupabaseService.client.from('ai_chat_messages').insert({

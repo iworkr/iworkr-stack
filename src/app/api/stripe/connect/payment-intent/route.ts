@@ -87,8 +87,7 @@ export async function POST(req: NextRequest) {
         { stripeAccount: stripeAccountId }
       );
 
-      // INCOMPLETE:TODO — Payment record insert errors are silently swallowed; should log failures so payment-intent and DB stay in sync. Done when .catch logs the error via logger.
-      await (supabase as any).from("payments").insert({
+      const { error: paymentRecordError } = await (supabase as any).from("payments").insert({
         organization_id: orgId,
         invoice_id: invoiceId || null,
         stripe_payment_intent_id: paymentIntent.id,
@@ -96,7 +95,10 @@ export async function POST(req: NextRequest) {
         currency: cur,
         platform_fee_cents: applicationFee,
         status: "pending",
-      }).then(() => {}).catch(() => {});
+      });
+      if (paymentRecordError) {
+        console.error("[Stripe] Payment record insert failed:", paymentRecordError.message, { paymentIntentId: paymentIntent.id, orgId });
+      }
 
       return NextResponse.json({
         clientSecret: paymentIntent.client_secret,

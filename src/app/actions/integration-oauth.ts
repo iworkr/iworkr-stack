@@ -4,6 +4,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { encrypt, decrypt } from "@/lib/encryption";
 
 /* ── Schemas ──────────────────────────────────────────── */
 
@@ -211,13 +212,13 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
       connectedAs = "QuickBooks Company";
     }
 
-    // INCOMPLETE:TODO — OAuth access_token and refresh_token are stored in plaintext in the database; should be encrypted at rest using AES-256 with a server-side encryption key. Done when tokens are encrypted before insert and decrypted on read.
+    // Tokens encrypted at rest via AES-256-GCM
     await supabase
       .from("integrations")
       .update({
         status: "connected",
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || null,
+        access_token: encrypt(tokens.access_token),
+        refresh_token: tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
         token_expires_at: expiresAt,
         connected_as: connectedAs,
         connected_email: connectedEmail,
@@ -272,7 +273,7 @@ export async function refreshIntegrationToken(integrationId: string): Promise<{ 
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         grant_type: "refresh_token",
-        refresh_token: int.refresh_token,
+        refresh_token: decrypt(int.refresh_token),
         client_id: clientId,
         client_secret: clientSecret,
       }),
@@ -294,8 +295,8 @@ export async function refreshIntegrationToken(integrationId: string): Promise<{ 
     await supabase
       .from("integrations")
       .update({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || int.refresh_token,
+        access_token: encrypt(tokens.access_token),
+        refresh_token: tokens.refresh_token ? encrypt(tokens.refresh_token) : int.refresh_token,
         token_expires_at: expiresAt,
         error_message: null,
         updated_at: new Date().toISOString(),
@@ -345,7 +346,7 @@ export async function connectWithApiKey(
     .from("integrations")
     .update({
       status: "connected",
-      access_token: apiKey,
+      access_token: encrypt(apiKey),
       connected_as: extraConfig?.connectedAs || "API Key",
       settings: extraConfig?.settings,
       last_sync: new Date().toISOString(),

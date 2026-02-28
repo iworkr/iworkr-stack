@@ -298,3 +298,58 @@ export async function updateNotificationPreferences(userId: string, prefsUpdate:
     return { data: null, error: err.message || "Failed to update notification preferences" };
   }
 }
+
+/* ── Export Workspace Data ──────────────────────────── */
+
+function escapeCSVField(value: unknown): string {
+  if (value == null) return "";
+  const str = typeof value === "object" ? JSON.stringify(value) : String(value);
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function rowsToCSV(rows: Record<string, unknown>[]): string {
+  if (rows.length === 0) return "";
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.join(",")];
+  for (const row of rows) {
+    lines.push(headers.map((h) => escapeCSVField(row[h])).join(","));
+  }
+  return lines.join("\n");
+}
+
+const EXPORTABLE_TABLES = ["clients", "jobs", "invoices"] as const;
+
+export async function exportWorkspaceData(
+  orgId: string,
+  tables: string[]
+): Promise<{ data: Record<string, string> | null; error: string | null }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data: membership } = await supabase
+      .from("organization_members").select("user_id")
+      .eq("organization_id", orgId).eq("user_id", user.id).maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
+    const validTables = tables.filter((t) =>
+      (EXPORTABLE_TABLES as readonly string[]).includes(t)
+    );
+    if (validTables.length === 0) return { data: null, error: "No valid tables selected" };
+
+    const result: Record<string, string> = {};
+    for (const table of validTables) {
+      const { data: rows, error } = await (supabase as any)
+        .from(table).select("*").eq("organization_id", orgId).limit(10000);
+      if (error) { result[table] = `Error: ${error.message}`; }
+      else { result[table] = rowsToCSV(rows || []); }
+    }
+    return { data: result, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message || "Export failed" };
+  }
+}

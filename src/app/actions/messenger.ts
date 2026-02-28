@@ -421,6 +421,88 @@ export async function markChannelRead(channelId: string) {
   }
 }
 
+/* ── Mentions ──────────────────────────────────────────── */
+
+export interface MentionItem {
+  messageId: string;
+  content: string;
+  channelId: string;
+  channelName: string;
+  channelType: string;
+  senderName: string;
+  senderAvatarUrl: string | null;
+  senderId: string;
+  timestamp: string;
+}
+
+export async function getMentions(orgId: string, userId: string) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    // Verify caller matches authenticated user
+    if (user.id !== userId) return { data: null, error: "Unauthorized" };
+
+    // Verify org membership
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Not a member of this organization" };
+
+    // Get all channels the user is a member of in this org
+    const { data: userChannels, error: chErr } = await supabase
+      .from("channels")
+      .select("id, name, type, channel_members!inner(user_id)")
+      .eq("organization_id", orgId)
+      .eq("channel_members.user_id", user.id)
+      .eq("is_archived", false);
+
+    if (chErr) return { data: null, error: chErr.message };
+    if (!userChannels || userChannels.length === 0) return { data: [], error: null };
+
+    const channelIds = userChannels.map((ch: any) => ch.id);
+    const channelMap = new Map<string, { name: string; type: string }>();
+    for (const ch of userChannels) {
+      channelMap.set(ch.id, { name: (ch as any).name || "Unknown", type: (ch as any).type });
+    }
+
+    // Search for messages containing @userId or @all
+    const { data: messages, error: msgErr } = await supabase
+      .from("messages")
+      .select("id, content, channel_id, sender_id, created_at, profiles:sender_id(id, full_name, avatar_url)")
+      .in("channel_id", channelIds)
+      .is("deleted_at", null)
+      .or(`content.ilike.%@${userId}%,content.ilike.%@all%`)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (msgErr) return { data: null, error: msgErr.message };
+
+    const mentions: MentionItem[] = (messages || []).map((msg: any) => {
+      const ch = channelMap.get(msg.channel_id);
+      return {
+        messageId: msg.id,
+        content: msg.content,
+        channelId: msg.channel_id,
+        channelName: ch?.name || "Unknown",
+        channelType: ch?.type || "group",
+        senderName: msg.profiles?.full_name || "Unknown",
+        senderAvatarUrl: msg.profiles?.avatar_url || null,
+        senderId: msg.sender_id,
+        timestamp: msg.created_at,
+      };
+    });
+
+    return { data: mentions, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
 /* ── Polls ─────────────────────────────────────────────── */
 
 export async function votePoll(messageId: string, optionIndex: number) {
@@ -461,5 +543,44 @@ export async function votePoll(messageId: string, optionIndex: number) {
     return { data, error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
+  }
+}
+
+/* ── Broadcast ────────────────────────────────────────── */
+
+export async function broadcastMessage(orgId: string, message: string, senderId: string) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id !== senderId) return { error: "Unauthorized" };
+
+    const { data: existing } = await supabase
+      .from("channels").select("id")
+      .eq("organization_id", orgId).eq("type", "broadcast")
+      .eq("name", "Team Broadcast").maybeSingle();
+
+    let channelId = existing?.id;
+    if (!channelId) {
+      const { data: created, error: createErr } = await supabase
+        .from("channels")
+        .insert({ organization_id: orgId, type: "broadcast", name: "Team Broadcast", created_by: senderId })
+        .select("id").single();
+      if (createErr) return { error: createErr.message };
+      channelId = created.id;
+    }
+
+    const { error: msgErr } = await supabase.from("messages").insert({
+      channel_id: channelId, sender_id: senderId, content: message,
+      type: "text", metadata: { broadcast: true },
+    });
+    if (msgErr) return { error: msgErr.message };
+
+    await supabase.from("channels")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", channelId);
+
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Broadcast failed" };
   }
 }

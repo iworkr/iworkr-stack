@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:iworkr_mobile/core/database/app_database.dart';
@@ -28,6 +29,7 @@ class LocationService {
   final AppDatabase _db;
   Timer? _syncTimer;
   Timer? _heartbeatTimer;
+  StreamSubscription<Position>? _positionSub;
   bool _tracking = false;
 
   LocationService(this._db);
@@ -38,7 +40,34 @@ class LocationService {
   Future<void> startTracking() async {
     if (_tracking) return;
     _tracking = true;
-    // INCOMPLETE:PARTIAL — startTracking only sets up sync timers but never starts GPS listening; no Geolocator.getPositionStream() or background geolocation plugin integration.
+
+    // Request location permission if needed
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _tracking = false;
+        return;
+      }
+    }
+
+    // Start GPS position stream
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // meters — only report when moved 10m+
+      ),
+    ).listen((position) {
+      recordPoint(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        speed: position.speed * 3.6, // m/s → km/h
+        heading: position.heading,
+        accuracy: position.accuracy,
+        isMock: position.isMocked,
+      );
+    });
 
     _syncTimer = Timer.periodic(
       const Duration(seconds: 60),
@@ -54,6 +83,8 @@ class LocationService {
   /// Kill tracking — called on clock out.
   void stopTracking() {
     _tracking = false;
+    _positionSub?.cancel();
+    _positionSub = null;
     _syncTimer?.cancel();
     _heartbeatTimer?.cancel();
     _syncTimer = null;
@@ -85,10 +116,25 @@ class LocationService {
     ));
   }
 
+  /// Record a heartbeat GPS ping (zero-speed point) to prove the service
+  /// is alive during stationary periods.
   Future<void> _recordHeartbeat() async {
-    // INCOMPLETE:PARTIAL — _recordHeartbeat is an empty stub; heartbeat GPS pings are never actually recorded.
-    // Heartbeat pings are recorded as zero-speed points
-    // to prove the service is alive during stationary periods.
+    if (!_tracking) return;
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      );
+      await recordPoint(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        speed: 0,
+        heading: position.heading,
+        accuracy: position.accuracy,
+        isMock: position.isMocked,
+      );
+    } catch (_) {
+      // Heartbeat is best-effort — don't crash tracking on failure
+    }
   }
 
   /// Sync unsynced telemetry to Supabase in batches.

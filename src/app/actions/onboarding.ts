@@ -148,7 +148,7 @@ export async function sendTeamInvites(
   const companyName = org?.name || "your team";
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iworkrapp.com";
 
-  const results: { email: string; success: boolean; error?: string }[] = [];
+  const results: { email: string; success: boolean; emailSent?: boolean; error?: string }[] = [];
 
   for (const email of emails) {
     const { data: invite, error } = await supabase
@@ -166,25 +166,32 @@ export async function sendTeamInvites(
       .select()
       .single();
 
+    let emailSent = true;
     if (!error && invite) {
       // Genesis: use /join route with token-based SSR validation
       const inviteToken = invite.token || invite.id;
       const inviteUrl = `${baseUrl}/join?token=${inviteToken}`;
-      await sendInviteEmail({
-        to: email,
-        inviterName,
-        companyName,
-        role: "Technician",
-        inviteUrl,
-        brandColorHex: org?.brand_color_hex || undefined,
-        logoUrl: org?.logo_url || undefined,
-      }).catch((err) => console.error("[Email] Invite send failed:", err)); // INCOMPLETE:TODO — Email failures are silently caught; should report failure per-invite in the results array and optionally retry. Done when invite email failures are surfaced to the caller.
+      try {
+        await sendInviteEmail({
+          to: email,
+          inviterName,
+          companyName,
+          role: "Technician",
+          inviteUrl,
+          brandColorHex: org?.brand_color_hex || undefined,
+          logoUrl: org?.logo_url || undefined,
+        });
+      } catch (emailErr) {
+        console.error("[Email] Invite send failed:", emailErr);
+        emailSent = false;
+      }
     }
 
     results.push({
       email,
       success: !error,
-      error: error?.message,
+      emailSent,
+      error: error?.message || (!emailSent ? "Invite created but email delivery failed" : undefined),
     });
   }
 

@@ -809,3 +809,131 @@ export async function getClientDetails(clientId: string, orgId?: string) {
     return { data: null, error: error.message || "Failed to fetch client details" };
   }
 }
+
+/* ── ABN Lookup ─────────────────────────────────────── */
+
+export async function lookupABN(name: string): Promise<{
+  abn: string; name: string; type: string; address: string; status: string;
+} | null> {
+  const guid = process.env.ABR_GUID;
+  if (!guid) return null;
+  try {
+    const url = `https://abr.business.gov.au/json/AbnDetails.aspx?abn=&callback=c&name=${encodeURIComponent(name)}&guid=${guid}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const text = await res.text();
+    const jsonStr = text.replace(/^c\(/, "").replace(/\)$/, "");
+    const data = JSON.parse(jsonStr);
+    if (!data?.Abn) return null;
+    return {
+      abn: data.Abn,
+      name: data.EntityName || data.BusinessName?.[0] || name,
+      type: data.EntityTypeName || "Unknown",
+      address: [data.AddressState, data.AddressPostcode].filter(Boolean).join(" "),
+      status: data.AbnStatus || "Unknown",
+    };
+  } catch {
+    return null;
+  }
+}
+
+/* ── Distance from HQ ──────────────────────────────── */
+
+export async function getDistanceFromHQ(orgId: string, clientAddress: string): Promise<string | null> {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey || !clientAddress) return null;
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: org } = await supabase
+      .from("organizations").select("settings").eq("id", orgId).maybeSingle();
+    const hqAddress = (org?.settings as any)?.address;
+    if (!hqAddress) return null;
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(hqAddress)}&destinations=${encodeURIComponent(clientAddress)}&key=${apiKey}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    const data = await res.json();
+    const element = data?.rows?.[0]?.elements?.[0];
+    if (element?.status !== "OK") return null;
+    return element.duration.text;
+  } catch {
+    return null;
+  }
+}
+
+/* ── CSV Client Import ─────────────────────────────── */
+
+function parseCSVRows(text: string): Record<string, string>[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"));
+  const rows: Record<string, string>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (const ch of lines[i]) {
+      if (ch === '"') { inQuotes = !inQuotes; }
+      else if (ch === "," && !inQuotes) { values.push(current.trim()); current = ""; }
+      else { current += ch; }
+    }
+    values.push(current.trim());
+    const row: Record<string, string> = {};
+    headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+export async function importClientsFromCSV(orgId: string, csvText: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+  const { data: membership } = await supabase
+    .from("organization_members").select("user_id")
+    .eq("organization_id", orgId).eq("user_id", user.id).maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
+
+  const rows = parseCSVRows(csvText);
+  if (rows.length === 0) return { error: "No data rows found in CSV" };
+  if (rows.length > 5000) return { error: "Maximum 5000 rows per import" };
+
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  const ClientRowSchema = z.object({
+    name: z.string().min(1).max(200),
+    email: z.string().email().max(255).optional().or(z.literal("")),
+    phone: z.string().max(30).optional(),
+    address: z.string().max(500).optional(),
+    type: z.enum(["residential", "commercial"]).optional(),
+  });
+
+  for (let i = 0; i < rows.length; i += 100) {
+    const batch = rows.slice(i, i + 100);
+    const validRecords: any[] = [];
+    for (const row of batch) {
+      const parsed = ClientRowSchema.safeParse({
+        name: row.name || row.client_name || row.company || "",
+        email: row.email || row.client_email || "",
+        phone: row.phone || row.mobile || "",
+        address: row.address || row.street_address || "",
+        type: row.type === "commercial" ? "commercial" : "residential",
+      });
+      if (!parsed.success) { skipped++; errors.push(`Row ${i + batch.indexOf(row) + 2}: Invalid data`); continue; }
+      validRecords.push({
+        organization_id: orgId, name: parsed.data.name,
+        email: parsed.data.email || null, phone: parsed.data.phone || null,
+        address: parsed.data.address || null, type: parsed.data.type || "residential",
+        status: "active" as const,
+      });
+    }
+    if (validRecords.length > 0) {
+      const { error } = await supabase.from("clients").insert(validRecords);
+      if (error) { errors.push(`Batch error: ${error.message}`); skipped += validRecords.length; }
+      else { imported += validRecords.length; }
+    }
+  }
+  revalidatePath("/dashboard/clients");
+  return { imported, skipped, errors: errors.slice(0, 20) };
+}

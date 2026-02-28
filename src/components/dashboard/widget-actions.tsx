@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Briefcase, FileText, UserPlus, Megaphone, Zap } from "lucide-react";
 import { useShellStore } from "@/lib/shell-store";
-import { useToastStore } from "@/components/app/action-toast";
+import { useOrg } from "@/lib/hooks/use-org";
 import { WidgetShell } from "./widget-shell";
+import { BroadcastModal } from "@/components/messenger/broadcast-modal";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const actions = [
@@ -44,7 +46,8 @@ const actions = [
 
 export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
   const { setCreateClientModalOpen, setCreateInvoiceModalOpen, setCreateJobModalOpen } = useShellStore();
-  const { addToast } = useToastStore();
+  const { orgId, userId } = useOrg();
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
 
   const handleAction = (actionId: string) => {
     switch (actionId) {
@@ -58,8 +61,7 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
         setCreateInvoiceModalOpen(true);
         break;
       case "broadcast":
-        // INCOMPLETE:TODO — Broadcast feature not implemented; should open a composer modal to send team-wide messages with delivery tracking. Done when BroadcastModal sends real messages via messenger server action.
-        addToast("Broadcast coming soon");
+        setBroadcastOpen(true);
         break;
     }
   };
@@ -130,6 +132,14 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
           );
         })}
       </div>
+      {orgId && userId && (
+        <BroadcastModal
+          open={broadcastOpen}
+          onClose={() => setBroadcastOpen(false)}
+          orgId={orgId}
+          userId={userId}
+        />
+      )}
     </WidgetShell>
   );
 }

@@ -53,25 +53,21 @@ async function verifyStripeSignature(
   return JSON.parse(body);
 }
 
-// INCOMPLETE:TODO — findOrgByStripeCustomer does full table scan of all organizations; should use indexed stripe_customer_id column for O(1) lookup.
-// TODO: Replace with indexed lookup: SELECT org_id FROM org_settings WHERE stripe_customer_id = $1
 async function findOrgByStripeCustomer(
   supabase: ReturnType<typeof createClient>,
   customerId: string,
 ): Promise<{ id: string; settings: Record<string, unknown> } | null> {
+  // Use JSONB contains filter for indexed lookup instead of full table scan
   const { data: orgs } = await supabase
     .from("organizations")
-    .select("id, settings");
+    .select("id, settings")
+    .contains("settings", { stripe_customer_id: customerId })
+    .limit(1);
 
-  if (!orgs) return null;
+  if (!orgs || orgs.length === 0) return null;
 
-  for (const org of orgs) {
-    const settings = (org.settings as Record<string, unknown>) ?? {};
-    if (settings.stripe_customer_id === customerId) {
-      return { id: org.id, settings };
-    }
-  }
-  return null;
+  const org = orgs[0];
+  return { id: org.id, settings: (org.settings as Record<string, unknown>) ?? {} };
 }
 
 Deno.serve(async (req: Request) => {

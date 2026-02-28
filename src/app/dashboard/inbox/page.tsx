@@ -8,6 +8,7 @@ import { useMessengerStore } from "@/lib/stores/messenger-store";
 import { MessengerSidebar } from "@/components/messenger/messenger-sidebar";
 import { ChatStream } from "@/components/messenger/chat-stream";
 import { TriagePanel } from "@/components/messenger/triage-panel";
+import { MentionsPanel } from "@/components/messenger/mentions-panel";
 import { createClient } from "@/lib/supabase/client";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
@@ -176,6 +177,17 @@ export default function InboxPage() {
             className="flex flex-1 overflow-hidden"
           >
             <TriagePanel />
+          </motion.div>
+        ) : activeView === "mentions" ? (
+          <motion.div
+            key="mentions"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-1 overflow-hidden"
+          >
+            <MentionsPanel />
           </motion.div>
         ) : activeChannel ? (
           <ChatStream

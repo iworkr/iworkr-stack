@@ -11,7 +11,6 @@ class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
   static GoTrueClient get auth => client.auth;
 
-  // INCOMPLETE:PARTIAL — SUPABASE_URL and SUPABASE_ANON_KEY use String.fromEnvironment with empty default; app will silently use empty strings in production if dart-defines are missing.
   static const String _supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
     defaultValue: '',
@@ -25,8 +24,12 @@ class SupabaseService {
   static String? pendingWidgetDeepLink;
 
   static Future<void> initialize() async {
-    assert(_supabaseUrl.isNotEmpty, 'SUPABASE_URL must be provided via --dart-define');
-    assert(_supabaseAnonKey.isNotEmpty, 'SUPABASE_ANON_KEY must be provided via --dart-define');
+    if (_supabaseUrl.isEmpty) {
+      throw StateError('SUPABASE_URL must be provided via --dart-define');
+    }
+    if (_supabaseAnonKey.isEmpty) {
+      throw StateError('SUPABASE_ANON_KEY must be provided via --dart-define');
+    }
 
     await Supabase.initialize(
       url: _supabaseUrl,

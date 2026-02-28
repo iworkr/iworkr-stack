@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -515,7 +516,8 @@ class _AddWorkspaceCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        // INCOMPLETE:TODO — Workspace join/create flow not implemented; tapping "Add workspace" does nothing. Done when tapping navigates to a create-workspace or join-by-invite screen.
+        Navigator.of(context).pop(false);
+        context.push('/workspace/create');
       },
       child: Container(
         width: 120,

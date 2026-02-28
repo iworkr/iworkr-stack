@@ -14,7 +14,6 @@ import { useMessengerStore, type Channel } from "@/lib/stores/messenger-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { useTeamStore } from "@/lib/team-store";
 import { NewMessageModal } from "./new-message-modal";
-import { useToastStore } from "@/components/app/action-toast";
 
 interface MessengerSidebarProps {
   userId: string;
@@ -32,7 +31,6 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
     (s.items ?? []).filter((i) => !i.read && !i.archived).length
   );
   const members = useTeamStore((s) => s.members) ?? [];
-  const { addToast } = useToastStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -145,10 +143,12 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
             badge={unreadInbox > 0 ? unreadInbox : undefined}
             badgeColor="rose"
           />
-          {/* INCOMPLETE:TODO — Mentions view not implemented; should show a filterable timeline of all @mentions across channels and job threads. Done when clicking navigates to a mentions view with real data. */}
           <SidebarItem
-            active={false}
-            onClick={() => { addToast("Mentions coming soon"); }}
+            active={activeView === "mentions"}
+            onClick={() => {
+              setActiveView("mentions");
+              setActiveChannel(null);
+            }}
             icon={<AtSign size={15} strokeWidth={1.5} />}
             label="Mentions"
           />
@@ -215,8 +215,15 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
                 <SidebarItem
                   key={m.id}
                   active={false}
-                  // INCOMPLETE:TODO — DM channel creation not implemented; clicking a team member should create/open a DM channel via createChannel server action. Done when DM channels persist and messages can be exchanged.
-                  onClick={() => { addToast("Direct messages coming soon"); }}
+                  onClick={async () => {
+                    if (!orgId) return;
+                    const openDM = useMessengerStore.getState().openDM;
+                    const channel = await openDM(orgId, m.id);
+                    if (channel) {
+                      setActiveChannel(channel.id);
+                      setActiveView("chat");
+                    }
+                  }}
                   icon={
                     <DMAvatar
                       name={m.name || "??"}

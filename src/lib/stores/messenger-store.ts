@@ -56,7 +56,7 @@ export interface ChannelMember {
   profiles?: { id: string; full_name: string; email: string; avatar_url: string | null };
 }
 
-type MessengerView = "triage" | "chat";
+type MessengerView = "triage" | "chat" | "mentions";
 
 interface MessengerState {
   // Data

@@ -505,9 +505,8 @@ async function updateInventoryAction(
   }
 }
 
-/* ── SMS Action (placeholder) ─────────────────────────── */
+/* ── SMS Action (Twilio) ──────────────────────────────── */
 
-// INCOMPLETE:BLOCKED(TWILIO_ACCOUNT_SID) — SMS action is a no-op that logs "would send" and returns simulated success; requires Twilio or SMS provider integration. Done when messages are actually delivered to the recipient phone number.
 async function sendSmsAction(
   config: Record<string, unknown>,
   ctx: ActionContext
@@ -517,12 +516,45 @@ async function sendSmsAction(
 
   if (!to) return { success: false, error: "No phone number" };
 
-  console.log(`[SMS] Would send to ${to}: ${message}`);
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
-  return {
-    success: true,
-    output: { sms_to: to, sms_status: "simulated" },
-  };
+  if (!accountSid || !authToken || !fromNumber) {
+    return { success: false, error: "Twilio credentials not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)" };
+  }
+
+  try {
+    const body = new URLSearchParams({
+      To: to,
+      From: fromNumber,
+      Body: message.slice(0, 1600),
+    });
+
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+        },
+        body: body.toString(),
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.message || "Twilio API error" };
+    }
+
+    return {
+      success: true,
+      output: { sms_to: to, sms_sid: data.sid, sms_status: data.status },
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || "SMS send failed" };
+  }
 }
 
 /* ── Utility: Template Interpolation ──────────────────── */

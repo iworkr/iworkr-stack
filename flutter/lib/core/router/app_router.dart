@@ -32,6 +32,7 @@ import 'package:iworkr_mobile/features/scout/screens/recon_screen.dart';
 import 'package:iworkr_mobile/features/scout/screens/scout_results_screen.dart';
 import 'package:iworkr_mobile/features/market/screens/market_index_screen.dart';
 import 'package:iworkr_mobile/features/stealth/screens/stealth_demo_screen.dart';
+import 'package:iworkr_mobile/features/workspace/screens/create_workspace_screen.dart';
 import 'package:iworkr_mobile/features/workspace/screens/workspace_settings_screen.dart';
 import 'package:iworkr_mobile/features/team/screens/team_roster_screen.dart';
 import 'package:iworkr_mobile/features/organization/screens/org_settings_screen.dart';
@@ -480,6 +481,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const StealthDemoScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/workspace/create',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const CreateWorkspaceScreen(),
           transitionsBuilder: _slideUpTransition,
         ),
       ),

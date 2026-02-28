@@ -20,6 +20,16 @@ import {
   FileText,
   Plus,
   FileDown,
+  X,
+  Calendar,
+  Camera,
+  PenTool,
+  ChevronDown,
+  CheckSquare,
+  Type,
+  AlignLeft,
+  MapPin,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -68,6 +78,7 @@ export default function FormBuilderPage() {
   const [loadingForm, setLoadingForm] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exportPdfLoading, setExportPdfLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const isNew = params.id === "new";
 
@@ -249,10 +260,9 @@ export default function FormBuilderPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* INCOMPLETE:TODO — Form preview not implemented; should render the form in a read-only modal as a client would see it. Done when clicking opens a preview modal with filled-in sample data. */}
           <button
             type="button"
-            onClick={() => { addToast("Form preview coming soon"); }}
+            onClick={() => setPreviewOpen(true)}
             className="flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
           >
             <Eye size={13} /> Preview
@@ -331,6 +341,262 @@ export default function FormBuilderPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Form Preview Modal ────────────────────────── */}
+      <FormPreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        title={title || "Untitled Form"}
+        blocks={blocks}
+      />
+    </div>
+  );
+}
+
+/* ── Form Preview Modal ───────────────────────────────── */
+
+function FormPreviewModal({
+  open,
+  onClose,
+  title,
+  blocks,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  blocks: FormBlock[];
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/90"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+
+          {/* Modal */}
+          <motion.div
+            className="relative z-10 mx-4 flex h-[85vh] w-full max-w-2xl flex-col rounded-xl border border-white/[0.06] bg-[#0A0A0A] shadow-2xl"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                  <Eye size={16} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-white">
+                    Form Preview
+                  </h3>
+                  <p className="text-[11px] text-zinc-500">
+                    Read-only preview as seen by the field worker
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/5 hover:text-zinc-300"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              {/* Form title */}
+              <div className="mb-6 flex items-center gap-2">
+                <FileText size={18} className="shrink-0 text-zinc-500" />
+                <h2 className="font-display text-xl font-bold text-white">
+                  {title}
+                </h2>
+              </div>
+
+              {blocks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <FileText size={32} className="mb-3 text-zinc-700" />
+                  <p className="text-[13px] text-zinc-500">
+                    No blocks added yet
+                  </p>
+                  <p className="mt-1 text-[11px] text-zinc-600">
+                    Add blocks in the builder to see a preview
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {blocks.map((block, idx) => (
+                    <motion.div
+                      key={block.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.03, duration: 0.2 }}
+                    >
+                      <PreviewBlock block={block} />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-white/[0.06] px-6 py-4">
+              <button
+                onClick={onClose}
+                className="w-full rounded-lg border border-white/[0.08] px-4 py-2.5 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5"
+              >
+                Close Preview
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ── Preview Block Renderer ───────────────────────────── */
+
+function PreviewBlock({ block }: { block: FormBlock }) {
+  const blockTypeIcons: Record<string, React.ReactNode> = {
+    short_text: <Type size={12} className="text-zinc-600" />,
+    long_text: <AlignLeft size={12} className="text-zinc-600" />,
+    date: <Calendar size={12} className="text-zinc-600" />,
+    signature: <PenTool size={12} className="text-zinc-600" />,
+    photo_evidence: <Camera size={12} className="text-zinc-600" />,
+    checkbox: <CheckSquare size={12} className="text-zinc-600" />,
+    dropdown: <ChevronDown size={12} className="text-zinc-600" />,
+    heading: null,
+    text: null,
+    gps_stamp: <MapPin size={12} className="text-zinc-600" />,
+    risk_matrix: <AlertTriangle size={12} className="text-zinc-600" />,
+  };
+
+  // Section header / heading
+  if (block.type === "heading") {
+    return (
+      <div className="border-b border-white/[0.04] pb-2 pt-2">
+        <h3 className="font-display text-[15px] font-semibold text-white">
+          {block.label || "Section Header"}
+        </h3>
+      </div>
+    );
+  }
+
+  // Static text block
+  if (block.type === "text") {
+    return (
+      <p className="text-[13px] leading-relaxed text-zinc-400">
+        {block.label}
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      {/* Label */}
+      <div className="mb-1.5 flex items-center gap-1.5">
+        {blockTypeIcons[block.type]}
+        <label className="text-[12px] font-medium text-zinc-300">
+          {block.label || "Untitled field"}
+        </label>
+        {block.required && (
+          <span className="text-[10px] text-red-400/70">*</span>
+        )}
+      </div>
+
+      {/* Field renderers */}
+      {block.type === "short_text" && (
+        <input
+          type="text"
+          disabled
+          placeholder={block.placeholder || "Enter text..."}
+          className="w-full rounded-lg border border-white/[0.06] bg-[#141414] px-3 py-2 text-[13px] text-zinc-500 placeholder:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
+        />
+      )}
+
+      {block.type === "long_text" && (
+        <textarea
+          disabled
+          rows={3}
+          placeholder={block.placeholder || "Enter details..."}
+          className="w-full resize-none rounded-lg border border-white/[0.06] bg-[#141414] px-3 py-2 text-[13px] text-zinc-500 placeholder:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
+        />
+      )}
+
+      {block.type === "date" && (
+        <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#141414] px-3 py-2">
+          <Calendar size={14} className="text-zinc-600" />
+          <span className="text-[13px] text-zinc-600">Select date...</span>
+        </div>
+      )}
+
+      {block.type === "signature" && (
+        <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-white/[0.08] bg-[#141414]">
+          <div className="flex flex-col items-center gap-1.5 text-zinc-700">
+            <PenTool size={20} />
+            <span className="text-[11px]">Tap to sign</span>
+          </div>
+        </div>
+      )}
+
+      {block.type === "photo_evidence" && (
+        <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-white/[0.08] bg-[#141414]">
+          <div className="flex flex-col items-center gap-1.5 text-zinc-700">
+            <Camera size={20} />
+            <span className="text-[11px]">Tap to capture photo</span>
+          </div>
+        </div>
+      )}
+
+      {block.type === "checkbox" && (
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-4 w-4 items-center justify-center rounded border border-white/[0.1] bg-[#141414]" />
+          <span className="text-[13px] text-zinc-500">{block.label}</span>
+        </div>
+      )}
+
+      {block.type === "dropdown" && (
+        <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-[#141414] px-3 py-2">
+          <span className="text-[13px] text-zinc-600">
+            {block.options && block.options.length > 0
+              ? `Select from ${block.options.length} options...`
+              : "Select..."}
+          </span>
+          <ChevronDown size={14} className="text-zinc-600" />
+        </div>
+      )}
+
+      {block.type === "gps_stamp" && (
+        <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#141414] px-3 py-2">
+          <MapPin size={14} className="text-zinc-600" />
+          <span className="text-[13px] text-zinc-600">
+            GPS location will be captured automatically
+          </span>
+        </div>
+      )}
+
+      {block.type === "risk_matrix" && (
+        <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#141414] px-3 py-2.5">
+          <AlertTriangle size={14} className="text-amber-500/60" />
+          <span className="text-[13px] text-zinc-600">
+            Risk assessment matrix
+          </span>
+        </div>
+      )}
     </div>
   );
 }

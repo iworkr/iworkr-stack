@@ -205,9 +205,33 @@ async function executeAction(
         };
       }
 
-      // INCOMPLETE:BLOCKED(TWILIO_ACCOUNT_SID) — SMS action not implemented; requires Twilio or SMS provider credentials.
-      // TODO: Wire to Twilio/SMS provider
-      return { success: false, error: "SMS provider not configured. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables." };
+      const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+      const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
+      const twilioFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
+
+      if (!twilioSid || !twilioAuth || !twilioFrom) {
+        return { success: false, error: "SMS provider not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER." };
+      }
+
+      const smsBody = new URLSearchParams({ To: phone, From: twilioFrom, Body: body.slice(0, 1600) });
+      const smsRes = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
+          },
+          body: smsBody.toString(),
+        },
+      );
+
+      if (!smsRes.ok) {
+        const errText = await smsRes.text();
+        return { success: false, error: `SMS send failed (${smsRes.status}): ${errText}` };
+      }
+      const smsResult = await smsRes.json();
+      return { success: true, output: { sms_sid: smsResult.sid, to: phone } };
     }
 
     case "send_notification":

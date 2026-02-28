@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import 'package:iworkr_mobile/core/services/ai_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -35,6 +36,8 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
   final _scrollController = ScrollController();
   final List<_LocalMessage> _messages = [];
   bool _sending = false;
+  bool _listening = false;
+  final stt.SpeechToText _speech = stt.SpeechToText();
   late AnimationController _orbPulse;
   late AnimationController _particleRotation;
 
@@ -370,6 +373,32 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
     _send();
   }
 
+  Future<void> _toggleListening() async {
+    HapticFeedback.lightImpact();
+    if (_listening) {
+      await _speech.stop();
+      setState(() => _listening = false);
+      return;
+    }
+
+    final available = await _speech.initialize(
+      onError: (_) => setState(() => _listening = false),
+    );
+    if (!available) return;
+
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (result) {
+        _controller.text = result.recognizedWords;
+        if (result.finalResult) {
+          setState(() => _listening = false);
+        }
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+    );
+  }
+
   Widget _buildMessagesList() {
     if (_messages.isEmpty) return const SizedBox.shrink();
 
@@ -445,18 +474,24 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              // INCOMPLETE:TODO — Voice input not implemented; microphone button does nothing. Needs speech_to_text package integration. Done when tapping starts speech recognition and inserts transcribed text into the chat input.
-            },
+            onTap: _toggleListening,
             child: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: ObsidianTheme.indigo.withValues(alpha: 0.1),
+                color: _listening
+                    ? ObsidianTheme.indigo.withValues(alpha: 0.3)
+                    : ObsidianTheme.indigo.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
+                border: _listening
+                    ? Border.all(color: ObsidianTheme.indigo.withValues(alpha: 0.6))
+                    : null,
               ),
-              child: Icon(PhosphorIconsLight.microphone, color: ObsidianTheme.indigo, size: 18),
+              child: Icon(
+                _listening ? PhosphorIconsLight.microphoneSlash : PhosphorIconsLight.microphone,
+                color: ObsidianTheme.indigo,
+                size: 18,
+              ),
             ),
           ),
           const SizedBox(width: 10),

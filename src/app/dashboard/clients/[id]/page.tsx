@@ -628,9 +628,24 @@ export default function ClientDossierPage() {
                 <Briefcase size={12} />
                 Create Job
               </motion.button>
-              {/* INCOMPLETE:TODO — Client statement generation not implemented; should produce a PDF statement of all invoices/payments for this client over a date range. Done when clicking generates and downloads a PDF. */}
               <button
-                onClick={() => addToast("Statement generation coming soon")}
+                onClick={async () => {
+                  addToast("Generating statement...");
+                  try {
+                    const res = await fetch(`/api/clients/${client.id}/statement`);
+                    if (!res.ok) throw new Error("Failed to generate statement");
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `statement-${client.name.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    addToast("Statement downloaded");
+                  } catch {
+                    addToast("Failed to generate statement");
+                  }
+                }}
                 className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-3 py-2 text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-300"
               >
                 <FileText size={12} />
