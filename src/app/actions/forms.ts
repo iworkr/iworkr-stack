@@ -44,6 +44,17 @@ export async function getForms(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("forms")
       .select("*")
@@ -62,6 +73,9 @@ export async function getForm(formId: string) {
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("forms")
       .select("*")
@@ -69,6 +83,16 @@ export async function getForm(formId: string) {
       .maybeSingle();
 
     if (error) return { data: null, error: error.message };
+    if (!data) return { data: null, error: null };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", data.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     return { data, error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
@@ -213,6 +237,24 @@ export async function publishForm(formId: string) {
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: form } = await supabase
+      .from("forms")
+      .select("organization_id")
+      .eq("id", formId)
+      .maybeSingle();
+    if (!form) return { data: null, error: "Form not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", form.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase.rpc("publish_form", {
       p_form_id: formId,
     });
@@ -238,6 +280,17 @@ export async function getFormSubmissions(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("form_submissions")
       .select(
@@ -260,6 +313,9 @@ export async function getFormSubmission(submissionId: string) {
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("form_submissions")
       .select(
@@ -272,6 +328,16 @@ export async function getFormSubmission(submissionId: string) {
       .maybeSingle();
 
     if (error) return { data: null, error: error.message };
+    if (!data) return { data: null, error: null };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", data.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     return { data, error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
@@ -291,18 +357,27 @@ export async function createFormSubmission(params: {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name")
-      .eq("id", user!.id)
+      .eq("id", user.id)
       .maybeSingle();
 
     const { data, error } = await supabase
       .from("form_submissions")
       .insert({
         ...params,
-        submitted_by: user?.id,
+        submitted_by: user.id,
         submitter_name: profile?.full_name || user?.email,
         status: "pending",
       })
@@ -327,6 +402,24 @@ export async function createFormSubmission(params: {
 export async function saveFormDraft(submissionId: string, formData: any) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: submission } = await supabase
+      .from("form_submissions")
+      .select("organization_id")
+      .eq("id", submissionId)
+      .maybeSingle();
+    if (!submission) return { data: null, error: "Submission not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", submission.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("save_form_draft", {
       p_submission_id: submissionId,
@@ -362,6 +455,24 @@ export async function signAndLockSubmission(
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: submission } = await supabase
+      .from("form_submissions")
+      .select("organization_id")
+      .eq("id", submissionId)
+      .maybeSingle();
+    if (!submission) return { data: null, error: "Submission not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", submission.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase.rpc("sign_and_lock_submission", {
       p_submission_id: submissionId,
       p_signature: signatureData,
@@ -394,6 +505,9 @@ export async function signAndLockSubmission(
 export async function verifyDocumentHash(hash: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("verify_document_hash", {
       p_hash: hash,

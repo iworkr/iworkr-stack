@@ -147,7 +147,7 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
           />
           <SidebarItem
             active={false}
-            onClick={() => { addToast("Mentions coming soon"); }}
+            onClick={() => { setActiveView("mentions"); }}
             icon={<AtSign size={15} strokeWidth={1.5} />}
             label="Mentions"
           />
@@ -214,7 +214,11 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
                 <SidebarItem
                   key={m.id}
                   active={false}
-                  onClick={() => { addToast("Direct messages coming soon"); }}
+                  onClick={async () => {
+                    if (!orgId) return;
+                    const openDM = useMessengerStore.getState().openDM;
+                    await openDM(orgId, m.id);
+                  }}
                   icon={
                     <DMAvatar
                       name={m.name || "??"}

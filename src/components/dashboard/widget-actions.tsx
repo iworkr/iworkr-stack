@@ -58,7 +58,7 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
         setCreateInvoiceModalOpen(true);
         break;
       case "broadcast":
-        addToast("Broadcast coming soon");
+        window.location.href = "/dashboard/messenger";
         break;
     }
   };

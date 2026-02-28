@@ -505,24 +505,43 @@ async function updateInventoryAction(
   }
 }
 
-/* ── SMS Action (placeholder) ─────────────────────────── */
+/* ── SMS Action ──────────────────────────────────────── */
 
 async function sendSmsAction(
   config: Record<string, unknown>,
   ctx: ActionContext
 ): Promise<ActionResult> {
-  // SMS integration placeholder — would use Twilio, MessageBird, etc.
   const to = String(config.to || ctx.variables.phone || "");
   const message = interpolate(String(config.message || ""), ctx.variables);
 
   if (!to) return { success: false, error: "No phone number" };
 
-  // Log that SMS would be sent (no provider configured yet)
-  console.log(`[SMS] Would send to ${to}: ${message}`);
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+  const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
 
+  if (!twilioSid || !twilioToken || !twilioFrom) {
+    return { success: false, error: "SMS provider not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER." };
+  }
+
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${twilioSid}:${twilioToken}`).toString("base64")}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ To: to, From: twilioFrom, Body: message }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    return { success: false, error: `SMS failed: ${err.message || res.statusText}` };
+  }
+
+  const data = await res.json();
   return {
     success: true,
-    output: { sms_to: to, sms_status: "simulated" },
+    output: { sms_to: to, sms_sid: data.sid, sms_status: data.status },
   };
 }
 

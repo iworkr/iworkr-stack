@@ -272,6 +272,9 @@ export async function saveDashboardLayout(layout: any) {
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
+
     const { error } = await supabase.rpc("save_dashboard_layout", {
       p_layout: layout,
     });
@@ -291,6 +294,9 @@ export async function saveDashboardLayout(layout: any) {
 export async function loadDashboardLayout() {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_dashboard_layout");
 
@@ -355,6 +361,18 @@ export async function updateFleetPosition(
 ) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { success: false, error: "Unauthorized" };
+
     const { data, error } = await supabase.rpc("update_fleet_position" as any, {
       p_org_id: orgId,
       p_lat: lat,
@@ -386,6 +404,18 @@ export interface FootprintTrailRow {
 export async function getFootprintTrails(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: [], error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("footprint_trails")
       .select("technician_id, path, timestamps")
@@ -413,6 +443,10 @@ export async function getFootprintTrails(orgId: string) {
 /** Snap raw GPS path to roads (Google Roads API). Call on-demand when footprints are toggled; cache in frontend. */
 export async function snapFootprintToRoads(path: Array<{ lat: number; lng: number }>) {
   try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: path, error: "Unauthorized" };
+
     if (path.length < 2) return { data: path, error: null };
     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
     if (!key) return { data: path, error: "Missing Google Maps API key" };

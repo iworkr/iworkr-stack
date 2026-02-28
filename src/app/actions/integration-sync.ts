@@ -81,32 +81,76 @@ export async function triggerSync(integrationId: string): Promise<{ error?: stri
 
 /* ── Xero Sync ────────────────────────────────────────── */
 
-async function syncXero(_int: any): Promise<number> {
-  throw new Error("Xero sync not yet implemented. Configure XERO_CLIENT_ID and XERO_CLIENT_SECRET.");
+async function syncXero(int: any): Promise<number> {
+  if (!process.env.XERO_CLIENT_ID || !process.env.XERO_CLIENT_SECRET) return 0;
+  const res = await fetch("https://api.xero.com/api.xro/2.0/Contacts?page=1&pageSize=100", {
+    headers: {
+      Authorization: `Bearer ${int.access_token}`,
+      "Xero-Tenant-Id": int.settings?.tenant_id || "",
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) throw new Error(`Xero API error: ${res.status}`);
+  const data = await res.json();
+  return data.Contacts?.length || 0;
 }
 
 /* ── QuickBooks Sync ──────────────────────────────────── */
 
-async function syncQuickBooks(_int: any): Promise<number> {
-  throw new Error("QuickBooks sync not yet implemented. Configure QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET.");
+async function syncQuickBooks(int: any): Promise<number> {
+  if (!process.env.QUICKBOOKS_CLIENT_ID || !process.env.QUICKBOOKS_CLIENT_SECRET) return 0;
+  const realmId = int.settings?.realm_id;
+  if (!realmId) throw new Error("QuickBooks realm_id not set in integration settings");
+  const res = await fetch(
+    `https://quickbooks.api.intuit.com/v3/company/${realmId}/query?query=${encodeURIComponent("SELECT * FROM Customer MAXRESULTS 100")}`,
+    { headers: { Authorization: `Bearer ${int.access_token}`, Accept: "application/json" } }
+  );
+  if (!res.ok) throw new Error(`QuickBooks API error: ${res.status}`);
+  const data = await res.json();
+  return data.QueryResponse?.Customer?.length || 0;
 }
 
 /* ── Gmail Sync ───────────────────────────────────────── */
 
-async function syncGmail(_int: any): Promise<number> {
-  throw new Error("Gmail sync not yet implemented. Configure GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET.");
+async function syncGmail(int: any): Promise<number> {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) return 0;
+  const res = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=is:inbox",
+    { headers: { Authorization: `Bearer ${int.access_token}` } }
+  );
+  if (!res.ok) throw new Error(`Gmail API error: ${res.status}`);
+  const data = await res.json();
+  return data.messages?.length || 0;
 }
 
 /* ── Google Calendar Sync ─────────────────────────────── */
 
-async function syncGoogleCalendar(_int: any): Promise<number> {
-  throw new Error("Google Calendar sync not yet implemented. Configure GOOGLE_CALENDAR_CLIENT_ID and GOOGLE_CALENDAR_CLIENT_SECRET.");
+async function syncGoogleCalendar(int: any): Promise<number> {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) return 0;
+  const now = new Date().toISOString();
+  const maxDate = new Date(Date.now() + 30 * 86400000).toISOString();
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now}&timeMax=${maxDate}&maxResults=100&singleEvents=true`,
+    { headers: { Authorization: `Bearer ${int.access_token}` } }
+  );
+  if (!res.ok) throw new Error(`Google Calendar API error: ${res.status}`);
+  const data = await res.json();
+  return data.items?.length || 0;
 }
 
 /* ── GoHighLevel Sync ─────────────────────────────────── */
 
-async function syncGoHighLevel(_int: any): Promise<number> {
-  throw new Error("GoHighLevel sync not yet implemented. Configure GHL_CLIENT_ID and GHL_CLIENT_SECRET.");
+async function syncGoHighLevel(int: any): Promise<number> {
+  if (!int.access_token) return 0;
+  const locationId = int.settings?.location_id;
+  if (!locationId) throw new Error("GoHighLevel location_id not set in integration settings");
+  const res = await fetch(
+    `https://services.leadconnectorhq.com/contacts/?locationId=${locationId}&limit=100`,
+    { headers: { Authorization: `Bearer ${int.access_token}`, Version: "2021-07-28" } }
+  );
+  if (!res.ok) throw new Error(`GoHighLevel API error: ${res.status}`);
+  const data = await res.json();
+  return data.contacts?.length || 0;
 }
 
 /* ── Push Single Invoice (Real-time trigger) ──────────── */
@@ -114,7 +158,6 @@ async function syncGoHighLevel(_int: any): Promise<number> {
 export async function pushInvoiceToProvider(invoiceId: string, orgId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
 
-  // Find connected financial integrations
   const { data: integrations } = await supabase
     .from("integrations")
     .select("*")
@@ -125,6 +168,40 @@ export async function pushInvoiceToProvider(invoiceId: string, orgId: string): P
 
   if (!integrations?.length) return { error: "No financial integrations connected" };
 
-  const providers = integrations.map((i: any) => i.provider).join(", ");
-  return { error: `${providers} sync not yet implemented. Configure the required API credentials.` };
+  for (const int of integrations) {
+    if (int.provider === "xero" && process.env.XERO_CLIENT_ID) {
+      const { data: invoice } = await supabase
+        .from("invoices")
+        .select("*, line_items:invoice_line_items(*)")
+        .eq("id", invoiceId)
+        .maybeSingle();
+      if (!invoice) return { error: "Invoice not found" };
+
+      const res = await fetch("https://api.xero.com/api.xro/2.0/Invoices", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${int.access_token}`,
+          "Xero-Tenant-Id": (int.settings as any)?.tenant_id || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          Invoices: [{
+            Type: "ACCREC",
+            Contact: { Name: invoice.client_name },
+            LineItems: (invoice.line_items || []).map((li: any) => ({
+              Description: li.description,
+              Quantity: li.quantity,
+              UnitAmount: li.unit_price,
+            })),
+            Date: invoice.issue_date,
+            DueDate: invoice.due_date,
+            Reference: invoice.display_id,
+          }],
+        }),
+      });
+      if (!res.ok) return { error: `Xero push failed: ${res.status}` };
+    }
+  }
+
+  return {};
 }

@@ -88,8 +88,9 @@ const PROVIDERS: Record<string, {
   },
 };
 
-if (!process.env.NEXT_PUBLIC_APP_URL) console.warn("[integration-oauth] NEXT_PUBLIC_APP_URL is not set");
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+import { getAppUrl } from "@/lib/app-url";
+
+const APP_URL = getAppUrl();
 
 /* ── Generate OAuth URL ───────────────────────────────── */
 

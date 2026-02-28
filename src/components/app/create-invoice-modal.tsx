@@ -21,7 +21,6 @@ import { useClientsStore } from "@/lib/clients-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
-  clients as mockClients,
   type Client,
   type Invoice,
   type LineItem,
@@ -116,8 +115,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   const { addToast } = useToastStore();
   const { createInvoiceServer } = useFinanceStore();
   const { orgId } = useOrg();
-  const storeClients = useClientsStore((s) => s.clients);
-  const allClients = storeClients.length > 0 ? storeClients : mockClients;
+  const allClients = useClientsStore((s) => s.clients);
   const [saving, setSaving] = useState(false);
 
   /* ── Derived ────────────────────────────────────────────── */

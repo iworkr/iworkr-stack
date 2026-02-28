@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getAppUrl } from "@/lib/app-url";
 import { sendEmail } from "@/lib/email/send";
 import { createElement } from "react";
 import { z } from "zod";
@@ -276,8 +277,7 @@ export async function sendQuote(quoteId: string): Promise<{ error?: string }> {
   if (!quote) return { error: "Quote not found" };
   if (!quote.client_email) return { error: "No client email set" };
 
-  if (!process.env.NEXT_PUBLIC_APP_URL) console.warn("[quotes] NEXT_PUBLIC_APP_URL is not set");
-  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/portal/view/${quote.secure_token}`;
+  const portalUrl = `${getAppUrl()}/portal/view/${quote.secure_token}`;
 
   await sendEmail({
     to: quote.client_email,

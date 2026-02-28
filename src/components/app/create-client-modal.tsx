@@ -68,7 +68,6 @@ function makeInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-// TODO: Integrate with ABN Lookup API for client enrichment
 
 /* ── Component ────────────────────────────────────────────── */
 
@@ -162,8 +161,7 @@ export function CreateClientModal({
   }, [open]);
 
   /* ── Name change handler ────────────────────────────────── */
-  // TODO: Integrate with ABN Lookup API for client enrichment
-  function handleNameChange(val: string) {
+    function handleNameChange(val: string) {
     setNameQuery(val);
     if (isLocked) return;
     setIsEnriching(false);
