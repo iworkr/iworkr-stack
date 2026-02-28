@@ -3,7 +3,7 @@
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import type { DispatchPin } from "@/app/actions/dashboard";
 
-/** Heading in degrees (0 = N). Not provided by API; stub 0 or pass from future location stream. */
+// INCOMPLETE:PARTIAL — FleetTech heading and speedKmh fields are defined but never populated from a real-time location stream; heading is always undefined so map markers show no direction. Done when updateFleetPosition supplies heading/speed from a GPS location stream.
 export interface FleetTech extends DispatchPin {
   heading?: number;
   speedKmh?: number;

@@ -515,7 +515,7 @@ class _AddWorkspaceCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        // TODO: Navigate to join/create workspace flow
+        // INCOMPLETE:TODO — Workspace join/create flow not implemented; tapping "Add workspace" does nothing. Done when tapping navigates to a create-workspace or join-by-invite screen.
       },
       child: Container(
         width: 120,

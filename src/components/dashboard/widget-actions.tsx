@@ -58,6 +58,7 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
         setCreateInvoiceModalOpen(true);
         break;
       case "broadcast":
+        // INCOMPLETE:TODO — Broadcast feature not implemented; should open a composer modal to send team-wide messages with delivery tracking. Done when BroadcastModal sends real messages via messenger server action.
         addToast("Broadcast coming soon");
         break;
     }

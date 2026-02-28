@@ -68,7 +68,7 @@ function makeInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-// TODO: Integrate with ABN Lookup API for client enrichment
+// INCOMPLETE:TODO — ABN Lookup API integration not implemented; handleNameChange should query ABN Lookup to auto-populate address, ABN number, and company classification. The isEnriching state and Sparkles spinner exist but never activate. Done when typing a business name triggers ABN lookup and populates client fields.
 
 /* ── Component ────────────────────────────────────────────── */
 
@@ -162,7 +162,6 @@ export function CreateClientModal({
   }, [open]);
 
   /* ── Name change handler ────────────────────────────────── */
-  // TODO: Integrate with ABN Lookup API for client enrichment
   function handleNameChange(val: string) {
     setNameQuery(val);
     if (isLocked) return;
@@ -420,6 +419,7 @@ export function CreateClientModal({
                               <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-300">
                                 {address}
                               </span>
+                              {/* INCOMPLETE:TODO — "12 min from HQ" is hardcoded; should calculate actual driving time from org HQ address using Google Maps Distance Matrix API. Done when drive time is dynamically computed. */}
                               <span className="shrink-0 text-[9px] text-zinc-600">
                                 12 min from HQ
                               </span>

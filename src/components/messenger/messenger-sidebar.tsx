@@ -145,6 +145,7 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
             badge={unreadInbox > 0 ? unreadInbox : undefined}
             badgeColor="rose"
           />
+          {/* INCOMPLETE:TODO — Mentions view not implemented; should show a filterable timeline of all @mentions across channels and job threads. Done when clicking navigates to a mentions view with real data. */}
           <SidebarItem
             active={false}
             onClick={() => { addToast("Mentions coming soon"); }}
@@ -214,6 +215,7 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
                 <SidebarItem
                   key={m.id}
                   active={false}
+                  // INCOMPLETE:TODO — DM channel creation not implemented; clicking a team member should create/open a DM channel via createChannel server action. Done when DM channels persist and messages can be exchanged.
                   onClick={() => { addToast("Direct messages coming soon"); }}
                   icon={
                     <DMAvatar

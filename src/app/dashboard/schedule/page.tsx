@@ -573,6 +573,7 @@ export default function SchedulePage() {
           )}
 
           {/* View Switcher — Sliding Pill */}
+          {/* INCOMPLETE:PARTIAL — Schedule only supports "day" view; week and month views are disabled. Done when week view renders a 7-day timeline and month view renders a calendar grid with blocks. */}
           <div className="relative flex items-center gap-0.5 rounded-lg p-0.5">
             {(["day", "week", "month"] as ViewScale[]).map((scale) => {
               const isDisabled = scale !== "day";

@@ -12,6 +12,7 @@ export default function ImportExportPage() {
     fileInputRef.current?.click();
   }
 
+  // INCOMPLETE:PARTIAL — CSV import accepts file selection but does not parse or process the file; needs a server action to parse CSV rows and upsert clients/jobs/invoices. Done when uploaded CSV data appears in the corresponding tables.
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -20,6 +21,7 @@ export default function ImportExportPage() {
     e.target.value = "";
   }
 
+  // INCOMPLETE:TODO — Export feature not implemented; should generate a downloadable CSV/ZIP of workspace data (clients, jobs, invoices). Done when clicking triggers a download of the organization's data.
   function handleExport() {
     addToast("Export feature coming soon");
   }

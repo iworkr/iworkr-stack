@@ -43,6 +43,7 @@ export default function AgentDetailPage() {
           <h2 className="text-[16px] font-semibold text-white">
             {isKnown ? `${agentId.replace(/_/g, " ")} agent` : "Agent"}
           </h2>
+          {/* INCOMPLETE:TODO — Additional AI agent types (dispatch optimizer, quote generator, etc.) not configurable yet; only Phone Receptionist has a settings UI. Done when each agent type has its own configuration panel. */}
           <p className="mt-2 max-w-[280px] text-[12px] text-zinc-500">
             Configuration for this agent is coming soon. Only the AI Phone Receptionist is configurable today.
           </p>

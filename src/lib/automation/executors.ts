@@ -507,17 +507,16 @@ async function updateInventoryAction(
 
 /* ── SMS Action (placeholder) ─────────────────────────── */
 
+// INCOMPLETE:BLOCKED(TWILIO_ACCOUNT_SID) — SMS action is a no-op that logs "would send" and returns simulated success; requires Twilio or SMS provider integration. Done when messages are actually delivered to the recipient phone number.
 async function sendSmsAction(
   config: Record<string, unknown>,
   ctx: ActionContext
 ): Promise<ActionResult> {
-  // SMS integration placeholder — would use Twilio, MessageBird, etc.
   const to = String(config.to || ctx.variables.phone || "");
   const message = interpolate(String(config.message || ""), ctx.variables);
 
   if (!to) return { success: false, error: "No phone number" };
 
-  // Log that SMS would be sent (no provider configured yet)
   console.log(`[SMS] Would send to ${to}: ${message}`);
 
   return {

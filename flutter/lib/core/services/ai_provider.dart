@@ -87,8 +87,7 @@ Future<AiChatMessage?> sendAiMessage({
     }
   }
 
-  // TODO: Replace with actual AI API call (e.g., POST to /api/ai/chat)
-  // This generates a local placeholder response until the Edge Function LLM is wired.
+  // INCOMPLETE:BLOCKED(OPENAI_API_KEY) — AI chat uses local placeholder response generator instead of real LLM; needs POST to /api/ai/chat or Supabase Edge Function with OpenAI key. Done when responses come from an actual LLM and [Demo] prefix is removed.
   final response = _generateLocalResponse(content, contextData);
 
   // Store AI response

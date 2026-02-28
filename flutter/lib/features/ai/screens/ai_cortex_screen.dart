@@ -447,7 +447,7 @@ class _AiCortexSheetState extends ConsumerState<AiCortexSheet>
           GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
-              // Voice input placeholder
+              // INCOMPLETE:TODO — Voice input not implemented; microphone button does nothing. Needs speech_to_text package integration. Done when tapping starts speech recognition and inserts transcribed text into the chat input.
             },
             child: Container(
               width: 40,

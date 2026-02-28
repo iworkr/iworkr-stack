@@ -417,7 +417,7 @@ function getPrimaryDownload(
     linux: {
       url: "#",
       label: "Download for Linux",
-      meta: "Coming soon",
+      meta: "Coming soon", // INCOMPLETE:TODO — Linux desktop build not available; need to add Linux target to Electron build pipeline and publish .AppImage/.deb artifacts. Done when Linux download URL points to a real binary.
     },
     unknown: {
       url: info?.macArmUrl ?? "#",

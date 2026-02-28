@@ -178,7 +178,7 @@ export async function sendTeamInvites(
         inviteUrl,
         brandColorHex: org?.brand_color_hex || undefined,
         logoUrl: org?.logo_url || undefined,
-      }).catch((err) => console.error("[Email] Invite send failed:", err));
+      }).catch((err) => console.error("[Email] Invite send failed:", err)); // INCOMPLETE:TODO — Email failures are silently caught; should report failure per-invite in the results array and optionally retry. Done when invite email failures are surfaced to the caller.
     }
 
     results.push({

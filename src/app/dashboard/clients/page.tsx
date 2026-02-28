@@ -393,7 +393,7 @@ export default function ClientsPage() {
               </AnimatePresence>
             </div>
 
-            {/* Import ghost button */}
+            {/* INCOMPLETE:TODO — CSV client import not implemented; should open an import modal that parses CSV and upserts clients via server action. Done when a CSV file upload creates client records. */}
             <button
               onClick={() => addToast("CSV import coming soon")}
               className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.03] hover:text-zinc-400"

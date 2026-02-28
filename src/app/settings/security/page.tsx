@@ -30,6 +30,7 @@ export default function SecurityPage() {
   }
 
   function handleEnable2FA() {
+    // INCOMPLETE:TODO — 2FA not implemented; should integrate with Supabase Auth MFA (TOTP) to enable authenticator app enrollment and verification. Done when users can enroll a TOTP device and are prompted on login.
     addToast("Two-factor authentication coming soon");
   }
 

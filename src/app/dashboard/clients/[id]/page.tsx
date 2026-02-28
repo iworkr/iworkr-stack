@@ -628,6 +628,7 @@ export default function ClientDossierPage() {
                 <Briefcase size={12} />
                 Create Job
               </motion.button>
+              {/* INCOMPLETE:TODO — Client statement generation not implemented; should produce a PDF statement of all invoices/payments for this client over a date range. Done when clicking generates and downloads a PDF. */}
               <button
                 onClick={() => addToast("Statement generation coming soon")}
                 className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-3 py-2 text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-300"

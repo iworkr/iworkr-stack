@@ -211,7 +211,7 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
       connectedAs = "QuickBooks Company";
     }
 
-    // TODO: Encrypt access_token and refresh_token at rest
+    // INCOMPLETE:TODO — OAuth access_token and refresh_token are stored in plaintext in the database; should be encrypted at rest using AES-256 with a server-side encryption key. Done when tokens are encrypted before insert and decrypted on read.
     await supabase
       .from("integrations")
       .update({

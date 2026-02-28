@@ -249,6 +249,7 @@ export default function FormBuilderPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* INCOMPLETE:TODO — Form preview not implemented; should render the form in a read-only modal as a client would see it. Done when clicking opens a preview modal with filled-in sample data. */}
           <button
             type="button"
             onClick={() => { addToast("Form preview coming soon"); }}
