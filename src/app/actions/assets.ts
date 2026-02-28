@@ -228,10 +228,20 @@ export interface UpdateInventoryItemParams {
 /**
  * Get all non-deleted assets with assigned_to profile name
  */
-// INCOMPLETE:BLOCKED(AUTH) — getAssets has no auth check; any unauthenticated call can list all assets for any org.
 export async function getAssets(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data: assets, error } = await supabase
       .from("assets")
@@ -446,10 +456,20 @@ export async function updateAsset(assetId: string, updates: UpdateAssetParams) {
 /**
  * Get all inventory items for an organization
  */
-// INCOMPLETE:BLOCKED(AUTH) — getInventoryItems has no auth check; any unauthenticated call can list all inventory for any org.
 export async function getInventoryItems(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data: items, error } = await supabase
       .from("inventory_items")
@@ -644,10 +664,20 @@ export async function createInventoryItem(params: CreateInventoryItemParams) {
 /**
  * Get recent asset audit entries for an organization
  */
-// INCOMPLETE:BLOCKED(AUTH) — getAssetAudits has no auth check; any unauthenticated call can read audit trail for any org.
 export async function getAssetAudits(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data: audits, error } = await supabase
       .from("asset_audits")
@@ -683,10 +713,20 @@ export interface AssetsOverview {
 /**
  * Get assets overview stats via RPC
  */
-// INCOMPLETE:BLOCKED(AUTH) — getAssetsOverview has no auth check; any unauthenticated call can read asset value/counts for any org.
 export async function getAssetsOverview(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_assets_overview", {
       p_org_id: orgId,
@@ -805,10 +845,20 @@ export async function consumeInventory(
 /**
  * Scan lookup — resolve barcode/QR to an existing asset or inventory item
  */
-// INCOMPLETE:BLOCKED(AUTH) — scanLookup has no auth check; any unauthenticated call can search assets/inventory by barcode for any org.
 export async function scanLookup(orgId: string, barcode: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // Check assets first
     const { data: asset } = await supabase
@@ -844,10 +894,13 @@ export async function scanLookup(orgId: string, barcode: string) {
 /**
  * Get audit trail for a specific entity (asset or inventory item)
  */
-// INCOMPLETE:BLOCKED(AUTH) — getEntityAudits has no auth check and no org scoping; any unauthenticated call can read audit trail for any entity.
 export async function getEntityAudits(entityId: string, entityType: "asset" | "inventory") {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
     const column = entityType === "asset" ? "asset_id" : "inventory_id";
 
     const { data: audits, error } = await supabase

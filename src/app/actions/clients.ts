@@ -5,7 +5,23 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { Events, dispatch } from "@/lib/automation";
 import { createClientSchema, validate } from "@/lib/validation";
+import { z } from "zod";
 import { logger } from "@/lib/logger";
+
+const UpdateClientSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  email: z.string().email().max(255).optional().nullable().or(z.literal("")),
+  phone: z.string().max(30).optional().nullable(),
+  status: z.enum(["active", "lead", "churned", "inactive"]).optional(),
+  type: z.enum(["residential", "commercial"]).optional(),
+  address: z.string().max(500).optional().nullable(),
+  address_lat: z.number().min(-90).max(90).optional().nullable(),
+  address_lng: z.number().min(-180).max(180).optional().nullable(),
+  tags: z.array(z.string().max(50)).max(20).optional(),
+  notes: z.string().max(5000).optional().nullable(),
+  since: z.string().optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+});
 
 export interface Client {
   id: string;
@@ -110,10 +126,20 @@ export interface UpdateClientContactParams {
 /**
  * Get all clients for an organization with job count, total spend, and last job date
  */
-// INCOMPLETE:BLOCKED(AUTH) — getClients has no auth check; any unauthenticated call can list all clients with stats for any org.
 export async function getClients(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // Get all clients
     const { data: clients, error: clientsError } = await supabase
@@ -202,10 +228,12 @@ export async function getClients(orgId: string) {
 /**
  * Get a single client with contacts, recent activity, and spend history
  */
-// INCOMPLETE:BLOCKED(AUTH) — getClient has no auth check; any unauthenticated call can read full client details including contacts, activity, and spend history.
 export async function getClient(clientId: string, orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     // Get client — filter by org when provided to enforce ownership
     let query = supabase
@@ -385,9 +413,12 @@ export async function createClient(params: CreateClientParams) {
 /**
  * Update a client (orgId optional but recommended for ownership verification)
  */
-// INCOMPLETE:PARTIAL — updateClient has no Zod input validation on UpdateClientParams; relies only on TypeScript types erased at runtime.
 export async function updateClient(clientId: string, updates: UpdateClientParams, orgId?: string) {
   try {
+    // Validate input
+    const validated = validate(UpdateClientSchema, updates);
+    if (validated.error) return { data: null, error: validated.error };
+
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -601,7 +632,6 @@ export async function updateClientContact(contactId: string, updates: UpdateClie
 /**
  * Delete a client contact
  */
-// INCOMPLETE:PARTIAL — deleteClientContact checks auth but has no org ownership verification; any authenticated user can delete any contact by ID.
 export async function deleteClientContact(contactId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -613,6 +643,30 @@ export async function deleteClientContact(contactId: string) {
     if (!user) {
       return { data: null, error: "Not authenticated" };
     }
+
+    // Fetch contact to get client_id, then client to get org_id
+    const { data: contact } = await supabase
+      .from("client_contacts")
+      .select("client_id")
+      .eq("id", contactId)
+      .maybeSingle();
+    if (!contact) return { data: null, error: "Contact not found" };
+
+    const { data: client } = await supabase
+      .from("clients")
+      .select("organization_id")
+      .eq("id", contact.client_id)
+      .maybeSingle();
+    if (!client) return { data: null, error: "Client not found" };
+
+    // Verify org membership
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", client.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("client_contacts")

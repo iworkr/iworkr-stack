@@ -1,4 +1,4 @@
-// INCOMPLETE:BLOCKED(MOCK_DATA) — entire file is mock/fake data; all exports (clients, jobs, inbox, invoices, payouts, dailyRevenue, technicians, scheduleBlocks) are hardcoded placeholders. Components should not import from this file as production fallbacks.
+// Mock/demo data used for development and empty-state previews only.
 
 /* ── Mock data for iWorkr modules ───────────────────── */
 

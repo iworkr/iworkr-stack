@@ -20,9 +20,7 @@ import { useFinanceStore } from "@/lib/finance-store";
 import { useClientsStore } from "@/lib/clients-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useOrg } from "@/lib/hooks/use-org";
-// INCOMPLETE:BLOCKED(MOCK_DATA) — imports mockClients as fallback; create-invoice uses mock data when store is empty. Remove mock fallback and show empty state instead.
 import {
-  clients as mockClients,
   type Client,
   type Invoice,
   type LineItem,
@@ -118,8 +116,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   const { createInvoiceServer } = useFinanceStore();
   const { orgId } = useOrg();
   const storeClients = useClientsStore((s) => s.clients);
-    // INCOMPLETE:BLOCKED(MOCK_DATA) — falls back to mock client list in production.
-  const allClients = storeClients.length > 0 ? storeClients : mockClients;
+  const allClients = storeClients;
   const [saving, setSaving] = useState(false);
 
   /* ── Derived ────────────────────────────────────────────── */
@@ -146,8 +143,8 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   );
 
   const subtotal = lineItems.reduce((sum, li) => sum + li.qty * li.rate, 0);
-    // INCOMPLETE:PARTIAL — GST tax rate hardcoded at 10%; should be org-configurable for different jurisdictions.
-  const taxRate = 0.1; // 10% GST
+  const orgSettings = useAuthStore((s) => s.currentOrg?.settings) as Record<string, unknown> | undefined;
+  const taxRate = (typeof orgSettings?.default_tax_rate === "number" ? orgSettings.default_tax_rate : 10) / 100;
   const tax = Math.round(subtotal * taxRate);
   const total = subtotal + tax;
 

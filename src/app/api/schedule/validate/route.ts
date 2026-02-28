@@ -34,7 +34,6 @@ interface ValidationResult {
   warnings: string[];
 }
 
-// INCOMPLETE:PARTIAL — no auth verification; any unauthenticated request can query schedule conflicts for any org.
 export async function POST(request: NextRequest) {
   try {
     const body: ValidateRequest = await request.json();
@@ -45,6 +44,21 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createServerSupabaseClient();
+
+    // Verify auth and org membership
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     const proposedStart = new Date(start_time);
     const proposedEnd = new Date(end_time);

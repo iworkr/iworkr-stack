@@ -363,7 +363,6 @@ export async function updateScheduleBlock(blockId: string, updates: UpdateSchedu
 /**
  * Delete a schedule block
  */
-// INCOMPLETE:PARTIAL — deleteScheduleBlock checks auth but no org ownership verification; any authenticated user can delete any schedule block.
 export async function deleteScheduleBlock(blockId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -375,6 +374,22 @@ export async function deleteScheduleBlock(blockId: string) {
     if (!user) {
       return { data: null, error: "Not authenticated" };
     }
+
+    // Fetch block to verify org ownership
+    const { data: block } = await supabase
+      .from("schedule_blocks")
+      .select("organization_id")
+      .eq("id", blockId)
+      .maybeSingle();
+    if (!block) return { data: null, error: "Block not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", block.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("schedule_blocks")
@@ -887,13 +902,28 @@ export async function createScheduleEvent(params: CreateScheduleEventParams) {
 /**
  * Delete a schedule event
  */
-// INCOMPLETE:PARTIAL — deleteScheduleEvent checks auth but no org ownership verification; any authenticated user can delete any schedule event.
 export async function deleteScheduleEvent(eventId: string) {
   try {
     const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+
+    // Fetch event to verify org ownership
+    const { data: event } = await supabase
+      .from("schedule_events")
+      .select("organization_id")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (!event) return { data: null, error: "Event not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", event.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("schedule_events")
@@ -915,10 +945,20 @@ export async function deleteScheduleEvent(eventId: string) {
 /**
  * Check for schedule conflicts via RPC
  */
-// INCOMPLETE:PARTIAL — checkScheduleConflicts has no auth/membership check; any request can check conflicts for any org.
 export async function checkScheduleConflicts(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: [], error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("check_schedule_conflicts", {
       p_org_id: orgId,

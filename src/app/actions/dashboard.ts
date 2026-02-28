@@ -268,10 +268,12 @@ export async function getDashboardSnapshot(orgId: string) {
 
 /* ── Dashboard Layout Persistence ───────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — saveDashboardLayout has no auth check; any unauthenticated request can save arbitrary layout data. Also accepts `layout: any` with no Zod validation.
 export async function saveDashboardLayout(layout: any) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
     const { error } = await supabase.rpc("save_dashboard_layout", {
       p_layout: layout,
@@ -289,10 +291,12 @@ export async function saveDashboardLayout(layout: any) {
   }
 }
 
-// INCOMPLETE:BLOCKED(AUTH) — loadDashboardLayout has no auth check; any unauthenticated request can load dashboard layout.
 export async function loadDashboardLayout() {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_dashboard_layout");
 
@@ -343,7 +347,6 @@ export async function getLiveDispatch(orgId: string) {
 
 /* ── Fleet Position Update ──────────────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — updateFleetPosition has no auth check and no org membership verification; any request can update GPS positions for any org.
 export async function updateFleetPosition(
   orgId: string,
   lat: number,
@@ -358,6 +361,18 @@ export async function updateFleetPosition(
 ) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { success: false, error: "Unauthorized" };
+
     const { data, error } = await supabase.rpc("update_fleet_position" as any, {
       p_org_id: orgId,
       p_lat: lat,
@@ -386,10 +401,21 @@ export interface FootprintTrailRow {
   timestamps?: number[] | null;
 }
 
-// INCOMPLETE:PARTIAL — getFootprintTrails has no auth check and no org membership verification; exposes technician GPS trail data.
 export async function getFootprintTrails(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: [], error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("footprint_trails")
       .select("technician_id, path, timestamps")
@@ -415,9 +441,12 @@ export async function getFootprintTrails(orgId: string) {
 }
 
 /** Snap raw GPS path to roads (Google Roads API). Call on-demand when footprints are toggled; cache in frontend. */
-// INCOMPLETE:PARTIAL — snapFootprintToRoads uses NEXT_PUBLIC_ (client-side) Google Maps key on server; should use a server-restricted key. Also no auth check.
 export async function snapFootprintToRoads(path: Array<{ lat: number; lng: number }>) {
   try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: path, error: "Unauthorized" };
+
     if (path.length < 2) return { data: path, error: null };
     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
     if (!key) return { data: path, error: "Missing Google Maps API key" };

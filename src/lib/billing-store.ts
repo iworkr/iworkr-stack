@@ -54,8 +54,8 @@ export const useBillingStore = create<BillingState>((set) => ({
         memberCount: count || 1,
         loading: false,
       });
-    // INCOMPLETE:PARTIAL — catch block silently swallows billing load errors; critical for payment flow, should show user-facing feedback.
-    } catch {
+    } catch (error) {
+      console.error("Billing store load failed:", error);
       set({ loading: false });
     }
   },

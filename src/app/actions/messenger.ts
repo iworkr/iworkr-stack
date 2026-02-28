@@ -54,12 +54,20 @@ export async function getChannels(orgId: string) {
   }
 }
 
-// INCOMPLETE:PARTIAL — getChannel checks auth but no channel membership verification; any authenticated user can read any channel.
 export async function getChannel(channelId: string) {
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+
+    // Verify channel membership
+    const { data: member } = await supabase
+      .from("channel_members")
+      .select("user_id")
+      .eq("channel_id", channelId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!member) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("channels")
@@ -231,12 +239,20 @@ export async function getChannelMembers(channelId: string) {
 
 /* ── Messages ──────────────────────────────────────────── */
 
-// INCOMPLETE:PARTIAL — getMessages checks auth but no channel membership verification; any authenticated user can read messages from any channel.
 export async function getMessages(channelId: string, limit = 50, before?: string) {
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+
+    // Verify channel membership
+    const { data: member } = await supabase
+      .from("channel_members")
+      .select("user_id")
+      .eq("channel_id", channelId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!member) return { data: null, error: "Unauthorized" };
 
     let query = supabase
       .from("messages")
@@ -345,8 +361,9 @@ export async function deleteMessage(messageId: string) {
   }
 }
 
-// INCOMPLETE:PARTIAL — toggleReaction has no input validation on emoji param; no max length, no allowlist — potential for storing arbitrary strings.
 export async function toggleReaction(messageId: string, emoji: string) {
+  // Validate emoji: max 32 chars, only emoji/alphanumeric characters
+  if (!emoji || emoji.length > 32) return { data: null, error: "Invalid emoji" };
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();

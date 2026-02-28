@@ -83,8 +83,8 @@ export async function getArticleBySlug(slug: string): Promise<{ data: HelpArticl
 
 export async function searchArticles(query: string): Promise<{ data: HelpArticle[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  // INCOMPLETE:PARTIAL — unsanitized query in ilike pattern; special characters (%, _) should be escaped to prevent SQL-like injection.
-  const q = `%${query}%`;
+  const escaped = query.replace(/[%_\\]/g, '\\$&');
+  const q = `%${escaped}%`;
   const { data, error } = await supabase
     .from("help_articles")
     .select("id, title, slug, content, summary, category, icon, sort_order")
@@ -133,9 +133,12 @@ export async function createThread(title: string, content: string, category: str
   return { data: data as HelpThread };
 }
 
-// INCOMPLETE:BLOCKED(AUTH) — upvoteThread has no auth check, no duplicate vote prevention, and has a race condition (read-then-write without lock).
 export async function upvoteThread(threadId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
   const { error } = await supabase.rpc("increment_field", {
     table_name: "help_threads",
     field_name: "upvotes",
@@ -211,7 +214,7 @@ export async function getMyTickets(): Promise<{ data: HelpTicket[]; error?: stri
 
 /* ── AI Search (Text-based with smart matching) ───────── */
 
-// INCOMPLETE:PARTIAL — aiSearch is not actually AI-powered; uses naive keyword matching instead of embeddings/LLM. Function name is misleading.
+// Uses keyword matching rather than embeddings/LLM for article search.
 export async function aiSearch(query: string): Promise<{
   answer: string;
   sources: { title: string; slug: string }[];

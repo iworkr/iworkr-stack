@@ -7,9 +7,11 @@ import { refreshIntegrationToken } from "./integration-oauth";
 
 /* ── Sync Orchestrator ────────────────────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — triggerSync has no auth check; any unauthenticated call can trigger sync operations.
 export async function triggerSync(integrationId: string): Promise<{ error?: string; synced?: number }> {
   const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
 
   const { data: int } = await supabase
     .from("integrations")
@@ -18,6 +20,15 @@ export async function triggerSync(integrationId: string): Promise<{ error?: stri
     .maybeSingle();
 
   if (!int) return { error: "Integration not found" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", int.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
+
   if (int.status !== "connected") return { error: "Integration not connected" };
 
   // Check token expiry
@@ -117,9 +128,19 @@ async function syncGoHighLevel(_int: any): Promise<number> {
 
 /* ── Push Single Invoice (Real-time trigger) ──────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — pushInvoiceToProvider has no auth check and returns stub error; financial push sync not implemented.
 export async function pushInvoiceToProvider(invoiceId: string, orgId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
 
   // Find connected financial integrations
   const { data: integrations } = await supabase

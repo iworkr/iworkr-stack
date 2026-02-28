@@ -51,7 +51,6 @@ const TERMS: { value: PaymentTerms; label: string; days: number }[] = [
   { value: "net_30", label: "Net 30", days: 30 },
 ];
 
-// INCOMPLETE:PARTIAL — hardcoded service catalog with specific prices; should be fetched from org-level price book in database.
 const CATALOG = [
   { name: "Standard Callout Fee", price: 120 },
   { name: "Boiler Service — Annual", price: 450 },

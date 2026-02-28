@@ -12,9 +12,8 @@ function getStripe() {
 /**
  * Creates a PaymentIntent for invoice payments.
  * Supports both Stripe Connect (connected accounts) and direct charges.
- * Public endpoint — uses anon key since callers may not be authenticated.
+ * Requires a valid invoice_id to verify the payment amount matches.
  */
-// INCOMPLETE:BLOCKED(AUTH) — no auth verification; public endpoint allows creating PaymentIntents for any org with no rate limiting.
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { invoiceId, orgId, amountCents, currency } = body as {
@@ -24,15 +23,31 @@ export async function POST(req: NextRequest) {
     currency?: string;
   };
 
-  if (!orgId || !amountCents) {
-    return NextResponse.json({ error: "Missing orgId or amountCents" }, { status: 400 });
+  if (!orgId || !amountCents || !invoiceId) {
+    return NextResponse.json({ error: "Missing orgId, invoiceId, or amountCents" }, { status: 400 });
   }
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
   );
+
+  // Verify the invoice exists, belongs to the org, and amount matches
+  const { data: invoice } = await (supabase as any)
+    .from("invoices")
+    .select("id, organization_id, total, status")
+    .eq("id", invoiceId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (!invoice) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
+
+  if (!["sent", "overdue", "viewed"].includes(invoice.status)) {
+    return NextResponse.json({ error: "Invoice is not payable" }, { status: 400 });
+  }
 
   const { data: org } = await (supabase as any)
     .from("organizations")

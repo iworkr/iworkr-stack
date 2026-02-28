@@ -288,7 +288,6 @@ export async function unsnoozeNotification(notificationId: string) {
 
 /* ── Create notification ─────────────────────────────── */
 
-// INCOMPLETE:PARTIAL — createNotification has no org membership check; any authenticated user could create notifications targeting users in other orgs. Also no rate limiting.
 export async function createNotification(params: CreateNotificationParams) {
   try {
     // Validate input
@@ -300,6 +299,15 @@ export async function createNotification(params: CreateNotificationParams) {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Not authenticated" };
+
+    // Verify org membership
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("notifications")

@@ -246,27 +246,33 @@ export const useIntegrationsStore = create<IntegrationsState>()(
       ),
     })),
 
-    // INCOMPLETE:BLOCKED(BACKEND) — syncNow uses setTimeout(2000) to fake sync completion; no real backend sync call. Wire to triggerSync server action.
-  syncNow: (id) => {
+  syncNow: async (id) => {
     set((s) => ({
       integrations: s.integrations.map((i) =>
         i.id === id ? { ...i, status: "syncing" as const } : i
       ),
     }));
-    setTimeout(() => {
+    const result = await syncIntegrationServer(id);
+    if (result.error) {
+      set((s) => ({
+        integrations: s.integrations.map((i) =>
+          i.id === id ? { ...i, status: "error" as const } : i
+        ),
+      }));
+    } else {
       set((s) => ({
         integrations: s.integrations.map((i) =>
           i.id === id ? { ...i, status: "connected" as const, lastSynced: "Just now" } : i
         ),
       }));
-      get().addEvent({
-        integrationId: id,
-        integrationName: get().integrations.find((i) => i.id === id)?.name || "",
-        type: "synced",
-        description: "Manual sync completed successfully",
-        time: "Just now",
-      });
-    }, 2000);
+    }
+    get().addEvent({
+      integrationId: id,
+      integrationName: get().integrations.find((i) => i.id === id)?.name || "",
+      type: "synced",
+      description: result.error ? "Sync failed" : "Manual sync completed successfully",
+      time: "Just now",
+    });
   },
 
   addEvent: (event) =>

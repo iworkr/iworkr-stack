@@ -121,7 +121,12 @@ export async function POST(request: NextRequest) {
       invoiceData = payload.data;
       workspaceData = payload.workspace;
     } else if (body.data && body.workspace) {
-      // INCOMPLETE:PARTIAL — when body.data/body.workspace passed directly (no invoice_id), no auth check; anyone can generate arbitrary PDFs.
+      // Require auth for direct PDF generation (no invoice_id lookup)
+      const supabase = await createServerSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
       invoiceData = body.data;
       workspaceData = body.workspace;
     } else {

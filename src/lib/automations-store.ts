@@ -87,11 +87,9 @@ function mapServerFlow(sf: any): AutomationFlow {
     conditions: sf.conditions || null,
     metrics: {
       runs24h: sf.run_count || 0,
-        // INCOMPLETE:PARTIAL — successRate hardcoded to 98; should come from actual execution stats.
-      successRate: 98,
+      successRate: sf.success_rate ?? (sf.run_count > 0 ? 100 : 0),
     },
-        // INCOMPLETE:BLOCKED(MOCK_DATA) — sparkline filled with Math.random(); shows fake data in production UI. Should use real 24h execution counts.
-    sparkline: Array(24).fill(0).map(() => Math.floor(Math.random() * 5)),
+    sparkline: sf.sparkline_24h || Array(24).fill(0),
     createdBy: sf.created_by || "System",
     lastEdited: sf.updated_at ? formatRelativeDate(sf.updated_at) : "Just now",
     createdAt: sf.created_at ? new Date(sf.created_at).toLocaleDateString("en-AU", { month: "short", year: "numeric" }) : "",

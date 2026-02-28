@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "crypto";
 import { exchangeOAuthCode } from "@/app/actions/integration-oauth";
 
 if (!process.env.NEXT_PUBLIC_APP_URL) console.warn("[integrations/callback] NEXT_PUBLIC_APP_URL is not set");
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+function verifyStateSignature(state: string): { integrationId?: string; provider?: string } | null {
+  try {
+    const decoded = JSON.parse(Buffer.from(state, "base64url").toString());
+    const { integrationId, provider, sig } = decoded;
+    if (!integrationId || !provider) return null;
+
+    // Verify HMAC signature if a signing secret is configured
+    const secret = process.env.OAUTH_STATE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (secret && sig) {
+      const payload = `${integrationId}:${provider}`;
+      const expected = createHmac("sha256", secret).update(payload).digest("hex");
+      if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+        return null;
+      }
+    }
+
+    return { integrationId, provider };
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -22,23 +45,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // INCOMPLETE:PARTIAL — OAuth callback has no CSRF state validation; base64url-decoded state is trusted without signature verification.
   try {
-    let stateData: { integrationId?: string; provider?: string };
-    try {
-      stateData = JSON.parse(Buffer.from(state, "base64url").toString());
-    } catch {
+    const stateData = verifyStateSignature(state);
+    if (!stateData || !stateData.integrationId || !stateData.provider) {
       return NextResponse.redirect(
-        `${APP_URL}/dashboard/integrations?connection=error&message=Malformed+state+parameter`
+        `${APP_URL}/dashboard/integrations?connection=error&message=Invalid+or+tampered+state+parameter`
       );
     }
     const { integrationId, provider } = stateData;
-
-    if (!integrationId || !provider) {
-      return NextResponse.redirect(
-        `${APP_URL}/dashboard/integrations?connection=error&message=Invalid+state+parameter`
-      );
-    }
 
     const result = await exchangeOAuthCode(code, provider, integrationId);
 

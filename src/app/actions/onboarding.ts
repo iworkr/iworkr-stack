@@ -105,11 +105,13 @@ export async function updateOrganizationTrade(orgId: string, trade: string) {
   return { success: true };
 }
 
-// INCOMPLETE:PARTIAL — sendTeamInvites has no org membership verification and no rate limiting; any authenticated user can send invites for any org with no max count on emails array.
 export async function sendTeamInvites(
   orgId: string,
   emails: string[]
 ) {
+  // Limit batch size to prevent abuse
+  if (emails.length > 20) return { error: "Maximum 20 invites at a time" };
+
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -119,6 +121,15 @@ export async function sendTeamInvites(
   if (!user) {
     return { error: "Not authenticated" };
   }
+
+  // Verify org membership
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
 
   // Get org name + branding and inviter profile for the email (Project Genesis)
   const { data: org } = await supabase

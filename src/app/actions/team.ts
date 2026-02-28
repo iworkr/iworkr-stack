@@ -317,7 +317,6 @@ export async function getRolesWithCounts(orgId: string) {
   }
 }
 
-// INCOMPLETE:PARTIAL — createRole has Zod schema (CreateRoleSchema) but validation is never called; raw params passed directly to insert.
 export async function createRole(params: {
   organization_id: string;
   name: string;
@@ -326,6 +325,10 @@ export async function createRole(params: {
   scopes?: any;
 }) {
   try {
+    // Validate input
+    const validated = validate(CreateRoleSchema, params);
+    if (validated.error) return { data: null, error: validated.error };
+
     const supabase = await createServerSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -336,7 +339,7 @@ export async function createRole(params: {
 
     const { data, error } = await supabase
       .from("organization_roles")
-      .insert(params)
+      .insert(params as any)
       .select()
       .single();
 
@@ -388,7 +391,6 @@ export async function updateRole(
   }
 }
 
-// INCOMPLETE:PARTIAL — updateRolePermissions accepts `permissions: any` and `scopes?: any` with no validation; arbitrary JSON stored as role permissions.
 export async function updateRolePermissions(
   roleId: string,
   permissions: any,

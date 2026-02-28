@@ -1,11 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
+import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { Events, dispatch } from "@/lib/automation";
 import { createInvoiceSchema, validate } from "@/lib/validation";
 import { logger } from "@/lib/logger";
+
+const UpdateInvoiceSchema = z.object({
+  client_id: z.string().uuid().optional().nullable(),
+  job_id: z.string().uuid().optional().nullable(),
+  client_name: z.string().max(200).optional().nullable(),
+  client_email: z.string().email().max(255).optional().nullable().or(z.literal("")),
+  client_address: z.string().max(500).optional().nullable(),
+  status: z.enum(["draft", "sent", "paid", "overdue", "voided"]).optional(),
+  issue_date: z.string().optional().nullable(),
+  due_date: z.string().optional().nullable(),
+  tax_rate: z.number().min(0).max(100).optional(),
+  subtotal: z.number().min(0).optional(),
+  tax: z.number().min(0).optional(),
+  total: z.number().min(0).optional(),
+  payment_link: z.string().max(2000).optional().nullable(),
+  notes: z.string().max(5000).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+});
 
 export interface Invoice {
   id: string;
@@ -131,10 +150,21 @@ export interface FinanceOverview {
 /**
  * Get organization settings (name, tax_id, address, email)
  */
-// INCOMPLETE:BLOCKED(AUTH) — getOrgSettings has no auth check; any unauthenticated call can read any org's name and settings. Add supabase.auth.getUser() + org membership verification.
 export async function getOrgSettings(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("organizations")
       .select("name, settings")
@@ -151,11 +181,21 @@ export async function getOrgSettings(orgId: string) {
 /**
  * Get all invoices for an organization with line items count
  */
-// INCOMPLETE:BLOCKED(AUTH) — getInvoices has no auth check; any unauthenticated call can list all invoices for any org. Add auth + org membership check.
 export async function getInvoices(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data: invoices, error } = await supabase
       .from("invoices")
       .select(`
@@ -187,11 +227,13 @@ export async function getInvoices(orgId: string) {
 /**
  * Get a single invoice with full details including line items and events
  */
-// INCOMPLETE:BLOCKED(AUTH) — getInvoice has no auth check and no org scoping; any unauthenticated call can read any invoice by ID.
 export async function getInvoice(invoiceId: string) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
     const { data: invoice, error } = await supabase
       .from("invoices")
       .select(`
@@ -210,6 +252,19 @@ export async function getInvoice(invoiceId: string) {
     if (error) {
       return { data: null, error: error.message };
     }
+
+    if (!invoice) {
+      return { data: null, error: "Invoice not found" };
+    }
+
+    // Verify org membership
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", invoice.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const formattedInvoice = {
       ...invoice!,
@@ -231,7 +286,6 @@ export async function getInvoice(invoiceId: string) {
 /**
  * Calculate invoice totals from line items
  */
-// INCOMPLETE:TODO — hardcoded default tax rate of 10%; should be pulled from org settings or branch tax configuration.
 function calculateTotals(lineItems: Array<{ quantity: number; unit_price: number }>, taxRate: number = 10) {
   const subtotal = lineItems.reduce(
     (sum, item) => sum + item.quantity * item.unit_price,
@@ -371,7 +425,6 @@ export async function createInvoice(params: CreateInvoiceParams) {
 /**
  * Soft-delete an invoice (sets deleted_at timestamp)
  */
-// INCOMPLETE:PARTIAL — deleteInvoice checks auth but has no org ownership verification; any authenticated user can soft-delete any invoice by ID.
 export async function deleteInvoice(invoiceId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -380,6 +433,25 @@ export async function deleteInvoice(invoiceId: string) {
     if (!user) {
       return { data: null, error: "Unauthorized" };
     }
+
+    // Fetch invoice to verify org ownership
+    const { data: invoice, error: fetchError } = await supabase
+      .from("invoices")
+      .select("organization_id")
+      .eq("id", invoiceId)
+      .maybeSingle();
+
+    if (fetchError || !invoice) {
+      return { data: null, error: fetchError?.message || "Invoice not found" };
+    }
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", invoice.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { error } = await supabase
       .from("invoices")
@@ -400,15 +472,39 @@ export async function deleteInvoice(invoiceId: string) {
 /**
  * Update invoice fields
  */
-// INCOMPLETE:PARTIAL — updateInvoice has no Zod input validation on UpdateInvoiceParams; relies only on TypeScript types which are erased at runtime.
 export async function updateInvoice(invoiceId: string, updates: UpdateInvoiceParams) {
   try {
+    // Validate input with Zod
+    const validated = validate(UpdateInvoiceSchema, updates);
+    if (validated.error) {
+      return { data: null, error: validated.error };
+    }
+
     const supabase = await createServerSupabaseClient();
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { data: null, error: "Unauthorized" };
     }
+
+    // Fetch invoice to verify org ownership
+    const { data: existingInvoice, error: fetchError } = await supabase
+      .from("invoices")
+      .select("organization_id")
+      .eq("id", invoiceId)
+      .maybeSingle();
+
+    if (fetchError || !existingInvoice) {
+      return { data: null, error: fetchError?.message || "Invoice not found" };
+    }
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", existingInvoice.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // If tax_rate is being updated, recalculate totals
     if (updates.tax_rate !== undefined) {
@@ -734,11 +830,21 @@ export async function removeLineItem(lineItemId: string) {
 /**
  * Get all payouts for an organization
  */
-// INCOMPLETE:BLOCKED(AUTH) — getPayouts has no auth check; any unauthenticated call can list all payouts for any org.
 export async function getPayouts(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data: payouts, error } = await supabase
       .from("payouts")
       .select("*")
@@ -758,11 +864,21 @@ export async function getPayouts(orgId: string) {
 /**
  * Get daily revenue statistics for the last 30 days
  */
-// INCOMPLETE:BLOCKED(AUTH) — getRevenueStats has no auth check; any unauthenticated call can read revenue data for any org.
 export async function getRevenueStats(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     // Calculate date range (last 30 days)
     const endDate = new Date();
     const startDate = new Date();
@@ -822,10 +938,20 @@ export async function getRevenueStats(orgId: string) {
 /**
  * Get finance overview dashboard stats via RPC
  */
-// INCOMPLETE:BLOCKED(AUTH) — getFinanceOverview has no auth check; any unauthenticated call can read full finance overview for any org.
 export async function getFinanceOverview(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("get_finance_overview", {
       p_org_id: orgId,
@@ -932,10 +1058,12 @@ export async function getInvoiceDetail(invoiceId: string) {
 /**
  * Run overdue watchdog: marks sent invoices past due date as overdue
  */
-// INCOMPLETE:BLOCKED(AUTH) — runOverdueWatchdog has no auth check; any unauthenticated call can trigger invoice status mutations across all orgs.
 export async function runOverdueWatchdog(orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("mark_overdue_invoices", {
       p_org_id: orgId || undefined,

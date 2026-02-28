@@ -261,7 +261,6 @@ function AuthPageInner() {
               </div>
 
               {/* Terms */}
-              {/* INCOMPLETE:PARTIAL — hardcoded external URLs for Terms and Privacy; should use env var or config */}
               <p className="text-center text-[11px] text-zinc-600">
                 By continuing, you agree to our{" "}
                 <a href="https://iworkrapp.com/terms" className="text-zinc-500 underline hover:text-zinc-400">

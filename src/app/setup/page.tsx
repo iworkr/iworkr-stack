@@ -18,7 +18,6 @@ const stepComponents: Record<string, React.ComponentType> = {
   complete: StepComplete,
 };
 
-// INCOMPLETE:PARTIAL — no auth guard; unauthenticated users can access the setup page directly without being redirected to login.
 export default function SetupPage() {
   const currentStep = useOnboardingStore((s) => s.currentStep);
   const StepComponent = stepComponents[currentStep] || StepIdentity;

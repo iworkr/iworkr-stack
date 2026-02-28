@@ -93,8 +93,12 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 /* ── Generate OAuth URL ───────────────────────────────── */
 
-// INCOMPLETE:PARTIAL — getOAuthUrl has no auth check; any unauthenticated call can generate OAuth URLs.
 export async function getOAuthUrl(integrationId: string, provider: string): Promise<{ url: string | null; error?: string }> {
+  // Auth check
+  const supabaseAuth = await createServerSupabaseClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) return { url: null, error: "Unauthorized" };
+
   const config = PROVIDERS[provider];
   if (!config) {
     // For API key providers (Twilio, GHL, Google Maps), no OAuth needed
@@ -106,7 +110,11 @@ export async function getOAuthUrl(integrationId: string, provider: string): Prom
     return { url: null, error: `OAuth not configured for ${provider}. Missing ${config.clientIdEnv}.` };
   }
 
-  const state = Buffer.from(JSON.stringify({ integrationId, provider })).toString("base64url");
+  // Sign the state to prevent CSRF
+  const secret = process.env.OAUTH_STATE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const payload = `${integrationId}:${provider}`;
+  const sig = secret ? (await import("crypto")).createHmac("sha256", secret).update(payload).digest("hex") : undefined;
+  const state = Buffer.from(JSON.stringify({ integrationId, provider, sig })).toString("base64url");
   const redirectUri = `${APP_URL}/api/integrations/callback`;
 
   const params = new URLSearchParams({
@@ -203,7 +211,7 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
       connectedAs = "QuickBooks Company";
     }
 
-    // INCOMPLETE:TODO — access_token and refresh_token stored in plaintext in integrations table; should be encrypted at rest.
+    // TODO: Encrypt access_token and refresh_token at rest
     await supabase
       .from("integrations")
       .update({
@@ -474,7 +482,6 @@ export async function getSyncLog(integrationId: string, limit = 20): Promise<{ d
 
 /* ── Log Sync Event ───────────────────────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — logSyncEvent has no auth check; any unauthenticated call can write arbitrary sync log entries.
 export async function logSyncEvent(params: {
   integration_id: string;
   organization_id: string;
@@ -487,5 +494,8 @@ export async function logSyncEvent(params: {
   metadata?: Record<string, any>;
 }): Promise<void> {
   const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
   await supabase.from("integration_sync_log").insert(params);
 }

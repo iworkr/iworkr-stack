@@ -30,9 +30,20 @@ export interface ApiKey {
 
 /* ── CRUD ─────────────────────────────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — getApiKeys has no auth check; any unauthenticated call can list API keys for any org.
 export async function getApiKeys(orgId: string): Promise<{ data: ApiKey[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: "Unauthorized" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { data: [], error: "Unauthorized" };
+
   const { data, error } = await supabase
     .from("api_keys")
     .select("id, name, key_prefix, last_used_at, expires_at, scopes, status, created_at, revoked_at")
@@ -43,7 +54,6 @@ export async function getApiKeys(orgId: string): Promise<{ data: ApiKey[]; error
   return { data: (data || []) as ApiKey[] };
 }
 
-// INCOMPLETE:PARTIAL — generateApiKey checks auth but no org membership verification; any authenticated user can generate keys for any org. Also no rate limiting.
 export async function generateApiKey(params: {
   organization_id: string;
   name: string;
@@ -60,6 +70,14 @@ export async function generateApiKey(params: {
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { key: null, data: null, error: "Unauthorized" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", params.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { key: null, data: null, error: "Unauthorized" };
 
   // Generate a secure API key
   const rawKey = randomBytes(32).toString("hex");
@@ -85,9 +103,27 @@ export async function generateApiKey(params: {
   return { key: fullKey, data: data as ApiKey };
 }
 
-// INCOMPLETE:BLOCKED(AUTH) — revokeApiKey has no auth check and no org scoping; any unauthenticated call can revoke any API key by ID.
 export async function revokeApiKey(keyId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { data: key } = await supabase
+    .from("api_keys")
+    .select("organization_id")
+    .eq("id", keyId)
+    .maybeSingle();
+  if (!key) return { error: "API key not found" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", key.organization_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { error: "Unauthorized" };
+
   const { error } = await supabase
     .from("api_keys")
     .update({ status: "revoked", revoked_at: new Date().toISOString() })

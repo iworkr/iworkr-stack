@@ -63,7 +63,7 @@
 ## 6) Work-in-progress status
 - **Current milestone**: Core platform live — jobs, schedule, clients, finance, assets, forms, automations, integrations, AI agent, dispatch, messenger, team management
 - **Next milestone**: Polish, performance, mobile parity, advanced automations, marketplace
-- **Known blockers**: See `INCOMPLETE:` comments in codebase (run `grep -r "INCOMPLETE:" src/`)
+- **Known blockers**: External API integrations (Xero, QuickBooks, Gmail, Google Calendar, GoHighLevel) require credentials. See `INCOMPLETE:BLOCKED` comments in `src/app/actions/integration-sync.ts`.
 
 ## 7) Architecture snapshot
 | Layer | Technology | Notes |

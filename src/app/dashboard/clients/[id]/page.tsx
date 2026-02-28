@@ -286,8 +286,9 @@ export default function ClientDossierPage() {
   const maxSpend = Math.max(...spendData.map((d) => d.amount), 1);
   const totalSpend = spendData.reduce((sum, d) => sum + d.amount, 0);
   const isVIP = (client.lifetimeValueNum || 0) >= 10000;
-  // INCOMPLETE:PARTIAL — outstandingBalance hardcoded to 0; should be calculated from unpaid invoices.
-  const outstandingBalance = 0; // Would come from unpaid invoices
+  const outstandingBalance = (client.invoices || [])
+    .filter((inv: { status: string; total: number }) => inv.status === "sent" || inv.status === "overdue")
+    .reduce((sum: number, inv: { total: number }) => sum + (inv.total || 0), 0);
 
   /* ── SVG path for spend chart ───────────────────────────── */
   const chartW = 480;

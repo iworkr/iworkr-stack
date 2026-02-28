@@ -2,8 +2,17 @@
 
 import { sendEmail } from "@/lib/email/send";
 import { createElement } from "react";
+import { z } from "zod";
+import { rateLimit, RateLimits } from "@/lib/rate-limit";
 
 const SUPPORT_EMAIL = process.env.ADMIN_EMAIL || "support@iworkr.com";
+
+const ContactFormSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  email: z.string().email("Invalid email").max(255),
+  subject: z.enum(["support", "sales", "bug", "other"]),
+  message: z.string().min(1, "Message is required").max(5000),
+});
 
 interface ContactFormData {
   name: string;
@@ -198,17 +207,20 @@ function AutoReply({ name }: { name: string }) {
   );
 }
 
-// INCOMPLETE:PARTIAL — submitContactForm has no rate limiting; publicly callable with no throttle, enabling email spam. Also uses manual checks instead of Zod schema.
 export async function submitContactForm(data: ContactFormData): Promise<{ success: boolean; error?: string }> {
-  const { name, email, subject, message } = data;
-
-  if (!name || !email || !subject || !message) {
-    return { success: false, error: "All fields are required." };
+  // Validate input with Zod
+  const parsed = ContactFormSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { success: false, error: "Please enter a valid email address." };
+  // Rate limit by email to prevent spam
+  const rl = rateLimit(`contact:${data.email}`, RateLimits.api);
+  if (!rl.success) {
+    return { success: false, error: "Too many submissions. Please try again later." };
   }
+
+  const { name, email, subject, message } = parsed.data;
 
   try {
     const [internalResult, autoReplyResult] = await Promise.all([

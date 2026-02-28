@@ -40,10 +40,20 @@ export interface FormsOverview {
 
 /* ── Forms CRUD ────────────────────────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — getForms has no auth check; any unauthenticated call can list all forms for any org.
 export async function getForms(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("forms")
@@ -59,10 +69,12 @@ export async function getForms(orgId: string) {
   }
 }
 
-// INCOMPLETE:BLOCKED(AUTH) — getForm has no auth check and no org scoping; any unauthenticated call can read any form by ID.
 export async function getForm(formId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("forms")
@@ -71,6 +83,16 @@ export async function getForm(formId: string) {
       .maybeSingle();
 
     if (error) return { data: null, error: error.message };
+    if (!data) return { data: null, error: "Form not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", data.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     return { data, error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
@@ -211,10 +233,27 @@ export async function deleteForm(formId: string) {
 
 /* ── Publish Form (version bump) ───────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — publishForm has no auth check; any unauthenticated call can publish any form.
 export async function publishForm(formId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: form } = await supabase
+      .from("forms")
+      .select("organization_id")
+      .eq("id", formId)
+      .maybeSingle();
+    if (!form) return { data: null, error: "Form not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", form.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("publish_form", {
       p_form_id: formId,
@@ -237,10 +276,20 @@ export async function publishForm(formId: string) {
 
 /* ── Submissions ───────────────────────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — getFormSubmissions has no auth check; any unauthenticated call can read all submissions for any org.
 export async function getFormSubmissions(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("form_submissions")
@@ -260,10 +309,12 @@ export async function getFormSubmissions(orgId: string) {
   }
 }
 
-// INCOMPLETE:BLOCKED(AUTH) — getFormSubmission has no auth check and no org scoping; any unauthenticated call can read any submission by ID.
 export async function getFormSubmission(submissionId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase
       .from("form_submissions")
@@ -329,10 +380,12 @@ export async function createFormSubmission(params: {
 
 /* ── Save Draft (autosave) ─────────────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — saveFormDraft has no auth check; any unauthenticated call can overwrite form submission data.
 export async function saveFormDraft(submissionId: string, formData: any) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("save_form_draft", {
       p_submission_id: submissionId,
@@ -355,7 +408,6 @@ export async function saveFormDraft(submissionId: string, formData: any) {
 
 /* ── Sign & Lock Submission ────────────────────────── */
 
-// INCOMPLETE:BLOCKED(AUTH) — signAndLockSubmission has no auth check; any unauthenticated call can sign and lock any form submission.
 export async function signAndLockSubmission(
   submissionId: string,
   signatureData: string,
@@ -368,6 +420,9 @@ export async function signAndLockSubmission(
 ) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("sign_and_lock_submission", {
       p_submission_id: submissionId,

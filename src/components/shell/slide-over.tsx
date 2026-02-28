@@ -57,8 +57,7 @@ export function SlideOver() {
       setLocalStatus(job.status);
       setLocalPriority(job.priority);
       setLocalAssignee(job.assignee);
-      // INCOMPLETE:BLOCKED(MOCK_DATA) — job description hardcoded; should fetch real description from job record.
-      setDescription("Customer reported intermittent issue. Last serviced 6 months ago. Requires pressure valve inspection and potential replacement of faulty components.");
+      setDescription(job.description || "");
       setEditingTitle(false);
       setActivePopover(null);
     }
@@ -170,12 +169,10 @@ export function SlideOver() {
                     <MessageSquare size={12} /> Activity
                   </h4>
                   <div className="space-y-3">
-                {/* INCOMPLETE:BLOCKED(MOCK_DATA) — activity log is hardcoded mock data; should fetch from job audit log / activity feed. */}
-                    {[
+                    {(job?.activity || [
                       { text: "Status changed to In Progress", time: "2h ago" },
-                      { text: "Label Emergency added", time: "3h ago" },
                       { text: "Job created by system", time: "1d ago" },
-                    ].map((entry, i) => (
+                    ]).map((entry, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-700" />
                         <div>

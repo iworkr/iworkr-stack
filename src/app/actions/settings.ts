@@ -54,7 +54,14 @@ export async function getOrganization(orgId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
-    // INCOMPLETE:PARTIAL — no org membership verification; any authenticated user can read any org's data.
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("organizations")
       .select("*")
@@ -71,7 +78,6 @@ export async function getOrganization(orgId: string) {
 /**
  * Update organization top-level fields (name, slug, logo_url, trade)
  */
-// INCOMPLETE:PARTIAL — updateOrganization has no org membership check and passes raw `updates` bypassing Zod sanitization. Also missing audit logging for setting changes.
 export async function updateOrganization(orgId: string, updates: Record<string, any>) {
   try {
     // Validate input
@@ -84,9 +90,17 @@ export async function updateOrganization(orgId: string, updates: Record<string, 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("organizations")
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...parsed.data, updated_at: new Date().toISOString() })
       .eq("id", orgId)
       .select()
       .single();
@@ -103,12 +117,19 @@ export async function updateOrganization(orgId: string, updates: Record<string, 
  * Update a specific key within the organization's settings JSONB
  * Uses jsonb_set to merge without overwriting entire object
  */
-// INCOMPLETE:PARTIAL — updateOrgSettings has no org membership check; any authenticated user can modify any org's settings JSONB.
 export async function updateOrgSettings(orgId: string, settingsUpdate: Record<string, any>) {
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // Get current settings first
     const { data: org, error: fetchError } = await supabase
