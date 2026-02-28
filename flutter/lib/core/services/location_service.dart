@@ -38,6 +38,7 @@ class LocationService {
   Future<void> startTracking() async {
     if (_tracking) return;
     _tracking = true;
+    // INCOMPLETE:PARTIAL — startTracking only sets up sync timers but never starts GPS listening; no Geolocator.getPositionStream() or background geolocation plugin integration.
 
     _syncTimer = Timer.periodic(
       const Duration(seconds: 60),
@@ -85,6 +86,7 @@ class LocationService {
   }
 
   Future<void> _recordHeartbeat() async {
+    // INCOMPLETE:PARTIAL — _recordHeartbeat is an empty stub; heartbeat GPS pings are never actually recorded.
     // Heartbeat pings are recorded as zero-speed points
     // to prove the service is alive during stationary periods.
   }

@@ -11,6 +11,7 @@ class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
   static GoTrueClient get auth => client.auth;
 
+  // INCOMPLETE:PARTIAL — SUPABASE_URL and SUPABASE_ANON_KEY use String.fromEnvironment with empty default; app will silently use empty strings in production if dart-defines are missing.
   static const String _supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
     defaultValue: '',

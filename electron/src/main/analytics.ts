@@ -40,6 +40,7 @@ export function initAnalytics(): void {
 
 async function flushEvents() {
   if (eventQueue.length === 0) return;
+  // INCOMPLETE:TODO — flushEvents discards all analytics events; no analytics endpoint configured. All desktop usage tracking is lost.
   // TODO: Implement analytics endpoint (e.g., POST to https://analytics.iworkrapp.com/events)
   console.warn(`[analytics] ${eventQueue.length} events discarded - analytics endpoint not configured`);
   eventQueue.length = 0;

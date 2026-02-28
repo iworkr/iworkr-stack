@@ -57,6 +57,7 @@ const statuses: { value: JobStatus; label: string }[] = [
   { value: "in_progress", label: "In Progress" },
 ];
 
+// INCOMPLETE:PARTIAL — catalogItems hardcoded; should be fetched from org-level price book or service catalog in database.
 const catalogItems = [
   { name: "Boiler service — annual", price: 450 },
   { name: "Boiler installation — gas", price: 3200 },
@@ -397,6 +398,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
           >
             {/* ── Header — PRD: breadcrumb left, minimize/close right ── */}
             <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-3.5">
+                {/* INCOMPLETE:PARTIAL — "Apex Plumbing" breadcrumb is hardcoded; should use org name from auth store. */}
               <span className="text-[12px] text-zinc-500">
                 Apex Plumbing <span className="text-zinc-600">&gt;</span> New Job
               </span>

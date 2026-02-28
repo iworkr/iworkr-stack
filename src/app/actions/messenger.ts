@@ -54,6 +54,7 @@ export async function getChannels(orgId: string) {
   }
 }
 
+// INCOMPLETE:PARTIAL — getChannel checks auth but no channel membership verification; any authenticated user can read any channel.
 export async function getChannel(channelId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -230,6 +231,7 @@ export async function getChannelMembers(channelId: string) {
 
 /* ── Messages ──────────────────────────────────────────── */
 
+// INCOMPLETE:PARTIAL — getMessages checks auth but no channel membership verification; any authenticated user can read messages from any channel.
 export async function getMessages(channelId: string, limit = 50, before?: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -343,6 +345,7 @@ export async function deleteMessage(messageId: string) {
   }
 }
 
+// INCOMPLETE:PARTIAL — toggleReaction has no input validation on emoji param; no max length, no allowlist — potential for storing arbitrary strings.
 export async function toggleReaction(messageId: string, emoji: string) {
   try {
     const supabase = await createServerSupabaseClient();

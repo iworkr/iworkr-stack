@@ -198,6 +198,7 @@ function AutoReply({ name }: { name: string }) {
   );
 }
 
+// INCOMPLETE:PARTIAL — submitContactForm has no rate limiting; publicly callable with no throttle, enabling email spam. Also uses manual checks instead of Zod schema.
 export async function submitContactForm(data: ContactFormData): Promise<{ success: boolean; error?: string }> {
   const { name, email, subject, message } = data;
 

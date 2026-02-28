@@ -96,6 +96,7 @@ export const useAuthStore = create<AuthState>()(
         loading: false,
         initialized: true,
       });
+    // INCOMPLETE:PARTIAL — empty catch block silently swallows initialization errors; should at minimum log the error.
     } catch {
       set({ loading: false, initialized: true });
     }

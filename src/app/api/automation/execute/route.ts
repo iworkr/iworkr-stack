@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       bearerToken.length === automationSecret.length &&
       timingSafeEqual(Buffer.from(bearerToken), Buffer.from(automationSecret));
 
+    // INCOMPLETE:PARTIAL — origin-based auth fallback is weak; allows any request from same hostname without bearer token, CSRF-vulnerable.
     if (!isSecretValid) {
       // Also allow requests from same origin (internal calls)
       const origin = request.headers.get("origin") || "";

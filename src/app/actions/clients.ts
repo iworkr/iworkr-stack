@@ -110,6 +110,7 @@ export interface UpdateClientContactParams {
 /**
  * Get all clients for an organization with job count, total spend, and last job date
  */
+// INCOMPLETE:BLOCKED(AUTH) — getClients has no auth check; any unauthenticated call can list all clients with stats for any org.
 export async function getClients(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -201,6 +202,7 @@ export async function getClients(orgId: string) {
 /**
  * Get a single client with contacts, recent activity, and spend history
  */
+// INCOMPLETE:BLOCKED(AUTH) — getClient has no auth check; any unauthenticated call can read full client details including contacts, activity, and spend history.
 export async function getClient(clientId: string, orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -383,6 +385,7 @@ export async function createClient(params: CreateClientParams) {
 /**
  * Update a client (orgId optional but recommended for ownership verification)
  */
+// INCOMPLETE:PARTIAL — updateClient has no Zod input validation on UpdateClientParams; relies only on TypeScript types erased at runtime.
 export async function updateClient(clientId: string, updates: UpdateClientParams, orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -598,6 +601,7 @@ export async function updateClientContact(contactId: string, updates: UpdateClie
 /**
  * Delete a client contact
  */
+// INCOMPLETE:PARTIAL — deleteClientContact checks auth but has no org ownership verification; any authenticated user can delete any contact by ID.
 export async function deleteClientContact(contactId: string) {
   try {
     const supabase = await createServerSupabaseClient();

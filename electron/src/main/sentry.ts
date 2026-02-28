@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/electron/main";
 import { app } from "electron";
 import log from "electron-log/main";
 
+// INCOMPLETE:PARTIAL — SENTRY_DSN reads from process.env which is not populated in packaged Electron apps; crash reporting will never activate in production. Should use electron-store or hardcoded DSN.
 const SENTRY_DSN = process.env.SENTRY_DSN || "";
 
 export function initSentry(): void {

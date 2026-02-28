@@ -90,6 +90,7 @@ function mapServerMember(s: any): TeamMember {
     skills: Array.isArray(s.skills) ? s.skills : [],
     lastActive: timeSince(s.last_active_at),
     joinedAt: formatJoinDate(s.joined_at),
+          // INCOMPLETE:BLOCKED(BACKEND) — jobsCompleted, avgRating, twoFactorEnabled, lastLoginIp, recentActivity are all hardcoded defaults; should aggregate from jobs table, reviews, and auth audit log.
     jobsCompleted: 0,
     avgRating: 0,
     hourlyRate: s.hourly_rate ? Number(s.hourly_rate) : 0,

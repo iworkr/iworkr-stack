@@ -29,6 +29,7 @@ export async function POST(
       return NextResponse.json({ error: "Quote not found" }, { status: 404 });
     }
 
+    // INCOMPLETE:PARTIAL — weak token validation; token is optional, quote can be declined without authentication.
     if (token && quote.secure_token !== token) {
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
     }

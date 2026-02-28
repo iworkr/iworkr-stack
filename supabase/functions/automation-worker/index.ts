@@ -205,6 +205,7 @@ async function executeAction(
         };
       }
 
+      // INCOMPLETE:BLOCKED(TWILIO_ACCOUNT_SID) — SMS action not implemented; requires Twilio or SMS provider credentials.
       // TODO: Wire to Twilio/SMS provider
       return { success: false, error: "SMS provider not configured. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables." };
     }

@@ -363,6 +363,7 @@ export async function updateScheduleBlock(blockId: string, updates: UpdateSchedu
 /**
  * Delete a schedule block
  */
+// INCOMPLETE:PARTIAL — deleteScheduleBlock checks auth but no org ownership verification; any authenticated user can delete any schedule block.
 export async function deleteScheduleBlock(blockId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -886,6 +887,7 @@ export async function createScheduleEvent(params: CreateScheduleEventParams) {
 /**
  * Delete a schedule event
  */
+// INCOMPLETE:PARTIAL — deleteScheduleEvent checks auth but no org ownership verification; any authenticated user can delete any schedule event.
 export async function deleteScheduleEvent(eventId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -913,6 +915,7 @@ export async function deleteScheduleEvent(eventId: string) {
 /**
  * Check for schedule conflicts via RPC
  */
+// INCOMPLETE:PARTIAL — checkScheduleConflicts has no auth/membership check; any request can check conflicts for any org.
 export async function checkScheduleConflicts(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();

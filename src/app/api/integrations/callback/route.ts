@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // INCOMPLETE:PARTIAL — OAuth callback has no CSRF state validation; base64url-decoded state is trusted without signature verification.
   try {
     let stateData: { integrationId?: string; provider?: string };
     try {

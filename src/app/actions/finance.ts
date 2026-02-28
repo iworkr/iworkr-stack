@@ -131,6 +131,7 @@ export interface FinanceOverview {
 /**
  * Get organization settings (name, tax_id, address, email)
  */
+// INCOMPLETE:BLOCKED(AUTH) — getOrgSettings has no auth check; any unauthenticated call can read any org's name and settings. Add supabase.auth.getUser() + org membership verification.
 export async function getOrgSettings(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -150,6 +151,7 @@ export async function getOrgSettings(orgId: string) {
 /**
  * Get all invoices for an organization with line items count
  */
+// INCOMPLETE:BLOCKED(AUTH) — getInvoices has no auth check; any unauthenticated call can list all invoices for any org. Add auth + org membership check.
 export async function getInvoices(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -185,6 +187,7 @@ export async function getInvoices(orgId: string) {
 /**
  * Get a single invoice with full details including line items and events
  */
+// INCOMPLETE:BLOCKED(AUTH) — getInvoice has no auth check and no org scoping; any unauthenticated call can read any invoice by ID.
 export async function getInvoice(invoiceId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -228,6 +231,7 @@ export async function getInvoice(invoiceId: string) {
 /**
  * Calculate invoice totals from line items
  */
+// INCOMPLETE:TODO — hardcoded default tax rate of 10%; should be pulled from org settings or branch tax configuration.
 function calculateTotals(lineItems: Array<{ quantity: number; unit_price: number }>, taxRate: number = 10) {
   const subtotal = lineItems.reduce(
     (sum, item) => sum + item.quantity * item.unit_price,
@@ -367,6 +371,7 @@ export async function createInvoice(params: CreateInvoiceParams) {
 /**
  * Soft-delete an invoice (sets deleted_at timestamp)
  */
+// INCOMPLETE:PARTIAL — deleteInvoice checks auth but has no org ownership verification; any authenticated user can soft-delete any invoice by ID.
 export async function deleteInvoice(invoiceId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -395,6 +400,7 @@ export async function deleteInvoice(invoiceId: string) {
 /**
  * Update invoice fields
  */
+// INCOMPLETE:PARTIAL — updateInvoice has no Zod input validation on UpdateInvoiceParams; relies only on TypeScript types which are erased at runtime.
 export async function updateInvoice(invoiceId: string, updates: UpdateInvoiceParams) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -728,6 +734,7 @@ export async function removeLineItem(lineItemId: string) {
 /**
  * Get all payouts for an organization
  */
+// INCOMPLETE:BLOCKED(AUTH) — getPayouts has no auth check; any unauthenticated call can list all payouts for any org.
 export async function getPayouts(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -751,6 +758,7 @@ export async function getPayouts(orgId: string) {
 /**
  * Get daily revenue statistics for the last 30 days
  */
+// INCOMPLETE:BLOCKED(AUTH) — getRevenueStats has no auth check; any unauthenticated call can read revenue data for any org.
 export async function getRevenueStats(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -814,6 +822,7 @@ export async function getRevenueStats(orgId: string) {
 /**
  * Get finance overview dashboard stats via RPC
  */
+// INCOMPLETE:BLOCKED(AUTH) — getFinanceOverview has no auth check; any unauthenticated call can read full finance overview for any org.
 export async function getFinanceOverview(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -923,6 +932,7 @@ export async function getInvoiceDetail(invoiceId: string) {
 /**
  * Run overdue watchdog: marks sent invoices past due date as overdue
  */
+// INCOMPLETE:BLOCKED(AUTH) — runOverdueWatchdog has no auth check; any unauthenticated call can trigger invoice status mutations across all orgs.
 export async function runOverdueWatchdog(orgId?: string) {
   try {
     const supabase = await createServerSupabaseClient();

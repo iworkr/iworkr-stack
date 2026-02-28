@@ -184,3 +184,5 @@ export type CreateClientInput = z.infer<typeof createClientSchema>;
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
 export type CreateScheduleBlockInput = z.infer<typeof createScheduleBlockSchema>;
 export type CreateFlowInput = z.infer<typeof createFlowSchema>;
+
+// INCOMPLETE:PARTIAL — has Zod schemas for job/client/invoice/schedule/automation but no schemas for teamInvites, assetCreation, stockItems, or formTemplates.

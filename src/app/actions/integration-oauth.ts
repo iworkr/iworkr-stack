@@ -93,6 +93,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 /* ── Generate OAuth URL ───────────────────────────────── */
 
+// INCOMPLETE:PARTIAL — getOAuthUrl has no auth check; any unauthenticated call can generate OAuth URLs.
 export async function getOAuthUrl(integrationId: string, provider: string): Promise<{ url: string | null; error?: string }> {
   const config = PROVIDERS[provider];
   if (!config) {
@@ -202,6 +203,7 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
       connectedAs = "QuickBooks Company";
     }
 
+    // INCOMPLETE:TODO — access_token and refresh_token stored in plaintext in integrations table; should be encrypted at rest.
     await supabase
       .from("integrations")
       .update({
@@ -472,6 +474,7 @@ export async function getSyncLog(integrationId: string, limit = 20): Promise<{ d
 
 /* ── Log Sync Event ───────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — logSyncEvent has no auth check; any unauthenticated call can write arbitrary sync log entries.
 export async function logSyncEvent(params: {
   integration_id: string;
   organization_id: string;

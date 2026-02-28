@@ -57,6 +57,7 @@ export function SlideOver() {
       setLocalStatus(job.status);
       setLocalPriority(job.priority);
       setLocalAssignee(job.assignee);
+      // INCOMPLETE:BLOCKED(MOCK_DATA) — job description hardcoded; should fetch real description from job record.
       setDescription("Customer reported intermittent issue. Last serviced 6 months ago. Requires pressure valve inspection and potential replacement of faulty components.");
       setEditingTitle(false);
       setActivePopover(null);
@@ -169,6 +170,7 @@ export function SlideOver() {
                     <MessageSquare size={12} /> Activity
                   </h4>
                   <div className="space-y-3">
+                {/* INCOMPLETE:BLOCKED(MOCK_DATA) — activity log is hardcoded mock data; should fetch from job audit log / activity feed. */}
                     {[
                       { text: "Status changed to In Progress", time: "2h ago" },
                       { text: "Label Emergency added", time: "3h ago" },

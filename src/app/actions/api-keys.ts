@@ -30,6 +30,7 @@ export interface ApiKey {
 
 /* ── CRUD ─────────────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — getApiKeys has no auth check; any unauthenticated call can list API keys for any org.
 export async function getApiKeys(orgId: string): Promise<{ data: ApiKey[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
@@ -42,6 +43,7 @@ export async function getApiKeys(orgId: string): Promise<{ data: ApiKey[]; error
   return { data: (data || []) as ApiKey[] };
 }
 
+// INCOMPLETE:PARTIAL — generateApiKey checks auth but no org membership verification; any authenticated user can generate keys for any org. Also no rate limiting.
 export async function generateApiKey(params: {
   organization_id: string;
   name: string;
@@ -83,6 +85,7 @@ export async function generateApiKey(params: {
   return { key: fullKey, data: data as ApiKey };
 }
 
+// INCOMPLETE:BLOCKED(AUTH) — revokeApiKey has no auth check and no org scoping; any unauthenticated call can revoke any API key by ID.
 export async function revokeApiKey(keyId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase

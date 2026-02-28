@@ -14,6 +14,7 @@ function getStripe() {
  * Supports both Stripe Connect (connected accounts) and direct charges.
  * Public endpoint — uses anon key since callers may not be authenticated.
  */
+// INCOMPLETE:BLOCKED(AUTH) — no auth verification; public endpoint allows creating PaymentIntents for any org with no rate limiting.
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { invoiceId, orgId, amountCents, currency } = body as {

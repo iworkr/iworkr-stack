@@ -317,6 +317,7 @@ export async function getRolesWithCounts(orgId: string) {
   }
 }
 
+// INCOMPLETE:PARTIAL — createRole has Zod schema (CreateRoleSchema) but validation is never called; raw params passed directly to insert.
 export async function createRole(params: {
   organization_id: string;
   name: string;
@@ -387,6 +388,7 @@ export async function updateRole(
   }
 }
 
+// INCOMPLETE:PARTIAL — updateRolePermissions accepts `permissions: any` and `scopes?: any` with no validation; arbitrary JSON stored as role permissions.
 export async function updateRolePermissions(
   roleId: string,
   permissions: any,

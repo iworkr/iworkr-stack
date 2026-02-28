@@ -53,6 +53,7 @@ async function verifyStripeSignature(
   return JSON.parse(body);
 }
 
+// INCOMPLETE:TODO — findOrgByStripeCustomer does full table scan of all organizations; should use indexed stripe_customer_id column for O(1) lookup.
 // TODO: Replace with indexed lookup: SELECT org_id FROM org_settings WHERE stripe_customer_id = $1
 async function findOrgByStripeCustomer(
   supabase: ReturnType<typeof createClient>,

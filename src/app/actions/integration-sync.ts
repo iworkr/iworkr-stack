@@ -7,6 +7,7 @@ import { refreshIntegrationToken } from "./integration-oauth";
 
 /* ── Sync Orchestrator ────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — triggerSync has no auth check; any unauthenticated call can trigger sync operations.
 export async function triggerSync(integrationId: string): Promise<{ error?: string; synced?: number }> {
   const supabase = await createServerSupabaseClient();
 
@@ -81,36 +82,42 @@ export async function triggerSync(integrationId: string): Promise<{ error?: stri
 
 /* ── Xero Sync ────────────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(XERO_CLIENT_ID) — Xero sync not implemented; requires Xero API credentials and OAuth flow.
 async function syncXero(_int: any): Promise<number> {
   throw new Error("Xero sync not yet implemented. Configure XERO_CLIENT_ID and XERO_CLIENT_SECRET.");
 }
 
 /* ── QuickBooks Sync ──────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(QUICKBOOKS_CLIENT_ID) — QuickBooks sync not implemented.
 async function syncQuickBooks(_int: any): Promise<number> {
   throw new Error("QuickBooks sync not yet implemented. Configure QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET.");
 }
 
 /* ── Gmail Sync ───────────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(GMAIL_API) — Gmail sync not implemented; requires Google OAuth consent screen + Gmail API scope.
 async function syncGmail(_int: any): Promise<number> {
   throw new Error("Gmail sync not yet implemented. Configure GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET.");
 }
 
 /* ── Google Calendar Sync ─────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(GCAL_API) — Google Calendar sync not implemented.
 async function syncGoogleCalendar(_int: any): Promise<number> {
   throw new Error("Google Calendar sync not yet implemented. Configure GOOGLE_CALENDAR_CLIENT_ID and GOOGLE_CALENDAR_CLIENT_SECRET.");
 }
 
 /* ── GoHighLevel Sync ─────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(GHL_API) — GoHighLevel sync not implemented.
 async function syncGoHighLevel(_int: any): Promise<number> {
   throw new Error("GoHighLevel sync not yet implemented. Configure GHL_CLIENT_ID and GHL_CLIENT_SECRET.");
 }
 
 /* ── Push Single Invoice (Real-time trigger) ──────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — pushInvoiceToProvider has no auth check and returns stub error; financial push sync not implemented.
 export async function pushInvoiceToProvider(invoiceId: string, orgId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
 

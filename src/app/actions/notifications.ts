@@ -288,6 +288,7 @@ export async function unsnoozeNotification(notificationId: string) {
 
 /* ── Create notification ─────────────────────────────── */
 
+// INCOMPLETE:PARTIAL — createNotification has no org membership check; any authenticated user could create notifications targeting users in other orgs. Also no rate limiting.
 export async function createNotification(params: CreateNotificationParams) {
   try {
     // Validate input

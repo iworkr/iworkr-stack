@@ -246,6 +246,7 @@ export const useIntegrationsStore = create<IntegrationsState>()(
       ),
     })),
 
+    // INCOMPLETE:BLOCKED(BACKEND) — syncNow uses setTimeout(2000) to fake sync completion; no real backend sync call. Wire to triggerSync server action.
   syncNow: (id) => {
     set((s) => ({
       integrations: s.integrations.map((i) =>

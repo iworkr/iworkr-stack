@@ -29,6 +29,7 @@ export interface IntegrationsOverview {
 
 /* ── Read ──────────────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — getIntegrations has no auth check; any unauthenticated call can list all integrations for any org.
 export async function getIntegrations(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -46,6 +47,7 @@ export async function getIntegrations(orgId: string) {
   }
 }
 
+// INCOMPLETE:BLOCKED(AUTH) — getIntegrationsOverview has no auth check; any unauthenticated call can read integration stats for any org.
 export async function getIntegrationsOverview(
   orgId: string
 ): Promise<{ data: IntegrationsOverview | null; error: string | null }> {
@@ -70,6 +72,7 @@ export async function getIntegrationsOverview(
 
 /* ── Connect / Disconnect ──────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — connectIntegration has no auth check; any unauthenticated call can connect any integration.
 export async function connectIntegration(
   integrationId: string,
   connectionId?: string
@@ -98,6 +101,7 @@ export async function connectIntegration(
   }
 }
 
+// INCOMPLETE:BLOCKED(AUTH) — disconnectIntegration has no auth check; any unauthenticated call can disconnect any integration.
 export async function disconnectIntegration(integrationId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -124,6 +128,7 @@ export async function disconnectIntegration(integrationId: string) {
 
 /* ── Settings ──────────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — updateIntegrationSettings has no auth check; any unauthenticated call can modify settings on any integration.
 export async function updateIntegrationSettings(
   integrationId: string,
   settings: any
@@ -159,6 +164,7 @@ export async function updateIntegrationSettings(
 
 /* ── Create integration record ─────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — createIntegration has no auth check; any unauthenticated call can create integration records for any org.
 export async function createIntegration(params: {
   organization_id: string;
   provider: string;
@@ -193,6 +199,7 @@ export async function createIntegration(params: {
 
 /* ── Sync Now ──────────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — syncIntegration has no auth check and is a stub; marks integration as "connected" without performing actual sync.
 export async function syncIntegration(integrationId: string) {
   try {
     const supabase = await createServerSupabaseClient();

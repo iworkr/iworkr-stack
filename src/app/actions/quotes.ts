@@ -100,6 +100,7 @@ export interface DocumentEvent {
 
 /* ── Quotes CRUD ──────────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — getQuotes has no auth check; any unauthenticated call can list all quotes for any org.
 export async function getQuotes(orgId: string): Promise<{ data: Quote[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
@@ -112,6 +113,7 @@ export async function getQuotes(orgId: string): Promise<{ data: Quote[]; error?:
   return { data: (data || []) as Quote[] };
 }
 
+// INCOMPLETE:BLOCKED(AUTH) — getQuote has no auth check and no org scoping; any unauthenticated call can read any quote by ID.
 export async function getQuote(quoteId: string): Promise<{ data: Quote | null; error?: string }> {
   const supabase = await createServerSupabaseClient();
   const { data: quote, error } = await supabase
@@ -193,6 +195,7 @@ export async function createQuote(params: {
   return { data: quote as Quote };
 }
 
+// INCOMPLETE:BLOCKED(AUTH) — updateQuote has no auth check; any unauthenticated call can update any quote.
 export async function updateQuote(
   quoteId: string,
   updates: Partial<Omit<Quote, "id" | "display_id" | "secure_token" | "created_at" | "updated_at">>
@@ -212,6 +215,7 @@ export async function updateQuote(
   return {};
 }
 
+// INCOMPLETE:BLOCKED(AUTH) — addQuoteLineItem has no auth check; any unauthenticated call can add line items to any quote.
 export async function addQuoteLineItem(
   quoteId: string,
   item: { description: string; quantity: number; unit_price: number }
@@ -228,6 +232,7 @@ export async function addQuoteLineItem(
   return { data: data as QuoteLineItem };
 }
 
+// INCOMPLETE:BLOCKED(AUTH) — removeQuoteLineItem has no auth check; any unauthenticated call can delete line items from any quote.
 export async function removeQuoteLineItem(lineItemId: string, quoteId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase
@@ -265,6 +270,7 @@ async function recalcQuoteTotals(quoteId: string) {
 
 /* ── Send Quote ───────────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — sendQuote has no auth check and no rate limiting; any unauthenticated call can trigger sending quotes to clients.
 export async function sendQuote(quoteId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
   const { data: quote } = await supabase
@@ -443,6 +449,7 @@ export async function rejectQuote(token: string, reason: string): Promise<{ erro
 
 /* ── Forensic Events ──────────────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — getDocumentEvents has no auth check; any unauthenticated call can read forensic event trail for any quote/invoice.
 export async function getDocumentEvents(docType: "quote" | "invoice", docId: string): Promise<{ data: DocumentEvent[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase

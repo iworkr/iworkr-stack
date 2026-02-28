@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  // INCOMPLETE:PARTIAL — cron auth is bypassed when CRON_SECRET and SUPABASE_SERVICE_ROLE_KEY are both unset (cronSecret is falsy, if-block skipped).
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

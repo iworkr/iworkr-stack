@@ -105,6 +105,7 @@ export async function updateOrganizationTrade(orgId: string, trade: string) {
   return { success: true };
 }
 
+// INCOMPLETE:PARTIAL — sendTeamInvites has no org membership verification and no rate limiting; any authenticated user can send invites for any org with no max count on emails array.
 export async function sendTeamInvites(
   orgId: string,
   emails: string[]

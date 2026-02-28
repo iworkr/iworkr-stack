@@ -116,6 +116,7 @@ export interface UpdateJobParams {
 /**
  * Get all jobs for an organization
  */
+// INCOMPLETE:BLOCKED(AUTH) — getJobs has no auth check; any unauthenticated call can list all jobs for any org. Add auth + org membership verification.
 export async function getJobs(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -162,6 +163,7 @@ export async function getJobs(orgId: string) {
 /**
  * Get a single job with full details
  */
+// INCOMPLETE:BLOCKED(AUTH) — getJob has no auth check and no org scoping; any unauthenticated call can read full job details including subtasks and activity.
 export async function getJob(jobId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -425,6 +427,7 @@ export async function updateJob(jobId: string, updates: UpdateJobParams) {
 /**
  * Soft delete a job
  */
+// INCOMPLETE:PARTIAL — deleteJob checks auth but has no org ownership verification; any authenticated user can soft-delete any job by ID.
 export async function deleteJob(jobId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -662,6 +665,7 @@ export async function assignJob(jobId: string, assigneeId: string | null, assign
 /**
  * Get line items for a job
  */
+// INCOMPLETE:BLOCKED(AUTH) — getJobLineItems has no auth check and no org scoping; any unauthenticated call can read line items for any job.
 export async function getJobLineItems(jobId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -792,6 +796,7 @@ export interface JobFilters {
 /**
  * Get filtered & sorted jobs via RPC with advanced filtering
  */
+// INCOMPLETE:BLOCKED(AUTH) — getFilteredJobs has no auth check; any unauthenticated call can search/filter all jobs for any org.
 export async function getFilteredJobs(orgId: string, filters: JobFilters = {}) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -822,6 +827,7 @@ export async function getFilteredJobs(orgId: string, filters: JobFilters = {}) {
 /**
  * Get full job details via RPC (includes line items, subtasks, activity)
  */
+// INCOMPLETE:BLOCKED(AUTH) — getJobDetails has no auth check; any unauthenticated call can read full job details via RPC.
 export async function getJobDetails(jobId: string) {
   try {
     const supabase = await createServerSupabaseClient();

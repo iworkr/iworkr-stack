@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
       invoiceData = payload.data;
       workspaceData = payload.workspace;
     } else if (body.data && body.workspace) {
+      // INCOMPLETE:PARTIAL — when body.data/body.workspace passed directly (no invoice_id), no auth check; anyone can generate arbitrary PDFs.
       invoiceData = body.data;
       workspaceData = body.workspace;
     } else {

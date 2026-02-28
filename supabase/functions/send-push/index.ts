@@ -74,6 +74,7 @@ serve(async (req) => {
       priority: "high",
     };
 
+    // INCOMPLETE:TODO — uses deprecated FCM legacy HTTP API (fcm.googleapis.com/fcm/send); must migrate to FCM v1 HTTP API before Google shuts it down.
     // WARNING: This uses the deprecated FCM legacy HTTP API. Migrate to FCM v1: https://firebase.google.com/docs/cloud-messaging/migrate-v1
     const fcmResponse = await fetch("https://fcm.googleapis.com/fcm/send", {
       method: "POST",

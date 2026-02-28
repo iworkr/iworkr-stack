@@ -85,6 +85,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
         style={{ background: "var(--background)", color: "var(--text-primary)" }}
       >
+        {/* INCOMPLETE:TODO — noise grain overlay z-[9999] will sit above modals and accessibility tools; consider lowering z-index */}
         {/* Noise grain overlay */}
         <div
           className="pointer-events-none fixed inset-0 z-[9999] opacity-[0.02] mix-blend-overlay"

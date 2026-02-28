@@ -34,6 +34,7 @@ interface ValidationResult {
   warnings: string[];
 }
 
+// INCOMPLETE:PARTIAL — no auth verification; any unauthenticated request can query schedule conflicts for any org.
 export async function POST(request: NextRequest) {
   try {
     const body: ValidateRequest = await request.json();

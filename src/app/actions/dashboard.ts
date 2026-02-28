@@ -268,6 +268,7 @@ export async function getDashboardSnapshot(orgId: string) {
 
 /* ── Dashboard Layout Persistence ───────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — saveDashboardLayout has no auth check; any unauthenticated request can save arbitrary layout data. Also accepts `layout: any` with no Zod validation.
 export async function saveDashboardLayout(layout: any) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -288,6 +289,7 @@ export async function saveDashboardLayout(layout: any) {
   }
 }
 
+// INCOMPLETE:BLOCKED(AUTH) — loadDashboardLayout has no auth check; any unauthenticated request can load dashboard layout.
 export async function loadDashboardLayout() {
   try {
     const supabase = await createServerSupabaseClient();
@@ -341,6 +343,7 @@ export async function getLiveDispatch(orgId: string) {
 
 /* ── Fleet Position Update ──────────────────────────── */
 
+// INCOMPLETE:BLOCKED(AUTH) — updateFleetPosition has no auth check and no org membership verification; any request can update GPS positions for any org.
 export async function updateFleetPosition(
   orgId: string,
   lat: number,
@@ -383,6 +386,7 @@ export interface FootprintTrailRow {
   timestamps?: number[] | null;
 }
 
+// INCOMPLETE:PARTIAL — getFootprintTrails has no auth check and no org membership verification; exposes technician GPS trail data.
 export async function getFootprintTrails(orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -411,6 +415,7 @@ export async function getFootprintTrails(orgId: string) {
 }
 
 /** Snap raw GPS path to roads (Google Roads API). Call on-demand when footprints are toggled; cache in frontend. */
+// INCOMPLETE:PARTIAL — snapFootprintToRoads uses NEXT_PUBLIC_ (client-side) Google Maps key on server; should use a server-restricted key. Also no auth check.
 export async function snapFootprintToRoads(path: Array<{ lat: number; lng: number }>) {
   try {
     if (path.length < 2) return { data: path, error: null };
