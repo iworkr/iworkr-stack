@@ -1,22 +1,19 @@
 "use client";
 
-import { useMap } from "@vis.gl/react-google-maps";
 import { useCallback, useMemo, useState } from "react";
+import { useDispatchMap } from "./dispatch-map-context";
 import type { DispatchPin } from "@/app/actions/dashboard";
 
 interface DispatchRosterProps {
-  /** Pins from get_live_dispatch (one per job with assignee); dedupe by technician for list. */
   pins: DispatchPin[];
   hoveredTechId: string | null;
   onHoverTech: (id: string | null) => void;
   onLocateTech: (techId: string, lat: number, lng: number) => void;
   onOpenJobDossier?: (jobId: string, title: string) => void;
-  /** Trigger ripple on marker (e.g. set a "pulse" tech id for 1s). */
   onRippleTech?: (techId: string | null) => void;
   visible: boolean;
 }
 
-/** Unique techs from pins (one row per technician, latest job as context). */
 function useUniqueTechs(pins: DispatchPin[]) {
   return useMemo(() => {
     const byTech = new Map<string, DispatchPin>();
@@ -45,9 +42,7 @@ function StatusPill({ status }: { status: string }) {
           ? { label: "Idle", className: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" }
           : { label: "Offline", className: "bg-zinc-800/20 text-zinc-600 border-zinc-800/30" };
   return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${config.className}`}
-    >
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${config.className}`}>
       {config.label}
     </span>
   );
@@ -73,7 +68,7 @@ export function DispatchRoster({
   onRippleTech,
   visible,
 }: DispatchRosterProps) {
-  const map = useMap();
+  const map = useDispatchMap();
   const [search, setSearch] = useState("");
   const techs = useUniqueTechs(pins);
 
@@ -89,7 +84,7 @@ export function DispatchRoster({
       const lat = pin.location_lat;
       const lng = pin.location_lng;
       if (tid && lat != null && lng != null && map) {
-        map.panTo({ lat, lng });
+        map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
         onLocateTech(tid, lat, lng);
         onRippleTech?.(tid);
       }
@@ -100,9 +95,7 @@ export function DispatchRoster({
   if (!visible) return null;
 
   return (
-    <div
-      className="h-full w-80 rounded-xl border border-white/5 bg-zinc-950/80 shadow-2xl backdrop-blur-xl"
-    >
+    <div className="h-full w-80 rounded-xl border border-white/5 bg-zinc-950/80 shadow-2xl backdrop-blur-xl">
       <div className="flex h-full flex-col border-b border-white/10 p-3">
         <h2 className="font-display text-sm font-semibold text-white">Active Fleet</h2>
         <input
@@ -110,9 +103,7 @@ export function DispatchRoster({
           placeholder="Filter by name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className={
-            "mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 outline-none transition focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20"
-          }
+          className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 outline-none transition focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20"
         />
       </div>
       <ul className="flex-1 overflow-y-auto p-2">
@@ -153,15 +144,9 @@ export function DispatchRoster({
                   </div>
                 )}
                 <div className="mt-0.5 flex items-center gap-2 text-[10px] text-zinc-600">
-                  {pin.speed != null && pin.speed > 0 && (
-                    <span>{pin.speed} km/h</span>
-                  )}
-                  {pin.battery != null && (
-                    <span>{pin.battery}%</span>
-                  )}
-                  {pin.position_updated_at && (
-                    <span>{timeAgo(pin.position_updated_at)}</span>
-                  )}
+                  {pin.speed != null && pin.speed > 0 && <span>{pin.speed} km/h</span>}
+                  {pin.battery != null && <span>{pin.battery}%</span>}
+                  {pin.position_updated_at && <span>{timeAgo(pin.position_updated_at)}</span>}
                 </div>
               </div>
             </li>

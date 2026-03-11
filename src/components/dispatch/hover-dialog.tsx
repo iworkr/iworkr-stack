@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMap } from "@vis.gl/react-google-maps";
+import { useDispatchMap } from "./dispatch-map-context";
 
 export interface HoverDialogTech {
   id: string;
@@ -23,9 +23,9 @@ interface HoverDialogProps {
   anchor: { lat: number; lng: number } | null;
 }
 
-/** Glassmorphic tooltip above a technician marker. Positioned via map projection. */
+/** Glassmorphic tooltip above a technician marker. Positioned via Mapbox projection. */
 export function HoverDialog({ tech, anchor }: HoverDialogProps) {
-  const map = useMap();
+  const map = useDispatchMap();
   const [pixel, setPixel] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -33,35 +33,22 @@ export function HoverDialog({ tech, anchor }: HoverDialogProps) {
       setPixel(null);
       return;
     }
+
     const update = () => {
-      const bounds = map.getBounds();
-      const mapDiv = map.getDiv();
-      if (!bounds || !mapDiv) return;
-      const ne = bounds.getNorthEast();
-      const sw = bounds.getSouthWest();
-      const lngSpan = ne.lng() - sw.lng();
-      const latSpan = ne.lat() - sw.lat();
-      if (lngSpan === 0 || latSpan === 0) return;
-      const fracX = (anchor.lng - sw.lng()) / lngSpan;
-      const fracY = (ne.lat() - anchor.lat) / latSpan; // north = top
-      const w = mapDiv.offsetWidth;
-      const h = mapDiv.offsetHeight;
-      setPixel({ x: fracX * w, y: fracY * h });
+      const point = map.project([anchor.lng, anchor.lat]);
+      setPixel({ x: point.x, y: point.y });
     };
+
     update();
-    const idle = map.addListener("idle", update);
-    const zoom = map.addListener("zoom_changed", update);
-    const center = map.addListener("center_changed", update);
+    map.on("move", update);
+    map.on("zoom", update);
+
     return () => {
-      if (typeof globalThis !== "undefined" && (globalThis as { google?: { maps?: { event?: { removeListener: (h: unknown) => void } } } }).google?.maps?.event) {
-        const ev = (globalThis as { google: { maps: { event: { removeListener: (h: unknown) => void } } } }).google.maps.event;
-        ev.removeListener(idle);
-        ev.removeListener(zoom);
-        ev.removeListener(center);
-      }
+      map.off("move", update);
+      map.off("zoom", update);
       setPixel(null);
     };
-  }, [map, anchor?.lat, anchor?.lng]);
+  }, [map, anchor?.lat, anchor?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!tech || !anchor || !pixel) return null;
 

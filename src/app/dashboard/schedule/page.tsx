@@ -28,6 +28,7 @@ import {
 import { type ScheduleBlock, type Technician } from "@/lib/data";
 import { useScheduleStore, type ViewScale } from "@/lib/schedule-store";
 import { useToastStore } from "@/components/app/action-toast";
+import { StaticMap } from "@/components/maps/static-map";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import { useOrg } from "@/lib/hooks/use-org";
 import { type BacklogJob } from "@/app/actions/schedule";
@@ -1338,11 +1339,13 @@ function JobPeekCard({
       {/* Mini map */}
       <div className="relative h-[100px] bg-[var(--surface-1)]">
         {block.location ? (
-          <img
-            src={`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(block.location)}&zoom=15&size=640x200&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:water%7Celement:labels%7Cvisibility:off&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=feature:administrative%7Celement:geometry.stroke%7Ccolor:0x27272a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&markers=color:0x10B981%7C${encodeURIComponent(block.location)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+          <StaticMap
+            address={block.location}
+            width={640}
+            height={200}
+            zoom={15}
             alt={block.location}
             className="h-full w-full object-cover"
-            loading="lazy"
           />
         ) : (
           <div className="flex h-full items-center justify-center">

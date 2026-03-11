@@ -10,7 +10,7 @@ import { SlideOver } from "@/components/shell/slide-over";
 import { ActionToastContainer } from "@/components/app/action-toast";
 import { DataProvider } from "@/components/app/data-provider";
 import { HydrationGate } from "@/components/app/hydration-gate";
-import { GoogleMapsProvider } from "@/components/maps/google-maps-provider";
+import { MapboxProvider } from "@/components/maps/mapbox-provider";
 import { useShellStore } from "@/lib/shell-store";
 import { PastDueBanner } from "@/components/app/feature-gate";
 import { useAuthStore } from "@/lib/auth-store";
@@ -162,7 +162,7 @@ export default function DashboardLayout({
   const mainMarginLeft = isMobile ? 0 : sidebarCollapsed ? 64 : 240;
 
   return (
-    <GoogleMapsProvider>
+    <MapboxProvider>
     <HydrationGate>
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
       {/* Noise grain */}
@@ -244,7 +244,7 @@ export default function DashboardLayout({
       <DesktopOfflineBanner />
     </div>
     </HydrationGate>
-    </GoogleMapsProvider>
+    </MapboxProvider>
   );
 }
 

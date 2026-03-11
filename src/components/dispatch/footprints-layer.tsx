@@ -1,12 +1,12 @@
 "use client";
 
-import { MapPolyline } from "./map-polyline";
+import { useEffect, useRef } from "react";
+import { useDispatchMap } from "./dispatch-map-context";
 
 /** Single trail: ordered breadcrumb points. Optional per-point timestamp for opacity. */
 export interface FootprintTrail {
   techId: string;
-  path: google.maps.LatLngLiteral[];
-  /** If provided, used for gradient opacity (older = more transparent). */
+  path: { lat: number; lng: number }[];
   timestamps?: number[];
 }
 
@@ -15,28 +15,73 @@ interface FootprintsLayerProps {
   visible: boolean;
 }
 
-/** PRD: Ghost trail — Zinc-500, strokeOpacity 0.3, strokeWeight 2; snap to roads via parent. */
-/* PRD §4.1: z-10 for geographic overlays (routes, footprints) */
-const FOOTPRINT_Z_INDEX = 10;
+/** PRD: Ghost trail — Zinc-500, opacity 0.3, weight 2; snap to roads via parent. */
+const FOOTPRINT_COLOR = "#71717a";
+const FOOTPRINT_OPACITY = 0.3;
 
 export function FootprintsLayer({ trails, visible }: FootprintsLayerProps) {
-  if (!visible || trails.length === 0) return null;
+  const map = useDispatchMap();
+  const sourceIdsRef = useRef<Set<string>>(new Set());
 
-  return (
-    <>
-      {trails
-        .filter((t) => t.path.length >= 2)
-        .map((trail) => (
-          <MapPolyline
-            key={`foot-${trail.techId}`}
-            path={trail.path}
-            strokeColor="#71717a"
-            strokeOpacity={0.3}
-            strokeWeight={2}
-            geodesic={false}
-            zIndex={FOOTPRINT_Z_INDEX}
-          />
-        ))}
-    </>
-  );
+  useEffect(() => {
+    if (!map) return;
+
+    // Clean up old layers/sources
+    sourceIdsRef.current.forEach((id) => {
+      try { map.removeLayer(`${id}-line`); } catch {}
+      try { map.removeSource(id); } catch {}
+    });
+    sourceIdsRef.current.clear();
+
+    if (!visible || trails.length === 0) return;
+
+    trails
+      .filter((t) => t.path.length >= 2)
+      .forEach((trail) => {
+        const sourceId = `footprint-${trail.techId}`;
+        sourceIdsRef.current.add(sourceId);
+
+        try {
+          map.addSource(sourceId, {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              properties: {},
+              geometry: {
+                type: "LineString",
+                coordinates: trail.path.map((p) => [p.lng, p.lat]),
+              },
+            },
+          });
+
+          map.addLayer({
+            id: `${sourceId}-line`,
+            type: "line",
+            source: sourceId,
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: {
+              "line-color": FOOTPRINT_COLOR,
+              "line-width": 2,
+              "line-opacity": FOOTPRINT_OPACITY,
+              "line-dasharray": [2, 3],
+            },
+          });
+        } catch {
+          // Silently skip — layer might already exist
+        }
+      });
+  }, [map, trails, visible]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (!map) return;
+      sourceIdsRef.current.forEach((id) => {
+        try { map.removeLayer(`${id}-line`); } catch {}
+        try { map.removeSource(id); } catch {}
+      });
+    };
+  }, [map]);
+
+  return null;
 }

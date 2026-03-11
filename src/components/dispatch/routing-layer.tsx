@@ -1,13 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMap } from "@vis.gl/react-google-maps";
-import { MapPolyline } from "./map-polyline";
+import { useDispatchMap } from "./dispatch-map-context";
+import { MAPBOX_ACCESS_TOKEN } from "@/components/maps/mapbox-provider";
 import type { DispatchPin } from "@/app/actions/dashboard";
 
 const DEVIATION_METERS = 500;
-/* PRD §4.1: z-10 for geographic overlays (routes, footprints) */
-const ROUTE_Z_INDEX = 10;
 
 interface JobWithCoords {
   id: string;
@@ -22,109 +20,58 @@ interface RoutingLayerProps {
 }
 
 interface CachedRoute {
-  path: google.maps.LatLngLiteral[];
+  path: [number, number][]; // [lng, lat][]
   originLat: number;
   originLng: number;
 }
 
-function haversineMeters(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-): number {
+function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const x =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-  return R * c;
-}
-
-function getRouteArrowIcons(): google.maps.IconSequence[] | null {
-  if (typeof globalThis === "undefined") return null;
-  const g = (globalThis as { google?: { maps?: { SymbolPath?: typeof google.maps.SymbolPath } } }).google;
-  if (!g?.maps?.SymbolPath) return null;
-  return [
-    {
-      icon: {
-        path: g.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-        scale: 2.5,
-        fillColor: "#10B981",
-        fillOpacity: 0.9,
-        strokeColor: "#052e16",
-        strokeWeight: 1,
-      },
-      repeat: "100px",
-    },
-  ];
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
 export function RoutingLayer({ dispatchPins, jobs, visible }: RoutingLayerProps) {
-  const map = useMap();
-  const routeArrowIcons = useMemo(() => getRouteArrowIcons(), []);
+  const map = useDispatchMap();
   const [routes, setRoutes] = useState<Map<string, CachedRoute>>(new Map());
   const cacheRef = useRef<Map<string, CachedRoute>>(new Map());
-  const directionsRef = useRef<google.maps.DirectionsService | null>(null);
+  const sourceIdsRef = useRef<Set<string>>(new Set());
 
   const jobMap = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
 
   const enRoutePins = useMemo(
-    () =>
-      dispatchPins.filter(
-        (p) =>
-          p.dispatch_status === "en_route" &&
-          p.location_lat != null &&
-          p.location_lng != null
-      ),
+    () => dispatchPins.filter((p) => p.dispatch_status === "en_route" && p.location_lat != null && p.location_lng != null),
     [dispatchPins]
   );
 
   const fetchRoute = useCallback(
-    (
-      origin: { lat: number; lng: number },
-      destination: { lat: number; lng: number },
-      key: string
-    ) => {
-      if (!map) return;
-      const g = (globalThis as { google?: typeof google }).google;
-      if (!directionsRef.current && g?.maps?.DirectionsService) {
-        directionsRef.current = new g.maps.DirectionsService();
+    async (origin: { lat: number; lng: number }, destination: { lat: number; lng: number }, key: string) => {
+      try {
+        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?geometries=geojson&overview=full&access_token=${MAPBOX_ACCESS_TOKEN}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const coords = data?.routes?.[0]?.geometry?.coordinates;
+        if (!coords || coords.length < 2) return;
+        const cached: CachedRoute = {
+          path: coords as [number, number][],
+          originLat: origin.lat,
+          originLng: origin.lng,
+        };
+        cacheRef.current.set(key, cached);
+        setRoutes(new Map(cacheRef.current));
+      } catch {
+        // Silently fail — route won't render
       }
-      const svc = directionsRef.current;
-      if (!svc || !g) return;
-      svc.route(
-        {
-          origin,
-          destination,
-          travelMode: g.maps.TravelMode.DRIVING,
-        },
-        (result, status) => {
-          const gm = (globalThis as { google?: typeof google }).google;
-          if (!gm?.maps?.DirectionsStatus || status !== gm.maps.DirectionsStatus.OK || !result?.routes?.[0]) return;
-          const route = result.routes[0];
-          const path = route.overview_path ?? [];
-          if (path.length < 2) return;
-          const flatPath: google.maps.LatLngLiteral[] = (path as google.maps.LatLng[]).map((ll) => ({
-            lat: ll.lat(),
-            lng: ll.lng(),
-          }));
-          const cached: CachedRoute = {
-            path: flatPath,
-            originLat: origin.lat,
-            originLng: origin.lng,
-          };
-          cacheRef.current.set(key, cached);
-          setRoutes(new Map(cacheRef.current));
-        }
-      );
     },
-    [map]
+    []
   );
 
+  // Fetch routes for en-route techs
   useEffect(() => {
     if (!visible || !map) return;
     enRoutePins.forEach((pin) => {
@@ -132,39 +79,72 @@ export function RoutingLayer({ dispatchPins, jobs, visible }: RoutingLayerProps)
       if (!job?.location_lat || !job?.location_lng) return;
       const origin = { lat: pin.location_lat!, lng: pin.location_lng! };
       const dest = { lat: job.location_lat, lng: job.location_lng };
-      const dist = haversineMeters(origin, dest);
-      if (dist < 20) return; // same point, skip
+      if (haversineMeters(origin, dest) < 20) return;
       const key = `${pin.technician_id ?? pin.id}-${pin.id}`;
       const cached = cacheRef.current.get(key);
-      if (cached) {
-        const deviation = haversineMeters(origin, { lat: cached.originLat, lng: cached.originLng });
-        if (deviation <= DEVIATION_METERS) return; // use cache
-      }
+      if (cached && haversineMeters(origin, { lat: cached.originLat, lng: cached.originLng }) <= DEVIATION_METERS) return;
       fetchRoute(origin, dest, key);
     });
   }, [map, visible, enRoutePins, jobMap, fetchRoute]);
 
-  if (!visible) return null;
+  // Render routes as Mapbox sources+layers
+  useEffect(() => {
+    if (!map) return;
 
-  return (
-    <>
-      {enRoutePins.map((pin) => {
-        const key = `${pin.technician_id ?? pin.id}-${pin.id}`;
-        const cached = routes.get(key);
-        if (!cached || cached.path.length < 2) return null;
-        return (
-          <MapPolyline
-            key={`route-${key}`}
-            path={cached.path}
-            strokeColor="#10B981"
-            strokeOpacity={0.8}
-            strokeWeight={3}
-            geodesic={false}
-            icons={routeArrowIcons ?? undefined}
-            zIndex={ROUTE_Z_INDEX}
-          />
-        );
-      })}
-    </>
-  );
+    // Remove old route layers/sources
+    sourceIdsRef.current.forEach((id) => {
+      try { map.removeLayer(`${id}-line`); } catch {}
+      try { map.removeSource(id); } catch {}
+    });
+    sourceIdsRef.current.clear();
+
+    if (!visible) return;
+
+    enRoutePins.forEach((pin) => {
+      const key = `${pin.technician_id ?? pin.id}-${pin.id}`;
+      const cached = routes.get(key);
+      if (!cached || cached.path.length < 2) return;
+
+      const sourceId = `route-${key}`;
+      sourceIdsRef.current.add(sourceId);
+
+      try {
+        map.addSource(sourceId, {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: cached.path },
+          },
+        });
+
+        map.addLayer({
+          id: `${sourceId}-line`,
+          type: "line",
+          source: sourceId,
+          layout: { "line-join": "round", "line-cap": "round" },
+          paint: {
+            "line-color": "#10B981",
+            "line-width": 3,
+            "line-opacity": 0.8,
+          },
+        });
+      } catch {
+        // Layer might already exist during hot updates
+      }
+    });
+  }, [map, visible, routes, enRoutePins]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (!map) return;
+      sourceIdsRef.current.forEach((id) => {
+        try { map.removeLayer(`${id}-line`); } catch {}
+        try { map.removeSource(id); } catch {}
+      });
+    };
+  }, [map]);
+
+  return null;
 }

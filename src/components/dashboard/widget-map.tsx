@@ -1,29 +1,19 @@
 "use client";
 
-import { Map, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
-import { ArrowRight, MapPin, Radio } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { ArrowRight, MapPin as MapPinIcon, Radio } from "lucide-react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getLiveDispatch, type DispatchPin } from "@/app/actions/dashboard";
 import { createClient } from "@/lib/supabase/client";
 import { WidgetShell } from "./widget-shell";
-import { useGoogleMaps } from "@/components/maps/google-maps-provider";
+import { useMapbox, MAPBOX_ACCESS_TOKEN } from "@/components/maps/mapbox-provider";
 import { MapOfflineFallback } from "@/components/maps/map-offline-fallback";
-import { MapDevelopmentDetector } from "@/components/maps/map-development-detector";
-import { OBSIDIAN_MAP_STYLES, DEFAULT_MAP_CENTER } from "@/components/maps/obsidian-map-styles";
-import { LottieIcon } from "./lottie-icon";
-import { radarScanAnimation } from "./lottie-data-relay";
+import { OBSIDIAN_MAP_STYLE, applyObsidianStyle, DEFAULT_MAP_CENTER } from "@/components/maps/obsidian-map-styles";
 import { useDashboardStore } from "@/lib/dashboard-store";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
-const statusConfig = {
-  on_job: { color: "bg-emerald-500", label: "On Job" },
-  en_route: { color: "bg-emerald-500", label: "En Route" },
-  idle: { color: "bg-zinc-600", label: "Idle" },
-};
-
-/* PRD §5.2: Custom branded markers — emerald pulse for active, zinc for idle */
+/* ── Types ──────────────────────────────────────────── */
 
 interface Pin {
   id: string;
@@ -34,28 +24,133 @@ interface Pin {
   lng: number;
 }
 
-/** Fits map bounds to pins when map is ready. */
-function FitBoundsToPins({ pins }: { pins: Pin[] }) {
-  const map = useMap();
+const statusConfig = {
+  on_job: { label: "On Job" },
+  en_route: { label: "En Route" },
+  idle: { label: "Idle" },
+};
+
+/* ── Mapbox Map Sub-component ───────────────────────── */
+
+function DispatchMapbox({
+  pins,
+  center,
+  className = "",
+}: {
+  pins: Pin[];
+  center: [number, number];
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+
   useEffect(() => {
-    if (!map || pins.length === 0) return;
-    if (pins.length === 1) {
-      map.setCenter({ lat: pins[0].lat, lng: pins[0].lng });
-      map.setZoom(14);
-      return;
-    }
-    const bounds = new google.maps.LatLngBounds();
-    pins.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
-    map.fitBounds(bounds, 50);
-  }, [map, pins]);
-  return null;
+    if (!containerRef.current || mapRef.current) return;
+    let cancelled = false;
+
+    import("mapbox-gl").then((mod) => {
+      if (cancelled || !containerRef.current) return;
+      const mapboxgl = mod.default;
+      mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
+      const map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: OBSIDIAN_MAP_STYLE,
+        center,
+        zoom: 13,
+        attributionControl: false,
+        logoPosition: "bottom-left",
+        fadeDuration: 0,
+        pitchWithRotate: false,
+        dragRotate: false,
+      });
+
+      applyObsidianStyle(map);
+
+      // Hide attribution/logo for clean widget look
+      map.on("load", () => {
+        const logo = containerRef.current?.querySelector(".mapboxgl-ctrl-logo");
+        if (logo) (logo as HTMLElement).style.display = "none";
+        const attrib = containerRef.current?.querySelector(".mapboxgl-ctrl-attrib");
+        if (attrib) (attrib as HTMLElement).style.display = "none";
+      });
+
+      mapRef.current = map;
+    });
+
+    return () => {
+      cancelled = true;
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update markers when pins change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    import("mapbox-gl").then((mod) => {
+      const mapboxgl = mod.default;
+
+      // Clear old markers
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+
+      if (pins.length === 0) return;
+
+      // Add new markers
+      for (const pin of pins) {
+        const isActive = pin.status !== "idle";
+        const el = document.createElement("div");
+        el.style.cssText = `
+          width: ${isActive ? "10px" : "8px"};
+          height: ${isActive ? "10px" : "8px"};
+          border-radius: 50%;
+          background: ${isActive ? "#10B981" : "#52525b"};
+          border: 2px solid #09090b;
+          cursor: pointer;
+          transition: transform 0.15s ease;
+        `;
+        el.title = pin.name ? `${pin.name} · ${pin.task} · ${statusConfig[pin.status].label}` : pin.task;
+        el.addEventListener("mouseenter", () => { el.style.transform = "scale(1.4)"; });
+        el.addEventListener("mouseleave", () => { el.style.transform = "scale(1)"; });
+
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([pin.lng, pin.lat])
+          .addTo(map);
+        markersRef.current.push(marker);
+      }
+
+      // Fit bounds
+      if (pins.length === 1) {
+        map.flyTo({ center: [pins[0].lng, pins[0].lat], zoom: 14, duration: 800 });
+      } else {
+        const bounds = new mapboxgl.LngLatBounds();
+        pins.forEach((p) => bounds.extend([p.lng, p.lat]));
+        map.fitBounds(bounds, { padding: 50, maxZoom: 15, duration: 800 });
+      }
+    });
+  }, [pins]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`${className} [&_.mapboxgl-ctrl-bottom-left]:hidden [&_.mapboxgl-ctrl-bottom-right]:hidden`}
+      style={{ background: "#050505" }}
+    />
+  );
 }
+
+/* ── Main Widget ────────────────────────────────────── */
 
 export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
-  const { isLoaded, loadError } = useGoogleMaps();
-  const [hovered, setHovered] = useState<string | null>(null);
+  const { isLoaded, loadError } = useMapbox();
   const cachedDispatch = useDashboardStore((s) => s.widgetDispatch);
   const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
   const isWidgetFresh = useDashboardStore((s) => s.isWidgetFresh);
@@ -65,12 +160,10 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
   const [loaded, setLoaded] = useState(
     cachedDispatch.data !== null && (cachedDispatch.data as DispatchPin[]).length > 0
   );
-  const [developmentMode, setDevelopmentMode] = useState(false);
 
   useEffect(() => {
     if (!orgId) return;
-    // Use cached data immediately, skip fetch if fresh
-    if (isWidgetFresh('widgetDispatch') && cachedDispatch.data) {
+    if (isWidgetFresh("widgetDispatch") && cachedDispatch.data) {
       setDispatchData(cachedDispatch.data as DispatchPin[]);
       setLoaded(true);
       return;
@@ -78,7 +171,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
     getLiveDispatch(orgId).then(({ data }) => {
       if (data && data.length > 0) {
         setDispatchData(data);
-        setWidgetCache('widgetDispatch', data);
+        setWidgetCache("widgetDispatch", data);
       }
       setLoaded(true);
     });
@@ -91,7 +184,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
       getLiveDispatch(orgId).then(({ data }) => {
         if (data) {
           setDispatchData(data);
-          setWidgetCache('widgetDispatch', data);
+          setWidgetCache("widgetDispatch", data);
         }
       });
     };
@@ -100,10 +193,8 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "fleet_positions", filter: `organization_id=eq.${orgId}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "jobs", filter: `organization_id=eq.${orgId}` }, refresh)
       .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [orgId]);
+    return () => { supabase.removeChannel(channel); };
+  }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pins: Pin[] = useMemo(() => {
     if (dispatchData.length === 0) return [];
@@ -111,35 +202,28 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
       .filter((d) => d.location_lat && d.location_lng)
       .map((d) => ({
         id: d.id,
-        name: d.name
-          ? d.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("") + "."
-          : "??",
+        name: d.name ? d.name.split(" ").map((n) => n[0]).join("") + "." : "??",
         task: d.task ?? "",
-        status:
-          d.dispatch_status === "on_job"
-            ? ("on_job" as const)
-            : d.dispatch_status === "idle"
-              ? ("idle" as const)
-              : ("en_route" as const),
+        status: d.dispatch_status === "on_job" ? "on_job" as const
+          : d.dispatch_status === "idle" ? "idle" as const
+          : "en_route" as const,
         lat: d.location_lat!,
         lng: d.location_lng!,
       }));
   }, [dispatchData]);
 
-  const mapCenter = useMemo(() => {
+  const mapCenter = useMemo((): [number, number] => {
     if (pins.length === 0) return DEFAULT_MAP_CENTER;
-    const avgLat = pins.reduce((s, p) => s + p.lat, 0) / pins.length;
     const avgLng = pins.reduce((s, p) => s + p.lng, 0) / pins.length;
-    return { lat: avgLat, lng: avgLng };
+    const avgLat = pins.reduce((s, p) => s + p.lat, 0) / pins.length;
+    return [avgLng, avgLat];
   }, [pins]);
 
   const activeCount = pins.filter((p) => p.status !== "idle").length;
   const onJobCount = pins.filter((p) => p.status === "on_job").length;
   const enRouteCount = pins.filter((p) => p.status === "en_route").length;
 
+  /* ── SMALL: Stats only ──────────────────────────── */
   if (size === "small") {
     return (
       <WidgetShell delay={0.05}>
@@ -148,18 +232,14 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           onClick={() => router.push("/dashboard/schedule")}
         >
           <Radio size={14} className="mb-1.5 text-zinc-500" />
-          <span className="text-[20px] font-medium text-zinc-100">
-            {activeCount}
-          </span>
+          <span className="text-[20px] font-medium text-zinc-100">{activeCount}</span>
           <span className="text-[9px] text-zinc-600">Active Techs</span>
           <div className="mt-1.5 flex items-center gap-2">
             <span className="flex items-center gap-1 text-[8px] text-zinc-600">
-              <span className="h-1 w-1 rounded-full bg-emerald-500" />
-              {onJobCount}
+              <span className="h-1 w-1 rounded-full bg-emerald-500" /> {onJobCount}
             </span>
             <span className="flex items-center gap-1 text-[8px] text-zinc-600">
-              <span className="h-1 w-1 rounded-full bg-emerald-500" />
-              {enRouteCount}
+              <span className="h-1 w-1 rounded-full bg-emerald-500" /> {enRouteCount}
             </span>
           </div>
         </div>
@@ -167,6 +247,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
     );
   }
 
+  /* ── Loading ────────────────────────────────────── */
   if (!loaded || !isLoaded) {
     return (
       <WidgetShell delay={0.05}>
@@ -183,44 +264,8 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
     );
   }
 
-  if (loadError || developmentMode) {
-    const fallbackContent = (
-      <div
-        className={`relative h-full overflow-hidden ${size === "medium" ? "min-h-[120px]" : "min-h-[260px]"}`}
-      >
-        <MapOfflineFallback
-          className="absolute inset-0 h-full w-full"
-          message="Map Offline"
-          subtext={developmentMode ? "Enable billing in Google Cloud for this project to use Maps." : "Establishing link… or check API configuration."}
-        />
-      </div>
-    );
-    if (size === "medium") {
-      return (
-        <WidgetShell
-          delay={0.05}
-          header={
-            <div className="flex items-center gap-2">
-              <Radio size={14} className="text-zinc-400" />
-              <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-                Dispatch
-              </span>
-              <span className="text-[10px] text-zinc-600">Offline</span>
-            </div>
-          }
-          action={
-            <button
-              onClick={() => router.push("/dashboard/schedule")}
-              className="flex items-center gap-1 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300"
-            >
-              Open <ArrowRight size={12} />
-            </button>
-          }
-        >
-          {fallbackContent}
-        </WidgetShell>
-      );
-    }
+  /* ── Error ──────────────────────────────────────── */
+  if (loadError) {
     return (
       <WidgetShell
         delay={0.05}
@@ -228,25 +273,20 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           <div className="flex items-center gap-2">
             <Radio size={14} className="text-zinc-400" />
             <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-              Live Dispatch
+              {size === "medium" ? "Dispatch" : "Live Dispatch"}
             </span>
-            <span className="text-[10px] text-zinc-600">Map unavailable</span>
+            <span className="text-[10px] text-zinc-600">Offline</span>
           </div>
         }
-        action={
-          <button
-            onClick={() => router.push("/dashboard/schedule")}
-            className="flex items-center gap-1 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300"
-          >
-            Open Dispatch <ArrowRight size={12} />
-          </button>
-        }
       >
-        {fallbackContent}
+        <div className={`relative h-full overflow-hidden ${size === "medium" ? "min-h-[120px]" : "min-h-[260px]"}`}>
+          <MapOfflineFallback className="absolute inset-0 h-full w-full" message="Map Offline" />
+        </div>
       </WidgetShell>
     );
   }
 
+  /* ── MEDIUM ─────────────────────────────────────── */
   if (size === "medium") {
     return (
       <WidgetShell
@@ -254,64 +294,23 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         header={
           <div className="flex items-center gap-2">
             <Radio size={14} className="text-zinc-400" />
-            <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-              Dispatch
-            </span>
-            <span className="text-[10px] text-zinc-500">
-              {activeCount} active
-            </span>
+            <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Dispatch</span>
+            <span className="text-[10px] text-zinc-500">{activeCount} active</span>
           </div>
         }
         action={
-          <button
-            onClick={() => router.push("/dashboard/schedule")}
-            className="flex items-center gap-1 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300"
-          >
+          <button onClick={() => router.push("/dashboard/schedule")} className="flex items-center gap-1 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300">
             Open <ArrowRight size={12} />
           </button>
         }
       >
         <div className="relative h-full min-h-[120px] overflow-hidden">
-          <div className="h-full w-full rounded-xl border border-white/5 bg-zinc-950">
-            <Map
-              defaultCenter={mapCenter}
-              defaultZoom={13}
-              center={mapCenter}
-              zoom={13}
-              style={{ width: "100%", height: "100%" }}
-              styles={OBSIDIAN_MAP_STYLES}
-              disableDefaultUI
-              zoomControl={false}
-              mapTypeControl={false}
-              streetViewControl={false}
-              fullscreenControl={false}
-              clickableIcons={false}
-              gestureHandling="greedy"
-            >
-              <MapDevelopmentDetector onDevelopmentMode={() => setDevelopmentMode(true)} />
-              <FitBoundsToPins pins={pins} />
-              {pins.map((pin) => (
-                <AdvancedMarker
-                  key={pin.id}
-                  position={{ lat: pin.lat, lng: pin.lng }}
-                  title={pin.name ? `${pin.name} · ${pin.task}` : pin.task}
-                >
-                  <div className={`h-2.5 w-2.5 rounded-full border-2 border-zinc-900 ${
-                    pin.status === "idle" ? "bg-zinc-600" : "bg-emerald-500"
-                  }`} />
-                </AdvancedMarker>
-              ))}
-            </Map>
-          </div>
+          <DispatchMapbox pins={pins} center={mapCenter} className="h-full w-full" />
 
           {loaded && pins.length === 0 && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/60">
               <div className="text-center">
-                <MapPin
-                  size={16}
-                  strokeWidth={1}
-                  className="mx-auto mb-1 text-zinc-700"
-                />
+                <MapPinIcon size={16} strokeWidth={1} className="mx-auto mb-1 text-zinc-700" />
                 <p className="text-[10px] text-zinc-600">No active dispatches</p>
               </div>
             </div>
@@ -319,113 +318,52 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-8 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
           <div className="absolute bottom-2 left-3 z-30 flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[8px] text-zinc-600">
-              <span className="h-1 w-1 rounded-full bg-emerald-500" /> On Job
-            </span>
-            <span className="flex items-center gap-1 text-[8px] text-zinc-600">
-              <span className="h-1 w-1 rounded-full bg-emerald-500" /> En Route
-            </span>
+            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> On Job</span>
+            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> En Route</span>
           </div>
         </div>
       </WidgetShell>
     );
   }
 
+  /* ── LARGE ──────────────────────────────────────── */
   return (
     <WidgetShell
       delay={0.05}
       header={
         <div className="flex items-center gap-2">
-          <div className="relative flex items-center gap-1.5">
-            <Radio size={14} className="text-zinc-400" />
-            <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-              Live Dispatch
-            </span>
-          </div>
+          <Radio size={14} className="text-zinc-400" />
+          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Live Dispatch</span>
           <span className="flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-zinc-400">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            </span>
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             {activeCount} Active
           </span>
         </div>
       }
       action={
-        <button
-          onClick={() => router.push("/dashboard/schedule")}
-          className="flex items-center gap-1 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300"
-        >
+        <button onClick={() => router.push("/dashboard/schedule")} className="flex items-center gap-1 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300">
           Open Dispatch <ArrowRight size={12} />
         </button>
       }
     >
       <div className="relative h-full min-h-[260px] overflow-hidden">
-        <div className="h-full w-full rounded-xl border border-white/5 bg-zinc-950">
-          <Map
-            defaultCenter={mapCenter}
-            defaultZoom={13}
-            center={mapCenter}
-            zoom={13}
-            style={{ width: "100%", height: "100%" }}
-            styles={OBSIDIAN_MAP_STYLES}
-            disableDefaultUI
-            zoomControl={false}
-            mapTypeControl={false}
-            streetViewControl={false}
-            fullscreenControl={false}
-            clickableIcons={false}
-            gestureHandling="greedy"
-          >
-            <MapDevelopmentDetector onDevelopmentMode={() => setDevelopmentMode(true)} />
-            <FitBoundsToPins pins={pins} />
-            {pins.map((pin) => {
-              const cfg = statusConfig[pin.status];
-              const isLive = pin.status !== "idle";
-              return (
-                <AdvancedMarker
-                  key={pin.id}
-                  position={{ lat: pin.lat, lng: pin.lng }}
-                  title={pin.name ? `${pin.name} · ${pin.task} · ${cfg.label}` : `${pin.task} · ${cfg.label}`}
-                >
-                  <div className="relative flex items-center justify-center">
-                    <div className={`relative h-3 w-3 rounded-full border-2 border-zinc-900 ${
-                      isLive ? "bg-emerald-500" : "bg-zinc-600"
-                    }`} />
-                  </div>
-                </AdvancedMarker>
-              );
-            })}
-          </Map>
-        </div>
+        <DispatchMapbox pins={pins} center={mapCenter} className="h-full w-full" />
 
         {loaded && pins.length === 0 && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/60">
             <div className="text-center">
-              <MapPin
-                size={20}
-                strokeWidth={1}
-                className="mx-auto mb-1.5 text-zinc-700"
-              />
+              <MapPinIcon size={20} strokeWidth={1} className="mx-auto mb-1.5 text-zinc-700" />
               <p className="text-[11px] text-zinc-600">No active dispatches</p>
-              <p className="mt-0.5 text-[9px] text-zinc-700">
-                Technicians will appear here when jobs are in progress.
-              </p>
+              <p className="mt-0.5 text-[9px] text-zinc-700">Technicians will appear here when jobs are in progress.</p>
             </div>
           </div>
         )}
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
         <div className="absolute bottom-3 left-3 z-30 flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[9px] text-zinc-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> On Job
-          </span>
-          <span className="flex items-center gap-1 text-[9px] text-zinc-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> En
-            Route
-          </span>
-          <span className="flex items-center gap-1 text-[9px] text-zinc-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-zinc-600" /> Idle
-          </span>
+          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> On Job</span>
+          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> En Route</span>
+          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-zinc-600" /> Idle</span>
         </div>
       </div>
     </WidgetShell>

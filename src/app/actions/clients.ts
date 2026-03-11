@@ -838,23 +838,50 @@ export async function lookupABN(name: string): Promise<{
 
 /* ── Distance from HQ ──────────────────────────────── */
 
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
+
+async function geocodeAddress(address: string): Promise<[number, number] | null> {
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&limit=1`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    const coords = data?.features?.[0]?.center;
+    if (!coords || coords.length < 2) return null;
+    return coords as [number, number]; // [lng, lat]
+  } catch {
+    return null;
+  }
+}
+
 export async function getDistanceFromHQ(orgId: string, clientAddress: string): Promise<string | null> {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey || !clientAddress) return null;
+  if (!clientAddress) return null;
   try {
     const supabase = await createServerSupabaseClient();
     const { data: org } = await supabase
       .from("organizations").select("settings").eq("id", orgId).maybeSingle();
     const hqAddress = (org?.settings as any)?.address;
     if (!hqAddress) return null;
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(hqAddress)}&destinations=${encodeURIComponent(clientAddress)}&key=${apiKey}`,
-      { signal: AbortSignal.timeout(5000) }
-    );
+
+    // Geocode both addresses using Mapbox
+    const [originCoords, destCoords] = await Promise.all([
+      geocodeAddress(hqAddress),
+      geocodeAddress(clientAddress),
+    ]);
+    if (!originCoords || !destCoords) return null;
+
+    // Use Mapbox Directions API for driving distance/duration
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords[0]},${originCoords[1]};${destCoords[0]},${destCoords[1]}?access_token=${MAPBOX_TOKEN}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     const data = await res.json();
-    const element = data?.rows?.[0]?.elements?.[0];
-    if (element?.status !== "OK") return null;
-    return element.duration.text;
+    const duration = data?.routes?.[0]?.duration;
+    if (duration == null) return null;
+
+    // Format duration in human-readable form
+    const mins = Math.round(duration / 60);
+    if (mins < 60) return `${mins} mins`;
+    const hrs = Math.floor(mins / 60);
+    const remainMins = mins % 60;
+    return remainMins > 0 ? `${hrs} hr ${remainMins} mins` : `${hrs} hr`;
   } catch {
     return null;
   }

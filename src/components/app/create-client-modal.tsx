@@ -20,6 +20,7 @@ import { PopoverMenu } from "./popover-menu";
 import { useToastStore } from "./action-toast";
 import { useClientsStore } from "@/lib/clients-store";
 import { InlineMap } from "@/components/maps/inline-map";
+import { StaticMap } from "@/components/maps/static-map";
 import { useOrg } from "@/lib/hooks/use-org";
 import { type Client, type ClientStatus } from "@/lib/data";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -421,11 +422,13 @@ export function CreateClientModal({
                           {addressCoords ? (
                             <InlineMap lat={addressCoords.lat} lng={addressCoords.lng} zoom={15} className="h-full w-full" />
                           ) : address ? (
-                            <img
-                              src={`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=15&size=640x320&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&markers=color:0x10B981%7C${encodeURIComponent(address)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+                            <StaticMap
+                              address={address}
+                              width={640}
+                              height={320}
+                              zoom={15}
                               alt={address}
                               className="h-full w-full object-cover"
-                              loading="lazy"
                             />
                           ) : (
                             <div className="flex h-full items-center justify-center">

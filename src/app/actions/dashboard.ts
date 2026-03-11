@@ -440,7 +440,9 @@ export async function getFootprintTrails(orgId: string) {
   }
 }
 
-/** Snap raw GPS path to roads (Google Roads API). Call on-demand when footprints are toggled; cache in frontend. */
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
+
+/** Snap raw GPS path to roads (Mapbox Map Matching API). Call on-demand when footprints are toggled; cache in frontend. */
 export async function snapFootprintToRoads(path: Array<{ lat: number; lng: number }>) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -448,19 +450,27 @@ export async function snapFootprintToRoads(path: Array<{ lat: number; lng: numbe
     if (!user) return { data: path, error: "Unauthorized" };
 
     if (path.length < 2) return { data: path, error: null };
-    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
-    if (!key) return { data: path, error: "Missing Google Maps API key" };
-    const pathStr = path.map((p) => `${p.lat},${p.lng}`).join("|");
-    const url = `https://roads.googleapis.com/v1/snapToRoads?path=${encodeURIComponent(pathStr)}&key=${key}`;
+
+    // Mapbox Map Matching API: max 100 coordinates per request; sample if needed
+    let coords = path.map((p) => `${p.lng},${p.lat}`);
+    if (coords.length > 100) {
+      const step = Math.ceil(coords.length / 100);
+      coords = coords.filter((_, i) => i % step === 0 || i === coords.length - 1);
+    }
+    const coordStr = coords.join(";");
+
+    const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${coordStr}?access_token=${MAPBOX_TOKEN}&geometries=geojson&overview=full`;
     const res = await fetch(url);
     if (!res.ok) {
       const text = await res.text();
-      return { data: path, error: `Roads API: ${res.status} ${text}` };
+      return { data: path, error: `Map Matching API: ${res.status} ${text}` };
     }
-    const json = (await res.json()) as { snappedPoints?: Array<{ location: { latitude: number; longitude: number } }> };
-    const snapped =
-      json.snappedPoints?.map((p) => ({ lat: p.location.latitude, lng: p.location.longitude })) ?? path;
-    return { data: snapped.length >= 2 ? snapped : path, error: null };
+    const json = await res.json();
+    const matchedCoords = json?.matchings?.[0]?.geometry?.coordinates;
+    if (!matchedCoords || matchedCoords.length < 2) return { data: path, error: null };
+
+    const snapped = matchedCoords.map((c: [number, number]) => ({ lat: c[1], lng: c[0] }));
+    return { data: snapped, error: null };
   } catch (error: any) {
     return { data: path, error: error?.message ?? "Snap to roads failed" };
   }

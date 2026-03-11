@@ -1,16 +1,15 @@
 "use client";
 
-import { Map as GoogleMap, useMap } from "@vis.gl/react-google-maps";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getLiveDispatch, getFootprintTrails, snapFootprintToRoads, type DispatchPin } from "@/app/actions/dashboard";
 import { createClient } from "@/lib/supabase/client";
 import { useShellStore } from "@/lib/shell-store";
 import { useFleetTracking } from "@/lib/hooks/use-fleet-tracking";
-import { useGoogleMaps } from "@/components/maps/google-maps-provider";
-import { OBSIDIAN_MAP_STYLES, DEFAULT_MAP_CENTER } from "@/components/maps/obsidian-map-styles";
+import { useMapbox, MAPBOX_ACCESS_TOKEN } from "@/components/maps/mapbox-provider";
+import { OBSIDIAN_MAP_STYLE, applyObsidianStyle, DEFAULT_MAP_CENTER } from "@/components/maps/obsidian-map-styles";
 import { MapOfflineFallback } from "@/components/maps/map-offline-fallback";
-import { MapDevelopmentDetector } from "@/components/maps/map-development-detector";
+import { DispatchMapProvider } from "@/components/dispatch/dispatch-map-context";
 import { FleetLayer, type FleetTech } from "@/components/dispatch/fleet-layer";
 import { JobLayer, type JobMarkerData } from "@/components/dispatch/job-layer";
 import { RoutingLayer } from "@/components/dispatch/routing-layer";
@@ -22,46 +21,17 @@ import { HoverDialog, type HoverDialogTech } from "@/components/dispatch/hover-d
 import { useJobsStore } from "@/lib/jobs-store";
 import { FeatureGate } from "@/components/app/feature-gate";
 
-
-function FitBoundsToData({
-  techs,
-  jobs,
-}: {
-  techs: DispatchPin[];
-  jobs: JobMarkerData[];
-}) {
-  const map = useMap();
-  const points = useMemo(() => {
-    const out: { lat: number; lng: number }[] = [];
-    techs.forEach((t) => {
-      if (t.location_lat != null && t.location_lng != null) out.push({ lat: t.location_lat, lng: t.location_lng });
-    });
-    jobs.forEach((j) => out.push({ lat: j.lat, lng: j.lng }));
-    return out;
-  }, [techs, jobs]);
-
-  useEffect(() => {
-    if (!map || points.length === 0) return;
-    if (points.length === 1) {
-      map.setCenter(points[0]);
-      map.setZoom(14);
-      return;
-    }
-    const bounds = new google.maps.LatLngBounds();
-    points.forEach((p) => bounds.extend(p));
-    map.fitBounds(bounds, 50);
-  }, [map, points]);
-  return null;
-}
-
 export default function DispatchPage() {
   const { orgId } = useOrg();
-  const { isLoaded, loadError } = useGoogleMaps();
+  const { isLoaded, loadError } = useMapbox();
   const openSlideOver = useShellStore((s) => s.openSlideOver);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   const [dispatchPins, setDispatchPins] = useState<DispatchPin[]>([]);
   const [footprints, setFootprints] = useState<FootprintTrail[]>([]);
-  const [snappedFootprints, setSnappedFootprints] = useState<Map<string, google.maps.LatLngLiteral[]>>(new Map());
+  const [snappedFootprints, setSnappedFootprints] = useState<Map<string, { lat: number; lng: number }[]>>(new Map());
   const snappedRequestedRef = useRef<Set<string>>(new Set());
   const [hoveredTechId, setHoveredTechId] = useState<string | null>(null);
   const [hoverDialogTech, setHoverDialogTech] = useState<HoverDialogTech | null>(null);
@@ -72,12 +42,88 @@ export default function DispatchPage() {
   const [showActiveRoutes, setShowActiveRoutes] = useState(true);
   const [showFootprints, setShowFootprints] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [developmentMode, setDevelopmentMode] = useState(false);
 
   const jobs = useJobsStore((s) => s.jobs);
   const loadFromServer = useJobsStore((s) => s.loadFromServer);
 
   useFleetTracking({ orgId, enabled: true });
+
+  // Initialize Mapbox map
+  useEffect(() => {
+    if (!isLoaded || !mapContainerRef.current || mapRef.current) return;
+    let cancelled = false;
+
+    import("mapbox-gl").then((mod) => {
+      if (cancelled || !mapContainerRef.current) return;
+      const mapboxgl = mod.default;
+      mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
+      const map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: OBSIDIAN_MAP_STYLE,
+        center: DEFAULT_MAP_CENTER,
+        zoom: 12,
+        attributionControl: false,
+        logoPosition: "bottom-left",
+        fadeDuration: 0,
+        pitchWithRotate: false,
+        dragRotate: false,
+      });
+
+      applyObsidianStyle(map);
+
+      // Add navigation controls (zoom only, no compass)
+      map.addControl(
+        new mapboxgl.NavigationControl({ showCompass: false, visualizePitch: false }),
+        "bottom-right"
+      );
+
+      map.on("load", () => {
+        // Hide Mapbox branding for cleaner command center look
+        const logo = mapContainerRef.current?.querySelector(".mapboxgl-ctrl-logo");
+        if (logo) (logo as HTMLElement).style.display = "none";
+        const attrib = mapContainerRef.current?.querySelector(".mapboxgl-ctrl-attrib");
+        if (attrib) (attrib as HTMLElement).style.display = "none";
+
+        mapRef.current = map;
+        setMapReady(true);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      mapRef.current?.remove();
+      mapRef.current = null;
+      setMapReady(false);
+    };
+  }, [isLoaded]);
+
+  // Fit bounds when dispatch data loads
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    const points: [number, number][] = [];
+    dispatchPins.forEach((t) => {
+      if (t.location_lat != null && t.location_lng != null) points.push([t.location_lng, t.location_lat]);
+    });
+    jobs.forEach((j) => {
+      if (j.locationCoords?.lat != null && j.locationCoords?.lng != null) points.push([j.locationCoords.lng, j.locationCoords.lat]);
+    });
+
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      map.flyTo({ center: points[0], zoom: 14, duration: 800 });
+      return;
+    }
+
+    import("mapbox-gl").then((mod) => {
+      const mapboxgl = mod.default;
+      const bounds = new mapboxgl.LngLatBounds();
+      points.forEach((p) => bounds.extend(p));
+      map.fitBounds(bounds, { padding: 50, maxZoom: 15, duration: 800 });
+    });
+  }, [mapReady, dispatchPins, jobs]);
 
   useEffect(() => {
     if (!orgId) return;
@@ -98,7 +144,6 @@ export default function DispatchPage() {
     });
   }, [orgId]);
 
-  // Snap footprint trails to roads on-demand when footprints are visible (cache by techId)
   useEffect(() => {
     if (!showFootprints || footprints.length === 0) return;
     footprints.forEach((trail) => {
@@ -187,7 +232,7 @@ export default function DispatchPage() {
     }));
   }, [showFootprints, footprints, snappedFootprints]);
 
-  const handleLocateTech = useCallback((_techId: string, lat: number, lng: number) => {
+  const handleLocateTech = useCallback((_techId: string, _lat: number, _lng: number) => {
     setRippleTechId(_techId);
     setTimeout(() => setRippleTechId(null), 1500);
   }, []);
@@ -224,14 +269,10 @@ export default function DispatchPage() {
     );
   }
 
-  if (loadError || developmentMode) {
+  if (loadError) {
     return (
       <div className="flex h-full items-center justify-center bg-zinc-950">
-        <MapOfflineFallback
-          className="h-full w-full"
-          message="Map Offline"
-          subtext={developmentMode ? "Enable billing in Google Cloud for this project to use Maps." : "Establishing link… or check API configuration."}
-        />
+        <MapOfflineFallback className="h-full w-full" message="Map Offline" subtext="Check Mapbox configuration." />
       </div>
     );
   }
@@ -243,7 +284,7 @@ export default function DispatchPage() {
       featureDescription="Unlock real-time fleet tracking, road-snapped routing, and GPS footprint trails for your entire operation."
     >
     {/* ── PRD §4.1 Z-Index Registry ────────────────────────
-         z-0:  Map canvas (GoogleMap)
+         z-0:  Map canvas (Mapbox GL)
          z-10: Routes / Footprints (geographic overlays)
          z-20: Markers (Fleet & Job pins)
          z-30: Hover tooltips
@@ -258,7 +299,6 @@ export default function DispatchPage() {
 
       {/* ── z-45: Command Bar Header ───────────────────── */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[45]">
-        {/* Atmospheric gradient fade over map */}
         <div
           className="absolute inset-x-0 top-0 h-24"
           style={{ background: "linear-gradient(to bottom, rgba(5,5,5,0.7) 0%, rgba(5,5,5,0.3) 50%, transparent 100%)" }}
@@ -269,9 +309,7 @@ export default function DispatchPage() {
               Live Dispatch
             </span>
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold tracking-tight text-white">
-                Fleet Command
-              </h1>
+              <h1 className="text-lg font-semibold tracking-tight text-white">Fleet Command</h1>
               {dispatchPins.length > 0 && (
                 <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/15 bg-emerald-500/[0.06] px-2 py-0.5 text-[10px] font-medium text-emerald-400">
                   <span className="relative flex h-1.5 w-1.5">
@@ -295,81 +333,64 @@ export default function DispatchPage() {
         </div>
       </div>
 
-      {/* ── z-0: Map Canvas ─────────────────────────────── */}
-      <GoogleMap
-        defaultCenter={DEFAULT_MAP_CENTER}
-        defaultZoom={12}
-        style={{ width: "100%", height: "100%" }}
-        styles={OBSIDIAN_MAP_STYLES}
-        disableDefaultUI
-        zoomControl={false}
-        mapTypeControl={false}
-        streetViewControl={false}
-        fullscreenControl={false}
-        clickableIcons={false}
-        gestureHandling="greedy"
-      >
-        <MapDevelopmentDetector onDevelopmentMode={() => setDevelopmentMode(true)} />
-        <FitBoundsToData techs={dispatchPins} jobs={jobMarkers} />
+      {/* ── z-0: Mapbox Canvas ─────────────────────────── */}
+      <div
+        ref={mapContainerRef}
+        className="absolute inset-0 [&_.mapboxgl-ctrl-bottom-left]:hidden [&_.mapboxgl-ctrl-bottom-right_.mapboxgl-ctrl-attrib]:hidden [&_.mapboxgl-ctrl-logo]:hidden"
+        style={{ background: "#050505" }}
+      />
 
-        {/* z-10: Geographic overlays (routes, footprints) */}
-        <RoutingLayer
-          dispatchPins={dispatchPins}
-          jobs={jobsWithCoords}
-          visible={showActiveRoutes}
-        />
-        <FootprintsLayer trails={footprintsToRender} visible={showFootprints} />
-
-        {/* z-20: Map markers (fleet + jobs) */}
-        <FleetLayer
-          techs={fleetTechs}
-          visible={showFleet}
-          hoveredId={hoveredTechId}
-          onHover={setHoveredTechId}
-          onHoverTechDetail={handleHoverTechDetail}
-          rippleTechId={rippleTechId}
-        />
-        <JobLayer
-          jobs={
-            showUnassignedJobs
-              ? jobMarkers
-              : jobMarkers.filter((j) => j.variant !== "unassigned")
-          }
-          visible={jobMarkers.length > 0}
-          onJobClick={handleJobClick}
-        />
-
-        {/* z-30: Hover tooltip (inside map for projection) */}
-        <HoverDialog tech={hoverDialogTech} anchor={hoverAnchor} />
-      </GoogleMap>
+      {/* ── Map layers rendered via context ──────────── */}
+      {mapReady && mapRef.current && (
+        <DispatchMapProvider value={mapRef.current}>
+          <RoutingLayer dispatchPins={dispatchPins} jobs={jobsWithCoords} visible={showActiveRoutes} />
+          <FootprintsLayer trails={footprintsToRender} visible={showFootprints} />
+          <FleetLayer
+            techs={fleetTechs}
+            visible={showFleet}
+            hoveredId={hoveredTechId}
+            onHover={setHoveredTechId}
+            onHoverTechDetail={handleHoverTechDetail}
+            rippleTechId={rippleTechId}
+          />
+          <JobLayer
+            jobs={showUnassignedJobs ? jobMarkers : jobMarkers.filter((j) => j.variant !== "unassigned")}
+            visible={jobMarkers.length > 0}
+            onJobClick={handleJobClick}
+          />
+          <HoverDialog tech={hoverDialogTech} anchor={hoverAnchor} />
+        </DispatchMapProvider>
+      )}
 
       {/* ── z-40: Floating UI Widgets ───────────────────── */}
-      {/* PRD §4.2: pointer-events-none wrapper lets clicks pass
-          through to map; widgets reclaim with pointer-events-auto */}
       <div className="pointer-events-none absolute inset-0 z-40">
-        <div className="pointer-events-auto absolute left-4 top-4">
-          <DispatchCommandPanel
-            showFleet={showFleet}
-            showUnassignedJobs={showUnassignedJobs}
-            showActiveRoutes={showActiveRoutes}
-            showFootprints={showFootprints}
-            onToggleFleet={() => setShowFleet((v) => !v)}
-            onToggleUnassignedJobs={() => setShowUnassignedJobs((v) => !v)}
-            onToggleActiveRoutes={() => setShowActiveRoutes((v) => !v)}
-            onToggleFootprints={() => setShowFootprints((v) => !v)}
-          />
-        </div>
-        <div className="pointer-events-auto absolute left-4 top-20" style={{ height: "calc(100vh - 6rem)" }}>
-          <DispatchRoster
-            pins={dispatchPins}
-            hoveredTechId={hoveredTechId}
-            onHoverTech={setHoveredTechId}
-            onLocateTech={handleLocateTech}
-            onOpenJobDossier={handleJobClick}
-            onRippleTech={setRippleTechId}
-            visible
-          />
-        </div>
+        {mapReady && mapRef.current && (
+          <DispatchMapProvider value={mapRef.current}>
+            <div className="pointer-events-auto absolute left-4 top-4">
+              <DispatchCommandPanel
+                showFleet={showFleet}
+                showUnassignedJobs={showUnassignedJobs}
+                showActiveRoutes={showActiveRoutes}
+                showFootprints={showFootprints}
+                onToggleFleet={() => setShowFleet((v) => !v)}
+                onToggleUnassignedJobs={() => setShowUnassignedJobs((v) => !v)}
+                onToggleActiveRoutes={() => setShowActiveRoutes((v) => !v)}
+                onToggleFootprints={() => setShowFootprints((v) => !v)}
+              />
+            </div>
+            <div className="pointer-events-auto absolute left-4 top-20" style={{ height: "calc(100vh - 6rem)" }}>
+              <DispatchRoster
+                pins={dispatchPins}
+                hoveredTechId={hoveredTechId}
+                onHoverTech={setHoveredTechId}
+                onLocateTech={handleLocateTech}
+                onOpenJobDossier={handleJobClick}
+                onRippleTech={setRippleTechId}
+                visible
+              />
+            </div>
+          </DispatchMapProvider>
+        )}
       </div>
 
       {/* ── z-35: Edge vignettes for command center depth ── */}
@@ -378,11 +399,40 @@ export default function DispatchPage() {
       <div className="pointer-events-none absolute inset-y-0 right-0 z-[35] w-8" style={{ background: "linear-gradient(to left, rgba(5,5,5,0.3) 0%, transparent 100%)" }} />
 
       {/* z-60: Search modal overlay */}
-      <DispatchSearch
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onSearch={handleSearch}
-      />
+      <DispatchSearch open={searchOpen} onClose={() => setSearchOpen(false)} onSearch={handleSearch} />
+
+      {/* Zoom controls styling override */}
+      <style jsx global>{`
+        .mapboxgl-ctrl-group {
+          background: rgba(9,9,11,0.8) !important;
+          border: 1px solid rgba(255,255,255,0.06) !important;
+          backdrop-filter: blur(12px);
+          border-radius: 8px !important;
+          overflow: hidden;
+        }
+        .mapboxgl-ctrl-group button {
+          width: 32px !important;
+          height: 32px !important;
+          background: transparent !important;
+          border-color: rgba(255,255,255,0.04) !important;
+        }
+        .mapboxgl-ctrl-group button:hover {
+          background: rgba(255,255,255,0.04) !important;
+        }
+        .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon {
+          filter: invert(1) brightness(0.5);
+        }
+        .mapboxgl-ctrl-group button:hover .mapboxgl-ctrl-icon {
+          filter: invert(1) brightness(0.7);
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0.15; transform: scale(1.3); }
+        }
+        @keyframes ping {
+          75%, 100% { transform: scale(2); opacity: 0; }
+        }
+      `}</style>
     </div>
     </FeatureGate>
   );

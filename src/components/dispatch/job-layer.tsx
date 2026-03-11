@@ -1,6 +1,7 @@
 "use client";
 
-import { AdvancedMarker } from "@vis.gl/react-google-maps";
+import { useEffect, useRef } from "react";
+import { useDispatchMap } from "./dispatch-map-context";
 
 export interface JobMarkerData {
   id: string;
@@ -17,40 +18,60 @@ interface JobLayerProps {
 }
 
 /* ── PRD §5.2: Job Site Marker — "The Target" ───────────
-   White dot (w-2.5 h-2.5 = 10px), border-2 border-zinc-900.
-   Urgent/overdue → bg-rose-500. In-progress → bg-violet-500.
+   White dot (10px), border-2 border-zinc-900.
+   Urgent/overdue → rose-500. In-progress → violet-500.
    Unassigned → dark fill + white border (inverted).
    ─────────────────────────────────────────────────────── */
 
-const variantStyles: Record<JobMarkerData["variant"], string> = {
-  unassigned: "h-3 w-3 border-2 border-white bg-zinc-950",
-  scheduled:  "h-2.5 w-2.5 border-2 border-zinc-900 bg-white",
-  in_progress: "h-2.5 w-2.5 border-2 border-zinc-900 bg-violet-500",
-  urgent:     "h-2.5 w-2.5 border-2 border-zinc-900 bg-rose-500",
+const variantColors: Record<JobMarkerData["variant"], { bg: string; border: string; size: number }> = {
+  unassigned: { bg: "#09090b", border: "#ffffff", size: 12 },
+  scheduled: { bg: "#ffffff", border: "#09090b", size: 10 },
+  in_progress: { bg: "#8b5cf6", border: "#09090b", size: 10 },
+  urgent: { bg: "#f43f5e", border: "#09090b", size: 10 },
 };
 
 export function JobLayer({ jobs, visible, onJobClick }: JobLayerProps) {
-  if (!visible || jobs.length === 0) return null;
+  const map = useDispatchMap();
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  /* PRD §4.1: z-20 for all map markers. Urgent/in_progress get +2 priority */
-  const zIndex = (variant: JobMarkerData["variant"]) =>
-    variant === "in_progress" || variant === "urgent" ? 22 : 20;
+  useEffect(() => {
+    if (!map) return;
 
-  return (
-    <>
-      {jobs.map((job) => (
-        <AdvancedMarker
-          key={job.id}
-          position={{ lat: job.lat, lng: job.lng }}
-          title={job.title}
-          zIndex={zIndex(job.variant)}
-          onClick={() => onJobClick(job.id, job.title)}
-        >
-          <div
-            className={`cursor-pointer rounded-full shadow-sm transition-transform duration-100 hover:scale-125 ${variantStyles[job.variant]}`}
-          />
-        </AdvancedMarker>
-      ))}
-    </>
-  );
+    // Clear old markers
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    if (!visible || jobs.length === 0) return;
+
+    import("mapbox-gl").then((mod) => {
+      const mapboxgl = mod.default;
+
+      jobs.forEach((job) => {
+        const v = variantColors[job.variant];
+        const el = document.createElement("div");
+        el.style.cssText = `
+          width: ${v.size}px; height: ${v.size}px; border-radius: 50%;
+          background: ${v.bg}; border: 2px solid ${v.border};
+          cursor: pointer; transition: transform 0.1s ease;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        `;
+        el.title = job.title;
+        el.addEventListener("mouseenter", () => { el.style.transform = "scale(1.25)"; });
+        el.addEventListener("mouseleave", () => { el.style.transform = "scale(1)"; });
+        el.addEventListener("click", () => onJobClick(job.id, job.title));
+
+        const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+          .setLngLat([job.lng, job.lat])
+          .addTo(map);
+        markersRef.current.push(marker);
+      });
+    });
+
+    return () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+    };
+  }, [map, jobs, visible, onJobClick]);
+
+  return null;
 }
