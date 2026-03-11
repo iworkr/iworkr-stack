@@ -59,12 +59,12 @@ function AnimatedConnector({ active, testing }: { active: boolean; testing: bool
             <motion.div
               animate={{ y: [-44, 44] }}
               transition={{ duration: 0.6, repeat: Infinity, ease: "linear" }}
-              className="h-6 w-full bg-gradient-to-b from-transparent via-[#10B981] to-transparent opacity-60"
+              className="h-6 w-full bg-gradient-to-b from-transparent via-white/40 to-transparent opacity-40"
             />
           </motion.div>
         )}
         {active && !testing && (
-          <div className="absolute inset-0 bg-gradient-to-b from-[#10B981]/40 to-[#10B981]/10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-white/[0.03]" />
         )}
       </div>
     </div>
@@ -509,7 +509,7 @@ export default function FlowEditorPage() {
                 animate={{ scale: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="flex h-20 w-20 items-center justify-center rounded-full bg-[#10B981] shadow-[0_0_24px_-4px_rgba(16,185,129,0.2)]"
+                className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500"
               >
                 <Check size={32} className="text-black" strokeWidth={3} />
               </motion.div>
@@ -541,14 +541,14 @@ export default function FlowEditorPage() {
                   {block.type === "trigger" && (
                     <div className="flex justify-center">
                       <motion.div
-                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(16,185,129,0)", "0 0 30px rgba(16,185,129,0.4)", "0 0 0px rgba(16,185,129,0)"] } : {}}
+                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(255,255,255,0)", "0 0 20px rgba(255,255,255,0.06)", "0 0 0px rgba(255,255,255,0)"] } : {}}
                         transition={isTestCurrent ? { duration: 1, repeat: Infinity } : {}}
-                        className={`relative w-full max-w-lg rounded-xl border ${config.border} bg-zinc-950 p-5 backdrop-blur-sm ${isTestActive ? "shadow-[0_0_16px_-4px_rgba(16,185,129,0.12)]" : ""}`}
+                        className={`relative w-full max-w-lg rounded-xl border ${config.border} bg-zinc-950 p-5 backdrop-blur-sm ${isTestActive ? "shadow-[0_0_12px_-4px_rgba(255,255,255,0.04)]" : ""}`}
                       >
-                        <div className="absolute -left-px -top-px h-3 w-3 rounded-tl-xl border-l border-t border-[#10B981]/60" />
-                        <div className="absolute -right-px -top-px h-3 w-3 rounded-tr-xl border-r border-t border-[#10B981]/60" />
-                        <div className="absolute -bottom-px -left-px h-3 w-3 rounded-bl-xl border-b border-l border-[#10B981]/60" />
-                        <div className="absolute -bottom-px -right-px h-3 w-3 rounded-br-xl border-b border-r border-[#10B981]/60" />
+                        <div className="absolute -left-px -top-px h-3 w-3 rounded-tl-xl border-l border-t border-white/10" />
+                        <div className="absolute -right-px -top-px h-3 w-3 rounded-tr-xl border-r border-t border-white/10" />
+                        <div className="absolute -bottom-px -left-px h-3 w-3 rounded-bl-xl border-b border-l border-white/10" />
+                        <div className="absolute -bottom-px -right-px h-3 w-3 rounded-br-xl border-b border-r border-white/10" />
 
                         <div className="flex items-center gap-3">
                           <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${config.bg}`}>
@@ -595,9 +595,9 @@ export default function FlowEditorPage() {
                   {block.type === "action" && (
                     <div className="flex justify-center">
                       <motion.div
-                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(16,185,129,0)", "0 0 25px rgba(16,185,129,0.3)", "0 0 0px rgba(16,185,129,0)"] } : {}}
+                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(255,255,255,0)", "0 0 20px rgba(255,255,255,0.05)", "0 0 0px rgba(255,255,255,0)"] } : {}}
                         transition={isTestCurrent ? { duration: 1, repeat: Infinity } : {}}
-                        className={`w-full max-w-lg rounded-xl border ${config.border} bg-zinc-950 p-4 backdrop-blur-sm ${isTestActive ? "shadow-[0_0_12px_-4px_rgba(16,185,129,0.1)]" : ""}`}
+                        className={`w-full max-w-lg rounded-xl border ${config.border} bg-zinc-950 p-4 backdrop-blur-sm ${isTestActive ? "shadow-[0_0_10px_-4px_rgba(255,255,255,0.04)]" : ""}`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(16,185,129,0.08)]">

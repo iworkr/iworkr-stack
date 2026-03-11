@@ -138,7 +138,7 @@ function LedgerEmptyState({ title, subtitle, cta, onCta }: { title: string; subt
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="relative flex flex-col items-center justify-center py-20 text-center"
     >
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[180px] w-[180px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.03] blur-[60px]" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[180px] w-[180px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[60px]" />
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -338,8 +338,8 @@ export default function FinancePage() {
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         {/* Atmospheric glow — PRD Design Revamp */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[100px] bg-gradient-to-b from-emerald-500/[0.02] to-transparent" />
-        <div className="pointer-events-none absolute top-0 left-1/2 h-[80px] w-[350px] -translate-x-1/2 rounded-full bg-emerald-500/[0.03] blur-[60px]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[100px] bg-gradient-to-b from-white/[0.01] to-transparent" />
+        <div className="pointer-events-none absolute top-0 left-1/2 h-[80px] w-[350px] -translate-x-1/2 rounded-full bg-white/[0.015] blur-[60px]" />
 
         <div className="relative flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
@@ -473,7 +473,7 @@ export default function FinancePage() {
               <div className="relative overflow-hidden border-b border-white/[0.03] px-6 pb-4 pt-6">
                 <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.015]" />
                 {/* Radial glow behind chart */}
-                <div className="pointer-events-none absolute bottom-0 left-1/2 h-[200px] w-[400px] -translate-x-1/2 rounded-full bg-emerald-500/[0.04] blur-[80px]" />
+                <div className="pointer-events-none absolute bottom-0 left-1/2 h-[200px] w-[400px] -translate-x-1/2 rounded-full bg-white/[0.02] blur-[80px]" />
 
                 <div className="relative z-10">
                   <div className="mb-1 flex items-center gap-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
@@ -1243,7 +1243,7 @@ function ConnectPaymentsTab() {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6">
         <div className="relative mb-8">
-          <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full" />
+          <div className="absolute inset-0 bg-white/[0.02] blur-3xl rounded-full" />
           <div className="relative w-20 h-20 rounded-2xl bg-zinc-950 border border-white/10 flex items-center justify-center">
             <Zap className="w-9 h-9 text-emerald-400" />
           </div>

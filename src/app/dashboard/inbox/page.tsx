@@ -21,9 +21,8 @@ function EmptyStateRadar() {
       {/* Noise texture */}
       <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.015]" />
 
-      {/* Ambient glow — stronger layered */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.03] blur-[100px]" />
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.05] blur-[60px]" />
+      {/* Ambient glow — neutral */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[100px]" />
 
       {/* Mono overline */}
       <motion.span
@@ -49,16 +48,8 @@ function EmptyStateRadar() {
           autoplay
           className="opacity-70"
         />
-        {/* Outer glow rings — triple-layered */}
-        <div className="absolute inset-[-4px] rounded-full border border-emerald-500/[0.08] animate-signal-pulse" />
-        <div
-          className="absolute inset-[-16px] rounded-full border border-emerald-500/[0.04] animate-signal-pulse"
-          style={{ animationDelay: "0.6s" }}
-        />
-        <div
-          className="absolute inset-[-28px] rounded-full border border-emerald-500/[0.02] animate-signal-pulse"
-          style={{ animationDelay: "1.2s" }}
-        />
+        {/* Outer ring — subtle */}
+        <div className="absolute inset-[-4px] rounded-full border border-white/[0.04]" />
       </motion.div>
 
       <motion.h3

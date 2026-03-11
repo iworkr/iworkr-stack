@@ -49,7 +49,7 @@ function ForensicEmptyState({
       className="flex flex-col items-center justify-center py-20 text-center"
     >
       {/* Subtle radial glow behind icon */}
-      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 h-[160px] w-[160px] rounded-full bg-emerald-500/[0.03] blur-[60px]" />
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 h-[160px] w-[160px] rounded-full bg-white/[0.015] blur-[60px]" />
       <div className="relative mb-5 flex h-16 w-16 items-center justify-center">
         {/* Blueprint wireframe rings */}
         <div className="absolute inset-0 rounded-xl border border-white/[0.04] animate-signal-pulse" />
@@ -195,7 +195,7 @@ export default function FormsPage() {
       {/* Atmospheric glow */}
       <div
         className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
       />
       {/* ── Header ───────────────────────────────────── */}
       <div className="relative z-10 border-b border-white/[0.05]">

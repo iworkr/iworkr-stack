@@ -523,7 +523,7 @@ export default function SchedulePage() {
       {/* ── Atmospheric radial glow ──────────────────────────── */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[300px] z-0"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 50%)" }}
+        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 50%)" }}
       />
       {/* ── Noise texture ────────────────────────────────────── */}
       <div className="stealth-noise" />
@@ -567,7 +567,7 @@ export default function SchedulePage() {
             className={`self-end rounded-md px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
               dateInfo.isToday
                 ? "text-zinc-600 cursor-default"
-                : "text-emerald-500 hover:bg-emerald-500/[0.06] hover:shadow-[0_0_12px_-3px_rgba(16,185,129,0.3)]"
+                : "text-zinc-300 hover:bg-white/[0.04]"
             }`}
             disabled={dateInfo.isToday}
           >
@@ -610,7 +610,7 @@ export default function SchedulePage() {
             onClick={() => setUnscheduledDrawerOpen(!unscheduledDrawerOpen)}
             className={`relative flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150 ${
               unscheduledDrawerOpen
-                ? "bg-emerald-500/[0.06] text-emerald-400"
+                ? "bg-white/[0.06] text-zinc-200"
                 : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
             }`}
           >
@@ -677,7 +677,7 @@ export default function SchedulePage() {
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 className="flex flex-col items-center justify-center py-24 text-center"
               >
-                <div className="pointer-events-none absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.03] blur-[60px]" />
+                <div className="pointer-events-none absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.02] blur-[60px]" />
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -691,8 +691,8 @@ export default function SchedulePage() {
                     autoplay
                     className="opacity-60"
                   />
-                  <div className="absolute inset-0 rounded-full border border-emerald-500/[0.06] animate-signal-pulse" />
-                  <div className="absolute inset-[-8px] rounded-full border border-emerald-500/[0.03] animate-signal-pulse" style={{ animationDelay: "0.8s" }} />
+                  <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
+                  <div className="absolute inset-[-8px] rounded-full border border-white/[0.02] animate-signal-pulse" style={{ animationDelay: "0.8s" }} />
                 </motion.div>
                 <h3 className="text-[15px] font-medium text-zinc-200">No schedule data</h3>
                 <p className="mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-zinc-600">
@@ -820,20 +820,17 @@ export default function SchedulePage() {
                             }}
                           />
 
-                          {/* ── "Laser" Now Line — prominent current time ── */}
+                          {/* ── Now Line — current time indicator ── */}
                           {isCurrentDay && (
                             <div className="absolute top-0 z-20 h-full" style={{ left: nowX }}>
-                              {/* Glow halo behind the line */}
-                              <div className="absolute -left-[6px] top-0 h-full w-[14px] bg-emerald-500/[0.06] blur-[4px]" />
-                              {/* Core laser line */}
-                              <div className="h-full w-[2px] bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6),0_0_24px_rgba(16,185,129,0.25),0_0_4px_rgba(16,185,129,0.8)]" />
-                              {/* Top dot — pulsing beacon */}
+                              {/* Core line */}
+                              <div className="h-full w-px bg-zinc-500" />
+                              {/* Top dot */}
                               {techIdx === 0 && (
                                 <>
-                                  <div className="absolute -top-1.5 -left-[6px] h-[14px] w-[14px] rounded-full bg-emerald-500 animate-laser-pulse shadow-[0_0_12px_rgba(16,185,129,0.6),0_0_4px_rgba(16,185,129,0.9)]" />
-                                  <div className="absolute -top-[10px] -left-[10px] h-[22px] w-[22px] rounded-full border border-emerald-500/20 animate-signal-pulse" />
+                                  <div className="absolute -top-1 -left-[3px] h-[7px] w-[7px] rounded-full bg-zinc-400" />
                                   {/* Time label */}
-                                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-emerald-500/90 px-1.5 py-0.5 font-mono text-[8px] font-bold text-black shadow-lg">
+                                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[8px] font-medium text-zinc-400">
                                     {formatHour(nowHour)}
                                   </div>
                                 </>
@@ -846,7 +843,7 @@ export default function SchedulePage() {
                             <motion.div
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              className="absolute top-2 z-[15] rounded-lg border-2 border-dashed border-emerald-500/30 bg-emerald-500/[0.03]"
+                              className="absolute top-2 z-[15] rounded-lg border-2 border-dashed border-white/10 bg-white/[0.02]"
                               style={{
                                 left: hourToX(dropTarget.hour),
                                 width: ghostDuration * HOUR_W,
@@ -854,7 +851,7 @@ export default function SchedulePage() {
                               }}
                             >
                               <div className="flex h-full items-center justify-center">
-                                <span className="font-mono text-[10px] font-medium text-emerald-500/40">
+                                <span className="font-mono text-[10px] font-medium text-zinc-600">
                                   {formatHour(dropTarget.hour)}
                                 </span>
                               </div>
@@ -1196,7 +1193,7 @@ export default function SchedulePage() {
                     ) : (
                       <div className="flex flex-col items-center py-12 text-center">
                         <div className="relative mb-5">
-                          <div className="pointer-events-none absolute top-1/2 left-1/2 h-[60px] w-[60px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.04] blur-[20px]" />
+                          <div className="pointer-events-none absolute top-1/2 left-1/2 h-[60px] w-[60px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.02] blur-[20px]" />
                           <div className="animate-backlog-idle">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
                               <Inbox size={18} strokeWidth={1.5} className="text-zinc-600" />
@@ -1228,23 +1225,23 @@ export default function SchedulePage() {
           <motion.div
             initial={{ scale: 1 }}
             animate={{ scale: 1.05 }}
-            className="absolute rounded-lg border border-emerald-500/40 shadow-[0_12px_40px_-10px_rgba(16,185,129,0.4)]"
+            className="absolute rounded-lg border border-white/10 shadow-[0_12px_40px_-10px_rgba(0,0,0,0.5)]"
             style={{
               left: mousePos.x - 80,
               top: mousePos.y - 28,
               width: Math.max(120, ghostDuration * HOUR_W),
               height: ROW_H - 16,
-              background: "rgba(16, 185, 129, 0.06)",
+              background: "rgba(255, 255, 255, 0.04)",
               backdropFilter: "blur(8px)",
               opacity: 0.9,
             }}
           >
             {/* Spine */}
-            <div className="absolute left-0 top-0 h-full w-[2px] rounded-l-lg bg-emerald-500" />
+            <div className="absolute left-0 top-0 h-full w-[2px] rounded-l-lg bg-zinc-500" />
             <div className="flex h-full flex-col justify-center truncate pl-3 pr-2">
               {dragState.source === "backlog" && dragState.backlogJob ? (
                 <>
-                  <span className="font-mono text-[8px] text-emerald-500/50">
+                  <span className="font-mono text-[8px] text-zinc-500">
                     {dragState.backlogJob.display_id}
                   </span>
                   <span className="truncate text-[11px] font-medium text-white">

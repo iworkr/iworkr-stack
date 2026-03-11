@@ -90,19 +90,19 @@ function ConversationTile({
             : "hover:bg-[var(--subtle-bg)]"
       }`}
     >
-      {/* Active indicator — emerald left spine */}
+      {/* Active indicator — left spine */}
       {active && (
         <motion.div
           layoutId="inbox-active-spine"
-          className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r bg-emerald-500"
+          className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r bg-zinc-400"
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
         />
       )}
 
-      {/* Unread dot — stronger glow */}
+      {/* Unread dot */}
       {unread && !active && (
         <div className="absolute left-1.5 top-1/2 -translate-y-1/2">
-          <div className="h-[7px] w-[7px] rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+          <div className="h-[5px] w-[5px] rounded-full bg-zinc-400" />
         </div>
       )}
 
@@ -110,7 +110,7 @@ function ConversationTile({
       <div
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-nav-item)] text-[10px] font-semibold ${
           isJob
-            ? "bg-emerald-500/10 text-emerald-400"
+            ? "bg-zinc-800/80 text-zinc-400"
             : "bg-zinc-800/80 text-zinc-400"
         }`}
       >
@@ -224,7 +224,7 @@ function InboxList({
         >
           {/* Focus spine */}
           <motion.div
-            className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+            className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-zinc-500"
             initial={false}
             animate={{
               opacity: searchFocused ? 1 : 0,
@@ -314,7 +314,7 @@ function EmptyStateRadar() {
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center text-center">
       <div className="pointer-events-none absolute inset-0 bg-noise opacity-[var(--noise-opacity)]" />
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.03] blur-[100px]" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[100px]" />
 
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
@@ -327,20 +327,16 @@ function EmptyStateRadar() {
           size={160}
           loop
           autoplay
-          className="opacity-70"
+          className="opacity-60"
         />
-        <div className="absolute inset-0 rounded-full border border-emerald-500/[0.06] animate-signal-pulse" />
-        <div
-          className="absolute inset-[-12px] rounded-full border border-emerald-500/[0.03] animate-signal-pulse"
-          style={{ animationDelay: "0.8s" }}
-        />
+        <div className="absolute inset-[-4px] rounded-full border border-white/[0.04]" />
       </motion.div>
 
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-500/60"
+        className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-600"
       >
         Comms Channel
       </motion.p>

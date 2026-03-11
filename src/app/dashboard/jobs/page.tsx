@@ -227,7 +227,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
       className="flex flex-col items-center justify-center py-28 text-center"
     >
       {/* Ambient glow */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.02] blur-[60px]" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[60px]" />
 
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
@@ -454,7 +454,7 @@ export default function JobsPage() {
       <div className="stealth-noise" />
 
       {/* Atmospheric glow at the top */}
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-emerald-500/[0.03] blur-[100px]" />
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-white/[0.015] blur-[100px]" />
 
       {/* ── Command Bar Header ─────────────────────────────── */}
       <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[var(--border-base)] bg-[var(--header-bg)] px-5 py-2.5 backdrop-blur-xl">
@@ -492,7 +492,7 @@ export default function JobsPage() {
                 )}
                 {viewFilter === tab.key && (
                   <motion.div layoutId="jobs-tab-indicator" className="absolute bottom-0 left-3 right-3 flex justify-center" transition={{ type: "spring", stiffness: 400, damping: 30 }}>
-                    <div className="h-1 w-1 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+                    <div className="h-1 w-1 rounded-full bg-emerald-500" />
                   </motion.div>
                 )}
               </button>

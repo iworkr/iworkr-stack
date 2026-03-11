@@ -411,7 +411,7 @@ export default function CRMPipelinePage() {
       {/* Atmospheric glow */}
       <div
         className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
       />
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">

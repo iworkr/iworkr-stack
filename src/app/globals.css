@@ -84,8 +84,8 @@
   --text-muted: #71717a;
   --brand: #10B981;
   --brand-hover: #059669;
-  --brand-glow: 0 0 20px rgba(16, 185, 129, 0.3);
-  --brand-glow-subtle: 0 0 12px -5px rgba(16, 185, 129, 0.2);
+  --brand-glow: 0 0 12px rgba(16, 185, 129, 0.15);
+  --brand-glow-subtle: 0 0 8px -5px rgba(16, 185, 129, 0.1);
   --selection-bg: rgba(16, 185, 129, 0.15);
   --scrollbar-thumb: rgba(255, 255, 255, 0.06);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.12);
@@ -552,8 +552,8 @@ img, video, svg, canvas {
 /* ── Schedule: "Tactical Timeline" ─────────────────── */
 
 @keyframes laser-pulse {
-  0%, 100% { box-shadow: 0 0 6px rgba(16, 185, 129, 0.4), 0 0 12px rgba(16, 185, 129, 0.2); }
-  50% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.3); }
+  0%, 100% { box-shadow: 0 0 4px rgba(255, 255, 255, 0.08); }
+  50% { box-shadow: 0 0 8px rgba(255, 255, 255, 0.12); }
 }
 
 @keyframes backlog-idle {
@@ -570,8 +570,8 @@ img, video, svg, canvas {
 }
 
 @keyframes capsule-glow {
-  0%, 100% { box-shadow: 0 0 6px var(--capsule-glow-color, rgba(16, 185, 129, 0.2)), inset 0 0 4px var(--capsule-glow-color, rgba(16, 185, 129, 0.05)); }
-  50% { box-shadow: 0 0 14px var(--capsule-glow-color, rgba(16, 185, 129, 0.3)), inset 0 0 8px var(--capsule-glow-color, rgba(16, 185, 129, 0.08)); }
+  0%, 100% { box-shadow: 0 0 4px var(--capsule-glow-color, rgba(255, 255, 255, 0.04)), inset 0 0 2px var(--capsule-glow-color, rgba(255, 255, 255, 0.02)); }
+  50% { box-shadow: 0 0 8px var(--capsule-glow-color, rgba(255, 255, 255, 0.06)), inset 0 0 4px var(--capsule-glow-color, rgba(255, 255, 255, 0.03)); }
 }
 
 .animate-capsule-glow {

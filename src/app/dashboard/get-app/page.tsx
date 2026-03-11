@@ -52,7 +52,7 @@ export default function GetAppPage() {
       <div className="stealth-noise" />
 
       {/* Atmospheric glow */}
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[350px] w-[500px] -translate-x-1/2 rounded-full bg-emerald-500/[0.03] blur-[120px]" />
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[350px] w-[500px] -translate-x-1/2 rounded-full bg-white/[0.015] blur-[120px]" />
 
       {/* Header */}
       <div className="relative z-10 border-b border-[var(--border-base)] bg-[var(--header-bg)] px-6 py-4 backdrop-blur-xl">

@@ -123,7 +123,7 @@ function DepotEmptyState({
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="relative flex flex-col items-center justify-center py-20 text-center"
     >
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[180px] w-[180px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.03] blur-[60px]" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[180px] w-[180px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[60px]" />
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -366,7 +366,7 @@ export default function AssetsPage() {
       {/* Atmospheric glow */}
       <div
         className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
       />
       {/* ── Header ───────────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">

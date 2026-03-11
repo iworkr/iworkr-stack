@@ -227,7 +227,7 @@ export default function JobDetailPage() {
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 text-center"
         >
-          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[160px] w-[160px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.02] blur-[60px]" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[160px] w-[160px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[60px]" />
           <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center">
             <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
             <div className="absolute inset-2 rounded-full border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.5s" }} />

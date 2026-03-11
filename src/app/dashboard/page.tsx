@@ -63,10 +63,10 @@ export default function DashboardPage() {
       {/* Noise texture */}
       <div className="stealth-noise" />
 
-      {/* Radial glow — atmosphere behind header */}
+      {/* Radial glow — neutral atmosphere behind header */}
       <div
         className="pointer-events-none absolute top-0 left-0 right-0 h-64"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
       />
 
       {/* Page header — stagger in first */}
@@ -83,7 +83,7 @@ export default function DashboardPage() {
           <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
             Dashboard
           </h1>
-          <p className="mt-1 border-l-2 border-emerald-500/30 pl-2 text-[12px] text-zinc-600">
+          <p className="mt-1 border-l-2 border-zinc-700 pl-2 text-[12px] text-zinc-600">
             {dateLabel.dayName}{dateLabel.dayName && `, ${dateLabel.monthDay}`}
             {activeJobCount !== null ? ` — ${activeJobCount} active job${activeJobCount !== 1 ? "s" : ""}` : ""}
           </p>
@@ -107,9 +107,8 @@ export default function DashboardPage() {
           </button>
 
           <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.04] px-3 py-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-signal-pulse absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-40" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
             <span className="text-[11px] text-zinc-500">Live</span>
           </div>

@@ -208,16 +208,15 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
       }
     >
       <div className="relative px-5 py-3">
-        {/* Emerald laser timeline */}
+        {/* Timeline spine */}
         {displayBlocks.length > 0 && (
           <motion.div
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-[68px] top-3 bottom-3 w-[1.5px] origin-top"
+            className="absolute left-[68px] top-3 bottom-3 w-px origin-top"
             style={{
-              background: "linear-gradient(180deg, rgba(16,185,129,0.4) 0%, rgba(16,185,129,0.08) 100%)",
-              boxShadow: "0 0 6px rgba(16,185,129,0.15)",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)",
             }}
           />
         )}
@@ -271,11 +270,10 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
                       animate={{ opacity: 1, width: "auto" }}
                       transition={{ delay: 0.6 }}
                       className="mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[8px] font-medium tracking-wide uppercase"
-                      style={{ background: "var(--ghost-emerald)", color: "var(--ghost-emerald-text)" }}
+                      style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}
                     >
                       <span className="relative flex h-1 w-1">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: "var(--brand)" }} />
-                        <span className="relative inline-flex h-1 w-1 rounded-full" style={{ background: "var(--brand)" }} />
+                        <span className="relative inline-flex h-1 w-1 rounded-full bg-emerald-500" />
                       </span>
                       Next Up
                     </motion.div>
@@ -295,9 +293,9 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
             className="absolute inset-x-5 z-10 flex items-center"
             style={{ top: `${((nowDecimal - 7) / 11) * 100}%` }}
           >
-            <div className="h-1.5 w-1.5 rounded-full bg-red-500/80 shadow-[0_0_6px_rgba(239,68,68,0.4)]" />
-            <div className="h-px flex-1 bg-red-500/20" />
-            <span className="ml-1 rounded-md bg-red-500/[0.08] px-1.5 py-0.5 font-mono text-[7px] font-medium text-red-400/70">NOW</span>
+            <div className="h-1 w-1 rounded-full bg-zinc-400" />
+            <div className="h-px flex-1 bg-zinc-700" />
+            <span className="ml-1 rounded-md bg-zinc-800 px-1.5 py-0.5 font-mono text-[7px] font-medium text-zinc-500">NOW</span>
           </motion.div>
         )}
       </div>

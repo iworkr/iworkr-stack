@@ -157,10 +157,10 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
               className="group flex w-full items-start gap-2.5 px-5 py-3 text-left transition-all duration-200 hover:bg-[var(--subtle-bg)]"
-              style={{ borderLeft: "2px solid var(--brand)" }}
+              style={{ borderLeft: "2px solid rgba(255,255,255,0.08)" }}
             >
               <div
-                className="mt-2 h-[6px] w-[6px] shrink-0 rounded-full shadow-[0_0_6px_var(--brand-glow)]"
+                className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full"
                 style={{ background: "var(--brand)" }}
               />
               <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGrad(item.senderInitials)}`}>

@@ -6,10 +6,10 @@ import type { ReactNode } from "react";
 
 export default function HelpLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 min-h-screen overflow-y-auto bg-[var(--background)] text-white selection:bg-[#10B981]/30">
-      {/* Atmospheric emerald glow — PRD: Spotlight Effect */}
+    <div className="fixed inset-0 z-50 min-h-screen overflow-y-auto bg-[var(--background)] text-white selection:bg-white/10">
+      {/* Atmospheric glow — neutral */}
       <div className="pointer-events-none fixed left-1/2 top-0 -translate-x-1/2">
-        <div className="h-[500px] w-[1000px] rounded-full bg-emerald-500/[0.05] blur-[140px]" />
+        <div className="h-[400px] w-[800px] rounded-full bg-white/[0.02] blur-[140px]" />
       </div>
 
       {/* Noise grain — standardized */}

@@ -257,8 +257,8 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
             <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
               Dispatch
             </span>
-            <span className="text-[10px] text-emerald-500">
-              {activeCount} Active
+            <span className="text-[10px] text-zinc-500">
+              {activeCount} active
             </span>
           </div>
         }
@@ -342,9 +342,8 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
               Live Dispatch
             </span>
           </div>
-          <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+          <span className="flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-zinc-400">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-50" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
             {activeCount} Active
@@ -389,10 +388,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
                   title={pin.name ? `${pin.name} · ${pin.task} · ${cfg.label}` : `${pin.task} · ${cfg.label}`}
                 >
                   <div className="relative flex items-center justify-center">
-                    {isLive && (
-                      <div className="absolute h-5 w-5 animate-pulse rounded-full bg-emerald-500/20" />
-                    )}
-                    <div className={`relative h-3 w-3 rounded-full border-2 border-zinc-900 shadow-lg ${
+                    <div className={`relative h-3 w-3 rounded-full border-2 border-zinc-900 ${
                       isLive ? "bg-emerald-500" : "bg-zinc-600"
                     }`} />
                   </div>

@@ -53,10 +53,10 @@ export function WidgetShell({
           background: "#09090b",
         }}
       >
-        {/* Hover light cone — subtle brand tint on hover only */}
+        {/* Hover light cone — neutral white tint on hover only */}
         <div
           className="pointer-events-none absolute inset-0 z-0 opacity-0 transition-opacity duration-200 group-hover/widget:opacity-100"
-          style={{ background: "radial-gradient(120% 150% at 50% -20%, rgba(16,185,129,0.03) 0%, transparent 50%)" }}
+          style={{ background: "radial-gradient(120% 150% at 50% -20%, rgba(255,255,255,0.02) 0%, transparent 50%)" }}
         />
 
         {/* Cursor spotlight — subtle on hover */}
