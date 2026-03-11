@@ -61,6 +61,8 @@ const footerLinks = [
 export function Footer() {
   return (
     <footer className="relative border-t border-[var(--card-border)] bg-[var(--surface-0)]">
+      {/* Subtle noise texture */}
+      <div className="stealth-noise" />
 
       <div className="relative z-10 mx-auto max-w-[1200px] px-6 py-16 md:px-12">
         <FadeIn>

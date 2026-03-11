@@ -25,6 +25,7 @@
     "@stripe/stripe-js": "^8.8.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.34.0",
     "jspdf": "^4.1.0",
     "lottie-react": "^2.4.1",
@@ -37,6 +38,7 @@
     "react-grid-layout": "^2.2.2",
     "resend": "^6.9.2",
     "stripe": "^20.3.1",
+    "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },

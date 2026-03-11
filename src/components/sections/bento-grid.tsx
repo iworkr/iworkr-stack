@@ -13,6 +13,9 @@ import {
 import { useRef, type MouseEvent, type ReactNode } from "react";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/fade-in";
 import { Section, SectionHeader } from "@/components/ui/section";
+import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
+import { Meteors } from "@/components/magicui/meteors";
+import { cn } from "@/lib/utils";
 
 /* ---------- Spotlight Card Primitive ---------- */
 function BentoCard({
@@ -78,14 +81,14 @@ function SchedulerVisual() {
   ];
 
   const colorMap: Record<string, string> = {
-    emerald: "border-white/[0.06] text-[var(--text-heading)]",
-    green: "border-white/[0.06] text-[var(--text-heading)]",
+    emerald: "border-emerald-500/10 text-[var(--text-heading)]",
+    green: "border-emerald-500/10 text-[var(--text-heading)]",
     amber: "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300",
     violet: "bg-[var(--subtle-bg)] border-[var(--card-border)] text-[var(--text-muted)]",
     zinc: "bg-[var(--subtle-bg)] border-[var(--card-border)] text-[var(--text-muted)] italic",
   };
 
-  const brandTintBg = "rgba(255, 255, 255, 0.03)";
+  const brandTintBg = "rgba(16, 185, 129, 0.04)";
 
   return (
     <div className="mt-4 space-y-1.5">
@@ -133,9 +136,9 @@ function MobileVisual() {
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
             className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)" }}
+            style={{ backgroundColor: "rgba(16, 185, 129, 0.06)" }}
           >
-            <Check size={24} className="text-zinc-300" />
+            <Check size={24} className="text-emerald-400/80" />
           </motion.div>
           <span className="text-[10px] font-medium text-[var(--text-heading)]">
             Tap to Clock In
@@ -191,8 +194,8 @@ function AIWaveformVisual() {
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.6 }}
-        className="ml-auto rounded-lg rounded-br-none px-3 py-2 text-xs text-zinc-300"
-        style={{ backgroundColor: "rgba(255, 255, 255, 0.04)" }}
+        className="ml-auto rounded-lg rounded-br-none px-3 py-2 text-xs text-emerald-200/80"
+        style={{ backgroundColor: "rgba(16, 185, 129, 0.05)" }}
       >
         Booking set for Tuesday at 9:00 AM
       </motion.div>
@@ -267,8 +270,8 @@ function QuotesVisual() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="rounded-md px-3 py-1 text-[10px] font-medium text-emerald-400"
-            style={{ backgroundColor: "rgba(16, 185, 129, 0.08)" }}
+            className="rounded-md px-3 py-1 text-[10px] font-medium text-emerald-400/80"
+            style={{ backgroundColor: "rgba(16, 185, 129, 0.06)" }}
           >
             Accepted
           </motion.button>
@@ -360,13 +363,25 @@ function FinancialsVisual() {
 export function BentoGrid() {
   return (
     <Section id="features" className="overflow-hidden">
-      {/* Subtle radial glow — neutral */}
+      {/* Subtle noise texture */}
+      <div className="stealth-noise" />
+      {/* Soft emerald radial glow — atmospheric accent */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255, 255, 255, 0.015) 0%, transparent 70%)",
+            "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(16, 185, 129, 0.015) 0%, transparent 70%)",
         }}
+      />
+      <AnimatedGridPattern
+        numSquares={30}
+        maxOpacity={0.03}
+        duration={5}
+        repeatDelay={1}
+        className={cn(
+          "pointer-events-none absolute inset-0 z-0",
+          "[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]",
+        )}
       />
 
       <FadeIn>
@@ -490,6 +505,7 @@ export function BentoGrid() {
               quote to settlement.
             </p>
             <FinancialsVisual />
+            <Meteors number={8} minDuration={3} maxDuration={8} />
           </BentoCard>
         </StaggerItem>
       </StaggerContainer>

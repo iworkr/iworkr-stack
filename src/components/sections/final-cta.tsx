@@ -3,6 +3,7 @@
 import { ArrowRight, LayoutDashboard } from "lucide-react";
 import { FadeIn } from "@/components/ui/fade-in";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
+import { Particles } from "@/components/magicui/particles";
 import { useAuthStore } from "@/lib/auth-store";
 
 export function FinalCTA() {
@@ -20,12 +21,24 @@ export function FinalCTA() {
         </div>
       </div>
 
-      {/* Subtle neutral glow */}
+      {/* Subtle noise texture */}
+      <div className="stealth-noise" />
+      {/* Soft emerald atmospheric glow */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: `radial-gradient(ellipse at center, rgba(255,255,255,0.015) 0%, transparent 60%)`,
+          background: `radial-gradient(ellipse at center, rgba(16,185,129,0.02) 0%, transparent 60%)`,
         }}
+      />
+
+      {/* Interactive particles — dramatic close */}
+      <Particles
+        className="pointer-events-none absolute inset-0"
+        quantity={60}
+        staticity={30}
+        ease={40}
+        size={0.4}
+        color="#10B981"
       />
 
       <div className="relative z-10 mx-auto max-w-[1200px] px-6 text-center md:px-12">

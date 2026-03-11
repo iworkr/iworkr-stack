@@ -74,6 +74,8 @@ function DispatchMapbox({
         if (logo) (logo as HTMLElement).style.display = "none";
         const attrib = containerRef.current?.querySelector(".mapboxgl-ctrl-attrib");
         if (attrib) (attrib as HTMLElement).style.display = "none";
+        // Force resize after load so the canvas fills the container
+        map.resize();
       });
 
       mapRef.current = map;
@@ -137,11 +139,12 @@ function DispatchMapbox({
   }, [pins]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`${className} [&_.mapboxgl-ctrl-bottom-left]:hidden [&_.mapboxgl-ctrl-bottom-right]:hidden`}
-      style={{ background: "#050505" }}
-    />
+    <div className={`${className} relative`} style={{ background: "#050505" }}>
+      <div
+        ref={containerRef}
+        className="absolute inset-0 [&_.mapboxgl-ctrl-bottom-left]:hidden [&_.mapboxgl-ctrl-bottom-right]:hidden"
+      />
+    </div>
   );
 }
 

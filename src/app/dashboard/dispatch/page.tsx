@@ -85,6 +85,9 @@ export default function DispatchPage() {
         const attrib = mapContainerRef.current?.querySelector(".mapboxgl-ctrl-attrib");
         if (attrib) (attrib as HTMLElement).style.display = "none";
 
+        // Force canvas to fill the container — prevents black screen
+        map.resize();
+
         mapRef.current = map;
         setMapReady(true);
       });

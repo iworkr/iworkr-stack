@@ -33,6 +33,11 @@
   --ease-snappy: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
+  /* MagicUI component animations */
+  --animate-shiny-text: shiny-text 8s infinite;
+  --animate-meteor: meteor 5s linear infinite;
+  --animate-border-beam: border-beam 6s linear infinite;
+
   /* Monolith: Strict radius scale — SHARP. No bubbly rounding. */
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -657,6 +662,48 @@ img, video, svg, canvas {
 
 .animate-status-fill {
   animation: status-fill 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── MagicUI Keyframes ───────────────────────────────── */
+
+@keyframes shiny-text {
+  0%, 90%, 100% {
+    background-position: calc(-100% - var(--shiny-width)) 0;
+  }
+  30%, 60% {
+    background-position: calc(100% + var(--shiny-width)) 0;
+  }
+}
+
+.animate-shiny-text {
+  animation: var(--animate-shiny-text);
+}
+
+@keyframes meteor {
+  0% {
+    transform: rotate(var(--angle)) translateX(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--angle)) translateX(-500px);
+    opacity: 0;
+  }
+}
+
+.animate-meteor {
+  animation: var(--animate-meteor);
+}
+
+@keyframes border-beam {
+  0% { offset-distance: 0%; }
+  100% { offset-distance: 100%; }
+}
+
+.animate-border-beam {
+  animation: border-beam 6s linear infinite;
 }
 
 /* Hover focus: dim siblings when parent has [data-hovering] */

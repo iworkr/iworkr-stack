@@ -18,9 +18,10 @@ export const DEFAULT_MAP_CENTER_LATLNG = { lat: -27.4698, lng: 153.0251 };
 /**
  * Runtime style overrides applied after map loads.
  * These transform the standard dark-v11 into our ultra-dark Obsidian theme.
+ * Handles the race condition where style.load may have already fired.
  */
 export function applyObsidianStyle(map: mapboxgl.Map) {
-  map.once("style.load", () => {
+  const apply = () => {
     // Background — vantablack
     try { map.setPaintProperty("background", "background-color", "#050505"); } catch {}
 
@@ -86,5 +87,12 @@ export function applyObsidianStyle(map: mapboxgl.Map) {
     try { map.setPaintProperty("admin-0-boundary", "line-opacity", 0.3); } catch {}
     try { map.setPaintProperty("admin-1-boundary", "line-color", "#1a1a1e"); } catch {}
     try { map.setPaintProperty("admin-1-boundary", "line-opacity", 0.2); } catch {}
-  });
+  };
+
+  // If style is already loaded, apply immediately; otherwise wait for the event
+  if (map.isStyleLoaded()) {
+    apply();
+  } else {
+    map.once("style.load", apply);
+  }
 }

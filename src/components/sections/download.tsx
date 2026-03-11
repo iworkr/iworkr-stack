@@ -55,6 +55,8 @@ const platforms = [
 export function DownloadSection() {
   return (
     <Section id="download" className="relative overflow-hidden">
+      {/* Subtle noise texture */}
+      <div className="stealth-noise" />
 
       <FadeIn>
         <SectionHeader

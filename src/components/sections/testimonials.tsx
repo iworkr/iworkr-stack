@@ -78,10 +78,10 @@ function TestimonialCard({
       {/* Metric badge — brand ghost tint */}
       <div className="my-4">
         <span
-          className="inline-block rounded-full border px-3 py-1 text-[10px] font-medium text-zinc-300"
+          className="inline-block rounded-full border px-3 py-1 text-[10px] font-medium text-emerald-300/70"
           style={{
-            borderColor: "rgba(255, 255, 255, 0.08)",
-            backgroundColor: "rgba(255, 255, 255, 0.03)",
+            borderColor: "rgba(16, 185, 129, 0.1)",
+            backgroundColor: "rgba(16, 185, 129, 0.04)",
           }}
         >
           {testimonial.metric}
@@ -116,12 +116,14 @@ export function Testimonials() {
 
   return (
     <Section id="testimonials" className="overflow-hidden">
-      {/* Subtle neutral glow */}
+      {/* Subtle noise texture */}
+      <div className="stealth-noise" />
+      {/* Soft emerald atmospheric glow */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255, 255, 255, 0.01) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(16, 185, 129, 0.01) 0%, transparent 70%)",
         }}
       />
 

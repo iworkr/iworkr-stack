@@ -81,7 +81,8 @@ function FAQItem({ faq, index }: { faq: (typeof faqs)[0]; index: number }) {
 export function FAQ() {
   return (
     <Section id="faq" className="overflow-hidden">
-      {/* Noise grain texture */}
+      {/* Subtle noise texture */}
+      <div className="stealth-noise" />
 
       <FadeIn>
         <SectionHeader

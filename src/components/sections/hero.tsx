@@ -5,6 +5,9 @@ import { ArrowRight, Sparkles, Smartphone, LayoutDashboard } from "lucide-react"
 import { Badge } from "@/components/ui/badge";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import { useAuthStore } from "@/lib/auth-store";
+import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
+import { BorderBeam } from "@/components/magicui/border-beam";
+import { Particles } from "@/components/magicui/particles";
 
 function AppleIcon({ className }: { className?: string }) {
   return (
@@ -73,15 +76,21 @@ export function Hero() {
 
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--background)] px-6 pt-24 pb-16">
-      {/* Subtle radial glow — neutral, no green */}
+      {/* Subtle noise texture */}
+      <div className="stealth-noise" />
+
+      {/* Soft emerald radial glow — very subtle, atmospheric */}
       <div className="pointer-events-none absolute top-0 left-1/2 h-[800px] w-[1200px] -translate-x-1/2 -translate-y-1/4">
         <div
           className="absolute inset-0"
           style={{
-            background: `radial-gradient(ellipse at center, rgba(255,255,255,0.015) 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse at center, rgba(16,185,129,0.015) 0%, transparent 70%)`,
           }}
         />
       </div>
+
+      {/* Floating particles */}
+      <Particles className="pointer-events-none absolute inset-0" quantity={40} staticity={40} ease={40} size={0.3} color="#10B981" />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         {/* Announcement Pill */}
@@ -92,7 +101,7 @@ export function Hero() {
         >
           <Badge glow className="mb-8 cursor-pointer hover:border-white/10">
             <Sparkles size={14} className="text-zinc-400" />
-            <span>New: AI Phone Agent for automatic dispatch</span>
+            <AnimatedShinyText shimmerWidth={80}>New: AI Phone Agent for automatic dispatch</AnimatedShinyText>
             <ArrowRight size={12} className="text-[var(--text-muted)] transition-transform duration-200 group-hover:translate-x-0.5" />
           </Badge>
         </motion.div>
@@ -295,7 +304,7 @@ export function Hero() {
                             initial={{ opacity: 0, scaleX: 0 }}
                             animate={{ opacity: 1, scaleX: 1 }}
                             transition={{ delay: 2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="origin-left rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-1.5"
+                            className="origin-left rounded-md border border-emerald-500/10 bg-emerald-500/[0.04] px-2 py-1.5"
                           >
                             <div className="text-[10px] font-medium text-zinc-200">
                               Water heater install
@@ -320,7 +329,7 @@ export function Hero() {
                             initial={{ opacity: 0, scaleX: 0 }}
                             animate={{ opacity: 1, scaleX: 1 }}
                             transition={{ delay: 2.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="origin-left rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-1.5"
+                            className="origin-left rounded-md border border-emerald-500/10 bg-emerald-500/[0.04] px-2 py-1.5"
                           >
                             <div className="text-[10px] font-medium text-zinc-200">
                               Boiler service
@@ -359,8 +368,8 @@ export function Hero() {
               </span>
               {[
                 { name: "Mike Thompson", status: "On job", color: "bg-emerald-500" },
-                { name: "Sarah Chen", status: "En route", color: "bg-zinc-400" },
-                { name: "James O'Brien", status: "Available", color: "bg-zinc-400" },
+                { name: "Sarah Chen", status: "En route", color: "bg-emerald-500/60" },
+                { name: "James O'Brien", status: "Available", color: "bg-zinc-500" },
               ].map((person) => (
                 <div
                   key={person.name}
@@ -383,6 +392,9 @@ export function Hero() {
               ))}
             </div>
           </div>
+
+          {/* Animated border beam */}
+          <BorderBeam size={120} duration={8} colorFrom="#10B981" colorTo="#059669" borderWidth={1} />
         </div>
 
         {/* Bottom gradient fade */}

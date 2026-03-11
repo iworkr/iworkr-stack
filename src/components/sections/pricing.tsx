@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { BorderBeam } from "@/components/magicui/border-beam";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/fade-in";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
@@ -54,12 +55,14 @@ export function Pricing() {
 
   return (
     <Section id="pricing" className="overflow-hidden">
-      {/* Subtle neutral glow */}
+      {/* Subtle noise texture */}
+      <div className="stealth-noise" />
+      {/* Soft emerald atmospheric glow */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(255, 255, 255, 0.012) 0%, transparent 70%)",
+            "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(16, 185, 129, 0.015) 0%, transparent 70%)",
         }}
       />
 
@@ -113,18 +116,31 @@ export function Pricing() {
               transition={{ duration: 0.2 }}
               className={`relative flex h-full flex-col rounded-xl border p-6 md:p-8 ${
                 plan.highlighted
-                  ? "border-white/[0.08] bg-[var(--subtle-bg)]"
+                  ? "border-emerald-500/15 bg-[var(--subtle-bg)]"
                   : "border-[var(--card-border)] bg-[var(--card-bg)]"
               }`}
+              style={plan.highlighted ? { boxShadow: "0 0 40px -12px rgba(16,185,129,0.08)" } : undefined}
             >
               {/* Top glow for highlighted — Signal Green accent */}
               {plan.highlighted && (
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                <>
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+                  <BorderBeam
+                    size={100}
+                    duration={10}
+                    colorFrom="#10B981"
+                    colorTo="#059669"
+                    borderWidth={1}
+                  />
+                </>
               )}
 
               {/* Badge */}
               {plan.badge && (
-                <span className="mb-4 inline-block w-fit rounded-full bg-[var(--subtle-bg-hover)] px-3 py-1 text-[10px] font-medium text-[var(--text-heading)]">
+                <span
+                  className="mb-4 inline-block w-fit rounded-full px-3 py-1 text-[10px] font-medium text-emerald-300/80"
+                  style={{ backgroundColor: "rgba(16, 185, 129, 0.06)" }}
+                >
                   {plan.badge}
                 </span>
               )}
