@@ -484,8 +484,18 @@ export function getPendingCount(): number {
   return teamMembers.filter((m) => m.status === "pending").length;
 }
 
-export function getRoleLabel(roleId: RoleId): string {
-  return roleDefinitions.find((r) => r.id === roleId)?.label || roleId;
+export function getRoleLabel(roleId: RoleId, industryType?: "trades" | "care"): string {
+  const label = roleDefinitions.find((r) => r.id === roleId)?.label || roleId;
+  if (industryType === "care") {
+    const careRoleMap: Record<string, string> = {
+      "Senior Tech": "Senior Support Worker",
+      Technician: "Support Worker",
+      Apprentice: "Trainee",
+      Subcontractor: "Agency Worker",
+    };
+    return careRoleMap[label] ?? label;
+  }
+  return label;
 }
 
 export function getRoleColor(roleId: RoleId): string {
@@ -505,5 +515,20 @@ export const permissionModules: { id: PermissionModule; label: string }[] = [
   { id: "settings", label: "Settings" },
   { id: "integrations", label: "Integrations" },
 ];
+
+/** Returns permission modules with labels translated for care sector. */
+export function getPermissionModules(industryType?: "trades" | "care"): typeof permissionModules {
+  if (industryType !== "care") return permissionModules;
+  const careMap: Record<string, string> = {
+    Jobs: "Shifts",
+    Clients: "Participants",
+    Schedule: "Roster",
+    Team: "Support Team",
+  };
+  return permissionModules.map((m) => ({
+    ...m,
+    label: careMap[m.label] ?? m.label,
+  }));
+}
 
 export const permissionActions: PermissionAction[] = ["view", "create", "edit", "delete", "export"];

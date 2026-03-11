@@ -32,6 +32,7 @@ class Workspace {
   final DateTime? joinedAt;
   final Map<String, dynamic>? settings;
   final String brandColorHex;
+  final String industryType; // 'trades' or 'care' — Project Nightingale
 
   const Workspace({
     required this.organizationId,
@@ -47,6 +48,7 @@ class Workspace {
     this.settings,
     // Default brand color (emerald green); overridden by workspace settings
     this.brandColorHex = '#10B981',
+    this.industryType = 'trades',
   });
 
   String get initials {
@@ -59,6 +61,7 @@ class Workspace {
 
   bool get isOwner => role == 'owner';
   bool get isAdmin => role == 'admin' || role == 'owner';
+  bool get isCare => industryType == 'care';
 
   factory Workspace.fromJson(Map<String, dynamic> json) {
     final org = json['organizations'] as Map<String, dynamic>? ?? {};
@@ -77,6 +80,7 @@ class Workspace {
       settings: org['settings'] as Map<String, dynamic>?,
       // Default brand color (emerald green); overridden by workspace settings
       brandColorHex: org['brand_color_hex'] as String? ?? '#10B981',
+      industryType: org['industry_type'] as String? ?? 'trades',
     );
   }
 }

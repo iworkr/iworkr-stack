@@ -43,6 +43,12 @@ import 'package:iworkr_mobile/features/hr/screens/time_clock_screen.dart';
 import 'package:iworkr_mobile/features/hr/screens/leave_request_screen.dart';
 import 'package:iworkr_mobile/features/assets/screens/asset_vault_screen.dart';
 import 'package:iworkr_mobile/features/assets/screens/asset_detail_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/care_hub_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/credentials_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/medications_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/incidents_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/observations_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/progress_notes_screen.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/widgets/shell_scaffold.dart';
 
@@ -475,6 +481,55 @@ final routerProvider = Provider<GoRouter>((ref) {
             transitionsBuilder: _slideUpTransition,
           );
         },
+      ),
+      // ── Care Sector Routes (Project Nightingale) ────────
+      GoRoute(
+        path: '/care',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const CareHubScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/credentials',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const CredentialsScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/medications',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const MedicationsScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/incidents',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const IncidentsScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/observations',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const ObservationsScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/progress-notes',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const ProgressNotesScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
       ),
       GoRoute(
         path: '/stealth',

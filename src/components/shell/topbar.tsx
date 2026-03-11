@@ -27,27 +27,37 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { Shimmer } from "@/components/ui/shimmer";
 import { DesktopUpdateIndicator } from "@/lib/desktop/desktop-update-indicator";
+import { translateLabel, type IndustryType } from "@/lib/industry-lexicon";
 
-function getBreadcrumbs(pathname: string, companyName: string) {
+function getBreadcrumbs(pathname: string, companyName: string, industryType: IndustryType = "trades") {
   const segments = pathname.split("/").filter(Boolean);
   const crumbs = companyName
     ? [{ label: companyName, href: "/dashboard" }]
     : [];
 
+  const t = (key: string) => translateLabel(key, industryType);
+
   const labelMap: Record<string, string> = {
     dashboard: "Dashboard",
     inbox: "Inbox",
     messages: "Messages",
-    jobs: "My Jobs",
-    schedule: "Schedule",
-    clients: "Clients",
+    jobs: t("My Jobs"),
+    schedule: t("Schedule"),
+    clients: t("Clients"),
     finance: "Finance",
     settings: "Settings",
     assets: "Assets",
     forms: "Forms",
-    team: "Team",
+    team: t("Team"),
     automations: "Automations",
     integrations: "Integrations",
+    dispatch: t("Dispatch"),
+    crm: t("Sales Pipeline"),
+    credentials: "Credentials",
+    care: "Care",
+    medications: "Medications",
+    incidents: "Incidents",
+    observations: "Observations",
   };
 
   for (let i = 0; i < segments.length; i++) {
@@ -428,7 +438,8 @@ export function Topbar() {
   const onboardingName = useOnboardingStore((s) => s.companyName);
   const { currentOrg } = useAuthStore();
   const companyName = currentOrg?.name || onboardingName || "";
-  const breadcrumbs = getBreadcrumbs(pathname, companyName);
+  const industryType = ((currentOrg as Record<string, unknown> | null)?.industry_type === "care" ? "care" : "trades") as IndustryType;
+  const breadcrumbs = getBreadcrumbs(pathname, companyName, industryType);
 
   const [wsOpen, setWsOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);

@@ -20,6 +20,8 @@ import {
   type ScheduleEvent,
 } from "@/app/actions/schedule";
 import { useToastStore } from "@/components/app/action-toast";
+import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/lib/auth-store";
 
 export type ViewScale = "day" | "week" | "month";
 
@@ -448,6 +450,50 @@ export const useScheduleStore = create<ScheduleState>()(
 
     const startISO = decimalHourToISO(selectedDate, snappedHour);
     const endISO = decimalHourToISO(selectedDate, snappedHour + duration);
+
+    // ─── Nightingale: Credential Hard Gate ────────────────────
+    // For care organizations, validate that the worker has all required
+    // credentials before allowing the shift assignment.
+    try {
+      const currentOrg = useAuthStore.getState().currentOrg as Record<string, unknown> | null;
+      if (currentOrg?.industry_type === "care") {
+        const supabase = createClient();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        if (token) {
+          const validateRes = await supabase.functions.invoke("validate-schedule", {
+            body: {
+              organization_id: orgId,
+              worker_id: technicianId,
+            },
+          });
+
+          if (validateRes.error || (validateRes.data && !validateRes.data.valid)) {
+            const errorData = validateRes.data || {};
+            const issues = errorData.issues || [];
+            const issueList = issues
+              .map((i: { credential_name: string; status: string }) => `• ${i.credential_name} (${i.status})`)
+              .join("\n");
+            const techName = get().technicians.find((t) => t.id === technicianId)?.name || "Worker";
+            showToast(
+              `⛔ Compliance Block: ${techName} cannot be assigned to "${job.title}". ${issues.length} credential issue(s):\n${issueList}`,
+              "error"
+            );
+            return;
+          }
+        }
+      }
+    } catch (credErr) {
+      // If validation service is unreachable, log but don't block for trades
+      const currentOrg = useAuthStore.getState().currentOrg as Record<string, unknown> | null;
+      if (currentOrg?.industry_type === "care") {
+        console.error("[Schedule] Credential validation failed:", credErr);
+        showToast("⚠ Unable to verify worker credentials. Please try again.", "error");
+        return;
+      }
+    }
+    // ────────────────────────────────────────────────────────────
 
     // Optimistic: create a temp block and remove from backlog
     const tempBlock: ScheduleBlock = {

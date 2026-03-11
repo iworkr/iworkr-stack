@@ -133,6 +133,10 @@ const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string }> = {
     subject: "⚠️ COMPLIANCE: Job {{job.id}} started without SWMS",
     body: "Technician {{tech.name}} has started Job {{job.id}} without a signed Safe Work Method Statement. Please review immediately.",
   },
+  credential_expiry_warning: {
+    subject: "⚠️ Action Required: {{credential_name}} expires on {{expiry_date}}",
+    body: "Hi {{worker_name}},\n\nYour credential \"{{credential_name}}\" ({{credential_type}}) is expiring in {{days_remaining}} days on {{expiry_date}}.\n\nPlease upload an updated certificate before the expiry date to maintain your compliance status and continue being assigned to shifts.\n\nYou can update your credential in the Team → Credentials section of your iWorkr dashboard.",
+  },
 };
 
 // ── HTML Email Builder ───────────────────────────────────────────

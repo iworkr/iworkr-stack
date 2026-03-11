@@ -61,6 +61,39 @@
 - **Consequences**: All new UI must use CSS variable tokens from globals.css. Hardcoded hex colors are a blocking review issue.
 - **Owner**: Design System Team
 
+### 2026-03-12 — Project Nightingale Phase 2: Clinical Safety & Health Intelligence
+
+- **Decision**: Implement eMAR (Electronic Medication Administration Records), Incident Reporting & Restrictive Practice governance, and Health Observations telemetry.
+- **Why**: Phase 1 delivered workforce compliance and participant intake. Phase 2 delivers the clinical safety layer required for NDIS Quality & Safeguards Commission compliance — medication tracking, incident management, and health monitoring.
+- **What changed (Phase 2)**:
+  - `participant_medications` table with prescription profiles, PRN flags, and time slots
+  - `medication_administration_records` table (eMAR) with outcome tracking and PRN effectiveness follow-ups
+  - `incidents` table with category/severity/status enums, witnesses, and photo evidence
+  - `restrictive_practices` table linked to incidents with authorization and debrief tracking
+  - `health_observations` table with 15 observation types (BP, glucose, heart rate, seizure, mood, etc.)
+  - Zustand stores: `medications-store.ts`, `incidents-store.ts` with CRUD and filtering
+  - Care-sector nav items (Medications, Incidents, Observations) gated by `industry_type === 'care'`
+  - Full dashboard pages at `/dashboard/care/medications`, `/dashboard/care/incidents`, `/dashboard/care/observations`
+- **All 6 migrations (065-067) applied to production Supabase with RLS policies**
+- **Consequences**: Care orgs see 3 new nav items and can track medications, incidents, and health observations. Trades orgs see zero changes.
+- **Owner**: Architecture
+
+### 2026-03-12 — Project Nightingale: NDIS & Aged Care Sector Expansion
+
+- **Decision**: Implement an "Industry Toggle" architecture that morphs iWorkr from a Trades OS into a Care OS via `organizations.industry_type` column and a nomenclature abstraction layer.
+- **Why**: The field service dispatch model (worker → location → task → bill) maps directly to community care. Care providers use fragmented tools (rostering app + paper medication binders + Excel budgets). iWorkr can capture this market by adding a configuration state, not a separate app.
+- **What changed (Phase 1)**:
+  - `industry_type` column on `organizations` table ('trades' | 'care')
+  - `useIndustryLexicon()` hook replaces all hardcoded labels (Jobs→Shifts, Clients→Participants, etc.)
+  - `worker_credentials` table with scheduling "hard gate" — expired credentials block shift assignment
+  - `participant_profiles`, `service_agreements`, `progress_notes` tables for care-specific data
+  - `validate-schedule` Edge Function enforces credential compliance before scheduling
+  - Credential expiry warnings via existing `mail_queue` pipeline
+- **Phases planned**: Phase 2 (eMAR, Incidents), Phase 3 (NDIS Budgets, PRODA Claims), Phase 4 (Quality Automation)
+- **Consequences**: All new UI labels must go through the lexicon system. Care-specific features gated behind `isCare` checks. Zero regression for existing trades workspaces — `industry_type` defaults to 'trades'.
+- **Reference**: `docs/PRD-Nightingale.md`
+- **Owner**: Architecture
+
 ### 2026-02-15 — Zustand for client state management
 - **Decision**: Use Zustand for all client-side state management on web.
 - **Why**: Minimal API, excellent TypeScript support, no boilerplate, works well with React 19. Simpler than Redux for our use case.

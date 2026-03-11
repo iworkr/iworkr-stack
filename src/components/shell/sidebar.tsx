@@ -24,6 +24,9 @@ import {
   Bot,
   Smartphone,
   Map,
+  Pill,
+  AlertTriangle,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -42,25 +45,42 @@ import { useBillingStore } from "@/lib/billing-store";
 import { createClient } from "@/lib/supabase/client";
 import { ProBadge } from "@/components/monetization/pro-badge";
 import { roleDefinitions, type RoleId, type PermissionModule } from "@/lib/team-data";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Data ─────────────────────────────────────────────── */
 
 const navItems = [
-  { id: "nav_dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", shortcut: "G D" },
-  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
-  { id: "nav_jobs", label: "My Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
-  { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
-  { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P" },
-  { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
-  { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R" },
-  { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
-  { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A" },
-  { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
-  { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "G T" },
-  { id: "nav_automations", label: "Automations", icon: Workflow, href: "/dashboard/automations", shortcut: "G W" },
-  { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations" },
-  { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent" },
+  { id: "nav_dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", shortcut: "G D", careOnly: false },
+  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I", careOnly: false },
+  { id: "nav_jobs", label: "My Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J", careOnly: false },
+  { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S", careOnly: false },
+  { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P", careOnly: false },
+  { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C", careOnly: false },
+  { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R", careOnly: false },
+  { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F", careOnly: false },
+  // ─── Care Sector (Nightingale) ─────────────────────
+  { id: "nav_medications", label: "Medications", icon: Pill, href: "/dashboard/care/medications", careOnly: true },
+  { id: "nav_incidents", label: "Incidents", icon: AlertTriangle, href: "/dashboard/care/incidents", careOnly: true },
+  { id: "nav_observations", label: "Observations", icon: Activity, href: "/dashboard/care/observations", careOnly: true },
+  // ─── General ──────────────────────────────────────
+  { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A", careOnly: false },
+  { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms", careOnly: false },
+  { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "G T", careOnly: false },
+  { id: "nav_automations", label: "Automations", icon: Workflow, href: "/dashboard/automations", shortcut: "G W", careOnly: false },
+  { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations", careOnly: false },
+  { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent", careOnly: false },
 ];
+
+/**
+ * Returns nav items with labels translated through the industry lexicon.
+ * For trades orgs, labels pass through unchanged and care-only items are hidden.
+ */
+function useTranslatedNavItems() {
+  const { t, isCare } = useIndustryLexicon();
+  return navItems
+    .filter((item) => !item.careOnly || isCare)
+    .map((item) => ({ ...item, label: t(item.label) }));
+}
 
 type SidebarTeamMember = { name: string; initials: string; status: "online" | "away"; role: string };
 
@@ -219,7 +239,8 @@ export function Sidebar() {
     nav_integrations: "integrations",
     nav_ai_agent: "integrations",
   };
-  const visibleNavItems = navItems.filter((item) => {
+  const translatedNavItems = useTranslatedNavItems();
+  const visibleNavItems = translatedNavItems.filter((item) => {
     const module = navModuleMap[item.id];
     if (!module) return true;
     return roleDef?.permissions[module]?.includes("view") ?? false;

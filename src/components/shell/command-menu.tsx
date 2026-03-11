@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useShellStore } from "@/lib/shell-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Commands ─────────────────────────────────────────── */
 
@@ -44,6 +45,12 @@ const commands = [
   { id: "nav-settings", label: "Go to Settings", icon: Settings, shortcut: "⌘,", group: "Navigation", href: "/settings" },
 ];
 
+/** Returns commands with labels translated through the industry lexicon. */
+function useTranslatedCommands() {
+  const { t } = useIndustryLexicon();
+  return commands.map((cmd) => ({ ...cmd, label: t(cmd.label) }));
+}
+
 export function CommandMenu() {
   const router = useRouter();
   const { commandMenuOpen, setCommandMenuOpen, setCreateClientModalOpen, setCreateInvoiceModalOpen, setCreateJobModalOpen } = useShellStore();
@@ -52,7 +59,8 @@ export function CommandMenu() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const filtered = commands.filter(
+  const translatedCommands = useTranslatedCommands();
+  const filtered = translatedCommands.filter(
     (cmd) =>
       cmd.label.toLowerCase().includes(search.toLowerCase()) ||
       cmd.group.toLowerCase().includes(search.toLowerCase())

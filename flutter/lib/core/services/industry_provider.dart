@@ -1,0 +1,70 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
+
+// ═══════════════════════════════════════════════════════════
+// ── Industry Toggle & Nomenclature Layer ─────────────────
+// ═══════════════════════════════════════════════════════════
+//
+// Project Nightingale: Morphs iWorkr from trades-only to
+// multi-sector by translating UI labels and gating features
+// based on organization.industry_type.
+//
+// For "trades" orgs, this is a no-op pass-through.
+// For "care" orgs, labels are translated and care features unlocked.
+
+/// The industry type for the current organization
+final industryTypeProvider = FutureProvider<String>((ref) async {
+  final orgId = await ref.watch(organizationIdProvider.future);
+  if (orgId == null) return 'trades';
+
+  final data = await SupabaseService.client
+      .from('organizations')
+      .select('industry_type')
+      .eq('id', orgId)
+      .maybeSingle();
+
+  return data?['industry_type'] as String? ?? 'trades';
+});
+
+/// Whether the current org is a care org
+final isCareProvider = Provider<bool>((ref) {
+  return ref.watch(industryTypeProvider).valueOrNull == 'care';
+});
+
+// ── Nomenclature Mapping ────────────────────────────────
+
+/// Care-sector label overrides (trades term → care term)
+const _careLexicon = <String, String>{
+  'Job': 'Shift',
+  'Jobs': 'Shifts',
+  'Client': 'Participant',
+  'Clients': 'Participants',
+  'Technician': 'Support Worker',
+  'Technicians': 'Support Workers',
+  'Quote': 'Service Quote',
+  'Quotes': 'Service Quotes',
+  'Schedule': 'Roster',
+  'Invoice': 'Claim',
+  'Invoices': 'Claims',
+  'Site': 'Location',
+  'Work Order': 'Support Plan',
+  'Dispatch': 'Coordination',
+  'Pipeline': 'Shift Board',
+  'Backlog': 'Unrostered',
+  'Equipment': 'Aids & Equipment',
+  'Fleet': 'Transport',
+  'Inventory': 'Supplies',
+};
+
+/// Translate a UI label based on org industry type
+String translateLabel(String label, {bool isCare = false}) {
+  if (!isCare) return label;
+  return _careLexicon[label] ?? label;
+}
+
+/// Riverpod-powered label translator
+final labelTranslatorProvider = Provider<String Function(String)>((ref) {
+  final isCare = ref.watch(isCareProvider);
+  return (label) => translateLabel(label, isCare: isCare);
+});

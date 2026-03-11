@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -21,37 +22,23 @@ class ShellScaffold extends ConsumerWidget {
   final Widget child;
   const ShellScaffold({super.key, required this.child});
 
-  static const _allTabs = [
-    _DockTab(
-      routePrefix: '/',
-      icon: PhosphorIconsLight.houseLine,
-      activeIcon: PhosphorIconsFill.houseLine,
-      label: 'Home',
-    ),
-    _DockTab(
-      routePrefix: '/jobs',
-      icon: PhosphorIconsLight.briefcase,
-      activeIcon: PhosphorIconsFill.briefcase,
-      label: 'Jobs',
-    ),
-    _DockTab(
-      routePrefix: '/schedule',
-      icon: PhosphorIconsLight.calendarBlank,
-      activeIcon: PhosphorIconsFill.calendarBlank,
-      label: 'Timeline',
-    ),
-    _DockTab(
-      routePrefix: '/chat',
-      icon: PhosphorIconsLight.chatCircle,
-      activeIcon: PhosphorIconsFill.chatCircle,
-      label: 'Comms',
-    ),
-    _DockTab(
-      routePrefix: '/profile',
-      icon: PhosphorIconsLight.userCircle,
-      activeIcon: PhosphorIconsFill.userCircle,
-      label: 'Profile',
-    ),
+  /// Trades tabs (default)
+  static const _tradesTabs = [
+    _DockTab(routePrefix: '/', icon: PhosphorIconsLight.houseLine, activeIcon: PhosphorIconsFill.houseLine, label: 'Home'),
+    _DockTab(routePrefix: '/jobs', icon: PhosphorIconsLight.briefcase, activeIcon: PhosphorIconsFill.briefcase, label: 'Jobs'),
+    _DockTab(routePrefix: '/schedule', icon: PhosphorIconsLight.calendarBlank, activeIcon: PhosphorIconsFill.calendarBlank, label: 'Timeline'),
+    _DockTab(routePrefix: '/chat', icon: PhosphorIconsLight.chatCircle, activeIcon: PhosphorIconsFill.chatCircle, label: 'Comms'),
+    _DockTab(routePrefix: '/profile', icon: PhosphorIconsLight.userCircle, activeIcon: PhosphorIconsFill.userCircle, label: 'Profile'),
+  ];
+
+  /// Care tabs (Project Nightingale) — replaces "Jobs" label with "Shifts"
+  /// and swaps Chat with Care Hub for quick access
+  static const _careTabs = [
+    _DockTab(routePrefix: '/', icon: PhosphorIconsLight.houseLine, activeIcon: PhosphorIconsFill.houseLine, label: 'Home'),
+    _DockTab(routePrefix: '/jobs', icon: PhosphorIconsLight.briefcase, activeIcon: PhosphorIconsFill.briefcase, label: 'Shifts'),
+    _DockTab(routePrefix: '/schedule', icon: PhosphorIconsLight.calendarBlank, activeIcon: PhosphorIconsFill.calendarBlank, label: 'Roster'),
+    _DockTab(routePrefix: '/care', icon: PhosphorIconsLight.heartbeat, activeIcon: PhosphorIconsFill.heartbeat, label: 'Care'),
+    _DockTab(routePrefix: '/profile', icon: PhosphorIconsLight.userCircle, activeIcon: PhosphorIconsFill.userCircle, label: 'Profile'),
   ];
 
   /// Derive the active tab index from the current route URI.
@@ -62,6 +49,12 @@ class ShellScaffold extends ConsumerWidget {
       if (location.startsWith(prefix)) return i;
     }
     if (location.startsWith('/inbox')) return 0;
+    // Care sub-routes → highlight Care tab
+    if (location.startsWith('/care')) {
+      for (int i = 0; i < tabs.length; i++) {
+        if (tabs[i].routePrefix == '/care') return i;
+      }
+    }
     return 0;
   }
 
@@ -69,9 +62,10 @@ class ShellScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.toString();
     final roleAsync = ref.watch(userRoleProvider);
+    final isCare = ref.watch(isCareProvider);
 
-    // Resolve the visible tabs based on clearance
-    final tabs = _allTabs; // Base tabs always visible
+    // Use care-specific tabs for care orgs (Project Nightingale)
+    final tabs = isCare ? _careTabs : _tradesTabs;
     final current = _resolveIndex(location, tabs);
 
     return Scaffold(

@@ -13,6 +13,8 @@ import { useFormsStore } from "@/lib/forms-store";
 import { useTeamStore } from "@/lib/team-store";
 import { useIntegrationsStore } from "@/lib/integrations-store";
 import { useMessengerStore } from "@/lib/stores/messenger-store";
+import { useCredentialsStore } from "@/lib/credentials-store";
+import { useIncidentsStore } from "@/lib/incidents-store";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useFleetTracking } from "@/lib/hooks/use-fleet-tracking";
 
@@ -46,6 +48,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     useTeamStore.getState().loadFromServer(orgId);
     useIntegrationsStore.getState().loadFromServer(orgId);
     useMessengerStore.getState().loadChannels(orgId);
+    useCredentialsStore.getState().loadFromServer(orgId);
+    useIncidentsStore.getState().loadFromServer(orgId);
   }, [orgId]);
 
   // Realtime subscription for notifications (skip when Supabase env invalid to avoid WS errors)
@@ -361,6 +365,57 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       supabase.removeChannel(integrationsChannel);
+    };
+  }, [orgId]);
+
+  // Realtime subscription for worker_credentials (compliance updates)
+  useEffect(() => {
+    if (!isSupabaseConfigured || !orgId) return;
+
+    const supabase = createClient();
+
+    const credentialsChannel = supabase
+      .channel(`credentials:${orgId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "worker_credentials",
+          filter: `organization_id=eq.${orgId}`,
+        },
+        (payload) => {
+          useCredentialsStore.getState().handleRealtimeInsert(payload.new as unknown as import("@/lib/credentials-store").WorkerCredential);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "worker_credentials",
+          filter: `organization_id=eq.${orgId}`,
+        },
+        (payload) => {
+          useCredentialsStore.getState().handleRealtimeUpdate(payload.new as unknown as import("@/lib/credentials-store").WorkerCredential);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "worker_credentials",
+          filter: `organization_id=eq.${orgId}`,
+        },
+        (payload) => {
+          useCredentialsStore.getState().handleRealtimeDelete((payload.old as unknown as { id: string }).id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(credentialsChannel);
     };
   }, [orgId]);
 

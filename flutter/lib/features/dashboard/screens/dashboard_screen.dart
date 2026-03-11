@@ -11,9 +11,12 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/services/schedule_provider.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
+import 'package:iworkr_mobile/core/services/credentials_provider.dart';
+import 'package:iworkr_mobile/core/services/incidents_provider.dart';
 import 'package:iworkr_mobile/core/database/sync_engine.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -96,6 +99,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           _TriageCard(ref: ref),
                           const SizedBox(height: 16),
                           _QuickActionsRow(),
+                          // Project Nightingale: Care compliance summary
+                          _CareComplianceBanner(ref: ref),
                         ],
                       ),
                     ),
@@ -1003,6 +1008,113 @@ class _DarkEarthMapPainter extends CustomPainter {
 // ═══════════════════════════════════════════════════════════
 // ── Wormhole Transition (Workspace Switch) ──────────────
 // ═══════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// ── Care Compliance Banner (Project Nightingale) ────────
+// ═══════════════════════════════════════════════════════════
+//
+// Shows a compact compliance + care summary on the dashboard
+// ONLY for care-sector organizations. Hidden for trades orgs.
+
+class _CareComplianceBanner extends ConsumerWidget {
+  final WidgetRef ref;
+  const _CareComplianceBanner({required this.ref});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCare = ref.watch(isCareProvider);
+    if (!isCare) return const SizedBox.shrink();
+
+    final c = context.iColors;
+    final credStats = ref.watch(credentialStatsProvider);
+    final incStats = ref.watch(incidentStatsProvider);
+
+    final hasAlerts = credStats.expired > 0 || credStats.expiring > 0 || incStats.critical > 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push('/care');
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: hasAlerts ? ObsidianTheme.amber.withValues(alpha: 0.3) : c.border,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(PhosphorIconsLight.heartbeat, size: 20, color: ObsidianTheme.emerald),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Care Overview', style: GoogleFonts.inter(
+                      fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary,
+                    )),
+                  ),
+                  Icon(PhosphorIconsLight.caretRight, size: 16, color: c.textTertiary),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _MiniStat(
+                    label: 'Credentials',
+                    value: '${credStats.verified}/${credStats.total}',
+                    color: credStats.expired > 0 ? ObsidianTheme.rose : ObsidianTheme.emerald,
+                  ),
+                  const SizedBox(width: 16),
+                  _MiniStat(
+                    label: 'Open Incidents',
+                    value: '${incStats.open}',
+                    color: incStats.critical > 0 ? ObsidianTheme.rose : ObsidianTheme.amber,
+                  ),
+                  if (credStats.expiring > 0) ...[
+                    const SizedBox(width: 16),
+                    _MiniStat(
+                      label: 'Expiring',
+                      value: '${credStats.expiring}',
+                      color: ObsidianTheme.amber,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(delay: 600.ms, duration: 400.ms)
+        .moveY(begin: 12, delay: 600.ms, duration: 400.ms, curve: Curves.easeOutQuart);
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _MiniStat({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: color)),
+        Text(label, style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
+      ],
+    );
+  }
+}
 
 class WormholeTransition extends StatefulWidget {
   final bool trigger;
