@@ -50,14 +50,14 @@ function InboxVisual() {
           transition={{ delay: i * 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="flex items-center gap-3 rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-3"
         >
-          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+          <div className="h-2 w-2 rounded-full bg-zinc-400" />
           <div className="flex-1">
             <div className="text-xs font-medium text-[var(--text-heading)]">{item.from}</div>
             <div className="text-[10px] text-[var(--text-dim)]">{item.type}</div>
           </div>
           <span className="text-[10px] text-[var(--text-dim)]">{item.time}</span>
           {item.count && (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/12 text-[9px] text-emerald-600 dark:text-emerald-400">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/[0.06] text-[9px] text-zinc-400">
               {item.count}
             </span>
           )}
@@ -329,7 +329,7 @@ function MapVisual() {
 
       <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--text-muted)]">
         <span>Optimized route: 3 jobs</span>
-        <span className="text-emerald-600 dark:text-emerald-400">Saving 47 min</span>
+        <span className="text-zinc-400">Saving 47 min</span>
       </div>
     </div>
   );
@@ -351,9 +351,9 @@ function PaymentVisual() {
             whileInView={{ scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.5, type: "spring" }}
-            className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20"
+            className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.06]"
           >
-            <CreditCard size={20} className="text-emerald-500" />
+            <CreditCard size={20} className="text-zinc-300" />
           </motion.div>
           <div className="text-xs text-[var(--text-muted)]">Payment Successful</div>
           <div className="mt-1 text-2xl font-medium tracking-tight text-[var(--text-primary)]">
@@ -406,8 +406,8 @@ export function Workflow() {
 
   return (
     <Section id="workflow" className="overflow-hidden">
-      {/* Line grid texture */}
-      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-50" />
+      {/* Very subtle grid — barely visible */}
+      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.015]" />
       {/* Radial fade overlay */}
       <div
         className="pointer-events-none absolute inset-0"

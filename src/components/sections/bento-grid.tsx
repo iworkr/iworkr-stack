@@ -78,15 +78,14 @@ function SchedulerVisual() {
   ];
 
   const colorMap: Record<string, string> = {
-    emerald: "border-[rgba(16,185,129,0.2)] text-[var(--text-heading)]",
-    green: "border-[rgba(16,185,129,0.2)] text-[var(--text-heading)]",
+    emerald: "border-white/[0.06] text-[var(--text-heading)]",
+    green: "border-white/[0.06] text-[var(--text-heading)]",
     amber: "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300",
     violet: "bg-[var(--subtle-bg)] border-[var(--card-border)] text-[var(--text-muted)]",
     zinc: "bg-[var(--subtle-bg)] border-[var(--card-border)] text-[var(--text-muted)] italic",
   };
 
-  /* Emerald/green rows get a ghost brand tint via inline style below */
-  const brandTintBg = "rgba(16, 185, 129, 0.06)";
+  const brandTintBg = "rgba(255, 255, 255, 0.03)";
 
   return (
     <div className="mt-4 space-y-1.5">
@@ -134,9 +133,9 @@ function MobileVisual() {
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
             className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: "rgba(16, 185, 129, 0.12)" }}
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)" }}
           >
-            <Check size={24} className="text-brand" />
+            <Check size={24} className="text-zinc-300" />
           </motion.div>
           <span className="text-[10px] font-medium text-[var(--text-heading)]">
             Tap to Clock In
@@ -192,8 +191,8 @@ function AIWaveformVisual() {
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.6 }}
-        className="ml-auto rounded-lg rounded-br-none px-3 py-2 text-xs text-brand"
-        style={{ backgroundColor: "rgba(16, 185, 129, 0.08)" }}
+        className="ml-auto rounded-lg rounded-br-none px-3 py-2 text-xs text-zinc-300"
+        style={{ backgroundColor: "rgba(255, 255, 255, 0.04)" }}
       >
         Booking set for Tuesday at 9:00 AM
       </motion.div>
@@ -268,8 +267,8 @@ function QuotesVisual() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="rounded-md px-3 py-1 text-[10px] font-medium text-brand"
-            style={{ backgroundColor: "rgba(16, 185, 129, 0.12)" }}
+            className="rounded-md px-3 py-1 text-[10px] font-medium text-emerald-400"
+            style={{ backgroundColor: "rgba(16, 185, 129, 0.08)" }}
           >
             Accepted
           </motion.button>
@@ -304,7 +303,7 @@ function FinancialsVisual() {
           <div className="text-2xl font-medium tracking-tight text-[var(--text-primary)]">
             $127,400
           </div>
-          <div className="text-[10px] text-brand">+23% vs last month</div>
+          <div className="text-[10px] text-emerald-500/70">+23% vs last month</div>
         </div>
         <div className="flex gap-2">
           {["Xero", "Stripe", "QuickBooks"].map((label) => (
@@ -361,20 +360,14 @@ function FinancialsVisual() {
 export function BentoGrid() {
   return (
     <Section id="features" className="overflow-hidden">
-      {/* Line grid background */}
-      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.4]" />
-
-      {/* Atmospheric glow — emerald haze anchored top-center */}
+      {/* Subtle radial glow — neutral */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(16, 185, 129, 0.04) 0%, transparent 70%)",
+            "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255, 255, 255, 0.015) 0%, transparent 70%)",
         }}
       />
-
-      {/* Noise texture overlay */}
-      <div className="stealth-noise" />
 
       <FadeIn>
         <SectionHeader

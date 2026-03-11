@@ -61,15 +61,11 @@ function TestimonialCard({
         isCenter ? "opacity-100" : "opacity-50 scale-[0.97]"
       }`}
     >
-      {/* Noise grain on card */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-xl bg-noise opacity-[0.015] mix-blend-overlay"
-      />
 
       {/* Quote mark — editorial, oversized */}
       <span
         className="mb-3 block text-5xl font-medium leading-none"
-        style={{ color: "var(--brand)", opacity: 0.2 }}
+        style={{ color: "var(--text-dim)", opacity: 0.3 }}
       >
         &ldquo;
       </span>
@@ -82,10 +78,10 @@ function TestimonialCard({
       {/* Metric badge — brand ghost tint */}
       <div className="my-4">
         <span
-          className="inline-block rounded-full border px-3 py-1 text-[10px] font-medium text-brand"
+          className="inline-block rounded-full border px-3 py-1 text-[10px] font-medium text-zinc-300"
           style={{
-            borderColor: "rgba(16, 185, 129, 0.15)",
-            backgroundColor: "rgba(16, 185, 129, 0.06)",
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            backgroundColor: "rgba(255, 255, 255, 0.03)",
           }}
         >
           {testimonial.metric}
@@ -120,20 +116,14 @@ export function Testimonials() {
 
   return (
     <Section id="testimonials" className="overflow-hidden">
-      {/* Line grid texture */}
-      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.3]" />
-
-      {/* Atmospheric glow — subtle warmth */}
+      {/* Subtle neutral glow */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(16, 185, 129, 0.02) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255, 255, 255, 0.01) 0%, transparent 70%)",
         }}
       />
-
-      {/* Noise overlay */}
-      <div className="stealth-noise" />
 
       <FadeIn>
         <SectionHeader

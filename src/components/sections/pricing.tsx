@@ -54,20 +54,14 @@ export function Pricing() {
 
   return (
     <Section id="pricing" className="overflow-hidden">
-      {/* Line grid texture */}
-      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.4]" />
-
-      {/* Atmospheric emerald glow — anchored center */}
+      {/* Subtle neutral glow */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(16, 185, 129, 0.03) 0%, transparent 70%)",
+            "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(255, 255, 255, 0.012) 0%, transparent 70%)",
         }}
       />
-
-      {/* Noise overlay */}
-      <div className="stealth-noise" />
 
       <FadeIn>
         <SectionHeader
@@ -100,7 +94,7 @@ export function Pricing() {
             }`}
           >
             Yearly
-            <span className="ml-1.5 text-[10px] font-medium text-brand">
+            <span className="ml-1.5 text-[10px] font-medium text-emerald-500/60">
               Save 20%
             </span>
           </button>
@@ -119,27 +113,13 @@ export function Pricing() {
               transition={{ duration: 0.2 }}
               className={`relative flex h-full flex-col rounded-xl border p-6 md:p-8 ${
                 plan.highlighted
-                  ? "border-[rgba(16,185,129,0.2)] bg-[var(--subtle-bg)]"
+                  ? "border-white/[0.08] bg-[var(--subtle-bg)]"
                   : "border-[var(--card-border)] bg-[var(--card-bg)]"
               }`}
-              style={
-                plan.highlighted
-                  ? { boxShadow: "0 0 40px -12px rgba(16, 185, 129, 0.1), inset 0 1px 0 0 rgba(16, 185, 129, 0.1)" }
-                  : undefined
-              }
             >
               {/* Top glow for highlighted — Signal Green accent */}
               {plan.highlighted && (
-                <>
-                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--brand)] to-transparent opacity-40" />
-                  {/* Ghost emerald tint overlay */}
-                  <div
-                    className="pointer-events-none absolute inset-0 rounded-xl"
-                    style={{
-                      background: "radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.04) 0%, transparent 60%)",
-                    }}
-                  />
-                </>
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
               )}
 
               {/* Badge */}
@@ -181,7 +161,7 @@ export function Pricing() {
 
               {/* Trial badge */}
               {plan.hasFreeTrial && plan.ctaLabel !== "Contact sales" && (
-                <p className="mb-4 text-center text-[11px] text-brand/70">
+                <p className="mb-4 text-center text-[11px] text-zinc-500">
                   {plan.trialDays}-day free trial · No credit card upfront
                 </p>
               )}

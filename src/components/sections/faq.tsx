@@ -82,7 +82,6 @@ export function FAQ() {
   return (
     <Section id="faq" className="overflow-hidden">
       {/* Noise grain texture */}
-      <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.015] mix-blend-overlay" />
 
       <FadeIn>
         <SectionHeader

@@ -103,7 +103,6 @@ export function Navbar() {
                     background: "var(--brand)",
                     color: "#fff",
                     borderColor: "transparent",
-                    boxShadow: "var(--brand-glow-subtle)",
                   }}
                 >
                   Start free
@@ -157,7 +156,6 @@ export function Navbar() {
                     background: "var(--brand)",
                     color: "#fff",
                     borderColor: "transparent",
-                    boxShadow: "var(--brand-glow-subtle)",
                   }}
                 >
                   Start free trial

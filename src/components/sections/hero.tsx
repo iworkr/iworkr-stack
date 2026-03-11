@@ -73,29 +73,15 @@ export function Hero() {
 
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--background)] px-6 pt-24 pb-16">
-      {/* Atmospheric green glow at top */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[600px]"
-        style={{
-          background: `radial-gradient(ellipse at center top, rgba(16,185,129,0.03) 0%, transparent 50%)`,
-        }}
-      />
-
-      {/* Background radial glow */}
+      {/* Subtle radial glow — neutral, no green */}
       <div className="pointer-events-none absolute top-0 left-1/2 h-[800px] w-[1200px] -translate-x-1/2 -translate-y-1/4">
         <div
           className="absolute inset-0"
           style={{
-            background: `radial-gradient(ellipse at center, var(--glow-soft) 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse at center, rgba(255,255,255,0.015) 0%, transparent 70%)`,
           }}
         />
       </div>
-
-      {/* Grid pattern */}
-      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.03]" />
-
-      {/* Noise texture */}
-      <div className="stealth-noise" />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         {/* Announcement Pill */}
@@ -104,8 +90,8 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          <Badge glow className="mb-8 cursor-pointer hover:border-emerald-500/20">
-            <Sparkles size={14} className="text-emerald-500/70" />
+          <Badge glow className="mb-8 cursor-pointer hover:border-white/10">
+            <Sparkles size={14} className="text-zinc-400" />
             <span>New: AI Phone Agent for automatic dispatch</span>
             <ArrowRight size={12} className="text-[var(--text-muted)] transition-transform duration-200 group-hover:translate-x-0.5" />
           </Badge>
@@ -152,7 +138,7 @@ export function Hero() {
           className="flex items-center gap-4"
         >
           {isAuthenticated ? (
-            <SpotlightButton size="lg" href="/dashboard" className="bg-[var(--brand)] text-white border-transparent hover:bg-[var(--brand-hover)]" style={{ boxShadow: "0 0 24px -6px rgba(16,185,129,0.35)" }}>
+            <SpotlightButton size="lg" href="/dashboard" className="bg-[var(--brand)] text-white border-transparent hover:bg-[var(--brand-hover)]">
               <LayoutDashboard size={16} />
               Open Dashboard
             </SpotlightButton>
@@ -162,7 +148,6 @@ export function Hero() {
                 size="lg"
                 href="/auth"
                 className="bg-[var(--brand)] text-white border-transparent hover:bg-[var(--brand-hover)]"
-                style={{ boxShadow: "0 0 24px -6px rgba(16,185,129,0.35)" }}
               >
                 Start building free
                 <ArrowRight size={16} />
@@ -231,28 +216,12 @@ export function Hero() {
         className="relative mt-20 w-full max-w-5xl"
         style={{ perspective: "1200px" }}
       >
-        {/* Emerald glow behind mockup */}
-        <div
-          className="pointer-events-none absolute -inset-8 -top-12"
-          style={{
-            background: `radial-gradient(ellipse at center, rgba(16,185,129,0.06) 0%, transparent 60%)`,
-          }}
-        />
-
-        {/* Glow beneath */}
-        <div
-          className="absolute inset-x-0 -bottom-20 h-40"
-          style={{
-            background: `radial-gradient(ellipse at center, rgba(16,185,129,0.04) 0%, transparent 70%)`,
-          }}
-        />
-
         {/* The UI mockup */}
         <div
           className="relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--surface-1)] shadow-2xl"
           style={{
             transform: "perspective(1200px) rotateX(2deg)",
-            boxShadow: "0 25px 60px -12px rgba(0,0,0,0.6), 0 0 40px -15px rgba(16,185,129,0.08)",
+            boxShadow: "0 25px 60px -12px rgba(0,0,0,0.6)",
           }}
         >
           {/* Window Chrome */}
@@ -326,12 +295,12 @@ export function Hero() {
                             initial={{ opacity: 0, scaleX: 0 }}
                             animate={{ opacity: 1, scaleX: 1 }}
                             transition={{ delay: 2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="origin-left rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1.5"
+                            className="origin-left rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-1.5"
                           >
-                            <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <div className="text-[10px] font-medium text-zinc-200">
                               Water heater install
                             </div>
-                            <div className="text-[9px] text-emerald-600/60 dark:text-emerald-400/60">
+                            <div className="text-[9px] text-zinc-500">
                               Mike T. — 42 Oak Ave
                             </div>
                           </motion.div>
@@ -351,12 +320,12 @@ export function Hero() {
                             initial={{ opacity: 0, scaleX: 0 }}
                             animate={{ opacity: 1, scaleX: 1 }}
                             transition={{ delay: 2.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="origin-left rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1.5"
+                            className="origin-left rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-1.5"
                           >
-                            <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <div className="text-[10px] font-medium text-zinc-200">
                               Boiler service
                             </div>
-                            <div className="text-[9px] text-emerald-600/60 dark:text-emerald-400/60">
+                            <div className="text-[9px] text-zinc-500">
                               Sarah L. — 17 Pine Rd
                             </div>
                           </motion.div>
@@ -390,7 +359,7 @@ export function Hero() {
               </span>
               {[
                 { name: "Mike Thompson", status: "On job", color: "bg-emerald-500" },
-                { name: "Sarah Chen", status: "En route", color: "bg-emerald-400" },
+                { name: "Sarah Chen", status: "En route", color: "bg-zinc-400" },
                 { name: "James O'Brien", status: "Available", color: "bg-zinc-400" },
               ].map((person) => (
                 <div
