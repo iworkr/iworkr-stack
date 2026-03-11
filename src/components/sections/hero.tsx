@@ -8,8 +8,8 @@ import { useAuthStore } from "@/lib/auth-store";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Particles } from "@/components/magicui/particles";
-import { Globe } from "@/components/ui/globe";
-import type { COBEOptions } from "cobe";
+import createGlobe, { type COBEOptions } from "cobe";
+import { useEffect, useRef, useCallback } from "react";
 
 function AppleIcon({ className }: { className?: string }) {
   return (
@@ -56,6 +56,55 @@ function PlatformIcon({ type }: { type: string }) {
     default:
       return null;
   }
+}
+
+/* ── Hero Globe ──────────────────────────────────────── */
+
+function HeroGlobe({ config }: { config: COBEOptions }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const phiRef = useRef(0);
+
+  const onRender = useCallback((state: Record<string, unknown>) => {
+    phiRef.current += 0.005;
+    state.phi = phiRef.current;
+  }, []);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const globe = createGlobe(canvasRef.current, {
+      ...config,
+      width: 1200,
+      height: 1200,
+      onRender,
+    });
+
+    // Fade in
+    requestAnimationFrame(() => {
+      if (canvasRef.current) canvasRef.current.style.opacity = "1";
+    });
+
+    return () => globe.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div
+      className="pointer-events-none absolute left-1/2 top-[6%] z-[1] -translate-x-1/2 opacity-40"
+      style={{
+        width: "min(1000px, 95vw)",
+        height: "min(1000px, 95vw)",
+        maskImage: "radial-gradient(circle at 50% 40%, black 20%, transparent 65%)",
+        WebkitMaskImage: "radial-gradient(circle at 50% 40%, black 20%, transparent 65%)",
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        className="h-full w-full opacity-0 transition-opacity duration-1000"
+        style={{ opacity: 0 }}
+      />
+    </div>
+  );
 }
 
 const GLOBE_CONFIG: COBEOptions = {
@@ -123,16 +172,8 @@ export function Hero() {
       {/* Floating particles */}
       <Particles className="pointer-events-none absolute inset-0" quantity={40} staticity={40} ease={40} size={0.3} color="#10B981" />
 
-      {/* Globe — large, dark, behind everything */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-[10%] z-[1] h-[700px] w-[700px] -translate-x-1/2 opacity-[0.35] sm:h-[800px] sm:w-[800px] md:h-[900px] md:w-[900px] lg:h-[1000px] lg:w-[1000px]"
-        style={{
-          maskImage: "radial-gradient(circle at 50% 40%, black 20%, transparent 70%)",
-          WebkitMaskImage: "radial-gradient(circle at 50% 40%, black 20%, transparent 70%)",
-        }}
-      >
-        <Globe className="top-0" config={GLOBE_CONFIG} />
-      </div>
+      {/* Globe — large, dark, behind text and mockup */}
+      <HeroGlobe config={GLOBE_CONFIG} />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         {/* Announcement Pill */}
