@@ -2,19 +2,28 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
-import { Search, FileText, CalendarDays, Users, Receipt, X, SkipForward } from "lucide-react";
+import { Search, FileText, CalendarDays, Users, Receipt, SkipForward } from "lucide-react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { CheckmarkDraw } from "./spinner";
 
-const menuItems = [
+const tradesMenuItems = [
   { icon: FileText, label: "Create Job", shortcut: "C", highlight: true },
   { icon: CalendarDays, label: "Open Scheduler", shortcut: "S", highlight: false },
   { icon: Users, label: "View Clients", shortcut: "L", highlight: false },
   { icon: Receipt, label: "New Invoice", shortcut: "I", highlight: false },
 ];
 
+const careMenuItems = [
+  { icon: FileText, label: "Create Shift", shortcut: "C", highlight: true },
+  { icon: CalendarDays, label: "Open Roster", shortcut: "S", highlight: false },
+  { icon: Users, label: "View Participants", shortcut: "L", highlight: false },
+  { icon: Receipt, label: "New Invoice", shortcut: "I", highlight: false },
+];
+
 export function StepTraining() {
-  const { advanceStep, setCommandMenuCompleted } = useOnboardingStore();
+  const { advanceStep, setCommandMenuCompleted, industryType } = useOnboardingStore();
+  const isCare = industryType === "care";
+  const menuItems = isCare ? careMenuItems : tradesMenuItems;
   const [phase, setPhase] = useState<"prompt" | "menu" | "typing" | "success">(
     "prompt"
   );
@@ -49,7 +58,8 @@ export function StepTraining() {
         }
       }
     },
-    [phase]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [phase, menuItems.length]
   );
 
   useEffect(() => {
@@ -60,7 +70,7 @@ export function StepTraining() {
   // Simulate typing
   useEffect(() => {
     if (phase !== "typing") return;
-    const text = "Create Job";
+    const text = isCare ? "Create Shift" : "Create Job";
     let i = 0;
     const interval = setInterval(() => {
       if (i <= text.length) {
@@ -71,7 +81,7 @@ export function StepTraining() {
       }
     }, 60);
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [phase, isCare]);
 
   function openMenu() {
     setPhase("menu");
@@ -213,7 +223,7 @@ export function StepTraining() {
             </div>
 
             {/* Hint — tap or press Enter */}
-            {phase === "typing" && searchText === "Create Job" && (
+            {phase === "typing" && searchText === (isCare ? "Create Shift" : "Create Job") && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -228,7 +238,7 @@ export function StepTraining() {
                     to select
                   </span>
                   <span className="md:hidden">
-                    Tap &quot;Create Job&quot; above to continue
+                    Tap &quot;{isCare ? "Create Shift" : "Create Job"}&quot; above to continue
                   </span>
                 </span>
               </motion.div>
@@ -254,8 +264,8 @@ export function StepTraining() {
                 transition={{ duration: 1, repeat: 2 }}
                 className="absolute inset-0 rounded-full border border-white/20"
               />
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
-                <span className="text-emerald-400">
+              <div className={`flex h-16 w-16 items-center justify-center rounded-full ${isCare ? "bg-blue-500/20" : "bg-emerald-500/20"}`}>
+                <span className={isCare ? "text-blue-400" : "text-emerald-400"}>
                   <CheckmarkDraw size={32} />
                 </span>
               </div>

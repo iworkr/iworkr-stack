@@ -7,8 +7,9 @@ import { useOnboardingStore } from "@/lib/onboarding-store";
 import { inviteEmailSchema } from "@/lib/validation";
 
 export function StepTeam() {
-  const { teamInvites, addTeamInvite, removeTeamInvite, advanceStep } =
+  const { teamInvites, addTeamInvite, removeTeamInvite, advanceStep, industryType } =
     useOnboardingStore();
+  const isCare = industryType === "care";
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +80,7 @@ export function StepTeam() {
           transition={{ delay: 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="text-2xl font-medium tracking-tight text-zinc-100 md:text-3xl"
         >
-          Who is in the van with you?
+          {isCare ? "Who is on your care team?" : "Who is in the van with you?"}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -87,8 +88,9 @@ export function StepTeam() {
           transition={{ delay: 0.2, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="text-sm text-zinc-500"
         >
-          iWorkr runs better when the team is connected. Invite your admins or
-          field techs.
+          {isCare
+            ? "Invite your coordinators, support workers, and admin staff."
+            : "iWorkr runs better when the team is connected. Invite your admins or field techs."}
         </motion.p>
       </div>
 

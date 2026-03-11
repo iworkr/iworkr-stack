@@ -7,7 +7,8 @@ import { completeOnboarding, sendTeamInvites } from "@/app/actions/onboarding";
 import { useAuthStore } from "@/lib/auth-store";
 
 export function StepComplete() {
-  const { companyName, organizationId, teamInvites } = useOnboardingStore();
+  const { companyName, organizationId, teamInvites, industryType } = useOnboardingStore();
+  const isCare = industryType === "care";
   const { refreshOrganizations } = useAuthStore();
   const [entering, setEntering] = useState(false);
 
@@ -106,11 +107,11 @@ export function StepComplete() {
             <motion.span
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="absolute inline-flex h-full w-full rounded-full bg-emerald-500"
+              className={`absolute inline-flex h-full w-full rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}
             />
           </span>
-          <span className="font-mono text-xs tracking-wider text-emerald-400 uppercase">
-            System Operational
+          <span className={`font-mono text-xs tracking-wider uppercase ${isCare ? "text-blue-400" : "text-emerald-400"}`}>
+            {isCare ? "Care Platform Ready" : "System Operational"}
           </span>
         </div>
 
@@ -119,8 +120,9 @@ export function StepComplete() {
         </h2>
 
         <p className="mx-auto max-w-sm text-sm text-zinc-500">
-          All systems are calibrated. Your workspace is provisioned and
-          operational. Welcome to your workspace.
+          {isCare
+            ? "Your care workspace is provisioned with compliance tracking, rostering, and clinical tools. Welcome aboard."
+            : "All systems are calibrated. Your workspace is provisioned and operational. Welcome to your workspace."}
         </p>
       </motion.div>
 

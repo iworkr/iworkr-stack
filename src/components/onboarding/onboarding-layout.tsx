@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { type ReactNode } from "react";
-import { useOnboardingStore, getStepProgress } from "@/lib/onboarding-store";
+import { useOnboardingStore, STEP_ORDER } from "@/lib/onboarding-store";
 
 const slideVariants = {
   enter: {
@@ -28,22 +28,35 @@ export function OnboardingLayout({
   stepKey: string;
 }) {
   const currentStep = useOnboardingStore((s) => s.currentStep);
-  const progress = getStepProgress(currentStep);
+  const industryType = useOnboardingStore((s) => s.industryType);
+  const isCare = industryType === "care";
+
+  // Calculate progress — if sector was skipped, adjust denominator
+  const stepsForProgress = industryType
+    ? STEP_ORDER.filter((s) => s !== "sector")
+    : STEP_ORDER;
+  const effectiveStep = currentStep === "sector" && industryType ? "identity" : currentStep;
+  const stepIndex = stepsForProgress.indexOf(effectiveStep);
+  const progress = ((Math.max(0, stepIndex) + 1) / stepsForProgress.length) * 100;
+
+  // Step label for display
+  const stepNumber = Math.max(0, stepIndex) + 1;
+  const totalSteps = stepsForProgress.length;
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--background)]">
       {/* Noise grain — standardized opacity */}
       <div className="stealth-noise fixed" />
 
-      {/* Atmospheric glow — system boot ambience */}
+      {/* Atmospheric glow — adapts to sector */}
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-[var(--brand)] opacity-[0.03] blur-[200px]" />
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full opacity-[0.03] blur-[200px] ${isCare ? "bg-blue-500" : "bg-[var(--brand)]"}`} />
       </div>
 
       {/* Progress bar — thin gradient line at top */}
       <div className="fixed top-0 right-0 left-0 z-40 h-px bg-[rgba(255,255,255,0.06)]">
         <motion.div
-          className="h-full bg-gradient-to-r from-white/60 via-white/40 to-white/20"
+          className={`h-full ${isCare ? "bg-gradient-to-r from-blue-400/60 via-blue-400/40 to-blue-400/20" : "bg-gradient-to-r from-white/60 via-white/40 to-white/20"}`}
           initial={{ width: "0%" }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -53,18 +66,26 @@ export function OnboardingLayout({
       {/* Vignette */}
       <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.6)_100%)]" />
 
-      {/* Logo */}
+      {/* Logo + optional care badge */}
       <div className="fixed top-6 left-6 z-40 flex items-center gap-2.5">
         <img
           src="/logos/logo-dark-streamline.png"
           alt="iWorkr"
           className="h-6 w-6 object-contain"
         />
+        {isCare && (
+          <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-blue-400">
+            care
+          </span>
+        )}
       </div>
 
-      {/* Step counter */}
-      <div className="fixed top-6 right-6 z-40">
+      {/* Step counter — shows step N of M */}
+      <div className="fixed top-6 right-6 z-40 flex items-center gap-3">
         <span className="font-mono text-[11px] tracking-wider text-zinc-600">
+          {stepNumber}/{totalSteps}
+        </span>
+        <span className="font-mono text-[11px] tracking-wider text-zinc-500">
           {currentStep.toUpperCase().replace("-", " ")}
         </span>
       </div>

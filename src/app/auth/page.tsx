@@ -23,9 +23,19 @@ export default function AuthPage() {
 function AuthPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setAuth } = useOnboardingStore();
+  const { setAuth, setIndustryType, goToStep } = useOnboardingStore();
   const urlMode = searchParams.get("mode");
+  const sector = searchParams.get("sector");
+  const isCare = sector === "care";
   const [mode, setMode] = useState<AuthMode>(urlMode === "signup" ? "email" : "choice");
+
+  // Pre-set onboarding store when coming from /ndis with ?sector=care
+  useEffect(() => {
+    if (isCare) {
+      setIndustryType("care");
+      goToStep("identity"); // Skip sector selection
+    }
+  }, [isCare, setIndustryType, goToStep]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -151,13 +161,13 @@ function AuthPageInner() {
         <div className="h-full w-full bg-line-grid" />
       </div>
 
-      {/* Atmospheric emerald glow behind auth card */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-emerald-500/[0.03] blur-[120px]" />
+      {/* Atmospheric glow behind auth card */}
+      <div className={`pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full blur-[120px] ${isCare ? "bg-blue-500/[0.03]" : "bg-emerald-500/[0.03]"}`} />
 
       {/* Back to home */}
       <div className="fixed top-6 left-6 z-10">
         <Link
-          href="/"
+          href={isCare ? "/ndis" : "/"}
           className="flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-300"
         >
           <ArrowLeft size={13} />
@@ -194,10 +204,14 @@ function AuthPageInner() {
                 </motion.div>
                 <div className="text-center">
                   <h1 className="text-xl font-medium tracking-tight text-zinc-100">
-                    {urlMode === "signup" ? "Create your workspace" : "Sign in to your workspace"}
+                    {urlMode === "signup"
+                      ? isCare ? "Create your care workspace" : "Create your workspace"
+                      : "Sign in to your workspace"}
                   </h1>
                   <p className="mt-1.5 text-[13px] text-zinc-600">
-                    The operating system for service work.
+                    {isCare
+                      ? "Built for NDIS, aged care, and disability support."
+                      : "The operating system for service work."}
                   </p>
                 </div>
               </div>
@@ -492,8 +506,8 @@ function AuthPageInner() {
       {/* Status bar — premium system status */}
       <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[var(--border-base)] bg-[var(--surface-1)]/80 px-4 py-2 backdrop-blur-md">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} />
+          <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} />
         </span>
         <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
           System Operational

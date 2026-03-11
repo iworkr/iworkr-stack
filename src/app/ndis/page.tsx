@@ -14,7 +14,6 @@ import {
   Smartphone,
   TrendingUp,
   Check,
-  FileText,
   AlertTriangle,
   MapPin,
   LayoutDashboard,
@@ -23,7 +22,6 @@ import {
   Plus,
   Minus,
   Inbox,
-  CreditCard,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -184,12 +182,12 @@ function NdisNavbar() {
             ) : (
               <>
                 <Link
-                  href="/auth"
+                  href="/auth?sector=care"
                   className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
                 >
                   Sign in
                 </Link>
-                <SpotlightButton size="sm" href="/auth" variant="primary">
+                <SpotlightButton size="sm" href="/auth?mode=signup&sector=care" variant="primary">
                   Start free
                 </SpotlightButton>
               </>
@@ -224,7 +222,7 @@ function NdisNavbar() {
               </a>
             ))}
             <div className="mt-3 border-t border-[var(--overlay-border)] pt-3">
-              <SpotlightButton size="md" className="w-full" href="/auth" variant="primary">
+              <SpotlightButton size="md" className="w-full" href="/auth?mode=signup&sector=care" variant="primary">
                 Start free trial
               </SpotlightButton>
             </div>
@@ -310,7 +308,7 @@ function NdisHero() {
             </SpotlightButton>
           ) : (
             <>
-              <SpotlightButton size="lg" href="/auth?mode=signup" variant="primary">
+              <SpotlightButton size="lg" href="/auth?mode=signup&sector=care" variant="primary">
                 Start free trial
                 <ArrowRight size={16} />
               </SpotlightButton>
@@ -1061,7 +1059,7 @@ function NdisCTA() {
               </SpotlightButton>
             ) : (
               <>
-                <SpotlightButton size="lg" href="/auth?mode=signup" variant="primary">
+                <SpotlightButton size="lg" href="/auth?mode=signup&sector=care" variant="primary">
                   Start free trial
                   <ArrowRight size={16} />
                 </SpotlightButton>

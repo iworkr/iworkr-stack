@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { OnboardingLayout } from "@/components/onboarding/onboarding-layout";
 import { StepSector } from "@/components/onboarding/step-sector";
@@ -22,6 +23,16 @@ const stepComponents: Record<string, React.ComponentType> = {
 
 export default function SetupPage() {
   const currentStep = useOnboardingStore((s) => s.currentStep);
+  const industryType = useOnboardingStore((s) => s.industryType);
+  const goToStep = useOnboardingStore((s) => s.goToStep);
+
+  // If industry is already set (e.g. from /ndis CTA), skip the sector step
+  useEffect(() => {
+    if (currentStep === "sector" && industryType) {
+      goToStep("identity");
+    }
+  }, [currentStep, industryType, goToStep]);
+
   const StepComponent = stepComponents[currentStep] || StepSector;
 
   return (
