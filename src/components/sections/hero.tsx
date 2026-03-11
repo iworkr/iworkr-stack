@@ -8,6 +8,8 @@ import { useAuthStore } from "@/lib/auth-store";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Particles } from "@/components/magicui/particles";
+import { Globe } from "@/components/ui/globe";
+import type { COBEOptions } from "cobe";
 
 function AppleIcon({ className }: { className?: string }) {
   return (
@@ -56,6 +58,35 @@ function PlatformIcon({ type }: { type: string }) {
   }
 }
 
+const GLOBE_CONFIG: COBEOptions = {
+  width: 800,
+  height: 800,
+  onRender: () => {},
+  devicePixelRatio: 2,
+  phi: 0,
+  theta: 0.3,
+  dark: 1,
+  diffuse: 0.4,
+  mapSamples: 16000,
+  mapBrightness: 1.2,
+  baseColor: [0.05, 0.05, 0.05],
+  markerColor: [16 / 255, 185 / 255, 129 / 255],
+  glowColor: [0.04, 0.04, 0.04],
+  markers: [
+    // Major cities where field service operates
+    { location: [-27.4698, 153.0251], size: 0.08 }, // Brisbane (HQ)
+    { location: [-33.8688, 151.2093], size: 0.06 }, // Sydney
+    { location: [-37.8136, 144.9631], size: 0.06 }, // Melbourne
+    { location: [51.5074, -0.1278], size: 0.05 },   // London
+    { location: [40.7128, -74.006], size: 0.07 },    // New York
+    { location: [34.0522, -118.2437], size: 0.05 },  // Los Angeles
+    { location: [49.2827, -123.1207], size: 0.04 },  // Vancouver
+    { location: [1.3521, 103.8198], size: 0.04 },    // Singapore
+    { location: [35.6762, 139.6503], size: 0.04 },   // Tokyo
+    { location: [-36.8485, 174.7633], size: 0.05 },  // Auckland
+  ],
+};
+
 const wordVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
@@ -91,6 +122,17 @@ export function Hero() {
 
       {/* Floating particles */}
       <Particles className="pointer-events-none absolute inset-0" quantity={40} staticity={40} ease={40} size={0.3} color="#10B981" />
+
+      {/* Globe — large, dark, behind everything */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-[10%] z-[1] h-[700px] w-[700px] -translate-x-1/2 opacity-[0.35] sm:h-[800px] sm:w-[800px] md:h-[900px] md:w-[900px] lg:h-[1000px] lg:w-[1000px]"
+        style={{
+          maskImage: "radial-gradient(circle at 50% 40%, black 20%, transparent 70%)",
+          WebkitMaskImage: "radial-gradient(circle at 50% 40%, black 20%, transparent 70%)",
+        }}
+      >
+        <Globe className="top-0" config={GLOBE_CONFIG} />
+      </div>
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         {/* Announcement Pill */}
