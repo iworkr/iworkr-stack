@@ -1,12 +1,10 @@
 import { CustomerPortal } from "@polar-sh/nextjs";
-
-const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-if (!appUrl) console.warn("[portal] NEXT_PUBLIC_APP_URL is not set, falling back to localhost");
+import { getAppUrl } from "@/lib/app-url";
 
 export const GET = CustomerPortal({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
   server: "production",
-  returnUrl: `${appUrl || "http://localhost:3000"}/settings/billing`,
+  returnUrl: `${getAppUrl()}/settings/billing`,
   getCustomerId: async (req) => {
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get("customerId");

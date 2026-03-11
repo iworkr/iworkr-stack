@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { exchangeOAuthCode } from "@/app/actions/integration-oauth";
+import { getAppUrl } from "@/lib/app-url";
 
-if (!process.env.NEXT_PUBLIC_APP_URL) console.warn("[integrations/callback] NEXT_PUBLIC_APP_URL is not set");
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const APP_URL = getAppUrl();
 
 function verifyStateSignature(state: string): { integrationId?: string; provider?: string } | null {
   try {

@@ -115,8 +115,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   const { addToast } = useToastStore();
   const { createInvoiceServer } = useFinanceStore();
   const { orgId } = useOrg();
-  const storeClients = useClientsStore((s) => s.clients);
-  const allClients = storeClients;
+  const allClients = useClientsStore((s) => s.clients);
   const [saving, setSaving] = useState(false);
 
   /* ── Derived ────────────────────────────────────────────── */

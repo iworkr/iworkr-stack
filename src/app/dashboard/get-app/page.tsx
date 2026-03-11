@@ -17,6 +17,7 @@ import {
   Camera,
   Bell,
 } from "lucide-react";
+import { sendAppDownloadLink } from "@/app/actions/sms";
 
 const FEATURES = [
   { icon: MapPin, label: "GPS Tracking", desc: "Real-time technician location" },
@@ -29,15 +30,20 @@ export default function GetAppPage() {
   const [smsNumber, setSmsNumber] = useState("");
   const [smsSending, setSmsSending] = useState(false);
   const [smsSent, setSmsSent] = useState(false);
+  const [smsError, setSmsError] = useState<string | null>(null);
 
   async function handleSendSMS() {
     if (!smsNumber.trim()) return;
     setSmsSending(true);
-    // Simulate sending — in production, this would call a Twilio/Resend action
-    await new Promise((r) => setTimeout(r, 1500));
+    setSmsError(null);
+    const result = await sendAppDownloadLink(smsNumber.trim());
     setSmsSending(false);
-    setSmsSent(true);
-    setTimeout(() => setSmsSent(false), 3000);
+    if (result.error) {
+      setSmsError(result.error);
+    } else {
+      setSmsSent(true);
+      setTimeout(() => setSmsSent(false), 3000);
+    }
   }
 
   return (

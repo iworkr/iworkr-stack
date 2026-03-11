@@ -189,6 +189,14 @@ export async function createScheduleBlock(params: CreateScheduleBlockParams) {
       return { data: null, error: "Not authenticated" };
     }
 
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     // Check for conflicts if technician is assigned
     if (params.technician_id) {
       const { data: conflictingBlocks, error: conflictError } = await supabase
@@ -300,6 +308,14 @@ export async function updateScheduleBlock(blockId: string, updates: UpdateSchedu
     if (fetchError) {
       return { data: null, error: fetchError.message };
     }
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", currentBlock.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // Check for conflicts if times or technician changed
     const startTime = updates.start_time || currentBlock.start_time;
@@ -466,6 +482,17 @@ export async function getScheduleView(orgId: string, date: string) {
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase.rpc("get_schedule_view", {
       p_org_id: orgId,
       p_date: date,
@@ -526,6 +553,21 @@ export async function moveScheduleBlockServer(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
+    const { data: blockRow } = await supabase
+      .from("schedule_blocks")
+      .select("organization_id")
+      .eq("id", blockId)
+      .maybeSingle();
+    if (!blockRow) return { data: null, error: "Block not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", blockRow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase.rpc("move_schedule_block", {
       p_block_id: blockId,
       p_technician_id: technicianId,
@@ -569,6 +611,21 @@ export async function resizeScheduleBlockServer(blockId: string, endTime: string
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
+    const { data: blockRow } = await supabase
+      .from("schedule_blocks")
+      .select("organization_id")
+      .eq("id", blockId)
+      .maybeSingle();
+    if (!blockRow) return { data: null, error: "Block not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", blockRow.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("schedule_blocks")
       .update({ end_time: endTime, updated_at: new Date().toISOString() })
@@ -602,6 +659,14 @@ export async function assignJobToSchedule(
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("assign_job_to_schedule", {
       p_org_id: orgId,
@@ -705,11 +770,19 @@ export async function unscheduleJob(blockId: string) {
     // Get the block to find the linked job
     const { data: block, error: fetchErr } = await supabase
       .from("schedule_blocks")
-      .select("job_id")
+      .select("job_id, organization_id")
       .eq("id", blockId)
       .single();
 
     if (fetchErr) return { data: null, error: fetchErr.message };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", block.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     // Delete the schedule block
     const { error: delErr } = await supabase
@@ -875,6 +948,14 @@ export async function createScheduleEvent(params: CreateScheduleEventParams) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
     const { data, error } = await supabase
       .from("schedule_events")
       .insert({
@@ -993,6 +1074,17 @@ export async function getCascadingDelays(
   try {
     const supabase = await createServerSupabaseClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: [], error: "Unauthorized" };
+
     const { data, error } = await supabase.rpc("get_cascading_delays", {
       p_org_id: orgId,
       p_technician_id: technicianId,
@@ -1022,6 +1114,17 @@ export async function validateScheduleDrop(
 ) {
   try {
     const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("validate_schedule_drop", {
       p_org_id: orgId,

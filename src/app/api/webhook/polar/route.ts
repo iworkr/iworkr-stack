@@ -50,11 +50,8 @@ async function getOrgOwnerEmail(
 
 export const POST = Webhooks({
   webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
-  onPayload: async (payload) => {
-    console.log(
-      `[Polar Webhook] ${payload.type}`,
-      JSON.stringify(payload.data?.id)
-    );
+  onPayload: async () => {
+    // Handled by specific event handlers below
   },
   onSubscriptionCreated: async (payload) => {
     const sub = payload.data;
@@ -124,9 +121,6 @@ export const POST = Webhooks({
       );
     }
 
-    console.log(
-      `[Polar] Subscription created: ${sub.id} → org ${orgId} (${planKey})`
-    );
   },
   onSubscriptionUpdated: async (payload) => {
     const sub = payload.data;

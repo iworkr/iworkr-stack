@@ -3,23 +3,32 @@
 import { FadeIn } from "@/components/ui/fade-in";
 
 const logos = [
-  { name: "FlowTech Services", width: 120 },
-  { name: "Summit Plumbing Co", width: 140 },
-  { name: "Apex Electric", width: 110 },
-  { name: "ClearWater HVAC", width: 130 },
-  { name: "GridLine Contractors", width: 140 },
-  { name: "TrueLevel Builds", width: 120 },
-  { name: "PipeWorks Pro", width: 115 },
-  { name: "VoltEdge Systems", width: 130 },
+  { name: "FlowTech", accent: "#3B82F6" },
+  { name: "Summit", accent: "#10B981" },
+  { name: "Apex", accent: "#F59E0B" },
+  { name: "ClearWater", accent: "#06B6D4" },
+  { name: "GridLine", accent: "#8B5CF6" },
+  { name: "TrueLevel", accent: "#EF4444" },
+  { name: "PipeWorks", accent: "#EC4899" },
+  { name: "VoltEdge", accent: "#14B8A6" },
 ];
 
-function LogoPlaceholder({ name, width }: { name: string; width: number }) {
+function LogoMark({ name, accent }: { name: string; accent: string }) {
   return (
-    <div
-      className="flex items-center gap-2 opacity-40 transition-opacity duration-300 hover:opacity-100"
-      style={{ width }}
-    >
-      <div className="h-5 w-5 rounded-md border border-[var(--card-border-hover)] bg-[var(--subtle-bg)]" />
+    <div className="flex items-center gap-2.5 opacity-40 transition-opacity duration-300 hover:opacity-100">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="6" fill={accent} fillOpacity="0.15" />
+        <text
+          x="12"
+          y="16"
+          textAnchor="middle"
+          fontSize="12"
+          fontWeight="700"
+          fill={accent}
+        >
+          {name.charAt(0)}
+        </text>
+      </svg>
       <span className="whitespace-nowrap text-sm font-medium tracking-tight text-[var(--text-muted)]">
         {name}
       </span>
@@ -49,10 +58,10 @@ export function SocialProof() {
 
         <div className="animate-marquee flex items-center gap-12">
           {[...logos, ...logos].map((logo, i) => (
-            <LogoPlaceholder
+            <LogoMark
               key={`${logo.name}-${i}`}
               name={logo.name}
-              width={logo.width}
+              accent={logo.accent}
             />
           ))}
         </div>
