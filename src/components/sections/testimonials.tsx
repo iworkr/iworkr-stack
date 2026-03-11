@@ -7,56 +7,35 @@ import { Section, SectionHeader } from "@/components/ui/section";
 
 const testimonials = [
   {
-    quote:
-      "iWorkr cut our admin time by 40%. It's the first tool that feels like it was built by engineers, not salespeople.",
+    quote: "iWorkr cut our admin time by 40%. It's the first tool that feels like it was built by engineers, not salespeople.",
     name: "Mike Thompson",
     role: "Owner",
     company: "Apex Plumbing Co",
     metric: "40% less admin",
   },
   {
-    quote:
-      "Credential tracking alone saved us from two audit findings. Everything is enforced before a shift even starts.",
-    name: "Rachel Nguyen",
-    role: "Compliance Manager",
-    company: "BrightPath Disability Services",
-    metric: "Zero audit gaps",
-  },
-  {
-    quote:
-      "The AI phone agent alone pays for itself. We capture every lead now — even at 2 AM on a Saturday.",
+    quote: "The AI phone agent alone pays for itself. We capture every lead now — even at 2 AM on a Saturday.",
     name: "Sarah Chen",
     role: "Operations Manager",
     company: "ClearWater HVAC",
     metric: "3x more leads",
   },
   {
-    quote:
-      "We moved from paper MARs to iWorkr in a weekend. The eMAR module is exactly what NDIS providers need.",
-    name: "Dr. Priya Mehta",
-    role: "Clinical Director",
-    company: "CareBridge Allied Health",
-    metric: "Digital-first care",
-  },
-  {
-    quote:
-      "We switched from three different apps. Having scheduling, invoicing, and CRM in one system changed everything.",
+    quote: "We switched from three different apps. Having scheduling, invoicing, and CRM in one system changed everything.",
     name: "James O'Brien",
     role: "Director",
     company: "GridLine Electrical",
     metric: "1 unified system",
   },
   {
-    quote:
-      "Our support workers clock in with GPS verification. The progress notes mean no more chasing shift reports.",
-    name: "Tom Whitfield",
-    role: "Operations Lead",
-    company: "NurtureCo Home Care",
-    metric: "Real-time visibility",
+    quote: "Our field techs actually like using it. The offline-first mobile app works even in basements with zero signal.",
+    name: "Lisa Park",
+    role: "Field Supervisor",
+    company: "Summit Services",
+    metric: "100% adoption",
   },
   {
-    quote:
-      "Invoices go out before the van leaves the driveway. Our average payment time dropped from 14 days to same-day.",
+    quote: "Invoices go out before the van leaves the driveway. Our average payment time dropped from 14 days to same-day.",
     name: "David Mitchell",
     role: "Finance Lead",
     company: "TrueLevel Builds",
@@ -146,7 +125,7 @@ export function Testimonials() {
       <FadeIn>
         <SectionHeader
           label="Testimonials"
-          title="Trusted by teams who demand precision."
+          title="Trusted by operators who demand precision."
           description="Real results from trade businesses that switched to iWorkr."
           className="text-center mx-auto"
         />

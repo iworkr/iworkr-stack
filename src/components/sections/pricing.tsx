@@ -70,7 +70,7 @@ export function Pricing() {
         <SectionHeader
           label="Pricing"
           title="Transparent pricing. No surprises."
-          description="One plan, every feature — trades and care. Start free. Scale when you're ready. No contracts, no hidden fees."
+          description="Start free. Scale when you're ready. No contracts, no hidden fees."
           className="text-center mx-auto"
         />
       </FadeIn>

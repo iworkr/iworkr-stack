@@ -12,7 +12,7 @@ import { useAuthStore } from "@/lib/auth-store";
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "Workflow", href: "#workflow" },
-  { label: "Download", href: "#download" },
+  { label: "For NDIS", href: "/ndis" },
   { label: "Pricing", href: "#pricing" },
 ];
 

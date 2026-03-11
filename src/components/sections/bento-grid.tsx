@@ -9,8 +9,6 @@ import {
   FileText,
   TrendingUp,
   Check,
-  ShieldCheck,
-  Pill,
 } from "lucide-react";
 import { useRef, type MouseEvent, type ReactNode } from "react";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/fade-in";
@@ -282,73 +280,6 @@ function QuotesVisual() {
   );
 }
 
-function ComplianceVisual() {
-  const credentials = [
-    { name: "NDIS Worker Screening", status: "verified", expires: "Jun 2026" },
-    { name: "Working With Children", status: "verified", expires: "Mar 2027" },
-    { name: "First Aid Certificate", status: "expiring", expires: "Apr 2026" },
-    { name: "Manual Handling", status: "pending", expires: "—" },
-  ];
-
-  return (
-    <div className="mt-5 space-y-2">
-      {credentials.map((cred) => (
-        <div
-          key={cred.name}
-          className="flex items-center justify-between rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-2"
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className={`h-2 w-2 rounded-full ${
-                cred.status === "verified"
-                  ? "bg-emerald-500"
-                  : cred.status === "expiring"
-                  ? "bg-amber-500"
-                  : "bg-zinc-500"
-              }`}
-            />
-            <span className="text-xs font-medium text-[var(--text-primary)]">{cred.name}</span>
-          </div>
-          <span className="text-[10px] text-[var(--text-muted)]">{cred.expires}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function eMarVisual() {
-  const meds = [
-    { name: "Paracetamol 500mg", time: "08:00", status: "given" },
-    { name: "Metformin 850mg", time: "08:00", status: "given" },
-    { name: "Salbutamol PRN", time: "—", status: "prn" },
-  ];
-
-  return (
-    <div className="mt-5 space-y-2">
-      {meds.map((med) => (
-        <div
-          key={med.name}
-          className="flex items-center justify-between rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-2"
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className={`flex h-5 w-5 items-center justify-center rounded text-[10px] ${
-                med.status === "given"
-                  ? "bg-emerald-500/10 text-emerald-400"
-                  : "bg-blue-500/10 text-blue-400"
-              }`}
-            >
-              {med.status === "given" ? <Check size={10} /> : "P"}
-            </div>
-            <span className="text-xs font-medium text-[var(--text-primary)]">{med.name}</span>
-          </div>
-          <span className="font-mono text-[10px] text-[var(--text-muted)]">{med.time}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function FinancialsVisual() {
   const points = [
     20, 35, 30, 45, 42, 55, 60, 58, 70, 75, 72, 85, 90, 95, 92, 100, 105, 115, 120,
@@ -455,8 +386,8 @@ export function BentoGrid() {
       <FadeIn>
         <SectionHeader
           label="Features"
-          title="Engineered for every operation."
-          description="From job sites to care shifts — one unified platform. Scheduling, compliance, clinical records, and payments. No bloat, no compromises."
+          title="Engineered for field operations."
+          description="Every component purpose-built. No bloat, no compromises. From scheduling to settlements — one unified platform."
         />
       </FadeIn>
 
@@ -556,44 +487,7 @@ export function BentoGrid() {
           </BentoCard>
         </StaggerItem>
 
-        {/* Row C — Care Sector */}
-        <StaggerItem className="md:col-span-6">
-          <BentoCard className="h-full p-6">
-            <div className="flex items-center gap-2 text-[var(--text-muted)]">
-              <ShieldCheck size={16} />
-              <span className="text-xs font-medium uppercase tracking-wider">
-                Compliance
-              </span>
-            </div>
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-[var(--text-heading)]">
-              Workforce Compliance.
-            </h3>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
-              NDIS screening, WWCC, certifications — tracked and enforced automatically.
-            </p>
-            <ComplianceVisual />
-          </BentoCard>
-        </StaggerItem>
-
-        <StaggerItem className="md:col-span-6">
-          <BentoCard className="h-full p-6">
-            <div className="flex items-center gap-2 text-[var(--text-muted)]">
-              <Pill size={16} />
-              <span className="text-xs font-medium uppercase tracking-wider">
-                eMAR
-              </span>
-            </div>
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-[var(--text-heading)]">
-              Medication Records.
-            </h3>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
-              Electronic medication administration. Real-time tracking with full audit trail.
-            </p>
-            {eMarVisual()}
-          </BentoCard>
-        </StaggerItem>
-
-        {/* Row D */}
+        {/* Row C */}
         <StaggerItem className="md:col-span-12">
           <BentoCard className="p-6 md:p-8">
             <div className="flex items-center gap-2 text-[var(--text-muted)]">

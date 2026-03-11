@@ -133,7 +133,7 @@ const wordVariants = {
 export function Hero() {
   const { user, initialized } = useAuthStore();
   const isAuthenticated = initialized && !!user;
-  const words = "The operating system for every team in the field.".split(" ");
+  const words = "The operating system for service work.".split(" ");
   const detectedPlatform = useDetectPlatform();
 
   /* ── Scroll-driven tilt for the scheduler mockup ── */
@@ -173,7 +173,7 @@ export function Hero() {
         >
           <Badge glow className="mb-8 cursor-pointer hover:border-white/10">
             <Sparkles size={14} className="text-zinc-400" />
-            <AnimatedShinyText shimmerWidth={80}>New: Now powering NDIS &amp; Aged Care providers</AnimatedShinyText>
+            <AnimatedShinyText shimmerWidth={80}>New: AI Phone Agent for automatic dispatch</AnimatedShinyText>
             <ArrowRight size={12} className="text-[var(--text-muted)] transition-transform duration-200 group-hover:translate-x-0.5" />
           </Badge>
         </motion.div>
@@ -207,8 +207,8 @@ export function Hero() {
           transition={{ delay: 0.8, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto mb-10 max-w-xl text-lg leading-relaxed text-[var(--text-body)]"
         >
-          Purpose-built for trades, NDIS providers, and care teams. Manage
-          jobs, shifts, compliance, and payments — all in one platform.
+          Purpose-built for plumbers, electricians, and field teams. Manage
+          jobs, scheduling, and payments with engineering precision.
         </motion.p>
 
         {/* CTA Row */}

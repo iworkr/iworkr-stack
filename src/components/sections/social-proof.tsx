@@ -11,10 +11,6 @@ const logos = [
   { name: "TrueLevel", accent: "#EF4444" },
   { name: "PipeWorks", accent: "#EC4899" },
   { name: "VoltEdge", accent: "#14B8A6" },
-  { name: "BrightPath", accent: "#3B82F6" },
-  { name: "CareBridge", accent: "#8B5CF6" },
-  { name: "AlliedFirst", accent: "#06B6D4" },
-  { name: "NurtureCo", accent: "#10B981" },
 ];
 
 function LogoMark({ name, accent }: { name: string; accent: string }) {
@@ -45,7 +41,7 @@ export function SocialProof() {
     <section className="relative overflow-hidden border-y border-[var(--card-border)] py-12">
       <FadeIn>
         <p className="mb-8 text-center text-xs tracking-widest text-[var(--text-dim)] uppercase">
-          Trusted by 2,000+ service and care businesses
+          Trusted by 2,000+ service businesses
         </p>
       </FadeIn>
 

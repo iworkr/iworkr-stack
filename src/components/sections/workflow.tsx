@@ -13,7 +13,7 @@ const steps = [
     label: "Step 01",
     title: "Capture the chaos.",
     description:
-      "Forms, calls, and referrals route directly to your unified inbox. Every lead and participant tracked. Nothing slips through.",
+      "Forms, calls, and emails route directly to your unified inbox. Every lead tracked. Nothing slips through.",
     visual: "inbox",
   },
   {
@@ -21,7 +21,7 @@ const steps = [
     label: "Step 02",
     title: "Dispatch with precision.",
     description:
-      "Drag-and-drop scheduling with auto-routing and compliance checks. Only qualified, credentialed workers get assigned.",
+      "Drag-and-drop scheduling with auto-routing. The system calculates optimal paths between jobs in real-time.",
     visual: "map",
   },
   {
@@ -29,7 +29,7 @@ const steps = [
     label: "Step 03",
     title: "Get paid before you leave.",
     description:
-      "Invoices and progress notes generated automatically. Tap-to-pay on site or NDIS claim-ready. Funds in your account by morning.",
+      "Invoices generated and sent automatically. Tap-to-pay on site. Funds in your account by morning.",
     visual: "payment",
   },
 ];
@@ -427,7 +427,7 @@ export function Workflow() {
         <SectionHeader
           label="Workflow"
           title="From lead to ledger. Automated."
-          description="Three steps. Zero admin overhead. Whether it's a plumbing job or a care shift — watch the entire lifecycle execute itself."
+          description="Three steps. Zero admin overhead. Watch the entire job lifecycle execute itself."
           className="text-center mx-auto"
         />
       </FadeIn>
