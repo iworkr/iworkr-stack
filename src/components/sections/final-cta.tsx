@@ -27,17 +27,17 @@ export function FinalCTA() {
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: `radial-gradient(ellipse at center, rgba(16,185,129,0.02) 0%, transparent 60%)`,
+          background: `radial-gradient(ellipse at center, rgba(16,185,129,0.008) 0%, transparent 60%)`,
         }}
       />
 
       {/* Interactive particles — dramatic close */}
       <Particles
         className="pointer-events-none absolute inset-0"
-        quantity={60}
-        staticity={30}
-        ease={40}
-        size={0.4}
+        quantity={25}
+        staticity={50}
+        ease={50}
+        size={0.3}
         color="#10B981"
       />
 
@@ -79,11 +79,7 @@ export function FinalCTA() {
                 <SpotlightButton
                   size="lg"
                   href="/auth"
-                  style={{
-                    background: "var(--brand)",
-                    color: "#fff",
-                    borderColor: "transparent",
-                  }}
+                  variant="primary"
                 >
                   Start free trial
                   <ArrowRight size={16} />

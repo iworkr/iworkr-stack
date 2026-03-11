@@ -14,7 +14,6 @@ import { useRef, type MouseEvent, type ReactNode } from "react";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/fade-in";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
-import { Meteors } from "@/components/magicui/meteors";
 import { cn } from "@/lib/utils";
 
 /* ---------- Spotlight Card Primitive ---------- */
@@ -370,14 +369,14 @@ export function BentoGrid() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(16, 185, 129, 0.015) 0%, transparent 70%)",
+            "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(16, 185, 129, 0.006) 0%, transparent 70%)",
         }}
       />
       <AnimatedGridPattern
-        numSquares={30}
-        maxOpacity={0.03}
-        duration={5}
-        repeatDelay={1}
+        numSquares={20}
+        maxOpacity={0.015}
+        duration={7}
+        repeatDelay={2}
         className={cn(
           "pointer-events-none absolute inset-0 z-0",
           "[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]",
@@ -505,7 +504,6 @@ export function BentoGrid() {
               quote to settlement.
             </p>
             <FinancialsVisual />
-            <Meteors number={8} minDuration={3} maxDuration={8} />
           </BentoCard>
         </StaggerItem>
       </StaggerContainer>

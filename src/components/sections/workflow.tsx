@@ -347,7 +347,7 @@ function PaymentVisual() {
         className="relative w-full max-w-xs overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 backdrop-blur-sm"
       >
         {/* Animated border beam — premium payment feel */}
-        <BorderBeam size={80} duration={8} colorFrom="#10B981" colorTo="#059669" borderWidth={1} />
+        <BorderBeam size={60} duration={12} colorFrom="rgba(16,185,129,0.3)" colorTo="rgba(5,150,105,0.15)" borderWidth={1} />
 
         <div className="relative mb-4 text-center">
           <motion.div

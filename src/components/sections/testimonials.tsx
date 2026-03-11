@@ -123,7 +123,7 @@ export function Testimonials() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(16, 185, 129, 0.01) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(16, 185, 129, 0.005) 0%, transparent 70%)",
         }}
       />
 

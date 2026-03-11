@@ -1,15 +1,39 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Smartphone, LayoutDashboard } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef, useState, useEffect } from "react";
+import {
+  ArrowRight,
+  Sparkles,
+  Smartphone,
+  LayoutDashboard,
+  Search,
+  Calendar,
+  MessageSquare,
+  Briefcase,
+  Users,
+  FileText,
+  BarChart3,
+  Map,
+  Wrench,
+  ClipboardList,
+  Zap,
+  Puzzle,
+  Bot,
+  ChevronRight,
+} from "lucide-react";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import { useAuthStore } from "@/lib/auth-store";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { BorderBeam } from "@/components/magicui/border-beam";
+import { Meteors } from "@/components/magicui/meteors";
 import { Particles } from "@/components/magicui/particles";
-import createGlobe, { type COBEOptions } from "cobe";
-import { useEffect, useRef, useCallback } from "react";
+
+/* ────────────────────────────────────────────────────────
+ * Small SVG icons for the download strip
+ * ──────────────────────────────────────────────────────── */
 
 function AppleIcon({ className }: { className?: string }) {
   return (
@@ -42,15 +66,15 @@ const downloadPlatforms = [
   { id: "android", name: "Android", iconType: "android" as const },
 ];
 
-function PlatformIcon({ type }: { type: string }) {
-  const cls = "h-[14px] w-[14px]";
+function PlatformIcon({ type, className }: { type: string; className?: string }) {
+  const cls = className ?? "h-[14px] w-[14px]";
   switch (type) {
     case "apple":
       return <AppleIcon className={cls} />;
     case "windows":
       return <WindowsIcon className={cls} />;
     case "ios":
-      return <Smartphone size={14} strokeWidth={1.5} />;
+      return <Smartphone size={14} strokeWidth={1.5} className={cls} />;
     case "android":
       return <AndroidIcon className={cls} />;
     default:
@@ -58,83 +82,36 @@ function PlatformIcon({ type }: { type: string }) {
   }
 }
 
-/* ── Hero Globe ──────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────
+ * Detect user platform for the download button icon
+ * ──────────────────────────────────────────────────────── */
 
-function HeroGlobe({ config }: { config: COBEOptions }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const phiRef = useRef(0);
+type Platform = "apple" | "windows" | "ios" | "android";
 
-  const onRender = useCallback((state: Record<string, unknown>) => {
-    phiRef.current += 0.005;
-    state.phi = phiRef.current;
-  }, []);
+function useDetectPlatform(): Platform {
+  const [platform, setPlatform] = useState<Platform>("apple");
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    const ua = navigator.userAgent || "";
+    const uaPlatform = (navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform || navigator.platform || "";
 
-    const globe = createGlobe(canvasRef.current, {
-      ...config,
-      width: 1200,
-      height: 1200,
-      onRender,
-    });
-
-    // Fade in
-    requestAnimationFrame(() => {
-      if (canvasRef.current) canvasRef.current.style.opacity = "1";
-    });
-
-    return () => globe.destroy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (/android/i.test(ua)) {
+      setPlatform("android");
+    } else if (/iPad|iPhone|iPod/.test(ua) || (/Mac/.test(uaPlatform) && "ontouchstart" in window)) {
+      setPlatform("ios");
+    } else if (/Win/.test(uaPlatform)) {
+      setPlatform("windows");
+    } else {
+      setPlatform("apple"); // macOS default
+    }
   }, []);
 
-  return (
-    <div
-      className="pointer-events-none absolute left-1/2 top-[6%] z-[1] -translate-x-1/2 opacity-40"
-      style={{
-        width: "min(1000px, 95vw)",
-        height: "min(1000px, 95vw)",
-        maskImage: "radial-gradient(circle at 50% 40%, black 20%, transparent 65%)",
-        WebkitMaskImage: "radial-gradient(circle at 50% 40%, black 20%, transparent 65%)",
-      }}
-    >
-      <canvas
-        ref={canvasRef}
-        className="h-full w-full opacity-0 transition-opacity duration-1000"
-        style={{ opacity: 0 }}
-      />
-    </div>
-  );
+  return platform;
 }
 
-const GLOBE_CONFIG: COBEOptions = {
-  width: 800,
-  height: 800,
-  onRender: () => {},
-  devicePixelRatio: 2,
-  phi: 0,
-  theta: 0.3,
-  dark: 1,
-  diffuse: 0.4,
-  mapSamples: 16000,
-  mapBrightness: 1.2,
-  baseColor: [0.05, 0.05, 0.05],
-  markerColor: [16 / 255, 185 / 255, 129 / 255],
-  glowColor: [0.04, 0.04, 0.04],
-  markers: [
-    // Major cities where field service operates
-    { location: [-27.4698, 153.0251], size: 0.08 }, // Brisbane (HQ)
-    { location: [-33.8688, 151.2093], size: 0.06 }, // Sydney
-    { location: [-37.8136, 144.9631], size: 0.06 }, // Melbourne
-    { location: [51.5074, -0.1278], size: 0.05 },   // London
-    { location: [40.7128, -74.006], size: 0.07 },    // New York
-    { location: [34.0522, -118.2437], size: 0.05 },  // Los Angeles
-    { location: [49.2827, -123.1207], size: 0.04 },  // Vancouver
-    { location: [1.3521, 103.8198], size: 0.04 },    // Singapore
-    { location: [35.6762, 139.6503], size: 0.04 },   // Tokyo
-    { location: [-36.8485, 174.7633], size: 0.05 },  // Auckland
-  ],
-};
+/* ────────────────────────────────────────────────────────
+ * Word-stagger animation variants
+ * ──────────────────────────────────────────────────────── */
 
 const wordVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -149,31 +126,43 @@ const wordVariants = {
   }),
 };
 
+/* ────────────────────────────────────────────────────────
+ * Hero component
+ * ──────────────────────────────────────────────────────── */
+
 export function Hero() {
   const { user, initialized } = useAuthStore();
   const isAuthenticated = initialized && !!user;
   const words = "The operating system for service work.".split(" ");
+  const detectedPlatform = useDetectPlatform();
 
+  /* ── Scroll-driven tilt for the scheduler mockup ── */
+  const mockupRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: mockupRef,
+    offset: ["start end", "end start"],
+  });
+  // Starts tilted at 12deg, flattens to 0 as it scrolls into the middle of the viewport
+  const rotateX = useTransform(scrollYProgress, [0, 0.45], [12, 0]);
+  const mockupScale = useTransform(scrollYProgress, [0, 0.45], [0.96, 1]);
+  const mockupY = useTransform(scrollYProgress, [0, 0.45], [40, 0]);
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--background)] px-6 pt-24 pb-16">
-      {/* Subtle noise texture */}
+
+      {/* ─── BACKGROUND LAYER ─── */}
       <div className="stealth-noise" />
 
-      {/* Soft emerald radial glow — very subtle, atmospheric */}
       <div className="pointer-events-none absolute top-0 left-1/2 h-[800px] w-[1200px] -translate-x-1/2 -translate-y-1/4">
         <div
           className="absolute inset-0"
           style={{
-            background: `radial-gradient(ellipse at center, rgba(16,185,129,0.015) 0%, transparent 70%)`,
+            background: "radial-gradient(ellipse at center, rgba(16,185,129,0.008) 0%, transparent 70%)",
           }}
         />
       </div>
 
-      {/* Floating particles */}
-      <Particles className="pointer-events-none absolute inset-0" quantity={40} staticity={40} ease={40} size={0.3} color="#10B981" />
-
-      {/* Globe — large, dark, behind text and mockup */}
-      <HeroGlobe config={GLOBE_CONFIG} />
+      <Particles className="pointer-events-none absolute inset-0" quantity={20} staticity={50} ease={50} size={0.2} color="#10B981" />
+      <Meteors number={14} angle={0} minDuration={3} maxDuration={6} minDelay={0.2} maxDelay={2} className="opacity-50" />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         {/* Announcement Pill */}
@@ -200,7 +189,7 @@ export function Hero() {
               animate="visible"
               className="mr-[0.25em] inline-block"
               style={{
-                backgroundImage: `linear-gradient(to bottom, var(--hero-grad-from), var(--hero-grad-to))`,
+                backgroundImage: "linear-gradient(to bottom, var(--hero-grad-from), var(--hero-grad-to))",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -230,7 +219,7 @@ export function Hero() {
           className="flex items-center gap-4"
         >
           {isAuthenticated ? (
-            <SpotlightButton size="lg" href="/dashboard" className="bg-[var(--brand)] text-white border-transparent hover:bg-[var(--brand-hover)]">
+            <SpotlightButton size="lg" href="/dashboard" variant="primary">
               <LayoutDashboard size={16} />
               Open Dashboard
             </SpotlightButton>
@@ -239,7 +228,7 @@ export function Hero() {
               <SpotlightButton
                 size="lg"
                 href="/auth"
-                className="bg-[var(--brand)] text-white border-transparent hover:bg-[var(--brand-hover)]"
+                variant="primary"
               >
                 Start building free
                 <ArrowRight size={16} />
@@ -248,8 +237,8 @@ export function Hero() {
                 size="lg"
                 href="/download"
                 variant="secondary"
-                className="border-[var(--border-base)] text-[var(--text-muted)] hover:border-[var(--border-active)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
               >
+                <PlatformIcon type={detectedPlatform} className="h-4 w-4 opacity-70" />
                 Download app
               </SpotlightButton>
             </>
@@ -296,197 +285,330 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* Hero Visual: App Mockup */}
+      {/* Hero Visual: App Mockup — single flat card */}
       <motion.div
-        initial={{ opacity: 0, y: 60, rotateX: 5 }}
-        animate={{ opacity: 1, y: 0, rotateX: 0 }}
+        ref={mockupRef}
+        initial={{ opacity: 0, y: 60 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{
           delay: 1.2,
           duration: 1,
           ease: [0.16, 1, 0.3, 1],
         }}
-        className="relative mt-20 w-full max-w-5xl"
-        style={{ perspective: "1200px" }}
+        className="relative z-10 mt-20 w-full max-w-6xl overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--background)]"
+        style={{
+          rotateX,
+          scale: mockupScale,
+          y: mockupY,
+          transformPerspective: 1200,
+          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+        }}
       >
-        {/* The UI mockup */}
-        <div
-          className="relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--surface-1)] shadow-2xl"
-          style={{
-            transform: "perspective(1200px) rotateX(2deg)",
-            boxShadow: "0 25px 60px -12px rgba(0,0,0,0.6)",
-          }}
-        >
-          {/* Window Chrome */}
-          <div className="flex items-center gap-2 border-b border-[var(--card-border)] px-4 py-3">
-            <div className="h-3 w-3 rounded-full bg-[var(--subtle-bg-hover)]" />
-            <div className="h-3 w-3 rounded-full bg-[var(--subtle-bg-hover)]" />
-            <div className="h-3 w-3 rounded-full bg-[var(--subtle-bg-hover)]" />
-            <div className="ml-4 flex-1 rounded-md bg-[var(--subtle-bg)] px-3 py-1 text-center">
-              <span className="font-mono text-[11px] text-[var(--text-dim)]">
-                app.iworkr.com/scheduler
-              </span>
-            </div>
-          </div>
+          {/* ─── App Shell ─── */}
+          <div className="flex min-h-[420px] md:min-h-[520px]">
 
-          {/* App Content Mockup */}
-          <div className="flex min-h-[400px] md:min-h-[500px]">
-            {/* Sidebar */}
-            <div className="hidden w-52 flex-shrink-0 border-r border-[var(--card-border)] p-4 md:block">
-              <div className="mb-6 flex items-center gap-2">
-                <div className="h-6 w-6 rounded-md bg-[var(--subtle-bg-hover)]" />
-                <span className="text-xs font-medium text-[var(--text-muted)]">
-                  Apex Plumbing
-                </span>
+            {/* ─── Sidebar ─── */}
+            <div className="hidden w-[180px] flex-shrink-0 flex-col border-r border-[var(--card-border)] bg-[var(--surface-1)] md:flex">
+              {/* Workspace logo */}
+              <div className="flex items-center gap-2.5 border-b border-[var(--card-border)] px-3 py-2.5">
+                <Image
+                  src="/logos/logo-dark-full.png"
+                  alt="iWorkr"
+                  width={72}
+                  height={18}
+                  className="h-[14px] w-auto object-contain"
+                />
               </div>
-              {["Dashboard", "Scheduler", "Jobs", "Clients", "Invoices", "Reports"].map(
-                (item, i) => (
+
+              {/* Nav section */}
+              <div className="flex flex-1 flex-col px-2 pt-3">
+                <span className="mb-1.5 px-2 font-mono text-[8px] font-semibold tracking-[0.1em] uppercase text-[var(--text-dim)]">Workspace</span>
+                {[
+                  { label: "Dashboard", icon: LayoutDashboard, active: false },
+                  { label: "Messages", icon: MessageSquare, active: false, badge: "3" },
+                  { label: "My Jobs", icon: Briefcase, active: false },
+                  { label: "Schedule", icon: Calendar, active: true },
+                  { label: "Dispatch", icon: Map, active: false },
+                  { label: "Clients", icon: Users, active: false },
+                  { label: "Sales Pipeline", icon: BarChart3, active: false },
+                  { label: "Finance", icon: FileText, active: false },
+                  { label: "Assets", icon: Wrench, active: false },
+                  { label: "Forms", icon: ClipboardList, active: false },
+                  { label: "Team", icon: Users, active: false },
+                  { label: "Automations", icon: Zap, active: false },
+                  { label: "Integrations", icon: Puzzle, active: false },
+                  { label: "AI Agent", icon: Bot, active: false },
+                ].map((item) => (
                   <div
-                    key={item}
-                    className={`mb-1 rounded-md px-3 py-2 text-xs ${
-                      i === 1
-                        ? "bg-[var(--subtle-bg-hover)] font-medium text-[var(--text-heading)]"
-                        : "text-[var(--text-muted)]"
+                    key={item.label}
+                    className={`mb-0.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-[10px] transition-colors ${
+                      item.active
+                        ? "bg-white/[0.06] font-medium text-[var(--text-heading)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-heading)]"
                     }`}
                   >
-                    {item}
+                    <item.icon size={12} strokeWidth={1.5} className={item.active ? "text-[var(--text-heading)]" : "text-[var(--text-dim)]"} />
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge && (
+                      <span className="flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-rose-500/15 px-1 text-[8px] font-medium text-rose-400">
+                        {item.badge}
+                      </span>
+                    )}
                   </div>
-                )
-              )}
+                ))}
+
+                {/* Team section at bottom */}
+                <div className="mt-auto border-t border-[var(--card-border)] pt-2 pb-3">
+                  <span className="mb-1 px-2 font-mono text-[8px] font-semibold tracking-[0.1em] uppercase text-[var(--text-dim)]">Your Team</span>
+                  <div className="mt-1 flex items-center gap-2 rounded-md px-2 py-1">
+                    <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full bg-[var(--avatar-bg)]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="https://api.dicebear.com/9.x/notionists/svg?seed=Jordan" alt="" className="h-full w-full" />
+                      <div className="absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full border-[1.5px] border-[var(--surface-1)] bg-emerald-500" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[var(--text-heading)]">Jordan Mitchell</div>
+                      <div className="text-[8px] text-[var(--text-dim)]">Admin</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Main Content - Calendar */}
-            <div className="flex-1 p-4 md:p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-[var(--text-heading)]">
-                  February 2026
-                </span>
-                <div className="flex gap-1">
-                  <div className="rounded-md bg-[var(--subtle-bg-hover)] px-3 py-1 text-xs text-[var(--text-muted)]">
-                    Day
+            {/* ─── Main Content Area ─── */}
+            <div className="flex flex-1 flex-col">
+              {/* Topbar */}
+              <div className="flex items-center justify-between border-b border-[var(--card-border)] bg-[var(--surface-1)]/50 px-4 py-2">
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-1.5 text-[10px]">
+                  <Image
+                    src="/logos/logo-mark.png"
+                    alt="iWorkr"
+                    width={14}
+                    height={14}
+                    className="h-3.5 w-3.5 object-contain"
+                  />
+                  <ChevronRight size={10} className="text-[var(--text-dim)]" />
+                  <span className="text-[var(--text-dim)]">Home</span>
+                  <ChevronRight size={10} className="text-[var(--text-dim)]" />
+                  <span className="text-[var(--text-dim)]">Dashboard</span>
+                  <ChevronRight size={10} className="text-[var(--text-dim)]" />
+                  <span className="text-[var(--text-heading)]">Schedule</span>
+                </div>
+                {/* Search + Avatar */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 rounded-md border border-[var(--card-border)] bg-[var(--subtle-bg)] px-2 py-1">
+                    <Search size={10} className="text-[var(--text-dim)]" />
+                    <span className="text-[9px] text-[var(--text-dim)]">Search...</span>
                   </div>
-                  <div className="rounded-md px-3 py-1 text-xs text-[var(--text-dim)]">
-                    Week
+                  <div className="h-5 w-5 overflow-hidden rounded-full bg-[var(--avatar-bg)]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://api.dicebear.com/9.x/notionists/svg?seed=Jordan" alt="" className="h-full w-full" />
                   </div>
                 </div>
               </div>
 
-              {/* Time Grid */}
-              <div className="space-y-0">
-                {["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM"].map(
-                  (time, i) => (
-                    <div
-                      key={time}
-                      className="flex border-t border-[var(--grid-line)]"
-                    >
-                      <span className="w-16 shrink-0 py-3 pr-3 text-right font-mono text-[10px] text-[var(--text-dim)]">
-                        {time}
-                      </span>
-                      <div className="relative flex-1 py-1">
-                        {i === 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, scaleX: 0 }}
-                            animate={{ opacity: 1, scaleX: 1 }}
-                            transition={{ delay: 2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="origin-left rounded-md border border-emerald-500/10 bg-emerald-500/[0.04] px-2 py-1.5"
-                          >
-                            <div className="text-[10px] font-medium text-zinc-200">
-                              Water heater install
-                            </div>
-                            <div className="text-[9px] text-zinc-500">
-                              Mike T. — 42 Oak Ave
-                            </div>
-                          </motion.div>
-                        )}
-                        {i === 1 && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 0.4 }}
-                            transition={{ delay: 2.3, duration: 0.5 }}
-                            className="rounded-md bg-[var(--subtle-bg)] px-2 py-1 text-[9px] italic text-[var(--text-muted)]"
-                          >
-                            Travel time · 22 min
-                          </motion.div>
-                        )}
-                        {i === 2 && (
-                          <motion.div
-                            initial={{ opacity: 0, scaleX: 0 }}
-                            animate={{ opacity: 1, scaleX: 1 }}
-                            transition={{ delay: 2.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="origin-left rounded-md border border-emerald-500/10 bg-emerald-500/[0.04] px-2 py-1.5"
-                          >
-                            <div className="text-[10px] font-medium text-zinc-200">
-                              Boiler service
-                            </div>
-                            <div className="text-[9px] text-zinc-500">
-                              Sarah L. — 17 Pine Rd
-                            </div>
-                          </motion.div>
-                        )}
-                        {i === 4 && (
-                          <motion.div
-                            initial={{ opacity: 0, scaleX: 0 }}
-                            animate={{ opacity: 1, scaleX: 1 }}
-                            transition={{ delay: 2.8, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="origin-left rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1.5"
-                          >
-                            <div className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                              Emergency callout
-                            </div>
-                            <div className="text-[9px] text-amber-600/60 dark:text-amber-400/60">
-                              David R. — 8 Elm St
-                            </div>
-                          </motion.div>
-                        )}
+              {/* Schedule Header */}
+              <div className="flex items-center justify-between border-b border-[var(--card-border)] px-4 py-2.5">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <div className="font-mono text-[8px] tracking-[0.08em] uppercase text-[var(--text-dim)]">Tactical Timeline</div>
+                    <div className="text-sm font-medium tracking-tight text-[var(--text-heading)]">Wed, March 11, 2026</div>
+                  </div>
+                  <span className="rounded-md bg-white/[0.08] px-2 py-0.5 text-[9px] font-medium text-[var(--text-heading)]">Today</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Day/Week/Month toggle */}
+                  <div className="flex rounded-md border border-[var(--card-border)] bg-[var(--subtle-bg)]">
+                    {["Day", "Week", "Month"].map((v, i) => (
+                      <button
+                        key={v}
+                        className={`px-2.5 py-1 text-[9px] font-medium transition-colors ${
+                          i === 0
+                            ? "bg-[var(--text-primary)] text-[var(--background)] rounded-l-md"
+                            : "text-[var(--text-dim)]"
+                        } ${i === 2 ? "rounded-r-md" : ""}`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                  <button className="flex items-center gap-1 rounded-md border border-[var(--card-border)] px-2 py-1 text-[9px] text-[var(--text-muted)]">
+                    <Map size={10} /> BackMap
+                  </button>
+                </div>
+              </div>
+
+              {/* ─── Timeline Grid ─── */}
+              <div className="flex flex-1 overflow-hidden">
+                {/* Timeline content area */}
+                <div className="flex-1 overflow-hidden">
+                  {/* Time column headers */}
+                  <div className="flex border-b border-[var(--card-border)]">
+                    {/* Tech name spacer */}
+                    <div className="w-[100px] shrink-0 border-r border-[var(--card-border)]" />
+                    {/* Time labels */}
+                    <div className="flex flex-1">
+                      {["6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM"].map((t) => (
+                        <div key={t} className="flex-1 border-r border-[var(--grid-line)] px-1 py-1.5 text-center font-mono text-[8px] text-[var(--text-dim)]">
+                          {t}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tech rows */}
+                  {[
+                    {
+                      name: "Mike Thompson",
+                      role: "Senior Plumber",
+                      online: true,
+                      avatar: "Mike",
+                      jobs: [
+                        { title: "Water heater install", client: "David Park", time: "8 AM — 10 AM", start: 2, span: 2, status: "in_progress" as const },
+                        { title: "Boiler service", client: "Sarah Mitchell", time: "11 AM — 12 PM", start: 5, span: 1, status: "scheduled" as const },
+                        { title: "Pipe repair", client: "James Wilson", time: "2 PM — 4 PM", start: 8, span: 2, status: "scheduled" as const },
+                      ],
+                    },
+                    {
+                      name: "Sarah Chen",
+                      role: "Electrician",
+                      online: true,
+                      avatar: "Sarah",
+                      jobs: [
+                        { title: "Panel upgrade", client: "Lisa Chen", time: "7 AM — 9 AM", start: 1, span: 2, status: "complete" as const },
+                        { title: "Outlet install", client: "Tom Harris", time: "10 AM — 11 AM", start: 4, span: 1, status: "en_route" as const },
+                        { title: "Wiring inspection", client: "Amy Brooks", time: "1 PM — 3 PM", start: 7, span: 2, status: "scheduled" as const },
+                      ],
+                    },
+                    {
+                      name: "James O'Brien",
+                      role: "HVAC Tech",
+                      online: false,
+                      avatar: "James",
+                      jobs: [
+                        { title: "AC maintenance", client: "Robert Kim", time: "9 AM — 11 AM", start: 3, span: 2, status: "on_site" as const },
+                        { title: "Duct cleaning", client: "Karen Lee", time: "12 PM — 2 PM", start: 6, span: 2, status: "scheduled" as const },
+                      ],
+                    },
+                    {
+                      name: "Emma Davis",
+                      role: "Plumber",
+                      online: true,
+                      avatar: "Emma",
+                      jobs: [
+                        { title: "Emergency callout", client: "David R.", time: "8 AM — 9 AM", start: 2, span: 1, status: "in_progress" as const },
+                        { title: "Drain clearing", client: "N. Patterson", time: "10 AM — 12 PM", start: 4, span: 2, status: "scheduled" as const },
+                        { title: "Fixture install", client: "C. Thompson", time: "3 PM — 5 PM", start: 9, span: 2, status: "scheduled" as const },
+                      ],
+                    },
+                  ].map((tech, techIdx) => (
+                    <div key={tech.name} className="flex border-b border-[var(--grid-line)]">
+                      {/* Tech info */}
+                      <div className="flex w-[100px] shrink-0 items-center gap-2 border-r border-[var(--card-border)] px-3 py-2">
+                        <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-[var(--avatar-bg)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={`https://api.dicebear.com/9.x/notionists/svg?seed=${tech.avatar}`} alt="" className="h-full w-full" />
+                          <div className={`absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full border-[1.5px] border-[var(--background)] ${tech.online ? "bg-emerald-500" : "bg-zinc-600"}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-[10px] font-medium text-[var(--text-heading)]">{tech.name}</div>
+                          <div className="truncate text-[8px] text-[var(--text-dim)]">{tech.role}</div>
+                        </div>
+                      </div>
+                      {/* Timeline row */}
+                      <div className="relative flex flex-1" style={{ minHeight: 72 }}>
+                        {/* Grid columns */}
+                        {Array.from({ length: 12 }).map((_, ci) => (
+                          <div key={ci} className="flex-1 border-r border-[var(--grid-line)]" />
+                        ))}
+                        {/* Job blocks */}
+                        {tech.jobs.map((job, blockIdx) => {
+                          const statusStyles = {
+                            scheduled: "border-l-sky-500 bg-sky-500/[0.08] text-sky-100",
+                            en_route: "border-l-amber-500 bg-amber-500/[0.08] text-amber-100",
+                            on_site: "border-l-violet-500 bg-violet-500/[0.08] text-violet-100",
+                            in_progress: "border-l-emerald-500 bg-emerald-500/[0.08] text-emerald-100",
+                            complete: "border-l-zinc-600 bg-zinc-500/[0.05] text-zinc-400",
+                          };
+                          const dotStyles = {
+                            scheduled: "bg-sky-400",
+                            en_route: "bg-amber-400",
+                            on_site: "bg-violet-400",
+                            in_progress: "bg-emerald-400",
+                            complete: "bg-zinc-500",
+                          };
+                          // Each column = 1/12 of width = 1 hour starting at 6 AM
+                          const left = `${(job.start / 12) * 100}%`;
+                          const width = `${(job.span / 12) * 100}%`;
+                          return (
+                            <motion.div
+                              key={job.title}
+                              initial={{ opacity: 0, scaleX: 0 }}
+                              animate={{ opacity: 1, scaleX: 1 }}
+                              transition={{
+                                delay: 1.8 + techIdx * 0.08 + blockIdx * 0.06,
+                                duration: 0.5,
+                                ease: [0.16, 1, 0.3, 1],
+                              }}
+                              className={`absolute top-2 origin-left rounded-lg border-l-2 backdrop-blur-sm px-2 py-1.5 flex flex-col justify-center ${statusStyles[job.status]}`}
+                              style={{ left, width, height: "calc(100% - 16px)" }}
+                            >
+                              <div className="flex items-center gap-1">
+                                <div className={`h-1.5 w-1.5 rounded-full ${dotStyles[job.status]}`} />
+                                <span className="font-mono text-[7px] opacity-60">{job.time}</span>
+                              </div>
+                              <div className="mt-0.5 truncate text-[9px] font-medium leading-tight">{job.title}</div>
+                              <div className="truncate text-[8px] opacity-50">{job.client}</div>
+                            </motion.div>
+                          );
+                        })}
                       </div>
                     </div>
-                  )
-                )}
-              </div>
-            </div>
+                  ))}
+                </div>
 
-            {/* Right Panel */}
-            <div className="hidden w-56 flex-shrink-0 border-l border-[var(--card-border)] p-4 lg:block">
-              <span className="mb-3 block text-xs font-medium text-[var(--text-muted)]">
-                Team
-              </span>
-              {[
-                { name: "Mike Thompson", status: "On job", color: "bg-emerald-500" },
-                { name: "Sarah Chen", status: "En route", color: "bg-emerald-500/60" },
-                { name: "James O'Brien", status: "Available", color: "bg-zinc-500" },
-              ].map((person) => (
-                <div
-                  key={person.name}
-                  className="mb-2 flex items-center gap-2 rounded-md px-2 py-1.5"
-                >
-                  <div className="relative h-6 w-6 rounded-full bg-[var(--avatar-bg)]">
-                    <div
-                      className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--background)] ${person.color}`}
-                    />
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-[var(--text-heading)]">
-                      {person.name}
+                {/* ─── Unassigned Jobs Panel ─── */}
+                <div className="hidden w-[180px] shrink-0 flex-col border-l border-[var(--card-border)] lg:flex">
+                  <div className="flex items-center justify-between border-b border-[var(--card-border)] px-3 py-2">
+                    <div>
+                      <div className="font-mono text-[8px] tracking-[0.08em] uppercase text-[var(--text-dim)]">Backlog</div>
+                      <div className="text-[10px] font-medium text-[var(--text-heading)]">Unassigned Jobs</div>
                     </div>
-                    <div className="text-[9px] text-[var(--text-dim)]">
-                      {person.status}
+                  </div>
+                  <div className="flex-1 space-y-1.5 p-2">
+                    {[
+                      { title: "Tap replacement", client: "M. Brown", priority: "medium" },
+                      { title: "Gas line check", client: "P. Jones", priority: "high" },
+                      { title: "Toilet repair", client: "S. Williams", priority: "low" },
+                    ].map((job, i) => (
+                      <motion.div
+                        key={job.title}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 2.2 + i * 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                        className="rounded-lg border border-[var(--card-border)] bg-[var(--subtle-bg)] p-2 cursor-grab"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <div className={`h-1.5 w-1.5 rounded-full ${
+                            job.priority === "high" ? "bg-rose-400" : job.priority === "medium" ? "bg-amber-400" : "bg-sky-400"
+                          }`} />
+                          <span className="text-[9px] font-medium text-[var(--text-heading)]">{job.title}</span>
+                        </div>
+                        <div className="mt-0.5 text-[8px] text-[var(--text-dim)]">{job.client}</div>
+                      </motion.div>
+                    ))}
+                    <div className="mt-2 text-center text-[8px] text-[var(--text-dim)]">
+                      Drag to assign to timeline
                     </div>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
 
           {/* Animated border beam */}
-          <BorderBeam size={120} duration={8} colorFrom="#10B981" colorTo="#059669" borderWidth={1} />
-        </div>
-
-        {/* Bottom gradient fade */}
-        <div
-          className="absolute inset-x-0 -bottom-1 h-32"
-          style={{
-            background: `linear-gradient(to top, var(--section-fade), transparent)`,
-          }}
-        />
+          <BorderBeam size={80} duration={14} colorFrom="rgba(16,185,129,0.25)" colorTo="rgba(5,150,105,0.1)" borderWidth={1} />
       </motion.div>
     </section>
   );

@@ -99,11 +99,7 @@ export function Navbar() {
                 <SpotlightButton
                   size="sm"
                   href="/auth"
-                  style={{
-                    background: "var(--brand)",
-                    color: "#fff",
-                    borderColor: "transparent",
-                  }}
+                  variant="primary"
                 >
                   Start free
                 </SpotlightButton>
@@ -152,11 +148,7 @@ export function Navbar() {
                   size="md"
                   className="w-full"
                   href="/auth"
-                  style={{
-                    background: "var(--brand)",
-                    color: "#fff",
-                    borderColor: "transparent",
-                  }}
+                  variant="primary"
                 >
                   Start free trial
                 </SpotlightButton>

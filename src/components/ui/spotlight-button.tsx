@@ -6,7 +6,7 @@ import { type ReactNode } from "react";
 
 interface SpotlightButtonProps {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "brand";
   size?: "sm" | "md" | "lg";
   className?: string;
   style?: React.CSSProperties;
@@ -21,6 +21,8 @@ const variants = {
     "bg-transparent text-[var(--text-primary)] border border-[var(--card-border)] hover:border-[var(--card-border-hover)] hover:bg-[var(--subtle-bg)]",
   ghost:
     "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-transparent",
+  brand:
+    "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)] border border-transparent",
 };
 
 const sizes = {

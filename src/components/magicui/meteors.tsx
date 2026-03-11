@@ -19,7 +19,7 @@ export const Meteors = ({
   maxDelay = 1.2,
   minDuration = 2,
   maxDuration = 10,
-  angle = 215,
+  angle = 0,
   className,
 }: MeteorsProps) => {
   const [meteorStyles, setMeteorStyles] = useState<Array<React.CSSProperties>>(
@@ -28,9 +28,9 @@ export const Meteors = ({
 
   useEffect(() => {
     const styles = [...new Array(number)].map(() => ({
-      "--angle": `${-angle}deg`,
+      "--meteor-angle": `${angle}deg`,
       top: "-5%",
-      left: `calc(0% + ${Math.floor(Math.random() * (typeof window !== "undefined" ? window.innerWidth : 1000))}px)`,
+      left: `${Math.random() * 100}%`,
       animationDelay:
         Math.random() * (maxDelay - minDelay) + minDelay + "s",
       animationDuration:
@@ -41,19 +41,23 @@ export const Meteors = ({
   }, [number, minDelay, maxDelay, minDuration, maxDuration, angle]);
 
   return (
-    <>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {[...meteorStyles].map((style, idx) => (
         <span
           key={idx}
           className={cn(
-            "pointer-events-none absolute left-1/2 top-1/2 size-0.5 rotate-[215deg] animate-meteor rounded-full bg-zinc-500 shadow-[0_0_0_1px_#ffffff10]",
+            "pointer-events-none absolute size-0.5 animate-meteor rounded-full bg-zinc-400 shadow-[0_0_0_1px_#ffffff10]",
             className,
           )}
           style={style}
         >
-          <div className="pointer-events-none absolute top-1/2 -z-10 h-px w-[50px] -translate-y-1/2 bg-gradient-to-r from-zinc-500 to-transparent" />
+          {/* Trail — points opposite to travel direction (upward for angle 0) */}
+          <div
+            className="pointer-events-none absolute left-1/2 bottom-full -z-10 w-px -translate-x-1/2 bg-gradient-to-t from-zinc-400 to-transparent"
+            style={{ height: 50 }}
+          />
         </span>
       ))}
-    </>
+    </div>
   );
 };

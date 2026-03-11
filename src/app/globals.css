@@ -25,7 +25,7 @@
   /* Brand: Signal Green (refined Emerald, not neon) */
   --color-brand: #10B981;
   --color-brand-dark: #059669;
-  --color-brand-glow: rgba(16, 185, 129, 0.4);
+  --color-brand-glow: rgba(16, 185, 129, 0.2);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -89,8 +89,8 @@
   --text-muted: #71717a;
   --brand: #10B981;
   --brand-hover: #059669;
-  --brand-glow: 0 0 12px rgba(16, 185, 129, 0.15);
-  --brand-glow-subtle: 0 0 8px -5px rgba(16, 185, 129, 0.1);
+  --brand-glow: 0 0 12px rgba(16, 185, 129, 0.08);
+  --brand-glow-subtle: 0 0 8px -5px rgba(16, 185, 129, 0.05);
   --selection-bg: rgba(16, 185, 129, 0.15);
   --scrollbar-thumb: rgba(255, 255, 255, 0.06);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.12);
@@ -115,9 +115,9 @@
   --testimonial-bg: rgba(24, 24, 27, 0.8);
   --cta-bg-text: rgba(39, 39, 42, 0.3);
   /* Ghost-tint semantic status tokens */
-  --ghost-emerald: rgba(16, 185, 129, 0.08);
+  --ghost-emerald: rgba(16, 185, 129, 0.05);
   --ghost-emerald-text: #34d399;
-  --ghost-emerald-strong: rgba(16, 185, 129, 0.15);
+  --ghost-emerald-strong: rgba(16, 185, 129, 0.10);
   --ghost-rose: rgba(244, 63, 94, 0.08);
   --ghost-rose-text: #fb7185;
   --ghost-rose-strong: rgba(244, 63, 94, 0.15);
@@ -147,8 +147,8 @@
   --text-muted: #71717a;
   --brand: #059669;
   --brand-hover: #047857;
-  --brand-glow: 0 0 15px rgba(5, 150, 105, 0.15);
-  --brand-glow-subtle: 0 0 10px -5px rgba(5, 150, 105, 0.1);
+  --brand-glow: 0 0 15px rgba(5, 150, 105, 0.08);
+  --brand-glow-subtle: 0 0 10px -5px rgba(5, 150, 105, 0.05);
   --selection-bg: rgba(5, 150, 105, 0.15);
   --scrollbar-thumb: rgba(0, 0, 0, 0.12);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
@@ -173,9 +173,9 @@
   --testimonial-bg: rgba(255, 255, 255, 0.8);
   --cta-bg-text: rgba(0, 0, 0, 0.04);
   /* Ghost-tint semantic status tokens */
-  --ghost-emerald: rgba(5, 150, 105, 0.1);
+  --ghost-emerald: rgba(5, 150, 105, 0.06);
   --ghost-emerald-text: #059669;
-  --ghost-emerald-strong: rgba(5, 150, 105, 0.18);
+  --ghost-emerald-strong: rgba(5, 150, 105, 0.12);
   --ghost-rose: rgba(225, 29, 72, 0.08);
   --ghost-rose-text: #e11d48;
   --ghost-rose-strong: rgba(225, 29, 72, 0.15);
@@ -681,14 +681,14 @@ img, video, svg, canvas {
 
 @keyframes meteor {
   0% {
-    transform: rotate(var(--angle)) translateX(0);
+    transform: rotate(var(--meteor-angle, 215deg)) translateY(0);
     opacity: 1;
   }
   70% {
     opacity: 1;
   }
   100% {
-    transform: rotate(var(--angle)) translateX(-500px);
+    transform: rotate(var(--meteor-angle, 215deg)) translateY(500px);
     opacity: 0;
   }
 }
