@@ -216,7 +216,9 @@ function PlanCard({
 export function UpgradeModal() {
   const { open, triggerFeature, triggerDescription, closeUpgrade } =
     useUpgradeModal();
-  const { plan: currentPlan } = useBillingStore();
+  const { plan: currentPlan, planTier } = useBillingStore();
+  // Effective plan key — use planTier which includes org fallback
+  const effectivePlanKey = currentPlan.key !== "free" ? currentPlan.key : planTier || "free";
   const [isYearly, setIsYearly] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
@@ -384,7 +386,7 @@ export function UpgradeModal() {
                       key={plan.key}
                       plan={plan}
                       isYearly={isYearly}
-                      isCurrent={currentPlan.key === plan.key}
+                      isCurrent={effectivePlanKey === plan.key}
                       isRecommended={plan.highlighted}
                       index={i}
                       onSelect={handleSelectPlan}

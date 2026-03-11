@@ -30,9 +30,10 @@ export function FeatureGate({
   featureTitle,
   featureDescription,
 }: FeatureGateProps) {
-  const { plan } = useBillingStore();
+  const { plan, planTier } = useBillingStore();
   const { openUpgrade } = useUpgradeModal();
-  const currentTier = plan.key;
+  // Use planTier (which includes org fallback) if the plan key is free
+  const currentTier = plan.key !== "free" ? plan.key : planTier || "free";
 
   if (meetsRequirement(currentTier, requiredTier)) {
     return <>{children}</>;
@@ -107,9 +108,9 @@ interface SoftGateProps {
 }
 
 export function SoftGate({ requiredTier, children, label }: SoftGateProps) {
-  const { plan } = useBillingStore();
+  const { plan, planTier } = useBillingStore();
   const { openUpgrade } = useUpgradeModal();
-  const currentTier = plan.key;
+  const currentTier = plan.key !== "free" ? plan.key : planTier || "free";
 
   if (meetsRequirement(currentTier, requiredTier)) {
     return <>{children}</>;

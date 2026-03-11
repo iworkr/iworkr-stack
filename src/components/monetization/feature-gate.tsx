@@ -161,9 +161,10 @@ export function useFeatureAccess(feature: GatedFeature): {
   config: FeatureConfig;
   currentPlan: string;
 } {
-  const { subscription } = useBillingStore();
+  const { subscription, planTier } = useBillingStore();
   const config = FEATURE_CONFIG[feature];
-  const currentPlan = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || "free";
+  // Use subscription plan_key first, then billing store planTier (which includes org fallback)
+  const currentPlan = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || planTier || "free";
   const allowed = meetsRequirement(currentPlan, config.requiredPlan);
   return { allowed, config, currentPlan };
 }

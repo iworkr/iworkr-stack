@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/auth-store";
+import { useBillingStore } from "@/lib/billing-store";
 import { getPlanByKey, type PlanDefinition } from "@/lib/plans";
 
 const stripePromise = loadStripe(
@@ -148,11 +149,20 @@ function CheckoutForm({
 // ── Success State ──
 function CheckoutSuccess({ planName }: { planName: string }) {
   const router = useRouter();
+  const { refreshBilling } = useBillingStore();
 
   useEffect(() => {
-    const t = setTimeout(() => router.push("/dashboard"), 4000);
+    // Give Stripe webhook a moment to process, then refresh billing store
+    const refresh = async () => {
+      // Wait 2s for webhook to sync to Supabase
+      await new Promise((r) => setTimeout(r, 2000));
+      await refreshBilling();
+    };
+    refresh();
+
+    const t = setTimeout(() => router.push("/dashboard?upgrade=success"), 4000);
     return () => clearTimeout(t);
-  }, [router]);
+  }, [router, refreshBilling]);
 
   return (
     <motion.div
@@ -187,6 +197,7 @@ function CheckoutInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, currentOrg } = useAuthStore();
+  const { refreshBilling } = useBillingStore();
 
   const planKey = searchParams.get("plan") || "pro";
   const interval = searchParams.get("interval") || "monthly";
@@ -454,7 +465,11 @@ function CheckoutInner() {
               <CheckoutForm
                 plan={plan}
                 type={intentType}
-                onSuccess={() => setSuccess(true)}
+                onSuccess={() => {
+                  setSuccess(true);
+                  // Kick off billing refresh immediately
+                  refreshBilling();
+                }}
               />
             </Elements>
           ) : (

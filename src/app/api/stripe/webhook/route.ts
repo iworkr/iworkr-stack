@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         const periodStart = item.current_period_start || sub.current_period_start || sub.start_date;
         const periodEnd = item.current_period_end || sub.current_period_end;
 
-        await supabase.from("subscriptions").upsert(
+        const { error: subErr } = await supabase.from("subscriptions").upsert(
           {
             organization_id: orgId,
             polar_subscription_id: `stripe_${sub.id}`,
@@ -110,9 +110,10 @@ export async function POST(req: NextRequest) {
           },
           { onConflict: "stripe_subscription_id" }
         );
+        if (subErr) console.error("[Stripe Webhook] subscription upsert failed:", subErr.message, subErr.details, subErr.hint);
 
         // Update org plan_tier and billing_provider
-        await supabase
+        const { error: orgErr } = await supabase
           .from("organizations")
           .update({
             plan_tier: planKey,
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
             ...(periodEnd ? { subscription_active_until: new Date(periodEnd * 1000).toISOString() } : {}),
           })
           .eq("id", orgId);
+        if (orgErr) console.error("[Stripe Webhook] org update failed:", orgErr.message, orgErr.details);
 
         // Send email
         const owner = await getOrgOwnerEmail(supabase, orgId);
@@ -167,20 +169,22 @@ export async function POST(req: NextRequest) {
         if (periodEnd) updateData.current_period_end = new Date(periodEnd * 1000).toISOString();
         if (sub.canceled_at) updateData.canceled_at = new Date(sub.canceled_at * 1000).toISOString();
 
-        await supabase
+        const { error: updErr } = await supabase
           .from("subscriptions")
           .update(updateData)
           .eq("stripe_subscription_id", sub.id);
+        if (updErr) console.error("[Stripe Webhook] subscription update failed:", updErr.message, updErr.details);
 
         // Sync org plan_tier
         if (orgId) {
-          await supabase
+          const { error: orgUpdErr } = await supabase
             .from("organizations")
             .update({
               plan_tier: sub.status === "canceled" ? "free" : planKey,
               ...(periodEnd ? { subscription_active_until: new Date(periodEnd * 1000).toISOString() } : {}),
             })
             .eq("id", orgId);
+          if (orgUpdErr) console.error("[Stripe Webhook] org plan update failed:", orgUpdErr.message);
 
           // Send cancellation email if just set to cancel
           if (sub.cancel_at_period_end && periodEnd) {

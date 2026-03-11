@@ -39,6 +39,7 @@ import { useState } from "react";
 import { Shimmer, ShimmerTeamRow } from "@/components/ui/shimmer";
 import { useTheme } from "@/components/providers/theme-provider";
 import { useBillingStore } from "@/lib/billing-store";
+import { createClient } from "@/lib/supabase/client";
 import { ProBadge } from "@/components/monetization/pro-badge";
 import { roleDefinitions, type RoleId, type PermissionModule } from "@/lib/team-data";
 
@@ -158,12 +159,52 @@ export function Sidebar() {
   const { currentOrg } = useAuthStore();
   const { orgId } = useOrg();
   const companyName = currentOrg?.name || onboardingName || "";
-  const { subscription, loadBilling } = useBillingStore();
-  const planKey = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || "free";
+  const { subscription, planTier, loadBilling } = useBillingStore();
+  const planKey = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || planTier || "free";
   const isFree = planKey === "free";
 
   useEffect(() => {
     if (orgId) loadBilling(orgId);
+  }, [orgId, loadBilling]);
+
+  // ── Realtime: auto-refresh billing when subscription or org changes ──
+  useEffect(() => {
+    if (!orgId) return;
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`billing-sync-${orgId}`)
+      .on(
+        "postgres_changes" as any,
+        {
+          event: "*",
+          schema: "public",
+          table: "subscriptions",
+          filter: `organization_id=eq.${orgId}`,
+        },
+        () => {
+          // Subscription row changed — reload billing
+          loadBilling(orgId);
+        }
+      )
+      .on(
+        "postgres_changes" as any,
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "organizations",
+          filter: `id=eq.${orgId}`,
+        },
+        () => {
+          // Org plan_tier changed — reload billing
+          loadBilling(orgId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [orgId, loadBilling]);
 
   const gatedNavIds = new Set(["nav_automations", "nav_integrations"]);
