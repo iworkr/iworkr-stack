@@ -1,45 +1,50 @@
 -- ============================================================
 -- Migration 047: Client Activity Logs (Project Helix §2)
--- Polymorphic activity timeline + Postgres triggers
+-- SAFE: All statements idempotent with existence checks.
 -- ============================================================
 
 -- ── 1. Create client_activity_logs table ─────────────────
-create table if not exists public.client_activity_logs (
-  id              uuid primary key default gen_random_uuid(),
-  client_id       uuid not null references public.clients on delete cascade,
-  organization_id uuid not null references public.organizations on delete cascade,
-  event_type      text not null,         -- 'job_created','job_completed','invoice_sent','invoice_paid','note_updated','status_changed','contact_added'
-  actor_id        uuid references auth.users,
-  metadata        jsonb default '{}',    -- polymorphic payload per event_type
-  created_at      timestamptz default now()
+CREATE TABLE IF NOT EXISTS public.client_activity_logs (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id       uuid NOT NULL REFERENCES public.clients ON DELETE CASCADE,
+  organization_id uuid NOT NULL REFERENCES public.organizations ON DELETE CASCADE,
+  event_type      text NOT NULL,
+  actor_id        uuid REFERENCES auth.users,
+  metadata        jsonb DEFAULT '{}',
+  created_at      timestamptz DEFAULT now()
 );
 
-create index idx_client_activity_client on public.client_activity_logs (client_id, created_at desc);
-create index idx_client_activity_org on public.client_activity_logs (organization_id, created_at desc);
+CREATE INDEX IF NOT EXISTS idx_client_activity_client ON public.client_activity_logs (client_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_client_activity_org ON public.client_activity_logs (organization_id, created_at DESC);
 
--- RLS
-alter table public.client_activity_logs enable row level security;
+ALTER TABLE public.client_activity_logs ENABLE ROW LEVEL SECURITY;
 
-create policy "Members can read client activity"
-  on public.client_activity_logs for select
-  using (
-    organization_id in (
-      select organization_id from public.organization_members
-      where user_id = auth.uid() and status = 'active'
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "Members can read client activity"
+    ON public.client_activity_logs FOR SELECT
+    USING (
+      organization_id IN (
+        SELECT organization_id FROM public.organization_members
+        WHERE user_id = auth.uid() AND status = 'active'
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-create policy "System can insert client activity"
-  on public.client_activity_logs for insert
-  with check (true);
+DO $$ BEGIN
+  CREATE POLICY "System can insert client activity"
+    ON public.client_activity_logs FOR INSERT
+    WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ── 2. Trigger: Log when a job is created for a client ───
-create or replace function public.log_client_job_created()
-returns trigger as $$
-begin
-  if NEW.client_id is not null then
-    insert into public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
-    values (
+CREATE OR REPLACE FUNCTION public.log_client_job_created()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.client_id IS NOT NULL THEN
+    INSERT INTO public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
+    VALUES (
       NEW.client_id,
       NEW.organization_id,
       'job_created',
@@ -47,28 +52,32 @@ begin
       jsonb_build_object(
         'job_id', NEW.id,
         'title', NEW.title,
-        'description', coalesce(NEW.description, '')
+        'description', COALESCE(NEW.description, '')
       )
     );
-  end if;
-  return NEW;
-end;
-$$ language plpgsql security definer;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-drop trigger if exists on_job_created_log_client on public.jobs;
-create trigger on_job_created_log_client
-  after insert on public.jobs
-  for each row
-  when (NEW.client_id is not null and NEW.deleted_at is null)
-  execute function public.log_client_job_created();
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='jobs') THEN
+    DROP TRIGGER IF EXISTS on_job_created_log_client ON public.jobs;
+    CREATE TRIGGER on_job_created_log_client
+      AFTER INSERT ON public.jobs
+      FOR EACH ROW
+      WHEN (NEW.client_id IS NOT NULL AND NEW.deleted_at IS NULL)
+      EXECUTE FUNCTION public.log_client_job_created();
+  END IF;
+END $$;
 
 -- ── 3. Trigger: Log when a job is completed for a client ─
-create or replace function public.log_client_job_completed()
-returns trigger as $$
-begin
-  if NEW.status = 'done' and OLD.status is distinct from 'done' and NEW.client_id is not null then
-    insert into public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
-    values (
+CREATE OR REPLACE FUNCTION public.log_client_job_completed()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.status = 'done' AND OLD.status IS DISTINCT FROM 'done' AND NEW.client_id IS NOT NULL THEN
+    INSERT INTO public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
+    VALUES (
       NEW.client_id,
       NEW.organization_id,
       'job_completed',
@@ -78,37 +87,40 @@ begin
         'title', NEW.title
       )
     );
-  end if;
-  return NEW;
-end;
-$$ language plpgsql security definer;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-drop trigger if exists on_job_completed_log_client on public.jobs;
-create trigger on_job_completed_log_client
-  after update on public.jobs
-  for each row
-  when (NEW.status = 'done' and OLD.status is distinct from NEW.status and NEW.client_id is not null)
-  execute function public.log_client_job_completed();
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='jobs') THEN
+    DROP TRIGGER IF EXISTS on_job_completed_log_client ON public.jobs;
+    CREATE TRIGGER on_job_completed_log_client
+      AFTER UPDATE ON public.jobs
+      FOR EACH ROW
+      WHEN (NEW.status = 'done' AND OLD.status IS DISTINCT FROM NEW.status AND NEW.client_id IS NOT NULL)
+      EXECUTE FUNCTION public.log_client_job_completed();
+  END IF;
+END $$;
 
 -- ── 4. Trigger: Log when an invoice is created/paid ──────
-create or replace function public.log_client_invoice_event()
-returns trigger as $$
-declare
+CREATE OR REPLACE FUNCTION public.log_client_invoice_event()
+RETURNS trigger AS $$
+DECLARE
   v_event_type text;
-begin
-  if NEW.client_id is null then return NEW; end if;
+BEGIN
+  IF NEW.client_id IS NULL THEN RETURN NEW; END IF;
 
-  -- Determine event type
-  if TG_OP = 'INSERT' then
+  IF TG_OP = 'INSERT' THEN
     v_event_type := 'invoice_sent';
-  elsif TG_OP = 'UPDATE' and NEW.status = 'paid' and OLD.status is distinct from 'paid' then
+  ELSIF TG_OP = 'UPDATE' AND NEW.status = 'paid' AND OLD.status IS DISTINCT FROM 'paid' THEN
     v_event_type := 'invoice_paid';
-  else
-    return NEW;
-  end if;
+  ELSE
+    RETURN NEW;
+  END IF;
 
-  insert into public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
-  values (
+  INSERT INTO public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
+  VALUES (
     NEW.client_id,
     NEW.organization_id,
     v_event_type,
@@ -116,28 +128,31 @@ begin
     jsonb_build_object(
       'invoice_id', NEW.id,
       'total', NEW.total,
-      'status', NEW.status,
-      'invoice_number', coalesce(NEW.invoice_number, '')
+      'status', NEW.status
     )
   );
-  return NEW;
-end;
-$$ language plpgsql security definer;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-drop trigger if exists on_invoice_log_client on public.invoices;
-create trigger on_invoice_log_client
-  after insert or update on public.invoices
-  for each row
-  when (NEW.client_id is not null)
-  execute function public.log_client_invoice_event();
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='invoices') THEN
+    DROP TRIGGER IF EXISTS on_invoice_log_client ON public.invoices;
+    CREATE TRIGGER on_invoice_log_client
+      AFTER INSERT OR UPDATE ON public.invoices
+      FOR EACH ROW
+      WHEN (NEW.client_id IS NOT NULL)
+      EXECUTE FUNCTION public.log_client_invoice_event();
+  END IF;
+END $$;
 
 -- ── 5. Trigger: Log client status changes ────────────────
-create or replace function public.log_client_status_change()
-returns trigger as $$
-begin
-  if OLD.status is distinct from NEW.status then
-    insert into public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
-    values (
+CREATE OR REPLACE FUNCTION public.log_client_status_change()
+RETURNS trigger AS $$
+BEGIN
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
+    VALUES (
       NEW.id,
       NEW.organization_id,
       'status_changed',
@@ -147,25 +162,29 @@ begin
         'to', NEW.status
       )
     );
-  end if;
-  return NEW;
-end;
-$$ language plpgsql security definer;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-drop trigger if exists on_client_status_change_log on public.clients;
-create trigger on_client_status_change_log
-  after update on public.clients
-  for each row
-  when (OLD.status is distinct from NEW.status)
-  execute function public.log_client_status_change();
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='clients') THEN
+    DROP TRIGGER IF EXISTS on_client_status_change_log ON public.clients;
+    CREATE TRIGGER on_client_status_change_log
+      AFTER UPDATE ON public.clients
+      FOR EACH ROW
+      WHEN (OLD.status IS DISTINCT FROM NEW.status)
+      EXECUTE FUNCTION public.log_client_status_change();
+  END IF;
+END $$;
 
 -- ── 6. Trigger: Log client notes changes ─────────────────
-create or replace function public.log_client_notes_change()
-returns trigger as $$
-begin
-  if OLD.notes is distinct from NEW.notes and NEW.notes is not null and NEW.notes != '' then
-    insert into public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
-    values (
+CREATE OR REPLACE FUNCTION public.log_client_notes_change()
+RETURNS trigger AS $$
+BEGIN
+  IF OLD.notes IS DISTINCT FROM NEW.notes AND NEW.notes IS NOT NULL AND NEW.notes != '' THEN
+    INSERT INTO public.client_activity_logs (client_id, organization_id, event_type, actor_id, metadata)
+    VALUES (
       NEW.id,
       NEW.organization_id,
       'note_updated',
@@ -174,108 +193,101 @@ begin
         'preview', left(NEW.notes, 120)
       )
     );
-  end if;
-  return NEW;
-end;
-$$ language plpgsql security definer;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-drop trigger if exists on_client_notes_change_log on public.clients;
-create trigger on_client_notes_change_log
-  after update on public.clients
-  for each row
-  when (OLD.notes is distinct from NEW.notes)
-  execute function public.log_client_notes_change();
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='clients') THEN
+    DROP TRIGGER IF EXISTS on_client_notes_change_log ON public.clients;
+    CREATE TRIGGER on_client_notes_change_log
+      AFTER UPDATE ON public.clients
+      FOR EACH ROW
+      WHEN (OLD.notes IS DISTINCT FROM NEW.notes)
+      EXECUTE FUNCTION public.log_client_notes_change();
+  END IF;
+END $$;
 
 -- ── 7. Updated RPC: get_client_details with activity logs ─
-create or replace function public.get_client_details(p_client_id uuid)
-returns json
-language plpgsql
-security definer
-as $$
-declare
-  v_result json;
-begin
-  select row_to_json(t)
-  into v_result
-  from (
-    select
-      c.*,
-      coalesce(js.job_count, 0) as job_count,
-      coalesce(is2.lifetime_value, 0) as total_spend,
-      js.last_job_date,
-      (
-        select coalesce(json_agg(row_to_json(cc) order by cc.is_primary desc, cc.created_at), '[]'::json)
-        from public.client_contacts cc
-        where cc.client_id = c.id
-      ) as contacts,
-      -- New: pull from client_activity_logs instead of job_activity
-      (
-        select coalesce(json_agg(row_to_json(cal) order by cal.created_at desc), '[]'::json)
-        from (
-          select
-            cal.id,
-            cal.event_type,
-            cal.actor_id,
-            cal.metadata,
-            cal.created_at,
-            p.full_name as actor_name
-          from public.client_activity_logs cal
-          left join public.profiles p on p.id = cal.actor_id
-          where cal.client_id = c.id
-          order by cal.created_at desc
-          limit 50
-        ) cal
-      ) as activity_log,
-      -- Keep legacy recent_activity for backward compat
-      (
-        select coalesce(json_agg(row_to_json(a) order by a.created_at desc), '[]'::json)
-        from (
-          select ja.*
-          from public.job_activity ja
-          join public.jobs j on j.id = ja.job_id
-          where j.client_id = c.id
-            and j.deleted_at is null
-          order by ja.created_at desc
-          limit 20
-        ) a
-      ) as recent_activity,
-      (
-        select coalesce(json_agg(row_to_json(inv) order by inv.created_at desc), '[]'::json)
-        from (
-          select i.id, i.status, i.total, i.created_at, i.due_date, i.invoice_number
-          from public.invoices i
-          where i.client_id = c.id
-          order by i.created_at desc
-          limit 50
-        ) inv
-      ) as spend_history,
-      -- New: inline jobs for the Jobs tab
-      (
-        select coalesce(json_agg(row_to_json(jb) order by jb.created_at desc), '[]'::json)
-        from (
-          select j.id, j.title, j.status, j.priority, j.created_at, j.scheduled_start, j.scheduled_end
-          from public.jobs j
-          where j.client_id = c.id
-            and j.deleted_at is null
-          order by j.created_at desc
-          limit 50
-        ) jb
-      ) as jobs
-    from public.clients c
-    left join lateral (
-      select count(*)::int as job_count, max(j.created_at) as last_job_date
-      from public.jobs j
-      where j.client_id = c.id and j.deleted_at is null
-    ) js on true
-    left join lateral (
-      select coalesce(sum(i.total), 0)::numeric as lifetime_value
-      from public.invoices i
-      where i.client_id = c.id and i.status = 'paid'
-    ) is2 on true
-    where c.id = p_client_id
-      and c.deleted_at is null
-  ) t;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='clients')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='jobs')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='invoices') THEN
 
-  return v_result;
-end;
-$$;
+    EXECUTE $fn$
+      CREATE OR REPLACE FUNCTION public.get_client_details(p_client_id uuid)
+      RETURNS json
+      LANGUAGE plpgsql
+      SECURITY DEFINER
+      AS $body$
+      DECLARE
+        v_result json;
+      BEGIN
+        SELECT row_to_json(t)
+        INTO v_result
+        FROM (
+          SELECT
+            c.*,
+            COALESCE(js.job_count, 0) AS job_count,
+            COALESCE(is2.lifetime_value, 0) AS total_spend,
+            js.last_job_date,
+            (
+              SELECT COALESCE(json_agg(row_to_json(cal) ORDER BY cal.created_at DESC), '[]'::json)
+              FROM (
+                SELECT
+                  cal2.id,
+                  cal2.event_type,
+                  cal2.actor_id,
+                  cal2.metadata,
+                  cal2.created_at,
+                  p.full_name AS actor_name
+                FROM public.client_activity_logs cal2
+                LEFT JOIN public.profiles p ON p.id = cal2.actor_id
+                WHERE cal2.client_id = c.id
+                ORDER BY cal2.created_at DESC
+                LIMIT 50
+              ) cal
+            ) AS activity_log,
+            (
+              SELECT COALESCE(json_agg(row_to_json(inv) ORDER BY inv.created_at DESC), '[]'::json)
+              FROM (
+                SELECT i.id, i.status, i.total, i.created_at, i.due_date
+                FROM public.invoices i
+                WHERE i.client_id = c.id
+                ORDER BY i.created_at DESC
+                LIMIT 50
+              ) inv
+            ) AS spend_history,
+            (
+              SELECT COALESCE(json_agg(row_to_json(jb) ORDER BY jb.created_at DESC), '[]'::json)
+              FROM (
+                SELECT j.id, j.title, j.status, j.priority, j.created_at, j.scheduled_start, j.scheduled_end
+                FROM public.jobs j
+                WHERE j.client_id = c.id
+                  AND j.deleted_at IS NULL
+                ORDER BY j.created_at DESC
+                LIMIT 50
+              ) jb
+            ) AS jobs
+          FROM public.clients c
+          LEFT JOIN LATERAL (
+            SELECT count(*)::int AS job_count, max(j.created_at) AS last_job_date
+            FROM public.jobs j
+            WHERE j.client_id = c.id AND j.deleted_at IS NULL
+          ) js ON true
+          LEFT JOIN LATERAL (
+            SELECT COALESCE(sum(i.total), 0)::numeric AS lifetime_value
+            FROM public.invoices i
+            WHERE i.client_id = c.id AND i.status = 'paid'
+          ) is2 ON true
+          WHERE c.id = p_client_id
+            AND c.deleted_at IS NULL
+        ) t;
+
+        RETURN v_result;
+      END;
+      $body$;
+    $fn$;
+  END IF;
+END $$;

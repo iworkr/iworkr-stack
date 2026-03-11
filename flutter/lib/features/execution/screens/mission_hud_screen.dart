@@ -301,6 +301,43 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
       // Non-critical — show 0 if fetch fails
     }
 
+    // Photo evidence gate — warn if no photos taken
+    if (photoCount < 1 && mounted) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF141414),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(PhosphorIconsLight.camera, color: ObsidianTheme.amber, size: 20),
+              const SizedBox(width: 10),
+              Text('No Photos Taken', style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          content: Text(
+            'You haven\'t captured any evidence photos for this job. It\'s recommended to take at least one photo before completing.',
+            style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('Take Photos', style: GoogleFonts.inter(color: ObsidianTheme.emerald)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text('Complete Anyway', style: GoogleFonts.inter(color: ObsidianTheme.amber)),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) {
+        // User chose to take photos — open evidence locker
+        if (mounted) showEvidenceLocker(context, jobId: widget.jobId);
+        return;
+      }
+    }
+
     if (!mounted) return;
 
     final result = await showJobCompletionSheet(
@@ -782,7 +819,10 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
       loading: () => const Center(
         child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, _) => _HudErrorView(
+        message: 'Could not load job details. Check your connection and try again.',
+        onRetry: () => ref.invalidate(jobDetailProvider(widget.jobId)),
+      ),
     );
   }
 
@@ -908,7 +948,10 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
       loading: () => const Center(
         child: CircularProgressIndicator(color: ObsidianTheme.amber, strokeWidth: 2),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, _) => _HudErrorView(
+        message: 'Could not load travel details. Check your connection.',
+        onRetry: () => ref.invalidate(jobDetailProvider(widget.jobId)),
+      ),
     );
   }
 
@@ -1115,7 +1158,10 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
       loading: () => const Center(
         child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, _) => _HudErrorView(
+        message: 'Could not load pre-work checklist. Check your connection.',
+        onRetry: () => ref.invalidate(jobDetailProvider(widget.jobId)),
+      ),
     );
   }
 
@@ -1216,13 +1262,19 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
       loading: () => const Center(
         child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, _) => _HudErrorView(
+        message: 'Could not load forms. Check your connection.',
+        onRetry: () => ref.invalidate(stageFormsProvider('mid_job')),
+      ),
       data: (templates) {
         return responsesAsync.when(
           loading: () => const Center(
             child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
           ),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (e, _) => _HudErrorView(
+            message: 'Could not load form responses.',
+            onRetry: () => ref.invalidate(jobFormResponsesProvider(widget.jobId)),
+          ),
           data: (responses) {
             final submittedIds = responses
                 .where((r) => r.isSubmitted)
@@ -1408,7 +1460,10 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
             loading: () => const Center(
               child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
             ),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (e, _) => _HudErrorView(
+              message: 'Could not load activity stream.',
+              onRetry: () => ref.invalidate(jobTelemetryProvider(widget.jobId)),
+            ),
             data: (events) {
               if (events.isEmpty) {
                 return Center(
@@ -1532,7 +1587,10 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
       loading: () => const Center(
         child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, _) => _HudErrorView(
+        message: 'Could not load job info.',
+        onRetry: () => ref.invalidate(jobDetailProvider(widget.jobId)),
+      ),
     );
   }
 
@@ -2282,6 +2340,81 @@ class _SubtaskNoteSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ── HUD Error View ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+class _HudErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+
+  const _HudErrorView({required this.message, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: ObsidianTheme.rose.withValues(alpha: 0.08),
+                border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.15)),
+              ),
+              child: Icon(
+                PhosphorIconsLight.wifiSlash,
+                color: ObsidianTheme.rose.withValues(alpha: 0.6),
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: c.textTertiary,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onRetry!();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: ObsidianTheme.emerald.withValues(alpha: 0.1),
+                    border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                  ),
+                  child: Text(
+                    'Retry',
+                    style: GoogleFonts.inter(
+                      color: ObsidianTheme.emerald,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 400.ms);
   }
 }
 

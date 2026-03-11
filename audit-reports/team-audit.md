@@ -1,9 +1,9 @@
 # Team & RBAC Module — Post-PRD Audit Report
 
-> **Generated**: 2026-02-19T01:10:52.086Z
+> **Generated**: 2026-03-10T00:49:16.300Z
 > **Module**: Team & RBAC (`/dashboard/team`, `/dashboard/team/roles`)
 > **Test Framework**: Playwright (16 test suites)
-> **Total Findings**: 18
+> **Total Findings**: 12
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 4 |
+| 🔴 Critical Failures | 1 |
 | 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 6 |
-| 🟢 Flow Passes | 8 |
+| 🟠 Warnings | 7 |
+| 🟢 Flow Passes | 4 |
 
 ---
 
@@ -23,10 +23,10 @@
 
 | Requirement | Status |
 |-------------|--------|
-| Network Green (no 406) | FAIL |
+| Network Green (no 406) | PASS |
 | Real Data (no mock fallback) | PASS |
 | Persistence (role change) | PENDING |
-| Security (permission toggle) | PASS |
+| Security (permission toggle) | PENDING |
 | Invites (real server call) | PENDING |
 
 ---
@@ -36,19 +36,6 @@
 ### Heading missing
 - **Area**: Header
 - **Detail**: h1 not found.
-
-### HTTP 406 error detected
-- **Area**: Network
-- **Detail**: useOrg 406 fix may not be applied.
-
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 406 ()
-
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load finance data: TypeError: Failed to fetch
-    at fetchServerAction (http://localhost:3000/_next/static/chunks/f105d_next_dist_client_37b09c39._.js:8817:23)
 
 ---
 
@@ -88,17 +75,17 @@ _No dummy data leaks found._
 - **Area**: Context
 - **Detail**: DB empty.
 
+### No roles listed
+- **Area**: Roles
+- **Detail**: DB may be empty.
+
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** 'Roles' link renders: Navigates to /dashboard/team/roles.
-- ✅ **[Filters]** Filter button visible: Filter functionality present.
-- ✅ **[Roles]** Roles sidebar loads: Role list with counts.
-- ✅ **[Roles]** 1 roles listed: Roles from DB.
-- ✅ **[Permissions]** Permission toggles present: Uses saveRolePermissionsServer() with optimistic rollback.
-- ✅ **[MockData]** No mock data detected: Empty state — no mock fallback.
-- ✅ **[Style]** All buttons have pointer: Checked 14.
+- ✅ **[Style]** All buttons have pointer: Checked 2.
+- ✅ **[Network]** No 406 errors: useOrg fix confirmed.
+- ✅ **[Console]** No console errors: Team pages loaded without errors.
 - ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
 
 ---

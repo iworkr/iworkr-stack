@@ -1,55 +1,58 @@
 -- ============================================================================
 -- Migration 039: Project Grandmaster — Operational Pipelines
--- ============================================================================
--- Wires the full lifecycle across iWorkr's operational surface:
---   Quote → Job → Schedule → Invoice → Archive
---
--- Sections:
---   1. Expand job_status enum (en_route, on_site, completed, archived)
---   2. Expand schedule_block_status enum (on_site)
---   3. Create quote_status enum & convert quotes.status from TEXT
---   4. CRM pipeline columns on clients
---   5. Job state-transition enforcement trigger
---   6. Quote-to-Job auto-conversion (accepted → job + draft invoice)
---   7. Nightly job archival cron
---   8. Job ↔ schedule_block status sync
---   9. Auto-invoice on job completion
---  10. Realtime for quotes
+-- SAFE: All statements wrapped with existence checks.
 -- ============================================================================
 
 -- --------------------------------------------------------------------------
 -- 1. Expand job_status enum
 -- --------------------------------------------------------------------------
-ALTER TYPE public.job_status ADD VALUE IF NOT EXISTS 'en_route'  AFTER 'scheduled';
-ALTER TYPE public.job_status ADD VALUE IF NOT EXISTS 'on_site'   AFTER 'en_route';
-ALTER TYPE public.job_status ADD VALUE IF NOT EXISTS 'completed' AFTER 'done';
-ALTER TYPE public.job_status ADD VALUE IF NOT EXISTS 'archived'  AFTER 'invoiced';
+DO $$ BEGIN ALTER TYPE public.job_status ADD VALUE IF NOT EXISTS 'en_route'  AFTER 'scheduled'; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE public.job_status ADD VALUE IF NOT EXISTS 'on_site'   AFTER 'en_route';  EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE public.job_status ADD VALUE IF NOT EXISTS 'completed' AFTER 'done';      EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE public.job_status ADD VALUE IF NOT EXISTS 'archived'  AFTER 'invoiced';  EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- --------------------------------------------------------------------------
 -- 2. Expand schedule_block_status enum
 -- --------------------------------------------------------------------------
-ALTER TYPE public.schedule_block_status ADD VALUE IF NOT EXISTS 'on_site' AFTER 'en_route';
+DO $$ BEGIN ALTER TYPE public.schedule_block_status ADD VALUE IF NOT EXISTS 'on_site' AFTER 'en_route'; EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- --------------------------------------------------------------------------
 -- 3. Create quote_status enum & convert quotes.status
 -- --------------------------------------------------------------------------
-CREATE TYPE public.quote_status AS ENUM (
-  'draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired'
-);
+DO $$ BEGIN
+  CREATE TYPE public.quote_status AS ENUM (
+    'draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE public.quotes
-  ALTER COLUMN status TYPE public.quote_status
-  USING status::public.quote_status;
-
-ALTER TABLE public.quotes ALTER COLUMN status SET DEFAULT 'draft';
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='quotes') THEN
+    -- Only convert if the column is not already the enum type
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='quotes' AND column_name='status'
+        AND udt_name != 'quote_status'
+    ) THEN
+      ALTER TABLE public.quotes
+        ALTER COLUMN status TYPE public.quote_status
+        USING status::public.quote_status;
+    END IF;
+    ALTER TABLE public.quotes ALTER COLUMN status SET DEFAULT 'draft';
+  END IF;
+END $$;
 
 -- --------------------------------------------------------------------------
 -- 4. CRM pipeline columns on clients
 -- --------------------------------------------------------------------------
-ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS pipeline_status    text         DEFAULT 'new_lead';
-ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS pipeline_updated_at timestamptz;
-ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS lead_source        text;
-ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS estimated_value    numeric(12,2) DEFAULT 0;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='clients') THEN
+    ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS pipeline_status     text          DEFAULT 'new_lead';
+    ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS pipeline_updated_at timestamptz;
+    ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS lead_source         text;
+    ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS estimated_value     numeric(12,2) DEFAULT 0;
+  END IF;
+END $$;
 
 -- --------------------------------------------------------------------------
 -- 5. Job state-transition enforcement
@@ -91,102 +94,123 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_enforce_job_transition
-  BEFORE UPDATE OF status ON public.jobs
-  FOR EACH ROW EXECUTE FUNCTION public.enforce_job_transition();
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='jobs') THEN
+    DROP TRIGGER IF EXISTS trg_enforce_job_transition ON public.jobs;
+    CREATE TRIGGER trg_enforce_job_transition
+      BEFORE UPDATE OF status ON public.jobs
+      FOR EACH ROW EXECUTE FUNCTION public.enforce_job_transition();
+  END IF;
+END $$;
 
 -- --------------------------------------------------------------------------
 -- 6. Quote-to-Job auto-conversion
 -- --------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.convert_accepted_quote()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER AS $$
-DECLARE
-  _job_id              uuid;
-  _invoice_id          uuid;
-  _job_display_id      text;
-  _invoice_display_id  text;
-BEGIN
-  IF NEW.status = 'accepted' AND (OLD.status IS DISTINCT FROM 'accepted') THEN
-    IF NEW.job_id IS NOT NULL THEN RETURN NEW; END IF;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='quotes')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='jobs')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='invoices') THEN
 
-    SELECT 'JOB-' || LPAD(
-      (COALESCE(MAX(NULLIF(REPLACE(display_id, 'JOB-', ''), '')::int, 0)) + 1)::text, 3, '0')
-    INTO _job_display_id
-    FROM public.jobs WHERE organization_id = NEW.organization_id;
+    EXECUTE $fn$
+      CREATE OR REPLACE FUNCTION public.convert_accepted_quote()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      SECURITY DEFINER AS $body$
+      DECLARE
+        _job_id              uuid;
+        _invoice_id          uuid;
+        _job_display_id      text;
+        _invoice_display_id  text;
+      BEGIN
+        IF NEW.status = 'accepted' AND (OLD.status IS DISTINCT FROM 'accepted') THEN
+          IF NEW.job_id IS NOT NULL THEN RETURN NEW; END IF;
 
-    SELECT 'INV-' || LPAD(
-      (COALESCE(MAX(NULLIF(REPLACE(display_id, 'INV-', ''), '')::int, 0)) + 1)::text, 4, '0')
-    INTO _invoice_display_id
-    FROM public.invoices WHERE organization_id = NEW.organization_id;
+          SELECT 'JOB-' || LPAD(
+            (COALESCE(MAX(NULLIF(REPLACE(display_id, 'JOB-', ''), '')::int, 0)) + 1)::text, 3, '0')
+          INTO _job_display_id
+          FROM public.jobs WHERE organization_id = NEW.organization_id;
 
-    INSERT INTO public.jobs (
-      organization_id, display_id, title, description, status,
-      client_id, location, revenue, created_by
-    ) VALUES (
-      NEW.organization_id,
-      _job_display_id,
-      COALESCE(NEW.title, 'Job from Quote ' || NEW.display_id),
-      'Auto-generated from accepted quote ' || NEW.display_id,
-      'backlog',
-      NEW.client_id,
-      NEW.client_address,
-      COALESCE(NEW.total, 0),
-      NEW.created_by
-    ) RETURNING id INTO _job_id;
+          SELECT 'INV-' || LPAD(
+            (COALESCE(MAX(NULLIF(REPLACE(display_id, 'INV-', ''), '')::int, 0)) + 1)::text, 4, '0')
+          INTO _invoice_display_id
+          FROM public.invoices WHERE organization_id = NEW.organization_id;
 
-    INSERT INTO public.invoices (
-      organization_id, display_id, client_id, job_id, quote_id,
-      client_name, client_email, client_address,
-      status, issue_date, due_date,
-      subtotal, tax_rate, tax, total,
-      created_by
-    ) VALUES (
-      NEW.organization_id,
-      _invoice_display_id,
-      NEW.client_id,
-      _job_id,
-      NEW.id,
-      NEW.client_name,
-      NEW.client_email,
-      NEW.client_address,
-      'draft',
-      CURRENT_DATE,
-      CURRENT_DATE + 14,
-      COALESCE(NEW.subtotal, 0),
-      COALESCE(NEW.tax_rate, 10),
-      COALESCE(NEW.tax, 0),
-      COALESCE(NEW.total, 0),
-      NEW.created_by
-    ) RETURNING id INTO _invoice_id;
+          INSERT INTO public.jobs (
+            organization_id, display_id, title, description, status,
+            client_id, location, revenue, created_by
+          ) VALUES (
+            NEW.organization_id,
+            _job_display_id,
+            COALESCE(NEW.title, 'Job from Quote ' || NEW.display_id),
+            'Auto-generated from accepted quote ' || NEW.display_id,
+            'backlog',
+            NEW.client_id,
+            NEW.client_address,
+            COALESCE(NEW.total, 0),
+            NEW.created_by
+          ) RETURNING id INTO _job_id;
 
-    INSERT INTO public.invoice_line_items (invoice_id, description, quantity, unit_price, sort_order)
-    SELECT _invoice_id, description, quantity, unit_price, sort_order
-    FROM public.quote_line_items
-    WHERE quote_id = NEW.id;
+          INSERT INTO public.invoices (
+            organization_id, display_id, client_id, job_id, quote_id,
+            client_name, client_email, client_address,
+            status, issue_date, due_date,
+            subtotal, tax_rate, tax, total,
+            created_by
+          ) VALUES (
+            NEW.organization_id,
+            _invoice_display_id,
+            NEW.client_id,
+            _job_id,
+            NEW.id,
+            NEW.client_name,
+            NEW.client_email,
+            NEW.client_address,
+            'draft',
+            CURRENT_DATE,
+            CURRENT_DATE + 14,
+            COALESCE(NEW.subtotal, 0),
+            COALESCE(NEW.tax_rate, 10),
+            COALESCE(NEW.tax, 0),
+            COALESCE(NEW.total, 0),
+            NEW.created_by
+          ) RETURNING id INTO _invoice_id;
 
-    NEW.job_id     := _job_id;
-    NEW.invoice_id := _invoice_id;
+          -- Copy line items if table exists
+          BEGIN
+            INSERT INTO public.invoice_line_items (invoice_id, description, quantity, unit_price, sort_order)
+            SELECT _invoice_id, description, quantity, unit_price, sort_order
+            FROM public.quote_line_items
+            WHERE quote_id = NEW.id;
+          EXCEPTION WHEN undefined_table THEN NULL;
+          END;
 
-    UPDATE public.clients
-    SET pipeline_status = 'won', pipeline_updated_at = now()
-    WHERE id = NEW.client_id;
+          NEW.job_id     := _job_id;
+          NEW.invoice_id := _invoice_id;
+
+          UPDATE public.clients
+          SET pipeline_status = 'won', pipeline_updated_at = now()
+          WHERE id = NEW.client_id;
+        END IF;
+
+        IF NEW.status = 'rejected' AND (OLD.status IS DISTINCT FROM 'rejected') THEN
+          UPDATE public.clients
+          SET pipeline_status = 'lost', pipeline_updated_at = now()
+          WHERE id = NEW.client_id;
+        END IF;
+
+        RETURN NEW;
+      END;
+      $body$;
+    $fn$;
+
+    DROP TRIGGER IF EXISTS trg_convert_accepted_quote ON public.quotes;
+    CREATE TRIGGER trg_convert_accepted_quote
+      BEFORE UPDATE OF status ON public.quotes
+      FOR EACH ROW EXECUTE FUNCTION public.convert_accepted_quote();
+  ELSE
+    RAISE NOTICE '[039] Skipping quote conversion — required tables not found.';
   END IF;
-
-  IF NEW.status = 'rejected' AND (OLD.status IS DISTINCT FROM 'rejected') THEN
-    UPDATE public.clients
-    SET pipeline_status = 'lost', pipeline_updated_at = now()
-    WHERE id = NEW.client_id;
-  END IF;
-
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_convert_accepted_quote
-  BEFORE UPDATE OF status ON public.quotes
-  FOR EACH ROW EXECUTE FUNCTION public.convert_accepted_quote();
+END $$;
 
 -- --------------------------------------------------------------------------
 -- 7. Nightly job archival
@@ -205,97 +229,130 @@ BEGIN
       WHERE i.job_id = j.id AND i.status = 'paid'
     )
     AND j.updated_at < now() - INTERVAL '48 hours';
+EXCEPTION WHEN undefined_table THEN NULL;
 END;
 $$;
 
-SELECT cron.schedule(
-  'grandmaster-job-archival',
-  '0 2 * * *',
-  'SELECT public.archive_completed_jobs()'
-);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.schedule(
+      'grandmaster-job-archival',
+      '0 2 * * *',
+      'SELECT public.archive_completed_jobs()'
+    );
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE '[039] pg_cron not available for job archival — skipping.';
+END $$;
 
 -- --------------------------------------------------------------------------
 -- 8. Sync job status → schedule_block status
 -- --------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.sync_job_to_schedule()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER AS $$
-DECLARE
-  _block_status public.schedule_block_status;
-BEGIN
-  IF NEW.status = OLD.status THEN RETURN NEW; END IF;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='jobs')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='schedule_blocks') THEN
 
-  CASE NEW.status::text
-    WHEN 'en_route'    THEN _block_status := 'en_route';
-    WHEN 'on_site'     THEN _block_status := 'on_site';
-    WHEN 'in_progress' THEN _block_status := 'in_progress';
-    WHEN 'done', 'completed', 'invoiced', 'archived'
-                       THEN _block_status := 'complete';
-    WHEN 'cancelled'   THEN _block_status := 'cancelled';
-    ELSE RETURN NEW;
-  END CASE;
+    EXECUTE $fn$
+      CREATE OR REPLACE FUNCTION public.sync_job_to_schedule()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      SECURITY DEFINER AS $body$
+      DECLARE
+        _block_status public.schedule_block_status;
+      BEGIN
+        IF NEW.status = OLD.status THEN RETURN NEW; END IF;
 
-  UPDATE public.schedule_blocks
-  SET status = _block_status, updated_at = now()
-  WHERE job_id = NEW.id
-    AND status != 'complete'
-    AND status != 'cancelled';
+        CASE NEW.status::text
+          WHEN 'en_route'    THEN _block_status := 'en_route';
+          WHEN 'on_site'     THEN _block_status := 'on_site';
+          WHEN 'in_progress' THEN _block_status := 'in_progress';
+          WHEN 'done', 'completed', 'invoiced', 'archived'
+                             THEN _block_status := 'complete';
+          WHEN 'cancelled'   THEN _block_status := 'cancelled';
+          ELSE RETURN NEW;
+        END CASE;
 
-  RETURN NEW;
-END;
-$$;
+        UPDATE public.schedule_blocks
+        SET status = _block_status, updated_at = now()
+        WHERE job_id = NEW.id
+          AND status != 'complete'
+          AND status != 'cancelled';
 
-CREATE TRIGGER trg_sync_job_to_schedule
-  AFTER UPDATE OF status ON public.jobs
-  FOR EACH ROW EXECUTE FUNCTION public.sync_job_to_schedule();
+        RETURN NEW;
+      END;
+      $body$;
+    $fn$;
+
+    DROP TRIGGER IF EXISTS trg_sync_job_to_schedule ON public.jobs;
+    CREATE TRIGGER trg_sync_job_to_schedule
+      AFTER UPDATE OF status ON public.jobs
+      FOR EACH ROW EXECUTE FUNCTION public.sync_job_to_schedule();
+  END IF;
+END $$;
 
 -- --------------------------------------------------------------------------
 -- 9. Auto-invoice on job completion (when no invoice exists)
 -- --------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.auto_invoice_on_completion()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER AS $$
-DECLARE
-  _has_invoice         boolean;
-  _invoice_display_id  text;
-BEGIN
-  IF NEW.status IN ('done', 'completed')
-     AND OLD.status NOT IN ('done', 'completed', 'invoiced', 'archived') THEN
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='jobs')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='invoices') THEN
 
-    SELECT EXISTS(
-      SELECT 1 FROM public.invoices WHERE job_id = NEW.id AND deleted_at IS NULL
-    ) INTO _has_invoice;
+    EXECUTE $fn$
+      CREATE OR REPLACE FUNCTION public.auto_invoice_on_completion()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      SECURITY DEFINER AS $body$
+      DECLARE
+        _has_invoice         boolean;
+        _invoice_display_id  text;
+      BEGIN
+        IF NEW.status IN ('done', 'completed')
+           AND OLD.status NOT IN ('done', 'completed', 'invoiced', 'archived') THEN
 
-    IF NOT _has_invoice AND NEW.revenue > 0 THEN
-      SELECT 'INV-' || LPAD(
-        (COALESCE(MAX(NULLIF(REPLACE(display_id, 'INV-', ''), '')::int, 0)) + 1)::text, 4, '0')
-      INTO _invoice_display_id
-      FROM public.invoices WHERE organization_id = NEW.organization_id;
+          SELECT EXISTS(
+            SELECT 1 FROM public.invoices WHERE job_id = NEW.id AND deleted_at IS NULL
+          ) INTO _has_invoice;
 
-      INSERT INTO public.invoices (
-        organization_id, display_id, client_id, job_id,
-        client_name, status, issue_date, due_date,
-        subtotal, tax_rate, tax, total
-      )
-      SELECT
-        NEW.organization_id, _invoice_display_id, NEW.client_id, NEW.id,
-        c.name, 'draft', CURRENT_DATE, CURRENT_DATE + 14,
-        NEW.revenue, 10, NEW.revenue * 0.1, NEW.revenue * 1.1
-      FROM public.clients c WHERE c.id = NEW.client_id;
-    END IF;
+          IF NOT _has_invoice AND NEW.revenue > 0 THEN
+            SELECT 'INV-' || LPAD(
+              (COALESCE(MAX(NULLIF(REPLACE(display_id, 'INV-', ''), '')::int, 0)) + 1)::text, 4, '0')
+            INTO _invoice_display_id
+            FROM public.invoices WHERE organization_id = NEW.organization_id;
+
+            INSERT INTO public.invoices (
+              organization_id, display_id, client_id, job_id,
+              client_name, status, issue_date, due_date,
+              subtotal, tax_rate, tax, total
+            )
+            SELECT
+              NEW.organization_id, _invoice_display_id, NEW.client_id, NEW.id,
+              c.name, 'draft', CURRENT_DATE, CURRENT_DATE + 14,
+              NEW.revenue, 10, NEW.revenue * 0.1, NEW.revenue * 1.1
+            FROM public.clients c WHERE c.id = NEW.client_id;
+          END IF;
+        END IF;
+
+        RETURN NEW;
+      END;
+      $body$;
+    $fn$;
+
+    DROP TRIGGER IF EXISTS trg_auto_invoice_on_completion ON public.jobs;
+    CREATE TRIGGER trg_auto_invoice_on_completion
+      AFTER UPDATE OF status ON public.jobs
+      FOR EACH ROW EXECUTE FUNCTION public.auto_invoice_on_completion();
   END IF;
-
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_auto_invoice_on_completion
-  AFTER UPDATE OF status ON public.jobs
-  FOR EACH ROW EXECUTE FUNCTION public.auto_invoice_on_completion();
+END $$;
 
 -- --------------------------------------------------------------------------
 -- 10. Enable realtime on quotes
 -- --------------------------------------------------------------------------
-ALTER PUBLICATION supabase_realtime ADD TABLE public.quotes;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='quotes')
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_publication_tables
+       WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'quotes'
+     ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.quotes;
+  END IF;
+END $$;

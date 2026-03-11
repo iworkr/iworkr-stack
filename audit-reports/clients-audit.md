@@ -1,10 +1,10 @@
 # Clients Module — Post-PRD Audit Report
 
-> **Generated**: 2026-02-19T01:02:43.533Z
+> **Generated**: 2026-03-11T03:35:36.938Z
 > **Module**: Clients (`/dashboard/clients` & `/dashboard/clients/[id]`)
 > **PRD**: Clients Module Live Activation (P0)
 > **Test Framework**: Playwright (20 test suites)
-> **Total Findings**: 36
+> **Total Findings**: 11
 
 ---
 
@@ -12,27 +12,15 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 4 |
+| 🔴 Critical Failures | 1 |
 | 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 12 |
-| 🟢 Flow Passes | 20 |
+| 🟠 Warnings | 6 |
+| 🟢 Flow Passes | 4 |
 
 ---
 
 ## 🔴 Critical Failures
-
-### Clients heading missing
-- **Area**: Header
-- **Detail**: h1 'Clients' not found.
-
-### Search input not found
-- **Area**: Search
-- **Detail**: Skipping.
-
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 406 ()
 
 ### No empty state shown
 - **Area**: EmptyState
@@ -51,26 +39,6 @@ _No dummy data leaks found._
 ---
 
 ## 🟠 Warnings
-
-### No client rows and no empty state
-- **Area**: Rows
-- **Detail**: 0 rows found but no empty state message either.
-
-### No rows to click
-- **Area**: Navigation
-- **Detail**: Skipping.
-
-### No clients
-- **Area**: Detail
-- **Detail**: Skipping.
-
-### Not enough rows
-- **Area**: Keyboard
-- **Detail**: Need 2+ rows.
-
-### No rows
-- **Area**: ContextMenu
-- **Detail**: Skipping.
 
 ### No clients
 - **Area**: EditEmail
@@ -92,10 +60,6 @@ _No dummy data leaks found._
 - **Area**: Location
 - **Detail**: Skipping.
 
-### HTTP 406
-- **Area**: Network
-- **Detail**: URL: https://olqjuadvseoxpfjzlghb.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
-
 ### No clients
 - **Area**: CommActions
 - **Detail**: Skipping communication test.
@@ -104,26 +68,10 @@ _No dummy data leaks found._
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** 'Filter' button renders: Filter button with SlidersHorizontal icon.
-- ✅ **[Header]** 'Add Client' CTA renders: White primary button with Plus icon.
-- ✅ **[Columns]** "Client" column: "Client" visible.
-- ✅ **[Columns]** "Status" column: "Status" visible.
-- ✅ **[Columns]** "Email" column: "Email" visible.
-- ✅ **[Columns]** "Jobs" column: "Jobs" visible.
-- ✅ **[Columns]** "LTV" column: "LTV" visible.
-- ✅ **[Columns]** "Last Active" column: "Last Active" visible.
-- ✅ **[Filter]** Filter popover opens: Filter popover with 'Filters' heading appeared.
-- ✅ **[Filter]** Status: "Active" option: Filter option "Active" visible.
-- ✅ **[Filter]** Status: "Lead" option: Filter option "Lead" visible.
-- ✅ **[Filter]** Status: "Churned" option: Filter option "Churned" visible.
-- ✅ **[Filter]** Status: "Inactive" option: Filter option "Inactive" visible.
-- ✅ **[Filter]** Type: "Residential" option: Filter option "Residential" visible.
-- ✅ **[Filter]** Type: "Commercial" option: Filter option "Commercial" visible.
-- ✅ **[Filter]** Filter badge shows count: Active filter count badge visible.
-- ✅ **[Filter]** 'Clear all' resets filters: Filters cleared.
-- ✅ **[AddClient]** 'Add Client' opens modal: Create client modal appeared.
-- ✅ **[Style]** All checked buttons have pointer: Checked 12 buttons.
-- ✅ **[Style]** Inter font applied: Font: Inter, "Inter Fallback"
+- ✅ **[Style]** All checked buttons have pointer: Checked 2 buttons.
+- ✅ **[Style]** Inter font applied: Font: inter, "inter Fallback"
+- ✅ **[Console]** No console errors: Clients pages loaded without console errors.
+- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
 
 ---
 

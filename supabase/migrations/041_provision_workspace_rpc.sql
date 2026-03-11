@@ -1,15 +1,10 @@
 -- ============================================================================
 -- Migration 041: Workspace Provisioning RPC
--- ============================================================================
--- Atomic workspace creation: org + owner membership + Stripe stub + seed data.
--- Used by both Next.js /signup and Flutter onboarding.
+-- SAFE: All CREATE OR REPLACE + table existence checks.
 -- ============================================================================
 
 -- --------------------------------------------------------------------------
 -- 1. create_organization_with_owner()
--- --------------------------------------------------------------------------
--- Atomically provisions a new workspace with the calling user as OWNER.
--- Returns the new organization row as JSONB.
 -- --------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.create_organization_with_owner(
   org_name  text,
@@ -30,7 +25,6 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  -- Create the organization
   INSERT INTO public.organizations (name, slug, trade, settings)
   VALUES (
     org_name,
@@ -43,19 +37,18 @@ BEGIN
   )
   RETURNING id INTO _org_id;
 
-  -- Create owner membership
   INSERT INTO public.organization_members (organization_id, user_id, role, status)
   VALUES (_org_id, _user_id, 'owner', 'active');
 
-  -- Mark profile onboarding complete
   UPDATE public.profiles
   SET onboarding_completed = true
   WHERE id = _user_id;
 
-  -- Seed industry defaults
-  PERFORM public.seed_industry_defaults(_org_id, COALESCE(org_trade, 'General'));
+  -- Seed industry defaults only if form_templates table exists
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='form_templates') THEN
+    PERFORM public.seed_industry_defaults(_org_id, COALESCE(org_trade, 'General'));
+  END IF;
 
-  -- Return the new org
   SELECT to_jsonb(o) INTO _org
   FROM public.organizations o
   WHERE o.id = _org_id;
@@ -66,8 +59,6 @@ $$;
 
 -- --------------------------------------------------------------------------
 -- 2. seed_industry_defaults()
--- --------------------------------------------------------------------------
--- Injects starter SWMS templates and common job type tags based on trade.
 -- --------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.seed_industry_defaults(
   p_org_id uuid,
@@ -81,7 +72,11 @@ AS $$
 DECLARE
   _swms_schema jsonb;
 BEGIN
-  -- Universal Site Safety SWMS (all trades)
+  -- Exit early if form_templates doesn't exist
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='form_templates') THEN
+    RETURN;
+  END IF;
+
   _swms_schema := jsonb_build_object(
     'sections', jsonb_build_array(
       jsonb_build_object(
@@ -99,7 +94,6 @@ BEGIN
   INSERT INTO public.form_templates (organization_id, title, description, stage, schema, requires_signature, is_active)
   VALUES (p_org_id, 'Site Safety Assessment', 'Universal pre-job safety checklist', 'pre_job', _swms_schema, true, true);
 
-  -- Trade-specific SWMS
   IF p_trade = 'HVAC' THEN
     INSERT INTO public.form_templates (organization_id, title, description, stage, schema, requires_signature, is_active)
     VALUES (p_org_id, 'Refrigerant Handling SWMS', 'Safe handling of refrigerant gases', 'pre_job',
@@ -185,7 +179,6 @@ BEGIN
       )), true, true);
   END IF;
 
-  -- Post-job quality checklist (universal)
   INSERT INTO public.form_templates (organization_id, title, description, stage, schema, requires_signature, is_active)
   VALUES (p_org_id, 'Job Completion Quality Check', 'Post-job quality and cleanup verification', 'post_job',
     jsonb_build_object('sections', jsonb_build_array(

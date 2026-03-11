@@ -1,9 +1,9 @@
 # Schedule Module — Comprehensive Audit Report (Post-PRD)
 
-> **Generated**: 2026-02-19T01:01:21.606Z
+> **Generated**: 2026-03-10T00:41:19.302Z
 > **Module**: Schedule (`/dashboard/schedule`)
 > **Test Framework**: Playwright (18 test suites)
-> **Total Findings**: 11
+> **Total Findings**: 9
 > **PRD**: Schedule Module Live Activation (P0)
 
 ---
@@ -15,16 +15,16 @@
 | 🔴 Critical Failures | 1 |
 | 🟡 Visual Defects | 1 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 4 |
-| 🟢 Flow Passes | 5 |
+| 🟠 Warnings | 3 |
+| 🟢 Flow Passes | 4 |
 
 ---
 
 ## 🔴 Critical Failures
 
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 406 ()
+### No empty state shown
+- **Area**: EmptyState
+- **Detail**: Schedule has 0 technicians but no empty state message.
 
 ---
 
@@ -51,10 +51,6 @@ _No dummy data leaks found._
 - **Area**: PeekNav
 - **Detail**: Skipping.
 
-### HTTP 406
-- **Area**: Network
-- **Detail**: URL: https://olqjuadvseoxpfjzlghb.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
-
 ### No blocks for action test
 - **Area**: PeekActions
 - **Detail**: Skipping — no blocks on schedule.
@@ -63,11 +59,10 @@ _No dummy data leaks found._
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Keyboard]** V key cycles view scale: Changed from "Day" to ""
-- ✅ **[Keyboard]** Escape closes drawer: Pressed Escape to close backlog drawer.
-- ✅ **[Style]** All checked buttons have pointer cursor: Checked 12 buttons.
-- ✅ **[Style]** Inter font applied: Font: Inter, "Inter Fallback"
-- ✅ **[EmptyState]** Empty state heading renders: 'No schedule data' displayed.
+- ✅ **[Style]** All checked buttons have pointer cursor: Checked 2 buttons.
+- ✅ **[Style]** Inter font applied: Font: inter, "inter Fallback"
+- ✅ **[Console]** No console errors: Schedule page loaded without console errors.
+- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
 
 ---
 

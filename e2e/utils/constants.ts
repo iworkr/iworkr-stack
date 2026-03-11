@@ -6,18 +6,20 @@ export const TEST_EMAIL = "qa-test@iworkrapp.com";
 export const TEST_PASSWORD = "QATestPass123!";
 
 export const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Messages", href: "/dashboard/inbox" },
-  { label: "My Jobs", href: "/dashboard/jobs" },
-  { label: "Schedule", href: "/dashboard/schedule" },
-  { label: "Clients", href: "/dashboard/clients" },
-  { label: "Finance", href: "/dashboard/finance" },
-  { label: "Assets", href: "/dashboard/assets" },
-  { label: "Forms", href: "/dashboard/forms" },
-  { label: "Team", href: "/dashboard/team" },
-  { label: "Automations", href: "/dashboard/automations" },
-  { label: "Integrations", href: "/dashboard/integrations" },
-  { label: "AI Agent", href: "/dashboard/ai-agent" },
+  { label: "Dashboard", href: "/dashboard", testId: "nav_dashboard" },
+  { label: "Messages", href: "/dashboard/inbox", testId: "nav_inbox" },
+  { label: "My Jobs", href: "/dashboard/jobs", testId: "nav_jobs" },
+  { label: "Schedule", href: "/dashboard/schedule", testId: "nav_schedule" },
+  { label: "Dispatch", href: "/dashboard/dispatch", testId: "nav_dispatch" },
+  { label: "Clients", href: "/dashboard/clients", testId: "nav_clients" },
+  { label: "Sales Pipeline", href: "/dashboard/crm", testId: "nav_crm" },
+  { label: "Finance", href: "/dashboard/finance", testId: "nav_invoices" },
+  { label: "Assets", href: "/dashboard/assets", testId: "nav_assets" },
+  { label: "Forms", href: "/dashboard/forms", testId: "nav_forms" },
+  { label: "Team", href: "/dashboard/team", testId: "nav_team" },
+  { label: "Automations", href: "/dashboard/automations", testId: "nav_automations" },
+  { label: "Integrations", href: "/dashboard/integrations", testId: "nav_integrations" },
+  { label: "AI Agent", href: "/dashboard/ai-agent", testId: "nav_ai_agent" },
 ] as const;
 
 export const SETTINGS_ROUTES = [

@@ -680,7 +680,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen>
 
         // POS-to-Invoice pivot
         GestureDetector(
-          onTap: _sendInvoiceLink,
+          onTap: _submitting ? null : _sendInvoiceLink,
           child: Text(
             'Send Invoice Link Instead',
             style: GoogleFonts.inter(

@@ -33,8 +33,15 @@ class ScreenshotHelper {
 }
 
 Future<void> ensureScreenshotDir() async {
-  final dir = Directory('screenshots');
-  if (!dir.existsSync()) {
-    dir.createSync(recursive: true);
+  try {
+    final dir = Directory('screenshots');
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+  } catch (e) {
+    // On iOS simulator/device, the app sandbox may be read-only.
+    // Screenshots will still work via binding.takeScreenshot() which
+    // uses the test runner's output directory.
+    TestLogger.warn('Screenshot dir creation skipped (read-only FS): $e');
   }
 }

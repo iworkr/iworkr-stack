@@ -1,9 +1,9 @@
 # Dashboard Module — Audit Report
 
-> **Generated**: 2026-02-19T00:56:25.527Z
+> **Generated**: 2026-03-11T03:34:10.892Z
 > **Module**: Dashboard (`/dashboard`)
 > **Test Framework**: Playwright
-> **Total Findings**: 48
+> **Total Findings**: 16
 
 ---
 
@@ -11,20 +11,15 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 6 |
-| 🟡 Visual Defects | 3 |
+| 🔴 Critical Failures | 11 |
+| 🟡 Visual Defects | 2 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 4 |
-| 🟢 Flow Passes | 35 |
+| 🟠 Warnings | 2 |
+| 🟢 Flow Passes | 1 |
 
 ---
 
 ## 🔴 Critical Failures
-
-
-### Missing widgets in bento grid
-- **Widget**: Page
-- **Detail**: Expected 6 widgets but found 4. Some widgets may have failed to render.
 
 
 ### Revenue MTD label missing
@@ -42,14 +37,44 @@
 - **Detail**: The 'Open Dispatch' action link is not rendered.
 
 
+### Triage header missing
+- **Widget**: Inbox
+- **Detail**: Inbox widget may not have loaded.
+
+
+### My Schedule header missing
+- **Widget**: Schedule
+- **Detail**: Schedule widget may not have loaded.
+
+
+### Quick Actions header missing
+- **Widget**: Actions
+- **Detail**: Actions widget may not have loaded.
+
+
+### "New Job" button missing
+- **Widget**: Actions
+- **Detail**: Expected action button "New Job" not found.
+
+
+### "New Invoice" button missing
+- **Widget**: Actions
+- **Detail**: Expected action button "New Invoice" not found.
+
+
+### "Add Client" button missing
+- **Widget**: Actions
+- **Detail**: Expected action button "Add Client" not found.
+
+
+### "Broadcast" button missing
+- **Widget**: Actions
+- **Detail**: Expected action button "Broadcast" not found.
+
+
 ### AI Insight header missing
 - **Widget**: Insights
 - **Detail**: Insights widget may not have loaded.
-
-
-### "Inbox" nav link missing
-- **Widget**: Sidebar
-- **Detail**: Sidebar link "Inbox" not found or not visible.
 
 
 
@@ -66,11 +91,6 @@
 ### Map legend incomplete
 - **Widget**: Map
 - **Detail**: One or more legend items missing from the map widget.
-
-
-### Background color unexpected
-- **Widget**: Style
-- **Detail**: Body background is rgb(5, 5, 5) — expected pure black (#000).
 
 
 
@@ -95,54 +115,12 @@ _No dummy data leaks found._
 - **Widget**: Inbox
 - **Detail**: Neither items nor 'All caught up' found — widget may have render issues.
 
-### ⌘K shortcut may not work in test
-- **Widget**: Topbar
-- **Detail**: Could not detect command menu after ⌘K — may be a Playwright focus issue.
-
-### 'C' shortcut unclear
-- **Widget**: Shortcuts
-- **Detail**: Could not detect create job modal after pressing 'C'.
-
 
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Page]** Dashboard heading renders: The h1 'Dashboard' heading is visible on page load.
-- ✅ **[Page]** Dynamic date renders correctly: Subheading contains current day "Thursday" — not hardcoded.
-- ✅ **[Page]** Live indicator present: The green pulsing 'Live' indicator is rendered.
-- ✅ **[Revenue]** SVG area chart renders: Found 34 SVG elements with paths (chart area + line).
-- ✅ **[Inbox]** Triage header renders: 'Triage' label is visible in the inbox widget.
-- ✅ **[Inbox]** 'View all' navigates to Inbox: Navigated to http://localhost:3000/dashboard/inbox
-- ✅ **[Schedule]** My Schedule header renders: 'My Schedule' label is visible.
-- ✅ **[Schedule]** 'Today' label visible: Schedule widget correctly shows 'Today' context.
-- ✅ **[Schedule]** 'Full View' navigates to Schedule: Navigated to http://localhost:3000/dashboard/schedule
-- ✅ **[Actions]** Quick Actions header renders: 'Quick Actions' label is visible.
-- ✅ **[Actions]** "New Job" button renders: Action button "New Job" is visible and styled.
-- ✅ **[Actions]** "New Invoice" button renders: Action button "New Invoice" is visible and styled.
-- ✅ **[Actions]** "Add Client" button renders: Action button "Add Client" is visible and styled.
-- ✅ **[Actions]** "Broadcast" button renders: Action button "Broadcast" is visible and styled.
-- ✅ **[Actions]** 'New Invoice' opens modal: Clicking 'New Invoice' successfully opens the create invoice modal.
-- ✅ **[Actions]** 'Add Client' opens modal: Clicking 'Add Client' successfully opens the create client modal.
-- ✅ **[Actions]** 'New Job' opens modal: Clicking 'New Job' successfully opens the create job modal.
-- ✅ **[Actions]** 'Broadcast' opens modal: Clicking 'Broadcast' triggers a UI response.
-- ✅ **[Sidebar]** "My Jobs" → /dashboard/jobs: Navigation successful.
-- ✅ **[Sidebar]** "Schedule" → /dashboard/schedule: Navigation successful.
-- ✅ **[Sidebar]** "Clients" → /dashboard/clients: Navigation successful.
-- ✅ **[Sidebar]** "Finance" → /dashboard/finance: Navigation successful.
-- ✅ **[Sidebar]** "Assets" → /dashboard/assets: Navigation successful.
-- ✅ **[Sidebar]** "Forms" → /dashboard/forms: Navigation successful.
-- ✅ **[Sidebar]** "Team" → /dashboard/team: Navigation successful.
-- ✅ **[Sidebar]** "Automations" → /dashboard/automations: Navigation successful.
-- ✅ **[Style]** All buttons have pointer cursor: Checked 19 buttons — all have cursor: pointer.
-- ✅ **[Style]** Inter font applied: Font family: Inter, "Inter Fallback"
-- ✅ **[Style]** No default blue links: All 15 checked links have custom themed colors.
-- ✅ **[Console]** No console errors: Dashboard loaded without any console.error calls.
-- ✅ **[Network]** No network failures: All network requests returned 2xx/3xx status codes.
-- ✅ **[Shortcuts]** '?' opens keyboard shortcuts: Keyboard shortcuts modal opens correctly.
-- ✅ **[Responsive]** Desktop layout (1440px) renders: Bento grid visible at desktop width.
-- ✅ **[Responsive]** Tablet layout (768px) renders: Grid adjusts to 2-column layout.
-- ✅ **[Responsive]** Mobile layout (375px) renders: Grid collapses to single column on mobile.
+- ✅ **[Revenue]** SVG area chart renders: Found 1 SVG elements with paths (chart area + line).
 
 ---
 

@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Smartphone } from "lucide-react";
+import { ArrowRight, Sparkles, Smartphone, LayoutDashboard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
+import { useAuthStore } from "@/lib/auth-store";
 
 function AppleIcon({ className }: { className?: string }) {
   return (
@@ -66,6 +67,8 @@ const wordVariants = {
 };
 
 export function Hero() {
+  const { user, initialized } = useAuthStore();
+  const isAuthenticated = initialized && !!user;
   const words = "The operating system for service work.".split(" ");
 
   return (
@@ -145,16 +148,25 @@ export function Hero() {
           transition={{ delay: 1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="flex items-center gap-4"
         >
-          <SpotlightButton size="lg" href="/auth">
-            Start building free
-            <ArrowRight size={16} />
-          </SpotlightButton>
-          <span className="hidden items-center gap-1.5 rounded border border-[var(--card-border)] px-2 py-1 font-mono text-[11px] text-[var(--text-muted)] sm:flex">
-            <kbd className="rounded bg-[var(--subtle-bg)] px-1.5 py-0.5 text-[10px]">
-              C
-            </kbd>
-            to get started
-          </span>
+          {isAuthenticated ? (
+            <SpotlightButton size="lg" href="/dashboard">
+              <LayoutDashboard size={16} />
+              Open Dashboard
+            </SpotlightButton>
+          ) : (
+            <>
+              <SpotlightButton size="lg" href="/auth">
+                Start building free
+                <ArrowRight size={16} />
+              </SpotlightButton>
+              <span className="hidden items-center gap-1.5 rounded border border-[var(--card-border)] px-2 py-1 font-mono text-[11px] text-[var(--text-muted)] sm:flex">
+                <kbd className="rounded bg-[var(--subtle-bg)] px-1.5 py-0.5 text-[10px]">
+                  C
+                </kbd>
+                to get started
+              </span>
+            </>
+          )}
         </motion.div>
 
         {/* Download Strip */}

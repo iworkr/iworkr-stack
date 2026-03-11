@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:iworkr_mobile/core/router/app_router.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -13,19 +14,42 @@ import 'utils/test_logger.dart';
 
 bool _supabaseInitialized = false;
 
+/// Initialize Supabase for integration tests.
+/// Falls back to TestConfig values when --dart-define isn't set for SUPABASE_URL/ANON_KEY.
+Future<void> _initializeSupabaseForTests() async {
+  if (_supabaseInitialized) return;
+
+  try {
+    // First try the app's own initializer (uses --dart-define)
+    await SupabaseService.initialize();
+    _supabaseInitialized = true;
+    TestLogger.info('Supabase initialized via SupabaseService');
+  } catch (e) {
+    // Fallback: initialize directly with TestConfig values
+    final url = TestConfig.supabaseUrl;
+    final key = TestConfig.supabaseAnonKey;
+    if (url.isNotEmpty && key.isNotEmpty) {
+      try {
+        await Supabase.initialize(url: url, anonKey: key);
+        _supabaseInitialized = true;
+        TestLogger.info('Supabase initialized via TestConfig fallback ($url)');
+      } catch (e2) {
+        // May already be initialized
+        _supabaseInitialized = true;
+        TestLogger.warn('Supabase fallback init: $e2');
+      }
+    } else {
+      _supabaseInitialized = true;
+      TestLogger.warn('Supabase init skipped — no SUPABASE_URL/ANON_KEY. '
+          'Pass via: --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...');
+    }
+  }
+}
+
 Future<void> bootstrapApp(WidgetTester tester) async {
   TestLogger.step('Bootstrapping app');
 
-  if (!_supabaseInitialized) {
-    try {
-      await SupabaseService.initialize();
-      _supabaseInitialized = true;
-      TestLogger.info('Supabase initialized');
-    } catch (e) {
-      TestLogger.warn('Supabase init skipped (may already be initialized): $e');
-      _supabaseInitialized = true;
-    }
-  }
+  await _initializeSupabaseForTests();
 
   await tester.pumpWidget(
     const ProviderScope(child: _TestApp()),

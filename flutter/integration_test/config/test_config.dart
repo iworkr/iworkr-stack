@@ -1,10 +1,21 @@
 class TestConfig {
   static const String testEmail = String.fromEnvironment(
     'TEST_EMAIL',
-    defaultValue: 'test@example.com',
+    defaultValue: 'qa-test@iworkrapp.com',
   );
   static const String testPassword = String.fromEnvironment(
     'TEST_PASSWORD',
+    defaultValue: 'QATestPass123!',
+  );
+
+  /// Supabase URL — must be provided via --dart-define for integration tests.
+  /// Defaults to the local Supabase instance.
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'http://127.0.0.1:54321',
+  );
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
     defaultValue: '',
   );
 

@@ -43,7 +43,7 @@ dependencies:
   url_launcher: ^6.3.1
 
   # Scanner & Permissions
-  mobile_scanner: ^6.0.2
+  mobile_scanner: ^7.2.0
   permission_handler: ^11.3.1
 
   # Biometrics & Device Info

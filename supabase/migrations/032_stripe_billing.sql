@@ -26,12 +26,18 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_sub
 
 -- 4. RLS: allow service_role to update billing columns (webhook)
 --    Normal users can only read their own org's plan_tier.
-CREATE POLICY IF NOT EXISTS "Users can read own org plan_tier"
-  ON public.organizations
-  FOR SELECT
-  USING (
-    id IN (
-      SELECT organization_id FROM public.organization_members
-      WHERE user_id = auth.uid() AND status = 'active'
-    )
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Users can read own org plan_tier' AND tablename = 'organizations'
+  ) THEN
+    CREATE POLICY "Users can read own org plan_tier"
+      ON public.organizations
+      FOR SELECT
+      USING (
+        id IN (
+          SELECT organization_id FROM public.organization_members
+          WHERE user_id = auth.uid() AND status = 'active'
+        )
+      );
+  END IF;
+END $$;

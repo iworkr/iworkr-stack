@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/revenuecat_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -31,6 +32,8 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
   );
 
   bool _isYearly = true;
+  bool _activating = false;
+  bool _restoring = false;
   late AnimationController _glowCtrl;
 
   @override
@@ -54,33 +57,92 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
   }
 
   Future<void> _activatePro() async {
+    if (_activating) return;
     HapticFeedback.heavyImpact();
-
-    final orgId = await ref.read(organizationIdProvider.future);
-    final user = ref.read(currentUserProvider);
-    if (orgId == null || user == null) return;
-
-    // Polar.sh checkout URL with org metadata
-    final checkoutUrl = Uri.parse(
-      _checkoutUrl
-      '?metadata[organization_id]=$orgId'
-      '&metadata[user_id]=${user.id}'
-      '&customer_email=${Uri.encodeComponent(user.email ?? '')}'
-      '&success_url=${Uri.encodeComponent('com.iworkr.mobile://payment_success')}'
-    );
+    setState(() => _activating = true);
 
     try {
-      await launchUrl(checkoutUrl, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not open checkout',
-              style: GoogleFonts.inter(color: Colors.white)),
-          backgroundColor: ObsidianTheme.rose,
-          behavior: SnackBarBehavior.floating,
-        ),
+      final orgId = await ref.read(organizationIdProvider.future);
+      final user = ref.read(currentUserProvider);
+      if (orgId == null || user == null) {
+        if (mounted) {
+          _showError('Unable to verify your account. Please sign in again.');
+          setState(() => _activating = false);
+        }
+        return;
+      }
+
+      // Polar.sh checkout URL with org metadata + billing interval
+      final billingInterval = _isYearly ? 'year' : 'month';
+      final checkoutUrl = Uri.parse(
+        '$_checkoutUrl'
+        '?metadata[organization_id]=$orgId'
+        '&metadata[user_id]=${user.id}'
+        '&metadata[billing_interval]=$billingInterval'
+        '&customer_email=${Uri.encodeComponent(user.email ?? '')}'
+        '&success_url=${Uri.encodeComponent('com.iworkr.mobile://payment_success')}'
       );
+
+      await launchUrl(checkoutUrl, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('Checkout error: $e');
+      if (mounted) {
+        _showError('Could not open checkout. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _activating = false);
+    }
+  }
+
+  Future<void> _restorePurchases() async {
+    if (_restoring) return;
+    HapticFeedback.mediumImpact();
+    setState(() => _restoring = true);
+
+    try {
+      await RevenueCatService.instance.restorePurchases();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Purchases restored successfully',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: ObsidianTheme.emerald,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        // Check if user now has an active subscription
+        final hasEntitlement = await RevenueCatService.instance.hasActiveEntitlement('pro');
+        if (hasEntitlement && mounted) {
+          context.go('/');
+        }
+      }
+    } catch (e) {
+      debugPrint('Restore error: $e');
+      if (mounted) {
+        _showError('No previous purchases found to restore.');
+      }
+    } finally {
+      if (mounted) setState(() => _restoring = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: GoogleFonts.inter(color: Colors.white)),
+        backgroundColor: ObsidianTheme.rose,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Future<void> _openUrl(String url) async {
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (mounted) _showError('Could not open link.');
     }
   }
 
@@ -135,12 +197,26 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                         ),
                       ),
                       const Spacer(),
-                      Text(
-                        'Restore Purchases',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: c.textTertiary,
-                        ),
+                      GestureDetector(
+                        onTap: _restoring ? null : _restorePurchases,
+                        child: _restoring
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: c.textTertiary,
+                                ),
+                              )
+                            : Text(
+                                'Restore Purchases',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: c.textTertiary,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: c.textTertiary.withValues(alpha: 0.4),
+                                ),
+                              ),
                       ),
                     ],
                   ),
@@ -244,16 +320,72 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen>
                           ],
                           accentColor: ObsidianTheme.emerald,
                           isFeatured: true,
-                          ctaLabel: 'Activate Pro Power',
-                          onTap: _activatePro,
+                          ctaLabel: _activating ? 'Opening checkout…' : 'Activate Pro Power',
+                          onTap: _activating ? () {} : _activatePro,
                           glowAnimation: _glowCtrl,
                           savings: _isYearly ? 'Save 20%' : null,
+                          isLoading: _activating,
                         )
                             .animate()
                             .fadeIn(delay: 600.ms, duration: 500.ms)
                             .moveY(begin: 20, delay: 600.ms, duration: 500.ms),
 
-                        const SizedBox(height: 120),
+                        const SizedBox(height: 24),
+
+                        // Legal links (required for App Store compliance)
+                        Column(
+                          children: [
+                            Text(
+                              _isYearly
+                                  ? 'Subscription auto-renews yearly at \$276/year unless cancelled at least 24 hours before the end of the current period.'
+                                  : 'Subscription auto-renews monthly at \$29/month unless cancelled at least 24 hours before the end of the current period.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                color: c.textTertiary,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _openUrl('https://iworkr.com/terms'),
+                                  child: Text(
+                                    'Terms of Service',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: c.textTertiary,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: c.textTertiary.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text('·', style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11)),
+                                ),
+                                GestureDetector(
+                                  onTap: () => _openUrl('https://iworkr.com/privacy'),
+                                  child: Text(
+                                    'Privacy Policy',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: c.textTertiary,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: c.textTertiary.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                            .animate()
+                            .fadeIn(delay: 700.ms, duration: 400.ms),
+
+                        const SizedBox(height: 80),
                       ],
                     ),
                   ),
@@ -443,6 +575,7 @@ class _PlanCard extends StatefulWidget {
   final VoidCallback onTap;
   final AnimationController? glowAnimation;
   final String? savings;
+  final bool isLoading;
 
   const _PlanCard({
     required this.title,
@@ -455,6 +588,7 @@ class _PlanCard extends StatefulWidget {
     required this.onTap,
     this.glowAnimation,
     this.savings,
+    this.isLoading = false,
   });
 
   @override
@@ -593,7 +727,9 @@ class _PlanCardState extends State<_PlanCard> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 color: widget.isFeatured
-                    ? ObsidianTheme.emerald
+                    ? (widget.isLoading
+                        ? ObsidianTheme.emerald.withValues(alpha: 0.7)
+                        : ObsidianTheme.emerald)
                     : Colors.transparent,
                 border: Border.all(
                   color: widget.isFeatured
@@ -602,16 +738,25 @@ class _PlanCardState extends State<_PlanCard> {
                 ),
               ),
               child: Center(
-                child: Text(
-                  widget.ctaLabel,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: widget.isFeatured
-                        ? Colors.black
-                        : c.textSecondary,
-                  ),
-                ),
+                child: widget.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : Text(
+                        widget.ctaLabel,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: widget.isFeatured
+                              ? Colors.black
+                              : c.textSecondary,
+                        ),
+                      ),
               ),
             ),
           ],

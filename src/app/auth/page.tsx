@@ -45,6 +45,18 @@ function AuthPageInner() {
     if (err) setError("Authentication failed. Please try again.");
   }, [searchParams]);
 
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    async function checkSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const next = searchParams.get("next");
+        router.replace(next || "/dashboard");
+      }
+    }
+    checkSession();
+  }, [router, searchParams, supabase.auth]);
+
   async function handleGoogleAuth() {
     setMode("authenticating");
     const { error } = await supabase.auth.signInWithOAuth({

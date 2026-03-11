@@ -23,6 +23,11 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 
+# Environment / dart-define files (contain secrets)
+dart_defines.env
+dart_defines*.env
+*.dart_defines
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id

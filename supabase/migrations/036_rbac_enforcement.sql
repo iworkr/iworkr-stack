@@ -2,6 +2,8 @@
 -- Migration 036: Role-Granular RLS Enforcement
 -- Project Cerberus — The Iron Matrix
 -- ═══════════════════════════════════════════════════════════
+-- SAFE: All DROP POLICY IF EXISTS + CREATE POLICY are wrapped
+--       in DO blocks to handle missing tables gracefully.
 
 -- Helper: extract role from organization_members for current user
 CREATE OR REPLACE FUNCTION get_user_org_role(p_org_id uuid)
@@ -16,112 +18,130 @@ AS $$
 $$;
 
 -- ── Jobs: Technicians see only assigned, Admins/Dispatchers see all ──
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='jobs') THEN
+    DROP POLICY IF EXISTS "jobs_select_policy" ON public.jobs;
+    CREATE POLICY "jobs_select_policy" ON public.jobs
+    FOR SELECT USING (
+      CASE get_user_org_role(organization_id)
+        WHEN 'owner'       THEN true
+        WHEN 'admin'        THEN true
+        WHEN 'manager'      THEN true
+        WHEN 'office_admin'  THEN true
+        WHEN 'senior_tech'   THEN true
+        WHEN 'technician'    THEN assignee_id = auth.uid()
+        WHEN 'apprentice'    THEN assignee_id = auth.uid()
+        WHEN 'subcontractor' THEN assignee_id = auth.uid()
+        ELSE false
+      END
+    );
 
-DROP POLICY IF EXISTS "jobs_select_policy" ON public.jobs;
-CREATE POLICY "jobs_select_policy" ON public.jobs
-FOR SELECT USING (
-  CASE get_user_org_role(organization_id)
-    WHEN 'owner'       THEN true
-    WHEN 'admin'        THEN true
-    WHEN 'manager'      THEN true
-    WHEN 'office_admin'  THEN true
-    WHEN 'senior_tech'   THEN true
-    WHEN 'technician'    THEN assigned_tech_id = auth.uid()
-    WHEN 'apprentice'    THEN assigned_tech_id = auth.uid()
-    WHEN 'subcontractor' THEN assigned_tech_id = auth.uid()
-    ELSE false
-  END
-);
+    DROP POLICY IF EXISTS "jobs_insert_policy" ON public.jobs;
+    CREATE POLICY "jobs_insert_policy" ON public.jobs
+    FOR INSERT WITH CHECK (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin', 'senior_tech')
+    );
 
-DROP POLICY IF EXISTS "jobs_insert_policy" ON public.jobs;
-CREATE POLICY "jobs_insert_policy" ON public.jobs
-FOR INSERT WITH CHECK (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin', 'senior_tech')
-);
+    DROP POLICY IF EXISTS "jobs_update_policy" ON public.jobs;
+    CREATE POLICY "jobs_update_policy" ON public.jobs
+    FOR UPDATE USING (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin', 'senior_tech')
+      OR assignee_id = auth.uid()
+    );
 
-DROP POLICY IF EXISTS "jobs_update_policy" ON public.jobs;
-CREATE POLICY "jobs_update_policy" ON public.jobs
-FOR UPDATE USING (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin', 'senior_tech')
-  OR assigned_tech_id = auth.uid()
-);
-
-DROP POLICY IF EXISTS "jobs_delete_policy" ON public.jobs;
-CREATE POLICY "jobs_delete_policy" ON public.jobs
-FOR DELETE USING (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager')
-);
+    DROP POLICY IF EXISTS "jobs_delete_policy" ON public.jobs;
+    CREATE POLICY "jobs_delete_policy" ON public.jobs
+    FOR DELETE USING (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager')
+    );
+  ELSE
+    RAISE NOTICE '[036] Skipping jobs policies — table not found.';
+  END IF;
+END $$;
 
 -- ── Clients: Techs read-only, No subcontractor access ──
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='clients') THEN
+    DROP POLICY IF EXISTS "clients_select_policy" ON public.clients;
+    CREATE POLICY "clients_select_policy" ON public.clients
+    FOR SELECT USING (
+      get_user_org_role(organization_id) IN (
+        'owner', 'admin', 'manager', 'office_admin', 'senior_tech', 'technician'
+      )
+    );
 
-DROP POLICY IF EXISTS "clients_select_policy" ON public.clients;
-CREATE POLICY "clients_select_policy" ON public.clients
-FOR SELECT USING (
-  get_user_org_role(organization_id) IN (
-    'owner', 'admin', 'manager', 'office_admin', 'senior_tech', 'technician'
-  )
-);
+    DROP POLICY IF EXISTS "clients_insert_policy" ON public.clients;
+    CREATE POLICY "clients_insert_policy" ON public.clients
+    FOR INSERT WITH CHECK (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
+    );
 
-DROP POLICY IF EXISTS "clients_insert_policy" ON public.clients;
-CREATE POLICY "clients_insert_policy" ON public.clients
-FOR INSERT WITH CHECK (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
-);
+    DROP POLICY IF EXISTS "clients_update_policy" ON public.clients;
+    CREATE POLICY "clients_update_policy" ON public.clients
+    FOR UPDATE USING (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
+    );
 
-DROP POLICY IF EXISTS "clients_update_policy" ON public.clients;
-CREATE POLICY "clients_update_policy" ON public.clients
-FOR UPDATE USING (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
-);
-
-DROP POLICY IF EXISTS "clients_delete_policy" ON public.clients;
-CREATE POLICY "clients_delete_policy" ON public.clients
-FOR DELETE USING (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager')
-);
+    DROP POLICY IF EXISTS "clients_delete_policy" ON public.clients;
+    CREATE POLICY "clients_delete_policy" ON public.clients
+    FOR DELETE USING (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager')
+    );
+  ELSE
+    RAISE NOTICE '[036] Skipping clients policies — table not found.';
+  END IF;
+END $$;
 
 -- ── Finance: Strictly Admins and Owners ──
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='invoices') THEN
+    DROP POLICY IF EXISTS "invoices_select_policy" ON public.invoices;
+    CREATE POLICY "invoices_select_policy" ON public.invoices
+    FOR SELECT USING (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
+    );
 
-DROP POLICY IF EXISTS "invoices_select_policy" ON public.invoices;
-CREATE POLICY "invoices_select_policy" ON public.invoices
-FOR SELECT USING (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
-);
+    DROP POLICY IF EXISTS "invoices_insert_policy" ON public.invoices;
+    CREATE POLICY "invoices_insert_policy" ON public.invoices
+    FOR INSERT WITH CHECK (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
+    );
 
-DROP POLICY IF EXISTS "invoices_insert_policy" ON public.invoices;
-CREATE POLICY "invoices_insert_policy" ON public.invoices
-FOR INSERT WITH CHECK (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
-);
+    DROP POLICY IF EXISTS "invoices_update_policy" ON public.invoices;
+    CREATE POLICY "invoices_update_policy" ON public.invoices
+    FOR UPDATE USING (
+      get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
+    );
 
-DROP POLICY IF EXISTS "invoices_update_policy" ON public.invoices;
-CREATE POLICY "invoices_update_policy" ON public.invoices
-FOR UPDATE USING (
-  get_user_org_role(organization_id) IN ('owner', 'admin', 'manager', 'office_admin')
-);
-
-DROP POLICY IF EXISTS "invoices_delete_policy" ON public.invoices;
-CREATE POLICY "invoices_delete_policy" ON public.invoices
-FOR DELETE USING (
-  get_user_org_role(organization_id) IN ('owner', 'admin')
-);
+    DROP POLICY IF EXISTS "invoices_delete_policy" ON public.invoices;
+    CREATE POLICY "invoices_delete_policy" ON public.invoices
+    FOR DELETE USING (
+      get_user_org_role(organization_id) IN ('owner', 'admin')
+    );
+  ELSE
+    RAISE NOTICE '[036] Skipping invoices policies — table not found.';
+  END IF;
+END $$;
 
 -- ── Organization Members: Prevent self-role-change, protect owners ──
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='organization_members') THEN
+    DROP POLICY IF EXISTS "members_update_no_self_escalation" ON public.organization_members;
+    CREATE POLICY "members_update_no_self_escalation" ON public.organization_members
+    FOR UPDATE USING (
+      user_id != auth.uid()
+      AND get_user_org_role(organization_id) IN ('owner', 'admin')
+    );
 
-DROP POLICY IF EXISTS "members_update_no_self_escalation" ON public.organization_members;
-CREATE POLICY "members_update_no_self_escalation" ON public.organization_members
-FOR UPDATE USING (
-  user_id != auth.uid()
-  AND get_user_org_role(organization_id) IN ('owner', 'admin')
-);
-
-DROP POLICY IF EXISTS "members_delete_protected" ON public.organization_members;
-CREATE POLICY "members_delete_protected" ON public.organization_members
-FOR DELETE USING (
-  user_id != auth.uid()
-  AND get_user_org_role(organization_id) IN ('owner', 'admin')
-  AND role != 'owner'
-);
+    DROP POLICY IF EXISTS "members_delete_protected" ON public.organization_members;
+    CREATE POLICY "members_delete_protected" ON public.organization_members
+    FOR DELETE USING (
+      user_id != auth.uid()
+      AND get_user_org_role(organization_id) IN ('owner', 'admin')
+      AND role != 'owner'
+    );
+  END IF;
+END $$;
 
 -- ── Prevent orphaned workspace (trigger) ──
 
@@ -155,42 +175,49 @@ CREATE TRIGGER trg_prevent_last_owner
   FOR EACH ROW EXECUTE FUNCTION prevent_last_owner_removal();
 
 -- ── Validate Invite RPC (public-facing, no auth needed for lookup) ──
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='organization_invites') THEN
+    EXECUTE $fn$
+      CREATE OR REPLACE FUNCTION validate_invite_token(p_token text)
+      RETURNS jsonb
+      LANGUAGE plpgsql SECURITY DEFINER
+      AS $body$
+      DECLARE
+        v_invite record;
+      BEGIN
+        SELECT i.*, o.name AS org_name, o.slug AS org_slug,
+               p.full_name AS inviter_name
+        INTO v_invite
+        FROM organization_invites i
+        JOIN organizations o ON o.id = i.organization_id
+        LEFT JOIN profiles p ON p.id = i.invited_by
+        WHERE i.token = p_token;
 
-CREATE OR REPLACE FUNCTION validate_invite_token(p_token text)
-RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER
-AS $$
-DECLARE
-  v_invite record;
-BEGIN
-  SELECT i.*, o.name AS org_name, o.slug AS org_slug,
-         p.full_name AS inviter_name
-  INTO v_invite
-  FROM organization_invites i
-  JOIN organizations o ON o.id = i.organization_id
-  LEFT JOIN profiles p ON p.id = i.invited_by
-  WHERE i.token = p_token;
+        IF NOT FOUND THEN
+          RETURN jsonb_build_object('valid', false, 'error', 'Invitation not found');
+        END IF;
 
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('valid', false, 'error', 'Invitation not found');
+        IF v_invite.status != 'pending' THEN
+          RETURN jsonb_build_object('valid', false, 'error', 'This invitation has already been used');
+        END IF;
+
+        IF v_invite.expires_at < now() THEN
+          RETURN jsonb_build_object('valid', false, 'error', 'This invitation has expired');
+        END IF;
+
+        RETURN jsonb_build_object(
+          'valid', true,
+          'email', v_invite.email,
+          'role', v_invite.role,
+          'organization_name', v_invite.org_name,
+          'organization_slug', v_invite.org_slug,
+          'inviter_name', v_invite.inviter_name,
+          'expires_at', v_invite.expires_at
+        );
+      END;
+      $body$;
+    $fn$;
+  ELSE
+    RAISE NOTICE '[036] Skipping validate_invite_token — organization_invites table not found.';
   END IF;
-
-  IF v_invite.status != 'pending' THEN
-    RETURN jsonb_build_object('valid', false, 'error', 'This invitation has already been used');
-  END IF;
-
-  IF v_invite.expires_at < now() THEN
-    RETURN jsonb_build_object('valid', false, 'error', 'This invitation has expired');
-  END IF;
-
-  RETURN jsonb_build_object(
-    'valid', true,
-    'email', v_invite.email,
-    'role', v_invite.role,
-    'organization_name', v_invite.org_name,
-    'organization_slug', v_invite.org_slug,
-    'inviter_name', v_invite.inviter_name,
-    'expires_at', v_invite.expires_at
-  );
-END;
-$$;
+END $$;

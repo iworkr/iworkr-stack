@@ -612,7 +612,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
         return MobileScanner(
           controller: _cameraController!,
           onDetect: _onDetect,
-          errorBuilder: (context, error, child) {
+          errorBuilder: (context, error) {
             return _CameraErrorView(
               message: error.errorDetails?.message ?? 'Camera feed interrupted',
               onRetry: _retryCamera,

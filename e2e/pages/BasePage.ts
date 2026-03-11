@@ -15,6 +15,13 @@ export abstract class BasePage {
   async goto() {
     logger.step(`Navigate to ${this.name}`, this.name);
     await this.page.goto(this.url);
+    await this.page.waitForLoadState("networkidle").catch(() => null);
+    // Handle redirect to /setup (onboarding) by retrying
+    if (this.page.url().includes("/setup") && !this.url.includes("/setup")) {
+      await this.page.waitForTimeout(1000);
+      await this.page.goto(this.url);
+      await this.page.waitForLoadState("networkidle").catch(() => null);
+    }
     await this.page.waitForTimeout(1500);
   }
 
@@ -141,14 +148,25 @@ export abstract class BasePage {
 
   // ── Sidebar Navigation ─────────────────────────────────
 
-  async navigateViaSidebar(label: string) {
+  async navigateViaSidebar(label: string, testId?: string) {
     logger.step(`Sidebar nav: "${label}"`, this.name);
-    const link = this.page.locator(`a:has-text("${label}")`).first();
-    if ((await link.count()) === 0) {
+    // Prefer stable data-testid selector, fall back to text match
+    let link;
+    if (testId) {
+      link = this.page.locator(`[data-testid="${testId}"]`).first();
+    }
+    if (!testId || (await link!.count()) === 0) {
+      link = this.page.locator(`[data-nav-label="${label}"]`).first();
+    }
+    if ((await link!.count()) === 0) {
+      // Final fallback: text-based match
+      link = this.page.locator(`a:has-text("${label}")`).first();
+    }
+    if ((await link!.count()) === 0) {
       logger.warn(`Sidebar link "${label}" not found`, this.name);
       return false;
     }
-    await link.click();
+    await link!.click();
     await this.page.waitForTimeout(1500);
     return true;
   }

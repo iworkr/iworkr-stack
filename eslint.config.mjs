@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Exclude non-web-app directories from linting
+    ".claude/**",
+    "flutter/**",
+    "electron/**",
+    "supabase/functions/**",
+    "playwright-report/**",
+    "test-results/**",
+    "audit-reports/**",
   ]),
 ]);
 

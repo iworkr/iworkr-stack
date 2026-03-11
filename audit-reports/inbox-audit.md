@@ -1,9 +1,9 @@
 # Inbox Module — Comprehensive Audit Report (Post-PRD)
 
-> **Generated**: 2026-02-19T00:58:00.104Z
+> **Generated**: 2026-03-10T00:39:47.621Z
 > **Module**: Inbox (`/dashboard/inbox`)
 > **Test Framework**: Playwright (18 test suites)
-> **Total Findings**: 17
+> **Total Findings**: 7
 > **PRD**: Inbox Module Live Activation & Fixes (P0)
 
 ---
@@ -12,38 +12,26 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 3 |
-| 🟡 Visual Defects | 1 |
+| 🔴 Critical Failures | 0 |
+| 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 10 |
-| 🟢 Flow Passes | 3 |
+| 🟠 Warnings | 7 |
+| 🟢 Flow Passes | 0 |
 
 ---
 
 ## 🔴 Critical Failures
 
+_No critical failures found._
 
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 406 ()
-
-### Filter button not found
-- **Area**: Filter
-- **Detail**: Could not locate the filter button in the inbox header.
-
-### No empty state shown
-- **Area**: EmptyState
-- **Detail**: Inbox has 0 items but no empty state message is visible — blank screen.
 
 
 ---
 
 ## 🟡 Visual Defects
 
+_No visual defects found._
 
-### Mobile preview pane state unclear
-- **Area**: Responsive
-- **Detail**: Could not verify if right pane is properly hidden on mobile.
 
 
 ---
@@ -87,26 +75,12 @@ _No dummy data leaks found._
 - **Area**: Avatar
 - **Detail**: Skipping — inbox empty.
 
-### No items for job ref test
-- **Area**: JobRef
-- **Detail**: Skipping.
-
-### HTTP 406
-- **Area**: Network
-- **Detail**: URL: https://olqjuadvseoxpfjzlghb.supabase.co/rest/v1/subscriptions?select=*&organization_id=eq.a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=in.%28active%2Ctrialing%2Cpast_due%29&order=created_at.desc&limit
-
-### Snooze not visible (empty inbox)
-- **Area**: Snooze
-- **Detail**: Snooze is not visible — preview pane shows empty state instead. Acceptable for MVP.
-
 
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[UI]** Keyboard hints render: Found 14 kbd elements for J, K, E, H hints.
-- ✅ **[Style]** All buttons have pointer cursor: Checked 14 buttons.
-- ✅ **[Style]** Inter font applied: Font: Inter, "Inter Fallback"
+
 
 ---
 

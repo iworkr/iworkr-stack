@@ -1,12 +1,13 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import { useTheme } from "@/components/providers/theme-provider";
+import { useAuthStore } from "@/lib/auth-store";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -19,6 +20,8 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { scrollY } = useScroll();
   const { theme } = useTheme();
+  const { user, initialized, profile } = useAuthStore();
+  const isAuthenticated = initialized && !!user;
   const bgOpacity = useTransform(scrollY, [0, 100], [0, 0.8]);
   const borderOpacity = useTransform(scrollY, [0, 100], [0, 0.08]);
 
@@ -73,15 +76,31 @@ export function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden items-center gap-3 md:flex">
-            <Link
-              href="/auth"
-              className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
-            >
-              Sign in
-            </Link>
-            <SpotlightButton size="sm" href="/auth">
-              Start free
-            </SpotlightButton>
+            {isAuthenticated ? (
+              <>
+                {profile?.full_name && (
+                  <span className="text-sm text-[var(--text-muted)]">
+                    {profile.full_name.split(" ")[0]}
+                  </span>
+                )}
+                <SpotlightButton size="sm" href="/dashboard">
+                  <LayoutDashboard size={14} />
+                  Dashboard
+                </SpotlightButton>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth"
+                  className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+                >
+                  Sign in
+                </Link>
+                <SpotlightButton size="sm" href="/auth">
+                  Start free
+                </SpotlightButton>
+              </>
+            )}
           </div>
 
           {/* Mobile Toggle */}
@@ -115,9 +134,16 @@ export function Navbar() {
               </a>
             ))}
             <div className="mt-3 border-t border-[var(--overlay-border)] pt-3">
-              <SpotlightButton size="md" className="w-full" href="/auth">
-                Start free trial
-              </SpotlightButton>
+              {isAuthenticated ? (
+                <SpotlightButton size="md" className="w-full" href="/dashboard">
+                  <LayoutDashboard size={14} />
+                  Go to Dashboard
+                </SpotlightButton>
+              ) : (
+                <SpotlightButton size="md" className="w-full" href="/auth">
+                  Start free trial
+                </SpotlightButton>
+              )}
             </div>
           </div>
         </motion.div>

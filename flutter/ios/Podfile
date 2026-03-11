@@ -50,6 +50,8 @@ post_install do |installer|
         'PERMISSION_NOTIFICATIONS=1',
       ]
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.1'
+
+      # Note: mobile_scanner v7+ supports arm64 simulators natively
     end
   end
 

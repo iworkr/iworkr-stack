@@ -16,6 +16,7 @@ import 'package:iworkr_mobile/core/widgets/obsidian_map.dart';
 import 'package:iworkr_mobile/features/quotes/screens/quote_create_screen.dart';
 import 'package:iworkr_mobile/features/safety/screens/safety_shield_screen.dart';
 import 'package:iworkr_mobile/features/ai/screens/ai_cortex_screen.dart';
+import 'package:iworkr_mobile/features/finance/screens/create_invoice_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -204,34 +205,36 @@ class _JobDetailBody extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Execute Job Button
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    context.push('/jobs/${job.id}/execute');
-                  },
-                  child: Container(
+                // Execute Job Button — adapts based on job status
+                if (job.status.isTerminal)
+                  // Completed/cancelled/archived jobs show status badge
+                  Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
                       borderRadius: ObsidianTheme.radiusMd,
-                      gradient: LinearGradient(
-                        colors: [
-                          ObsidianTheme.emerald.withValues(alpha: 0.1),
-                          ObsidianTheme.emerald.withValues(alpha: 0.05),
-                        ],
-                      ),
-                      border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                      color: c.hoverBg,
+                      border: Border.all(color: c.border),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(PhosphorIconsLight.play, size: 18, color: ObsidianTheme.emerald),
+                        Icon(
+                          job.status == JobStatus.cancelled
+                              ? PhosphorIconsLight.prohibit
+                              : PhosphorIconsLight.checkCircle,
+                          size: 18,
+                          color: job.status == JobStatus.cancelled
+                              ? ObsidianTheme.rose
+                              : ObsidianTheme.emerald,
+                        ),
                         const SizedBox(width: 10),
                         Text(
-                          'EXECUTE JOB',
+                          job.status == JobStatus.cancelled
+                              ? 'JOB CANCELLED'
+                              : 'JOB ${job.status.label.toUpperCase()}',
                           style: GoogleFonts.jetBrainsMono(
-                            color: ObsidianTheme.emerald,
+                            color: c.textTertiary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.5,
@@ -239,11 +242,53 @@ class _JobDetailBody extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                )
-                    .animate()
-                    .fadeIn(delay: 250.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1))
-                    .moveY(begin: 6, delay: 250.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
+                  )
+                      .animate()
+                      .fadeIn(delay: 250.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+                else
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      context.push('/jobs/${job.id}/execute');
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: ObsidianTheme.radiusMd,
+                        gradient: LinearGradient(
+                          colors: [
+                            ObsidianTheme.emerald.withValues(alpha: 0.1),
+                            ObsidianTheme.emerald.withValues(alpha: 0.05),
+                          ],
+                        ),
+                        border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            job.status.isActive ? PhosphorIconsLight.arrowRight : PhosphorIconsLight.play,
+                            size: 18,
+                            color: ObsidianTheme.emerald,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            job.status.isActive ? 'CONTINUE JOB' : 'EXECUTE JOB',
+                            style: GoogleFonts.jetBrainsMono(
+                              color: ObsidianTheme.emerald,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(delay: 250.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+                      .moveY(begin: 6, delay: 250.ms, duration: 500.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
 
                 // Inline map preview
                 if (job.locationLat != null && job.locationLng != null) ...[
@@ -382,7 +427,7 @@ class _JobDetailBody extends StatelessWidget {
                       child: ShimmerLoading(height: 40, borderRadius: ObsidianTheme.radiusSm),
                     )),
                   ),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (e, _) => _ErrorSection(text: 'Could not load tasks. Pull to retry.'),
                 ),
 
                 const SizedBox(height: 28),
@@ -483,7 +528,18 @@ class _JobDetailBody extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => HapticFeedback.lightImpact(),
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CreateInvoiceScreen(
+                                jobId: job.id,
+                                clientId: job.clientId,
+                                clientName: job.clientName,
+                              ),
+                            ),
+                          );
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
@@ -566,7 +622,7 @@ class _JobDetailBody extends StatelessWidget {
                       child: ShimmerLoading(height: 32, borderRadius: ObsidianTheme.radiusSm),
                     )),
                   ),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (e, _) => _ErrorSection(text: 'Could not load activity.'),
                 ),
               ],
             ),
@@ -635,6 +691,33 @@ class _EmptySection extends StatelessWidget {
       ),
       child: Center(
         child: Text(text, style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
+      ),
+    );
+  }
+}
+
+class _ErrorSection extends StatelessWidget {
+  final String text;
+  const _ErrorSection({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: ObsidianTheme.radiusLg,
+        border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.2)),
+        color: ObsidianTheme.rose.withValues(alpha: 0.04),
+      ),
+      child: Row(
+        children: [
+          Icon(PhosphorIconsLight.warning, size: 16, color: ObsidianTheme.rose.withValues(alpha: 0.6)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
+          ),
+        ],
       ),
     );
   }

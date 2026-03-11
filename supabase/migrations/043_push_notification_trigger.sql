@@ -1,13 +1,11 @@
 -- ============================================================================
 -- Migration 043: Push Notification FCM Trigger
+-- SAFE: All statements idempotent.
 -- ============================================================================
--- pg_net already enabled in 001_extensions.sql
 
--- Add FCM token storage to profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS fcm_token text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS push_enabled boolean DEFAULT true;
 
--- Fires the send-push Edge Function via pg_net when a notification is inserted
 CREATE OR REPLACE FUNCTION public.fire_push_notification()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -42,6 +40,13 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_fire_push_notification
-  AFTER INSERT ON public.notifications
-  FOR EACH ROW EXECUTE FUNCTION public.fire_push_notification();
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='notifications') THEN
+    DROP TRIGGER IF EXISTS trg_fire_push_notification ON public.notifications;
+    CREATE TRIGGER trg_fire_push_notification
+      AFTER INSERT ON public.notifications
+      FOR EACH ROW EXECUTE FUNCTION public.fire_push_notification();
+  ELSE
+    RAISE NOTICE '[043] Skipping push notification trigger — notifications table not found.';
+  END IF;
+END $$;

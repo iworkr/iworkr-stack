@@ -1,10 +1,13 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LayoutDashboard } from "lucide-react";
 import { FadeIn } from "@/components/ui/fade-in";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
+import { useAuthStore } from "@/lib/auth-store";
 
 export function FinalCTA() {
+  const { user, initialized } = useAuthStore();
+  const isAuthenticated = initialized && !!user;
   return (
     <section className="relative overflow-hidden py-32 md:py-40">
       {/* Massive logo background */}
@@ -45,20 +48,30 @@ export function FinalCTA() {
 
         <FadeIn delay={0.15}>
           <p className="mx-auto mt-6 max-w-lg text-base text-[var(--text-muted)]">
-            Join 2,000+ service businesses already running on iWorkr.
-            14-day free trial. No credit card required.
+            {isAuthenticated
+              ? "Your workspace is ready. Pick up where you left off."
+              : "Join 2,000+ service businesses already running on iWorkr. 14-day free trial. No credit card required."}
           </p>
         </FadeIn>
 
         <FadeIn delay={0.25}>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <SpotlightButton size="lg" href="/auth">
-              Start free trial
-              <ArrowRight size={16} />
-            </SpotlightButton>
-            <SpotlightButton variant="secondary" size="lg" href="mailto:sales@iworkr.com">
-              Contact sales
-            </SpotlightButton>
+            {isAuthenticated ? (
+              <SpotlightButton size="lg" href="/dashboard">
+                <LayoutDashboard size={16} />
+                Open Dashboard
+              </SpotlightButton>
+            ) : (
+              <>
+                <SpotlightButton size="lg" href="/auth">
+                  Start free trial
+                  <ArrowRight size={16} />
+                </SpotlightButton>
+                <SpotlightButton variant="secondary" size="lg" href="mailto:sales@iworkr.com">
+                  Contact sales
+                </SpotlightButton>
+              </>
+            )}
           </div>
         </FadeIn>
       </div>

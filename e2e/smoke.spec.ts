@@ -54,7 +54,7 @@ test.describe("Smoke Test — Full Route Crawler", () => {
     await page.goto("/dashboard");
     await page.waitForTimeout(2500);
 
-    const sidebarLinks = page.locator("nav a, aside a").filter({ has: page.locator("span, svg") });
+    const sidebarLinks = page.locator("[data-testid^='nav_'], nav a, aside a").filter({ has: page.locator("span, svg") });
     const linkCount = await sidebarLinks.count();
     logger.info(`Found ${linkCount} sidebar links`);
 

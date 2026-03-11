@@ -91,6 +91,8 @@ function NavLink({
     <Link
       href={item.href}
       title={collapsed ? item.label : undefined}
+      data-testid={item.id}
+      data-nav-label={item.label}
       className={`group relative flex items-center gap-2.5 rounded-lg px-2 py-[7px] transition-all duration-150 ${
         collapsed ? "justify-center" : ""
       } ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
