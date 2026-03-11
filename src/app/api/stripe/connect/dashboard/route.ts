@@ -1,13 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2026-01-28.clover" as Stripe.LatestApiVersion,
-  });
-}
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabaseClient();
