@@ -12,6 +12,8 @@ export function StepComplete() {
   const { refreshOrganizations } = useAuthStore();
   const [entering, setEntering] = useState(false);
 
+  const reset = useOnboardingStore((s) => s.reset);
+
   const handleEnter = useCallback(async () => {
     if (entering) return;
     setEntering(true);
@@ -34,10 +36,13 @@ export function StepComplete() {
       // Graceful degradation — continue to dashboard even if backend isn't configured
     }
 
+    // Clear the onboarding store so we don't loop back to the complete step
+    reset();
+
     setTimeout(() => {
       window.location.href = "/dashboard";
     }, 1200);
-  }, [entering, organizationId, teamInvites, refreshOrganizations]);
+  }, [entering, organizationId, teamInvites, refreshOrganizations, reset]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {

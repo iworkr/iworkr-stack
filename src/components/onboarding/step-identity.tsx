@@ -67,7 +67,14 @@ export function StepIdentity() {
           return;
         }
         if ("organization" in res && res.organization) {
-          setOrganizationId((res.organization as { id: string }).id);
+          // The RPC returns JSONB — it could be {id: "..."} or just a string UUID
+          const org = res.organization;
+          const orgId = typeof org === "string"
+            ? org
+            : (org as Record<string, unknown>)?.id as string | undefined;
+          if (orgId) {
+            setOrganizationId(orgId);
+          }
         }
       } catch {
         // If Supabase is not configured yet, continue anyway (graceful degradation)
