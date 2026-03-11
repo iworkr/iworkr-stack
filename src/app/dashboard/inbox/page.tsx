@@ -70,7 +70,7 @@ function EmptyStateRadar() {
         transition={{ delay: 0.85 }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="mt-6 flex items-center gap-2 rounded-xl border border-white/10 bg-transparent px-4 py-2 text-[12px] font-medium text-zinc-400 transition-all duration-200 hover:bg-white/5 hover:text-white"
+        className="mt-6 flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-4 py-2 text-[12px] font-medium text-zinc-400 transition-all duration-200 hover:bg-white/5 hover:text-white"
       >
         <Radio size={13} />
         Start a new transmission

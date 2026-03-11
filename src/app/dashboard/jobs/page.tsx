@@ -152,7 +152,7 @@ function FilterPopover({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed z-50 w-[220px] overflow-hidden rounded-xl border border-white/[0.06] bg-zinc-900/90 shadow-2xl shadow-black/50 backdrop-blur-xl"
+            className="fixed z-50 w-[220px] overflow-hidden rounded-lg border border-white/[0.06] bg-zinc-900/90 shadow-2xl shadow-black/50 backdrop-blur-xl"
             style={{
               top: anchorRef.current ? anchorRef.current.getBoundingClientRect().bottom + 6 : 0,
               right: anchorRef.current ? window.innerWidth - anchorRef.current.getBoundingClientRect().right : 0,
@@ -267,7 +267,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <button className="mt-5 flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200">
+          <button className="mt-5 flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200">
             <Plus size={14} />
             Create Job
           </button>
@@ -548,7 +548,7 @@ export default function JobsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setCreateJobModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200"
+            className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200"
           >
             <Plus size={13} strokeWidth={2} />
             New Job
@@ -837,7 +837,7 @@ export default function JobsPage() {
               initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-950 p-6 shadow-2xl">
+              className="w-full max-w-[420px] rounded-xl border border-white/5 bg-zinc-950 p-6 shadow-2xl">
               <div className="flex items-center gap-3 pb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
                   <AlertTriangle size={18} className="text-red-400" />
@@ -858,8 +858,8 @@ export default function JobsPage() {
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 pt-4">
-                <button onClick={() => setIsBulkDeleteModalOpen(false)} disabled={isDeleting} className="rounded-xl bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white">Cancel</button>
-                <motion.button whileTap={{ scale: 0.98 }} onClick={confirmBulkDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10 disabled:opacity-50">
+                <button onClick={() => setIsBulkDeleteModalOpen(false)} disabled={isDeleting} className="rounded-lg bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white">Cancel</button>
+                <motion.button whileTap={{ scale: 0.98 }} onClick={confirmBulkDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10 disabled:opacity-50">
                   <Trash2 size={13} />{isDeleting ? "Deleting…" : `Delete ${bulkDeleteJobs.length} Jobs`}
                 </motion.button>
               </div>
@@ -899,8 +899,8 @@ export default function JobsPage() {
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 pt-4">
-                <button onClick={() => { setIsDeleteModalOpen(false); setJobToDelete(null); }} disabled={isDeleting} className="rounded-xl bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50">Cancel</button>
-                <motion.button whileTap={{ scale: 0.98 }} onClick={confirmDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10 disabled:opacity-50">
+                <button onClick={() => { setIsDeleteModalOpen(false); setJobToDelete(null); }} disabled={isDeleting} className="rounded-lg bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50">Cancel</button>
+                <motion.button whileTap={{ scale: 0.98 }} onClick={confirmDelete} disabled={isDeleting} className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10 disabled:opacity-50">
                   <Trash2 size={13} />{isDeleting ? "Deleting…" : "Delete"}
                 </motion.button>
               </div>

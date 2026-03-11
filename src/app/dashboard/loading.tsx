@@ -16,7 +16,7 @@ export default function DashboardLoading() {
       {/* KPI cards skeleton */}
       <div className="mb-6 grid grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-white/[0.04] bg-white/[0.02] p-5">
+          <div key={i} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-5">
             <div className="mb-3 h-3 w-16 rounded skeleton-shimmer" />
             <div className="mb-2 h-7 w-24 rounded skeleton-shimmer" />
             <div className="h-3 w-12 rounded skeleton-shimmer" />
@@ -26,7 +26,7 @@ export default function DashboardLoading() {
 
       {/* Content skeleton */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-2xl border border-white/[0.04] bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-5">
           <div className="mb-4 h-4 w-28 rounded skeleton-shimmer" />
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -40,7 +40,7 @@ export default function DashboardLoading() {
             ))}
           </div>
         </div>
-        <div className="rounded-2xl border border-white/[0.04] bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-5">
           <div className="mb-4 h-4 w-24 rounded skeleton-shimmer" />
           <div className="h-48 rounded-xl skeleton-shimmer" />
         </div>

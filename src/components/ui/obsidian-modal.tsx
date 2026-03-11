@@ -9,7 +9,7 @@ import { type ReactNode, useEffect, useRef } from "react";
 const BACKDROP_CLASS =
   "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm";
 const CONTAINER_CLASS =
-  "overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl";
+  "overflow-hidden border border-white/5 bg-zinc-950 shadow-2xl";
 
 const CENTERED_TRANSITION = { duration: 0.15, ease: "easeOut" as const };
 
@@ -74,6 +74,7 @@ export function ObsidianModal({
               transition={CENTERED_TRANSITION}
               className={`flex max-h-[85vh] w-full flex-col ${CONTAINER_CLASS} ${padding === "none" ? "" : padding}`}
               style={{
+                borderRadius: "var(--radius-modal)",
                 maxWidth:
                   maxWidth === "full"
                     ? "100%"
@@ -135,14 +136,17 @@ export function ObsidianModalHeader({
   );
 }
 
-/** Primary CTA — stark white. PRD 55.0 */
+/** Primary CTA — stark white. PRD 55.0 — sharp radius via token */
 export const obsidianButtonPrimary =
-  "rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50";
+  "bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50";
 
 /** Secondary / Cancel — ghost */
 export const obsidianButtonGhost =
-  "rounded-xl bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white";
+  "bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white";
 
 /** Destructive — muted rose */
 export const obsidianButtonDanger =
-  "rounded-xl border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10";
+  "border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10";
+
+/** Shared inline style for all obsidian buttons — apply via style={obsidianButtonRadius} */
+export const obsidianButtonRadius = { borderRadius: "var(--radius-button)" } as const;

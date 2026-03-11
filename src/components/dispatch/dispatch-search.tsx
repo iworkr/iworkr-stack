@@ -38,7 +38,7 @@ export function DispatchSearch({ open, onClose, onSearch }: DispatchSearchProps)
 
   return (
     <div className="absolute left-1/2 top-4 z-20 w-full max-w-md -translate-x-1/2">
-      <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-zinc-950/90 px-3 py-2 shadow-xl backdrop-blur-md">
+      <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-zinc-950/90 px-3 py-2 shadow-xl backdrop-blur-md">
         <Search size={14} className="shrink-0 text-zinc-500" />
         <input
           ref={inputRef}

@@ -204,7 +204,7 @@ export default function HelpHubPage() {
               onChange={(e) => handleSearchChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleAiSearch(); }}
               placeholder="How do I create a recurring job?"
-              className="h-14 w-full rounded-2xl border border-white/10 bg-zinc-900/50 pl-12 pr-24 text-[15px] text-zinc-200 placeholder-zinc-600 outline-none backdrop-blur-sm transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_30px_-8px_rgba(0,230,118,0.15)]"
+              className="h-14 w-full rounded-lg border border-white/10 bg-zinc-900/50 pl-12 pr-24 text-[15px] text-zinc-200 placeholder-zinc-600 outline-none backdrop-blur-sm transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_30px_-8px_rgba(0,230,118,0.15)]"
             />
             <button
               onClick={handleAiSearch}
@@ -714,7 +714,7 @@ function NewThreadModal({ onClose }: { onClose: () => void }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/[0.08] bg-[#0a0a0a] p-6 shadow-2xl"
+        className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-6 shadow-2xl"
       >
         <h2 className="mb-5 text-[15px] font-medium text-zinc-200">Ask the Community</h2>
 

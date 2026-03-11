@@ -36,7 +36,8 @@ export function GlassCard({
       ref={ref}
       onMouseMove={handleMouseMove}
       transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
-      className={`group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[border-color] duration-200 hover:border-white/10 ${className}`}
+      className={`group relative overflow-hidden border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[border-color] duration-200 hover:border-white/10 ${className}`}
+      style={{ borderRadius: "var(--radius-card)" }}
     >
       {/* Spotlight */}
       <motion.div

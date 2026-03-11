@@ -179,7 +179,7 @@ export function CommandMenu() {
                           data-active={isActive}
                           onClick={() => executeCommand(cmd)}
                           onMouseEnter={() => setSelectedIndex(globalIdx)}
-                          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-100 ${
+                          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-all duration-100 ${
                             isActive
                               ? "bg-white/[0.05] text-zinc-100"
                               : "text-zinc-400 hover:bg-white/[0.03]"

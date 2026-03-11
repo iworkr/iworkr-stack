@@ -697,7 +697,7 @@ export default function SchedulePage() {
                 </p>
                 <button
                   onClick={() => setUnscheduledDrawerOpen(true)}
-                  className="mt-5 flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[12px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
+                  className="mt-5 flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[12px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
                 >
                   <CalendarClock size={14} />
                   Open Backlog
@@ -1269,7 +1269,7 @@ function JobPeekCard({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -8 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      className="absolute top-full left-0 z-50 mt-2 w-[320px] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A0A0A]/95 shadow-2xl backdrop-blur-xl"
+      className="absolute top-full left-0 z-50 mt-2 w-[320px] overflow-hidden rounded-xl border border-white/[0.06] bg-[#0A0A0A]/95 shadow-2xl backdrop-blur-xl"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -1372,7 +1372,7 @@ function JobPeekCard({
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={onOpenFull}
-          className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-[11px] font-medium text-black transition-colors hover:bg-zinc-200"
+          className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-[11px] font-medium text-black transition-colors hover:bg-zinc-200"
         >
           <ExternalLink size={11} />
           Job Control

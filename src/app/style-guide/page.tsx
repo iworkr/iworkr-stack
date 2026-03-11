@@ -164,8 +164,15 @@ export default function StyleGuidePage() {
         </div>
 
         <div className="rounded-lg border border-rose-500/10 bg-rose-500/[0.03] p-4 mb-16">
-          <p className="text-[11px] font-semibold text-rose-400 mb-1">Anti-patterns</p>
-          <p className="text-[12px] text-zinc-500">Never cluttered. Never neon-overloaded. Never playful/bubbly. Never use color for decoration. Never exceed 3 levels of card nesting.</p>
+          <p className="text-[11px] font-semibold text-rose-400 mb-1">Anti-patterns — What iWorkr is NOT</p>
+          <ul className="text-[12px] text-zinc-500 space-y-1 list-none">
+            <li>✕ Never bubbly/rounded — sharp edges convey precision and professionalism</li>
+            <li>✕ Never use rounded-2xl or rounded-3xl on UI elements (max 12px)</li>
+            <li>✕ Never use rounded-full on buttons (only for pills, avatars, toggles)</li>
+            <li>✕ Never cluttered. Never neon-overloaded. Never playful</li>
+            <li>✕ Never exceed 3 levels of card nesting</li>
+            <li>✕ Never hardcode border-radius — use semantic tokens</li>
+          </ul>
         </div>
 
         {/* ══════════════════════════════════════════════════ */}
@@ -243,7 +250,7 @@ export default function StyleGuidePage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* SPACING & RADIUS */}
         {/* ══════════════════════════════════════════════════ */}
-        <SectionAnchor id="spacing" label="04" title="Spacing & Border Radius" description="Consistent 4px base grid. Strict radius scale." />
+        <SectionAnchor id="spacing" label="04" title="Spacing & Border Radius" description="Consistent 4px base grid. Sharp, tight radius scale. No bubbly rounding." />
 
         <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-4">Spacing Scale</p>
         <div className="flex flex-wrap items-end gap-3 mb-8">
@@ -255,11 +262,11 @@ export default function StyleGuidePage() {
           ))}
         </div>
 
-        <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-4">Border Radius Scale</p>
-        <div className="flex flex-wrap items-center gap-4 mb-16">
+        <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-4">Base Radius Scale</p>
+        <div className="flex flex-wrap items-center gap-4 mb-8">
           {[
             { r: 4, label: "xs" }, { r: 6, label: "sm" }, { r: 8, label: "md" },
-            { r: 12, label: "lg" }, { r: 16, label: "xl" }, { r: 9999, label: "full" },
+            { r: 10, label: "lg" }, { r: 12, label: "xl" }, { r: 9999, label: "full" },
           ].map((item) => (
             <div key={item.label} className="flex flex-col items-center gap-1.5">
               <div className="h-12 w-12 border border-emerald-500/30 bg-emerald-500/10" style={{ borderRadius: item.r }} />
@@ -268,10 +275,49 @@ export default function StyleGuidePage() {
           ))}
         </div>
 
+        <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-4">Semantic Radius Tokens — Single Source of Truth</p>
+        <p className="text-[12px] text-zinc-500 mb-4">Change one CSS variable in <code className="font-mono text-emerald-500/60">globals.css</code> → every element of that type updates instantly.</p>
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {[
+            { token: "--radius-button", val: "8px", usage: "All buttons", css: ".r-button" },
+            { token: "--radius-card", val: "10px", usage: "Cards, panels", css: ".r-card" },
+            { token: "--radius-modal", val: "12px", usage: "Modals, dialogs", css: ".r-modal" },
+            { token: "--radius-widget", val: "12px", usage: "Dashboard widgets", css: ".r-widget" },
+            { token: "--radius-input", val: "8px", usage: "Inputs, textareas", css: ".r-input" },
+            { token: "--radius-dropdown", val: "8px", usage: "Menus, popovers", css: ".r-dropdown" },
+            { token: "--radius-badge", val: "4px", usage: "Tags, labels", css: ".r-badge" },
+            { token: "--radius-nav-item", val: "6px", usage: "Sidebar items", css: ".r-nav" },
+            { token: "--radius-toast", val: "10px", usage: "Toast alerts", css: ".r-toast" },
+          ].map((t) => (
+            <div key={t.token} className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+              <div className="h-8 w-8 shrink-0 border border-emerald-500/30 bg-emerald-500/10" style={{ borderRadius: t.val }} />
+              <div>
+                <p className="font-mono text-[10px] text-emerald-500/70">{t.token}</p>
+                <p className="text-[10px] text-zinc-500">{t.usage} · <span className="text-zinc-600">{t.val}</span></p>
+                <p className="font-mono text-[9px] text-zinc-700">class: {t.css}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <CodeBlock code={`/* globals.css — change ONE value, restyle ALL buttons */
+--radius-button: 8px;
+--radius-card: 10px;
+--radius-modal: 12px;
+
+/* Usage in components: */
+style={{ borderRadius: "var(--radius-button)" }}
+/* Or use utility class: */
+className="r-button"
+className="r-card"
+className="r-modal"`} />
+
+        <div className="mb-16" />
+
         {/* ══════════════════════════════════════════════════ */}
         {/* BUTTONS */}
         {/* ══════════════════════════════════════════════════ */}
-        <SectionAnchor id="buttons" label="05" title="Button System" description="SpotlightButton for CTAs. ObsidianButton for modals. Micro-interaction on press." />
+        <SectionAnchor id="buttons" label="05" title="Button System" description="Sharp 8px radius via --radius-button. SpotlightButton for CTAs. ObsidianButton for modals." />
 
         <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-4">SpotlightButton — Variants</p>
         <ShowcaseRow>
@@ -296,36 +342,41 @@ export default function StyleGuidePage() {
 
         <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-4">Obsidian Buttons (Modal Pattern)</p>
         <ShowcaseRow>
-          <button className="rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 active:scale-[0.98]">Primary</button>
-          <button className="rounded-xl bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white">Ghost</button>
-          <button className="rounded-xl border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10">Danger</button>
-          <button className="rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black opacity-50 cursor-not-allowed">Disabled</button>
+          <button className="r-button bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 active:scale-[0.98]">Primary</button>
+          <button className="r-button bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white">Ghost</button>
+          <button className="r-button border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10">Danger</button>
+          <button className="r-button bg-white px-4 py-2 text-[13px] font-medium text-black opacity-50 cursor-not-allowed">Disabled</button>
         </ShowcaseRow>
 
-        <CodeBlock code={`<SpotlightButton variant="primary" size="md">
+        <CodeBlock code={`// CTA buttons — radius from --radius-button token
+<SpotlightButton variant="primary" size="md">
   <Plus size={14} /> New Job
 </SpotlightButton>
 
-// Modal buttons
-<button className={obsidianButtonPrimary}>Save</button>
-<button className={obsidianButtonGhost}>Cancel</button>
-<button className={obsidianButtonDanger}>Delete</button>`} />
+// Modal buttons — import from obsidian-modal.tsx
+import { obsidianButtonPrimary, obsidianButtonRadius } from "@/components/ui/obsidian-modal";
+<button className={obsidianButtonPrimary} style={obsidianButtonRadius}>Save</button>
+
+// Quick utility class approach
+<button className="r-button bg-white px-4 py-2 text-sm font-medium text-black">
+  Save
+</button>`} />
 
         <div className="mb-16" />
 
         {/* ══════════════════════════════════════════════════ */}
         {/* INPUTS */}
         {/* ══════════════════════════════════════════════════ */}
-        <SectionAnchor id="inputs" label="06" title="Input & Form Elements" description="Minimal inputs. Transparent by default, border on focus." />
+        <SectionAnchor id="inputs" label="06" title="Input & Form Elements" description="Minimal inputs. Transparent by default, border on focus. Sharp radius via --radius-input." />
 
         <div className="max-w-md space-y-4 mb-8">
           <div>
             <label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Standard Input</label>
-            <input className="w-full rounded-lg border border-white/[0.08] bg-transparent px-3 py-2 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[rgba(255,255,255,0.15)] focus:bg-[rgba(255,255,255,0.02)] transition-all" placeholder="Enter job title..." />
+            <input className="r-input w-full border border-white/[0.08] bg-transparent px-3 py-2 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[rgba(255,255,255,0.15)] focus:bg-[rgba(255,255,255,0.02)] transition-all" placeholder="Enter job title..." />
           </div>
           <div>
             <label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Search Input</label>
-            <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-transparent px-3 py-2">
+            <div className="r-input flex items-center gap-2 border border-white/[0.08] bg-transparent px-3 py-2">
               <Search size={14} className="text-zinc-600" />
               <input className="flex-1 bg-transparent text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600" placeholder="Search jobs..." />
               <kbd className="rounded border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">⌘K</kbd>
@@ -333,7 +384,7 @@ export default function StyleGuidePage() {
           </div>
           <div>
             <label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Textarea</label>
-            <textarea className="w-full resize-none rounded-lg border border-white/[0.08] bg-transparent px-3 py-2 text-[13px] text-zinc-400 outline-none placeholder:text-zinc-600 focus:border-[rgba(255,255,255,0.15)] transition-all" rows={3} placeholder="Add a description..." />
+            <textarea className="r-input w-full resize-none border border-white/[0.08] bg-transparent px-3 py-2 text-[13px] text-zinc-400 outline-none placeholder:text-zinc-600 focus:border-[rgba(255,255,255,0.15)] transition-all" rows={3} placeholder="Add a description..." />
           </div>
           <div>
             <label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Toggle</label>
@@ -436,8 +487,8 @@ export default function StyleGuidePage() {
         <SectionAnchor id="modals" label="10" title="Modals & Toasts" description="ObsidianModal for dialogs. ActionToast for confirmations." />
 
         <ShowcaseRow label="Interactive Demos">
-          <button onClick={() => setDemoModalOpen(true)} className="rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 active:scale-[0.98]">Open Modal</button>
-          <button onClick={() => { setDemoToastVisible(true); setTimeout(() => setDemoToastVisible(false), 3000); }} className="rounded-xl border border-white/[0.08] bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-300 transition-colors hover:bg-white/5">Show Toast</button>
+          <button onClick={() => setDemoModalOpen(true)} className="r-button bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 active:scale-[0.98]">Open Modal</button>
+          <button onClick={() => { setDemoToastVisible(true); setTimeout(() => setDemoToastVisible(false), 3000); }} className="r-button border border-white/[0.08] bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-300 transition-colors hover:bg-white/5">Show Toast</button>
         </ShowcaseRow>
 
         {/* Demo Modal */}
@@ -446,22 +497,22 @@ export default function StyleGuidePage() {
             <>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setDemoModalOpen(false)} />
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} className="w-full max-w-md overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} className="r-modal w-full max-w-md overflow-hidden border border-white/5 bg-zinc-950 shadow-2xl" onClick={(e) => e.stopPropagation()}>
                   <div className="p-8">
                     <div className="flex items-start justify-between gap-4 pb-6">
                       <div>
                         <h3 className="font-display text-[17px] font-semibold tracking-tight text-white">ObsidianModal</h3>
-                        <p className="mt-0.5 text-[12px] text-zinc-500">This is the standard modal pattern</p>
+                        <p className="mt-0.5 text-[12px] text-zinc-500">Sharp modal — radius from --radius-modal</p>
                       </div>
-                      <button onClick={() => setDemoModalOpen(false)} className="shrink-0 rounded-lg p-1.5 text-zinc-500 hover:bg-white/5 hover:text-white"><X size={16} /></button>
+                      <button onClick={() => setDemoModalOpen(false)} className="shrink-0 r-nav p-1.5 text-zinc-500 hover:bg-white/5 hover:text-white"><X size={16} /></button>
                     </div>
                     <div className="space-y-4">
-                      <div><label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Job Title</label><input className="w-full rounded-lg border border-white/[0.08] bg-transparent px-3 py-2 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[rgba(255,255,255,0.15)] transition-all" placeholder="e.g. Hot water system install" /></div>
-                      <div><label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Description</label><textarea className="w-full resize-none rounded-lg border border-white/[0.08] bg-transparent px-3 py-2 text-[13px] text-zinc-400 outline-none placeholder:text-zinc-600 focus:border-[rgba(255,255,255,0.15)] transition-all" rows={3} placeholder="Describe the job..." /></div>
+                      <div><label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Job Title</label><input className="r-input w-full border border-white/[0.08] bg-transparent px-3 py-2 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[rgba(255,255,255,0.15)] transition-all" placeholder="e.g. Hot water system install" /></div>
+                      <div><label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Description</label><textarea className="r-input w-full resize-none border border-white/[0.08] bg-transparent px-3 py-2 text-[13px] text-zinc-400 outline-none placeholder:text-zinc-600 focus:border-[rgba(255,255,255,0.15)] transition-all" rows={3} placeholder="Describe the job..." /></div>
                     </div>
                     <div className="flex items-center justify-end gap-2 pt-6">
-                      <button onClick={() => setDemoModalOpen(false)} className="rounded-xl bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 hover:bg-white/5 hover:text-white">Cancel</button>
-                      <button onClick={() => setDemoModalOpen(false)} className="rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black hover:bg-zinc-200 active:scale-[0.98]">Create Job</button>
+                      <button onClick={() => setDemoModalOpen(false)} className="r-button bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 hover:bg-white/5 hover:text-white">Cancel</button>
+                      <button onClick={() => setDemoModalOpen(false)} className="r-button bg-white px-4 py-2 text-[13px] font-medium text-black hover:bg-zinc-200 active:scale-[0.98]">Create Job</button>
                     </div>
                   </div>
                 </motion.div>
@@ -474,7 +525,7 @@ export default function StyleGuidePage() {
         <AnimatePresence>
           {demoToastVisible && (
             <motion.div initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }} className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2">
-              <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/15 bg-[#0A0A0A]/95 px-4 py-2.5 shadow-lg backdrop-blur-md">
+              <div className="flex items-center gap-2.5 r-toast border border-emerald-500/15 bg-[#0A0A0A]/95 px-4 py-2.5 shadow-lg backdrop-blur-md">
                 <CheckCircle2 size={14} className="text-emerald-400" />
                 <span className="text-[13px] text-zinc-200">Job created successfully</span>
                 <button className="ml-2 text-[12px] font-medium text-zinc-500 hover:text-white">Undo</button>
@@ -486,9 +537,9 @@ export default function StyleGuidePage() {
         <div className="mb-4" />
         <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-3">Toast Variants</p>
         <div className="space-y-2 mb-16">
-          <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/15 bg-[#0A0A0A] px-4 py-2.5"><CheckCircle2 size={14} className="text-emerald-400" /><span className="text-[13px] text-zinc-200">Success toast</span></div>
-          <div className="flex items-center gap-2.5 rounded-xl border border-rose-500/15 bg-[#0A0A0A] px-4 py-2.5"><AlertCircle size={14} className="text-rose-400" /><span className="text-[13px] text-zinc-200">Error toast</span></div>
-          <div className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#0A0A0A] px-4 py-2.5"><CheckCircle2 size={14} className="text-zinc-400" /><span className="text-[13px] text-zinc-200">Info toast</span></div>
+          <div className="flex items-center gap-2.5 r-toast border border-emerald-500/15 bg-[#0A0A0A] px-4 py-2.5"><CheckCircle2 size={14} className="text-emerald-400" /><span className="text-[13px] text-zinc-200">Success toast</span></div>
+          <div className="flex items-center gap-2.5 r-toast border border-rose-500/15 bg-[#0A0A0A] px-4 py-2.5"><AlertCircle size={14} className="text-rose-400" /><span className="text-[13px] text-zinc-200">Error toast</span></div>
+          <div className="flex items-center gap-2.5 r-toast border border-white/[0.06] bg-[#0A0A0A] px-4 py-2.5"><CheckCircle2 size={14} className="text-zinc-400" /><span className="text-[13px] text-zinc-200">Info toast</span></div>
         </div>
 
         {/* ══════════════════════════════════════════════════ */}
@@ -499,7 +550,7 @@ export default function StyleGuidePage() {
         <div className="grid grid-cols-2 gap-4 mb-16">
           <div>
             <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-3">Context Menu</p>
-            <div className="w-52 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]">
+            <div className="w-52 overflow-hidden r-dropdown border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]">
               {[
                 { icon: <Eye size={12} />, label: "View details", shortcut: "Enter" },
                 { icon: <Search size={12} />, label: "Edit job", shortcut: "E" },
@@ -521,7 +572,7 @@ export default function StyleGuidePage() {
           </div>
           <div>
             <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-3">Dropdown / Popover</p>
-            <div className="w-52 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.5)]">
+            <div className="w-52 overflow-hidden r-dropdown border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.5)]">
               <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-white/[0.06] mb-1">
                 <Search size={12} className="text-zinc-600" />
                 <span className="text-[12px] text-zinc-600">Search...</span>

@@ -70,7 +70,7 @@ export function BroadcastModal({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
+        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-white/5 bg-zinc-950 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

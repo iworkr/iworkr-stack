@@ -1245,7 +1245,7 @@ function ConnectPaymentsTab() {
         <button
           onClick={handleSetupConnect}
           disabled={actionLoading}
-          className="px-8 py-3 bg-white text-black font-semibold text-sm rounded-xl hover:bg-zinc-200 transition-colors disabled:opacity-30 flex items-center gap-2"
+          className="px-8 py-3 bg-white text-black font-semibold text-sm rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-30 flex items-center gap-2"
         >
           {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
           Setup Payments

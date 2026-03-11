@@ -787,7 +787,7 @@ function AddLeadModal({
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-white/[0.06] bg-[#0A0A0A] p-6 shadow-2xl"
+        className="w-full max-w-md rounded-xl border border-white/[0.06] bg-[#0A0A0A] p-6 shadow-2xl"
       >
         {/* Modal header */}
         <div className="mb-5 flex items-center justify-between">

@@ -41,13 +41,14 @@ export function WidgetShell({
         ease: [0.16, 1, 0.3, 1],
       }}
       onMouseMove={handleMouseMove}
-      className={`group/widget relative flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-200 ${className}`}
-      style={{ borderRadius: 16 }}
+      className={`group/widget relative flex h-full flex-col overflow-hidden transition-all duration-200 ${className}`}
+      style={{ borderRadius: "var(--radius-widget)" }}
     >
       {/* Card body — Linear-style light cone */}
       <div
-        className="widget-glass relative z-[1] flex h-full flex-col overflow-hidden rounded-2xl border border-white/5 transition-[border-color,box-shadow] duration-200 group-hover/widget:border-white/10"
+        className="widget-glass relative z-[1] flex h-full flex-col overflow-hidden border border-white/5 transition-[border-color,box-shadow] duration-200 group-hover/widget:border-white/10"
         style={{
+          borderRadius: "var(--radius-widget)",
           boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05)",
           background: "radial-gradient(120% 150% at 50% -20%, rgba(16,185,129,0.04) 0%, transparent 50%), #09090b",
         }}
@@ -92,8 +93,9 @@ export function WidgetShell({
 export function WidgetSkeleton({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`widget-glass overflow-hidden rounded-2xl border border-white/5 ${className}`}
+      className={`widget-glass overflow-hidden border border-white/5 ${className}`}
       style={{
+        borderRadius: "var(--radius-widget)",
         boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05)",
         background: "radial-gradient(120% 150% at 50% -20%, rgba(16,185,129,0.04) 0%, transparent 50%), #09090b",
       }}

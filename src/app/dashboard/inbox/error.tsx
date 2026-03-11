@@ -53,14 +53,14 @@ export default function InboxError({
         <div className="mt-6 flex items-center justify-center gap-3">
           <button
             onClick={reset}
-            className="btn-micro inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200"
+            className="btn-micro inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200"
           >
             <RotateCcw size={13} />
             Retry
           </button>
           <a
             href="/dashboard"
-            className="btn-micro inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-[13px] font-medium text-zinc-300 transition-all hover:border-white/[0.12] hover:text-white"
+            className="btn-micro inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-[13px] font-medium text-zinc-300 transition-all hover:border-white/[0.12] hover:text-white"
           >
             <ArrowLeft size={13} />
             Dashboard

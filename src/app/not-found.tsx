@@ -74,7 +74,7 @@ export default function NotFound() {
         >
           <Link
             href="/dashboard"
-            className="btn-micro inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[13px] font-medium text-black transition-all hover:bg-zinc-200"
+            className="btn-micro inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-medium text-black transition-all hover:bg-zinc-200"
           >
             <ArrowLeft size={14} />
             Return to Command Center

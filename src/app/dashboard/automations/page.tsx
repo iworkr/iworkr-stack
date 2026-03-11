@@ -87,21 +87,21 @@ function EmptyState({ onCreateFlow, loading }: { onCreateFlow: () => void; loadi
         <motion.div
           animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 rounded-3xl bg-[#00E676]/10"
+          className="absolute inset-0 rounded-xl bg-[#00E676]/10"
           style={{ margin: "-16px" }}
         />
         {/* Middle ring */}
         <motion.div
           animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0, 0.2] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          className="absolute inset-0 rounded-3xl bg-[#00E676]/5"
+          className="absolute inset-0 rounded-xl bg-[#00E676]/5"
           style={{ margin: "-8px" }}
         />
         {/* Core icon */}
         <motion.div
           animate={{ rotate: [0, 360] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-[rgba(0,230,118,0.06)] ring-1 ring-[#00E676]/15"
+          className="relative flex h-20 w-20 items-center justify-center rounded-xl bg-[rgba(0,230,118,0.06)] ring-1 ring-[#00E676]/15"
         >
           <Cpu size={36} strokeWidth={0.8} className="text-[#00E676]" />
         </motion.div>
@@ -227,7 +227,7 @@ function RunDetailModal({
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative mx-4 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl"
+        className="relative mx-4 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">

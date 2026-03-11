@@ -60,7 +60,7 @@ export function StripeConnectModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#0C0C0C] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.8)]"
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#0C0C0C] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.8)]"
           >
             {/* Close button */}
             <button
@@ -124,7 +124,7 @@ export function StripeConnectModal() {
                   {/* Connect button */}
                   <button
                     onClick={handleConnect}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#635BFF] px-4 py-3 text-[13px] font-medium text-white transition-all hover:bg-[#5851DB] hover:shadow-[0_0_20px_rgba(99,91,255,0.3)]"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#635BFF] px-4 py-3 text-[13px] font-medium text-white transition-all hover:bg-[#5851DB] hover:shadow-[0_0_20px_rgba(99,91,255,0.3)]"
                   >
                     Connect with Stripe
                   </button>
@@ -227,7 +227,7 @@ export function StripeConnectModal() {
 
                   <button
                     onClick={handleClose}
-                    className="mt-6 rounded-xl bg-white/[0.05] px-6 py-2.5 text-[12px] font-medium text-zinc-300 transition-colors hover:bg-white/[0.08]"
+                    className="mt-6 rounded-lg bg-white/[0.05] px-6 py-2.5 text-[12px] font-medium text-zinc-300 transition-colors hover:bg-white/[0.08]"
                   >
                     Done
                   </button>

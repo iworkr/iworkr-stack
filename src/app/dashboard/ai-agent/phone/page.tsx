@@ -407,7 +407,7 @@ export default function PhoneAgentPage() {
                 {showAddKnowledge && (
                   <>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddKnowledge(false)} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-                    <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl">
+                    <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-white/5 bg-zinc-950 shadow-2xl">
                       <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
                         <h3 className="font-display text-[15px] font-semibold text-white">Add Knowledge</h3>
                         <button onClick={() => setShowAddKnowledge(false)} className="rounded-lg p-1.5 text-zinc-500 hover:text-white"><X size={16} /></button>

@@ -141,7 +141,7 @@ export default function DownloadPage() {
           >
             <a
               href={primaryDownload.url}
-              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-b from-[#00E676] to-[#00C853] px-8 py-4 text-[15px] font-semibold text-black shadow-[0_0_40px_-10px_rgba(0,230,118,0.3)] transition-all hover:shadow-[0_0_60px_-10px_rgba(0,230,118,0.5)]"
+              className="group flex items-center gap-3 rounded-lg bg-gradient-to-b from-[#00E676] to-[#00C853] px-8 py-4 text-[15px] font-semibold text-black shadow-[0_0_40px_-10px_rgba(0,230,118,0.3)] transition-all hover:shadow-[0_0_60px_-10px_rgba(0,230,118,0.5)]"
             >
               <Download size={18} />
               {primaryDownload.label}
@@ -220,7 +220,7 @@ export default function DownloadPage() {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="mx-auto mt-16 w-full max-w-4xl"
         >
-          <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl">
+          <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl">
             {/* Fake title bar */}
             <div className="flex h-10 items-center border-b border-white/[0.06] px-4">
               <div className="flex gap-2">
@@ -297,7 +297,7 @@ export default function DownloadPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 transition-colors hover:border-white/[0.12]"
+              className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 transition-colors hover:border-white/[0.12]"
             >
               <f.icon size={20} className="mb-3 text-[#00E676]" />
               <p className="text-[14px] font-medium text-zinc-200">{f.label}</p>
@@ -316,7 +316,7 @@ export default function DownloadPage() {
             System Requirements
           </h3>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6">
               <div className="mb-3 flex items-center gap-2">
                 <Apple size={16} className="text-zinc-400" />
                 <span className="text-[14px] font-medium text-zinc-300">macOS</span>
@@ -328,7 +328,7 @@ export default function DownloadPage() {
                 <li>Signed & Notarized by Apple</li>
               </ul>
             </div>
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6">
               <div className="mb-3 flex items-center gap-2">
                 <WindowsIcon />
                 <span className="text-[14px] font-medium text-zinc-300">Windows</span>

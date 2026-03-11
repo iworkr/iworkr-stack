@@ -88,9 +88,9 @@ export default function GetAppPage() {
               href="https://apps.apple.com/app/iworkr"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-6 transition-all hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-10px_rgba(0,230,118,0.15)]"
+              className="group flex items-center gap-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-6 transition-all hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-10px_rgba(0,230,118,0.15)]"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/5">
                 <Apple size={28} className="text-zinc-300" />
               </div>
               <div className="flex-1">
@@ -108,9 +108,9 @@ export default function GetAppPage() {
               href="https://play.google.com/store/apps/details?id=com.iworkr.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-6 transition-all hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-10px_rgba(0,230,118,0.15)]"
+              className="group flex items-center gap-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-6 transition-all hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-10px_rgba(0,230,118,0.15)]"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/5">
                 <svg viewBox="0 0 24 24" className="h-7 w-7 fill-zinc-300">
                   <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302a1 1 0 010 1.381l-2.302 2.302-2.533-2.533 2.533-2.452zM5.864 2.658L16.8 9.006l-2.302 2.302L5.864 2.658z" />
                 </svg>
@@ -131,7 +131,7 @@ export default function GetAppPage() {
             className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2"
           >
             {/* QR Code */}
-            <div className="flex flex-col items-center rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-6">
+            <div className="flex flex-col items-center rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-6">
               <QrCode size={14} className="mb-2 text-zinc-600" />
               <p className="mb-4 text-[11px] text-zinc-500">Scan with your phone camera</p>
               <div className="flex h-40 w-40 items-center justify-center rounded-xl border border-[rgba(255,255,255,0.1)] bg-white p-3">
@@ -167,7 +167,7 @@ export default function GetAppPage() {
             </div>
 
             {/* SMS Link */}
-            <div className="flex flex-col rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-6">
+            <div className="flex flex-col rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-6">
               <Send size={14} className="mb-2 text-zinc-600" />
               <p className="mb-1 text-[12px] font-medium text-zinc-300">Text me the link</p>
               <p className="mb-4 text-[11px] text-zinc-600">
@@ -221,9 +221,9 @@ export default function GetAppPage() {
             </h3>
             <a
               href="/download"
-              className="group flex items-center gap-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-6 transition-all hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-10px_rgba(0,230,118,0.15)]"
+              className="group flex items-center gap-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-6 transition-all hover:border-[rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_-10px_rgba(0,230,118,0.15)]"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/5">
                 <Monitor size={28} className="text-zinc-300" />
               </div>
               <div className="flex-1">

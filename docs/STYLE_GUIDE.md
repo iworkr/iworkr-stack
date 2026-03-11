@@ -265,17 +265,58 @@ Container: `mx-auto max-w-[1200px] px-6 md:px-12`
 
 ---
 
-## 6. Border Radius
+## 6. Border Radius — SHARP by Design
 
-| Token | Value | Usage |
+iWorkr uses **tight, sharp radii**. Never bubbly. Never rounded-2xl/3xl on UI elements.
+
+### 6.1 Base Scale
+
+| Token | Value | Description |
 |---|---|---|
-| `--radius-xs` | `4px` | Badges, chips, small pills |
-| `--radius-sm` | `6px` | Inputs, small buttons, tags |
-| `--radius-md` | `8px` | Cards, panels, command palette |
-| `--radius-lg` | `12px` | Dashboard widgets, modals, large cards |
-| `--radius-xl` | `16px` | Large containers, widget shells |
-| `rounded-full` | `9999px` | Avatars, status pills, toggle tracks |
-| `rounded-2xl` | `16px` | Modal dialogs, widget shells |
+| `--radius-xs` | `4px` | Smallest — badges, chips |
+| `--radius-sm` | `6px` | Small — nav items |
+| `--radius-md` | `8px` | Medium — buttons, inputs |
+| `--radius-lg` | `10px` | Cards, toasts |
+| `--radius-xl` | `12px` | Modals, widgets (max) |
+| `rounded-full` | `9999px` | Avatars, status pills, toggle tracks only |
+
+### 6.2 Semantic Tokens — Single Source of Truth
+
+Change ONE CSS variable in `globals.css` → every element of that type updates instantly.
+
+| Token | Value | Applies to | CSS class |
+|---|---|---|---|
+| `--radius-button` | `8px` | All buttons | `.r-button` |
+| `--radius-card` | `10px` | Cards, panels | `.r-card` |
+| `--radius-modal` | `12px` | Modals, dialogs | `.r-modal` |
+| `--radius-widget` | `12px` | Dashboard widgets | `.r-widget` |
+| `--radius-input` | `8px` | Text inputs, selects | `.r-input` |
+| `--radius-dropdown` | `8px` | Context menus, popovers | `.r-dropdown` |
+| `--radius-badge` | `4px` | Tags, labels (not pills) | `.r-badge` |
+| `--radius-nav-item` | `6px` | Sidebar nav items | `.r-nav` |
+| `--radius-toast` | `10px` | Toast notifications | `.r-toast` |
+
+### 6.3 Usage
+
+```tsx
+// Option A: CSS utility class (preferred for new code)
+<button className="r-button bg-white px-4 py-2">Save</button>
+<div className="r-card border border-white/5 p-4">Card</div>
+
+// Option B: Inline style (for components with existing style prop)
+style={{ borderRadius: "var(--radius-button)" }}
+
+// Option C: Import from obsidian-modal.tsx
+import { obsidianButtonPrimary, obsidianButtonRadius } from "@/components/ui/obsidian-modal";
+<button className={obsidianButtonPrimary} style={obsidianButtonRadius}>Save</button>
+```
+
+### 6.4 Anti-patterns
+
+- ❌ Never `rounded-2xl` or `rounded-3xl` on any UI element
+- ❌ Never `rounded-full` on buttons (only pills, avatars, toggles)
+- ❌ Never hardcode `rounded-xl` when a semantic token exists
+- ✅ Always use semantic tokens or utility classes
 
 ---
 
@@ -344,20 +385,29 @@ Light mode:
 | `md` | `px-5 py-2.5` | `text-sm` |
 | `lg` | `px-7 py-3` | `text-base` |
 
-Base: `inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200`
+Base: `inline-flex items-center justify-center gap-2 font-medium transition-all duration-200`
+Radius: `style={{ borderRadius: "var(--radius-button)" }}` (8px)
 Motion: `whileTap={{ scale: 0.98 }}`
 
 ### 9.2 Obsidian Button System (Modals & Forms)
 
+All buttons use `--radius-button` (8px) via inline style or `.r-button` class.
+
 ```ts
-// Primary — white bg, black text
-const obsidianButtonPrimary = "rounded-xl bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50";
+// Primary — white bg, black text (radius via obsidianButtonRadius)
+const obsidianButtonPrimary = "bg-white px-4 py-2 text-[13px] font-medium text-black transition-all hover:bg-zinc-200 active:scale-[0.98]";
+const obsidianButtonRadius = { borderRadius: "var(--radius-button)" };
 
 // Ghost — transparent, zinc text
-const obsidianButtonGhost = "rounded-xl bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white";
+const obsidianButtonGhost = "bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white";
 
-// Danger — rose outline
-const obsidianButtonDanger = "rounded-xl border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10";
+// Danger — rose outline (radius via obsidianButtonRadius)
+const obsidianButtonDanger = "border border-rose-500/20 bg-transparent px-4 py-2 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10";
+
+// Usage: always pair className + style
+<button className={obsidianButtonPrimary} style={obsidianButtonRadius}>Save</button>
+// Or use utility class:
+<button className="r-button bg-white px-4 py-2 text-sm font-medium text-black">Save</button>
 ```
 
 ### 9.3 Micro-Interaction Utilities
@@ -549,7 +599,8 @@ Cursor-tracking spotlight with spring physics.
 </GlassCard>
 ```
 
-Classes: `group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[border-color] duration-200 hover:border-white/10`
+Classes: `group relative overflow-hidden border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[border-color] duration-200 hover:border-white/10`
+Radius: `style={{ borderRadius: "var(--radius-card)" }}` (10px)
 
 Spotlight: `radial-gradient(350px circle at ${x}px ${y}px, var(--subtle-bg-hover), transparent 80%)` using `useSpring({ stiffness: 300, damping: 30 })`
 
@@ -616,7 +667,7 @@ transition={{ duration: 0.15, ease: "easeOut" }}
 
 Portal-mounted, z-100, with pricing tiles. See `src/components/app/upgrade-modal.tsx`.
 - Backdrop: `bg-black/70 backdrop-blur-md`
-- Body: `rounded-2xl border border-white/[0.06] bg-[#0A0A0A] max-w-[860px]`
+- Body: `r-modal border border-white/[0.06] bg-[#0A0A0A] max-w-[860px]`
 - Spring entry: `stiffness: 400, damping: 32`
 
 ---
@@ -638,7 +689,7 @@ useToastStore.addToast("Failed to save", undefined, "error");
 | `error` | `AlertCircle` | `text-rose-400` | `border-rose-500/15` |
 | `info` | `CheckCircle` | `text-zinc-400` | `border-white/[0.06]` |
 
-Toast classes: `rounded-xl border bg-[#0A0A0A]/95 px-4 py-2.5 shadow-lg backdrop-blur-md`
+Toast classes: `r-toast border bg-[#0A0A0A]/95 px-4 py-2.5 shadow-lg backdrop-blur-md`
 Auto-dismiss: 5 seconds. Includes optional "Undo" button.
 
 **Animation:**
@@ -694,7 +745,7 @@ Panel: rounded-[8px] border border-[rgba(255,255,255,0.08)] bg-[#0F0F0F]
        shadow-[0_24px_48px_rgba(0,0,0,0.4)] max-w-[560px]
 Input: text-[14px] text-zinc-100 placeholder:text-zinc-600
 Group: text-[9px] font-bold tracking-widest text-zinc-700 uppercase
-Item:  rounded-xl px-3 py-2 text-zinc-400
+Item:  r-dropdown px-3 py-2 text-zinc-400
 Active: bg-white/[0.05] text-zinc-100
 Kbd:   rounded border border-white/[0.06] bg-white/[0.03] font-mono text-[9px] text-zinc-600
 ```

@@ -426,7 +426,7 @@ export function OnboardingWizard({
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-2xl border border-white/5 bg-zinc-950 p-8 shadow-2xl"
+          className="rounded-xl border border-white/5 bg-zinc-950 p-8 shadow-2xl"
         >
           <AnimatePresence mode="wait">
             {/* ═══ STEP 1: Identity & Password ═══════════════ */}

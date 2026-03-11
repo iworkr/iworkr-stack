@@ -283,14 +283,14 @@ export function UpgradeModal() {
               exit={{ opacity: 0, scale: 0.97, y: 8 }}
               transition={{ type: "spring", stiffness: 400, damping: 32 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-[860px] max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.06] bg-[#0A0A0A] shadow-2xl"
+              className="relative w-full max-w-[860px] max-h-[90vh] overflow-y-auto rounded-xl border border-white/[0.06] bg-[#0A0A0A] shadow-2xl"
             >
               {/* Top emerald accent line */}
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
 
               {/* Noise overlay */}
               <div
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-[0.012]"
+                className="pointer-events-none absolute inset-0 rounded-xl opacity-[0.012]"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
                 }}

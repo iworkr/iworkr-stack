@@ -138,7 +138,7 @@ export function InviteModal() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/5 bg-zinc-950 shadow-2xl"
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-white/5 bg-zinc-950 shadow-2xl"
           >
             {/* Header — no hr, whitespace separation */}
             <div className="flex items-center justify-between gap-4 px-6 py-5">

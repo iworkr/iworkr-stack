@@ -583,7 +583,7 @@ export function MemberDrawer() {
                 {member.status === "pending" && (
                   <button
                     onClick={() => { resendInvite(member.id); addToast(`Invite resent to ${member.email}`); }}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-zinc-900/50 py-2 text-[11px] font-medium text-zinc-300 transition-all hover:bg-zinc-900"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/[0.06] bg-zinc-900/50 py-2 text-[11px] font-medium text-zinc-300 transition-all hover:bg-zinc-900"
                   >
                     <RefreshCw size={12} /> Resend Invite
                   </button>
@@ -599,7 +599,7 @@ export function MemberDrawer() {
                         else addToast(`${member.name} suspended`);
                       }}
                       disabled={actionLoading === "suspend"}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] py-2 text-[11px] font-medium text-amber-400 transition-all hover:bg-amber-500/10 disabled:opacity-50"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] py-2 text-[11px] font-medium text-amber-400 transition-all hover:bg-amber-500/10 disabled:opacity-50"
                     >
                       <Ban size={12} /> {actionLoading === "suspend" ? "…" : "Suspend"}
                     </button>
@@ -612,7 +612,7 @@ export function MemberDrawer() {
                         else { addToast(`${member.name} removed`); handleClose(); }
                       }}
                       disabled={actionLoading === "remove"}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/[0.04] py-2 text-[11px] font-medium text-rose-400 transition-all hover:bg-rose-500/10 disabled:opacity-50"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/[0.04] py-2 text-[11px] font-medium text-rose-400 transition-all hover:bg-rose-500/10 disabled:opacity-50"
                     >
                       <UserMinus size={12} /> {actionLoading === "remove" ? "…" : "Remove"}
                     </button>
@@ -628,7 +628,7 @@ export function MemberDrawer() {
                       else addToast(`${member.name} reactivated`);
                     }}
                     disabled={actionLoading === "reactivate"}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] py-2 text-[11px] font-medium text-emerald-400 transition-all hover:bg-emerald-500/10 disabled:opacity-50"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] py-2 text-[11px] font-medium text-emerald-400 transition-all hover:bg-emerald-500/10 disabled:opacity-50"
                   >
                     <Play size={12} /> {actionLoading === "reactivate" ? "…" : "Reactivate"}
                   </button>

@@ -198,7 +198,7 @@ export function JobChat({ jobId, jobTitle }: JobChatProps) {
       </div>
 
       {/* Stealth input — floating glass bar */}
-      <div className="mt-2 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-zinc-900/80 px-3 py-2 backdrop-blur-xl transition-all duration-200 focus-within:border-white/[0.1] focus-within:shadow-lg focus-within:shadow-black/20">
+      <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/[0.06] bg-zinc-900/80 px-3 py-2 backdrop-blur-xl transition-all duration-200 focus-within:border-white/[0.1] focus-within:shadow-lg focus-within:shadow-black/20">
         <input
           ref={inputRef}
           value={content}

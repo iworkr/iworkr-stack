@@ -36,14 +36,15 @@ export function SpotlightButton({
   href,
   onClick,
 }: SpotlightButtonProps) {
-  const baseClasses = `inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`;
+  const baseClasses = `inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`;
+  const radiusStyle = { borderRadius: "var(--radius-button)" };
 
   if (href) {
     const isInternal = href.startsWith("/");
 
     if (isInternal) {
       return (
-        <Link href={href} className={baseClasses}>
+        <Link href={href} className={baseClasses} style={radiusStyle}>
           {children}
         </Link>
       );
@@ -55,6 +56,7 @@ export function SpotlightButton({
         whileTap={{ scale: 0.98 }}
         transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
         className={baseClasses}
+        style={radiusStyle}
       >
         {children}
       </motion.a>
@@ -67,6 +69,7 @@ export function SpotlightButton({
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
       className={baseClasses}
+      style={radiusStyle}
     >
       {children}
     </motion.button>

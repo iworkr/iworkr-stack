@@ -197,7 +197,7 @@ export function DashboardGrid() {
             <div key={widgetId} className="relative">
               {/* Edit mode overlay */}
               {editMode && (
-                <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl ring-1 ring-white/[0.12] ring-offset-1 ring-offset-black/40" />
+                <div className="pointer-events-none absolute inset-0 z-20 rounded-xl ring-1 ring-white/[0.12] ring-offset-1 ring-offset-black/40" />
               )}
 
               {/* Drag handle + remove button (edit mode only) */}
@@ -222,7 +222,7 @@ export function DashboardGrid() {
               )}
 
               {/* Widget content */}
-              <div className="h-full overflow-hidden rounded-2xl">
+              <div className="h-full overflow-hidden rounded-xl">
                 {renderWidget(widgetId, sizeMap[widgetId] || "medium")}
               </div>
             </div>
