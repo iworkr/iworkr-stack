@@ -1,14 +1,10 @@
-import { CustomerPortal } from "@polar-sh/nextjs";
-import { getAppUrl } from "@/lib/app-url";
+import { NextResponse } from "next/server";
 
-export const GET = CustomerPortal({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  server: "production",
-  returnUrl: `${getAppUrl()}/settings/billing`,
-  getCustomerId: async (req) => {
-    const { searchParams } = new URL(req.url);
-    const customerId = searchParams.get("customerId");
-    if (!customerId) throw new Error("Missing customerId");
-    return customerId;
-  },
-});
+/**
+ * Legacy Polar.sh portal route — deprecated.
+ * Billing management now goes through Stripe's billing portal.
+ * See /api/stripe/portal instead.
+ */
+export async function GET() {
+  return NextResponse.redirect(new URL("/settings/billing", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"));
+}

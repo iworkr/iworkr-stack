@@ -162,27 +162,10 @@ function UpgradeButton({
   const [loading, setLoading] = useState(false);
   const { currentOrg } = useAuthStore();
 
-  async function handleUpgrade() {
+  function handleUpgrade() {
     if (loading) return;
     setLoading(true);
-
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          priceId: plan.polarPriceIdMonthly,
-          orgId: currentOrg?.id,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch {
-      setLoading(false);
-    }
+    window.location.href = `/checkout?plan=${plan.key}&interval=monthly`;
   }
 
   const isMd = size === "md";

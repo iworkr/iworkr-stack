@@ -7,6 +7,7 @@ import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/fade-in";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import { PLANS } from "@/lib/plans";
+import { useAuthStore } from "@/lib/auth-store";
 
 const displayPlans = PLANS.filter((p) => p.key !== "free");
 
@@ -38,6 +39,18 @@ function PriceDisplay({
 
 export function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
+  const { user, initialized } = useAuthStore();
+  const isAuthenticated = initialized && !!user;
+
+  function getCheckoutHref(plan: (typeof displayPlans)[0]) {
+    if (plan.ctaLabel === "Contact sales") return "mailto:sales@iworkr.com";
+    const interval = isYearly ? "yearly" : "monthly";
+    // Authenticated users go straight to checkout; others go through auth first
+    if (isAuthenticated) {
+      return `/checkout?plan=${plan.key}&interval=${interval}`;
+    }
+    return `/auth?mode=signup&next=${encodeURIComponent(`/checkout?plan=${plan.key}&interval=${interval}`)}`;
+  }
 
   return (
     <Section id="pricing" className="overflow-hidden">
@@ -134,17 +147,18 @@ export function Pricing() {
                 variant={plan.highlighted ? "primary" : "secondary"}
                 size="md"
                 className="mb-6 w-full"
-                href={
-                  plan.ctaLabel === "Contact sales"
-                    ? "mailto:sales@iworkr.com"
-                    : plan.polarProductId
-                    ? `/api/checkout?products=${plan.polarProductId}`
-                    : "/auth"
-                }
+                href={getCheckoutHref(plan)}
               >
                 {plan.ctaLabel}
                 <ArrowRight size={14} />
               </SpotlightButton>
+
+              {/* Trial badge */}
+              {plan.hasFreeTrial && plan.ctaLabel !== "Contact sales" && (
+                <p className="mb-4 text-center text-[11px] text-emerald-500/70">
+                  {plan.trialDays}-day free trial · No credit card upfront
+                </p>
+              )}
 
               {/* Features */}
               <div className="grid grid-cols-1 gap-2.5 border-t border-[var(--card-border)] pt-6">

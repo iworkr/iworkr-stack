@@ -1,9 +1,10 @@
 /**
  * Plan configuration — the single source of truth for pricing,
- * feature limits, and Polar price IDs.
+ * feature limits, and Stripe Price IDs.
  *
- * When Polar Products/Prices are created, replace the placeholder
- * `price_xxx` values with real Polar Price IDs.
+ * All billing flows through self-hosted Stripe Checkout (Embedded).
+ * Stripe Price IDs are loaded from env vars so they can differ
+ * between staging and production.
  */
 
 export interface PlanLimits {
@@ -26,12 +27,6 @@ export interface PlanDefinition {
   description: string;
   monthlyPrice: number;
   yearlyPrice: number;
-  /** Polar Product ID (the product itself) */
-  polarProductId: string;
-  /** Polar Price ID for monthly billing */
-  polarPriceIdMonthly: string;
-  /** Polar Price ID for yearly billing (empty if not available yet) */
-  polarPriceIdYearly: string;
   /** Stripe Price ID for monthly billing */
   stripePriceIdMonthly: string;
   /** Stripe Price ID for yearly billing */
@@ -46,23 +41,6 @@ export interface PlanDefinition {
   trialDays: number;
 }
 
-/**
- * ┌─────────────────────────────────────────────────────────────────┐
- * │  POLAR.SH PRODUCT MAPPING (Live)                               │
- * │                                                                 │
- * │  Starter   → Product: 95b33e16-0141-4359-8d6c-464b5f08a254    │
- * │              Price:   a70530fd-5055-4477-9bf6-291428d08856     │
- * │                                                                 │
- * │  Standard  → Product: 7673fa11-335c-4e37-a5cf-106f17202e58    │
- * │              Price:   5ed03136-ef53-4795-8512-fcae419212a6     │
- * │                                                                 │
- * │  Enterprise → Product: e5ac6ca6-8dfa-4be8-85aa-87c2eac2633e   │
- * │               Price:   72baea92-875b-4ed1-9ae3-fed6f349f7ad   │
- * │                                                                 │
- * │  All plans include 14-day free trial.                          │
- * │  To change pricing, update both here AND in Polar Dashboard.   │
- * └─────────────────────────────────────────────────────────────────┘
- */
 export const PLANS: PlanDefinition[] = [
   {
     key: "free",
@@ -70,9 +48,6 @@ export const PLANS: PlanDefinition[] = [
     description: "Get started with the basics.",
     monthlyPrice: 0,
     yearlyPrice: 0,
-    polarProductId: "",
-    polarPriceIdMonthly: "",
-    polarPriceIdYearly: "",
     stripePriceIdMonthly: "",
     stripePriceIdYearly: "",
     limits: {
@@ -106,9 +81,6 @@ export const PLANS: PlanDefinition[] = [
     description: "For solo operators getting organized.",
     monthlyPrice: 47,
     yearlyPrice: 38,
-    polarProductId: "95b33e16-0141-4359-8d6c-464b5f08a254",
-    polarPriceIdMonthly: "a70530fd-5055-4477-9bf6-291428d08856",
-    polarPriceIdYearly: process.env.NEXT_PUBLIC_POLAR_PRICE_STARTER_YEARLY || "",
     stripePriceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY || "",
     stripePriceIdYearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_YEARLY || "",
     limits: {
@@ -145,9 +117,6 @@ export const PLANS: PlanDefinition[] = [
     description: "For growing teams that need automation.",
     monthlyPrice: 97,
     yearlyPrice: 78,
-    polarProductId: "7673fa11-335c-4e37-a5cf-106f17202e58",
-    polarPriceIdMonthly: "5ed03136-ef53-4795-8512-fcae419212a6",
-    polarPriceIdYearly: process.env.NEXT_PUBLIC_POLAR_PRICE_PRO_YEARLY || "",
     stripePriceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || "",
     stripePriceIdYearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY || "",
     limits: {
@@ -186,9 +155,6 @@ export const PLANS: PlanDefinition[] = [
     description: "For operations at scale.",
     monthlyPrice: 247,
     yearlyPrice: 198,
-    polarProductId: "e5ac6ca6-8dfa-4be8-85aa-87c2eac2633e",
-    polarPriceIdMonthly: "72baea92-875b-4ed1-9ae3-fed6f349f7ad",
-    polarPriceIdYearly: process.env.NEXT_PUBLIC_POLAR_PRICE_BUSINESS_YEARLY || "",
     stripePriceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_MONTHLY || "",
     stripePriceIdYearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_YEARLY || "",
     limits: {
@@ -263,4 +229,9 @@ export function getBillingCycle(planKey: string | null | undefined): "monthly" |
   if (!planKey || planKey === "free") return "free";
   if (planKey.includes("annual") || planKey.includes("yearly")) return "yearly";
   return "monthly";
+}
+
+/** Get the Stripe Price ID for a plan based on billing interval */
+export function getStripePriceId(plan: PlanDefinition, yearly: boolean): string {
+  return yearly ? plan.stripePriceIdYearly : plan.stripePriceIdMonthly;
 }

@@ -1,8 +1,10 @@
-import { Checkout } from "@polar-sh/nextjs";
+import { NextResponse } from "next/server";
 
-export const GET = Checkout({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  successUrl: process.env.POLAR_SUCCESS_URL!,
-  server: "production",
-  theme: "dark",
-});
+/**
+ * Legacy Polar.sh checkout route — deprecated.
+ * All checkout now goes through /checkout (self-hosted Stripe Checkout).
+ * This redirect ensures any old links still work.
+ */
+export async function GET() {
+  return NextResponse.redirect(new URL("/#pricing", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"));
+}

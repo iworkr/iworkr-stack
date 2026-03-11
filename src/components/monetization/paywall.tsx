@@ -369,7 +369,7 @@ function FullPagePaywall({ feature, config }: { feature: GatedFeature; config: F
           transition={{ delay: 1.1 }}
           className="mt-3 font-mono text-[10px] text-zinc-700"
         >
-          Powered by Polar · Cancel anytime · 14-day free trial
+          Secured by Stripe · Cancel anytime · 14-day free trial
         </motion.p>
       </div>
     </div>

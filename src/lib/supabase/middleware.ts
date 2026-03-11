@@ -50,7 +50,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes: redirect to /auth if not signed in
-  const protectedPaths = ["/dashboard", "/setup", "/settings"];
+  const protectedPaths = ["/dashboard", "/setup", "/settings", "/checkout"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   if (isProtected && !user) {

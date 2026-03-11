@@ -2,10 +2,10 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Check,
   Crown,
-  ExternalLink,
   Loader2,
   Sparkles,
   Users,
@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Calendar,
   Shield,
+  RotateCcw,
+  ArrowUpRight,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useBillingStore } from "@/lib/billing-store";
@@ -22,6 +24,7 @@ import {
   PLANS,
   getPlanDisplayName,
   getBillingCycle,
+  getStripePriceId,
   type PlanDefinition,
 } from "@/lib/plans";
 
@@ -90,13 +93,13 @@ function PlanCard({
   plan,
   isCurrentPlan,
   isYearly,
-  onUpgrade,
+  onSelect,
   loading,
 }: {
   plan: PlanDefinition;
   isCurrentPlan: boolean;
   isYearly: boolean;
-  onUpgrade: (productId: string) => void;
+  onSelect: (plan: PlanDefinition) => void;
   loading: boolean;
 }) {
   const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
@@ -172,12 +175,12 @@ function PlanCard({
           className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] py-2 text-[12px] text-zinc-400 transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-zinc-200"
         >
           Contact Sales
-          <ExternalLink size={11} />
+          <ArrowUpRight size={11} />
         </a>
       ) : (
         <button
-          onClick={() => onUpgrade(plan.polarProductId)}
-          disabled={loading || !plan.polarProductId}
+          onClick={() => onSelect(plan)}
+          disabled={loading || price === 0}
           className={`mt-3 flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-medium transition-all ${
             plan.highlighted
               ? "bg-white text-black hover:bg-zinc-200"
@@ -199,11 +202,13 @@ function PlanCard({
 }
 
 export default function BillingPage() {
+  const router = useRouter();
   const { currentOrg, currentMembership } = useAuthStore();
   const { subscription, plan, memberCount, loading, loadBilling } =
     useBillingStore();
   const [isYearly, setIsYearly] = useState(false);
   const [showPlans, setShowPlans] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const orgId = currentOrg?.id;
   const isAdmin =
@@ -213,27 +218,87 @@ export default function BillingPage() {
     if (orgId) loadBilling(orgId);
   }, [orgId, loadBilling]);
 
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
-
-  function handleUpgrade(productId: string) {
-    if (!productId || !orgId) return;
-    setUpgradeLoading(true);
-    const params = new URLSearchParams({
-      products: productId,
-      "metadata[organization_id]": orgId,
-    });
-    window.location.href = `/api/checkout?${params.toString()}`;
-  }
-
-  function handleManageBilling() {
-    window.open("https://polar.sh/iworkr/portal", "_blank");
-  }
-
   const currentPlanKey = subscription?.plan_key || "free";
   const billingCycle = getBillingCycle(currentPlanKey);
   const periodEnd = subscription?.current_period_end
     ? new Date(subscription.current_period_end)
     : null;
+
+  async function handleSelectPlan(selectedPlan: PlanDefinition) {
+    if (!orgId) return;
+    const interval = isYearly ? "yearly" : "monthly";
+
+    // If no active subscription, go to checkout
+    if (!subscription || currentPlanKey === "free") {
+      router.push(`/checkout?plan=${selectedPlan.key}&interval=${interval}`);
+      return;
+    }
+
+    // If upgrading/downgrading, use the manage API
+    const priceId = getStripePriceId(selectedPlan, isYearly);
+    if (!priceId) return;
+
+    setActionLoading("change-plan");
+    try {
+      const res = await fetch("/api/stripe/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "change-plan", orgId, newPriceId: priceId }),
+      });
+      if (res.ok) {
+        await loadBilling(orgId);
+        setShowPlans(false);
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCancel() {
+    if (!orgId) return;
+    setActionLoading("cancel");
+    try {
+      await fetch("/api/stripe/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel", orgId }),
+      });
+      await loadBilling(orgId);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleReactivate() {
+    if (!orgId) return;
+    setActionLoading("reactivate");
+    try {
+      await fetch("/api/stripe/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reactivate", orgId }),
+      });
+      await loadBilling(orgId);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleOpenPortal() {
+    if (!orgId) return;
+    setActionLoading("portal");
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId }),
+      });
+      const data = await res.json();
+      if (data.url) window.open(data.url, "_blank");
+    } finally {
+      setActionLoading(null);
+    }
+  }
 
   return (
     <>
@@ -278,11 +343,16 @@ export default function BillingPage() {
               <div className="flex items-center gap-2">
                 {subscription && isAdmin && (
                   <button
-                    onClick={handleManageBilling}
-                    className="flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[12px] text-zinc-400 transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-zinc-200"
+                    onClick={handleOpenPortal}
+                    disabled={actionLoading === "portal"}
+                    className="flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-[12px] text-zinc-400 transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-zinc-200 disabled:opacity-50"
                   >
-                    <CreditCard size={12} />
-                    Manage billing
+                    {actionLoading === "portal" ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <CreditCard size={12} />
+                    )}
+                    Payment method
                   </button>
                 )}
                 {isAdmin && (
@@ -314,16 +384,29 @@ export default function BillingPage() {
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                className="mt-4 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-[12px] text-red-400"
+                className="mt-4 flex items-center justify-between rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2"
               >
-                <AlertTriangle size={13} />
-                Your subscription will be canceled on{" "}
-                {periodEnd.toLocaleDateString("en-AU", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-                .
+                <div className="flex items-center gap-2 text-[12px] text-red-400">
+                  <AlertTriangle size={13} />
+                  Cancels on{" "}
+                  {periodEnd.toLocaleDateString("en-AU", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </div>
+                <button
+                  onClick={handleReactivate}
+                  disabled={actionLoading === "reactivate"}
+                  className="flex items-center gap-1 rounded-md border border-white/10 px-2.5 py-1 text-[11px] text-zinc-300 transition-colors hover:bg-white/5"
+                >
+                  {actionLoading === "reactivate" ? (
+                    <Loader2 size={10} className="animate-spin" />
+                  ) : (
+                    <RotateCcw size={10} />
+                  )}
+                  Reactivate
+                </button>
               </motion.div>
             )}
 
@@ -345,7 +428,7 @@ export default function BillingPage() {
 
             {/* Subscription details */}
             {subscription && periodEnd && (
-              <div className="mt-4 flex flex-wrap gap-4 border-t border-[rgba(255,255,255,0.06)] pt-4">
+              <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-[rgba(255,255,255,0.06)] pt-4">
                 <div className="flex items-center gap-1.5 text-[11px] text-zinc-600">
                   <Calendar size={11} />
                   Next billing:{" "}
@@ -357,8 +440,28 @@ export default function BillingPage() {
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-zinc-600">
                   <Shield size={11} />
-                  Status: {subscription.status}
+                  Status:{" "}
+                  <span
+                    className={
+                      subscription.status === "active" || subscription.status === "trialing"
+                        ? "text-emerald-500"
+                        : subscription.status === "past_due"
+                        ? "text-amber-500"
+                        : "text-zinc-500"
+                    }
+                  >
+                    {subscription.status === "trialing" ? "Trial" : subscription.status}
+                  </span>
                 </div>
+                {subscription && !subscription.cancel_at_period_end && isAdmin && (
+                  <button
+                    onClick={handleCancel}
+                    disabled={actionLoading === "cancel"}
+                    className="ml-auto text-[11px] text-zinc-700 transition-colors hover:text-red-400"
+                  >
+                    {actionLoading === "cancel" ? "Canceling..." : "Cancel subscription"}
+                  </button>
+                )}
               </div>
             )}
           </motion.div>
@@ -416,8 +519,8 @@ export default function BillingPage() {
                             .replace(/_yearly$/, "")
                         }
                         isYearly={isYearly}
-                        onUpgrade={handleUpgrade}
-                        loading={upgradeLoading}
+                        onSelect={handleSelectPlan}
+                        loading={actionLoading === "change-plan"}
                       />
                     )
                   )}
@@ -435,14 +538,14 @@ export default function BillingPage() {
           >
             <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-3">
               <span className="text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
-                Invoices
+                Invoices & receipts
               </span>
               {subscription && (
                 <button
-                  onClick={handleManageBilling}
+                  onClick={handleOpenPortal}
                   className="text-[11px] text-zinc-600 transition-colors hover:text-zinc-300"
                 >
-                  View all in portal →
+                  View in Stripe portal →
                 </button>
               )}
             </div>
@@ -450,7 +553,7 @@ export default function BillingPage() {
               <CreditCard size={20} className="mx-auto mb-2 text-zinc-700" />
               <p className="text-[13px] text-zinc-600">
                 {subscription
-                  ? "View and manage invoices in your billing portal."
+                  ? "View and download invoices from your Stripe billing portal."
                   : "No invoices yet. Subscribe to a plan to get started."}
               </p>
             </div>
