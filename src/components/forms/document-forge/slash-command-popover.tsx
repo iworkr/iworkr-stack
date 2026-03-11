@@ -5,6 +5,7 @@ import { useMemo, useEffect, useRef, useState } from "react";
 import { TOOLBOX_ITEMS, filterTools } from "./forge-config";
 import type { BlockType } from "@/lib/forms-data";
 import { useBillingStore } from "@/lib/billing-store";
+import { useUpgradeModal } from "@/lib/upgrade-modal-store";
 
 const GATED_BLOCKS: Record<string, string> = {
   signature: "pro",
@@ -30,6 +31,7 @@ export function SlashCommandPopover({
 }: SlashCommandPopoverProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const [highlightIndex, setHighlightIndex] = useState(0);
+  const { openUpgrade } = useUpgradeModal();
 
   const filtered = useMemo(() => filterTools(query), [query]);
   const selected = filtered[highlightIndex];
@@ -108,7 +110,7 @@ export function SlashCommandPopover({
                   onMouseEnter={() => setHighlightIndex(i)}
                   onClick={() => {
                     if (isLocked) {
-                      window.location.href = "/settings/billing";
+                      openUpgrade({ feature: item.label, description: "Upgrade to use this block type." });
                       return;
                     }
                     onSelect(item.type);

@@ -47,6 +47,7 @@ import { InviteModal } from "@/components/team/invite-modal";
 import { useToastStore } from "@/components/app/action-toast";
 import { useBillingStore } from "@/lib/billing-store";
 import { getPlanByKey } from "@/lib/plans";
+import { useUpgradeModal } from "@/lib/upgrade-modal-store";
 
 /* ── Skill icon map ─────────────────────────────────────── */
 
@@ -325,7 +326,7 @@ export default function TeamPage() {
                 return (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => window.location.href = "/settings/billing"}
+                    onClick={() => useUpgradeModal.getState().openUpgrade({ feature: "Team Seats", description: "Upgrade your plan to add more team members." })}
                     className="flex h-7 items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 text-[11px] font-medium text-amber-400 transition-all duration-200 hover:bg-amber-500/20"
                   >
                     <UserPlus size={13} strokeWidth={2} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Lock,
   Check,
@@ -23,8 +23,9 @@ import {
   Layers,
   TrendingUp,
 } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState } from "react";
 import type { GatedFeature, FeatureConfig } from "./feature-gate";
+import { useUpgradeModal } from "@/lib/upgrade-modal-store";
 
 /* ── Feature icon map ──────────────────────────────────── */
 
@@ -293,11 +294,16 @@ export function Paywall({ feature, config, currentPlan, variant, onClose }: Payw
 function FullPagePaywall({ feature, config }: { feature: GatedFeature; config: FeatureConfig }) {
   const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { openUpgrade } = useUpgradeModal();
   const bentoProps = bentoPropsMap[feature] || bentoPropsMap.automations;
 
   const handleUpgrade = () => {
     setLoading(true);
-    window.location.href = "/settings/billing";
+    openUpgrade({
+      plan: config.requiredPlan,
+      feature: config.label,
+      description: config.description,
+    });
   };
 
   return (
@@ -388,11 +394,17 @@ function ModalPaywall({
   onClose?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const { openUpgrade } = useUpgradeModal();
   const Icon = featureIcons[feature] || Sparkles;
 
   const handleUpgrade = () => {
     setLoading(true);
-    window.location.href = "/settings/billing";
+    onClose?.();
+    openUpgrade({
+      plan: config.requiredPlan,
+      feature: config.label,
+      description: config.description,
+    });
   };
 
   return (
@@ -509,11 +521,16 @@ function ModalPaywall({
 
 function BannerPaywall({ feature, config }: { feature: GatedFeature; config: FeatureConfig }) {
   const [loading, setLoading] = useState(false);
+  const { openUpgrade } = useUpgradeModal();
   const Icon = featureIcons[feature] || Lock;
 
   const handleUpgrade = () => {
     setLoading(true);
-    window.location.href = "/settings/billing";
+    openUpgrade({
+      plan: config.requiredPlan,
+      feature: config.label,
+      description: config.description,
+    });
   };
 
   return (

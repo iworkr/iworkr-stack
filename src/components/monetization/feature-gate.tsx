@@ -161,7 +161,7 @@ export function useFeatureAccess(feature: GatedFeature): {
   config: FeatureConfig;
   currentPlan: string;
 } {
-  const { plan, subscription } = useBillingStore();
+  const { subscription } = useBillingStore();
   const config = FEATURE_CONFIG[feature];
   const currentPlan = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || "free";
   const allowed = meetsRequirement(currentPlan, config.requiredPlan);

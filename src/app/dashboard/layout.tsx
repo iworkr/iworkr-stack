@@ -26,6 +26,7 @@ const CreateClientModal = dynamic(() => import("@/components/app/create-client-m
 const CreateInvoiceModal = dynamic(() => import("@/components/app/create-invoice-modal").then((m) => m.CreateInvoiceModal), { ssr: false });
 const KeyboardShortcuts = dynamic(() => import("@/components/app/keyboard-shortcuts").then((m) => m.KeyboardShortcuts), { ssr: false });
 const UpgradeCelebration = dynamic(() => import("@/components/monetization/upgrade-celebration").then((m) => m.UpgradeCelebration), { ssr: false });
+const UpgradeModal = dynamic(() => import("@/components/app/upgrade-modal").then((m) => m.UpgradeModal), { ssr: false });
 
 export default function DashboardLayout({
   children,
@@ -236,6 +237,7 @@ export default function DashboardLayout({
         onClose={() => setShortcutsOpen(false)}
       />
       <ActionToastContainer />
+      <UpgradeModal />
       <UpgradeCelebration />
       <DesktopBridge />
       <DesktopBadge />
