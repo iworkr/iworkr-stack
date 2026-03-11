@@ -46,17 +46,17 @@ export function WidgetShell({
     >
       {/* Card body — Linear-style light cone */}
       <div
-        className="widget-glass relative z-[1] flex h-full flex-col overflow-hidden border border-white/5 transition-[border-color,box-shadow] duration-200 group-hover/widget:border-white/10"
+        className="widget-glass relative z-[1] flex h-full flex-col overflow-hidden border border-white/[0.04] transition-[border-color,box-shadow] duration-200 group-hover/widget:border-white/[0.08]"
         style={{
           borderRadius: "var(--radius-widget)",
-          boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05)",
-          background: "radial-gradient(120% 150% at 50% -20%, rgba(16,185,129,0.04) 0%, transparent 50%), #09090b",
+          boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.03)",
+          background: "#09090b",
         }}
       >
-        {/* Hover light cone intensifier — shifts from 0.04 to 0.08 */}
+        {/* Hover light cone — subtle brand tint on hover only */}
         <div
           className="pointer-events-none absolute inset-0 z-0 opacity-0 transition-opacity duration-200 group-hover/widget:opacity-100"
-          style={{ background: "radial-gradient(120% 150% at 50% -20%, rgba(16,185,129,0.04) 0%, transparent 50%)" }}
+          style={{ background: "radial-gradient(120% 150% at 50% -20%, rgba(16,185,129,0.03) 0%, transparent 50%)" }}
         />
 
         {/* Cursor spotlight — subtle on hover */}
@@ -93,11 +93,11 @@ export function WidgetShell({
 export function WidgetSkeleton({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`widget-glass overflow-hidden border border-white/5 ${className}`}
+      className={`widget-glass overflow-hidden border border-white/[0.04] ${className}`}
       style={{
         borderRadius: "var(--radius-widget)",
-        boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05)",
-        background: "radial-gradient(120% 150% at 50% -20%, rgba(16,185,129,0.04) 0%, transparent 50%), #09090b",
+        boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.03)",
+        background: "#09090b",
       }}
     >
       <div className="relative overflow-hidden p-6">

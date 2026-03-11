@@ -14,6 +14,7 @@ import { MapDevelopmentDetector } from "@/components/maps/map-development-detect
 import { OBSIDIAN_MAP_STYLES, DEFAULT_MAP_CENTER } from "@/components/maps/obsidian-map-styles";
 import { LottieIcon } from "./lottie-icon";
 import { radarScanAnimation } from "./lottie-data-relay";
+import { useDashboardStore } from "@/lib/dashboard-store";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const statusConfig = {
@@ -55,24 +56,43 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
   const { orgId } = useOrg();
   const { isLoaded, loadError } = useGoogleMaps();
   const [hovered, setHovered] = useState<string | null>(null);
-  const [dispatchData, setDispatchData] = useState<DispatchPin[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const cachedDispatch = useDashboardStore((s) => s.widgetDispatch);
+  const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
+  const isWidgetFresh = useDashboardStore((s) => s.isWidgetFresh);
+  const [dispatchData, setDispatchData] = useState<DispatchPin[]>(
+    (cachedDispatch.data as DispatchPin[] | null) ?? []
+  );
+  const [loaded, setLoaded] = useState(
+    cachedDispatch.data !== null && (cachedDispatch.data as DispatchPin[]).length > 0
+  );
   const [developmentMode, setDevelopmentMode] = useState(false);
 
   useEffect(() => {
     if (!orgId) return;
+    // Use cached data immediately, skip fetch if fresh
+    if (isWidgetFresh('widgetDispatch') && cachedDispatch.data) {
+      setDispatchData(cachedDispatch.data as DispatchPin[]);
+      setLoaded(true);
+      return;
+    }
     getLiveDispatch(orgId).then(({ data }) => {
-      if (data && data.length > 0) setDispatchData(data);
+      if (data && data.length > 0) {
+        setDispatchData(data);
+        setWidgetCache('widgetDispatch', data);
+      }
       setLoaded(true);
     });
-  }, [orgId]);
+  }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!orgId) return;
     const supabase = createClient();
     const refresh = () => {
       getLiveDispatch(orgId).then(({ data }) => {
-        if (data) setDispatchData(data);
+        if (data) {
+          setDispatchData(data);
+          setWidgetCache('widgetDispatch', data);
+        }
       });
     };
     const channel = supabase

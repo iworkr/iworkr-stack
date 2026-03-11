@@ -10,6 +10,7 @@ import { getMySchedule, type ScheduleItem } from "@/app/actions/dashboard";
 import { WidgetShell } from "./widget-shell";
 import { LottieIcon } from "./lottie-icon";
 import { emptyCalendarAnimation } from "./lottie-data";
+import { useDashboardStore } from "@/lib/dashboard-store";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const statusAccent: Record<string, { bg: string; text: string; dot: string }> = {
@@ -90,15 +91,31 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
   const { orgId } = useOrg();
   const storeBlocks = useScheduleStore((s) => s.blocks);
   const scheduleLoaded = useScheduleStore((s) => s.loaded);
-  const [serverBlocks, setServerBlocks] = useState<ScheduleItem[]>([]);
-  const [rpcLoaded, setRpcLoaded] = useState(false);
+  const cachedSchedule = useDashboardStore((s) => s.widgetSchedule);
+  const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
+  const isWidgetFresh = useDashboardStore((s) => s.isWidgetFresh);
+  const [serverBlocks, setServerBlocks] = useState<ScheduleItem[]>(
+    (cachedSchedule.data as ScheduleItem[] | null) ?? []
+  );
+  const [rpcLoaded, setRpcLoaded] = useState(
+    cachedSchedule.data !== null && cachedSchedule.data.length > 0
+  );
 
   useEffect(() => {
+    // Use cached data immediately, skip fetch if fresh
+    if (isWidgetFresh('widgetSchedule') && cachedSchedule.data) {
+      setServerBlocks(cachedSchedule.data as ScheduleItem[]);
+      setRpcLoaded(true);
+      return;
+    }
     getMySchedule(size === "large" ? 10 : 5).then(({ data }) => {
-      if (data && data.length > 0) setServerBlocks(data);
+      if (data && data.length > 0) {
+        setServerBlocks(data);
+        setWidgetCache('widgetSchedule', data);
+      }
       setRpcLoaded(true);
     });
-  }, [size]);
+  }, [size]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const myBlocks: DisplayBlock[] = useMemo(() => {
     if (serverBlocks.length > 0) {

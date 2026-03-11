@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getAIInsights, type AIInsight } from "@/app/actions/dashboard";
 import { WidgetShell } from "./widget-shell";
+import { useDashboardStore } from "@/lib/dashboard-store";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const typeConfig = {
@@ -64,16 +65,32 @@ function InsightSkeleton({ size }: { size: WidgetSize }) {
 export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
-  const [insights, setInsights] = useState<AIInsight[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const cachedInsights = useDashboardStore((s) => s.widgetInsights);
+  const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
+  const isWidgetFresh = useDashboardStore((s) => s.isWidgetFresh);
+  const [insights, setInsights] = useState<AIInsight[]>(
+    (cachedInsights.data as AIInsight[] | null) ?? []
+  );
+  const [loaded, setLoaded] = useState(
+    cachedInsights.data !== null && (cachedInsights.data as AIInsight[]).length > 0
+  );
 
   useEffect(() => {
     if (!orgId) return;
+    // Use cached data immediately, skip fetch if fresh
+    if (isWidgetFresh('widgetInsights') && cachedInsights.data) {
+      setInsights(cachedInsights.data as AIInsight[]);
+      setLoaded(true);
+      return;
+    }
     getAIInsights(orgId).then(({ data }) => {
-      if (data && data.length > 0) setInsights(data);
+      if (data && data.length > 0) {
+        setInsights(data);
+        setWidgetCache('widgetInsights', data);
+      }
       setLoaded(true);
     });
-  }, [orgId]);
+  }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const insight = insights.length > 0 ? insights[0] : emptyInsight;
   const config = typeConfig[insight.type] || typeConfig.warning;

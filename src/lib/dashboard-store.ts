@@ -76,6 +76,20 @@ export interface DashboardSnapshot {
   }[];
 }
 
+/* ── Widget Cache Entry ─────────────────────────────────── */
+
+interface WidgetCacheEntry<T> {
+  data: T | null;
+  fetchedAt: number | null;
+}
+
+const WIDGET_STALE_MS = 5 * 60 * 1000; // 5 minutes SWR
+
+function isWidgetCacheFresh(fetchedAt: number | null): boolean {
+  if (!fetchedAt) return false;
+  return Date.now() - fetchedAt < WIDGET_STALE_MS;
+}
+
 /* ── Store ──────────────────────────────────────────────── */
 
 interface DashboardState {
@@ -89,6 +103,12 @@ interface DashboardState {
   snapshot: DashboardSnapshot | null;
   snapshotLoading: boolean;
   snapshotFetchedAt: number | null;
+
+  // Widget-level caches (stale-while-revalidate)
+  widgetRevenueStats: WidgetCacheEntry<any>;
+  widgetSchedule: WidgetCacheEntry<any[]>;
+  widgetInsights: WidgetCacheEntry<any[]>;
+  widgetDispatch: WidgetCacheEntry<any[]>;
 
   // Notepad
   notepadContent: string;
@@ -108,6 +128,14 @@ interface DashboardState {
   setNotepadContent: (content: string) => void;
   setQuickLinks: (links: { label: string; href: string; icon?: string }[]) => void;
   resetLayout: () => void;
+
+  // Widget cache actions
+  setWidgetCache: <K extends 'widgetRevenueStats' | 'widgetSchedule' | 'widgetInsights' | 'widgetDispatch'>(
+    key: K,
+    data: any,
+  ) => void;
+  isWidgetFresh: (key: 'widgetRevenueStats' | 'widgetSchedule' | 'widgetInsights' | 'widgetDispatch') => boolean;
+  getWidgetCache: <T>(key: 'widgetRevenueStats' | 'widgetSchedule' | 'widgetInsights' | 'widgetDispatch') => T | null;
 }
 
 export const useDashboardStore = create<DashboardState>()(
@@ -121,6 +149,11 @@ export const useDashboardStore = create<DashboardState>()(
       snapshot: null,
       snapshotLoading: false,
       snapshotFetchedAt: null,
+
+      widgetRevenueStats: { data: null, fetchedAt: null },
+      widgetSchedule: { data: null, fetchedAt: null },
+      widgetInsights: { data: null, fetchedAt: null },
+      widgetDispatch: { data: null, fetchedAt: null },
 
       notepadContent: "",
       quickLinks: [
@@ -175,6 +208,10 @@ export const useDashboardStore = create<DashboardState>()(
       setSnapshot: (snap) => set({ snapshot: snap, snapshotLoading: false, snapshotFetchedAt: Date.now() }),
       setSnapshotLoading: (loading) => set({ snapshotLoading: loading }),
 
+      setWidgetCache: (key, data) => set({ [key]: { data, fetchedAt: Date.now() } }),
+      isWidgetFresh: (key) => isWidgetCacheFresh(get()[key].fetchedAt),
+      getWidgetCache: (key) => get()[key].data,
+
       setNotepadContent: (content) => set({ notepadContent: content }),
       setQuickLinks: (links) => set({ quickLinks: links }),
 
@@ -193,6 +230,10 @@ export const useDashboardStore = create<DashboardState>()(
         quickLinks: state.quickLinks,
         snapshot: state.snapshot,
         snapshotFetchedAt: state.snapshotFetchedAt,
+        widgetRevenueStats: state.widgetRevenueStats,
+        widgetSchedule: state.widgetSchedule,
+        widgetInsights: state.widgetInsights,
+        widgetDispatch: state.widgetDispatch,
       }),
     }
   )

@@ -8,6 +8,7 @@ import { useFinanceStore } from "@/lib/finance-store";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getDashboardStats, type DashboardStats } from "@/app/actions/dashboard";
 import { WidgetShell } from "./widget-shell";
+import { useDashboardStore } from "@/lib/dashboard-store";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 /* ── SVG helpers ───────────────────────────────────── */
@@ -62,14 +63,25 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
   const { orgId } = useOrg();
   const dailyRevenue = useFinanceStore((s) => s.dailyRevenue);
   const financeLoaded = useFinanceStore((s) => s.loaded);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const cachedStats = useDashboardStore((s) => s.widgetRevenueStats);
+  const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
+  const isWidgetFresh = useDashboardStore((s) => s.isWidgetFresh);
+  const [stats, setStats] = useState<DashboardStats | null>(cachedStats.data);
 
   useEffect(() => {
     if (!orgId) return;
+    // Use cached data immediately, skip fetch if fresh
+    if (isWidgetFresh('widgetRevenueStats') && cachedStats.data) {
+      setStats(cachedStats.data);
+      return;
+    }
     getDashboardStats(orgId).then(({ data }) => {
-      if (data) setStats(data);
+      if (data) {
+        setStats(data);
+        setWidgetCache('widgetRevenueStats', data);
+      }
     });
-  }, [orgId]);
+  }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const revenueMTD = useMemo(() => {
     if (stats?.revenue_current) return stats.revenue_current;
@@ -246,20 +258,18 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
             style={{ strokeDasharray: 2000, strokeDashoffset: lineLen }}
           />
 
-          {/* Hollow data point circles at every node (PRD §4.3) */}
-          {points.map((p, i) => (
+          {/* Hollow data point circles — only show on hover (PRD §4.3) */}
+          {hoverIndex !== null && points[hoverIndex] && (
             <circle
-              key={i}
-              cx={p.x}
-              cy={p.y}
-              r={hoverIndex === i ? 5 : 3.5}
+              cx={points[hoverIndex].x}
+              cy={points[hoverIndex].y}
+              r={3}
               fill="var(--surface-0)"
               stroke="var(--brand)"
-              strokeWidth={2}
-              opacity={hoverIndex === i ? 1 : 0.5}
+              strokeWidth={1.5}
               className="transition-all duration-150"
             />
-          ))}
+          )}
 
           {/* Crosshair on hover (PRD §4.4) */}
           {hoverPoint && (
