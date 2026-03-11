@@ -341,7 +341,7 @@ function Shell({
   orgName?: string;
 }) {
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col">
+    <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
       <header className="border-b border-white/5 px-6 py-4">
         <div className="max-w-lg mx-auto flex items-center gap-3">

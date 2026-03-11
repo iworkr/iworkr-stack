@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* Header */}
       <div className="border-b border-white/[0.05]">
         <div className="flex h-14 items-center justify-between px-5">
@@ -31,8 +31,8 @@ export default function Loading() {
             style={{ aspectRatio: "3 / 4", animationDelay: `${i * 50}ms` }}
           >
             {/* Preview area */}
-            <div className="flex items-center justify-center bg-[#0A0A0A] p-4" style={{ height: "55%" }}>
-              <div className="w-full max-w-[100px] rounded-lg border border-white/[0.04] bg-[#050505] p-3 space-y-1.5">
+            <div className="flex items-center justify-center bg-[var(--surface-1)] p-4" style={{ height: "55%" }}>
+              <div className="w-full max-w-[100px] rounded-lg border border-white/[0.04] bg-[var(--background)] p-3 space-y-1.5">
                 <div className="h-1.5 w-[80%] animate-pulse rounded-full bg-white/[0.06]" />
                 <div className="h-1 w-full animate-pulse rounded-full bg-white/[0.03]" />
                 <div className="h-1 w-[70%] animate-pulse rounded-full bg-white/[0.03]" />

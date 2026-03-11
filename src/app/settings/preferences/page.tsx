@@ -44,9 +44,18 @@ export default function PreferencesPage() {
 
   return (
     <>
-      <h1 className="mb-8 text-2xl font-medium tracking-tight text-zinc-100">
-        Preferences
-      </h1>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Preferences
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Preferences
+        </h1>
+        <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-muted)]">
+          Customize how iWorkr looks, feels, and behaves across all your devices.
+        </p>
+      </div>
 
       {/* General */}
       <SettingSection title="General">
@@ -80,7 +89,7 @@ export default function PreferencesPage() {
         </SettingRow>
         <SettingRow
           label="First day of the week"
-          description="Used for date pickers"
+          description="Used for date pickers and calendar views"
         >
           <Select
             value={firstDay}
@@ -134,10 +143,10 @@ export default function PreferencesPage() {
                 <button
                   key={theme.id}
                   onClick={() => handleThemeChange(theme.id)}
-                  className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] transition-all ${
+                  className={`flex items-center gap-1.5 rounded-[var(--radius-button)] border px-2.5 py-1.5 text-[12px] font-medium transition-all ${
                     active
-                      ? "border-[#00E676]/40 bg-[rgba(0,230,118,0.06)] text-zinc-200"
-                      : "border-[rgba(255,255,255,0.08)] text-zinc-500 hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-400"
+                      ? "border-[var(--brand)]/30 bg-[rgba(16,185,129,0.06)] text-[var(--text-primary)] shadow-[0_0_8px_-3px_rgba(16,185,129,0.2)]"
+                      : "border-[var(--border-base)] text-[var(--text-muted)] hover:border-[var(--border-active)] hover:text-[var(--text-primary)]"
                   }`}
                 >
                   <Icon size={12} />

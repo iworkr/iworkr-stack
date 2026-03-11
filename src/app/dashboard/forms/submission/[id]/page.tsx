@@ -152,7 +152,7 @@ export default function SubmissionDetailPage() {
                   </span>
                 </div>
                 {/* Mini map */}
-                <div className="relative mb-2 h-20 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#080808]">
+                <div className="relative mb-2 h-20 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)] bg-[var(--surface-1)]">
                   <InlineMap
                     lat={submission.telemetry.gpsLat}
                     lng={submission.telemetry.gpsLng}

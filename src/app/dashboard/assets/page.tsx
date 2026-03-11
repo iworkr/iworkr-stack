@@ -360,18 +360,25 @@ export default function AssetsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="relative flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+      />
       {/* ── Header ───────────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="text-zinc-600">Dashboard</span>
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">ASSET COMMAND</span>
               <ChevronRightIcon size={10} className="text-zinc-700" />
               <span className="font-medium text-white">Assets</span>
             </div>
-            <span className="rounded-full bg-white/[0.03] px-2 py-0.5 text-[11px] text-zinc-500">
-              {assets.length} assets
+            <span className="rounded-full bg-white/[0.03] px-2 py-0.5 font-mono text-[10px] text-zinc-500">
+              {assets.length}
             </span>
           </div>
 
@@ -451,21 +458,21 @@ export default function AssetsPage() {
           </div>
         </div>
 
-        {/* ── KPI Cards ─────────────────────────────────── */}
+        {/* ── KPI Cards — Operational readiness strip ──── */}
         <div className="grid grid-cols-3 gap-3 px-5 pb-4">
           {/* Total Value */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05, duration: 0.3 }}
-            className="group flex items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
+            className="group flex items-center gap-3 rounded-xl border border-white/[0.04] bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:border-white/[0.06] hover:bg-zinc-900/40"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
               <DollarSign size={14} className="text-zinc-500 transition-colors group-hover:text-emerald-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Total Value</div>
-              <div className="font-mono text-[18px] font-semibold tracking-tight text-emerald-400">
+              <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Fleet Value</div>
+              <div className="font-mono text-[18px] font-semibold tabular-nums tracking-tight text-emerald-400">
                 <AnimatedNumber value={totalValue} />
               </div>
             </div>
@@ -478,25 +485,25 @@ export default function AssetsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.3 }}
             onClick={handleLowStockClick}
-            className={`group flex cursor-pointer items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
+            className={`group flex cursor-pointer items-center gap-3 rounded-xl border border-white/[0.04] bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:border-white/[0.06] hover:bg-zinc-900/40 ${
               lowStockCount > 0 ? "animate-lowstock-pulse" : ""
-            } ${kpiFilter === "low_stock" ? "ring-1 ring-amber-500/30" : ""}`}
+            } ${kpiFilter === "low_stock" ? "!border-amber-500/30" : ""}`}
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
               <AlertTriangle size={14} className={`transition-colors ${lowStockCount > 0 ? "text-amber-500" : "text-zinc-600"}`} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Low Stock</div>
+              <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Low Stock</div>
               <div className="flex items-baseline gap-1.5">
-                <span className={`font-mono text-[18px] font-semibold tracking-tight ${lowStockCount > 0 ? "text-amber-500" : "text-zinc-400"}`}>
+                <span className={`font-mono text-[18px] font-semibold tabular-nums tracking-tight ${lowStockCount > 0 ? "text-amber-500" : "text-zinc-400"}`}>
                   {lowStockCount}
                 </span>
-                <span className="text-[10px] text-zinc-600">items</span>
+                <span className="font-mono text-[9px] tracking-wide text-zinc-600">items</span>
               </div>
             </div>
             {lowStockCount > 0 && (
-              <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-medium text-amber-400">
-                Alert
+              <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 font-mono text-[8px] font-medium tracking-wide text-amber-400">
+                ALERT
               </span>
             )}
           </motion.div>
@@ -507,25 +514,25 @@ export default function AssetsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.3 }}
             onClick={handleMaintenanceClick}
-            className={`group flex cursor-pointer items-center gap-3 rounded-xl bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
-              kpiFilter === "maintenance" ? "ring-1 ring-rose-500/30" : ""
+            className={`group flex cursor-pointer items-center gap-3 rounded-xl border border-white/[0.04] bg-zinc-900/30 px-4 py-3 transition-all duration-200 hover:border-white/[0.06] hover:bg-zinc-900/40 ${
+              kpiFilter === "maintenance" ? "!border-rose-500/30" : ""
             }`}
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
               <Wrench size={14} className={`transition-colors ${maintenanceCount > 0 ? "text-rose-400" : "text-zinc-600"}`} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Maintenance</div>
+              <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Maintenance</div>
               <div className="flex items-baseline gap-1.5">
-                <span className={`font-mono text-[18px] font-semibold tracking-tight ${maintenanceCount > 0 ? "text-rose-400" : "text-zinc-400"}`}>
+                <span className={`font-mono text-[18px] font-semibold tabular-nums tracking-tight ${maintenanceCount > 0 ? "text-rose-400" : "text-zinc-400"}`}>
                   {maintenanceCount}
                 </span>
-                <span className="text-[10px] text-zinc-600">units</span>
+                <span className="font-mono text-[9px] tracking-wide text-zinc-600">units</span>
               </div>
             </div>
             {maintenanceCount > 0 && (
-              <span className="rounded-md bg-rose-500/10 px-1.5 py-0.5 text-[8px] font-medium text-rose-400">
-                Active
+              <span className="rounded-md bg-rose-500/10 px-1.5 py-0.5 font-mono text-[8px] font-medium tracking-wide text-rose-400">
+                ACTIVE
               </span>
             )}
           </motion.div>
@@ -689,7 +696,7 @@ function FleetListView({ assets }: { assets: Asset[] }) {
 
   return (
     <div>
-      <div className="flex items-center border-b border-white/[0.03] bg-[#080808] px-4 py-1.5 rounded-t-xl">
+      <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-4 py-1.5 rounded-t-xl">
         <div className="w-8" />
         <div className="w-20 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Tag</div>
         <div className="min-w-0 flex-1 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Name</div>

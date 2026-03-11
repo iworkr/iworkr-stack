@@ -84,12 +84,20 @@ export function InvalidTokenUI({ reason }: InvalidTokenUIProps) {
   const Icon = config.icon;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#050505] p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-[var(--background)] p-4">
+      {/* Noise — standardized */}
+      <div className="stealth-noise fixed" />
+
+      {/* Atmospheric glow */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[400px] rounded-full bg-[var(--brand)] opacity-[0.02] blur-[160px]" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-md"
+        className="relative z-10 w-full max-w-md"
       >
         {/* Glass card */}
         <div className="rounded-2xl border border-white/5 bg-zinc-950 p-8 shadow-2xl">

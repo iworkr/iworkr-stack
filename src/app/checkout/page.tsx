@@ -82,7 +82,7 @@ function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-[var(--border-base)] bg-[var(--surface-1)] p-5">
         <PaymentElement
           options={{
             layout: "tabs",
@@ -260,7 +260,7 @@ function CheckoutInner() {
       theme: "night",
       variables: {
         colorPrimary: "#10B981",
-        colorBackground: "#0A0A0A",
+          colorBackground: "#0a0a0a",
         colorText: "#ededed",
         colorTextSecondary: "#71717a",
         colorDanger: "#f43f5e",
@@ -298,17 +298,18 @@ function CheckoutInner() {
   };
 
   return (
-    <div className="relative flex min-h-screen bg-[#050505]">
-      {/* Noise */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50 opacity-[0.015] mix-blend-overlay"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-        }}
-      />
+    <div className="relative flex min-h-screen bg-[var(--background)]">
+      {/* Noise — standardized */}
+      <div className="stealth-noise fixed" />
+
+      {/* Atmospheric glow — checkout confidence */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute top-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--brand)] opacity-[0.02] blur-[180px]" />
+        <div className="absolute bottom-0 left-0 h-[400px] w-[400px] rounded-full bg-[var(--brand)] opacity-[0.015] blur-[160px]" />
+      </div>
 
       {/* Left: Order Summary */}
-      <div className="hidden w-[440px] flex-col border-r border-white/[0.06] bg-[#0A0A0A] p-10 lg:flex">
+      <div className="hidden w-[440px] flex-col border-r border-[var(--border-base)] bg-[var(--surface-1)] p-10 lg:flex">
         <Link
           href="/#pricing"
           className="mb-10 flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-300"
@@ -319,7 +320,7 @@ function CheckoutInner() {
 
         <div className="flex-1">
           {/* Plan card */}
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+          <div className="rounded-xl border border-[var(--border-active)] bg-white/[0.02] p-5">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
                 <Sparkles size={16} className="text-emerald-400" />
@@ -332,7 +333,7 @@ function CheckoutInner() {
               </div>
             </div>
 
-            <div className="space-y-2 border-t border-white/[0.06] pt-4">
+            <div className="space-y-2 border-t border-[var(--border-base)] pt-4">
               {plan.features.slice(0, 6).map((f) => (
                 <div key={f} className="flex items-center gap-2">
                   <Check size={12} className="shrink-0 text-emerald-500/60" />
@@ -366,7 +367,7 @@ function CheckoutInner() {
                 <span className="text-emerald-500/80">−${price}</span>
               </div>
             )}
-            <div className="border-t border-white/[0.06] pt-3">
+            <div className="border-t border-[var(--border-base)] pt-3">
               <div className="flex items-center justify-between">
                 <span className="text-[14px] font-medium text-zinc-200">
                   Due today
@@ -385,7 +386,7 @@ function CheckoutInner() {
         </div>
 
         {/* Trust signals */}
-        <div className="mt-auto space-y-3 border-t border-white/[0.06] pt-6">
+        <div className="mt-auto space-y-3 border-t border-[var(--border-base)] pt-6">
           <div className="flex items-center gap-2.5 text-[11px] text-zinc-600">
             <Shield size={13} className="shrink-0 text-zinc-600" />
             Secured by Stripe. Your card details never touch our servers.
@@ -490,7 +491,7 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+        <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
           <Loader2 size={24} className="animate-spin text-zinc-600" />
         </div>
       }

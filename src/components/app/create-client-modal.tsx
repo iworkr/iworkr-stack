@@ -320,7 +320,7 @@ export function CreateClientModal({
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             layout
-            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#141414] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
+            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-[var(--card-border)] bg-[var(--surface-2)] shadow-[var(--shadow-deep)]"
             style={{ maxHeight: "80vh" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -376,7 +376,7 @@ export function CreateClientModal({
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         >
-                          <Sparkles size={18} className="text-[#00E676]" />
+                          <Sparkles size={18} className="text-[var(--brand)]" />
                         </motion.div>
                       ) : (
                         <Sparkles size={18} className="text-zinc-700" />
@@ -395,7 +395,7 @@ export function CreateClientModal({
                         animate={{ opacity: 1 }}
                         className="mt-2 text-[10px] text-zinc-600"
                       >
-                        Press <kbd className="rounded bg-[rgba(255,255,255,0.06)] px-1 py-0.5 font-mono text-[9px] text-zinc-500">Enter</kbd> to confirm
+                        Press <kbd className="rounded bg-[var(--subtle-bg)] px-1 py-0.5 font-mono text-[9px] text-zinc-500">Enter</kbd> to confirm
                       </motion.div>
                     )}
                   </div>
@@ -416,8 +416,8 @@ export function CreateClientModal({
                   >
                     <div className="px-6 pb-4">
                       {/* Map card */}
-                      <div className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)]">
-                        <div className="relative h-[160px] bg-[#0a0a0a]">
+                      <div className="overflow-hidden rounded-lg border border-[var(--border-base)]">
+                        <div className="relative h-[160px] bg-[var(--surface-1)]">
                           {addressCoords ? (
                             <InlineMap lat={addressCoords.lat} lng={addressCoords.lng} zoom={15} className="h-full w-full" />
                           ) : address ? (
@@ -438,7 +438,7 @@ export function CreateClientModal({
                               initial={{ opacity: 0, y: 4 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.5 }}
-                              className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.7)] px-3 py-2 backdrop-blur-md"
+                              className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2 rounded-md border border-[var(--card-border)] bg-[rgba(0,0,0,0.7)] px-3 py-2 backdrop-blur-md"
                             >
                               <MapPin size={10} className="shrink-0 text-emerald-500" />
                               <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-300">
@@ -461,7 +461,7 @@ export function CreateClientModal({
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
                             placeholder="Enter address..."
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
+                            className="w-full border-b border-[var(--border-base)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]"
                           />
                         </div>
                       )}
@@ -470,7 +470,7 @@ export function CreateClientModal({
                     {/* ══════════════════════════════════════════ */}
                     {/* ZONE 3: Contact & Billing Details          */}
                     {/* ══════════════════════════════════════════ */}
-                    <div className="border-t border-[rgba(255,255,255,0.06)] px-6 py-4">
+                    <div className="border-t border-[var(--border-base)] px-6 py-4">
                       {/* Client type selector — Big toggle cards */}
                       <div className="mb-5 grid grid-cols-2 gap-3">
                         {clientTypes.map((ct) => {
@@ -483,12 +483,12 @@ export function CreateClientModal({
                               onClick={() => setClientType(ct.value)}
                               className={`relative flex flex-col items-center gap-2 rounded-xl border px-4 py-4 text-center transition-all duration-200 ${
                                 active
-                                  ? "border-white/20 bg-white/[0.06]"
-                                  : "border-white/[0.06] bg-white/[0.01] hover:border-white/[0.12] hover:bg-white/[0.02]"
+                                  ? "border-white/20 bg-[var(--subtle-bg-hover)]"
+                                  : "border-[var(--border-base)] bg-[var(--card-bg)] hover:border-[var(--border-active)] hover:bg-[var(--card-bg)]"
                               }`}
                             >
                               <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-                                active ? "bg-white/10 text-white" : "bg-white/[0.04] text-zinc-500"
+                                active ? "bg-white/10 text-white" : "bg-[var(--subtle-bg)] text-zinc-500"
                               }`}>
                                 <Icon size={20} />
                               </div>
@@ -524,7 +524,7 @@ export function CreateClientModal({
                             value={contactName}
                             onChange={(e) => setContactName(e.target.value)}
                             placeholder="Full name"
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
+                            className="w-full border-b border-[var(--border-base)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]"
                           />
                         </div>
 
@@ -537,7 +537,7 @@ export function CreateClientModal({
                             value={contactRole}
                             onChange={(e) => setContactRole(e.target.value)}
                             placeholder="e.g. Owner, Site Manager"
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
+                            className="w-full border-b border-[var(--border-base)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]"
                           />
                         </div>
 
@@ -552,7 +552,7 @@ export function CreateClientModal({
                             value={contactEmail}
                             onChange={(e) => setContactEmail(e.target.value)}
                             placeholder="email@company.com"
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
+                            className="w-full border-b border-[var(--border-base)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]"
                           />
                         </div>
 
@@ -567,7 +567,7 @@ export function CreateClientModal({
                             value={contactPhone}
                             onChange={(e) => setContactPhone(e.target.value)}
                             placeholder="+61 400 000 000"
-                            className="w-full border-b border-[rgba(255,255,255,0.06)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
+                            className="w-full border-b border-[var(--border-base)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]"
                           />
                         </div>
                       </div>
@@ -580,7 +580,7 @@ export function CreateClientModal({
                         <div className="relative">
                           <button
                             onClick={() => setActivePill(activePill === "billing" ? null : "billing")}
-                            className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+                            className="flex items-center gap-1.5 rounded-md border border-[var(--card-border)] px-3 py-1.5 text-[12px] text-zinc-400 transition-colors hover:border-[var(--card-border-hover)] hover:text-zinc-300"
                           >
                             {billingTerms.find((b) => b.value === billingTerm)?.label}
                             <ChevronDown size={10} className="text-zinc-600" />
@@ -622,7 +622,7 @@ export function CreateClientModal({
                                   className={`rounded-full px-2.5 py-0.5 text-[10px] transition-all ${
                                     active
                                       ? "bg-zinc-700 text-zinc-200"
-                                      : "bg-[rgba(255,255,255,0.03)] text-zinc-600 hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-400"
+                                      : "bg-[var(--card-bg)] text-zinc-600 hover:bg-[var(--subtle-bg-hover)] hover:text-zinc-400"
                                   }`}
                                 >
                                   {active && <Check size={8} className="mr-0.5 inline" />}
@@ -640,13 +640,13 @@ export function CreateClientModal({
             </div>
 
             {/* ── Footer / Action Bar ───────────────────────── */}
-            <div className="flex shrink-0 items-center justify-between border-t border-[rgba(255,255,255,0.06)] px-5 py-3">
+            <div className="flex shrink-0 items-center justify-between border-t border-[var(--border-base)] px-5 py-3">
               {/* Send welcome email toggle */}
               <div className="flex flex-col gap-1">
                 <label className="flex items-center gap-2 text-[11px] text-zinc-600">
                   <button
                     onClick={() => setSendWelcome(!sendWelcome)}
-                    className={`relative h-[16px] w-[28px] rounded-full transition-colors ${sendWelcome ? "bg-[#00E676]" : "bg-zinc-700"}`}
+                    className={`relative h-[16px] w-[28px] rounded-full transition-colors ${sendWelcome ? "bg-[var(--brand)]" : "bg-zinc-700"}`}
                   >
                     <motion.div
                       layout

@@ -174,7 +174,7 @@ export function MemberDrawer() {
             animate={{ x: 0 }}
             exit={{ x: 420 }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-[400px] flex-col border-l border-white/5 bg-[#050505]"
+            className="fixed right-0 top-0 z-50 flex h-screen w-[400px] flex-col border-l border-white/5 bg-[var(--background)]"
           >
             {/* ── Hero Header ──────────────────────────── */}
             <div className="relative shrink-0 overflow-hidden bg-gradient-to-b from-zinc-900/60 to-[#050505]">

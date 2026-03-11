@@ -73,11 +73,16 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
 
   return (
     <aside className="flex h-full w-[280px] shrink-0 flex-col overflow-hidden border-r border-white/[0.04] bg-zinc-950">
-      {/* Header */}
+      {/* Header — PRD Design Revamp: mono overline + richer hierarchy */}
       <div className="flex items-center justify-between px-4 py-3">
-        <h2 className="text-[14px] font-semibold tracking-tight text-white">
-          Messages
-        </h2>
+        <div>
+          <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-700 uppercase">
+            COMMS
+          </span>
+          <h2 className="text-[14px] font-semibold tracking-tight text-white">
+            Messages
+          </h2>
+        </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

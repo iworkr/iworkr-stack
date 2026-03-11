@@ -13,7 +13,7 @@ import { getDocumentByToken, approveQuote, rejectQuote } from "@/app/actions/quo
 
 function ConfettiParticle({ delay, left }: { delay: number; left: number }) {
   const color = useMemo(() => {
-    const c = ["#00E676", "#fff", "#00C853", "#A5D6A7", "#69F0AE"];
+    const c = ["#10B981", "#fff", "#059669", "#A5D6A7", "#69F0AE"];
     return c[Math.floor(Math.random() * c.length)];
   }, []);
   const size = useMemo(() => 4 + Math.random() * 6, []);
@@ -93,7 +93,7 @@ function SignaturePad({ onSave, onCancel }: { onSave: (data: string, name: strin
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Full name"
-            className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 text-[13px] text-zinc-200 outline-none focus:border-[#00E676]/30"
+            className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 text-[13px] text-zinc-200 outline-none focus:border-[#10B981]/30"
           />
         </div>
 
@@ -123,7 +123,7 @@ function SignaturePad({ onSave, onCancel }: { onSave: (data: string, name: strin
                 onSave(canvasRef.current!.toDataURL(), name);
               }}
               disabled={!hasSignature || !name.trim()}
-              className="flex items-center gap-1.5 rounded-lg bg-[#00E676] px-4 py-2 text-[12px] font-medium text-black disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-lg bg-[#10B981] px-4 py-2 text-[12px] font-medium text-black disabled:opacity-40"
             >
               <Check size={12} /> Approve & Sign
             </button>
@@ -234,7 +234,7 @@ export default function PortalPage() {
   const isQuote = docType === "quote";
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-[#00E676]/30">
+    <div className="min-h-screen bg-black text-white selection:bg-[#10B981]/30">
       {/* Confetti */}
       <AnimatePresence>
         {showConfetti && (
@@ -331,7 +331,7 @@ export default function PortalPage() {
                 </div>
                 <div className="flex justify-between border-t border-white/[0.08] pt-2 text-[15px] font-medium">
                   <span className="text-zinc-300">Total</span>
-                  <span className="tabular-nums text-[#00E676]">${Number(doc.total).toFixed(2)}</span>
+                  <span className="tabular-nums text-[#10B981]">${Number(doc.total).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -374,7 +374,7 @@ export default function PortalPage() {
               <button
                 onClick={() => setSignatureOpen(true)}
                 disabled={submitting}
-                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00E676] to-emerald-600 px-8 py-3 text-[14px] font-semibold text-black shadow-[0_0_30px_-5px_rgba(0,230,118,0.3)] transition-all hover:shadow-[0_0_40px_-5px_rgba(0,230,118,0.5)]"
+                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#10B981] to-emerald-600 px-8 py-3 text-[14px] font-semibold text-black shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_40px_-5px_rgba(16,185,129,0.5)]"
               >
                 {submitting ? <Loader2 size={14} className="animate-spin" /> : <><Check size={14} /> Approve & Sign</>}
               </button>
@@ -386,7 +386,7 @@ export default function PortalPage() {
               onClick={() => {
                 window.location.href = `/pay/${doc.id}`;
               }}
-              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00E676] to-emerald-600 px-8 py-3 text-[14px] font-semibold text-black shadow-[0_0_30px_-5px_rgba(0,230,118,0.3)]"
+              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#10B981] to-emerald-600 px-8 py-3 text-[14px] font-semibold text-black shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)]"
             >
               <CreditCard size={16} /> Pay ${Number(doc.total).toFixed(2)}
             </button>
@@ -396,7 +396,7 @@ export default function PortalPage() {
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="flex items-center gap-2 rounded-xl bg-[rgba(0,230,118,0.08)] px-6 py-3 text-[14px] font-medium text-[#00E676]"
+              className="flex items-center gap-2 rounded-xl bg-[rgba(16,185,129,0.08)] px-6 py-3 text-[14px] font-medium text-[#10B981]"
             >
               <CheckCircle size={18} /> Paid {doc.paid_date ? `on ${formatDate(doc.paid_date)}` : ""}
             </motion.div>
@@ -406,7 +406,7 @@ export default function PortalPage() {
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="flex items-center gap-2 rounded-xl bg-[rgba(0,230,118,0.08)] px-6 py-3 text-[14px] font-medium text-[#00E676]"
+              className="flex items-center gap-2 rounded-xl bg-[rgba(16,185,129,0.08)] px-6 py-3 text-[14px] font-medium text-[#10B981]"
             >
               <CheckCircle size={18} /> Approved — Invoice created
             </motion.div>
@@ -478,16 +478,16 @@ function StatusBadge({ status }: { status: string }) {
     draft: { label: "Draft", color: "text-zinc-400", bg: "bg-zinc-500/10" },
     sent: { label: "Sent", color: "text-sky-400", bg: "bg-sky-500/10" },
     viewed: { label: "Viewed", color: "text-amber-400", bg: "bg-amber-500/10" },
-    accepted: { label: "Approved", color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
+    accepted: { label: "Approved", color: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.08)]" },
     rejected: { label: "Declined", color: "text-red-400", bg: "bg-red-500/10" },
-    paid: { label: "Paid", color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
+    paid: { label: "Paid", color: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.08)]" },
     overdue: { label: "Overdue", color: "text-red-400", bg: "bg-red-500/10" },
     voided: { label: "Voided", color: "text-zinc-500", bg: "bg-zinc-500/10" },
   };
   const c = config[status] || config.draft;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${c.color} ${c.bg}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${status === "paid" || status === "accepted" ? "bg-[#00E676]" : status === "overdue" || status === "rejected" ? "bg-red-400" : "bg-current"}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${status === "paid" || status === "accepted" ? "bg-[#10B981]" : status === "overdue" || status === "rejected" ? "bg-red-400" : "bg-current"}`} />
       {c.label}
     </span>
   );

@@ -308,7 +308,8 @@ export default function InvoiceBuilderPage() {
 
   if (savedInvoice) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-[#0a0a0a] px-6">
+      <div className="flex h-full flex-col items-center justify-center bg-[var(--surface-1)] px-6">
+        <div className="pointer-events-none absolute inset-0 bg-noise opacity-[var(--noise-opacity)]" />
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -324,11 +325,11 @@ export default function InvoiceBuilderPage() {
             Your invoice is ready. Share the payment link with your client.
           </p>
 
-          <div className="mb-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+          <div className="mb-4 rounded-xl border border-[var(--border-active)] bg-white/[0.03] p-4">
             <label className="mb-2 block text-left font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
               Payment Link
             </label>
-            <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-zinc-950 px-3 py-2.5">
+              <div className="flex items-center gap-2 rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--background)] px-3 py-2.5">
               <Link2 size={13} className="shrink-0 text-zinc-600" />
               <span className="min-w-0 flex-1 truncate text-left text-[12px] text-zinc-400">
                 {savedInvoice.paymentLink}
@@ -349,7 +350,7 @@ export default function InvoiceBuilderPage() {
             </button>
             <button
               onClick={() => window.open(savedInvoice.paymentLink, "_blank")}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.08] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--border-active)] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
             >
               <ExternalLink size={13} />
               Preview Payment Portal
@@ -359,13 +360,13 @@ export default function InvoiceBuilderPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push(`/dashboard/finance/invoices/${savedInvoice.displayId}`)}
-              className="flex-1 rounded-lg border border-white/[0.06] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+              className="flex-1 rounded-lg border border-[var(--border-base)] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
             >
               View Invoice
             </button>
             <button
               onClick={() => router.push("/dashboard/finance")}
-              className="flex-1 rounded-lg border border-white/[0.06] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+              className="flex-1 rounded-lg border border-[var(--border-base)] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
             >
               Back to Finance
             </button>
@@ -376,9 +377,12 @@ export default function InvoiceBuilderPage() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#0a0a0a]">
+    <div className="relative flex h-full flex-col overflow-hidden bg-[var(--surface-1)]">
+      {/* Noise texture */}
+      <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-[var(--noise-opacity)]" />
+
       {/* ── Top Bar ─────────────────────────────────────────── */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/[0.06] px-5">
+      <div className="relative z-10 flex h-14 shrink-0 items-center justify-between border-b border-[var(--border-base)] px-5">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/dashboard/finance")}
@@ -395,7 +399,7 @@ export default function InvoiceBuilderPage() {
           <button
             disabled={!isValid || saving}
             onClick={() => handleSave("draft")}
-            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200 disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--border-base)] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200 disabled:opacity-40"
           >
             <Save size={12} />
             Save Draft
@@ -412,16 +416,16 @@ export default function InvoiceBuilderPage() {
       </div>
 
       {/* ── Split Pane ──────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative z-10 flex flex-1 overflow-hidden">
         {/* ── Left: Form ────────────────────────────────────── */}
-        <div className="w-[480px] shrink-0 overflow-y-auto border-r border-white/[0.06] p-5">
+        <div className="w-[480px] shrink-0 overflow-y-auto border-r border-[var(--border-base)] p-5">
           {/* Client Selector */}
           <div className="mb-6">
             <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
               Bill To
             </label>
             {selectedClient ? (
-              <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02] px-3 py-2.5">
                 <div>
                   <div className="text-sm font-medium text-zinc-200">{selectedClient.name}</div>
                   {selectedClient.email && (
@@ -444,7 +448,7 @@ export default function InvoiceBuilderPage() {
                   }}
                   onFocus={() => setShowClientDD(true)}
                   placeholder="Search clients…"
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] py-2.5 pl-9 pr-3 text-sm text-zinc-200 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
+                  className="w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-white/[0.02] py-2.5 pl-9 pr-3 text-sm text-zinc-200 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
                 />
                 <AnimatePresence>
                   {showClientDD && filteredClients.length > 0 && (
@@ -452,7 +456,7 @@ export default function InvoiceBuilderPage() {
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
-                      className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-white/[0.08] bg-zinc-900 shadow-2xl"
+                      className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--border-active)] bg-zinc-900 shadow-2xl"
                     >
                       {filteredClients.map((c: any) => (
                         <button
@@ -486,7 +490,7 @@ export default function InvoiceBuilderPage() {
               <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
                 Issue Date
               </label>
-              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-zinc-400">
+              <div className="rounded-[var(--radius-input)] border border-[var(--border-base)] bg-white/[0.02] px-3 py-2 font-mono text-xs tabular-nums text-zinc-400">
                 {issueDate.toLocaleDateString("en-AU")}
               </div>
             </div>
@@ -496,7 +500,7 @@ export default function InvoiceBuilderPage() {
               </label>
               <button
                 onClick={() => setShowTerms(!showTerms)}
-                className="flex w-full items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-zinc-300"
+                className="flex w-full items-center justify-between rounded-lg border border-[var(--border-base)] bg-white/[0.02] px-3 py-2 text-xs text-zinc-300"
               >
                 {TERMS.find((t) => t.value === terms)?.label}
                 <ChevronDown size={12} className="text-zinc-600" />
@@ -507,7 +511,7 @@ export default function InvoiceBuilderPage() {
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-white/[0.08] bg-zinc-900 shadow-2xl"
+                    className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-[var(--border-active)] bg-zinc-900 shadow-2xl"
                   >
                     {TERMS.map((t) => (
                       <button
@@ -537,7 +541,7 @@ export default function InvoiceBuilderPage() {
               type="number"
               value={taxRate}
               onChange={(e) => setTaxRate(Math.max(0, Number(e.target.value)))}
-              className="w-24 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-emerald-500/30"
+              className="w-24 rounded-lg border border-[var(--border-base)] bg-white/[0.02] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-emerald-500/30"
             />
           </div>
 
@@ -554,7 +558,7 @@ export default function InvoiceBuilderPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="group rounded-lg border border-white/[0.06] bg-white/[0.02] p-3"
+                  className="group rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3"
                 >
                   <div className="flex items-start gap-2">
                     <GripVertical size={14} className="mt-1 shrink-0 cursor-grab text-zinc-700" />
@@ -572,7 +576,7 @@ export default function InvoiceBuilderPage() {
                             type="number"
                             value={li.qty}
                             onChange={(e) => updateItem(li.id, "qty", Math.max(0, Number(e.target.value)))}
-                            className="w-16 rounded border border-white/[0.06] bg-transparent px-2 py-1 font-mono text-xs text-zinc-300 outline-none focus:border-emerald-500/30"
+                            className="w-16 rounded border border-[var(--border-base)] bg-transparent px-2 py-1 font-mono text-xs text-zinc-300 outline-none focus:border-emerald-500/30"
                           />
                         </div>
                         <div className="flex items-center gap-1">
@@ -581,10 +585,10 @@ export default function InvoiceBuilderPage() {
                             type="number"
                             value={li.rate}
                             onChange={(e) => updateItem(li.id, "rate", Math.max(0, Number(e.target.value)))}
-                            className="w-24 rounded border border-white/[0.06] bg-transparent px-2 py-1 font-mono text-xs text-zinc-300 outline-none focus:border-emerald-500/30"
+                            className="w-24 rounded border border-[var(--border-base)] bg-transparent px-2 py-1 font-mono text-xs text-zinc-300 outline-none focus:border-emerald-500/30"
                           />
                         </div>
-                        <div className="ml-auto font-mono text-xs font-semibold text-zinc-300">
+                        <div className="ml-auto font-mono text-xs font-semibold tabular-nums text-zinc-300">
                           {formatCurrency(Math.round(li.qty * li.rate * 100) / 100)}
                         </div>
                       </div>
@@ -618,12 +622,12 @@ export default function InvoiceBuilderPage() {
                     if (e.key === "Enter") addCustomItem();
                   }}
                   placeholder="Add item from catalog or type custom…"
-                  className="w-full rounded-lg border border-dashed border-white/[0.08] bg-transparent py-2 pl-9 pr-3 text-xs text-zinc-400 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
+                  className="w-full rounded-lg border border-dashed border-[var(--border-active)] bg-transparent py-2 pl-9 pr-3 text-xs text-zinc-400 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
                 />
               </div>
               <button
                 onClick={addCustomItem}
-                className="shrink-0 rounded-lg border border-white/[0.06] p-2 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
+                className="shrink-0 rounded-lg border border-[var(--border-base)] p-2 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
               >
                 <Plus size={14} />
               </button>
@@ -634,7 +638,7 @@ export default function InvoiceBuilderPage() {
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
-                  className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-white/[0.08] bg-zinc-900 shadow-2xl"
+                  className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-[var(--border-active)] bg-zinc-900 shadow-2xl"
                 >
                   {filteredCatalog.map((ci) => (
                     <button
@@ -643,7 +647,7 @@ export default function InvoiceBuilderPage() {
                       className="flex w-full items-center justify-between px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.04]"
                     >
                       <span>{ci.name}</span>
-                      <span className="font-mono text-zinc-500">{formatCurrency(ci.price)}</span>
+                      <span className="font-mono tabular-nums text-zinc-500">{formatCurrency(ci.price)}</span>
                     </button>
                   ))}
                   {filteredCatalog.length === 0 && catalogQuery && (
@@ -667,7 +671,7 @@ export default function InvoiceBuilderPage() {
                 className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-[10px] font-medium transition-colors ${
                   discountType === "percent"
                     ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                    : "border-white/[0.06] text-zinc-500 hover:text-zinc-300"
+                    : "border-[var(--border-base)] text-zinc-500 hover:text-zinc-300"
                 }`}
               >
                 <Percent size={11} /> Percentage
@@ -677,7 +681,7 @@ export default function InvoiceBuilderPage() {
                 className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-[10px] font-medium transition-colors ${
                   discountType === "fixed"
                     ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                    : "border-white/[0.06] text-zinc-500 hover:text-zinc-300"
+                    : "border-[var(--border-base)] text-zinc-500 hover:text-zinc-300"
                 }`}
               >
                 <DollarSign size={11} /> Fixed Amount
@@ -688,7 +692,7 @@ export default function InvoiceBuilderPage() {
                   value={discountValue}
                   onChange={(e) => setDiscountValue(Math.max(0, Number(e.target.value)))}
                   placeholder={discountType === "percent" ? "%" : "$"}
-                  className="w-20 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-500/30"
+                  className="w-20 rounded-lg border border-[var(--border-base)] bg-white/[0.02] px-2 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-500/30"
                 />
               )}
             </div>
@@ -704,40 +708,40 @@ export default function InvoiceBuilderPage() {
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Payment instructions, warranty info, thank-you message…"
-              className="w-full resize-none rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
+              className="w-full resize-none rounded-lg border border-[var(--border-base)] bg-white/[0.02] px-3 py-2 text-xs text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
             />
           </div>
 
           {/* Totals Summary */}
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+          <div className="rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-4">
             <div className="flex items-center justify-between py-1">
               <span className="text-xs text-zinc-500">Subtotal</span>
-              <span className="font-mono text-xs text-zinc-300">{formatCurrency(totals.subtotal)}</span>
+              <span className="font-mono text-xs tabular-nums text-zinc-300">{formatCurrency(totals.subtotal)}</span>
             </div>
             {totals.discountTotal > 0 && (
               <div className="flex items-center justify-between py-1">
                 <span className="text-xs text-zinc-500">
                   Discount {discountType === "percent" ? `(${discountValue}%)` : ""}
                 </span>
-                <span className="font-mono text-xs text-red-400">-{formatCurrency(totals.discountTotal)}</span>
+                <span className="font-mono text-xs tabular-nums text-red-400">-{formatCurrency(totals.discountTotal)}</span>
               </div>
             )}
             <div className="flex items-center justify-between py-1">
               <span className="text-xs text-zinc-500">GST ({taxRate}%)</span>
-              <span className="font-mono text-xs text-zinc-300">{formatCurrency(totals.taxTotal)}</span>
+              <span className="font-mono text-xs tabular-nums text-zinc-300">{formatCurrency(totals.taxTotal)}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between border-t border-white/[0.06] pt-3">
-              <span className="text-sm font-bold text-zinc-200">Total</span>
-              <span className="font-mono text-lg font-bold text-emerald-400">{formatCurrency(totals.total)}</span>
+            <div className="mt-2 flex items-center justify-between border-t border-[var(--border-base)] pt-3">
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-200 uppercase">Total</span>
+              <span className="font-mono text-lg font-bold tabular-nums text-emerald-400">{formatCurrency(totals.total)}</span>
             </div>
           </div>
         </div>
 
         {/* ── Right: PDF Preview ────────────────────────────── */}
-        <div className="flex flex-1 flex-col overflow-hidden bg-zinc-950/30">
-          <div className="flex h-10 shrink-0 items-center gap-2 border-b border-white/[0.06] px-4">
+        <div className="flex flex-1 flex-col overflow-hidden bg-[var(--background)]">
+          <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--border-base)] px-4">
             <Eye size={13} className="text-zinc-600" />
-            <span className="text-[10px] font-medium uppercase tracking-[2px] text-zinc-600">
+            <span className="font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
               Live Preview
             </span>
           </div>

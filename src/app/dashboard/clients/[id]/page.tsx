@@ -260,7 +260,7 @@ export default function ClientDossierPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex h-full items-center justify-center bg-[#050505]"
+        className="flex h-full items-center justify-center bg-[var(--background)]"
       >
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
@@ -308,10 +308,13 @@ export default function ClientDossierPage() {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="flex h-full flex-col bg-[#050505]"
+      className="relative flex h-full flex-col bg-[var(--background)]"
     >
+      {/* Noise texture */}
+      <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-[var(--noise-opacity)]" />
+
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 border-b border-[var(--border-base)] bg-[var(--header-bg)] backdrop-blur-[var(--header-blur)]">
         <div className="flex items-center justify-between px-6 py-2.5">
           <div className="flex items-center gap-1.5 text-[12px]">
             <button
@@ -382,7 +385,7 @@ export default function ClientDossierPage() {
               {client.initials}
             </div>
             {isVIP && (
-              <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 ring-2 ring-[#050505]">
+              <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 ring-2 ring-[var(--background)]">
                 <span className="text-[8px] font-bold text-black">★</span>
               </div>
             )}
@@ -419,11 +422,11 @@ export default function ClientDossierPage() {
       {/* ── 2-Column Body (PRD §3: 30/70 HUD | Canvas) ──── */}
       <div className="flex flex-1 overflow-hidden">
         {/* ── HUD Panel (Left ~30%) ─────────────────────────── */}
-        <div className="w-[340px] shrink-0 overflow-y-auto border-r border-white/[0.04] bg-white/[0.01] scrollbar-none">
+        <div className="w-[340px] shrink-0 overflow-y-auto border-r border-[var(--border-base)] bg-white/[0.01] scrollbar-none">
           <div className="p-5">
             {/* ── LTV Spotlight ──────────────────────────────── */}
-            <div className="mb-6 rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
-              <div className="mb-1 flex items-center gap-1 text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+            <div className="mb-6 rounded-xl border border-[var(--border-base)] bg-white/[0.02] p-4">
+              <div className="mb-1 flex items-center gap-1 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                 <DollarSign size={9} />
                 Lifetime Value
               </div>
@@ -433,11 +436,11 @@ export default function ClientDossierPage() {
             {/* ── Location Intel ──────────────────────────────── */}
             {client.address && (
               <div className="mb-6">
-                <h4 className="mb-3 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+                <h4 className="mb-3 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                   Location
                 </h4>
-                <div className="overflow-hidden rounded-xl border border-white/[0.06]">
-                  <div className="relative h-[130px] bg-[#080808]">
+                <div className="overflow-hidden rounded-xl border border-[var(--border-base)]">
+                  <div className="relative h-[130px] bg-[var(--surface-1)]">
                     {client.addressCoords ? (
                       <InlineMap lat={client.addressCoords.lat} lng={client.addressCoords.lng} zoom={15} className="h-full w-full" />
                     ) : (
@@ -445,7 +448,7 @@ export default function ClientDossierPage() {
                         <MapPin size={16} strokeWidth={1} className="text-zinc-700" />
                       </div>
                     )}
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#080808] to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[var(--surface-1)] to-transparent" />
                     {client.addressCoords && (
                       <div className="absolute right-2 bottom-2 z-10 rounded-md bg-black/60 px-2 py-1 text-[9px] text-zinc-400 backdrop-blur-sm">
                         {haversineKm(client.addressCoords.lat, client.addressCoords.lng, -33.8688, 151.2093).toFixed(1)} km from HQ
@@ -462,7 +465,7 @@ export default function ClientDossierPage() {
 
             {/* ── Contact Grid ────────────────────────────────── */}
             <div className="mb-6">
-              <h4 className="mb-3 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+              <h4 className="mb-3 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                 Contacts
               </h4>
               <div className="space-y-1">
@@ -513,7 +516,7 @@ export default function ClientDossierPage() {
 
             {/* ── Details (Editable) ──────────────────────────── */}
             <div className="mb-6">
-              <h4 className="mb-3 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+              <h4 className="mb-3 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                 Details
               </h4>
               <div className="space-y-0.5">
@@ -548,7 +551,7 @@ export default function ClientDossierPage() {
                   }}
                 />
                 <div className="flex items-center justify-between rounded-md px-3 py-2">
-                  <span className="text-[11px] text-zinc-600">Type</span>
+                  <span className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">Type</span>
                   <div className="flex items-center gap-1.5">
                     {client.type === "commercial" ? <Building2 size={11} className="text-zinc-600" /> : <User size={11} className="text-zinc-600" />}
                     <span className="text-[12px] text-zinc-400">
@@ -557,10 +560,10 @@ export default function ClientDossierPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between rounded-md px-3 py-2">
-                  <span className="text-[11px] text-zinc-600">Since</span>
+                  <span className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">Since</span>
                   <div className="flex items-center gap-1.5">
                     <Calendar size={11} className="text-zinc-600" />
-                    <span className="text-[12px] text-zinc-500">{client.since || "—"}</span>
+                    <span className="font-mono text-[12px] tabular-nums text-zinc-500">{client.since || "—"}</span>
                   </div>
                 </div>
               </div>
@@ -568,7 +571,7 @@ export default function ClientDossierPage() {
 
             {/* ── Tags ────────────────────────────────────────── */}
             <div className="mb-6">
-              <h4 className="mb-3 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+              <h4 className="mb-3 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                 Tags
               </h4>
               <div className="flex flex-wrap gap-1.5">
@@ -618,7 +621,7 @@ export default function ClientDossierPage() {
           </div>
 
           {/* ── Sticky Footer Actions ─────────────────────────── */}
-          <div className="sticky bottom-0 border-t border-white/[0.04] bg-[#080808]/90 px-5 py-3 backdrop-blur-xl">
+          <div className="sticky bottom-0 border-t border-[var(--border-base)] bg-[var(--surface-1)]/90 px-5 py-3 backdrop-blur-xl">
             <div className="flex items-center gap-2">
               <motion.button
                 whileTap={{ scale: 0.98 }}
@@ -686,11 +689,11 @@ export default function ClientDossierPage() {
           {spendData.length > 0 && (
             <div className="border-b border-white/[0.03] px-6 py-5">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+                <h3 className="flex items-center gap-1.5 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                   <TrendingUp size={10} />
                   Revenue Trend
                 </h3>
-                <span className="font-mono text-[13px] font-medium text-emerald-400">
+                <span className="font-mono text-[13px] font-medium tabular-nums text-emerald-400">
                   {client.lifetimeValue}
                   <span className="ml-1 text-[9px] text-zinc-600">lifetime</span>
                 </span>
@@ -728,7 +731,7 @@ export default function ClientDossierPage() {
                       cx={p.x}
                       cy={p.y}
                       r={spendData[i].amount > 0 ? 2.5 : 0}
-                      fill="#050505"
+                      fill="var(--background)"
                       stroke="#34d399"
                       strokeWidth="1.5"
                       initial={{ opacity: 0, scale: 0 }}
@@ -877,12 +880,12 @@ function StatCard({ label, icon, value, subtext, accent }: {
   };
 
   return (
-    <div className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-4">
-      <div className="mb-2 flex items-center gap-1 text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+    <div className="rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.01] p-4">
+      <div className="mb-2 flex items-center gap-1 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
         {icon}
         {label}
       </div>
-      <div className={`font-mono text-[20px] font-semibold ${accentClasses[accent]}`}>
+      <div className={`font-mono text-[20px] font-semibold tabular-nums ${accentClasses[accent]}`}>
         {value}
       </div>
       <div className="mt-0.5 text-[10px] text-zinc-600">{subtext}</div>
@@ -973,7 +976,7 @@ function PolymorphicTimeline({
                 transition={{ delay: i * 0.03, duration: 0.2 }}
                 className="relative flex gap-3"
               >
-                <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/[0.06] bg-[#080808]">
+                <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/[0.06] bg-[var(--surface-1)]">
                   <Icon size={8} className={iconColor} />
                 </div>
                 <div
@@ -1040,7 +1043,7 @@ function PolymorphicTimeline({
               transition={{ delay: i * 0.04, duration: 0.2 }}
               className="relative flex gap-3"
             >
-              <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/[0.06] bg-[#080808]">
+              <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/[0.06] bg-[var(--surface-1)]">
                 <Icon size={8} className={iconColor} />
               </div>
               <div className="flex-1 rounded-lg border border-white/[0.03] bg-white/[0.01] p-3">
@@ -1188,8 +1191,8 @@ function InlineInvoicesList({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-[10px] text-zinc-600">{invoices.length} invoices</span>
-        <span className="font-mono text-[11px] text-emerald-400">${totalSpend.toLocaleString()}</span>
+        <span className="font-mono text-[10px] tabular-nums text-zinc-600">{invoices.length} invoices</span>
+        <span className="font-mono text-[11px] tabular-nums text-emerald-400">${totalSpend.toLocaleString()}</span>
       </div>
       <div className="space-y-1.5">
         {invoices.map((inv, i) => {
@@ -1205,7 +1208,7 @@ function InlineInvoicesList({
               <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${status.dot}`} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-medium text-zinc-300">
+                  <span className="font-mono text-[12px] font-medium tabular-nums text-zinc-300">
                     {inv.invoice_number || `#${inv.id.slice(0, 6)}`}
                   </span>
                   <span className={`text-[10px] ${status.text}`}>{status.label}</span>
@@ -1221,7 +1224,7 @@ function InlineInvoicesList({
                   )}
                 </div>
               </div>
-              <span className={`shrink-0 font-mono text-[12px] font-medium ${
+              <span className={`shrink-0 font-mono text-[12px] font-medium tabular-nums ${
                 inv.status === "paid" ? "text-emerald-400" : "text-zinc-400"
               }`}>
                 ${Number(inv.total || 0).toLocaleString()}
@@ -1341,7 +1344,7 @@ function EditableRow({
 
   return (
     <div className="relative flex items-center justify-between rounded-md px-3 py-2 transition-colors hover:bg-white/[0.02]">
-      <span className="text-[11px] text-zinc-600">{label}</span>
+      <span className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">{label}</span>
       <div className="flex items-center gap-1.5">
         {icon}
         {editing ? (

@@ -14,8 +14,18 @@ const statuses: { status: JobStatus; description: string }[] = [
 export default function StatusesPage() {
   return (
     <>
-      <h1 className="mb-2 text-2xl font-medium tracking-tight text-zinc-100">Statuses</h1>
-      <p className="mb-6 text-[13px] text-zinc-600">Configure the workflow statuses for jobs in your workspace.</p>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Statuses
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Statuses
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Configure the workflow statuses for jobs in your workspace.
+        </p>
+      </div>
       <div className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)]">
         {statuses.map((s, i) => (
           <div key={s.status} className={`flex items-center justify-between px-4 py-3 ${i !== statuses.length - 1 ? "border-b border-[rgba(255,255,255,0.04)]" : ""} hover:bg-[rgba(255,255,255,0.02)]`}>

@@ -103,7 +103,19 @@ export default function SecurityPage() {
 
   return (
     <>
-      <h1 className="mb-8 text-2xl font-medium tracking-tight text-zinc-100">Security & access</h1>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Security
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Security &amp; access
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Manage your password, two-factor authentication, and active sessions.
+        </p>
+      </div>
+
       <SettingSection title="Authentication">
         <SettingRow label="Password" description="Change your account password">
           <button

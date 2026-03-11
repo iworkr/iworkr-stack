@@ -253,6 +253,48 @@ export default function DispatchPage() {
          z-70: Toasts (handled by ActionToastContainer)
     ─────────────────────────────────────────────────────── */}
     <div className="relative h-full w-full overflow-hidden bg-zinc-950">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
+
+      {/* ── z-45: Command Bar Header ───────────────────── */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[45]">
+        {/* Atmospheric gradient fade over map */}
+        <div
+          className="absolute inset-x-0 top-0 h-24"
+          style={{ background: "linear-gradient(to bottom, rgba(5,5,5,0.7) 0%, rgba(5,5,5,0.3) 50%, transparent 100%)" }}
+        />
+        <div className="pointer-events-auto relative flex items-center justify-between px-5 py-3">
+          <div className="flex flex-col">
+            <span className="mb-0.5 font-mono text-[9px] font-medium tracking-[0.2em] text-emerald-500/60 uppercase">
+              Live Dispatch
+            </span>
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg font-semibold tracking-tight text-white">
+                Fleet Command
+              </h1>
+              {dispatchPins.length > 0 && (
+                <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/15 bg-emerald-500/[0.06] px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  </span>
+                  {dispatchPins.filter(p => p.status === "online" || p.status === "en_route" || p.status === "on_site").length} active
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-black/40 px-3 py-1.5 text-[11px] text-zinc-500 backdrop-blur-sm transition-colors hover:border-white/[0.1] hover:text-zinc-300"
+            >
+              Search fleet & jobs
+              <kbd className="rounded bg-white/[0.04] px-1 py-0.5 font-mono text-[8px] text-zinc-600">⌘K</kbd>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* ── z-0: Map Canvas ─────────────────────────────── */}
       <GoogleMap
         defaultCenter={DEFAULT_MAP_CENTER}
@@ -329,6 +371,11 @@ export default function DispatchPage() {
           />
         </div>
       </div>
+
+      {/* ── z-35: Edge vignettes for command center depth ── */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[35] h-20" style={{ background: "linear-gradient(to top, rgba(5,5,5,0.5) 0%, transparent 100%)" }} />
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-[35] w-8" style={{ background: "linear-gradient(to right, rgba(5,5,5,0.3) 0%, transparent 100%)" }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-[35] w-8" style={{ background: "linear-gradient(to left, rgba(5,5,5,0.3) 0%, transparent 100%)" }} />
 
       {/* z-60: Search modal overlay */}
       <DispatchSearch

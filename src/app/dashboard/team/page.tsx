@@ -206,7 +206,9 @@ export default function TeamPage() {
   const drawerOpen = !!selectedMemberId;
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
       <motion.div
         className="flex min-h-0 flex-1 flex-col"
         style={{ transformOrigin: "center left" }}
@@ -215,34 +217,52 @@ export default function TeamPage() {
       >
         {/* ── Header ───────────────────────────────────────── */}
         <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-5 py-2.5">
+        {/* Atmospheric glow — PRD Design Revamp */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-gradient-to-b from-emerald-500/[0.03] to-transparent" />
+        <div className="pointer-events-none absolute top-0 left-1/2 h-[100px] w-[400px] -translate-x-1/2 rounded-full bg-emerald-500/[0.04] blur-[80px]" />
+
+        <div className="relative flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="text-zinc-600">Dashboard</span>
-              <ChevronRightIcon size={10} className="text-zinc-700" />
-              <span className="font-medium text-white">Team</span>
+            <div>
+              <div className="flex items-center gap-1.5 text-[12px] mb-0.5">
+                <span className="text-zinc-600">Dashboard</span>
+                <ChevronRightIcon size={10} className="text-zinc-700" />
+                <span className="font-medium text-white">Team</span>
+              </div>
+              {/* Mono overline — PRD: "PERSONNEL" */}
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+                PERSONNEL
+              </span>
             </div>
 
             {/* Command bar stats — PRD 57.0 (JetBrains Mono, neutral pills) */}
-            <div className="flex items-center gap-3 ml-2">
-              <div className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2.5 py-1">
+            <div className="ml-2 h-6 w-px bg-white/[0.06]" />
+            <div className="flex items-center gap-3 ml-1">
+              <div className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1">
                 <Users size={10} className="text-zinc-500" />
                 <span className="font-mono text-[11px] text-zinc-400">{activeCount}</span>
-                <span className="text-[10px] text-zinc-500">total</span>
+                <span className="text-[10px] text-zinc-600">total</span>
               </div>
-              <div className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2.5 py-1">
+              <div className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-40" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 </span>
                 <span className="font-mono text-[11px] text-zinc-300">{onlineCount}</span>
-                <span className="text-[10px] text-zinc-500">online</span>
+                <span className="text-[10px] text-zinc-600">online</span>
               </div>
+              {onJobCount > 0 && (
+                <div className="flex items-center gap-1.5 rounded-md border border-emerald-500/10 bg-emerald-500/[0.04] px-2.5 py-1">
+                  <Briefcase size={9} className="text-emerald-500/70" />
+                  <span className="font-mono text-[11px] text-emerald-400">{onJobCount}</span>
+                  <span className="text-[10px] text-zinc-600">on job</span>
+                </div>
+              )}
               {pendingCount > 0 && (
-                <div className="flex items-center gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-1">
+                <div className="flex items-center gap-1.5 rounded-md border border-amber-500/10 bg-amber-500/[0.06] px-2.5 py-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                   <span className="font-mono text-[11px] text-amber-400">{pendingCount}</span>
-                  <span className="text-[10px] text-zinc-500">pending</span>
+                  <span className="text-[10px] text-zinc-600">pending</span>
                 </div>
               )}
             </div>
@@ -411,14 +431,14 @@ export default function TeamPage() {
               transition={{ duration: 0.2 }}
               className="min-w-[700px]"
             >
-              {/* Table header — PRD 57.0 Inter Display, tracking-widest, text-zinc-500 */}
-              <div className="sticky top-0 z-10 flex items-center border-b border-white/5 bg-[#080808] px-5 py-1.5">
+              {/* Table header — PRD Design Revamp: consistent token-based column headers */}
+              <div className="sticky top-0 z-10 flex items-center border-b border-white/[0.06] bg-[var(--surface-1)]/80 backdrop-blur-sm px-5 py-2">
                 <div className="w-8" />
-                <div className="min-w-0 flex-1 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Member</div>
-                <div className="w-28 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Role</div>
-                <div className="w-24 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Branch</div>
-                <div className="w-36 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Skills</div>
-                <div className="w-24 px-2 font-display text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Last Active</div>
+                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Member</div>
+                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Role</div>
+                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Branch</div>
+                <div className="w-36 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Skills</div>
+                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Last Active</div>
                 <div className="w-20" />
               </div>
 

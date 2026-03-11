@@ -27,8 +27,8 @@ export default function AgentDetailPage() {
   const isKnown = KNOWN_AGENTS.includes(agentId as any);
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
-      <div className="sticky top-0 z-10 border-b border-white/5 bg-[#050505]/95 backdrop-blur-xl">
+    <div className="flex h-full flex-col bg-[var(--background)]">
+      <div className="sticky top-0 z-10 border-b border-white/5 bg-[var(--background)]/95 backdrop-blur-xl">
         <div className="flex items-center gap-4 px-6 py-4">
           <Link href="/dashboard/ai-agent" className="flex items-center gap-1.5 text-[12px] text-zinc-500 transition-colors hover:text-white">
             <ChevronLeft size={14} /> AI Workforce

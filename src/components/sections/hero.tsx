@@ -72,7 +72,15 @@ export function Hero() {
   const words = "The operating system for service work.".split(" ");
 
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-24 pb-16">
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--background)] px-6 pt-24 pb-16">
+      {/* Atmospheric green glow at top */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[600px]"
+        style={{
+          background: `radial-gradient(ellipse at center top, rgba(16,185,129,0.03) 0%, transparent 50%)`,
+        }}
+      />
+
       {/* Background radial glow */}
       <div className="pointer-events-none absolute top-0 left-1/2 h-[800px] w-[1200px] -translate-x-1/2 -translate-y-1/4">
         <div
@@ -83,16 +91,11 @@ export function Hero() {
         />
       </div>
 
-      {/* Grid lines */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.03]">
-        <div
-          className="h-full w-full"
-          style={{
-            backgroundImage: `linear-gradient(var(--grid-line-strong) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px)`,
-            backgroundSize: "60px 60px",
-          }}
-        />
-      </div>
+      {/* Grid pattern */}
+      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.03]" />
+
+      {/* Noise texture */}
+      <div className="stealth-noise" />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         {/* Announcement Pill */}
@@ -101,15 +104,15 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          <Badge glow className="mb-8 cursor-pointer">
-            <Sparkles size={14} className="text-[var(--text-muted)]" />
+          <Badge glow className="mb-8 cursor-pointer hover:border-emerald-500/20">
+            <Sparkles size={14} className="text-emerald-500/70" />
             <span>New: AI Phone Agent for automatic dispatch</span>
-            <ArrowRight size={12} className="text-[var(--text-muted)]" />
+            <ArrowRight size={12} className="text-[var(--text-muted)] transition-transform duration-200 group-hover:translate-x-0.5" />
           </Badge>
         </motion.div>
 
         {/* H1 with staggered words */}
-        <h1 className="mb-6 text-5xl font-medium leading-[1.1] tracking-[-0.03em] sm:text-6xl md:text-7xl lg:text-[76px]">
+        <h1 className="mb-6 text-5xl font-medium leading-[1.08] tracking-tighter text-zinc-100 sm:text-6xl md:text-7xl lg:text-[76px]">
           {words.map((word, i) => (
             <motion.span
               key={i}
@@ -149,22 +152,29 @@ export function Hero() {
           className="flex items-center gap-4"
         >
           {isAuthenticated ? (
-            <SpotlightButton size="lg" href="/dashboard">
+            <SpotlightButton size="lg" href="/dashboard" className="bg-[var(--brand)] text-white border-transparent hover:bg-[var(--brand-hover)]" style={{ boxShadow: "0 0 24px -6px rgba(16,185,129,0.35)" }}>
               <LayoutDashboard size={16} />
               Open Dashboard
             </SpotlightButton>
           ) : (
             <>
-              <SpotlightButton size="lg" href="/auth">
+              <SpotlightButton
+                size="lg"
+                href="/auth"
+                className="bg-[var(--brand)] text-white border-transparent hover:bg-[var(--brand-hover)]"
+                style={{ boxShadow: "0 0 24px -6px rgba(16,185,129,0.35)" }}
+              >
                 Start building free
                 <ArrowRight size={16} />
               </SpotlightButton>
-              <span className="hidden items-center gap-1.5 rounded border border-[var(--card-border)] px-2 py-1 font-mono text-[11px] text-[var(--text-muted)] sm:flex">
-                <kbd className="rounded bg-[var(--subtle-bg)] px-1.5 py-0.5 text-[10px]">
-                  C
-                </kbd>
-                to get started
-              </span>
+              <SpotlightButton
+                size="lg"
+                href="/download"
+                variant="secondary"
+                className="border-[var(--border-base)] text-[var(--text-muted)] hover:border-[var(--border-active)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
+              >
+                Download app
+              </SpotlightButton>
             </>
           )}
         </motion.div>
@@ -174,16 +184,20 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-8 flex flex-col items-center gap-3"
+          className="mt-10 flex flex-col items-center gap-3"
         >
-          <span className="text-[11px] tracking-widest uppercase text-[var(--text-dim)]">
-            Download
-          </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
+            <div className="h-px w-8 bg-[var(--border-base)]" />
+            <span className="font-mono text-[10px] tracking-widest uppercase text-[var(--text-dim)]">
+              Available on
+            </span>
+            <div className="h-px w-8 bg-[var(--border-base)]" />
+          </div>
+          <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border-base)] bg-[var(--surface-1)] p-1">
             {downloadPlatforms.map((p, i) => (
               <motion.a
                 key={p.id}
-                href="/auth"
+                href="/download"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
@@ -191,12 +205,12 @@ export function Hero() {
                   duration: 0.4,
                   ease: [0.16, 1, 0.3, 1],
                 }}
-                className="group flex flex-col items-center gap-1.5 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-[var(--subtle-bg)]"
+                className="group flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-all duration-200 hover:bg-[var(--subtle-bg-hover)]"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-muted)] transition-all duration-200 group-hover:border-[var(--card-border-hover)] group-hover:bg-[var(--subtle-bg-hover)] group-hover:text-[var(--text-primary)]">
+                <div className="text-[var(--text-dim)] transition-colors duration-200 group-hover:text-[var(--text-primary)]">
                   <PlatformIcon type={p.iconType} />
                 </div>
-                <span className="text-[10px] text-[var(--text-dim)] transition-colors duration-200 group-hover:text-[var(--text-muted)]">
+                <span className="text-[11px] text-[var(--text-dim)] transition-colors duration-200 group-hover:text-[var(--text-muted)]">
                   {p.name}
                 </span>
               </motion.a>
@@ -217,19 +231,28 @@ export function Hero() {
         className="relative mt-20 w-full max-w-5xl"
         style={{ perspective: "1200px" }}
       >
+        {/* Emerald glow behind mockup */}
+        <div
+          className="pointer-events-none absolute -inset-8 -top-12"
+          style={{
+            background: `radial-gradient(ellipse at center, rgba(16,185,129,0.06) 0%, transparent 60%)`,
+          }}
+        />
+
         {/* Glow beneath */}
         <div
           className="absolute inset-x-0 -bottom-20 h-40"
           style={{
-            background: `radial-gradient(ellipse at center, var(--glow-soft) 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse at center, rgba(16,185,129,0.04) 0%, transparent 70%)`,
           }}
         />
 
         {/* The UI mockup */}
         <div
-          className="relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-2xl"
+          className="relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--surface-1)] shadow-2xl"
           style={{
             transform: "perspective(1200px) rotateX(2deg)",
+            boxShadow: "0 25px 60px -12px rgba(0,0,0,0.6), 0 0 40px -15px rgba(16,185,129,0.08)",
           }}
         >
           {/* Window Chrome */}

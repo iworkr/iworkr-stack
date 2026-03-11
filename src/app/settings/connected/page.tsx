@@ -15,7 +15,19 @@ export default function ConnectedAccountsPage() {
 
   return (
     <>
-      <h1 className="mb-8 text-2xl font-medium tracking-tight text-zinc-100">Connected accounts</h1>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Connected Accounts
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Connected accounts
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Link third-party sign-in providers to your iWorkr account.
+        </p>
+      </div>
+
       <div className="space-y-3">
         {accounts.map((acc) => (
           <div key={acc.provider} className="flex items-center justify-between rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-4 py-3">

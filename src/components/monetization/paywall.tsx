@@ -307,7 +307,7 @@ function FullPagePaywall({ feature, config }: { feature: GatedFeature; config: F
   };
 
   return (
-    <div className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 bg-[#050505]">
+    <div className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 bg-[var(--background)]">
       {/* Central emerald glow (fades in first) */}
       <motion.div
         initial={{ opacity: 0 }}

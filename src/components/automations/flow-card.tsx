@@ -46,14 +46,14 @@ function Sparkline({ data }: { data: number[] }) {
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
       <defs>
         <linearGradient id="spark-green-fill" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#00E676" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#00E676" stopOpacity="0" />
+          <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
         </linearGradient>
       </defs>
       <polyline
         points={points}
         fill="none"
-        stroke="#00E676"
+        stroke="#10B981"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -83,7 +83,7 @@ function FlowToggle({
       disabled={loading}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-all duration-200 ${
         loading ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
-      } ${checked ? "bg-[#00E676]" : "bg-zinc-800"}`}
+      } ${checked ? "bg-[#10B981]" : "bg-zinc-800"}`}
     >
       <motion.span
         animate={{ x: checked ? 18 : 2 }}
@@ -149,9 +149,9 @@ export function FlowCard({ flow, index }: FlowCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       onClick={() => router.push(`/dashboard/automations/${flow.id}`)}
-      className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-zinc-900/40 backdrop-blur-sm transition-[border-color,box-shadow] duration-200 hover:border-[#00E676]/20 ${
-        borderFlash ? "border-[#00E676]/40 shadow-[0_0_20px_-8px_rgba(0,230,118,0.25)]" : ""
-      } ${isActive && !borderFlash ? "border-[#00E676]/10" : ""} ${
+      className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-zinc-900/40 backdrop-blur-sm transition-[border-color,box-shadow] duration-200 hover:border-[#10B981]/20 ${
+        borderFlash ? "border-[#10B981]/40 shadow-[0_0_20px_-8px_rgba(16,185,129,0.25)]" : ""
+      } ${isActive && !borderFlash ? "border-[#10B981]/10" : ""} ${
         !isActive && !borderFlash ? "border-white/5" : ""
       } ${isPaused ? "opacity-60" : ""} ${isDraft ? "opacity-50" : ""}`}
       style={{ aspectRatio: "3 / 2" }}
@@ -164,17 +164,17 @@ export function FlowCard({ flow, index }: FlowCardProps) {
           <motion.div
             whileHover={{ rotate: [0, -10, 10, 0], scale: 1.05 }}
             transition={{ duration: 0.4 }}
-            className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconStyle.bg} transition-colors group-hover:bg-[rgba(0,230,118,0.08)]`}
+            className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconStyle.bg} transition-colors group-hover:bg-[rgba(16,185,129,0.08)]`}
           >
-            <Icon size={20} strokeWidth={1.5} className={`${iconStyle.text} transition-colors group-hover:text-[#00E676]`} />
+            <Icon size={20} strokeWidth={1.5} className={`${iconStyle.text} transition-colors group-hover:text-[#10B981]`} />
           </motion.div>
 
           <div className="flex items-center gap-2">
             {/* Status badge */}
             {isActive && (
               <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00E676] opacity-40" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#00E676]" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10B981] opacity-40" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#10B981]" />
               </span>
             )}
             {isPaused && (

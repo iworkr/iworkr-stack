@@ -55,27 +55,53 @@ export function FeatureGate({
 
   return (
     <div className="relative h-full w-full min-h-[400px]">
-      <div className="pointer-events-none select-none blur-[6px] opacity-30 h-full">
+      {/* Blurred preview content behind the gate */}
+      <div className="pointer-events-none select-none blur-[6px] opacity-20 h-full">
         {children}
       </div>
 
-      <div className="absolute inset-0 flex items-center justify-center z-50">
-        <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" />
+      {/* Paywall overlay */}
+      <div className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden">
+        {/* Dark scrim with noise */}
+        <div className="absolute inset-0 bg-[var(--background)]/85 backdrop-blur-lg" />
+        <div className="stealth-noise" />
+
+        {/* Radial glow behind upgrade area */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{
+            width: 500,
+            height: 400,
+            background: "radial-gradient(ellipse at center, rgba(16,185,129,0.05) 0%, transparent 65%)",
+          }}
+        />
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 flex flex-col items-center text-center max-w-sm px-8 py-10"
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 flex flex-col items-center text-center max-w-sm px-8 py-12"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/15 bg-emerald-500/5 mb-5">
-            <Lock className="h-5 w-5 text-zinc-400" />
+          {/* Icon with subtle pulse ring */}
+          <div className="relative mb-6">
+            <motion.div
+              animate={{ scale: [1, 1.4, 1], opacity: [0.2, 0, 0.2] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute inset-0 rounded-2xl bg-[var(--brand)]/10"
+              style={{ margin: "-8px" }}
+            />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--brand)]/15 bg-[var(--brand)]/[0.06]" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
+              <Lock className="h-5 w-5 text-zinc-400" />
+            </div>
           </div>
 
-          <h2 className="text-lg font-semibold text-white tracking-tight">
+          <p className="mb-2 font-mono text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+            {requiredPlan.name} Plan
+          </p>
+          <h2 className="text-[18px] font-medium text-white tracking-tight">
             {title}
           </h2>
-          <p className="mt-2 text-sm text-zinc-500 leading-relaxed max-w-xs">
+          <p className="mt-2 text-[13px] text-zinc-500 leading-relaxed max-w-xs">
             {description}
           </p>
 
@@ -83,16 +109,16 @@ export function FeatureGate({
             onClick={handleUpgrade}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
-            className="group mt-6 flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-medium text-black transition-all hover:bg-zinc-200"
+            className="stealth-btn-brand group mt-8 gap-2 px-6 py-2.5 text-[13px] shadow-[0_0_24px_-8px_rgba(16,185,129,0.2)] transition-all hover:shadow-[0_0_32px_-8px_rgba(16,185,129,0.3)]"
           >
-            <Crown className="h-3.5 w-3.5 text-zinc-500" />
-            View plans
-            <ArrowRight className="h-3.5 w-3.5 opacity-50 group-hover:translate-x-0.5 transition-transform" />
+            <Crown className="h-3.5 w-3.5" />
+            Upgrade to {requiredPlan.name}
+            <ArrowRight className="h-3.5 w-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
           </motion.button>
 
           <p className="mt-4 text-[11px] text-zinc-600">
             {requiredPlan.hasFreeTrial
-              ? `${requiredPlan.trialDays}-day free trial included`
+              ? `${requiredPlan.trialDays}-day free trial · No credit card required`
               : "No credit card required"}
           </p>
         </motion.div>

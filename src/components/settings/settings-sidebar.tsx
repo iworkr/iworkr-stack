@@ -82,7 +82,7 @@ export function SettingsSidebar() {
   const teamName = currentOrg?.name || "";
 
   return (
-    <aside className="flex h-full w-[260px] shrink-0 flex-col overflow-y-auto border-r border-[rgba(255,255,255,0.08)] bg-[#050505]">
+    <aside className="flex h-full w-[260px] shrink-0 flex-col overflow-y-auto border-r border-[rgba(255,255,255,0.08)] bg-[var(--background)]">
       {/* Back to app */}
       <div className="px-4 pt-4 pb-2">
         <Link

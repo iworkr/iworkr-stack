@@ -38,9 +38,9 @@ export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
     return (
       <WidgetShell delay={0}>
         <div className="flex h-full flex-col items-center justify-center p-3">
-          <Users size={14} strokeWidth={1.5} className="mb-1.5 text-zinc-600" />
-          <span className="text-[22px] font-medium tracking-tight text-white">{onlineMembers.length}</span>
-          <span className="text-[9px] font-medium uppercase tracking-widest text-zinc-600">Online</span>
+          <Users size={14} strokeWidth={1.5} className="mb-1.5 text-[var(--text-dim)]" />
+          <span className="font-mono text-[22px] font-medium tabular-nums tracking-tight text-[var(--text-primary)]">{onlineMembers.length}</span>
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-dim)]">Online</span>
         </div>
       </WidgetShell>
     );
@@ -52,50 +52,57 @@ export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
       delay={0}
       header={
         <div className="flex items-center gap-2">
-          <Users size={14} strokeWidth={1.5} className="text-zinc-500" />
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Team Status</span>
-          <span className="text-[11px] text-zinc-600">{onlineMembers.length} online</span>
+          <Users size={14} strokeWidth={1.5} className="text-[var(--text-muted)]" />
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Team Status</span>
+          <span className="font-mono text-[9px] tabular-nums text-[var(--text-dim)]">{onlineMembers.length} online</span>
         </div>
       }
     >
-      <div className="divide-y divide-white/[0.03]">
+      <div className="divide-y divide-[var(--border-base)]">
         {display.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="relative mb-3 flex h-10 w-10 items-center justify-center">
               <div className="animate-orbit-reverse">
-                <div className="h-1 w-1 rounded-full bg-zinc-700" />
+                <div className="h-1 w-1 rounded-full" style={{ background: "var(--text-dim)" }} />
               </div>
-              <Users size={18} strokeWidth={1.5} className="text-zinc-700" />
+              <Users size={18} strokeWidth={1.5} className="text-[var(--text-dim)]" />
             </div>
-            <p className="text-[12px] text-zinc-600">No team members online</p>
+            <p className="text-[12px] text-[var(--text-dim)]">No team members online</p>
+            <p className="mt-0.5 font-mono text-[9px] tracking-widest uppercase text-[var(--text-dim)]">Check back later</p>
           </div>
         ) : (
           display.map((m, i) => {
             const initials = m.name
               ? m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
               : "??";
+            const isOnline = m.onlineStatus === "online";
             return (
               <motion.div
                 key={m.id}
                 initial={{ opacity: 0, x: 4 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + i * 0.04, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                className="flex items-center gap-2.5 px-4 py-2 transition-colors duration-150 hover:bg-white/[0.02]"
+                className="flex items-center gap-2.5 px-4 py-2 transition-colors duration-150 hover:bg-[var(--subtle-bg)]"
               >
-                <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[8px] font-medium text-zinc-500">
+                <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[8px] font-medium text-[var(--text-muted)]" style={{ background: "var(--avatar-bg)" }}>
                   {initials}
                   <div
-                    className={`absolute -right-px -bottom-px h-[6px] w-[6px] rounded-full border-[1.5px] border-[#0A0A0A] ${
-                      m.onlineStatus === "online" ? "bg-emerald-500" : "bg-amber-500"
-                    }`}
+                    className="absolute -right-px -bottom-px h-[6px] w-[6px] rounded-full"
+                    style={{
+                      background: isOnline ? "var(--brand)" : "var(--ghost-amber-text)",
+                      border: "1.5px solid var(--surface-1)",
+                    }}
                   />
                 </div>
-                <span className="truncate text-[12px] text-zinc-400">{m.name}</span>
-                <span className="ml-auto text-[10px] text-zinc-600">
-                  {m.onlineStatus === "online" ? "Active" : "Idle"}
+                <span className="truncate text-[12px] text-[var(--text-body)]">{m.name}</span>
+                <span
+                  className="ml-auto font-mono text-[9px] font-medium uppercase tracking-widest"
+                  style={{ color: isOnline ? "var(--ghost-emerald-text)" : "var(--ghost-amber-text)" }}
+                >
+                  {isOnline ? "Active" : "Idle"}
                 </span>
                 {size === "large" && m.role && (
-                  <span className="text-[9px] text-zinc-700">
+                  <span className="font-mono text-[9px] text-[var(--text-dim)]">
                     {String(m.role).replace(/_/g, " ")}
                   </span>
                 )}
@@ -105,7 +112,7 @@ export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
         )}
 
         {size === "large" && onlineMembers.length > maxDisplay && (
-          <div className="px-4 py-2 text-center text-[10px] text-zinc-600">
+          <div className="px-4 py-2 text-center font-mono text-[9px] tabular-nums text-[var(--text-dim)]">
             +{onlineMembers.length - maxDisplay} more
           </div>
         )}

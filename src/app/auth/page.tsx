@@ -14,7 +14,7 @@ type AuthMode = "choice" | "email" | "password" | "magic_link_sent" | "authentic
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-black" />}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[var(--background)]" />}>
       <AuthPageInner />
     </Suspense>
   );
@@ -139,30 +139,20 @@ function AuthPageInner() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black">
-      {/* Noise grain */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50 opacity-[0.018] mix-blend-overlay"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "256px 256px",
-        }}
-      />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--background)]">
+      {/* Noise grain — standardized */}
+      <div className="stealth-noise fixed" />
 
       {/* Vignette */}
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.7)_100%)]" />
 
-      {/* Grid lines */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.025]">
-        <div
-          className="h-full w-full"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: "80px 80px",
-          }}
-        />
+      {/* Grid lines — standardized bg-line-grid class */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03]">
+        <div className="h-full w-full bg-line-grid" />
       </div>
+
+      {/* Atmospheric emerald glow behind auth card */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-emerald-500/[0.03] blur-[120px]" />
 
       {/* Back to home */}
       <div className="fixed top-6 left-6 z-10">
@@ -219,7 +209,7 @@ function AuthPageInner() {
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleGoogleAuth}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)] px-4 py-3 text-sm font-medium text-zinc-200 transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.06)]"
+                  className="flex w-full items-center justify-center gap-3 rounded-[var(--radius-button)] border border-[var(--border-active)] bg-[var(--subtle-bg)] px-4 py-3 text-sm font-medium text-zinc-200 shadow-[var(--shadow-inset-bevel)] transition-colors hover:border-[var(--card-border-hover)] hover:bg-[var(--subtle-bg-hover)]"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24">
                     <path
@@ -244,9 +234,9 @@ function AuthPageInner() {
 
                 {/* Divider */}
                 <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-[rgba(255,255,255,0.06)]" />
-                  <span className="text-xs text-zinc-600">or</span>
-                  <div className="h-px flex-1 bg-[rgba(255,255,255,0.06)]" />
+                  <div className="h-px flex-1 bg-[var(--border-base)]" />
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-600">or</span>
+                  <div className="h-px flex-1 bg-[var(--border-base)]" />
                 </div>
 
                 {/* Password */}
@@ -254,7 +244,7 @@ function AuthPageInner() {
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setMode("password")}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg border border-[rgba(255,255,255,0.1)] bg-transparent px-4 py-3 text-sm text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-200"
+                  className="flex w-full items-center justify-center gap-3 rounded-[var(--radius-button)] border border-[var(--border-base)] bg-transparent px-4 py-3 text-sm text-zinc-400 transition-all hover:border-[var(--border-active)] hover:bg-[var(--subtle-bg)] hover:text-zinc-200"
                 >
                   <KeyRound size={16} />
                   Sign in with Password
@@ -265,7 +255,7 @@ function AuthPageInner() {
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setMode("email")}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg border border-[rgba(255,255,255,0.1)] bg-transparent px-4 py-3 text-sm text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-200"
+                  className="flex w-full items-center justify-center gap-3 rounded-[var(--radius-button)] border border-[var(--border-base)] bg-transparent px-4 py-3 text-sm text-zinc-400 transition-all hover:border-[var(--border-active)] hover:bg-[var(--subtle-bg)] hover:text-zinc-200"
                 >
                   <Mail size={16} />
                   Continue with Magic Link
@@ -323,7 +313,7 @@ function AuthPageInner() {
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder="you@company.com"
-                    className="w-full border-b border-white/[0.08] bg-transparent py-3 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
+                    className="w-full border-b border-[var(--border-base)] bg-transparent py-3 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
                     autoComplete="email"
                   />
                   {error && (
@@ -341,7 +331,7 @@ function AuthPageInner() {
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleEmailSubmit}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-black transition-all hover:bg-zinc-200"
+                  className="stealth-btn-primary flex w-full items-center justify-center gap-2 rounded-[var(--radius-button)] px-4 py-3 text-sm font-medium transition-all"
                 >
                   Continue
                   <ArrowRight size={14} />
@@ -382,7 +372,7 @@ function AuthPageInner() {
                   onChange={(e) => { setEmail(e.target.value); setError(null); }}
                   onKeyDown={handleKeyDown}
                   placeholder="you@company.com"
-                  className="w-full border-b border-white/[0.08] bg-transparent py-3 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
+                  className="w-full border-b border-[var(--border-base)] bg-transparent py-3 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
                   autoComplete="email"
                 />
 
@@ -393,7 +383,7 @@ function AuthPageInner() {
                     onChange={(e) => { setPassword(e.target.value); setError(null); }}
                     onKeyDown={handleKeyDown}
                     placeholder="Password"
-                    className="w-full border-b border-white/[0.08] bg-transparent py-3 pr-10 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
+                    className="w-full border-b border-[var(--border-base)] bg-transparent py-3 pr-10 text-base text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-emerald-500"
                     autoComplete="current-password"
                   />
                   <button
@@ -420,7 +410,7 @@ function AuthPageInner() {
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handlePasswordSubmit}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-black transition-all hover:bg-zinc-200"
+                  className="stealth-btn-primary flex w-full items-center justify-center gap-2 rounded-[var(--radius-button)] px-4 py-3 text-sm font-medium transition-all"
                 >
                   Sign In
                   <ArrowRight size={14} />
@@ -472,7 +462,7 @@ function AuthPageInner() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)]"
+                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-active)] bg-[var(--subtle-bg)]"
               >
                 <Mail size={24} className="text-zinc-400" />
               </motion.div>
@@ -499,14 +489,18 @@ function AuthPageInner() {
         </AnimatePresence>
       </div>
 
-      {/* Status bar */}
-      <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2">
+      {/* Status bar — premium system status */}
+      <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[var(--border-base)] bg-[var(--surface-1)]/80 px-4 py-2 backdrop-blur-md">
         <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
         </span>
-        <span className="font-mono text-[10px] text-zinc-600">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
           System Operational
+        </span>
+        <div className="h-2.5 w-px bg-[var(--border-base)]" />
+        <span className="font-mono text-[10px] text-zinc-700">
+          v1.0
         </span>
       </div>
     </div>

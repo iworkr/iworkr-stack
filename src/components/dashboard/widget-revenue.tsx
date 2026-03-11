@@ -162,20 +162,20 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
           className="flex h-full cursor-pointer flex-col items-center justify-center p-4"
           onClick={() => router.push("/dashboard/finance")}
         >
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Revenue</span>
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Revenue</span>
           <div className="mt-1.5 flex items-baseline gap-0.5">
-            <span className={`text-[10px] ${isZero ? "text-zinc-700" : "text-zinc-600"}`}>$</span>
-            <span className={`font-mono text-[24px] font-medium tracking-tight ${isZero ? "text-zinc-700" : "text-white"}`}>
+            <span className={`font-mono text-[10px] tabular-nums ${isZero ? "text-zinc-700" : "text-[var(--text-dim)]"}`}>$</span>
+            <span className={`font-mono text-[24px] font-medium tabular-nums tracking-tight ${isZero ? "text-zinc-700" : "text-[var(--text-primary)]"}`}>
               {Math.floor(revenueMTD / 1000)}k
             </span>
           </div>
-          <div className="mt-1 flex items-center gap-1">
+          <div className="mt-1.5 flex items-center gap-1 rounded-full px-1.5 py-0.5" style={{ background: isPositiveGrowth ? "var(--ghost-emerald)" : "var(--ghost-rose)" }}>
             {isPositiveGrowth ? (
-              <TrendingUp size={9} className="text-emerald-500" />
+              <TrendingUp size={9} style={{ color: "var(--ghost-emerald-text)" }} />
             ) : (
-              <TrendingDown size={9} className="text-red-400" />
+              <TrendingDown size={9} style={{ color: "var(--ghost-rose-text)" }} />
             )}
-            <span className={`font-mono text-[9px] font-medium ${isPositiveGrowth ? "text-emerald-500" : "text-red-400"}`}>
+            <span className="font-mono text-[9px] font-medium tabular-nums" style={{ color: isPositiveGrowth ? "var(--ghost-emerald-text)" : "var(--ghost-rose-text)" }}>
               {isPositiveGrowth ? "+" : ""}{growthPct}%
             </span>
           </div>
@@ -219,8 +219,8 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
         >
           <defs>
             <linearGradient id="revenueGradFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10B981" stopOpacity="0.15" />
-              <stop offset="95%" stopColor="#10B981" stopOpacity="0" />
+              <stop offset="5%" stopColor="var(--brand)" stopOpacity="0.15" />
+              <stop offset="95%" stopColor="var(--brand)" stopOpacity="0" />
             </linearGradient>
           </defs>
 
@@ -240,7 +240,7 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
           <motion.path
             d={linePath}
             fill="none"
-            stroke="#10B981"
+            stroke="var(--brand)"
             strokeWidth="2"
             strokeLinecap="round"
             style={{ strokeDasharray: 2000, strokeDashoffset: lineLen }}
@@ -253,8 +253,8 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
               cx={p.x}
               cy={p.y}
               r={hoverIndex === i ? 5 : 3.5}
-              fill="#09090B"
-              stroke="#10B981"
+              fill="var(--surface-0)"
+              stroke="var(--brand)"
               strokeWidth={2}
               opacity={hoverIndex === i ? 1 : 0.5}
               className="transition-all duration-150"
@@ -277,20 +277,21 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
           <motion.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute z-20 rounded-lg border border-white/10 p-3 shadow-2xl"
+            className="absolute z-20 rounded-lg border p-3 shadow-2xl"
             style={{
               left: `${Math.min(Math.max((hoverPoint.x / W) * 100, 12), 85)}%`,
               bottom: "58%",
               transform: "translateX(-50%)",
-              background: "rgba(9,9,11,0.95)",
+              background: "var(--overlay-bg)",
+              borderColor: "var(--border-active)",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
             }}
           >
-            <div className="text-[11px] uppercase tracking-wider text-zinc-400">
+            <div className="font-mono text-[9px] uppercase tracking-widest text-[var(--text-muted)]">
               {formatTooltipDate(hoverData.date)}
             </div>
-            <div className="mt-0.5 font-mono text-[18px] font-semibold text-white">
+            <div className="mt-0.5 font-mono text-[18px] font-semibold tabular-nums text-[var(--text-primary)]">
               ${hoverData.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </motion.div>
@@ -299,36 +300,38 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
         {/* KPI (PRD §5.1 Level 3) */}
         <div className="relative z-10">
           <div className="mt-1 flex items-baseline gap-1">
-            <span className={`font-mono text-sm ${isZero ? "text-zinc-700" : "text-zinc-600"}`}>$</span>
-            <motion.span className={`font-mono text-4xl font-medium tracking-tight ${isZero ? "text-zinc-700" : "text-white"}`}>
+            <span className={`font-mono text-sm tabular-nums ${isZero ? "text-zinc-700" : "text-[var(--text-dim)]"}`}>$</span>
+            <motion.span className={`font-mono text-4xl font-medium tabular-nums tracking-tight ${isZero ? "text-zinc-700" : "text-[var(--text-primary)]"}`}>
               {rounded}
             </motion.span>
           </div>
           <div className="mt-2 flex items-center gap-2.5">
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-medium ${
-              isPositiveGrowth
-                ? "bg-emerald-500/10 text-emerald-400"
-                : "bg-red-500/10 text-red-400"
-            }`}>
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-medium tabular-nums"
+              style={{
+                background: isPositiveGrowth ? "var(--ghost-emerald)" : "var(--ghost-rose)",
+                color: isPositiveGrowth ? "var(--ghost-emerald-text)" : "var(--ghost-rose-text)",
+              }}
+            >
               {isPositiveGrowth ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {isPositiveGrowth ? "+" : ""}{growthPct}%
             </span>
-            <span className="text-xs text-zinc-600">vs last month</span>
+            <span className="text-xs text-[var(--text-dim)]">vs last month</span>
           </div>
 
           {size === "large" && stats && (
-            <div className="mt-5 flex items-center gap-6 border-t border-white/5 pt-4">
+            <div className="mt-5 flex items-center gap-6 border-t pt-4" style={{ borderColor: "var(--border-base)" }}>
               <div>
-                <div className="text-xs font-medium uppercase tracking-widest text-zinc-500">Prev Month</div>
-                <div className="mt-0.5 font-mono text-sm font-medium text-zinc-400">${stats.revenue_previous.toLocaleString()}</div>
+                <div className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Prev Month</div>
+                <div className="mt-0.5 font-mono text-sm font-medium tabular-nums text-[var(--text-body)]">${stats.revenue_previous.toLocaleString()}</div>
               </div>
               <div>
-                <div className="text-xs font-medium uppercase tracking-widest text-zinc-500">Active Jobs</div>
-                <div className="mt-0.5 font-mono text-sm font-medium text-zinc-400">{stats.active_jobs_count}</div>
+                <div className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Active Jobs</div>
+                <div className="mt-0.5 font-mono text-sm font-medium tabular-nums text-[var(--text-body)]">{stats.active_jobs_count}</div>
               </div>
               <div>
-                <div className="text-xs font-medium uppercase tracking-widest text-zinc-500">Unassigned</div>
-                <div className="mt-0.5 font-mono text-sm font-medium text-zinc-400">{stats.unassigned_jobs_count}</div>
+                <div className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Unassigned</div>
+                <div className="mt-0.5 font-mono text-sm font-medium tabular-nums text-[var(--text-body)]">{stats.unassigned_jobs_count}</div>
               </div>
             </div>
           )}

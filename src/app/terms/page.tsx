@@ -10,38 +10,45 @@ export const metadata: Metadata = {
 
 function LastUpdated({ date }: { date: string }) {
   return (
-    <p className="mb-8 text-sm text-zinc-500">
-      Last updated: <span className="text-zinc-300">{date}</span>
+    <p className="mb-8 text-sm text-[var(--text-muted)]">
+      Last updated: <span className="text-[var(--text-primary)]">{date}</span>
     </p>
   );
 }
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-black text-zinc-300">
-      <div className="mx-auto max-w-3xl px-6 py-24 md:px-12">
+    <div className="relative min-h-screen bg-[var(--background)] text-[var(--text-body)]">
+      {/* Noise texture overlay */}
+      <div className="stealth-noise" />
+
+      {/* Atmospheric glow */}
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-emerald-500/[0.03] blur-[120px]" />
+
+      <div className="relative z-10 mx-auto max-w-3xl px-6 py-24 md:px-12">
         <Link
           href="/"
-          className="mb-8 inline-flex items-center gap-1.5 text-sm text-zinc-600 transition-colors hover:text-[#00E676]"
+          className="mb-8 inline-flex items-center gap-1.5 text-sm text-[var(--text-dim)] transition-colors hover:text-[var(--brand)]"
         >
           <ArrowLeft size={14} />
           Back to iWorkr
         </Link>
 
-        <h1 className="mb-2 text-3xl font-medium tracking-tight text-[#EDEDED]">
+        <span className="mb-3 block font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Legal</span>
+        <h1 className="mb-2 text-3xl font-medium tracking-tight text-[var(--text-heading)]">
           Terms of Service
         </h1>
         <LastUpdated date="February 16, 2026" />
 
-        <div className="space-y-10 text-[15px] leading-relaxed text-[#A1A1AA]">
+        <div className="space-y-10 text-[15px] leading-relaxed text-[var(--text-body)]">
           {/* 1 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               1. Acceptance of Terms
             </h2>
             <p>
               Welcome to iWorkr. By accessing our website at{" "}
-              <a href="https://iworkrapp.com" className="text-white transition-colors hover:text-[#00E676]">
+              <a href="https://iworkrapp.com" className="text-[var(--text-primary)] transition-colors hover:text-[var(--brand)]">
                 iworkrapp.com
               </a>{" "}
               and using our services, you agree to be bound by the following terms and conditions
@@ -58,7 +65,7 @@ export default function TermsPage() {
 
           {/* 2 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               2. Service Description
             </h2>
             <p>
@@ -76,7 +83,7 @@ export default function TermsPage() {
 
           {/* 3 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               3. Account Responsibilities
             </h2>
             <p>
@@ -86,11 +93,11 @@ export default function TermsPage() {
             </p>
             <ul className="mt-3 list-disc space-y-1.5 pl-6">
               <li>
-                <strong className="text-zinc-200">Organization Owners</strong> are responsible for
+                <strong className="text-[var(--text-primary)]">Organization Owners</strong> are responsible for
                 managing team access via the RBAC permissions matrix.
               </li>
               <li>
-                <strong className="text-zinc-200">Administrators</strong> must ensure all team
+                <strong className="text-[var(--text-primary)]">Administrators</strong> must ensure all team
                 members comply with these Terms.
               </li>
               <li>
@@ -105,7 +112,7 @@ export default function TermsPage() {
 
           {/* 4 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               4. Subscription &amp; Billing
             </h2>
             <p>
@@ -123,7 +130,7 @@ export default function TermsPage() {
 
           {/* 5 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               5. Acceptable Use
             </h2>
             <p>You agree not to use the Service to:</p>
@@ -139,7 +146,7 @@ export default function TermsPage() {
 
           {/* 6 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               6. Intellectual Property
             </h2>
             <p>
@@ -155,7 +162,7 @@ export default function TermsPage() {
 
           {/* 7 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               7. Termination
             </h2>
             <p>
@@ -180,7 +187,7 @@ export default function TermsPage() {
 
           {/* 8 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               8. Limitation of Liability
             </h2>
             <p>
@@ -198,7 +205,7 @@ export default function TermsPage() {
 
           {/* 9 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               9. Indemnification
             </h2>
             <p>
@@ -211,7 +218,7 @@ export default function TermsPage() {
 
           {/* 10 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               10. Modifications to Terms
             </h2>
             <p>
@@ -224,7 +231,7 @@ export default function TermsPage() {
 
           {/* 11 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               11. Governing Law
             </h2>
             <p>
@@ -235,19 +242,19 @@ export default function TermsPage() {
 
           {/* 12 */}
           <section>
-            <h2 className="mb-3 text-lg font-medium text-[#EDEDED]">
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
               12. Contact
             </h2>
             <p>
               For questions about these Terms, contact us at{" "}
               <a
                 href="mailto:legal@iworkr.com"
-                className="text-white underline underline-offset-2 transition-colors hover:text-[#00E676]"
+                className="text-[var(--text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--brand)]"
               >
                 legal@iworkr.com
               </a>{" "}
               or visit our{" "}
-              <Link href="/contact" className="text-white underline underline-offset-2 transition-colors hover:text-[#00E676]">
+              <Link href="/contact" className="text-[var(--text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--brand)]">
                 Contact page
               </Link>
               .
@@ -256,12 +263,12 @@ export default function TermsPage() {
         </div>
 
         {/* Bottom nav */}
-        <div className="mt-16 flex items-center gap-4 border-t border-white/[0.06] pt-8 text-sm text-zinc-600">
-          <Link href="/privacy" className="transition-colors hover:text-[#00E676]">Privacy Policy</Link>
-          <span className="text-zinc-800">|</span>
-          <Link href="/cookies" className="transition-colors hover:text-[#00E676]">Cookie Policy</Link>
-          <span className="text-zinc-800">|</span>
-          <Link href="/contact" className="transition-colors hover:text-[#00E676]">Contact Us</Link>
+        <div className="mt-16 flex items-center gap-4 border-t border-[var(--border-base)] pt-8 text-sm text-[var(--text-dim)]">
+          <Link href="/privacy" className="transition-colors hover:text-[var(--brand)]">Privacy Policy</Link>
+          <span className="text-[var(--border-base)]">|</span>
+          <Link href="/cookies" className="transition-colors hover:text-[var(--brand)]">Cookie Policy</Link>
+          <span className="text-[var(--border-base)]">|</span>
+          <Link href="/contact" className="transition-colors hover:text-[var(--brand)]">Contact Us</Link>
         </div>
       </div>
     </div>

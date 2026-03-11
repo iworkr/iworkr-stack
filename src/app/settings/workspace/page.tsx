@@ -116,9 +116,18 @@ export default function WorkspacePage() {
 
   return (
     <>
-      <h1 className="mb-8 text-2xl font-medium tracking-tight text-zinc-100">
-        Workspace
-      </h1>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Workspace
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Workspace
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Configure your organization name, branding, locale, and tax settings.
+        </p>
+      </div>
 
       {/* Logo + name */}
       <div className="mb-8 flex items-center gap-5">
@@ -177,7 +186,7 @@ export default function WorkspacePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={handleNameBlur}
-            className="w-[220px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/40"
+            className="w-[220px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
             placeholder="Acme Electrical"
           />
         </SettingRow>
@@ -197,7 +206,7 @@ export default function WorkspacePage() {
             value={trade}
             onChange={(e) => setTrade(e.target.value)}
             onBlur={handleTradeBlur}
-            className="w-[220px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/40"
+            className="w-[220px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
             placeholder="Electrical, Plumbing, HVAC..."
           />
         </SettingRow>
@@ -210,7 +219,7 @@ export default function WorkspacePage() {
             value={taxId}
             onChange={(e) => setTaxId(e.target.value)}
             onBlur={handleTaxIdBlur}
-            className="w-[220px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/40"
+            className="w-[220px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
             placeholder="ABN 12 345 678 901"
           />
         </SettingRow>
@@ -222,7 +231,7 @@ export default function WorkspacePage() {
             step={0.5}
             value={defaultTaxRate}
             onChange={(e) => updateOrgSettingsField("default_tax_rate", parseFloat(e.target.value) || 0)}
-            className="w-[100px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/40"
+            className="w-[100px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
           />
         </SettingRow>
         <SettingRow label="Default payment terms (days)" description="Due date calculation for invoices">
@@ -232,7 +241,7 @@ export default function WorkspacePage() {
             max={365}
             value={paymentTerms}
             onChange={(e) => updateOrgSettingsField("default_payment_terms", parseInt(e.target.value) || 14)}
-            className="w-[100px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/40"
+            className="w-[100px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
           />
         </SettingRow>
         <SettingRow label="Currency" description="Default currency for invoices">
@@ -265,7 +274,7 @@ export default function WorkspacePage() {
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onBlur={handleAddressBlur}
-            className="w-[280px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/40"
+            className="w-[280px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
             placeholder="123 Main St, Brisbane QLD 4000"
           />
         </SettingRow>

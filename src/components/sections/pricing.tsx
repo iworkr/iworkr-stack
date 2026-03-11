@@ -54,8 +54,20 @@ export function Pricing() {
 
   return (
     <Section id="pricing" className="overflow-hidden">
-      {/* Dot grid texture */}
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid opacity-[0.03]" />
+      {/* Line grid texture */}
+      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.4]" />
+
+      {/* Atmospheric emerald glow — anchored center */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(16, 185, 129, 0.03) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Noise overlay */}
+      <div className="stealth-noise" />
 
       <FadeIn>
         <SectionHeader
@@ -88,7 +100,7 @@ export function Pricing() {
             }`}
           >
             Yearly
-            <span className="ml-1.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-500">
+            <span className="ml-1.5 text-[10px] font-medium text-brand">
               Save 20%
             </span>
           </button>
@@ -97,7 +109,7 @@ export function Pricing() {
 
       {/* Cards */}
       <StaggerContainer
-        className="grid grid-cols-1 gap-4 md:grid-cols-3"
+        className="relative z-10 grid grid-cols-1 gap-4 md:grid-cols-3"
         staggerDelay={0.1}
       >
         {displayPlans.map((plan) => (
@@ -107,13 +119,27 @@ export function Pricing() {
               transition={{ duration: 0.2 }}
               className={`relative flex h-full flex-col rounded-xl border p-6 md:p-8 ${
                 plan.highlighted
-                  ? "border-[var(--card-border-hover)] bg-[var(--subtle-bg)]"
+                  ? "border-[rgba(16,185,129,0.2)] bg-[var(--subtle-bg)]"
                   : "border-[var(--card-border)] bg-[var(--card-bg)]"
               }`}
+              style={
+                plan.highlighted
+                  ? { boxShadow: "0 0 40px -12px rgba(16, 185, 129, 0.1), inset 0 1px 0 0 rgba(16, 185, 129, 0.1)" }
+                  : undefined
+              }
             >
-              {/* Top glow for highlighted */}
+              {/* Top glow for highlighted — Signal Green accent */}
               {plan.highlighted && (
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--text-muted)] to-transparent" />
+                <>
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--brand)] to-transparent opacity-40" />
+                  {/* Ghost emerald tint overlay */}
+                  <div
+                    className="pointer-events-none absolute inset-0 rounded-xl"
+                    style={{
+                      background: "radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.04) 0%, transparent 60%)",
+                    }}
+                  />
+                </>
               )}
 
               {/* Badge */}
@@ -155,7 +181,7 @@ export function Pricing() {
 
               {/* Trial badge */}
               {plan.hasFreeTrial && plan.ctaLabel !== "Contact sales" && (
-                <p className="mb-4 text-center text-[11px] text-emerald-500/70">
+                <p className="mb-4 text-center text-[11px] text-brand/70">
                   {plan.trialDays}-day free trial · No credit card upfront
                 </p>
               )}

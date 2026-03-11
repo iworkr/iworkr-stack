@@ -16,7 +16,8 @@ const actions = [
     label: "New Job",
     description: "Create a new job order",
     action: "createJob",
-    accentHover: "hover:border-emerald-500/15",
+    ghost: "var(--ghost-emerald)",
+    ghostText: "var(--ghost-emerald-text)",
   },
   {
     id: "new-invoice",
@@ -24,7 +25,8 @@ const actions = [
     label: "New Invoice",
     description: "Generate a new invoice",
     action: "createInvoice",
-    accentHover: "hover:border-blue-500/15",
+    ghost: "var(--ghost-blue)",
+    ghostText: "var(--ghost-blue-text)",
   },
   {
     id: "add-client",
@@ -32,7 +34,8 @@ const actions = [
     label: "Add Client",
     description: "Register a new client",
     action: "createClient",
-    accentHover: "hover:border-violet-500/15",
+    ghost: "var(--ghost-violet)",
+    ghostText: "var(--ghost-violet-text)",
   },
   {
     id: "broadcast",
@@ -40,7 +43,8 @@ const actions = [
     label: "Broadcast",
     description: "Send a team broadcast",
     action: "broadcast",
-    accentHover: "hover:border-amber-500/15",
+    ghost: "var(--ghost-amber)",
+    ghostText: "var(--ghost-amber-text)",
   },
 ] as const;
 
@@ -79,10 +83,13 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 + i * 0.05 }}
                 onClick={() => handleAction(a.action)}
-                className={`group/action flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.04] bg-transparent transition-all duration-200 ${a.accentHover}`}
+                className="group/action flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200"
+                style={{ borderColor: "var(--border-base)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = a.ghostText; e.currentTarget.style.background = a.ghost; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-base)"; e.currentTarget.style.background = "transparent"; }}
                 title={a.label}
               >
-                <Icon size={15} strokeWidth={1.5} className="text-zinc-600 transition-colors duration-200 group-hover/action:text-zinc-200" />
+                <Icon size={15} strokeWidth={1.5} className="text-[var(--text-dim)] transition-colors duration-200 group-hover/action:text-[var(--text-body)]" />
               </motion.button>
             );
           })}
@@ -96,8 +103,8 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
       delay={0.25}
       header={
         <div className="flex items-center gap-2">
-          <Zap size={14} strokeWidth={1.5} className="text-zinc-600" />
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Quick Actions</span>
+          <Zap size={14} strokeWidth={1.5} className="text-[var(--text-dim)]" />
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Quick Actions</span>
         </div>
       }
     >
@@ -111,20 +118,31 @@ export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => handleAction(a.action)}
-              className={`group/action flex flex-col items-center justify-center gap-2.5 rounded-xl border border-white/[0.03] bg-transparent px-3 py-5 transition-all duration-200 ${a.accentHover}`}
+              className="group/action flex flex-col items-center justify-center gap-2.5 rounded-xl border px-3 py-5 transition-all duration-200"
+              style={{ borderColor: "var(--border-base)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = a.ghostText; e.currentTarget.style.background = a.ghost; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-base)"; e.currentTarget.style.background = "transparent"; }}
             >
-              <div className="relative">
+              <div
+                className="flex items-center justify-center rounded-lg border transition-all duration-200"
+                style={{
+                  width: size === "large" ? 40 : 36,
+                  height: size === "large" ? 40 : 36,
+                  borderColor: "var(--border-base)",
+                  background: "var(--subtle-bg)",
+                }}
+              >
                 <Icon
-                  size={size === "large" ? 24 : 20}
+                  size={size === "large" ? 20 : 17}
                   strokeWidth={1.5}
-                  className="text-zinc-600 transition-colors duration-200 group-hover/action:text-zinc-200"
+                  className="text-[var(--text-dim)] transition-colors duration-200 group-hover/action:text-[var(--text-body)]"
                 />
               </div>
-              <span className="text-[10px] font-medium text-zinc-600 transition-colors duration-200 group-hover/action:text-zinc-300">
+              <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-dim)] transition-colors duration-200 group-hover/action:text-[var(--text-body)]">
                 {a.label}
               </span>
               {size === "large" && (
-                <span className="text-[8px] text-zinc-800 transition-colors duration-200 group-hover/action:text-zinc-600">
+                <span className="text-[8px] text-[var(--text-dim)] transition-colors duration-200 group-hover/action:text-[var(--text-muted)]">
                   {a.description}
                 </span>
               )}

@@ -57,23 +57,37 @@ function TestimonialCard({
 }) {
   return (
     <div
-      className={`flex h-full w-[320px] flex-shrink-0 flex-col rounded-xl border border-[var(--card-border)] bg-[var(--testimonial-bg)] p-6 backdrop-blur-sm transition-all duration-300 sm:w-[380px] ${
+      className={`relative flex h-full w-[320px] flex-shrink-0 flex-col rounded-xl border border-[var(--card-border)] bg-[var(--testimonial-bg)] p-6 backdrop-blur-sm transition-all duration-300 sm:w-[380px] ${
         isCenter ? "opacity-100" : "opacity-50 scale-[0.97]"
       }`}
     >
-      {/* Quote mark */}
-      <span className="mb-4 block font-serif text-4xl leading-none text-[var(--text-dim)]">
+      {/* Noise grain on card */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-xl bg-noise opacity-[0.015] mix-blend-overlay"
+      />
+
+      {/* Quote mark — editorial, oversized */}
+      <span
+        className="mb-3 block text-5xl font-medium leading-none"
+        style={{ color: "var(--brand)", opacity: 0.2 }}
+      >
         &ldquo;
       </span>
 
       {/* Quote */}
-      <p className="flex-1 text-sm leading-relaxed text-[var(--text-heading)]">
+      <p className="relative z-10 flex-1 text-[15px] leading-relaxed tracking-[-0.01em] text-[var(--text-heading)]">
         {testimonial.quote}
       </p>
 
-      {/* Metric badge */}
+      {/* Metric badge — brand ghost tint */}
       <div className="my-4">
-        <span className="inline-block rounded-full border border-[var(--card-border)] bg-[var(--subtle-bg)] px-3 py-1 text-[10px] font-medium text-[var(--text-muted)]">
+        <span
+          className="inline-block rounded-full border px-3 py-1 text-[10px] font-medium text-brand"
+          style={{
+            borderColor: "rgba(16, 185, 129, 0.15)",
+            backgroundColor: "rgba(16, 185, 129, 0.06)",
+          }}
+        >
           {testimonial.metric}
         </span>
       </div>
@@ -106,8 +120,20 @@ export function Testimonials() {
 
   return (
     <Section id="testimonials" className="overflow-hidden">
-      {/* Dot grid texture */}
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid opacity-[0.025]" />
+      {/* Line grid texture */}
+      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.3]" />
+
+      {/* Atmospheric glow — subtle warmth */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(16, 185, 129, 0.02) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Noise overlay */}
+      <div className="stealth-noise" />
 
       <FadeIn>
         <SectionHeader

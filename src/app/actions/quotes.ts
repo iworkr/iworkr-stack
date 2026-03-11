@@ -355,12 +355,12 @@ export async function sendQuote(quoteId: string): Promise<{ error?: string }> {
       createElement("h1", { style: { fontSize: "24px", fontWeight: 500 } }, `Quote ${quote.display_id}`),
       createElement("p", { style: { color: "#A1A1AA", marginTop: "12px" } },
         `Hi ${quote.client_name || "there"}, please review the following estimate${quote.title ? ` for "${quote.title}"` : ""}.`),
-      createElement("p", { style: { fontSize: "28px", fontWeight: 600, color: "#00E676", margin: "24px 0" } },
+      createElement("p", { style: { fontSize: "28px", fontWeight: 600, color: "#10B981", margin: "24px 0" } },
         `$${Number(quote.total).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`),
       createElement("a", {
         href: portalUrl,
         style: {
-          display: "inline-block", padding: "14px 32px", backgroundColor: "#00E676",
+          display: "inline-block", padding: "14px 32px", backgroundColor: "#10B981",
           color: "#000", borderRadius: "12px", fontWeight: 600, textDecoration: "none", fontSize: "14px",
         },
       }, "Review & Approve"),

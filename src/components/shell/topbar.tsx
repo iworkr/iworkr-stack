@@ -134,7 +134,7 @@ function WorkspaceDropdown({
               <span className="flex-1 truncate text-[12px] font-medium text-zinc-200">
                 {companyName || <Shimmer className="h-3 w-24" />}
               </span>
-              <Check size={12} className="text-[#00E676]" />
+              <Check size={12} className="text-[#10B981]" />
             </div>
 
             <div className="my-1 h-px bg-[rgba(255,255,255,0.06)]" />
@@ -214,7 +214,7 @@ function NotificationsPopover({
       >
         <Bell size={14} strokeWidth={1.5} />
         {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[#00E676] ring-1 ring-black" />
+          <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[#10B981] ring-1 ring-black" />
         )}
       </motion.button>
 
@@ -232,7 +232,7 @@ function NotificationsPopover({
                 Notifications
               </span>
               {unreadCount > 0 && (
-                <span className="rounded-full bg-[rgba(0,230,118,0.12)] px-1.5 py-0.5 text-[9px] font-medium text-[#00E676]">
+                <span className="rounded-full bg-[rgba(16,185,129,0.12)] px-1.5 py-0.5 text-[9px] font-medium text-[#10B981]">
                   {unreadCount} new
                 </span>
               )}
@@ -262,7 +262,7 @@ function NotificationsPopover({
                     }}
                     className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
                   >
-                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00E676]" />
+                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#10B981]" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
                         <span className="truncate text-[11px] font-medium text-zinc-300">

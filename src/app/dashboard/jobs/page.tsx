@@ -449,18 +449,24 @@ export default function JobsPage() {
   const doneCount = jobsList.filter((j) => ["done", "completed", "invoiced", "archived"].includes(j.status)).length;
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
-      {/* Subtle grid background */}
-      <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.012]" />
+    <div className="flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture overlay */}
+      <div className="stealth-noise" />
+
+      {/* Atmospheric glow at the top */}
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-emerald-500/[0.03] blur-[100px]" />
 
       {/* ── Command Bar Header ─────────────────────────────── */}
-      <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-white/[0.04] bg-zinc-950/80 px-5 py-2.5 backdrop-blur-xl">
+      <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[var(--border-base)] bg-[var(--header-bg)] px-5 py-2.5 backdrop-blur-xl">
         <div className="flex items-center gap-5">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-1.5 text-[12px]">
-            <span className="text-zinc-500 transition-colors hover:text-white cursor-pointer">Dashboard</span>
-            <ChevronRight size={10} className="text-zinc-700" />
-            <span className="font-semibold text-white">Jobs</span>
+          {/* Overline + Breadcrumbs */}
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Operations</span>
+            <div className="flex items-center gap-1.5 text-[12px]">
+              <span className="text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] cursor-pointer">Dashboard</span>
+              <ChevronRight size={10} className="text-zinc-700" />
+              <span className="font-semibold text-[var(--text-primary)]">Jobs</span>
+            </div>
           </div>
 
           {/* Tab Switcher */}
@@ -557,16 +563,16 @@ export default function JobsPage() {
       </div>
 
       {/* ── Sticky Column Headers ──────────────────────────── */}
-      <div className="jobs-grid relative z-10 grid items-center border-b border-white/5 bg-[#080808] px-5 py-2" style={{ gridTemplateColumns: "32px 32px 80px 100px minmax(200px,1fr) 112px 112px 40px 80px 96px" }}>
+      <div className="jobs-grid relative z-10 grid items-center border-b border-[var(--border-base)] bg-[var(--surface-1)] px-5 py-2" style={{ gridTemplateColumns: "32px 32px 80px 100px minmax(200px,1fr) 112px 112px 40px 80px 96px" }}>
         <div />
         <div />
-        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">ID</div>
-        <div className="px-1 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Status</div>
-        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Title</div>
-        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Client</div>
-        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Location</div>
+        <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">ID</div>
+        <div className="px-1 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Status</div>
+        <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Title</div>
+        <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Client</div>
+        <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Location</div>
         <div />
-        <div className="px-2 font-display text-[10px] font-semibold tracking-tight text-zinc-500 uppercase">Due</div>
+        <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Due</div>
         <div />
       </div>
 
@@ -752,7 +758,7 @@ export default function JobsPage() {
           <>
             <div className="fixed inset-0 z-50" onClick={() => setCtxStatusMenu((p) => ({ ...p, open: false }))} />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed z-50 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]" style={{ left: ctxStatusMenu.x, top: ctxStatusMenu.y, width: 160 }}>
+              className="fixed z-50 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[var(--surface-1)] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]" style={{ left: ctxStatusMenu.x, top: ctxStatusMenu.y, width: 160 }}>
               {STATUS_OPTIONS.map((opt) => {
                 const currentJob = jobsList.find((j) => j.id === ctxStatusMenu.jobId);
                 const isActive = currentJob?.status === opt.value;
@@ -772,7 +778,7 @@ export default function JobsPage() {
       <AnimatePresence>
         {statusDropdown && (
           <motion.div ref={statusDropdownRef} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed z-50 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]" style={{ left: statusDropdown.x, top: statusDropdown.y, width: 160 }}>
+            className="fixed z-50 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[var(--surface-1)] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]" style={{ left: statusDropdown.x, top: statusDropdown.y, width: 160 }}>
             {STATUS_OPTIONS.map((opt) => {
               const currentJob = jobsList.find((j) => j.id === statusDropdown.jobId);
               const isActive = currentJob?.status === opt.value;

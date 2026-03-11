@@ -24,9 +24,9 @@ const platforms = [
     subtitle: "Windows 10+",
     badge: null,
     size: "74 MB",
-    gradient: "from-[#00E676] to-[#00C853]",
-    hoverBorder: "hover:border-[rgba(0,230,118,0.3)]",
-    hoverBg: "hover:bg-[rgba(0,230,118,0.05)]",
+    gradient: "from-[#10B981] to-[#059669]",
+    hoverBorder: "hover:border-[rgba(16,185,129,0.3)]",
+    hoverBg: "hover:bg-[rgba(16,185,129,0.05)]",
   },
   {
     id: "ios",

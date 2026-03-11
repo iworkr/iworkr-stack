@@ -210,7 +210,7 @@ export default function FormBuilderPage() {
 
   if (loadingForm) {
     return (
-      <div className="flex h-full flex-col bg-[#050505]">
+      <div className="flex h-full flex-col bg-[var(--background)]">
         <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
           <div className="h-8 w-64 rounded-lg bg-white/5 animate-pulse" />
           <div className="flex gap-2">
@@ -229,9 +229,9 @@ export default function FormBuilderPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* Sticky header */}
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-white/5 bg-[#050505]/95 px-6 py-4 backdrop-blur-xl">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-white/5 bg-[var(--background)]/95 px-6 py-4 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/forms"
@@ -387,7 +387,7 @@ function FormPreviewModal({
 
           {/* Modal */}
           <motion.div
-            className="relative z-10 mx-4 flex h-[85vh] w-full max-w-2xl flex-col rounded-xl border border-white/[0.06] bg-[#0A0A0A] shadow-2xl"
+            className="relative z-10 mx-4 flex h-[85vh] w-full max-w-2xl flex-col rounded-xl border border-white/[0.06] bg-[var(--surface-1)] shadow-2xl"
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}

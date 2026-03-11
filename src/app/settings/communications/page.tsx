@@ -179,12 +179,18 @@ export default function CommunicationsPage() {
 
   return (
     <>
-      <h1 className="mb-1 text-2xl font-medium tracking-tight text-zinc-100">
-        Email Communications
-      </h1>
-      <p className="mb-8 text-[13px] text-zinc-500">
-        Manage automated emails sent to your team
-      </p>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Communications
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Email Communications
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Manage automated emails sent to your team and clients.
+        </p>
+      </div>
 
       {loading ? (
         <div className="space-y-3">
@@ -219,7 +225,7 @@ export default function CommunicationsPage() {
                       <div
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors ${
                           isActive
-                            ? "bg-[rgba(0,230,118,0.08)] text-[#00E676]"
+                            ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]"
                             : "bg-[rgba(255,255,255,0.04)] text-zinc-600"
                         }`}
                       >
@@ -336,7 +342,7 @@ function TemplateEditorModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(0,230,118,0.08)] text-[#00E676]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(16,185,129,0.08)] text-[#10B981]">
               <Icon size={15} />
             </div>
             <div>
@@ -384,7 +390,7 @@ function TemplateEditorModal({
                 <button
                   key={v}
                   onClick={() => insertVariable(v)}
-                  className="rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-2 py-1 font-mono text-[11px] text-zinc-400 transition-colors hover:border-[#00E676]/30 hover:bg-[rgba(0,230,118,0.05)] hover:text-[#00E676]"
+                  className="rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-2 py-1 font-mono text-[11px] text-zinc-400 transition-colors hover:border-[#10B981]/30 hover:bg-[rgba(16,185,129,0.05)] hover:text-[#10B981]"
                 >
                   {v}
                 </button>
@@ -403,7 +409,7 @@ function TemplateEditorModal({
               onChange={(e) => setBody(e.target.value)}
               rows={8}
               placeholder="Write your email template here..."
-              className="w-full resize-none rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 font-mono text-[13px] leading-relaxed text-zinc-200 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]/30"
+              className="w-full resize-none rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 font-mono text-[13px] leading-relaxed text-zinc-200 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#10B981]/30"
             />
           </div>
         </div>
@@ -419,7 +425,7 @@ function TemplateEditorModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-[#00E676] px-3.5 py-1.5 text-[12px] font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="rounded-md bg-[#10B981] px-3.5 py-1.5 text-[12px] font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save template"}
           </button>

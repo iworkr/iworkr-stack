@@ -316,14 +316,14 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
             animate={sent ? { opacity: 0, scale: 0.92 } : { opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[1100px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#141414] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
+            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[1100px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-[var(--card-border)] bg-[var(--surface-2)] shadow-[var(--shadow-deep)]"
             style={{ height: "85vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ═══════════════════════════════════════════════ */}
             {/* ZONE A: Constructor (Left Column - 40%)         */}
             {/* ═══════════════════════════════════════════════ */}
-            <div className="flex w-[40%] flex-col border-r border-white/5">
+            <div className="flex w-[40%] flex-col border-r border-[var(--border-base)]">
               {/* Header */}
               <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-4">
                 <span className="text-[12px] text-zinc-500">
@@ -341,7 +341,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
               {/* Scrollable constructor body */}
               <div className="flex-1 overflow-y-auto">
                 {/* ── Client selector ─────────────────────── */}
-                <div className="border-b border-[rgba(255,255,255,0.06)] px-5 py-4">
+                <div className="border-b border-[var(--border-base)] px-5 py-4">
                   {selectedClient ? (
                     <div className="flex items-center gap-2.5">
                       <div className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-semibold text-zinc-300 ${getGrad(selectedClient.initials)}`}>
@@ -391,7 +391,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
                             transition={{ duration: 0.1 }}
-                            className="absolute top-full left-0 right-0 z-20 mt-2 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                            className="absolute top-full left-0 right-0 z-20 mt-2 overflow-hidden rounded-lg border border-[var(--border-active)] bg-[var(--surface-1)] p-1 shadow-xl"
                           >
                             {filteredClients.map((c) => (
                               <button
@@ -416,7 +416,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                 </div>
 
                 {/* ── Meta properties grid ────────────────── */}
-                <div className="grid grid-cols-2 gap-3 border-b border-[rgba(255,255,255,0.06)] px-5 py-4">
+                <div className="grid grid-cols-2 gap-3 border-b border-[var(--border-base)] px-5 py-4">
                   {/* Terms */}
                   <div>
                     <label className="mb-1 block text-[9px] font-medium tracking-wider text-zinc-600 uppercase">
@@ -425,7 +425,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                     <div className="relative">
                       <button
                         onClick={() => setShowTerms(!showTerms)}
-                        className="flex w-full items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1.5 text-left text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)]"
+                        className="flex w-full items-center justify-between rounded-md border border-[var(--card-border)] px-2.5 py-1.5 text-left text-[12px] text-zinc-400 transition-colors hover:border-[var(--card-border-hover)]"
                       >
                         {paymentTerms.find((t) => t.value === terms)?.label}
                         <ChevronDown size={10} className="text-zinc-600" />
@@ -437,7 +437,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
                             transition={{ duration: 0.1 }}
-                            className="absolute top-full left-0 right-0 z-20 mt-1 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                            className="absolute top-full left-0 right-0 z-20 mt-1 overflow-hidden rounded-lg border border-[var(--border-active)] bg-[var(--surface-1)] p-1 shadow-xl"
                           >
                             {paymentTerms.map((t) => (
                               <button
@@ -461,7 +461,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                     <label className="mb-1 block text-[9px] font-medium tracking-wider text-zinc-600 uppercase">
                       Date
                     </label>
-                    <div className="rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1.5 text-[12px] text-zinc-400">
+                    <div className="rounded-md border border-[var(--card-border)] px-2.5 py-1.5 text-[12px] text-zinc-400">
                       {formatDate(issueDate)}
                     </div>
                   </div>
@@ -471,7 +471,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                     <label className="mb-1 block text-[9px] font-medium tracking-wider text-zinc-600 uppercase">
                       Due Date
                     </label>
-                    <div className="rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1.5 text-[12px] text-zinc-300">
+                    <div className="rounded-md border border-[var(--card-border)] px-2.5 py-1.5 text-[12px] text-zinc-300">
                       {formatDate(dueDate)}
                     </div>
                   </div>
@@ -485,7 +485,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                       value={reference}
                       onChange={(e) => setReference(e.target.value)}
                       placeholder="PO number..."
-                      className="w-full rounded-md border border-[rgba(255,255,255,0.08)] bg-transparent px-2.5 py-1.5 text-[12px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
+                      className="w-full rounded-md border border-[var(--card-border)] bg-transparent px-2.5 py-1.5 text-[12px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]"
                     />
                   </div>
                 </div>
@@ -506,7 +506,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -20 }}
                           transition={{ duration: 0.15 }}
-                          className="group flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2"
+                          className="group flex items-center gap-2 rounded-md border border-[var(--border-base)] bg-[var(--card-bg)] px-3 py-2"
                         >
                           <input
                             value={li.description}
@@ -550,7 +550,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
                   {/* Add item input */}
                   <div className="relative">
-                    <div className="flex items-center gap-2 rounded-md border border-dashed border-[rgba(255,255,255,0.08)] px-3 py-2 transition-colors focus-within:border-[#00E676]/40">
+                    <div className="flex items-center gap-2 rounded-md border border-dashed border-[var(--card-border)] px-3 py-2 transition-colors focus-within:border-[var(--brand)]/40">
                       <Plus size={12} className="shrink-0 text-zinc-600" />
                       <input
                         ref={catalogInputRef}
@@ -588,7 +588,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -4 }}
                           transition={{ duration: 0.1 }}
-                          className="absolute top-full left-0 right-0 z-20 mt-1 max-h-[180px] overflow-y-auto rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                          className="absolute top-full left-0 right-0 z-20 mt-1 max-h-[180px] overflow-y-auto rounded-lg border border-[var(--border-active)] bg-[var(--surface-1)] p-1 shadow-xl"
                         >
                           {filteredCatalog.map((ci, i) => (
                             <button
@@ -618,19 +618,19 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="Payment instructions, terms..."
                       rows={2}
-                      className="w-full resize-none rounded-md border border-[rgba(255,255,255,0.08)] bg-transparent px-2.5 py-1.5 text-[12px] text-zinc-400 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]"
+                      className="w-full resize-none rounded-md border border-[var(--card-border)] bg-transparent px-2.5 py-1.5 text-[12px] text-zinc-400 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* ── Action bar (fixed bottom left) ────────── */}
-              <div className="flex shrink-0 items-center justify-between border-t border-[rgba(255,255,255,0.06)] px-5 py-3">
+              <div className="flex shrink-0 items-center justify-between border-t border-[var(--border-base)] px-5 py-3">
                 {/* Attach PDF toggle */}
                 <label className="flex items-center gap-2 text-[11px] text-zinc-600">
                   <button
                     onClick={() => setAttachPdf(!attachPdf)}
-                    className={`relative h-[16px] w-[28px] rounded-full transition-colors ${attachPdf ? "bg-[#00E676]" : "bg-zinc-700"}`}
+                    className={`relative h-[16px] w-[28px] rounded-full transition-colors ${attachPdf ? "bg-[var(--brand)]" : "bg-zinc-700"}`}
                   >
                     <motion.div
                       layout
@@ -649,7 +649,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSubmit("send")}
                     disabled={!isValid}
-                    className="flex items-center gap-2 rounded-l-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-3.5 py-1.5 text-[12px] font-medium text-black transition-all duration-200 hover:brightness-110 disabled:opacity-30"
+                    className="flex items-center gap-2 rounded-l-md bg-gradient-to-b from-[var(--brand)] to-[var(--brand-hover)] px-3.5 py-1.5 text-[12px] font-medium text-black transition-all duration-200 hover:brightness-110 disabled:opacity-30"
                   >
                     {sent ? (
                       <motion.div
@@ -665,7 +665,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                         Send Invoice
                       </>
                     )}
-                    <kbd className="rounded bg-[rgba(255,255,255,0.15)] px-1 py-0.5 font-mono text-[9px]">
+                    <kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[9px]">
                       ⌘↵
                     </kbd>
                   </motion.button>
@@ -673,7 +673,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                   <button
                     onClick={() => setSplitMenuOpen(!splitMenuOpen)}
                     disabled={!isValid}
-                    className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(0,0,0,0.15)] bg-gradient-to-b from-[#00E676] to-[#00C853] px-1.5 text-black transition-colors duration-200 hover:brightness-110 disabled:opacity-30"
+                    className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(0,0,0,0.15)] bg-gradient-to-b from-[var(--brand)] to-[var(--brand-hover)] px-1.5 text-black transition-colors duration-200 hover:brightness-110 disabled:opacity-30"
                   >
                     <ChevronDown size={11} />
                   </button>
@@ -686,7 +686,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 4, scale: 0.95 }}
                         transition={{ duration: 0.1 }}
-                        className="absolute bottom-full right-0 z-20 mb-2 w-[200px] overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                        className="absolute bottom-full right-0 z-20 mb-2 w-[200px] overflow-hidden rounded-lg border border-[var(--border-active)] bg-[var(--surface-1)] p-1 shadow-xl"
                       >
                         <button
                           onClick={() => { setSplitMenuOpen(false); handleSubmit("send"); }}
@@ -719,7 +719,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
             {/* ═══════════════════════════════════════════════ */}
             {/* ZONE B: Paper Preview (Right Column - 60%)      */}
             {/* ═══════════════════════════════════════════════ */}
-            <div className="flex w-[60%] items-start justify-center overflow-y-auto bg-[#0a0a0a] p-6">
+            <div className="flex w-[60%] items-start justify-center overflow-y-auto bg-[var(--surface-1)] p-6">
               <motion.div
                 layout
                 className="w-full max-w-[520px] rounded-sm bg-[#F5F5F7] p-8 shadow-2xl"

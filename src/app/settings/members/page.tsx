@@ -29,10 +29,16 @@ export default function MembersPage() {
 
   return (
     <>
+      {/* ─── Page intro — premium control-center header ─── */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight text-zinc-100">Members</h1>
-          <p className="mt-1 text-[13px] text-zinc-600">
+          <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+            Members
+          </span>
+          <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+            Members
+          </h1>
+          <p className="mt-1 text-[13px] text-[var(--text-muted)]">
             Manage team members, roles, and access in your workspace.
           </p>
         </div>
@@ -101,7 +107,7 @@ export default function MembersPage() {
               <div className="w-24">
                 <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
                   role === "owner" || role === "manager"
-                    ? "border-[rgba(0,230,118,0.3)] bg-[rgba(0,230,118,0.08)] text-[#00E676]"
+                    ? "border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.08)] text-[#10B981]"
                     : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-zinc-500"
                 }`}>
                   {role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}

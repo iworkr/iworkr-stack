@@ -60,8 +60,11 @@ const footerLinks = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-[var(--card-border)]">
-      <div className="mx-auto max-w-[1200px] px-6 py-16 md:px-12">
+    <footer className="relative border-t border-[var(--card-border)] bg-[var(--surface-0)]">
+      {/* Noise overlay */}
+      <div className="stealth-noise" />
+
+      <div className="relative z-10 mx-auto max-w-[1200px] px-6 py-16 md:px-12">
         <FadeIn>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-6">
             {footerLinks.map((group) => (
@@ -105,8 +108,14 @@ export function Footer() {
           {/* Status */}
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-pulse-dot absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              <span
+                className="animate-pulse-dot absolute inline-flex h-full w-full rounded-full opacity-75"
+                style={{ backgroundColor: "var(--brand)" }}
+              />
+              <span
+                className="relative inline-flex h-2 w-2 rounded-full"
+                style={{ backgroundColor: "var(--brand)" }}
+              />
             </span>
             <span className="text-xs text-[var(--text-dim)]">System Operational</span>
           </div>

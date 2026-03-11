@@ -302,12 +302,18 @@ export default function BillingPage() {
 
   return (
     <>
-      <h1 className="mb-2 text-2xl font-medium tracking-tight text-zinc-100">
-        Billing
-      </h1>
-      <p className="mb-6 text-[13px] text-zinc-600">
-        Manage your subscription plan and payment method.
-      </p>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Billing
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Billing
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Manage your subscription plan and payment method.
+        </p>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">

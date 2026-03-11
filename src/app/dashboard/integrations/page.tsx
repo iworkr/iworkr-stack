@@ -124,7 +124,9 @@ export default function IntegrationsPage() {
   }, [filteredIntegrations, activeTab]);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
       {/* ── OAuth Success Confetti ───────────────────── */}
       <AnimatePresence>
         {showConfetti && (
@@ -151,7 +153,7 @@ export default function IntegrationsPage() {
                   top: 0,
                   width: 5 + Math.random() * 5,
                   height: 5 + Math.random() * 5,
-                  backgroundColor: ["#00E676", "#fff", "#4285F4", "#13B5EA", "#FF6B35"][Math.floor(Math.random() * 5)],
+                  backgroundColor: ["#10B981", "#fff", "#4285F4", "#13B5EA", "#FF6B35"][Math.floor(Math.random() * 5)],
                   borderRadius: Math.random() > 0.5 ? "50%" : "2px",
                 }}
               />
@@ -167,11 +169,11 @@ export default function IntegrationsPage() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-b border-[rgba(0,230,118,0.15)] bg-[rgba(0,230,118,0.04)]"
+            className="overflow-hidden border-b border-[var(--brand)]/15 bg-[var(--brand)]/[0.04]"
           >
             <div className="flex items-center justify-center gap-2 px-6 py-2.5">
-              <PartyPopper size={14} className="text-[#00E676]" />
-              <span className="text-[12px] text-[#00E676]">
+              <PartyPopper size={14} className="text-[var(--brand)]" />
+              <span className="text-[12px] text-[var(--brand)]">
                 {successProvider.charAt(0).toUpperCase() + successProvider.slice(1)} connected successfully!
               </span>
             </div>
@@ -180,11 +182,14 @@ export default function IntegrationsPage() {
       </AnimatePresence>
 
       {/* ── Header ───────────────────────────────────── */}
-      <div className="border-b border-[rgba(255,255,255,0.06)] px-4 pb-0 pt-4 md:px-6 md:pt-5">
+      <div className="border-b border-[var(--border-base)] px-4 pb-0 pt-4 md:px-6 md:pt-5">
         {/* Title row */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-[15px] font-medium text-zinc-200">Integrations</h1>
+            <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+              Integrations
+            </p>
+            <h1 className="text-[15px] font-medium tracking-tight text-zinc-200">Connected Tools</h1>
             <p className="mt-0.5 text-[12px] text-zinc-600">
               Supercharge your workflow with connected tools.
             </p>
@@ -194,14 +199,14 @@ export default function IntegrationsPage() {
             {/* Stats */}
             <div className="flex items-center gap-4 pr-3">
               <div className="flex items-center gap-1.5">
-                <Check size={12} className="text-emerald-500" />
+                <Check size={12} className="text-[var(--brand)]" />
                 <span className="text-[11px] text-zinc-500">
                   <span className="font-medium text-zinc-300">{connectedCount}</span> connected
                 </span>
               </div>
               {errorCount > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <AlertTriangle size={12} className="text-red-500" />
+                  <AlertTriangle size={12} className="text-red-400" />
                   <span className="text-[11px] text-zinc-500">
                     <span className="font-medium text-red-400">{errorCount}</span> error{errorCount > 1 ? "s" : ""}
                   </span>
@@ -217,7 +222,7 @@ export default function IntegrationsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Find an integration..."
-                className="h-8 w-52 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] pl-8 pr-3 text-[12px] text-zinc-300 placeholder-zinc-600 outline-none transition-colors focus:border-[rgba(255,255,255,0.2)]"
+                className="h-8 w-52 rounded-[var(--radius-input)] border border-[var(--border-base)] bg-white/[0.03] pl-8 pr-3 text-[12px] text-zinc-300 placeholder-zinc-600 outline-none transition-colors focus:border-[var(--brand)]/30 focus:shadow-[var(--brand-glow-subtle)]"
               />
             </div>
           </div>
@@ -241,7 +246,7 @@ export default function IntegrationsPage() {
                 {isActive && (
                   <motion.div
                     layoutId="integrations-tab-indicator"
-                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-white"
+                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[var(--text-primary)]"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -275,7 +280,7 @@ export default function IntegrationsPage() {
                   <h2 className="text-[11px] font-medium uppercase tracking-wider text-zinc-600">
                     {catLabel[category] || category}
                   </h2>
-                  <div className="h-px flex-1 bg-[rgba(255,255,255,0.04)]" />
+                  <div className="h-px flex-1 bg-[var(--border-base)]" />
                   <span className="text-[10px] text-zinc-700">{items.length}</span>
                 </motion.div>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

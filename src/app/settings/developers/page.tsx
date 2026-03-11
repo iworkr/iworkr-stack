@@ -78,10 +78,15 @@ export default function DevelopersPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-[18px] font-semibold text-zinc-100">Developer API</h1>
-        <p className="mt-1 text-[13px] text-zinc-500">
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Developer API
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Developer API
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
           Manage API keys to integrate the platform with your custom systems.
         </p>
       </div>
@@ -114,7 +119,7 @@ export default function DevelopersPage() {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => { setNewKeyName("Production Key"); setCreateModalOpen(true); }}
-          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-[#00E676] to-[#00C853] px-3 py-1.5 text-[12px] font-semibold text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)]"
+          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-[#10B981] to-[#059669] px-3 py-1.5 text-[12px] font-semibold text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(16,185,129,0.4)]"
         >
           <Plus size={12} />
           Generate Key
@@ -128,26 +133,26 @@ export default function DevelopersPage() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mb-4 overflow-hidden rounded-xl border border-[#00E676]/20 bg-[#00E676]/5 p-4"
+            className="mb-4 overflow-hidden rounded-xl border border-[#10B981]/20 bg-[#10B981]/5 p-4"
           >
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <Shield size={14} className="text-[#00E676]" />
-                  <p className="text-[12px] font-medium text-[#00E676]">New API Key Created</p>
+                  <Shield size={14} className="text-[#10B981]" />
+                  <p className="text-[12px] font-medium text-[#10B981]">New API Key Created</p>
                 </div>
                 <p className="mt-1 text-[10px] text-zinc-500">
                   Copy this key now — it will not be shown again.
                 </p>
                 <div className="mt-2 flex items-center gap-2">
-                  <code className="rounded-md border border-[#00E676]/20 bg-black/40 px-3 py-1.5 font-mono text-[11px] text-zinc-300">
+                  <code className="rounded-md border border-[#10B981]/20 bg-black/40 px-3 py-1.5 font-mono text-[11px] text-zinc-300">
                     {revealedKey}
                   </code>
                   <button
                     onClick={() => copyKey(revealedKey, "new")}
-                    className="flex h-7 w-7 items-center justify-center rounded-md border border-[#00E676]/20 text-zinc-400 hover:text-[#00E676]"
+                    className="flex h-7 w-7 items-center justify-center rounded-md border border-[#10B981]/20 text-zinc-400 hover:text-[#10B981]"
                   >
-                    {copiedId === "new" ? <Check size={12} className="text-[#00E676]" /> : <Copy size={12} />}
+                    {copiedId === "new" ? <Check size={12} className="text-[#10B981]" /> : <Copy size={12} />}
                   </button>
                 </div>
               </div>
@@ -168,7 +173,7 @@ export default function DevelopersPage() {
         <div className="flex flex-col items-center justify-center rounded-xl border border-[rgba(255,255,255,0.06)] py-16">
           <Key size={24} className="mb-2 text-zinc-800" />
           <p className="text-[12px] text-zinc-600">No API keys yet</p>
-          <button onClick={() => setCreateModalOpen(true)} className="mt-3 text-[12px] text-[#00E676] hover:underline">
+          <button onClick={() => setCreateModalOpen(true)} className="mt-3 text-[12px] text-[#10B981] hover:underline">
             Generate your first key
           </button>
         </div>
@@ -183,8 +188,8 @@ export default function DevelopersPage() {
               className="group flex items-center justify-between rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-4 transition-colors hover:border-[rgba(255,255,255,0.12)]"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#00E676]/10">
-                  <Key size={14} className="text-[#00E676]" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#10B981]/10">
+                  <Key size={14} className="text-[#10B981]" />
                 </div>
                 <div>
                   <p className="text-[12px] font-medium text-zinc-300">{key.name}</p>
@@ -210,7 +215,7 @@ export default function DevelopersPage() {
                   onClick={() => copyKey(key.key_prefix, key.id)}
                   className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-600 hover:bg-white/5 hover:text-zinc-300"
                 >
-                  {copiedId === key.id ? <Check size={12} className="text-[#00E676]" /> : <Copy size={12} />}
+                  {copiedId === key.id ? <Check size={12} className="text-[#10B981]" /> : <Copy size={12} />}
                 </button>
                 {confirmRevokeId === key.id ? (
                   <div className="flex items-center gap-1">
@@ -262,7 +267,7 @@ export default function DevelopersPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[400px] rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0A0A0A] shadow-2xl"
+              className="w-full max-w-[400px] rounded-xl border border-[rgba(255,255,255,0.1)] bg-[var(--surface-1)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
                 <h2 className="text-[14px] font-medium text-zinc-200">Generate API Key</h2>
@@ -276,7 +281,7 @@ export default function DevelopersPage() {
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
                   placeholder="e.g., Production, Staging, Webhook"
-                  className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#00E676]/30"
+                  className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30"
                 />
                 <p className="mt-2 text-[10px] text-zinc-600">
                   This key will have full read/write access to your organization&apos;s data via the API.
@@ -288,7 +293,7 @@ export default function DevelopersPage() {
                   whileTap={{ scale: 0.97 }}
                   onClick={handleCreate}
                   disabled={!newKeyName.trim() || creating}
-                  className="flex items-center gap-1.5 rounded-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-4 py-1.5 text-[12px] font-semibold text-black disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-md bg-gradient-to-b from-[#10B981] to-[#059669] px-4 py-1.5 text-[12px] font-semibold text-black disabled:opacity-50"
                 >
                   {creating && <Loader2 size={12} className="animate-spin" />}
                   Generate

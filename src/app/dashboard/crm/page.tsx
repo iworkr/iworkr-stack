@@ -62,53 +62,71 @@ const COLUMNS: {
   border: string;
   dot: string;
   bg: string;
+  headerBg: string;
+  headerBorder: string;
   text: string;
   emptyText: string;
+  emptyHint: string;
 }[] = [
   {
     id: "new_lead",
     label: "New Lead",
-    border: "border-t-sky-500",
+    border: "border-t-sky-500/20",
     dot: "bg-sky-400",
     bg: "bg-sky-500/10",
+    headerBg: "bg-sky-500/[0.06]",
+    headerBorder: "border-sky-500/[0.12]",
     text: "text-sky-400",
-    emptyText: "New leads land here. Add your first lead to get started.",
+    emptyText: "New leads land here",
+    emptyHint: "Add your first lead to get the pipeline started.",
   },
   {
     id: "quoting",
     label: "Quoting",
-    border: "border-t-amber-500",
+    border: "border-t-amber-500/20",
     dot: "bg-amber-400",
     bg: "bg-amber-500/10",
+    headerBg: "bg-amber-500/[0.06]",
+    headerBorder: "border-amber-500/[0.12]",
     text: "text-amber-400",
-    emptyText: "Drag leads here once you've started quoting.",
+    emptyText: "No active quotes",
+    emptyHint: "Drag leads here once you've started quoting.",
   },
   {
     id: "awaiting_approval",
     label: "Awaiting Approval",
-    border: "border-t-violet-500",
+    border: "border-t-violet-500/20",
     dot: "bg-violet-400",
     bg: "bg-violet-500/10",
+    headerBg: "bg-violet-500/[0.06]",
+    headerBorder: "border-violet-500/[0.12]",
     text: "text-violet-400",
-    emptyText: "Quotes sent and awaiting client approval.",
+    emptyText: "No pending approvals",
+    emptyHint: "Quotes sent to clients will appear here.",
   },
   {
     id: "won",
     label: "Won",
-    border: "border-t-emerald-500",
+    border: "border-t-emerald-500/20",
     dot: "bg-emerald-400",
     bg: "bg-emerald-500/10",
+    headerBg: "bg-emerald-500/[0.06]",
+    headerBorder: "border-emerald-500/[0.12]",
     text: "text-emerald-400",
-    emptyText: "Closed deals appear here. Keep it up!",
+    emptyText: "No closed deals yet",
+    emptyHint: "Closed deals appear here. Keep it up!",
   },
   {
     id: "lost",
     label: "Lost",
-    border: "border-t-rose-500",
+    border: "border-t-rose-500/20",
     dot: "bg-rose-400",
     bg: "bg-rose-500/10",
+    headerBg: "bg-rose-500/[0.06]",
+    headerBorder: "border-rose-500/[0.12]",
     text: "text-rose-400",
-    emptyText: "Lost opportunities. Review to improve your close rate.",
+    emptyText: "No lost opportunities",
+    emptyHint: "Review lost deals to improve your close rate.",
   },
 ];
 
@@ -387,15 +405,22 @@ export default function CRMPipelinePage() {
   /* ── Render ────────────────────────────────────────────── */
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="relative flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+      />
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="text-zinc-600">Dashboard</span>
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">SALES PIPELINE</span>
               <ChevronRight size={10} className="text-zinc-700" />
-              <span className="font-medium text-white">Sales Pipeline</span>
+              <span className="font-medium text-white">CRM</span>
             </div>
             <span className="text-[11px] text-zinc-600">
               Drag clients through your sales funnel
@@ -489,17 +514,17 @@ function KanbanColumn({
 
   return (
     <div className="flex h-full w-[280px] min-w-[280px] flex-col">
-      {/* Column header */}
+      {/* Column header — ghost-tint treatment */}
       <div
-        className={`mb-2 rounded-t-xl border-t-2 ${column.border} bg-zinc-950/60 px-3 py-2.5`}
+        className={`mb-2 rounded-t-xl border-t ${column.border} ${column.headerBg} border-b ${column.headerBorder} px-3 py-2.5`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={`h-2 w-2 rounded-full ${column.dot}`} />
-            <span className="text-[12px] font-semibold text-zinc-200">
+            <span className={`h-1.5 w-1.5 rounded-full ${column.dot}`} />
+            <span className="font-mono text-[10px] font-semibold tracking-wide text-zinc-300 uppercase">
               {column.label}
             </span>
-            <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
+            <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 font-mono text-[9px] font-medium text-zinc-500">
               {clients.length}
             </span>
           </div>
@@ -524,13 +549,18 @@ function KanbanColumn({
             }`}
           >
             {clients.length === 0 && !snapshot.isDraggingOver && (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <Users
-                  size={20}
-                  className="mb-2 text-zinc-800"
-                />
-                <p className="max-w-[200px] text-[11px] leading-relaxed text-zinc-700">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.04] bg-white/[0.01] py-10 text-center">
+                <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02]">
+                  <Users
+                    size={14}
+                    className="text-zinc-700"
+                  />
+                </div>
+                <p className="text-[11px] font-medium text-zinc-500">
                   {column.emptyText}
+                </p>
+                <p className="mt-1 max-w-[200px] text-[10px] leading-relaxed text-zinc-700">
+                  {column.emptyHint}
                 </p>
               </div>
             )}
@@ -691,7 +721,7 @@ function KanbanSkeleton() {
           className="flex h-full w-[280px] min-w-[280px] flex-col"
         >
           <div
-            className={`mb-2 rounded-t-xl border-t-2 ${col.border} bg-zinc-950/60 px-3 py-2.5`}
+            className={`mb-2 rounded-t-xl border-t ${col.border} ${col.headerBg} px-3 py-2.5`}
           >
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-zinc-800 animate-pulse" />
@@ -787,7 +817,7 @@ function AddLeadModal({
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-xl border border-white/[0.06] bg-[#0A0A0A] p-6 shadow-2xl"
+        className="w-full max-w-md rounded-xl border border-white/[0.06] bg-[var(--surface-1)] p-6 shadow-2xl"
       >
         {/* Modal header */}
         <div className="mb-5 flex items-center justify-between">

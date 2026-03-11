@@ -450,7 +450,7 @@ import { obsidianButtonPrimary, obsidianButtonRadius } from "@/components/ui/obs
           <span className="rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[10px] text-zinc-500">Emergency</span>
           <span className="inline-flex items-center gap-1 rounded-md bg-white/[0.03] px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-zinc-500">STARTER</span>
           <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500/15 px-1 font-mono text-[9px] font-medium text-rose-400">3</span>
-          <span className="rounded-full bg-[rgba(0,230,118,0.12)] px-1.5 py-0.5 text-[9px] font-medium text-[#00E676]">NEW</span>
+          <span className="rounded-full bg-[rgba(16,185,129,0.12)] px-1.5 py-0.5 text-[9px] font-medium text-[#10B981]">NEW</span>
         </ShowcaseRow>
 
         <div className="mb-16" />
@@ -550,7 +550,7 @@ import { obsidianButtonPrimary, obsidianButtonRadius } from "@/components/ui/obs
         <div className="grid grid-cols-2 gap-4 mb-16">
           <div>
             <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-3">Context Menu</p>
-            <div className="w-52 overflow-hidden r-dropdown border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]">
+            <div className="w-52 overflow-hidden r-dropdown border border-[rgba(255,255,255,0.1)] bg-[var(--surface-1)] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.8)]">
               {[
                 { icon: <Eye size={12} />, label: "View details", shortcut: "Enter" },
                 { icon: <Search size={12} />, label: "Edit job", shortcut: "E" },
@@ -572,7 +572,7 @@ import { obsidianButtonPrimary, obsidianButtonRadius } from "@/components/ui/obs
           </div>
           <div>
             <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase mb-3">Dropdown / Popover</p>
-            <div className="w-52 overflow-hidden r-dropdown border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.5)]">
+            <div className="w-52 overflow-hidden r-dropdown border border-[rgba(255,255,255,0.1)] bg-[var(--surface-1)] p-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.5)]">
               <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-white/[0.06] mb-1">
                 <Search size={12} className="text-zinc-600" />
                 <span className="text-[12px] text-zinc-600">Search...</span>

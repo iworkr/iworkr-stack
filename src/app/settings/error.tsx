@@ -86,7 +86,7 @@ export default function SettingsError({
         <div className="mt-6 flex items-center gap-3">
           <button
             onClick={reset}
-            className="flex items-center gap-2 rounded-lg bg-[#00E676] px-5 py-2.5 text-[13px] font-medium text-black shadow-[0_0_20px_-6px_rgba(0,230,118,0.3)] transition-all hover:bg-[#00C853] hover:shadow-[0_0_30px_-6px_rgba(0,230,118,0.4)]"
+            className="flex items-center gap-2 rounded-lg bg-[#10B981] px-5 py-2.5 text-[13px] font-medium text-black shadow-[0_0_20px_-6px_rgba(16,185,129,0.3)] transition-all hover:bg-[#059669] hover:shadow-[0_0_30px_-6px_rgba(16,185,129,0.4)]"
           >
             <RefreshCw size={14} strokeWidth={2} />
             Reload Interface

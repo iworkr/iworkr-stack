@@ -34,15 +34,15 @@ export const colors = {
   /** Pure white */
   white: "#fafafa",
   /** Neon Green — primary accent */
-  green: "#00E676",
+  green: "#10B981",
   /** Darker green for gradients / hover */
-  greenDark: "#00C853",
+  greenDark: "#059669",
   /** Green tinted backgrounds */
-  greenBg: "rgba(0,230,118,0.08)",
+  greenBg: "rgba(16,185,129,0.08)",
   /** Green tinted borders */
-  greenBorder: "rgba(0,230,118,0.15)",
+  greenBorder: "rgba(16,185,129,0.15)",
   /** Success green (same as brand) */
-  success: "#00E676",
+  success: "#10B981",
   /** Warning amber */
   warning: "#f59e0b",
   warningBg: "rgba(245,158,11,0.08)",
@@ -83,7 +83,7 @@ export function EmailLayout({ preview, children }: EmailLayoutProps) {
               <tr>
                 <td style={{
                   height: "120px",
-                  background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,230,118,0.12) 0%, transparent 70%)",
+                  background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 70%)",
                 }} />
               </tr>
             </table>

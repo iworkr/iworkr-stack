@@ -93,7 +93,7 @@ class IWorkrColors extends ThemeExtension<IWorkrColors> {
     activeBg: AlabasterTheme.activeBg,
     shimmerBase: AlabasterTheme.shimmerBase,
     shimmerHighlight: AlabasterTheme.shimmerHighlight,
-    inputIdleBg: Color(0xFFF4F4F5), // Zinc-100
+    inputIdleBg: Color(0xFFE4E4E7), // Zinc-200 (matches surface-2)
     inputFocusBg: Color(0xFFFFFFFF),
     dockBg: Color(0xCCFFFFFF), // white/80
   );

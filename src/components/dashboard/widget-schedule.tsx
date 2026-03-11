@@ -12,11 +12,11 @@ import { LottieIcon } from "./lottie-icon";
 import { emptyCalendarAnimation } from "./lottie-data";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
-const statusAccent: Record<string, { bar: string; dot: string; text: string; glow: string }> = {
-  scheduled:   { bar: "bg-emerald-500", dot: "bg-emerald-500", text: "text-emerald-400", glow: "" },
-  en_route:    { bar: "bg-amber-500",   dot: "bg-amber-500",   text: "text-amber-400",   glow: "" },
-  in_progress: { bar: "bg-blue-500",    dot: "bg-blue-500",    text: "text-blue-400",    glow: "" },
-  complete:    { bar: "bg-zinc-700",     dot: "bg-zinc-700",    text: "text-zinc-600",    glow: "" },
+const statusAccent: Record<string, { bg: string; text: string; dot: string }> = {
+  scheduled:   { bg: "var(--ghost-emerald)", text: "var(--ghost-emerald-text)", dot: "var(--brand)" },
+  en_route:    { bg: "var(--ghost-amber)",   text: "var(--ghost-amber-text)",   dot: "var(--ghost-amber-text)" },
+  in_progress: { bg: "var(--ghost-blue)",    text: "var(--ghost-blue-text)",    dot: "var(--ghost-blue-text)" },
+  complete:    { bg: "var(--ghost-zinc)",     text: "var(--ghost-zinc-text)",    dot: "var(--ghost-zinc-text)" },
 };
 
 function formatHour(h: number) {
@@ -59,7 +59,7 @@ function ScheduleEmptyState() {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="mt-3 text-[12px] font-medium text-zinc-500"
+        className="mt-3 text-[13px] font-medium text-[var(--text-muted)]"
       >
         Clear schedule today
       </motion.p>
@@ -67,10 +67,20 @@ function ScheduleEmptyState() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
-        className="mt-0.5 text-[9px] text-zinc-700"
+        className="mt-1 text-[10px] text-[var(--text-dim)]"
       >
         Jobs will appear here when assigned
       </motion.p>
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9 }}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[9px] tracking-widest uppercase"
+        style={{ background: "var(--ghost-emerald)", color: "var(--ghost-emerald-text)" }}
+      >
+        <CalendarDays size={9} />
+        No blocks scheduled
+      </motion.div>
     </div>
   );
 }
@@ -140,19 +150,19 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
           onClick={() => nextBlock?.jobId ? router.push(`/dashboard/jobs/${nextBlock.jobId}`) : router.push("/dashboard/schedule")}
         >
           <div className="flex items-center gap-1.5 mb-2">
-            <CalendarDays size={12} className="text-zinc-600" />
-            <span className="text-[9px] font-medium uppercase tracking-[0.15em] text-zinc-600">Next Up</span>
+            <CalendarDays size={12} className="text-[var(--text-dim)]" />
+            <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-dim)]">Next Up</span>
           </div>
           {nextBlock ? (
             <>
-              <div className="truncate text-[12px] font-medium text-zinc-200">{nextBlock.title}</div>
+              <div className="truncate text-[12px] font-medium text-[var(--text-body)]">{nextBlock.title}</div>
               <div className="mt-1 flex items-center gap-1">
-                <Clock size={8} className="text-emerald-500" />
-                <span className="font-mono text-[10px] text-emerald-400">{formatHour(nextBlock.startHour)}</span>
+                <Clock size={8} style={{ color: "var(--ghost-emerald-text)" }} />
+                <span className="font-mono text-[10px] tabular-nums" style={{ color: "var(--ghost-emerald-text)" }}>{formatHour(nextBlock.startHour)}</span>
               </div>
             </>
           ) : (
-            <span className="text-[11px] text-zinc-700">No upcoming jobs</span>
+            <span className="text-[11px] text-[var(--text-dim)]">No upcoming jobs</span>
           )}
         </div>
       </WidgetShell>
@@ -166,9 +176,9 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
       delay={0.2}
       header={
         <div className="flex items-center gap-2">
-          <CalendarDays size={14} className="text-zinc-600" />
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">My Schedule</span>
-          <span className="text-[11px] text-zinc-700">Today</span>
+          <CalendarDays size={14} className="text-[var(--text-dim)]" />
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">My Schedule</span>
+          <span className="font-mono text-[9px] text-[var(--text-dim)]">Today</span>
         </div>
       }
       action={
@@ -218,23 +228,23 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
                 }`}
               >
                 <div className="flex w-12 shrink-0 flex-col items-end pt-0.5">
-                  <span className={`font-mono text-[10px] font-medium ${isNext ? c.text : "text-zinc-600"}`}>
+                  <span className="font-mono text-[10px] font-medium tabular-nums" style={{ color: isNext ? c.text : "var(--text-dim)" }}>
                     {formatHour(block.startHour)}
                   </span>
-                  <span className="font-mono text-[8px] text-zinc-800">{block.duration.toFixed(1)}h</span>
+                  <span className="font-mono text-[8px] tabular-nums text-[var(--text-dim)]">{block.duration.toFixed(1)}h</span>
                 </div>
 
                 {/* Timeline dot */}
                 <div className="relative mt-1.5">
-                  <div className={`h-2 w-2 rounded-full ${c.dot} ${isNext ? c.glow : "opacity-50"}`} />
+                  <div className="h-2 w-2 rounded-full" style={{ background: c.dot, opacity: isNext ? 1 : 0.5 }} />
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className={`truncate text-[12px] font-medium ${isComplete ? "text-zinc-700 line-through" : "text-zinc-200"}`}>
+                  <div className={`truncate text-[12px] font-medium ${isComplete ? "text-[var(--text-dim)] line-through" : "text-[var(--text-body)]"}`}>
                     {block.title}
                   </div>
                   {block.location && (
-                    <div className="flex items-center gap-1 text-[9px] text-zinc-700">
+                    <div className="flex items-center gap-1 text-[9px] text-[var(--text-dim)]">
                       <MapPin size={8} /><span className="truncate">{block.location}</span>
                     </div>
                   )}
@@ -243,11 +253,12 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
                       initial={{ opacity: 0, width: 0 }}
                       animate={{ opacity: 1, width: "auto" }}
                       transition={{ delay: 0.6 }}
-                      className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-500/[0.08] px-2 py-0.5 text-[8px] font-medium text-emerald-400"
+                      className="mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[8px] font-medium tracking-wide uppercase"
+                      style={{ background: "var(--ghost-emerald)", color: "var(--ghost-emerald-text)" }}
                     >
                       <span className="relative flex h-1 w-1">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                        <span className="relative inline-flex h-1 w-1 rounded-full bg-emerald-500" />
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: "var(--brand)" }} />
+                        <span className="relative inline-flex h-1 w-1 rounded-full" style={{ background: "var(--brand)" }} />
                       </span>
                       Next Up
                     </motion.div>

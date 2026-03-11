@@ -21,9 +21,18 @@ export default function NotificationsPage() {
 
   return (
     <>
-      <h1 className="mb-8 text-2xl font-medium tracking-tight text-zinc-100">
-        Notifications
-      </h1>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Notifications
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Notifications
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Control which alerts you receive and how they are delivered.
+        </p>
+      </div>
 
       <SettingSection title="Channels">
         <SettingRow label="Email notifications" description="Receive notifications via email">

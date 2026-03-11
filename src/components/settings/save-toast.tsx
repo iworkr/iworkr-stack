@@ -76,9 +76,9 @@ export function SettingsSaveIndicator() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.95 }}
           transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed right-6 bottom-6 z-50 flex items-center gap-2 rounded-lg border border-[rgba(0,230,118,0.2)] bg-[#141414] px-3.5 py-2 shadow-xl"
+          className="fixed right-6 bottom-6 z-50 flex items-center gap-2 rounded-lg border border-[rgba(16,185,129,0.2)] bg-[#141414] px-3.5 py-2 shadow-xl"
         >
-          <Check size={13} className="text-[#00E676]" />
+          <Check size={13} className="text-[#10B981]" />
           <span className="text-[12px] text-zinc-300">Saved</span>
         </motion.div>
       )}

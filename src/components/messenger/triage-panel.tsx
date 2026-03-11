@@ -134,7 +134,7 @@ export function TriagePanel() {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-[#050505]">
+    <div className="flex flex-1 flex-col overflow-hidden bg-[var(--background)]">
       {/* Noise texture */}
       <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.012]" />
 

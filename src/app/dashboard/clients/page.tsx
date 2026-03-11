@@ -229,14 +229,21 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="relative flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+      />
       {/* ── Command Bar Header ────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             {/* Breadcrumbs */}
             <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="text-zinc-600">Dashboard</span>
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">CLIENT INTELLIGENCE</span>
               <ChevronRight size={10} className="text-zinc-700" />
               <span className="font-medium text-white">Clients</span>
             </div>
@@ -438,14 +445,14 @@ export default function ClientsPage() {
       </div>
 
       {/* ── Column headers ─────────────────────────────────────── */}
-      <div className="flex items-center border-b border-white/[0.03] bg-[#080808] px-5 py-2">
-        <div className="w-64 px-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Client</div>
-        <div className="w-24 px-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Status</div>
-        <div className="w-20 px-2 text-center text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Contact</div>
-        <div className="min-w-0 flex-1 px-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Email</div>
-        <div className="w-16 px-2 text-right text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Jobs</div>
-        <div className="w-28 px-2 text-right text-[10px] font-bold tracking-widest text-zinc-500 uppercase">LTV</div>
-        <div className="w-24 px-2 text-right text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Last Active</div>
+      <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
+        <div className="w-64 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
+        <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
+        <div className="w-20 px-2 text-center font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Contact</div>
+        <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Email</div>
+        <div className="w-16 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Jobs</div>
+        <div className="w-28 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">LTV</div>
+        <div className="w-24 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Active</div>
         <div className="w-24" />
       </div>
 
@@ -504,16 +511,36 @@ export default function ClientsPage() {
           </motion.div>
         )}
 
-        {/* LTV Summary Bar */}
+        {/* LTV Summary Bar — Analytical strip */}
         {filtered.length > 0 && (
-          <div className="flex items-center gap-6 border-b border-white/[0.02] bg-white/[0.01] px-7 py-2">
-            <span className="text-[10px] text-zinc-600">
-              {filtered.length} client{filtered.length !== 1 ? "s" : ""}
-            </span>
-            <span className="flex items-center gap-1 font-mono text-[11px] text-emerald-400">
-              ${animatedLTV.toLocaleString()}
-              <span className="text-[9px] text-zinc-600">total LTV</span>
-            </span>
+          <div className="flex items-center gap-6 border-b border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">Records</span>
+              <span className="font-mono text-[11px] font-medium text-zinc-400">
+                {filtered.length}
+              </span>
+            </div>
+            <div className="h-3 w-px bg-white/[0.04]" />
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">Total LTV</span>
+              <span className="font-mono text-[11px] font-medium text-emerald-400">
+                ${animatedLTV.toLocaleString()}
+              </span>
+            </div>
+            <div className="h-3 w-px bg-white/[0.04]" />
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">VIP</span>
+              <span className="font-mono text-[11px] font-medium text-amber-400/80">
+                {vipCount}
+              </span>
+            </div>
+            <div className="h-3 w-px bg-white/[0.04]" />
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">Leads</span>
+              <span className="font-mono text-[11px] font-medium text-sky-400/80">
+                {leadCount}
+              </span>
+            </div>
           </div>
         )}
 

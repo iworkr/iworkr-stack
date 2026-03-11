@@ -93,7 +93,7 @@ export function SlideOver() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 36 }}
-            className="fixed top-0 right-0 z-40 flex h-full w-[400px] flex-col border-l border-[rgba(255,255,255,0.08)] bg-[#0A0A0A] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
+            className="fixed top-0 right-0 z-40 flex h-full w-[400px] flex-col border-l border-[var(--card-border)] bg-[var(--surface-1)] shadow-[var(--shadow-deep)]"
           >
             {/* Header — no hr, whitespace */}
             <div className="flex items-center justify-between gap-4 px-6 py-4">
@@ -159,12 +159,12 @@ export function SlideOver() {
                   onChange={(e) => setDescription(e.target.value)}
                   onBlur={() => addToast("Saved")}
                   placeholder="Add description..."
-                  className="mb-6 w-full resize-none rounded-lg border border-transparent bg-transparent p-0 text-[13px] leading-relaxed text-zinc-400 outline-none transition-colors focus:border-[rgba(255,255,255,0.08)] focus:bg-[rgba(255,255,255,0.02)] focus:p-3"
+                  className="mb-6 w-full resize-none rounded-lg border border-transparent bg-transparent p-0 text-[13px] leading-relaxed text-[var(--text-muted)] outline-none transition-colors focus:border-[var(--card-border)] focus:bg-[var(--card-bg)] focus:p-3"
                   rows={4}
                 />
 
                 {/* Activity */}
-                <div className="border-t border-[rgba(255,255,255,0.06)] pt-4">
+                <div className="border-t border-[var(--border-base)] pt-4">
                   <h4 className="mb-3 flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
                     <MessageSquare size={12} /> Activity
                   </h4>
@@ -186,7 +186,7 @@ export function SlideOver() {
               </div>
 
               {/* Meta sidebar (right 35%) */}
-              <div className="w-56 shrink-0 overflow-y-auto border-l border-[rgba(255,255,255,0.06)] p-4">
+              <div className="w-56 shrink-0 overflow-y-auto border-l border-[var(--border-base)] p-4">
                 <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
                   Properties
                 </h4>
@@ -196,7 +196,7 @@ export function SlideOver() {
                     <div className="mb-1 text-[11px] text-zinc-600">Status</div>
                     <button
                       onClick={() => setActivePopover(activePopover === "status" ? null : "status")}
-                      className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-zinc-300 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                      className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-zinc-300 transition-colors hover:bg-[var(--subtle-bg)]"
                     >
                       <StatusIcon status={localStatus} size={12} />
                       {statusOptions.find((s) => s.value === localStatus)?.label}
@@ -219,7 +219,7 @@ export function SlideOver() {
                     <div className="mb-1 text-[11px] text-zinc-600">Priority</div>
                     <button
                       onClick={() => setActivePopover(activePopover === "priority" ? null : "priority")}
-                      className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-zinc-300 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                      className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-zinc-300 transition-colors hover:bg-[var(--subtle-bg)]"
                     >
                       <PriorityIcon priority={localPriority} size={12} />
                       {priorityOptions.find((p) => p.value === localPriority)?.label}
@@ -242,7 +242,7 @@ export function SlideOver() {
                     <div className="mb-1 text-[11px] text-zinc-600">Assignee</div>
                     <button
                       onClick={() => setActivePopover(activePopover === "assignee" ? null : "assignee")}
-                      className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-zinc-300 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                      className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-zinc-300 transition-colors hover:bg-[var(--subtle-bg)]"
                     >
                       {localAssignee}
                     </button>
@@ -281,7 +281,7 @@ export function SlideOver() {
                       {(job?.labels || []).map((label) => (
                         <span
                           key={label}
-                          className="rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[10px] text-zinc-500"
+                          className="rounded border border-[var(--card-border)] px-1.5 py-0.5 text-[10px] text-zinc-500"
                         >
                           {label}
                         </span>

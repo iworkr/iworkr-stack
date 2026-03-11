@@ -167,7 +167,7 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
         animate="center"
         exit="exit"
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative flex flex-1 flex-col overflow-hidden bg-[#050505]"
+        className="relative flex flex-1 flex-col overflow-hidden bg-[var(--background)]"
       >
         {/* Noise texture */}
         <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.012]" />

@@ -331,12 +331,12 @@ export function ConfigPanel() {
                       value={apiKeyInput}
                       onChange={(e) => setApiKeyInput(e.target.value)}
                       placeholder="Paste API key..."
-                      className="h-9 flex-1 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 text-[12px] text-zinc-300 outline-none transition-colors focus:border-[#00E676]/30"
+                      className="h-9 flex-1 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 text-[12px] text-zinc-300 outline-none transition-colors focus:border-[#10B981]/30"
                     />
                     <button
                       onClick={handleApiKeyConnect}
                       disabled={!apiKeyInput.trim() || actionLoading}
-                      className="flex items-center gap-1.5 rounded-lg bg-[#00E676] px-4 py-2 text-[11px] font-medium text-black transition-colors hover:bg-[#00C853] disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-lg bg-[#10B981] px-4 py-2 text-[11px] font-medium text-black transition-colors hover:bg-[#059669] disabled:opacity-50"
                     >
                       {actionLoading ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
                       Connect

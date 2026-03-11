@@ -78,12 +78,15 @@ function SchedulerVisual() {
   ];
 
   const colorMap: Record<string, string> = {
-    emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
-    green: "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+    emerald: "border-[rgba(16,185,129,0.2)] text-[var(--text-heading)]",
+    green: "border-[rgba(16,185,129,0.2)] text-[var(--text-heading)]",
     amber: "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300",
-    violet: "bg-zinc-500/10 border-zinc-500/20 text-zinc-600 dark:text-zinc-300",
+    violet: "bg-[var(--subtle-bg)] border-[var(--card-border)] text-[var(--text-muted)]",
     zinc: "bg-[var(--subtle-bg)] border-[var(--card-border)] text-[var(--text-muted)] italic",
   };
+
+  /* Emerald/green rows get a ghost brand tint via inline style below */
+  const brandTintBg = "rgba(16, 185, 129, 0.06)";
 
   return (
     <div className="mt-4 space-y-1.5">
@@ -95,6 +98,11 @@ function SchedulerVisual() {
           viewport={{ once: true }}
           transition={{ delay: i * 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${colorMap[slot.color]}`}
+          style={
+            slot.color === "emerald" || slot.color === "green"
+              ? { backgroundColor: brandTintBg }
+              : undefined
+          }
         >
           <span className="w-10 font-mono text-[10px] opacity-60">
             {slot.time}
@@ -125,9 +133,10 @@ function MobileVisual() {
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-            className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20"
+            className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: "rgba(16, 185, 129, 0.12)" }}
           >
-            <Check size={24} className="text-emerald-500" />
+            <Check size={24} className="text-brand" />
           </motion.div>
           <span className="text-[10px] font-medium text-[var(--text-heading)]">
             Tap to Clock In
@@ -158,8 +167,11 @@ function AIWaveformVisual() {
                 delay: i * 0.05,
                 ease: "easeInOut",
               }}
-              className="w-1 rounded-full bg-gradient-to-t from-zinc-400/40 to-zinc-500/80 dark:from-zinc-700 dark:to-zinc-400"
-              style={{ height }}
+              className="w-1 rounded-full"
+              style={{
+                background: "linear-gradient(to top, var(--text-dim), var(--text-muted))",
+                height,
+              }}
             />
           );
         })}
@@ -180,7 +192,8 @@ function AIWaveformVisual() {
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.6 }}
-        className="ml-auto rounded-lg rounded-br-none bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400"
+        className="ml-auto rounded-lg rounded-br-none px-3 py-2 text-xs text-brand"
+        style={{ backgroundColor: "rgba(16, 185, 129, 0.08)" }}
       >
         Booking set for Tuesday at 9:00 AM
       </motion.div>
@@ -255,7 +268,8 @@ function QuotesVisual() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="rounded-md bg-emerald-500/20 px-3 py-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400"
+            className="rounded-md px-3 py-1 text-[10px] font-medium text-brand"
+            style={{ backgroundColor: "rgba(16, 185, 129, 0.12)" }}
           >
             Accepted
           </motion.button>
@@ -290,7 +304,7 @@ function FinancialsVisual() {
           <div className="text-2xl font-medium tracking-tight text-[var(--text-primary)]">
             $127,400
           </div>
-          <div className="text-[10px] text-emerald-600 dark:text-emerald-400">+23% vs last month</div>
+          <div className="text-[10px] text-brand">+23% vs last month</div>
         </div>
         <div className="flex gap-2">
           {["Xero", "Stripe", "QuickBooks"].map((label) => (
@@ -346,7 +360,22 @@ function FinancialsVisual() {
 
 export function BentoGrid() {
   return (
-    <Section id="features">
+    <Section id="features" className="overflow-hidden">
+      {/* Line grid background */}
+      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.4]" />
+
+      {/* Atmospheric glow — emerald haze anchored top-center */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(16, 185, 129, 0.04) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Noise texture overlay */}
+      <div className="stealth-noise" />
+
       <FadeIn>
         <SectionHeader
           label="Features"
@@ -356,7 +385,7 @@ export function BentoGrid() {
       </FadeIn>
 
       <StaggerContainer
-        className="grid grid-cols-1 gap-4 md:grid-cols-12"
+        className="relative z-10 grid grid-cols-1 gap-4 md:grid-cols-12"
         staggerDelay={0.08}
       >
         {/* Row A */}

@@ -42,20 +42,27 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-zinc-300">
-      <div className="mx-auto max-w-3xl px-6 py-24 md:px-12">
+    <div className="relative min-h-screen bg-[var(--background)] text-[var(--text-body)]">
+      {/* Noise texture overlay */}
+      <div className="stealth-noise" />
+
+      {/* Atmospheric glow */}
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-emerald-500/[0.03] blur-[120px]" />
+
+      <div className="relative z-10 mx-auto max-w-3xl px-6 py-24 md:px-12">
         <Link
           href="/"
-          className="mb-8 inline-flex items-center gap-1.5 text-sm text-zinc-600 transition-colors hover:text-[#00E676]"
+          className="mb-8 inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--brand)]"
         >
           <ArrowLeft size={14} />
           Back to iWorkr
         </Link>
 
-        <h1 className="mb-2 text-3xl font-medium tracking-tight text-[#EDEDED]">
+        <span className="mb-3 block font-mono text-[9px] font-bold tracking-widest text-[var(--brand)] uppercase">Get in touch</span>
+        <h1 className="mb-2 text-3xl font-medium tracking-tight text-[var(--text-heading)]">
           Contact Us
         </h1>
-        <p className="mb-10 text-[15px] leading-relaxed text-[#A1A1AA]">
+        <p className="mb-10 text-[15px] leading-relaxed text-[var(--text-body)]">
           Have a question, need support, or want to chat about enterprise plans? We&apos;d love to
           hear from you. Our team typically responds within 24 hours.
         </p>
@@ -68,24 +75,24 @@ export default function ContactPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center rounded-2xl border border-[#00E676]/20 bg-[rgba(0,230,118,0.03)] px-8 py-16 text-center"
+              className="flex flex-col items-center rounded-2xl border border-[var(--brand)]/20 bg-[rgba(16,185,129,0.03)] px-8 py-16 text-center"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
-                className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#00E676] shadow-[0_0_40px_-8px_rgba(0,230,118,0.5)]"
+                className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] shadow-[0_0_40px_-8px_rgba(16,185,129,0.5)]"
               >
                 <CheckCircle size={24} className="text-black" />
               </motion.div>
-              <h2 className="text-xl font-medium text-[#EDEDED]">Message Sent</h2>
-              <p className="mt-2 max-w-sm text-sm text-zinc-500">
+              <h2 className="text-xl font-medium text-[var(--text-heading)]">Message Sent</h2>
+              <p className="mt-2 max-w-sm text-sm text-[var(--text-muted)]">
                 Thanks, {name}! We&apos;ve sent you a confirmation email. Our team will get back to
                 you within 24 hours.
               </p>
               <Link
                 href="/"
-                className="mt-6 text-sm text-zinc-500 transition-colors hover:text-[#00E676]"
+                className="mt-6 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--brand)]"
               >
                 Return to Home
               </Link>
@@ -103,7 +110,7 @@ export default function ContactPage() {
               {/* Name & Email row */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="name" className="mb-1.5 block text-xs font-medium text-zinc-400">
+                  <label htmlFor="name" className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
                     Your Name
                   </label>
                   <input
@@ -113,11 +120,11 @@ export default function ContactPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="John Smith"
-                    className="h-10 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[14px] text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-[#00E676]/30 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.15)]"
+                    className="h-10 w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--card-bg)] px-3 text-[14px] text-[var(--text-primary)] placeholder-[var(--text-dim)] outline-none transition-all focus:border-[var(--brand)]/30 focus:shadow-[var(--brand-glow-subtle)]"
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-zinc-400">
+                  <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
                     Email Address
                   </label>
                   <input
@@ -127,14 +134,14 @@ export default function ContactPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="john@company.com"
-                    className="h-10 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[14px] text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-[#00E676]/30 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.15)]"
+                    className="h-10 w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--card-bg)] px-3 text-[14px] text-[var(--text-primary)] placeholder-[var(--text-dim)] outline-none transition-all focus:border-[var(--brand)]/30 focus:shadow-[var(--brand-glow-subtle)]"
                   />
                 </div>
               </div>
 
               {/* Subject selector — card picker */}
               <div>
-                <label className="mb-2 block text-xs font-medium text-zinc-400">
+                <label className="mb-2 block text-xs font-medium text-[var(--text-muted)]">
                   What can we help with?
                 </label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -146,10 +153,10 @@ export default function ContactPage() {
                         key={opt.value}
                         type="button"
                         onClick={() => setSubject(opt.value)}
-                        className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-center transition-all ${
+                        className={`flex flex-col items-center gap-1.5 rounded-[var(--radius-input)] border p-3 text-center transition-all ${
                           isSelected
-                            ? "border-[#00E676]/30 bg-[rgba(0,230,118,0.05)] text-[#00E676]"
-                            : "border-white/[0.06] bg-white/[0.02] text-zinc-500 hover:border-white/[0.1] hover:text-zinc-300"
+                            ? "border-[var(--brand)]/30 bg-[rgba(16,185,129,0.05)] text-[var(--brand)]"
+                            : "border-[var(--border-base)] bg-[var(--card-bg)] text-[var(--text-muted)] hover:border-[var(--border-active)] hover:text-[var(--text-primary)]"
                         }`}
                       >
                         <Icon size={16} />
@@ -162,7 +169,7 @@ export default function ContactPage() {
 
               {/* Message */}
               <div>
-                <label htmlFor="message" className="mb-1.5 block text-xs font-medium text-zinc-400">
+                <label htmlFor="message" className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
                   Message
                 </label>
                 <textarea
@@ -172,7 +179,7 @@ export default function ContactPage() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Tell us what's on your mind..."
-                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-[14px] leading-relaxed text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-[#00E676]/30 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.15)]"
+                  className="w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--card-bg)] px-3 py-2.5 text-[14px] leading-relaxed text-[var(--text-primary)] placeholder-[var(--text-dim)] outline-none transition-all focus:border-[var(--brand)]/30 focus:shadow-[var(--brand-glow-subtle)]"
                 />
               </div>
 
@@ -189,11 +196,11 @@ export default function ContactPage() {
 
               {/* Submit */}
               <div className="flex items-center justify-between">
-                <p className="text-xs text-zinc-600">
+                <p className="text-xs text-[var(--text-dim)]">
                   Or email directly:{" "}
                   <a
                     href="mailto:support@iworkr.com"
-                    className="text-zinc-400 underline underline-offset-2 transition-colors hover:text-[#00E676]"
+                    className="text-[var(--text-muted)] underline underline-offset-2 transition-colors hover:text-[var(--brand)]"
                   >
                     support@iworkr.com
                   </a>
@@ -201,7 +208,7 @@ export default function ContactPage() {
                 <button
                   type="submit"
                   disabled={sending}
-                  className={`flex items-center gap-2 rounded-lg bg-[#00E676] px-5 py-2.5 text-[13px] font-medium text-black shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)] transition-all hover:bg-[#00C853] hover:shadow-[0_0_30px_-4px_rgba(0,230,118,0.5)] ${
+                  className={`flex items-center gap-2 rounded-[var(--radius-button)] bg-[var(--brand)] px-5 py-2.5 text-[13px] font-medium text-black shadow-[var(--brand-glow)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-[0_0_30px_-4px_rgba(16,185,129,0.5)] ${
                     sending ? "opacity-60 cursor-not-allowed" : ""
                   }`}
                 >
@@ -214,12 +221,12 @@ export default function ContactPage() {
         </AnimatePresence>
 
         {/* Bottom nav */}
-        <div className="mt-16 flex items-center gap-4 border-t border-white/[0.06] pt-8 text-sm text-zinc-600">
-          <Link href="/terms" className="transition-colors hover:text-[#00E676]">Terms of Service</Link>
-          <span className="text-zinc-800">|</span>
-          <Link href="/privacy" className="transition-colors hover:text-[#00E676]">Privacy Policy</Link>
-          <span className="text-zinc-800">|</span>
-          <Link href="/cookies" className="transition-colors hover:text-[#00E676]">Cookie Policy</Link>
+        <div className="mt-16 flex items-center gap-4 border-t border-[var(--border-base)] pt-8 text-sm text-[var(--text-dim)]">
+          <Link href="/terms" className="transition-colors hover:text-[var(--brand)]">Terms of Service</Link>
+          <span className="text-[var(--border-base)]">|</span>
+          <Link href="/privacy" className="transition-colors hover:text-[var(--brand)]">Privacy Policy</Link>
+          <span className="text-[var(--border-base)]">|</span>
+          <Link href="/cookies" className="transition-colors hover:text-[var(--brand)]">Cookie Policy</Link>
         </div>
       </div>
     </div>

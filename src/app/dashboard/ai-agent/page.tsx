@@ -61,10 +61,12 @@ function AgentCard({
   agent,
   isActive,
   onActivate,
+  index,
 }: {
   agent: (typeof AGENTS)[number];
   isActive: boolean;
   onActivate?: () => void;
+  index: number;
 }) {
   const Icon = agent.icon;
 
@@ -72,20 +74,21 @@ function AgentCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className={`group relative overflow-hidden rounded-xl border bg-zinc-900/40 p-5 transition-all duration-200 ${
+      transition={{ duration: 0.35, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
+      className={`group relative overflow-hidden rounded-[var(--radius-card)] border p-5 transition-all duration-200 ${
         isActive
-          ? "border-violet-500/20 shadow-lg shadow-violet-500/5"
-          : "border-white/5 hover:border-violet-500/30 hover:shadow-xl hover:shadow-black/20"
+          ? "border-violet-500/15 bg-violet-500/[0.04] shadow-[0_0_24px_-8px_rgba(139,92,246,0.08)]"
+          : "border-[var(--border-base)] bg-white/[0.02] hover:border-violet-500/15 hover:bg-violet-500/[0.02]"
       }`}
+      style={{ boxShadow: isActive ? undefined : "var(--shadow-inset-bevel)" }}
     >
       {/* PRD 60: "Synapse" pulse behind icon when active */}
       {isActive && (
         <motion.div
-          className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full bg-violet-500/10"
+          className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full bg-violet-500/[0.08]"
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.4, 0.15, 0.4],
+            opacity: [0.4, 0.1, 0.4],
           }}
           transition={{
             duration: 3,
@@ -99,22 +102,22 @@ function AgentCard({
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-card)] border transition-colors ${
                 isActive
-                  ? "border-violet-500/30 bg-violet-500/10 text-violet-400"
-                  : "border-white/5 bg-white/[0.02] text-zinc-500 group-hover:border-violet-500/20 group-hover:text-violet-400/80"
+                  ? "border-violet-500/20 bg-violet-500/[0.08] text-violet-400"
+                  : "border-[var(--border-base)] bg-white/[0.02] text-zinc-500 group-hover:border-violet-500/15 group-hover:text-violet-400/70"
               }`}
             >
               <Icon size={18} strokeWidth={1.5} />
             </div>
             <div>
-              <h3 className="text-[13px] font-semibold text-white">
+              <h3 className="text-[13px] font-medium tracking-tight text-zinc-200">
                 {agent.name}
               </h3>
               {isActive && (
                 <span className="relative mt-0.5 flex items-center gap-1">
-                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[10px] font-medium text-emerald-400">
+                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
+                  <span className="text-[10px] font-medium text-[var(--brand)]">
                     Active
                   </span>
                 </span>
@@ -122,7 +125,7 @@ function AgentCard({
             </div>
           </div>
         </div>
-        <p className="mb-4 text-[11px] leading-relaxed text-zinc-500">
+        <p className="mb-4 text-[11px] leading-relaxed text-[var(--text-muted)]">
           {agent.description}
         </p>
 
@@ -130,7 +133,7 @@ function AgentCard({
           {isActive ? (
             <Link
               href={agent.href}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-[11px] font-medium text-black transition-colors hover:bg-zinc-200"
+              className="stealth-btn-primary gap-1.5 px-3.5 py-2 text-[11px]"
             >
               Configure
               <ChevronRight size={12} />
@@ -139,7 +142,7 @@ function AgentCard({
             <button
               type="button"
               onClick={onActivate}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3.5 py-2 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
+              className="stealth-btn-ghost gap-1.5 px-3.5 py-2 text-[11px]"
             >
               Activate
             </button>
@@ -173,38 +176,53 @@ export default function AIWorkforceHubPage() {
       featureTitle="AI Workforce Hub"
       featureDescription="Deploy synthetic receptionists and automated dispatchers to scale your operations without scaling payroll."
     >
-      <div className="flex h-full flex-col bg-[#050505]">
-        {/* PRD 60: Hub Header */}
-        <div className="sticky top-0 z-10 border-b border-white/5 bg-[#050505]/95 backdrop-blur-xl">
-          <div className="px-6 py-5">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-white">
-              AI Workforce
-            </h1>
-            <p className="mt-1 text-[13px] text-zinc-500">
-              Deploy synthetic agents to automate your operations.
-            </p>
-            {/* Micro-metric bar */}
-            <div className="mt-4 flex items-center gap-4 font-mono text-[11px]">
-              <span className="text-zinc-500">
-                Active Agents:{" "}
-                <span className="text-zinc-300">{activeCount}/{maxAgents}</span>
-              </span>
-              <span className="text-zinc-700">•</span>
-              <span className="text-zinc-500">
-                Tasks Automated Today:{" "}
-                <span className="text-violet-400/90">{tasksToday}</span>
-              </span>
-            </div>
+      <div className="relative flex h-full flex-col bg-[var(--background)]">
+        {/* Noise texture */}
+        <div className="stealth-noise" />
+
+        {/* Atmospheric glow — subtle violet top-center */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2"
+          style={{
+            width: 600,
+            height: 300,
+            background: "radial-gradient(ellipse at center, rgba(139,92,246,0.04) 0%, transparent 70%)",
+          }}
+        />
+
+        {/* PRD 60: Hub Header — mono overline pattern */}
+        <div className="sticky top-0 z-10 border-b border-[var(--border-base)] px-4 pb-4 pt-4 md:px-6 md:pt-5" style={{ background: "var(--header-bg)", backdropFilter: "blur(var(--header-blur))" }}>
+          <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+            AI Workforce
+          </p>
+          <h1 className="text-[15px] font-medium tracking-tight text-zinc-200">
+            The Synthetic Roster
+          </h1>
+          <p className="mt-0.5 text-[12px] text-zinc-600">
+            Deploy synthetic agents to automate your operations.
+          </p>
+          {/* Micro-metric bar */}
+          <div className="mt-3 flex items-center gap-4 font-mono text-[11px]">
+            <span className="text-zinc-500">
+              Active:{" "}
+              <span className="font-medium text-zinc-300">{activeCount}/{maxAgents}</span>
+            </span>
+            <span className="text-zinc-800">·</span>
+            <span className="text-zinc-500">
+              Tasks Today:{" "}
+              <span className="font-medium text-violet-400/80">{tasksToday}</span>
+            </span>
           </div>
         </div>
 
         {/* Agent Grid — PRD 60: responsive, Obsidian cards */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {AGENTS.map((agent) => (
+            {AGENTS.map((agent, i) => (
               <AgentCard
                 key={agent.id}
                 agent={agent}
+                index={i}
                 isActive={
                   agent.id === "phone" ? phoneEnabled : false
                 }

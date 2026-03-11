@@ -52,9 +52,18 @@ export default function ProfilePage() {
 
   return (
     <>
-      <h1 className="mb-8 text-2xl font-medium tracking-tight text-zinc-100">
-        Profile
-      </h1>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Profile
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Profile
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Manage your personal information, avatar, and contact details.
+        </p>
+      </div>
 
       {/* Avatar */}
       <div className="mb-8 flex items-center gap-5">
@@ -128,7 +137,7 @@ export default function ProfilePage() {
             value={nameVal}
             onChange={(e) => setNameVal(e.target.value)}
             onBlur={handleNameBlur}
-            className="w-full rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/40"
+            className="w-full rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
           />
         </div>
 
@@ -153,7 +162,7 @@ export default function ProfilePage() {
             value={phoneVal}
             onChange={(e) => setPhoneVal(e.target.value)}
             onBlur={handlePhoneBlur}
-            className="w-full rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/40"
+            className="w-full rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
             placeholder="+61 400 000 000"
           />
         </div>

@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* Header skeleton — stealth nav */}
       <div className="flex items-center justify-between px-5 py-3">
         <div className="flex items-center gap-5">

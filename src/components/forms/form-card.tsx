@@ -91,7 +91,7 @@ export function FormCard({ template, index }: FormCardProps) {
       {/* ── Document Preview (Blueprint wireframe) ──── */}
       <div className="relative flex flex-col items-center justify-center px-4 pt-5 pb-4 bg-[#0A0A0A]" style={{ height: "55%" }}>
         {/* Mini document wireframe */}
-        <div className="w-full max-w-[140px] rounded-lg border border-white/[0.05] bg-[#050505] p-3">
+        <div className="w-full max-w-[140px] rounded-lg border border-white/[0.05] bg-[var(--background)] p-3">
           {/* Title line */}
           <div className="mb-2 h-1.5 w-[80%] rounded-full bg-white/[0.08]" />
           {/* Body lines */}

@@ -82,8 +82,12 @@ function ConversationTile({
   return (
     <button
       onClick={onClick}
-      className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150 ${
-        active ? "bg-white/5" : "hover:bg-white/[0.03]"
+      className={`group relative flex w-full items-center gap-3 rounded-[var(--radius-nav-item)] px-3 py-2.5 text-left transition-all duration-150 ${
+        active
+          ? "bg-[var(--subtle-bg-hover)]"
+          : unread
+            ? "bg-[var(--subtle-bg)]"
+            : "hover:bg-[var(--subtle-bg)]"
       }`}
     >
       {/* Active indicator — emerald left spine */}
@@ -95,16 +99,16 @@ function ConversationTile({
         />
       )}
 
-      {/* Unread dot */}
+      {/* Unread dot — stronger glow */}
       {unread && !active && (
         <div className="absolute left-1.5 top-1/2 -translate-y-1/2">
-          <div className="h-[6px] w-[6px] rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+          <div className="h-[7px] w-[7px] rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
         </div>
       )}
 
       {/* Avatar — 28×28 */}
       <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-semibold ${
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-nav-item)] text-[10px] font-semibold ${
           isJob
             ? "bg-emerald-500/10 text-emerald-400"
             : "bg-zinc-800/80 text-zinc-400"
@@ -187,17 +191,24 @@ function InboxList({
   }, [channels, searchQuery]);
 
   return (
-    <aside className="flex h-full w-[320px] shrink-0 flex-col border-r border-white/[0.04] bg-[#0A0A0A]">
+    <aside className="flex h-full w-[320px] shrink-0 flex-col border-r border-[var(--border-base)] bg-[var(--surface-1)]">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-3">
-        <h2 className="text-[14px] font-semibold tracking-tight text-white">
-          Messages
-        </h2>
+      <div className="flex items-center justify-between border-b border-[var(--border-base)] px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-[14px] font-semibold tracking-tight text-white">
+            Messages
+          </h2>
+          {channels.length > 0 && (
+            <span className="rounded-[var(--radius-badge)] bg-[var(--subtle-bg)] px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">
+              {channels.length}
+            </span>
+          )}
+        </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onNewMessage}
-          className="rounded-md p-1.5 text-zinc-500 transition-colors duration-150 hover:bg-white/5 hover:text-white"
+          className="rounded-md p-1.5 text-zinc-500 transition-colors duration-150 hover:bg-[var(--subtle-bg)] hover:text-white"
           title="New message (⌘N)"
         >
           <Plus size={14} strokeWidth={1.5} />
@@ -207,13 +218,13 @@ function InboxList({
       {/* Stealth search */}
       <div className="px-3 py-2">
         <div
-          className={`relative flex items-center gap-2 rounded-lg px-2.5 py-1.5 transition-all duration-200 ${
-            searchFocused ? "bg-white/[0.03]" : ""
+          className={`relative flex items-center gap-2 rounded-[var(--radius-input)] px-2.5 py-1.5 transition-all duration-200 ${
+            searchFocused ? "bg-[var(--subtle-bg)]" : ""
           }`}
         >
           {/* Focus spine */}
           <motion.div
-            className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-white"
+            className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
             initial={false}
             animate={{
               opacity: searchFocused ? 1 : 0,
@@ -245,7 +256,7 @@ function InboxList({
             </button>
           ) : (
             !searchFocused && (
-              <kbd className="flex items-center gap-0.5 rounded border border-white/[0.06] bg-white/[0.02] px-1 py-0.5 text-[9px] font-medium text-zinc-700">
+              <kbd className="flex items-center gap-0.5 rounded-[var(--radius-badge)] border border-[var(--border-base)] bg-[var(--subtle-bg)] px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-700">
                 <span className="text-[10px]">⌘</span>K
               </kbd>
             )
@@ -256,19 +267,29 @@ function InboxList({
       {/* Channel list */}
       <nav className="flex-1 overflow-y-auto px-2 py-1 scrollbar-none">
         {filteredChannels.length === 0 ? (
-          <div className="flex flex-col items-center py-12 text-center">
-            <MessageCircle size={24} className="mb-2 text-zinc-800" />
-            <p className="text-[12px] text-zinc-600">
+          <div className="flex flex-col items-center py-16 text-center">
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[var(--radius-card)] border border-[var(--border-base)] bg-[var(--surface-2)]">
+              <MessageCircle size={18} className="text-zinc-600" />
+            </div>
+            <p className="text-[13px] font-medium text-zinc-400">
               {searchQuery
                 ? "No matching conversations"
                 : "No conversations yet"}
             </p>
-            <button
-              onClick={onNewMessage}
-              className="mt-3 text-[11px] text-emerald-500 transition-colors hover:text-emerald-400"
-            >
-              Start a conversation
-            </button>
+            <p className="mt-1 text-[11px] text-zinc-600">
+              {searchQuery
+                ? "Try a different search term"
+                : "Start your first conversation"}
+            </p>
+            {!searchQuery && (
+              <button
+                onClick={onNewMessage}
+                className="mt-4 flex items-center gap-1.5 rounded-[var(--radius-button)] border border-[var(--border-base)] bg-[var(--subtle-bg)] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-all hover:border-[var(--border-active)] hover:text-white"
+              >
+                <Plus size={12} />
+                New conversation
+              </button>
+            )}
           </div>
         ) : (
           filteredChannels.map((channel) => (
@@ -292,8 +313,8 @@ function InboxList({
 function EmptyStateRadar() {
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center text-center">
-      <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.015]" />
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.03] blur-[80px]" />
+      <div className="pointer-events-none absolute inset-0 bg-noise opacity-[var(--noise-opacity)]" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.03] blur-[100px]" />
 
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
@@ -315,6 +336,15 @@ function EmptyStateRadar() {
         />
       </motion.div>
 
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-500/60"
+      >
+        Comms Channel
+      </motion.p>
+
       <motion.h3
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -330,7 +360,7 @@ function EmptyStateRadar() {
         transition={{ delay: 0.6 }}
         className="mt-2 max-w-[280px] text-[13px] leading-relaxed text-zinc-500"
       >
-        Select a conversation or start a new one
+        Select a conversation from the sidebar or start a new one
       </motion.p>
 
       <motion.button
@@ -339,7 +369,7 @@ function EmptyStateRadar() {
         transition={{ delay: 0.85 }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="mt-6 flex items-center gap-2 rounded-xl border border-white/10 bg-transparent px-4 py-2 text-[12px] font-medium text-zinc-400 transition-all duration-200 hover:bg-white/5 hover:text-white"
+        className="mt-6 flex items-center gap-2 rounded-[var(--radius-button)] border border-[var(--border-active)] bg-[var(--subtle-bg)] px-4 py-2.5 text-[12px] font-medium text-zinc-400 shadow-[var(--shadow-inset-bevel)] transition-all duration-200 hover:bg-[var(--subtle-bg-hover)] hover:text-white"
       >
         <Radio size={13} />
         Start a new conversation
@@ -511,7 +541,7 @@ export default function MessagesPage() {
   /* ── Loading state ───────────────────────────────────── */
   if (!userId) {
     return (
-      <div className="relative flex h-full items-center justify-center overflow-hidden bg-[#050505]">
+      <div className="relative flex h-full items-center justify-center overflow-hidden bg-[var(--background)]">
         <p className="text-[13px] text-zinc-500">Loading messages…</p>
       </div>
     );
@@ -526,9 +556,9 @@ export default function MessagesPage() {
           • overflow-hidden: hijacks standard dashboard scroll
           • flex: creates horizontal split-pane layout
           ══════════════════════════════════════════════════════ */}
-      <div className="relative flex h-full overflow-hidden bg-[#050505]">
-        {/* Noise grain */}
-        <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-[0.012]" />
+      <div className="relative flex h-full overflow-hidden bg-[var(--background)]">
+        {/* Noise grain — standardized */}
+        <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-[var(--noise-opacity)]" />
 
         {/* ── Left Pane: InboxList (320px fixed) ─────────── */}
         <InboxList

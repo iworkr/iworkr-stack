@@ -33,9 +33,9 @@ import {
 /* ── Block config — PRD: Dark nodes (bg-zinc-950) ──────── */
 
 const blockConfig: Record<BlockType, { icon: typeof Zap; color: string; bg: string; border: string }> = {
-  trigger: { icon: Zap, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.06)]", border: "border-[#00E676]/30" },
+  trigger: { icon: Zap, color: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.06)]", border: "border-[#10B981]/30" },
   delay: { icon: Clock, color: "text-amber-400", bg: "bg-amber-500/5", border: "border-amber-500/20" },
-  action: { icon: Send, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.04)]", border: "border-[#00E676]/20" },
+  action: { icon: Send, color: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.04)]", border: "border-[#10B981]/20" },
   condition: { icon: GitBranch, color: "text-zinc-400", bg: "bg-zinc-500/5", border: "border-zinc-500/20" },
 };
 
@@ -59,12 +59,12 @@ function AnimatedConnector({ active, testing }: { active: boolean; testing: bool
             <motion.div
               animate={{ y: [-44, 44] }}
               transition={{ duration: 0.6, repeat: Infinity, ease: "linear" }}
-              className="h-6 w-full bg-gradient-to-b from-transparent via-[#00E676] to-transparent opacity-60"
+              className="h-6 w-full bg-gradient-to-b from-transparent via-[#10B981] to-transparent opacity-60"
             />
           </motion.div>
         )}
         {active && !testing && (
-          <div className="absolute inset-0 bg-gradient-to-b from-[#00E676]/40 to-[#00E676]/10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#10B981]/40 to-[#10B981]/10" />
         )}
       </div>
     </div>
@@ -222,7 +222,7 @@ function TraceViewer({ trace, onClose }: { trace: TraceStep[]; onClose: () => vo
     >
       <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
         <div className="flex items-center gap-2">
-          <Terminal size={14} className="text-[#00E676]" />
+          <Terminal size={14} className="text-[#10B981]" />
           <span className="font-mono text-[12px] font-semibold text-white">Execution Trace</span>
         </div>
         <button onClick={onClose} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-800 hover:text-white">
@@ -251,10 +251,10 @@ function TraceViewer({ trace, onClose }: { trace: TraceStep[]; onClose: () => vo
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <div className={`h-1.5 w-1.5 rounded-full ${isPass ? "bg-[#00E676]" : isFail ? "bg-rose-500" : "bg-zinc-600"}`} />
+                  <div className={`h-1.5 w-1.5 rounded-full ${isPass ? "bg-[#10B981]" : isFail ? "bg-rose-500" : "bg-zinc-600"}`} />
                   <span className="font-mono text-[10px] font-bold uppercase text-zinc-500">{step.step}</span>
                   <span className={`ml-auto rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
-                    isPass ? "bg-[rgba(0,230,118,0.1)] text-[#00E676]"
+                    isPass ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]"
                     : isFail ? "bg-rose-500/10 text-rose-400"
                     : "bg-zinc-800 text-zinc-500"
                   }`}>
@@ -326,7 +326,7 @@ export default function FlowEditorPage() {
 
   if (!flow) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#050505]">
+      <div className="flex h-full items-center justify-center bg-[var(--background)]">
         <div className="text-center">
           <Zap size={32} strokeWidth={0.8} className="mx-auto mb-3 text-zinc-800" />
           <p className="text-[13px] text-zinc-500">Flow not found.</p>
@@ -402,7 +402,7 @@ export default function FlowEditorPage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* ── Header ──────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
@@ -435,7 +435,7 @@ export default function FlowEditorPage() {
             disabled={testRunning}
             className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[11px] font-medium transition-all ${
               testRunning
-                ? "cursor-not-allowed border-[#00E676]/20 bg-[rgba(0,230,118,0.05)] text-[#00E676]"
+                ? "cursor-not-allowed border-[#10B981]/20 bg-[rgba(16,185,129,0.05)] text-[#10B981]"
                 : "border-white/[0.1] bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"
             }`}
           >
@@ -455,7 +455,7 @@ export default function FlowEditorPage() {
           <button
             onClick={handlePublish}
             disabled={publishing}
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-[#00E676] px-4 text-[11px] font-semibold text-black transition-all hover:bg-[#00C864] disabled:opacity-50"
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-[#10B981] px-4 text-[11px] font-semibold text-black transition-all hover:bg-[#00C864] disabled:opacity-50"
           >
             {publishing ? (
               <><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}><Upload size={11} /></motion.div> Publishing...</>
@@ -478,7 +478,7 @@ export default function FlowEditorPage() {
             disabled={toggleLoading}
             className={`flex h-8 items-center gap-1.5 rounded-lg px-4 text-[11px] font-medium transition-all ${
               isActive
-                ? "bg-[rgba(0,230,118,0.1)] text-[#00E676] hover:bg-[rgba(0,230,118,0.15)]"
+                ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] hover:bg-[rgba(16,185,129,0.15)]"
                 : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/15"
             } ${toggleLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
@@ -509,7 +509,7 @@ export default function FlowEditorPage() {
                 animate={{ scale: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="flex h-20 w-20 items-center justify-center rounded-full bg-[#00E676] shadow-[0_0_24px_-4px_rgba(0,230,118,0.2)]"
+                className="flex h-20 w-20 items-center justify-center rounded-full bg-[#10B981] shadow-[0_0_24px_-4px_rgba(16,185,129,0.2)]"
               >
                 <Check size={32} className="text-black" strokeWidth={3} />
               </motion.div>
@@ -541,21 +541,21 @@ export default function FlowEditorPage() {
                   {block.type === "trigger" && (
                     <div className="flex justify-center">
                       <motion.div
-                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(0,230,118,0)", "0 0 30px rgba(0,230,118,0.4)", "0 0 0px rgba(0,230,118,0)"] } : {}}
+                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(16,185,129,0)", "0 0 30px rgba(16,185,129,0.4)", "0 0 0px rgba(16,185,129,0)"] } : {}}
                         transition={isTestCurrent ? { duration: 1, repeat: Infinity } : {}}
-                        className={`relative w-full max-w-lg rounded-xl border ${config.border} bg-zinc-950 p-5 backdrop-blur-sm ${isTestActive ? "shadow-[0_0_16px_-4px_rgba(0,230,118,0.12)]" : ""}`}
+                        className={`relative w-full max-w-lg rounded-xl border ${config.border} bg-zinc-950 p-5 backdrop-blur-sm ${isTestActive ? "shadow-[0_0_16px_-4px_rgba(16,185,129,0.12)]" : ""}`}
                       >
-                        <div className="absolute -left-px -top-px h-3 w-3 rounded-tl-xl border-l border-t border-[#00E676]/60" />
-                        <div className="absolute -right-px -top-px h-3 w-3 rounded-tr-xl border-r border-t border-[#00E676]/60" />
-                        <div className="absolute -bottom-px -left-px h-3 w-3 rounded-bl-xl border-b border-l border-[#00E676]/60" />
-                        <div className="absolute -bottom-px -right-px h-3 w-3 rounded-br-xl border-b border-r border-[#00E676]/60" />
+                        <div className="absolute -left-px -top-px h-3 w-3 rounded-tl-xl border-l border-t border-[#10B981]/60" />
+                        <div className="absolute -right-px -top-px h-3 w-3 rounded-tr-xl border-r border-t border-[#10B981]/60" />
+                        <div className="absolute -bottom-px -left-px h-3 w-3 rounded-bl-xl border-b border-l border-[#10B981]/60" />
+                        <div className="absolute -bottom-px -right-px h-3 w-3 rounded-br-xl border-b border-r border-[#10B981]/60" />
 
                         <div className="flex items-center gap-3">
                           <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${config.bg}`}>
                             <Icon size={16} className={config.color} />
                           </div>
                           <div>
-                            <p className="text-[9px] font-medium uppercase tracking-wider text-[#00E676]">When this happens...</p>
+                            <p className="text-[9px] font-medium uppercase tracking-wider text-[#10B981]">When this happens...</p>
                             <p className="text-[12px] text-zinc-200">{block.label}</p>
                           </div>
                         </div>
@@ -595,16 +595,16 @@ export default function FlowEditorPage() {
                   {block.type === "action" && (
                     <div className="flex justify-center">
                       <motion.div
-                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(0,230,118,0)", "0 0 25px rgba(0,230,118,0.3)", "0 0 0px rgba(0,230,118,0)"] } : {}}
+                        animate={isTestCurrent ? { boxShadow: ["0 0 0px rgba(16,185,129,0)", "0 0 25px rgba(16,185,129,0.3)", "0 0 0px rgba(16,185,129,0)"] } : {}}
                         transition={isTestCurrent ? { duration: 1, repeat: Infinity } : {}}
-                        className={`w-full max-w-lg rounded-xl border ${config.border} bg-zinc-950 p-4 backdrop-blur-sm ${isTestActive ? "shadow-[0_0_12px_-4px_rgba(0,230,118,0.1)]" : ""}`}
+                        className={`w-full max-w-lg rounded-xl border ${config.border} bg-zinc-950 p-4 backdrop-blur-sm ${isTestActive ? "shadow-[0_0_12px_-4px_rgba(16,185,129,0.1)]" : ""}`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(0,230,118,0.08)]">
-                            {ChannelIcon ? <ChannelIcon size={14} className="text-[#00E676]" /> : <Icon size={14} className={config.color} />}
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(16,185,129,0.08)]">
+                            {ChannelIcon ? <ChannelIcon size={14} className="text-[#10B981]" /> : <Icon size={14} className={config.color} />}
                           </div>
                           <div className="flex-1">
-                            <p className="text-[9px] font-medium uppercase tracking-wider text-[#00E676]">Do this...</p>
+                            <p className="text-[9px] font-medium uppercase tracking-wider text-[#10B981]">Do this...</p>
                             <p className="text-[12px] text-zinc-200">{block.label}</p>
                           </div>
                         </div>
@@ -634,8 +634,8 @@ export default function FlowEditorPage() {
                           </div>
                         </div>
                         <div className="mt-3 flex gap-2">
-                          <div className="flex-1 rounded-lg border border-[#00E676]/15 bg-[rgba(0,230,118,0.03)] px-2.5 py-1.5 text-center">
-                            <p className="text-[9px] font-medium uppercase text-[#00E676]">Yes → Continue</p>
+                          <div className="flex-1 rounded-lg border border-[#10B981]/15 bg-[rgba(16,185,129,0.03)] px-2.5 py-1.5 text-center">
+                            <p className="text-[9px] font-medium uppercase text-[#10B981]">Yes → Continue</p>
                           </div>
                           <div className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800/30 px-2.5 py-1.5 text-center">
                             <p className="text-[9px] font-medium uppercase text-zinc-500">No → Stop</p>
@@ -650,7 +650,7 @@ export default function FlowEditorPage() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="absolute -right-2 -top-2 z-30 flex h-5 w-5 items-center justify-center rounded-full bg-[#00E676]"
+                      className="absolute -right-2 -top-2 z-30 flex h-5 w-5 items-center justify-center rounded-full bg-[#10B981]"
                     >
                       <Check size={10} className="text-black" strokeWidth={3} />
                     </motion.div>

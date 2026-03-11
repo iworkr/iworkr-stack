@@ -16,7 +16,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#050505] p-6">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--background)] p-6">
       {/* Noise grain */}
       <div
         className="pointer-events-none fixed inset-0 z-50 opacity-[0.015] mix-blend-overlay"

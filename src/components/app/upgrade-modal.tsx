@@ -36,7 +36,7 @@ function BillingToggle({
   onChange: (yearly: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-center gap-1 rounded-full border border-white/[0.06] bg-white/[0.02] p-0.5">
+    <div className="flex items-center justify-center gap-1 rounded-full border border-[var(--border-base)] bg-[var(--card-bg)] p-0.5">
       <button
         onClick={() => onChange(false)}
         className={`relative rounded-full px-4 py-1.5 text-[12px] font-medium transition-all duration-200 ${
@@ -96,7 +96,7 @@ function PlanCard({
       className={`group relative flex flex-col rounded-xl border p-5 transition-all duration-200 ${
         isRecommended
           ? "border-emerald-500/20 bg-emerald-500/[0.03]"
-          : "border-white/[0.06] bg-white/[0.015] hover:border-white/[0.1]"
+          : "border-[var(--border-base)] bg-[var(--card-bg)] hover:border-[var(--border-active)]"
       }`}
     >
       {/* Recommended glow line */}
@@ -125,7 +125,7 @@ function PlanCard({
           className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
             isRecommended
               ? "border-emerald-500/20 bg-emerald-500/10"
-              : "border-white/[0.06] bg-white/[0.03]"
+              : "border-[var(--border-base)] bg-[var(--card-bg)]"
           }`}
         >
           <Icon
@@ -188,7 +188,7 @@ function PlanCard({
 
       {/* CTA */}
       {isCurrent ? (
-        <div className="flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] py-2.5 text-[12px] font-medium text-zinc-500">
+        <div className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--border-base)] bg-[var(--card-bg)] py-2.5 text-[12px] font-medium text-zinc-500">
           <Check size={12} />
           Current plan
         </div>
@@ -200,7 +200,7 @@ function PlanCard({
           className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-[12px] font-medium transition-all duration-200 ${
             isRecommended
               ? "bg-white text-black hover:bg-zinc-200"
-              : "border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06]"
+              : "border border-[var(--card-border)] bg-[var(--card-bg)] text-white hover:bg-[var(--subtle-bg-hover)]"
           }`}
         >
           {plan.hasFreeTrial ? "Start 14-day trial" : "Get started"}
@@ -283,7 +283,7 @@ export function UpgradeModal() {
               exit={{ opacity: 0, scale: 0.97, y: 8 }}
               transition={{ type: "spring", stiffness: 400, damping: 32 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-[860px] max-h-[90vh] overflow-y-auto rounded-xl border border-white/[0.06] bg-[#0A0A0A] shadow-2xl"
+              className="relative w-full max-w-[860px] max-h-[90vh] overflow-y-auto rounded-xl border border-[var(--border-base)] bg-[var(--surface-1)] shadow-2xl"
             >
               {/* Top emerald accent line */}
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
@@ -302,7 +302,7 @@ export function UpgradeModal() {
               {/* Close button */}
               <button
                 onClick={closeUpgrade}
-                className="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
+                className="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-[var(--subtle-bg)] hover:text-zinc-300"
               >
                 <X size={16} />
               </button>
@@ -345,7 +345,7 @@ export function UpgradeModal() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.05 }}
-                        className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03]"
+                        className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)]"
                       >
                         <Crown size={18} className="text-zinc-300" />
                       </motion.div>

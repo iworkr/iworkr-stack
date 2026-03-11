@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 
 const labels = [
-  { name: "Plumbing", color: "bg-[#00E676]" },
+  { name: "Plumbing", color: "bg-[#10B981]" },
   { name: "Electrical", color: "bg-amber-500" },
   { name: "HVAC", color: "bg-cyan-500" },
   { name: "Emergency", color: "bg-red-500" },
@@ -18,8 +18,19 @@ const labels = [
 export default function LabelsPage() {
   return (
     <>
+      {/* ─── Page intro — premium control-center header ─── */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-medium tracking-tight text-zinc-100">Labels</h1>
+        <div>
+          <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+            Labels
+          </span>
+          <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+            Labels
+          </h1>
+          <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+            Organize and categorize jobs with color-coded labels.
+          </p>
+        </div>
         <button className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-[13px] font-medium text-black hover:bg-zinc-200">
           <Plus size={14} /> New label
         </button>

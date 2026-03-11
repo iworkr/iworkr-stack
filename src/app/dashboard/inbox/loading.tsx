@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="flex h-full overflow-hidden bg-[#050505]">
+    <div className="flex h-full overflow-hidden bg-[var(--background)]">
       {/* Sidebar skeleton */}
       <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-white/[0.04] bg-zinc-950 px-3 py-4">
         <div className="mb-4 h-5 w-24 animate-pulse rounded bg-zinc-900" />

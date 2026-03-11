@@ -36,9 +36,15 @@ export default function IntegrationsPage() {
 
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-2xl font-medium tracking-tight text-zinc-100">Integrations</h1>
-        <p className="mt-1 text-[13px] text-zinc-600">
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Integrations
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Integrations
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
           Connect your workspace with your existing tools and services.
         </p>
       </div>

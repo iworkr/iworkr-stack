@@ -331,23 +331,37 @@ export default function FinancePage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="relative flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture — PRD Design Revamp */}
+      <div className="stealth-noise" />
+
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-5 py-2.5">
+        {/* Atmospheric glow — PRD Design Revamp */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[100px] bg-gradient-to-b from-emerald-500/[0.02] to-transparent" />
+        <div className="pointer-events-none absolute top-0 left-1/2 h-[80px] w-[350px] -translate-x-1/2 rounded-full bg-emerald-500/[0.03] blur-[60px]" />
+
+        <div className="relative flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="text-zinc-600">Dashboard</span>
-              <ChevronRightIcon size={10} className="text-zinc-700" />
-              <span className="font-medium text-white">Finance</span>
+            <div>
+              <div className="flex items-center gap-1.5 text-[12px] mb-0.5">
+                <span className="text-zinc-600">Dashboard</span>
+                <ChevronRightIcon size={10} className="text-zinc-700" />
+                <span className="font-medium text-white">Finance</span>
+              </div>
+              {/* Mono overline — PRD: "FINANCE" */}
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+                FINANCE
+              </span>
             </div>
-            <span className="rounded-full bg-white/[0.03] px-2 py-0.5 text-[11px] text-zinc-500">
+            <div className="ml-1 h-6 w-px bg-white/[0.06]" />
+            <span className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5 font-mono text-[11px] text-zinc-500">
               {invoices.length} invoices
             </span>
             {overdueInvoices.length > 0 && (
               <button
                 onClick={() => { setActiveTab("invoices"); }}
-                className="flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-400 transition-colors hover:bg-rose-500/15"
+                className="flex items-center gap-1 rounded-md border border-rose-500/15 bg-rose-500/[0.06] px-2 py-0.5 font-mono text-[11px] text-rose-400 transition-colors hover:bg-rose-500/10"
               >
                 <AlertTriangle size={9} />
                 {overdueInvoices.length} overdue
@@ -457,14 +471,15 @@ export default function FinancePage() {
             >
               {/* ── Revenue Banner + Chart ──────────────────── */}
               <div className="relative overflow-hidden border-b border-white/[0.03] px-6 pb-4 pt-6">
-                <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.012]" />
+                <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.015]" />
                 {/* Radial glow behind chart */}
                 <div className="pointer-events-none absolute bottom-0 left-1/2 h-[200px] w-[400px] -translate-x-1/2 rounded-full bg-emerald-500/[0.04] blur-[80px]" />
 
                 <div className="relative z-10">
-                  <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-zinc-600 uppercase">
+                  <div className="mb-1 flex items-center gap-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
                     <DollarSign size={10} />
-                    Total Revenue (MTD)
+                    Total Revenue
+                    <span className="rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[8px] text-zinc-700">MTD</span>
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="font-mono text-[48px] font-semibold tracking-tighter text-white">
@@ -574,7 +589,7 @@ export default function FinancePage() {
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="pointer-events-none absolute z-10 rounded-xl border border-white/[0.06] bg-[#0A0A0A]/95 px-4 py-2.5 shadow-xl backdrop-blur-xl"
+                        className="pointer-events-none absolute z-10 rounded-xl border border-white/[0.06] bg-[var(--surface-1)]/95 px-4 py-2.5 shadow-xl backdrop-blur-xl"
                         style={{
                           left: `${(chartPoints[hoveredPoint].x / chartW) * 100}%`,
                           top: -12,
@@ -609,42 +624,48 @@ export default function FinancePage() {
                 </div>
               </div>
 
-              {/* ── Metric Cards ────────────────────────────── */}
-              <div className="grid grid-cols-3 gap-4 p-6">
+              {/* ── Metric Cards — PRD: precise, analytical ────── */}
+              <div className="grid grid-cols-3 gap-3 p-6">
                 {/* Stripe Balance */}
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, duration: 0.3 }}
-                  className="group rounded-xl bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
+                  className="group relative overflow-hidden rounded-xl border border-white/[0.04] bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:border-white/[0.08]"
                 >
-                  <div className="mb-3 flex items-center gap-2 text-[10px] font-bold tracking-widest text-zinc-600 uppercase">
-                    <CreditCard size={11} className="transition-colors duration-200 group-hover:text-zinc-400" />
-                    Stripe Balance
-                  </div>
-                  <div className="mb-1 font-mono text-[28px] font-semibold tracking-tight text-white">
-                    <AnimatedNumber value={stripeBalance} />
-                  </div>
-                  <div className="mb-3 text-[11px] text-zinc-600">
-                    {(() => {
-                      const pending = payouts.find((p) => p.status === "pending" || p.status === "processing");
-                      if (!pending?.date) return "Available to payout";
-                      const arrival = new Date(pending.date);
-                      const today = new Date();
-                      const diffDays = Math.ceil((arrival.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                      if (diffDays <= 0) return "Arriving today";
-                      if (diffDays === 1) return "Arriving tomorrow";
-                      const dayName = arrival.toLocaleDateString("en-US", { weekday: "long" });
-                      return `Arriving ${dayName}`;
-                    })()}
-                  </div>
-                  <div className="h-[3px] overflow-hidden rounded-full bg-white/[0.04]">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: "65%" }}
-                      transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
-                      className="h-full rounded-full bg-emerald-500/60"
-                    />
+                  <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.008]" />
+                  <div className="relative">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+                        <CreditCard size={10} className="transition-colors duration-200 group-hover:text-zinc-400" />
+                        Stripe Balance
+                      </span>
+                      <span className="rounded-md bg-emerald-500/[0.06] px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-500/70 uppercase">Live</span>
+                    </div>
+                    <div className="mb-1 font-mono text-[32px] font-semibold tracking-tighter text-white">
+                      <AnimatedNumber value={stripeBalance} />
+                    </div>
+                    <div className="mb-3 font-mono text-[10px] text-zinc-600">
+                      {(() => {
+                        const pending = payouts.find((p) => p.status === "pending" || p.status === "processing");
+                        if (!pending?.date) return "Available to payout";
+                        const arrival = new Date(pending.date);
+                        const today = new Date();
+                        const diffDays = Math.ceil((arrival.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        if (diffDays <= 0) return "Arriving today";
+                        if (diffDays === 1) return "Arriving tomorrow";
+                        const dayName = arrival.toLocaleDateString("en-US", { weekday: "long" });
+                        return `Arriving ${dayName}`;
+                      })()}
+                    </div>
+                    <div className="h-[2px] overflow-hidden rounded-full bg-white/[0.04]">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: "65%" }}
+                        transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+                        className="h-full rounded-full bg-emerald-500/60"
+                      />
+                    </div>
                   </div>
                 </motion.div>
 
@@ -654,36 +675,44 @@ export default function FinancePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15, duration: 0.3 }}
                   onClick={() => { if (totalOverdue > 0) { setActiveTab("invoices"); } }}
-                  className={`group rounded-xl bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${totalOverdue > 0 ? "cursor-pointer animate-overdue-pulse" : ""}`}
+                  className={`group relative overflow-hidden rounded-xl border border-white/[0.04] bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:border-white/[0.08] ${totalOverdue > 0 ? "cursor-pointer border-rose-500/10 animate-overdue-pulse" : ""}`}
                 >
-                  <div className={`mb-3 flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase ${totalOverdue > 0 ? "text-rose-400/70" : "text-zinc-600"}`}>
-                    <AlertTriangle size={11} />
-                    Overdue
-                  </div>
-                  <div className={`mb-1 font-mono text-[28px] font-semibold tracking-tight ${totalOverdue > 0 ? "text-rose-400" : "text-zinc-500"}`}>
-                    <AnimatedNumber value={totalOverdue} />
-                  </div>
-                  <div className="space-y-1.5">
-                    {overdueInvoices.slice(0, 3).map((inv) => (
-                      <div
-                        key={inv.id}
-                        onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/finance/invoices/${inv.id}`); }}
-                        className="flex cursor-pointer items-center justify-between rounded-md px-2 py-1 transition-colors hover:bg-rose-500/[0.04]"
-                      >
-                        <div>
-                          <span className="font-mono text-[10px] text-zinc-600">{inv.id}</span>
-                          <span className="ml-2 text-[10px] text-zinc-500">{inv.clientName}</span>
+                  <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.008]" />
+                  <div className="relative">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className={`flex items-center gap-2 font-mono text-[9px] font-bold tracking-widest uppercase ${totalOverdue > 0 ? "text-rose-400/70" : "text-zinc-600"}`}>
+                        <AlertTriangle size={10} />
+                        Overdue
+                      </span>
+                      {overdueInvoices.length > 0 && (
+                        <span className="font-mono text-[9px] font-medium text-rose-400/60">{overdueInvoices.length} inv</span>
+                      )}
+                    </div>
+                    <div className={`mb-1 font-mono text-[32px] font-semibold tracking-tighter ${totalOverdue > 0 ? "text-rose-400" : "text-zinc-500"}`}>
+                      <AnimatedNumber value={totalOverdue} />
+                    </div>
+                    <div className="space-y-1">
+                      {overdueInvoices.slice(0, 3).map((inv) => (
+                        <div
+                          key={inv.id}
+                          onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/finance/invoices/${inv.id}`); }}
+                          className="flex cursor-pointer items-center justify-between rounded-md px-2 py-1 transition-colors hover:bg-rose-500/[0.04]"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[9px] text-zinc-700">{inv.id}</span>
+                            <span className="text-[10px] text-zinc-500">{inv.clientName}</span>
+                          </div>
+                          <span className="font-mono text-[10px] font-medium text-rose-400">
+                            ${inv.total.toLocaleString()}
+                          </span>
                         </div>
-                        <span className="font-mono text-[10px] font-medium text-rose-400">
-                          ${inv.total.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                    {overdueInvoices.length > 0 && (
-                      <button className="mt-1 text-[10px] text-zinc-600 transition-colors hover:text-rose-400">
-                        Send Reminders →
-                      </button>
-                    )}
+                      ))}
+                      {overdueInvoices.length > 0 && (
+                        <button className="mt-1 font-mono text-[9px] text-zinc-700 transition-colors hover:text-rose-400">
+                          Send Reminders →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
 
@@ -692,50 +721,53 @@ export default function FinancePage() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
-                  className="group rounded-xl bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
+                  className="group relative overflow-hidden rounded-xl border border-white/[0.04] bg-zinc-900/30 p-5 transition-all duration-200 hover:bg-zinc-900/40 hover:border-white/[0.08]"
                 >
-                  <div className="mb-3 flex items-center gap-2 text-[10px] font-bold tracking-widest text-zinc-600 uppercase">
-                    <Clock size={11} />
-                    Avg Payout Time
-                  </div>
-                  <div className="mb-1 flex items-baseline gap-1">
-                    <span className="font-mono text-[28px] font-semibold tracking-tight text-white">{avgPayoutDays}</span>
-                    <span className="text-[12px] text-zinc-600">days</span>
-                  </div>
-                  <div className="mb-3 text-[11px] text-zinc-600">Days to payment</div>
-                  <div className="mb-2">
-                    <Sparkline data={payoutSparkData} color={avgPayoutDays <= 3 ? "#10B981" : "#F59E0B"} />
-                  </div>
-                  {avgPayoutDays > 0 && (
-                    <div className={`flex items-center gap-1 text-[10px] ${avgPayoutDays <= 3 ? "text-emerald-400" : "text-amber-400"}`}>
-                      <TrendingUp size={9} />
-                      {avgPayoutDays <= 3 ? "Faster than industry avg" : "On par with industry avg"}
+                  <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.008]" />
+                  <div className="relative">
+                    <div className="mb-3 flex items-center gap-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+                      <Clock size={10} />
+                      Avg Payout Time
                     </div>
-                  )}
+                    <div className="mb-1 flex items-baseline gap-1">
+                      <span className="font-mono text-[32px] font-semibold tracking-tighter text-white">{avgPayoutDays}</span>
+                      <span className="font-mono text-[11px] text-zinc-600">days</span>
+                    </div>
+                    <div className="mb-3 font-mono text-[10px] text-zinc-700">Days to payment</div>
+                    <div className="mb-2">
+                      <Sparkline data={payoutSparkData} color={avgPayoutDays <= 3 ? "#10B981" : "#F59E0B"} />
+                    </div>
+                    {avgPayoutDays > 0 && (
+                      <div className={`flex items-center gap-1 font-mono text-[9px] ${avgPayoutDays <= 3 ? "text-emerald-400/80" : "text-amber-400/80"}`}>
+                        <TrendingUp size={9} />
+                        {avgPayoutDays <= 3 ? "Faster than industry avg" : "On par with industry avg"}
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               </div>
 
               {/* ── Recent Activity (Ledger preview) ───────── */}
               <div className="px-6 pb-6">
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-[10px] font-bold tracking-widest text-zinc-600 uppercase">
+                  <h3 className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
                     Recent Activity
                   </h3>
                   <button
                     onClick={() => setActiveTab("invoices")}
-                    className="flex items-center gap-1 text-[10px] text-zinc-600 transition-colors hover:text-emerald-400"
+                    className="flex items-center gap-1 font-mono text-[9px] text-zinc-700 transition-colors hover:text-emerald-400"
                   >
                     View all <ArrowRight size={9} />
                   </button>
                 </div>
 
                 {/* Column sub-header */}
-                <div className="mb-1 flex items-center px-3 py-1">
-                  <div className="w-20 text-[9px] font-bold tracking-widest text-zinc-700 uppercase">Status</div>
-                  <div className="w-20 text-[9px] font-bold tracking-widest text-zinc-700 uppercase">ID</div>
-                  <div className="flex-1 text-[9px] font-bold tracking-widest text-zinc-700 uppercase">Client</div>
-                  <div className="w-24 text-[9px] font-bold tracking-widest text-zinc-700 uppercase">Date</div>
-                  <div className="w-24 text-right text-[9px] font-bold tracking-widest text-zinc-700 uppercase">Amount</div>
+                <div className="mb-1 flex items-center rounded-md bg-white/[0.015] px-3 py-1.5">
+                  <div className="w-20 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">Status</div>
+                  <div className="w-20 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">ID</div>
+                  <div className="flex-1 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">Client</div>
+                  <div className="w-24 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">Date</div>
+                  <div className="w-24 text-right font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">Amount</div>
                   <div className="w-6" />
                 </div>
 
@@ -787,12 +819,12 @@ export default function FinancePage() {
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             >
               {/* Column headers */}
-              <div className="flex items-center border-b border-white/[0.03] bg-[#080808] px-5 py-1.5">
-                <div className="w-20 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
-                <div className="w-24 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Invoice</div>
-                <div className="w-24 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
-                <div className="min-w-0 flex-1 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
-                <div className="w-28 px-2 text-right text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Amount</div>
+              <div className="flex items-center border-b border-white/[0.06] bg-[var(--surface-1)]/80 backdrop-blur-sm px-5 py-2">
+                <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
+                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Invoice</div>
+                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
+                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
+                <div className="w-28 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Amount</div>
                 <div className="w-20" />
               </div>
 
@@ -888,12 +920,12 @@ export default function FinancePage() {
               exit="exit"
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="flex items-center border-b border-white/[0.03] bg-[#080808] px-5 py-1.5">
-                <div className="w-20 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
-                <div className="w-24 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Quote</div>
-                <div className="min-w-0 flex-1 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
-                <div className="w-28 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Valid Until</div>
-                <div className="w-28 px-2 text-right text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Amount</div>
+              <div className="flex items-center border-b border-white/[0.06] bg-[var(--surface-1)]/80 backdrop-blur-sm px-5 py-2">
+                <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
+                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Quote</div>
+                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
+                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Valid Until</div>
+                <div className="w-28 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Amount</div>
                 <div className="w-8" />
               </div>
 
@@ -968,8 +1000,8 @@ export default function FinancePage() {
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               className="p-6"
             >
-              <div className="mb-4 flex items-center gap-2 text-[10px] font-bold tracking-widest text-zinc-600 uppercase">
-                <Banknote size={12} />
+              <div className="mb-4 flex items-center gap-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+                <Banknote size={11} />
                 Bank Transfers
               </div>
               <div className="space-y-2">

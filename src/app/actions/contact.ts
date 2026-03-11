@@ -51,7 +51,7 @@ function InternalNotification({
         style: {
           fontSize: "20px",
           fontWeight: 600,
-          color: "#00E676",
+          color: "#10B981",
           marginBottom: "16px",
         },
       },
@@ -181,7 +181,7 @@ function AutoReply({ name }: { name: string }) {
           style: {
             display: "inline-block",
             padding: "10px 20px",
-            backgroundColor: "#00E676",
+            backgroundColor: "#10B981",
             color: "#000000",
             borderRadius: "8px",
             fontSize: "13px",

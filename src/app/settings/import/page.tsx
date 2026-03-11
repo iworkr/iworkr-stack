@@ -71,8 +71,18 @@ export default function ImportExportPage() {
 
   return (
     <>
-      <h1 className="mb-2 text-2xl font-medium tracking-tight text-zinc-100">Import / Export</h1>
-      <p className="mb-6 text-[13px] text-zinc-600">Import data from other platforms or export your workspace data.</p>
+      {/* ─── Page intro — premium control-center header ─── */}
+      <div className="mb-10">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+          Import &amp; Export
+        </span>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Import / Export
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          Import data from other platforms or export your workspace data.
+        </p>
+      </div>
 
       <input
         ref={fileInputRef}

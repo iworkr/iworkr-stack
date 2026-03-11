@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* Header */}
       <div className="border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
@@ -30,7 +30,7 @@ export default function Loading() {
       </div>
 
       {/* Table header */}
-      <div className="flex items-center border-b border-white/[0.03] bg-[#080808] px-5 py-1.5">
+      <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-1.5">
         <div className="w-8" />
         <div className="min-w-0 flex-1 px-2"><div className="h-2 w-14 animate-pulse rounded bg-zinc-800/40" /></div>
         <div className="w-28 px-2"><div className="h-2 w-8 animate-pulse rounded bg-zinc-800/40" /></div>

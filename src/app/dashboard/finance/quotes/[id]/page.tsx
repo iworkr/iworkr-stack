@@ -18,7 +18,7 @@ const statusConfig: Record<string, { label: string; dot: string; text: string; b
   draft: { label: "Draft", dot: "bg-zinc-500", text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-600/30" },
   sent: { label: "Sent", dot: "bg-sky-400", text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30" },
   viewed: { label: "Viewed", dot: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30" },
-  accepted: { label: "Approved", dot: "bg-[#00E676]", text: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", border: "border-[rgba(0,230,118,0.3)]" },
+  accepted: { label: "Approved", dot: "bg-[#10B981]", text: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.08)]", border: "border-[rgba(16,185,129,0.3)]" },
   rejected: { label: "Declined", dot: "bg-red-400", text: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30" },
   expired: { label: "Expired", dot: "bg-zinc-600", text: "text-zinc-600", bg: "bg-zinc-600/10", border: "border-zinc-700/30" },
 };
@@ -123,7 +123,7 @@ export default function QuoteDetailPage() {
               initial={{ scale: 1, y: 0, opacity: 1 }}
               animate={{ scale: 0.3, y: -300, x: 300, opacity: 0, rotate: -15 }}
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center gap-2 rounded-xl bg-[#00E676]/20 px-6 py-4 text-[#00E676] backdrop-blur-sm"
+              className="flex items-center gap-2 rounded-xl bg-[#10B981]/20 px-6 py-4 text-[#10B981] backdrop-blur-sm"
             >
               <Send size={24} />
               <span className="text-lg font-medium">Sent!</span>
@@ -152,7 +152,7 @@ export default function QuoteDetailPage() {
             onClick={handleCopyLink}
             className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300"
           >
-            {copied ? <Check size={11} className="text-[#00E676]" /> : <Copy size={11} />}
+            {copied ? <Check size={11} className="text-[#10B981]" /> : <Copy size={11} />}
             Copy Link
           </button>
           {quote.status === "draft" && (
@@ -160,7 +160,7 @@ export default function QuoteDetailPage() {
               whileTap={{ scale: 0.98 }}
               onClick={handleSend}
               disabled={sending}
-              className="flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[12px] font-medium text-black transition-colors duration-200 hover:bg-[#00C853]"
+              className="flex items-center gap-1.5 rounded-md bg-[#10B981] px-3 py-1.5 text-[12px] font-medium text-black transition-colors duration-200 hover:bg-[#059669]"
             >
               {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
               Send to Client
@@ -236,7 +236,7 @@ export default function QuoteDetailPage() {
                     </div>
                     <div className="flex justify-between border-t border-white/[0.08] pt-2 text-[15px] font-medium">
                       <span className="text-zinc-300">Total</span>
-                      <span className="tabular-nums text-[#00E676]">${Number(quote.total).toFixed(2)}</span>
+                      <span className="tabular-nums text-[#10B981]">${Number(quote.total).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -266,12 +266,12 @@ export default function QuoteDetailPage() {
 
               {/* Linked Invoice */}
               {quote.invoice_id && (
-                <div className="mt-6 flex items-center gap-2 rounded-lg border border-[rgba(0,230,118,0.15)] bg-[rgba(0,230,118,0.04)] px-4 py-3">
-                  <FileText size={14} className="text-[#00E676]" />
+                <div className="mt-6 flex items-center gap-2 rounded-lg border border-[rgba(16,185,129,0.15)] bg-[rgba(16,185,129,0.04)] px-4 py-3">
+                  <FileText size={14} className="text-[#10B981]" />
                   <span className="text-[12px] text-zinc-300">Invoice created from this quote</span>
                   <button
                     onClick={() => router.push(`/dashboard/finance/invoices/${quote.invoice_id}`)}
-                    className="ml-auto flex items-center gap-1 text-[11px] text-[#00E676] transition-colors hover:underline"
+                    className="ml-auto flex items-center gap-1 text-[11px] text-[#10B981] transition-colors hover:underline"
                   >
                     View Invoice <ExternalLink size={10} />
                   </button>

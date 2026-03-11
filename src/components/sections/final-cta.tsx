@@ -10,6 +10,9 @@ export function FinalCTA() {
   const isAuthenticated = initialized && !!user;
   return (
     <section className="relative overflow-hidden py-32 md:py-40">
+      {/* Line grid background */}
+      <div className="pointer-events-none absolute inset-0 bg-line-grid opacity-[0.3]" />
+
       {/* Massive logo background */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <div
@@ -20,13 +23,25 @@ export function FinalCTA() {
         </div>
       </div>
 
-      {/* Radial glow */}
+      {/* Primary emerald glow — commanding brand presence */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(16, 185, 129, 0.06) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Secondary radial glow */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: `radial-gradient(ellipse at center, var(--glow-soft) 0%, transparent 60%)`,
         }}
       />
+
+      {/* Noise overlay */}
+      <div className="stealth-noise" />
 
       <div className="relative z-10 mx-auto max-w-[1200px] px-6 text-center md:px-12">
         <FadeIn>
@@ -63,7 +78,16 @@ export function FinalCTA() {
               </SpotlightButton>
             ) : (
               <>
-                <SpotlightButton size="lg" href="/auth">
+                <SpotlightButton
+                  size="lg"
+                  href="/auth"
+                  style={{
+                    background: "var(--brand)",
+                    color: "#fff",
+                    borderColor: "transparent",
+                    boxShadow: "0 0 30px -8px rgba(16, 185, 129, 0.4)",
+                  }}
+                >
                   Start free trial
                   <ArrowRight size={16} />
                 </SpotlightButton>

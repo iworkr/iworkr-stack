@@ -270,7 +270,7 @@ class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserv
         statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
         systemNavigationBarColor:
-            isDark ? const Color(0xFF050505) : const Color(0xFFFAFAFA),
+            isDark ? const Color(0xFF050505) : const Color(0xFFF9FAFB),
         systemNavigationBarIconBrightness:
             isDark ? Brightness.light : Brightness.dark,
       ),

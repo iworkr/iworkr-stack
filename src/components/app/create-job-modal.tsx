@@ -393,7 +393,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             layout
-            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#141414] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
+            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-[var(--card-border)] bg-[var(--surface-2)] shadow-[var(--shadow-deep)]"
             style={{ maxHeight: "85vh" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -449,8 +449,8 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                     >
                       {/* Map card */}
                       {selectedClient.address && (
-                        <div className="flex-1 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.06)]">
-                          <div className="relative h-[100px] bg-[#0a0a0a]">
+                        <div className="flex-1 overflow-hidden rounded-lg border border-[var(--border-base)]">
+                          <div className="relative h-[100px] bg-[var(--surface-1)]">
                             <div className="absolute inset-0 opacity-[0.03]">
                               {Array.from({ length: 5 }).map((_, i) => (
                                 <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-white" style={{ top: `${i * 25}%` }} />
@@ -465,18 +465,18 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.2 }}
                               >
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#00E676] shadow-lg shadow-[#00E676]/30">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand)] shadow-lg shadow-emerald-500/30">
                                   <MapPin size={10} className="text-white" />
                                 </div>
                                 <motion.div
                                   animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
                                   transition={{ duration: 2, repeat: Infinity }}
-                                  className="absolute inset-0 rounded-full border border-[#00E676]"
+                                  className="absolute inset-0 rounded-full border border-[var(--brand)]"
                                 />
                               </motion.div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1.5 bg-[rgba(255,255,255,0.02)] px-3 py-1.5 text-[10px] text-zinc-500">
+                          <div className="flex items-center gap-1.5 bg-[var(--card-bg)] px-3 py-1.5 text-[10px] text-zinc-500">
                             <MapPin size={9} className="text-zinc-600" />
                             {selectedClient.address}
                           </div>
@@ -484,7 +484,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                       )}
 
                       {/* Client health snapshot */}
-                      <div className="w-[200px] shrink-0 space-y-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
+                      <div className="w-[200px] shrink-0 space-y-2 rounded-lg border border-[var(--border-base)] bg-[var(--card-bg)] p-3">
                         <div className="text-[9px] font-medium tracking-wider text-zinc-600 uppercase">
                           Client Health
                         </div>
@@ -535,7 +535,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -4 }}
                           transition={{ duration: 0.1 }}
-                          className="absolute top-full left-0 right-0 z-20 mt-2 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                          className="absolute top-full left-0 right-0 z-20 mt-2 overflow-hidden rounded-lg border border-[var(--border-active)] bg-[var(--surface-1)] p-1 shadow-xl"
                         >
                           {filteredClients.map((c) => (
                             <button
@@ -591,7 +591,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   <div className="relative">
                     <button
                       onClick={() => setActivePill(activePill === "status" ? null : "status")}
-                      className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+                      className="flex items-center gap-1.5 rounded-md border border-[var(--card-border)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[var(--card-border-hover)] hover:text-zinc-300"
                     >
                       <StatusIcon status={status} size={12} />
                       {statuses.find((s) => s.value === status)?.label}
@@ -618,7 +618,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   <div className="relative">
                     <button
                       onClick={() => setActivePill(activePill === "priority" ? null : "priority")}
-                      className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+                      className="flex items-center gap-1.5 rounded-md border border-[var(--card-border)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[var(--card-border-hover)] hover:text-zinc-300"
                     >
                       <PriorityIcon priority={priority} size={12} />
                       {priorities.find((p) => p.value === priority)?.label || "Priority"}
@@ -645,7 +645,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   <div className="relative">
                     <button
                       onClick={() => setActivePill(activePill === "assignee" ? null : "assignee")}
-                      className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300"
+                      className="flex items-center gap-1.5 rounded-md border border-[var(--card-border)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[var(--card-border-hover)] hover:text-zinc-300"
                     >
                       <User size={11} className="text-zinc-600" />
                       {assignee}
@@ -665,7 +665,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
 
                   {/* Target Date */}
                   <div className="relative flex items-center gap-1.5">
-                    <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[rgba(255,255,255,0.15)] hover:text-zinc-300">
+                    <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-[var(--card-border)] px-2.5 py-1 text-[12px] text-zinc-400 transition-colors hover:border-[var(--card-border-hover)] hover:text-zinc-300">
                       <Calendar size={11} className="text-zinc-600" />
                       {targetDate ? (
                         <span className="text-zinc-300">
@@ -702,13 +702,13 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
               {/* ══════════════════════════════════════════════ */}
               {/* ZONE 3: Financials (The Quote Engine)          */}
               {/* ══════════════════════════════════════════════ */}
-              <div className="border-t border-[rgba(255,255,255,0.06)] px-6 py-4">
+              <div className="border-t border-[var(--border-base)] px-6 py-4">
                 {/* Toggle */}
                 <div className="mb-3 flex items-center justify-between">
                   <label className="flex items-center gap-2 text-[12px] text-zinc-400">
                     <button
                       onClick={() => setEstimateMode(!estimateMode)}
-                      className={`relative h-[18px] w-[32px] rounded-full transition-colors ${estimateMode ? "bg-[#00E676]" : "bg-zinc-700"}`}
+                      className={`relative h-[18px] w-[32px] rounded-full transition-colors ${estimateMode ? "bg-[var(--brand)]" : "bg-zinc-700"}`}
                     >
                       <motion.div
                         layout
@@ -741,10 +741,10 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                       className="overflow-hidden"
                     >
                       {/* Receipt UI */}
-                      <div className="mb-3 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+                      <div className="mb-3 rounded-lg border border-[var(--border-base)] bg-[var(--card-bg)]">
                         {/* Line items */}
                         {lineItems.length > 0 && (
-                          <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+                          <div className="divide-y divide-[var(--subtle-bg)]">
                             {lineItems.map((li) => (
                               <motion.div
                                 key={li.id}
@@ -777,7 +777,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                         )}
 
                         {/* Add item input */}
-                        <div className="relative border-t border-[rgba(255,255,255,0.04)] px-4 py-2.5">
+                        <div className="relative border-t border-[var(--subtle-bg)] px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <Plus size={12} className="shrink-0 text-zinc-600" />
                             <input
@@ -820,7 +820,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                       {lineItems.length > 0 && (
                         <motion.div
                           layout
-                          className="flex items-center justify-between rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
+                          className="flex items-center justify-between rounded-lg border border-[var(--border-base)] bg-[var(--card-bg)] px-4 py-3"
                         >
                           <span className="text-[11px] font-medium text-zinc-500">Estimated Total</span>
                           <motion.span
@@ -864,7 +864,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
                   disabled={!title.trim() || saving}
-                  className="flex items-center gap-2 rounded-md bg-[#5E6AD2] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-[#4f5bc4] disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-md bg-[var(--brand)] px-4 py-2 text-[13px] font-medium text-black transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                 >
                   <Send size={12} />
                   {saving ? "Saving..." : "Send Quote & Save"}
@@ -875,7 +875,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
                   disabled={!title.trim() || saving}
-                  className="flex items-center gap-2 rounded-md bg-[#5E6AD2] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-[#4f5bc4] disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-md bg-[var(--brand)] px-4 py-2 text-[13px] font-medium text-black transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                 >
                   <Check size={12} />
                   {saving ? "Saving..." : "Create Issue"}
@@ -893,7 +893,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="fixed z-[100] overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] p-1 shadow-xl"
+                className="fixed z-[100] overflow-hidden rounded-[8px] border border-[var(--border-active)] bg-[var(--surface-1)] p-1 shadow-xl"
                 style={{
                   top: catalogDropdownPos.top,
                   left: catalogDropdownPos.left,

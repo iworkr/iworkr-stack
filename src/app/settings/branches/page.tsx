@@ -125,16 +125,23 @@ export default function BranchesPage() {
 
   return (
     <div>
-      {/* Header */}
+      {/* ─── Page intro — premium control-center header ─── */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-[18px] font-semibold text-zinc-100">Branches</h1>
-          <p className="mt-1 text-[13px] text-zinc-500">Manage your multi-location operations.</p>
+          <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+            Branches
+          </span>
+          <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+            Branches
+          </h1>
+          <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+            Manage your multi-location operations.
+          </p>
         </div>
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={openCreateModal}
-          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-[#00E676] to-[#00C853] px-3 py-2 text-[12px] font-semibold text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(0,230,118,0.4)]"
+          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-[#10B981] to-[#059669] px-3 py-2 text-[12px] font-semibold text-black transition-all hover:shadow-[0_0_20px_-4px_rgba(16,185,129,0.4)]"
         >
           <Plus size={14} />
           Add Branch
@@ -150,7 +157,7 @@ export default function BranchesPage() {
         <div className="flex flex-col items-center justify-center rounded-xl border border-[rgba(255,255,255,0.06)] py-16">
           <Building2 size={24} className="mb-2 text-zinc-800" />
           <p className="text-[12px] text-zinc-600">No branches yet</p>
-          <button onClick={openCreateModal} className="mt-3 text-[12px] text-[#00E676] hover:underline">
+          <button onClick={openCreateModal} className="mt-3 text-[12px] text-[#10B981] hover:underline">
             Add your first branch
           </button>
         </div>
@@ -166,15 +173,15 @@ export default function BranchesPage() {
             >
               <div className="flex items-center gap-4">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                  b.is_headquarters ? "bg-[#00E676]/10" : "bg-zinc-800"
+                  b.is_headquarters ? "bg-[#10B981]/10" : "bg-zinc-800"
                 }`}>
-                  {b.is_headquarters ? <Crown size={16} className="text-[#00E676]" /> : <Building2 size={16} className="text-zinc-500" />}
+                  {b.is_headquarters ? <Crown size={16} className="text-[#10B981]" /> : <Building2 size={16} className="text-zinc-500" />}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="text-[13px] font-medium text-zinc-200">{b.name}</p>
                     {b.is_headquarters && (
-                      <span className="rounded-full bg-[#00E676]/10 px-2 py-0.5 text-[9px] font-medium text-[#00E676]">HQ</span>
+                      <span className="rounded-full bg-[#10B981]/10 px-2 py-0.5 text-[9px] font-medium text-[#10B981]">HQ</span>
                     )}
                     <span className={`rounded-full px-2 py-0.5 text-[9px] font-medium ${
                       b.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-800 text-zinc-500"
@@ -247,7 +254,7 @@ export default function BranchesPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[480px] rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0A0A0A] shadow-2xl"
+              className="w-full max-w-[480px] rounded-xl border border-[rgba(255,255,255,0.1)] bg-[var(--surface-1)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
                 <h2 className="text-[14px] font-medium text-zinc-200">
@@ -265,22 +272,22 @@ export default function BranchesPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Gold Coast Office"
-                    className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#00E676]/30"
+                    className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-[10px] text-zinc-600">City</label>
-                    <input value={city} onChange={(e) => setCity(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#00E676]/30" />
+                    <input value={city} onChange={(e) => setCity(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
                   </div>
                   <div>
                     <label className="mb-1 block text-[10px] text-zinc-600">State</label>
-                    <input value={state} onChange={(e) => setState(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#00E676]/30" />
+                    <input value={state} onChange={(e) => setState(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
                   </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] text-zinc-600">Address</label>
-                  <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#00E676]/30" />
+                  <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -291,17 +298,17 @@ export default function BranchesPage() {
                   </div>
                   <div>
                     <label className="mb-1 block text-[10px] text-zinc-600">Tax Rate (%)</label>
-                    <input type="number" step="0.01" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#00E676]/30" />
+                    <input type="number" step="0.01" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-[10px] text-zinc-600">Phone</label>
-                    <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#00E676]/30" />
+                    <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
                   </div>
                   <div>
                     <label className="mb-1 block text-[10px] text-zinc-600">Email</label>
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#00E676]/30" />
+                    <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
                   </div>
                 </div>
               </div>
@@ -312,7 +319,7 @@ export default function BranchesPage() {
                   whileTap={{ scale: 0.97 }}
                   onClick={handleSave}
                   disabled={!name.trim() || saving}
-                  className="flex items-center gap-1.5 rounded-md bg-gradient-to-b from-[#00E676] to-[#00C853] px-4 py-1.5 text-[12px] font-semibold text-black disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-md bg-gradient-to-b from-[#10B981] to-[#059669] px-4 py-1.5 text-[12px] font-semibold text-black disabled:opacity-50"
                 >
                   {saving && <Loader2 size={12} className="animate-spin" />}
                   {editBranch ? "Update" : "Create"}

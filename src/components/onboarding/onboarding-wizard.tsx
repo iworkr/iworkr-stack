@@ -399,12 +399,20 @@ export function OnboardingWizard({
   }, [step, passwordValid, fullName, submitting, handleCreateAccount, handleCompleteProfile]);
 
   /* ── Dynamic brand color for CTA ───────────────────────── */
-  const brandColor = inviteContext.brandColor || "#00E676";
+  const brandColor = inviteContext.brandColor || "#10B981";
   const brandTextColor = getContrastTextColor(brandColor);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#050505] p-4">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center bg-[var(--background)] p-4">
+      {/* Noise — standardized */}
+      <div className="stealth-noise fixed" />
+
+      {/* Atmospheric glow — command center ambience */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-[var(--brand)] opacity-[0.025] blur-[180px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
         {/* ── Workspace Logo ───────────────────────────────── */}
         {inviteContext.organizationLogo && (
           <motion.div

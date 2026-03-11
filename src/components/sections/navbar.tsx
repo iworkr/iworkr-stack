@@ -41,7 +41,7 @@ export function Navbar() {
           className="absolute inset-x-0 bottom-0 h-px"
           style={{
             opacity: borderOpacity,
-            backgroundColor: "var(--text-primary)",
+            backgroundColor: "var(--card-border-hover)",
           }}
         />
 
@@ -96,7 +96,16 @@ export function Navbar() {
                 >
                   Sign in
                 </Link>
-                <SpotlightButton size="sm" href="/auth">
+                <SpotlightButton
+                  size="sm"
+                  href="/auth"
+                  style={{
+                    background: "var(--brand)",
+                    color: "#fff",
+                    borderColor: "transparent",
+                    boxShadow: "var(--brand-glow-subtle)",
+                  }}
+                >
                   Start free
                 </SpotlightButton>
               </>
@@ -140,7 +149,17 @@ export function Navbar() {
                   Go to Dashboard
                 </SpotlightButton>
               ) : (
-                <SpotlightButton size="md" className="w-full" href="/auth">
+                <SpotlightButton
+                  size="md"
+                  className="w-full"
+                  href="/auth"
+                  style={{
+                    background: "var(--brand)",
+                    color: "#fff",
+                    borderColor: "transparent",
+                    boxShadow: "var(--brand-glow-subtle)",
+                  }}
+                >
                   Start free trial
                 </SpotlightButton>
               )}

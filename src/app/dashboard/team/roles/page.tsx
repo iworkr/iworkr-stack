@@ -124,7 +124,9 @@ export default function RolesPage() {
   const isOwnerRole = selectedRoleId === "owner";
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
       {/* ── Back Nav ──────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 px-5 py-2.5 backdrop-blur-xl">
         <button
@@ -141,7 +143,7 @@ export default function RolesPage() {
       {/* ── Split View ────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Role List */}
-        <div className="w-[240px] shrink-0 border-r border-white/[0.04] bg-[#080808]">
+        <div className="w-[240px] shrink-0 border-r border-white/[0.04] bg-[var(--surface-1)]">
           <div className="border-b border-white/[0.04] px-4 py-3">
             <h2 className="text-[12px] font-medium text-zinc-300">Roles</h2>
             <p className="text-[10px] text-zinc-600">{roles.length} configured</p>
@@ -234,7 +236,7 @@ export default function RolesPage() {
                   {/* Permission Matrix */}
                   <div className="overflow-hidden rounded-lg border border-white/[0.04]">
                     {/* Header row */}
-                    <div className="sticky top-0 z-10 grid grid-cols-6 gap-0 bg-[#0A0A0A]">
+                    <div className="sticky top-0 z-10 grid grid-cols-6 gap-0 bg-[var(--surface-1)]">
                       <div className="border-b border-r border-white/[0.04] px-3 py-2.5">
                         <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-600">Module</span>
                       </div>

@@ -36,7 +36,7 @@ function ZenEmptyState() {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.5 }}
-        className="mt-3 text-[13px] font-medium text-zinc-400"
+        className="mt-3 text-[13px] font-medium text-[var(--text-muted)]"
       >
         Inbox Zero. Nice work.
       </motion.p>
@@ -44,10 +44,20 @@ function ZenEmptyState() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9 }}
-        className="mt-1 text-[10px] text-zinc-700"
+        className="mt-1 text-[10px] text-[var(--text-dim)]"
       >
         No unread notifications
       </motion.p>
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.1 }}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[9px] tracking-widest uppercase"
+        style={{ background: "var(--ghost-emerald)", color: "var(--ghost-emerald-text)" }}
+      >
+        <Check size={9} />
+        All caught up
+      </motion.div>
     </div>
   );
 }
@@ -76,14 +86,17 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
           onClick={() => router.push("/dashboard/inbox")}
         >
           <div className="relative">
-            <Inbox size={16} className="text-zinc-600" />
+            <Inbox size={16} className="text-[var(--text-dim)]" />
             {unreadCount > 0 && (
-              <span className="absolute -right-2 -top-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-emerald-500 px-1 font-mono text-[8px] font-bold text-black">
+              <span
+                className="absolute -right-2 -top-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-1 font-mono text-[8px] font-bold tabular-nums text-black"
+                style={{ background: "var(--brand)" }}
+              >
                 {unreadCount}
               </span>
             )}
           </div>
-          <span className="mt-2 text-[10px] text-zinc-600">
+          <span className="mt-2 font-mono text-[9px] text-[var(--text-dim)]">
             {unreadCount > 0 ? `${unreadCount} unread` : "All clear"}
           </span>
         </div>
@@ -96,10 +109,13 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
       delay={0.15}
       header={
         <div className="flex items-center gap-2">
-          <Inbox size={14} className="text-zinc-600" />
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Triage</span>
+          <Inbox size={14} className="text-[var(--text-dim)]" />
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Triage</span>
           {unreadCount > 0 && (
-            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500/[0.08] px-1.5 font-mono text-[9px] font-medium text-emerald-400">
+            <span
+              className="flex h-4 min-w-[16px] items-center justify-center rounded-full px-1.5 font-mono text-[9px] font-medium tabular-nums"
+              style={{ background: "var(--ghost-emerald)", color: "var(--ghost-emerald-text)" }}
+            >
               {unreadCount}
             </span>
           )}
@@ -130,7 +146,7 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
       ) : displayItems.length === 0 ? (
         <ZenEmptyState />
       ) : (
-        <div className="divide-y divide-white/[0.02]">
+        <div className="divide-y divide-[var(--border-base)]">
           {displayItems.map((item, i) => (
             <motion.button
               key={item.id}
@@ -140,20 +156,24 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
               onClick={() => { markAsRead(item.id); router.push("/dashboard/inbox"); }}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
-              className="group flex w-full items-start gap-2.5 px-5 py-3 text-left transition-all duration-200 hover:bg-white/[0.015]"
+              className="group flex w-full items-start gap-2.5 px-5 py-3 text-left transition-all duration-200 hover:bg-[var(--subtle-bg)]"
+              style={{ borderLeft: "2px solid var(--brand)" }}
             >
-              <div className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full bg-emerald-500" />
+              <div
+                className="mt-2 h-[6px] w-[6px] shrink-0 rounded-full shadow-[0_0_6px_var(--brand-glow)]"
+                style={{ background: "var(--brand)" }}
+              />
               <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGrad(item.senderInitials)}`}>
                 <span className="text-[8px] font-semibold text-zinc-300">{item.senderInitials}</span>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[11px] font-medium text-zinc-300 transition-colors group-hover:text-zinc-100">
+                  <span className="truncate text-[11px] font-semibold text-[var(--text-primary)] transition-colors group-hover:text-[var(--text-heading)]">
                     {item.sender}
                   </span>
-                  <span className="shrink-0 font-mono text-[9px] text-zinc-800">{item.time}</span>
+                  <span className="shrink-0 font-mono text-[9px] tabular-nums text-[var(--text-dim)]">{item.time}</span>
                 </div>
-                <p className="truncate text-[10px] text-zinc-600">{item.body}</p>
+                <p className="truncate text-[10px] text-[var(--text-muted)]">{item.body}</p>
               </div>
 
               {hoveredId === item.id && (
@@ -164,7 +184,8 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
                 >
                   <button
                     onClick={(e) => { e.stopPropagation(); archive(item.id); }}
-                    className="rounded-lg p-1.5 text-zinc-700 transition-colors hover:bg-emerald-500/[0.08] hover:text-emerald-400"
+                    className="rounded-lg p-1.5 transition-colors hover:text-[var(--ghost-emerald-text)]"
+                    style={{ color: "var(--text-dim)" }}
                   >
                     <Check size={11} />
                   </button>
@@ -177,7 +198,7 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
             <div className="px-5 py-2.5 text-center">
               <button
                 onClick={() => router.push("/dashboard/inbox")}
-                className="font-mono text-[10px] text-zinc-700 transition-colors hover:text-emerald-500"
+                className="font-mono text-[10px] tabular-nums text-[var(--text-dim)] transition-colors hover:text-[var(--brand)]"
               >
                 +{unreadItems.length - maxItems} more
               </button>

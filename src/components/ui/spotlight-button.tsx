@@ -9,6 +9,7 @@ interface SpotlightButtonProps {
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md" | "lg";
   className?: string;
+  style?: React.CSSProperties;
   href?: string;
   onClick?: () => void;
 }
@@ -33,18 +34,19 @@ export function SpotlightButton({
   variant = "primary",
   size = "md",
   className = "",
+  style,
   href,
   onClick,
 }: SpotlightButtonProps) {
   const baseClasses = `inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`;
-  const radiusStyle = { borderRadius: "var(--radius-button)" };
+  const mergedStyle: React.CSSProperties = { borderRadius: "var(--radius-button)", ...style };
 
   if (href) {
     const isInternal = href.startsWith("/");
 
     if (isInternal) {
       return (
-        <Link href={href} className={baseClasses} style={radiusStyle}>
+        <Link href={href} className={baseClasses} style={mergedStyle}>
           {children}
         </Link>
       );
@@ -56,7 +58,7 @@ export function SpotlightButton({
         whileTap={{ scale: 0.98 }}
         transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
         className={baseClasses}
-        style={radiusStyle}
+        style={mergedStyle}
       >
         {children}
       </motion.a>
@@ -69,7 +71,7 @@ export function SpotlightButton({
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
       className={baseClasses}
-      style={radiusStyle}
+      style={mergedStyle}
     >
       {children}
     </motion.button>

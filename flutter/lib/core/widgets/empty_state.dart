@@ -50,8 +50,8 @@ class EmptyState extends StatelessWidget {
                     ),
                   )
                       .animate(onPlay: (c) => c.repeat())
-                      .scaleXY(begin: 0.8, end: 1.8, duration: 2000.ms, curve: Curves.easeOut)
-                      .fadeOut(duration: 2000.ms),
+                      .scaleXY(begin: 1, end: 1.8, duration: 2000.ms, curve: Curves.easeOut)
+                      .fade(begin: 0.3, end: 0, duration: 2000.ms),
 
                   // Inner icon container (zen-breathe: 3s)
                   Container(
@@ -65,7 +65,8 @@ class EmptyState extends StatelessWidget {
                     child: Icon(icon, size: 26, color: ObsidianTheme.textTertiary),
                   )
                       .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scaleXY(begin: 1, end: 1.08, duration: 3000.ms, curve: Curves.easeInOut),
+                      .scaleXY(begin: 1, end: 1.15, duration: 3000.ms, curve: Curves.easeInOut)
+                      .fade(begin: 0.6, end: 1, duration: 3000.ms, curve: Curves.easeInOut),
                 ],
               ),
             ),

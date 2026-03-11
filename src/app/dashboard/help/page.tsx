@@ -50,7 +50,7 @@ const fadeUp = {
 /* ── Category config ──────────────────────────────────── */
 
 const categories = [
-  { id: "getting-started", label: "Getting Started", icon: Rocket, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]" },
+  { id: "getting-started", label: "Getting Started", icon: Rocket, color: "text-emerald-500", bg: "bg-emerald-500/[0.08]" },
   { id: "workflow", label: "Workflow & Jobs", icon: GitBranch, color: "text-amber-400", bg: "bg-amber-500/8" },
   { id: "billing", label: "Billing & Finance", icon: DollarSign, color: "text-blue-400", bg: "bg-blue-500/8" },
   { id: "team", label: "Team & RBAC", icon: Shield, color: "text-violet-400", bg: "bg-violet-500/8" },
@@ -90,7 +90,7 @@ function ThinkingAnimation() {
         animate={{ rotate: 360 }}
         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
       >
-        <Cpu size={18} className="text-[#00E676]" />
+        <Cpu size={18} className="text-emerald-500" />
       </motion.div>
       <div className="flex gap-1">
         {[0, 1, 2].map((i) => (
@@ -98,7 +98,7 @@ function ThinkingAnimation() {
             key={i}
             animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1, 0.8] }}
             transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-            className="h-1.5 w-1.5 rounded-full bg-[#00E676]"
+            className="h-1.5 w-1.5 rounded-full bg-emerald-500"
           />
         ))}
       </div>
@@ -185,7 +185,10 @@ export default function HelpHubPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
-          <h1 className="text-4xl font-medium tracking-tight text-[#EDEDED] md:text-5xl">
+          <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-500/70">
+            Intelligence Center
+          </p>
+          <h1 className="text-4xl font-medium tracking-tight text-[var(--text-primary)] md:text-5xl">
             Help Hub
           </h1>
           <p className="mt-3 text-[15px] text-zinc-500">
@@ -193,7 +196,7 @@ export default function HelpHubPage() {
           </p>
         </motion.div>
 
-        {/* AI Search Bar */}
+        {/* AI Search Bar — command surface */}
         <div className="relative mx-auto mt-8 max-w-2xl">
           <div className="relative">
             <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" />
@@ -204,12 +207,12 @@ export default function HelpHubPage() {
               onChange={(e) => handleSearchChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleAiSearch(); }}
               placeholder="How do I create a recurring job?"
-              className="h-14 w-full rounded-lg border border-white/10 bg-zinc-900/50 pl-12 pr-24 text-[15px] text-zinc-200 placeholder-zinc-600 outline-none backdrop-blur-sm transition-all focus:border-[#00E676]/40 focus:shadow-[0_0_30px_-8px_rgba(0,230,118,0.15)]"
+              className="h-14 w-full rounded-[var(--radius-input)] border border-[var(--border-active)] bg-[var(--surface-1)] pl-12 pr-24 text-[15px] text-zinc-200 placeholder-zinc-600 shadow-[var(--shadow-inset-bevel)] outline-none backdrop-blur-sm transition-all focus:border-emerald-500/40 focus:shadow-[0_0_30px_-8px_rgba(16,185,129,0.15)]"
             />
             <button
               onClick={handleAiSearch}
               disabled={aiThinking || !searchQuery.trim()}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-[#00E676] px-4 py-2 text-[12px] font-medium text-black transition-all hover:bg-[#00C853] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-[var(--radius-button)] bg-emerald-500 px-4 py-2 text-[12px] font-medium text-black transition-all hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {aiThinking ? "Thinking..." : "Ask AI"}
             </button>
@@ -222,15 +225,15 @@ export default function HelpHubPage() {
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
-                className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl"
+                className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-[var(--radius-dropdown)] border border-[var(--border-active)] bg-[var(--surface-1)] shadow-[var(--shadow-dropdown)]"
               >
                 {searchResults.map((r) => (
                   <button
                     key={r.id}
                     onClick={() => { setSelectedArticle(r); setSearchResults([]); }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--subtle-bg)]"
                   >
-                    <BookOpen size={14} className="shrink-0 text-[#00E676]" />
+                    <BookOpen size={14} className="shrink-0 text-emerald-500" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-medium text-zinc-200">{r.title}</p>
                       <p className="truncate text-[11px] text-zinc-600">{r.summary}</p>
@@ -260,17 +263,17 @@ export default function HelpHubPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mx-auto mt-6 max-w-2xl text-left"
             >
-              <div className="rounded-2xl border border-[#00E676]/15 bg-[rgba(0,230,118,0.03)] p-6">
+              <div className="rounded-[var(--radius-card)] border border-emerald-500/15 bg-emerald-500/[0.03] p-6">
                 <div className="mb-3 flex items-center gap-2">
-                  <Cpu size={14} className="text-[#00E676]" />
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-[#00E676]">AI Answer</span>
+                  <Cpu size={14} className="text-emerald-500" />
+                  <span className="font-mono text-[10px] font-medium uppercase tracking-[0.15em] text-emerald-500">AI Answer</span>
                 </div>
                 <div className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-zinc-300">
                   {aiAnswer.answer}
                 </div>
                 {aiAnswer.sources.length > 0 && (
-                  <div className="mt-4 border-t border-white/[0.06] pt-3">
-                    <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-zinc-600">Sources</p>
+                  <div className="mt-4 border-t border-[var(--border-base)] pt-3">
+                    <p className="mb-2 font-mono text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-600">Sources</p>
                     <div className="flex flex-wrap gap-2">
                       {aiAnswer.sources.map((s) => (
                         <button
@@ -279,7 +282,7 @@ export default function HelpHubPage() {
                             const a = articles.find((art) => art.slug === s.slug);
                             if (a) setSelectedArticle(a);
                           }}
-                          className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 text-[11px] text-zinc-400 transition-colors hover:border-[#00E676]/20 hover:text-zinc-200"
+                          className="flex items-center gap-1 rounded-[var(--radius-badge)] border border-[var(--border-base)] bg-[var(--subtle-bg)] px-2.5 py-1 text-[11px] text-zinc-400 transition-colors hover:border-emerald-500/20 hover:text-zinc-200"
                         >
                           <FileText size={10} /> {s.title}
                         </button>
@@ -295,7 +298,7 @@ export default function HelpHubPage() {
 
       {/* ── Knowledge Grid (Bento Box) ───────────────── */}
       <motion.div variants={fadeUp} className="mb-16">
-        <h2 className="mb-6 text-[13px] font-medium uppercase tracking-wider text-zinc-600">
+        <h2 className="mb-6 font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-600">
           Knowledge Base
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -309,11 +312,11 @@ export default function HelpHubPage() {
                   const first = grouped[cat.id]?.[0];
                   if (first) setSelectedArticle(first);
                 }}
-                className="group cursor-pointer rounded-xl border border-white/5 bg-zinc-950 p-6 text-left transition-all hover:border-[#00E676]/20"
+                className="group cursor-pointer rounded-[var(--radius-card)] border border-[var(--border-base)] bg-[var(--surface-1)] p-6 text-left shadow-[var(--shadow-inset-bevel)] transition-all hover:border-emerald-500/20 hover:bg-[var(--surface-2)]"
               >
                 <AnimatedIcon icon={cat.icon} color={cat.color} bg={cat.bg} />
                 <h3 className="mt-4 text-[14px] font-medium text-white">{cat.label}</h3>
-                <p className="mt-1 text-[12px] text-zinc-600">{count} Article{count !== 1 ? "s" : ""}</p>
+                <p className="mt-1 font-mono text-[11px] text-zinc-600">{count} article{count !== 1 ? "s" : ""}</p>
               </motion.button>
             );
           })}
@@ -321,11 +324,11 @@ export default function HelpHubPage() {
           <motion.button
             whileHover={{ borderColor: "rgba(255,255,255,0.1)" }}
             onClick={() => setTicketDrawer(true)}
-            className="group cursor-pointer rounded-xl border border-white/5 bg-zinc-950 p-6 text-left transition-all hover:border-[#00E676]/20"
+            className="group cursor-pointer rounded-[var(--radius-card)] border border-[var(--border-base)] bg-[var(--surface-1)] p-6 text-left shadow-[var(--shadow-inset-bevel)] transition-all hover:border-emerald-500/20 hover:bg-[var(--surface-2)]"
           >
             <AnimatedIcon icon={MessageSquare} color="text-red-400" bg="bg-red-500/8" />
             <h3 className="mt-4 text-[14px] font-medium text-white">Contact Support</h3>
-            <p className="mt-1 text-[12px] text-zinc-600">Submit a ticket</p>
+            <p className="mt-1 font-mono text-[11px] text-zinc-600">Submit a ticket</p>
           </motion.button>
         </div>
       </motion.div>
@@ -333,12 +336,12 @@ export default function HelpHubPage() {
       {/* ── Community Threads ─────────────────────────── */}
       <motion.div variants={fadeUp} className="mb-16">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-600">
+          <h2 className="font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-600">
             Community Threads
           </h2>
           <button
             onClick={() => setThreadModal(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-[#00E676] px-3 py-1.5 text-[11px] font-medium text-black transition-all hover:bg-[#00C853]"
+            className="flex items-center gap-1.5 rounded-[var(--radius-button)] bg-emerald-500 px-3 py-1.5 text-[11px] font-medium text-black transition-all hover:bg-emerald-600"
           >
             <Plus size={12} />
             Ask the Community
@@ -352,14 +355,14 @@ export default function HelpHubPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.3 }}
-              className="group flex items-start gap-4 rounded-xl border border-white/5 bg-zinc-950 p-4 transition-all hover:border-white/[0.08] hover:bg-white/[0.02]"
+              className="group flex items-start gap-4 rounded-[var(--radius-card)] border border-[var(--border-base)] bg-[var(--surface-1)] p-4 transition-all hover:border-[var(--border-active)] hover:bg-[var(--surface-2)]"
             >
               {/* Upvote */}
               <div className="flex flex-col items-center gap-0.5 pt-0.5">
-                <button className="text-zinc-600 transition-colors hover:text-[#00E676]">
+                <button className="text-zinc-600 transition-colors hover:text-emerald-500">
                   <ArrowUp size={14} />
                 </button>
-                <span className="text-[11px] font-medium text-zinc-500">{thread.upvotes}</span>
+                <span className="font-mono text-[11px] font-medium text-zinc-500">{thread.upvotes}</span>
               </div>
 
               <div className="min-w-0 flex-1">
@@ -368,7 +371,7 @@ export default function HelpHubPage() {
                     {thread.title}
                   </h3>
                   {thread.is_solved && (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-[rgba(0,230,118,0.08)] px-2 py-0.5 text-[9px] font-medium text-[#00E676]">
+                    <span className="flex shrink-0 items-center gap-1 rounded-[var(--radius-badge)] bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-medium text-emerald-500">
                       <CheckCircle size={8} /> Solved
                     </span>
                   )}
@@ -376,7 +379,7 @@ export default function HelpHubPage() {
                 <p className="mt-0.5 line-clamp-1 text-[11px] text-zinc-600">
                   {thread.content}
                 </p>
-                <div className="mt-2 flex items-center gap-3 text-[10px] text-zinc-700">
+                <div className="mt-2 flex items-center gap-3 font-mono text-[10px] text-zinc-700">
                   <span>{thread.reply_count} replies</span>
                   <span className="capitalize">{thread.category}</span>
                 </div>
@@ -384,9 +387,12 @@ export default function HelpHubPage() {
             </motion.div>
           ))}
           {threads.length === 0 && (
-            <div className="flex flex-col items-center py-12 text-center">
-              <MessageSquare size={24} className="mb-2 text-zinc-800" />
-              <p className="text-[12px] text-zinc-600">No community threads yet.</p>
+            <div className="flex flex-col items-center py-16 text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-card)] border border-[var(--border-base)] bg-[var(--surface-1)]">
+                <MessageSquare size={20} className="text-zinc-700" />
+              </div>
+              <p className="text-[13px] font-medium text-zinc-400">No threads yet</p>
+              <p className="mt-1 text-[12px] text-zinc-600">Be the first to start a discussion.</p>
             </div>
           )}
         </div>
@@ -394,14 +400,14 @@ export default function HelpHubPage() {
 
       {/* ── FAQ Accordion ─────────────────────────────── */}
       <motion.div variants={fadeUp} className="mb-16">
-        <h2 className="mb-4 text-[13px] font-medium uppercase tracking-wider text-zinc-600">
+        <h2 className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-600">
           Frequently Asked Questions
         </h2>
         <div className="space-y-2">
           {faqs.map((faq, i) => (
             <div
               key={i}
-              className="overflow-hidden rounded-xl border border-white/5 bg-zinc-950 transition-colors hover:border-white/[0.08]"
+              className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-base)] bg-[var(--surface-1)] transition-colors hover:border-[var(--border-active)]"
             >
               <button
                 onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
@@ -424,7 +430,7 @@ export default function HelpHubPage() {
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className="overflow-hidden"
                   >
-                    <div className="border-t border-white/[0.04] px-5 pb-4 pt-3">
+                    <div className="border-t border-[var(--border-base)] px-5 pb-4 pt-3">
                       <p className="text-[13px] leading-relaxed text-zinc-500">{faq.a}</p>
                     </div>
                   </motion.div>
@@ -437,10 +443,10 @@ export default function HelpHubPage() {
 
       {/* ── "Still Stuck?" CTA ────────────────────────── */}
       <motion.div variants={fadeUp} className="mb-12 text-center">
-        <p className="text-[13px] text-zinc-600">Still stuck?</p>
+        <p className="font-mono text-[11px] uppercase tracking-wider text-zinc-600">Still stuck?</p>
         <button
           onClick={() => setTicketDrawer(true)}
-          className="mt-2 text-[13px] text-white underline underline-offset-4 transition-colors hover:text-[#00E676]"
+          className="mt-2 text-[13px] text-white underline underline-offset-4 transition-colors hover:text-emerald-500"
         >
           Contact Human Support
         </button>
@@ -462,34 +468,34 @@ export default function HelpHubPage() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed right-0 top-0 z-50 h-full w-full max-w-xl overflow-y-auto border-l border-white/[0.06] bg-[#0a0a0a]"
+              className="fixed right-0 top-0 z-50 h-full w-full max-w-xl overflow-y-auto border-l border-[var(--border-base)] bg-[var(--surface-1)]"
             >
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/[0.06] bg-[#0a0a0a]/90 px-6 py-4 backdrop-blur-md">
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-base)] bg-[var(--surface-1)]/90 px-6 py-4 backdrop-blur-md">
                 <div className="flex items-center gap-2">
-                  <BookOpen size={14} className="text-[#00E676]" />
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">{selectedArticle.category}</span>
+                  <BookOpen size={14} className="text-emerald-500" />
+                  <span className="font-mono text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-500">{selectedArticle.category}</span>
                 </div>
                 <button
                   onClick={() => setSelectedArticle(null)}
-                  className="rounded p-1 text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
+                  className="rounded p-1 text-zinc-600 transition-colors hover:bg-[var(--subtle-bg)] hover:text-zinc-300"
                 >
                   <X size={16} />
                 </button>
               </div>
               <div className="px-6 py-8">
-                <h1 className="text-2xl font-medium tracking-tight text-[#EDEDED]">{selectedArticle.title}</h1>
+                <h1 className="text-2xl font-medium tracking-tight text-[var(--text-primary)]">{selectedArticle.title}</h1>
                 {selectedArticle.summary && (
                   <p className="mt-2 text-[14px] text-zinc-500">{selectedArticle.summary}</p>
                 )}
                 <div className="prose-invert mt-8 max-w-none text-[14px] leading-relaxed text-zinc-400">
                   {selectedArticle.content.split("\n").map((line, i) => {
-                    if (line.startsWith("# ")) return <h1 key={i} className="mb-4 mt-8 text-xl font-medium text-[#EDEDED]">{line.slice(2)}</h1>;
+                    if (line.startsWith("# ")) return <h1 key={i} className="mb-4 mt-8 text-xl font-medium text-[var(--text-primary)]">{line.slice(2)}</h1>;
                     if (line.startsWith("## ")) return <h2 key={i} className="mb-3 mt-6 text-lg font-medium text-zinc-200">{line.slice(3)}</h2>;
                     if (line.startsWith("- **")) {
                       const match = line.match(/- \*\*(.+?)\*\*:?\s*(.*)/);
                       if (match) return <p key={i} className="mb-1.5 ml-4"><strong className="text-zinc-200">{match[1]}:</strong> {match[2]}</p>;
                     }
-                    if (line.startsWith("- ")) return <p key={i} className="mb-1 ml-4 before:mr-2 before:content-['•'] before:text-[#00E676]">{line.slice(2)}</p>;
+                    if (line.startsWith("- ")) return <p key={i} className="mb-1 ml-4 before:mr-2 before:content-['•'] before:text-emerald-500">{line.slice(2)}</p>;
                     if (line.match(/^\d+\./)) return <p key={i} className="mb-1.5 ml-4">{line}</p>;
                     if (line.trim() === "") return <br key={i} />;
                     return <p key={i} className="mb-2">{line}</p>;
@@ -498,8 +504,8 @@ export default function HelpHubPage() {
 
                 {/* Related articles */}
                 {grouped[selectedArticle.category] && grouped[selectedArticle.category].length > 1 && (
-                  <div className="mt-10 border-t border-white/[0.06] pt-6">
-                    <p className="mb-3 text-[10px] font-medium uppercase tracking-wider text-zinc-600">Related Articles</p>
+                  <div className="mt-10 border-t border-[var(--border-base)] pt-6">
+                    <p className="mb-3 font-mono text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-600">Related Articles</p>
                     <div className="space-y-1">
                       {grouped[selectedArticle.category]
                         .filter((a) => a.id !== selectedArticle.id)
@@ -507,9 +513,9 @@ export default function HelpHubPage() {
                           <button
                             key={a.id}
                             onClick={() => setSelectedArticle(a)}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+                            className="flex w-full items-center gap-2 rounded-[var(--radius-nav-item)] px-3 py-2 text-left text-[12px] text-zinc-400 transition-colors hover:bg-[var(--subtle-bg)] hover:text-zinc-200"
                           >
-                            <ExternalLink size={10} className="text-[#00E676]" />
+                            <ExternalLink size={10} className="text-emerald-500" />
                             {a.title}
                           </button>
                         ))}
@@ -572,11 +578,11 @@ function TicketDrawer({ onClose }: { onClose: () => void }) {
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-white/[0.06] bg-[#0a0a0a]"
+        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-[var(--border-base)] bg-[var(--surface-1)]"
       >
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--border-base)] px-6 py-4">
           <h2 className="text-[14px] font-medium text-zinc-200">Submit a Ticket</h2>
-          <button onClick={onClose} className="rounded p-1 text-zinc-600 hover:bg-white/[0.06] hover:text-zinc-300">
+          <button onClick={onClose} className="rounded p-1 text-zinc-600 hover:bg-[var(--subtle-bg)] hover:text-zinc-300">
             <X size={16} />
           </button>
         </div>
@@ -594,7 +600,7 @@ function TicketDrawer({ onClose }: { onClose: () => void }) {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
-                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#00E676] shadow-[0_0_20px_-6px_rgba(0,230,118,0.15)]"
+                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-[var(--brand-glow-subtle)]"
                 >
                   <Send size={20} className="text-black" />
                 </motion.div>
@@ -618,7 +624,7 @@ function TicketDrawer({ onClose }: { onClose: () => void }) {
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="Brief description of your issue"
-                    className="h-10 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[13px] text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-[#00E676]/30"
+                    className="h-10 w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--subtle-bg)] px-3 text-[13px] text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/30"
                   />
                 </div>
                 <div>
@@ -629,14 +635,14 @@ function TicketDrawer({ onClose }: { onClose: () => void }) {
                         key={s}
                         type="button"
                         onClick={() => setSeverity(s)}
-                        className={`rounded-lg border py-2 text-[11px] font-medium capitalize transition-all ${
+                        className={`rounded-[var(--radius-button)] border py-2 text-[11px] font-medium capitalize transition-all ${
                           severity === s
                             ? s === "critical"
                               ? "border-red-500/30 bg-red-500/10 text-red-400"
                               : s === "high"
                               ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                              : "border-[#00E676]/30 bg-[rgba(0,230,118,0.05)] text-[#00E676]"
-                            : "border-white/[0.06] text-zinc-600 hover:border-white/[0.1]"
+                              : "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-500"
+                            : "border-[var(--border-base)] text-zinc-600 hover:border-[var(--border-active)]"
                         }`}
                       >
                         {s}
@@ -651,12 +657,12 @@ function TicketDrawer({ onClose }: { onClose: () => void }) {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Describe your issue in detail..."
-                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-[13px] leading-relaxed text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-[#00E676]/30"
+                    className="w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--subtle-bg)] px-3 py-2.5 text-[13px] leading-relaxed text-zinc-200 placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/30"
                   />
                 </div>
 
                 {error && (
-                  <div className="flex items-center gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-[12px] text-red-400">
+                  <div className="flex items-center gap-2 rounded-[var(--radius-card)] border border-red-500/15 bg-red-500/5 px-3 py-2 text-[12px] text-red-400">
                     <AlertCircle size={12} /> {error}
                   </div>
                 )}
@@ -664,7 +670,7 @@ function TicketDrawer({ onClose }: { onClose: () => void }) {
                 <button
                   onClick={handleSubmit}
                   disabled={sending || !subject.trim() || !message.trim()}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#00E676] py-2.5 text-[13px] font-medium text-black transition-all hover:bg-[#00C853] disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-button)] bg-emerald-500 py-2.5 text-[13px] font-medium text-black transition-all hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Send size={14} />
                   {sending ? "Submitting..." : "Submit Ticket"}
@@ -714,7 +720,7 @@ function NewThreadModal({ onClose }: { onClose: () => void }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-6 shadow-2xl"
+        className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-modal)] border border-[var(--border-active)] bg-[var(--surface-1)] p-6 shadow-[var(--shadow-deep)]"
       >
         <h2 className="mb-5 text-[15px] font-medium text-zinc-200">Ask the Community</h2>
 
@@ -726,7 +732,7 @@ function NewThreadModal({ onClose }: { onClose: () => void }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What's your question?"
-              className="h-10 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[13px] text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#00E676]/30"
+              className="h-10 w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--subtle-bg)] px-3 text-[13px] text-zinc-200 placeholder-zinc-600 outline-none focus:border-emerald-500/30"
             />
           </div>
           <div>
@@ -734,7 +740,7 @@ function NewThreadModal({ onClose }: { onClose: () => void }) {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="h-10 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[13px] text-zinc-200 outline-none focus:border-[#00E676]/30"
+              className="h-10 w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--subtle-bg)] px-3 text-[13px] text-zinc-200 outline-none focus:border-emerald-500/30"
             >
               <option value="general">General</option>
               <option value="workflow">Workflow & Jobs</option>
@@ -750,7 +756,7 @@ function NewThreadModal({ onClose }: { onClose: () => void }) {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Provide as much detail as possible..."
-              className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-[13px] leading-relaxed text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#00E676]/30"
+              className="w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--subtle-bg)] px-3 py-2.5 text-[13px] leading-relaxed text-zinc-200 placeholder-zinc-600 outline-none focus:border-emerald-500/30"
             />
           </div>
 
@@ -768,7 +774,7 @@ function NewThreadModal({ onClose }: { onClose: () => void }) {
             <button
               onClick={handleSubmit}
               disabled={sending || !title.trim() || !content.trim()}
-              className="flex items-center gap-1.5 rounded-lg bg-[#00E676] px-4 py-2 text-[12px] font-medium text-black transition-all hover:bg-[#00C853] disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-[var(--radius-button)] bg-emerald-500 px-4 py-2 text-[12px] font-medium text-black transition-all hover:bg-emerald-600 disabled:opacity-40"
             >
               <Send size={12} />
               {sending ? "Posting..." : "Post Thread"}

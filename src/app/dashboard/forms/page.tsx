@@ -48,6 +48,8 @@ function ForensicEmptyState({
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="flex flex-col items-center justify-center py-20 text-center"
     >
+      {/* Subtle radial glow behind icon */}
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 h-[160px] w-[160px] rounded-full bg-emerald-500/[0.03] blur-[60px]" />
       <div className="relative mb-5 flex h-16 w-16 items-center justify-center">
         {/* Blueprint wireframe rings */}
         <div className="absolute inset-0 rounded-xl border border-white/[0.04] animate-signal-pulse" />
@@ -70,11 +72,26 @@ function ForensicEmptyState({
       </div>
       <h3 className="text-[14px] font-medium text-zinc-300">{title}</h3>
       <p className="mt-1 max-w-[280px] text-[12px] text-zinc-600">{subtitle}</p>
+
+      {/* Capability hints — show system potential */}
+      <div className="mt-6 flex items-center gap-4">
+        {[
+          { icon: ShieldCheck, label: "Safety checks" },
+          { icon: ClipboardCheck, label: "Field inspections" },
+          { icon: PenTool, label: "Digital signatures" },
+        ].map(({ icon: HintIcon, label }) => (
+          <div key={label} className="flex items-center gap-1.5 text-[10px] text-zinc-700">
+            <HintIcon size={10} strokeWidth={1.5} />
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+
       {cta && onCta && (
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={onCta}
-          className="mt-4 flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-white transition-all duration-150 hover:border-emerald-500/30 hover:text-emerald-400"
+          className="mt-5 flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-white transition-all duration-150 hover:border-emerald-500/30 hover:text-emerald-400"
         >
           <Plus size={12} />
           {cta}
@@ -172,31 +189,41 @@ export default function FormsPage() {
   }, [submissions, activeTab, searchQuery]);
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="relative flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+      />
       {/* ── Header ───────────────────────────────────── */}
-      <div className="border-b border-white/[0.05]">
+      <div className="relative z-10 border-b border-white/[0.05]">
         {/* Title row */}
         <div className="flex h-14 shrink-0 items-center justify-between px-5">
-          <div className="flex items-center gap-3">
-            <h1 className="text-[15px] font-medium text-white">Forms & Compliance</h1>
-            <span className="rounded-full bg-white/[0.03] px-2 py-0.5 text-[11px] text-zinc-500">
-              {templateCount} templates
-            </span>
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">COMPLIANCE</span>
+            <div className="flex items-center gap-3">
+              <h1 className="text-[15px] font-medium text-white">Forms & Compliance</h1>
+              <span className="rounded-full bg-white/[0.03] px-2 py-0.5 font-mono text-[10px] text-zinc-500">
+                {templateCount}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Stats */}
+            {/* Stats — mono analytical readout */}
             <div className="mr-2 flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle size={11} className="text-emerald-500" />
-                <span className="font-mono text-[10px] text-emerald-400">{signedCount}</span>
-                <span className="text-[10px] text-zinc-600">signed</span>
+              <div className="flex items-center gap-1.5 rounded-md bg-white/[0.02] px-2 py-1">
+                <CheckCircle size={10} className="text-emerald-500" />
+                <span className="font-mono text-[10px] tabular-nums text-emerald-400">{signedCount}</span>
+                <span className="font-mono text-[9px] tracking-wide text-zinc-600">SIGNED</span>
               </div>
               {pendingCount > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Clock size={11} className="text-amber-500" />
-                  <span className="font-mono text-[10px] text-amber-400">{pendingCount}</span>
-                  <span className="text-[10px] text-zinc-600">pending</span>
+                <div className="flex items-center gap-1.5 rounded-md bg-white/[0.02] px-2 py-1">
+                  <Clock size={10} className="text-amber-500" />
+                  <span className="font-mono text-[10px] tabular-nums text-amber-400">{pendingCount}</span>
+                  <span className="font-mono text-[9px] tracking-wide text-zinc-600">PENDING</span>
                 </div>
               )}
             </div>

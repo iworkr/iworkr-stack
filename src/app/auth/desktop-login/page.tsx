@@ -58,14 +58,14 @@ export default function DesktopLoginPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mx-4 w-full max-w-sm rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 text-center"
       >
         <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]">
-          <Monitor size={24} className="text-[#00E676]" />
+          <Monitor size={24} className="text-[#10B981]" />
         </div>
 
         <h1 className="text-[18px] font-semibold text-zinc-200">
@@ -78,12 +78,12 @@ export default function DesktopLoginPage() {
         <div className="mt-8">
           {status === "pending" || status === "authenticating" ? (
             <div className="flex flex-col items-center gap-3">
-              <Loader2 size={24} className="animate-spin text-[#00E676]" />
+              <Loader2 size={24} className="animate-spin text-[#10B981]" />
               <p className="text-[12px] text-zinc-500">Authenticating…</p>
             </div>
           ) : status === "success" ? (
             <div className="flex flex-col items-center gap-3">
-              <CheckCircle size={24} className="text-[#00E676]" />
+              <CheckCircle size={24} className="text-[#10B981]" />
               <p className="text-[12px] text-zinc-400">
                 Authenticated! Returning to Desktop…
               </p>

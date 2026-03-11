@@ -519,39 +519,52 @@ export default function SchedulePage() {
   const totalWidth = TOTAL_HOURS * HOUR_W;
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="relative flex h-full flex-col bg-[var(--background)]">
+      {/* ── Atmospheric radial glow ──────────────────────────── */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[300px] z-0"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 50%)" }}
+      />
+      {/* ── Noise texture ────────────────────────────────────── */}
+      <div className="stealth-noise" />
+
       {/* ── Command Header (Transparent, Stealth) ────────────── */}
-      <div className="flex items-center justify-between px-5 py-3">
+      <div className="relative z-10 flex items-center justify-between px-5 py-3">
         <div className="flex items-center gap-5">
           {/* Date Navigator — Stealth style */}
-          <div className="group/nav flex items-center gap-1">
-            <button
-              onClick={() => navigateDate(-1)}
-              className="rounded-md p-1.5 text-zinc-700 opacity-0 transition-all duration-150 group-hover/nav:opacity-100 hover:bg-white/[0.04] hover:text-zinc-300"
-            >
-              <ChevronLeft size={15} />
-            </button>
-            <motion.span
-              key={dateKey}
-              initial={{ opacity: 0, x: navDir === "left" ? 20 : -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="min-w-[200px] text-center text-[15px] font-medium text-white"
-            >
-              {dateInfo.label}
-            </motion.span>
-            <button
-              onClick={() => navigateDate(1)}
-              className="rounded-md p-1.5 text-zinc-700 opacity-0 transition-all duration-150 group-hover/nav:opacity-100 hover:bg-white/[0.04] hover:text-zinc-300"
-            >
-              <ChevronRight size={15} />
-            </button>
+          <div className="flex flex-col">
+            <span className="mb-1 font-mono text-[9px] font-medium tracking-[0.2em] text-zinc-600 uppercase">
+              Tactical Timeline
+            </span>
+            <div className="group/nav flex items-center gap-1">
+              <button
+                onClick={() => navigateDate(-1)}
+                className="rounded-md p-1.5 text-zinc-700 opacity-0 transition-all duration-150 group-hover/nav:opacity-100 hover:bg-white/[0.04] hover:text-zinc-300"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <motion.span
+                key={dateKey}
+                initial={{ opacity: 0, x: navDir === "left" ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="min-w-[240px] text-center text-2xl font-semibold tracking-tight text-white"
+              >
+                {dateInfo.label}
+              </motion.span>
+              <button
+                onClick={() => navigateDate(1)}
+                className="rounded-md p-1.5 text-zinc-700 opacity-0 transition-all duration-150 group-hover/nav:opacity-100 hover:bg-white/[0.04] hover:text-zinc-300"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
           </div>
 
           {/* "Today" ghost button — glows Emerald when viewing non-today */}
           <button
             onClick={goToday}
-            className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+            className={`self-end rounded-md px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
               dateInfo.isToday
                 ? "text-zinc-600 cursor-default"
                 : "text-emerald-500 hover:bg-emerald-500/[0.06] hover:shadow-[0_0_12px_-3px_rgba(16,185,129,0.3)]"
@@ -574,8 +587,8 @@ export default function SchedulePage() {
             </span>
           )}
 
-          {/* View Switcher — Sliding Pill */}
-          <div className="relative flex items-center gap-0.5 rounded-lg p-0.5">
+          {/* View Switcher — Stealth Tab pattern */}
+          <div className="stealth-tabs border-b-0">
             {(["day", "week", "month"] as ViewScale[]).map((scale) => {
               const isActive = viewScale === scale;
               return (
@@ -583,20 +596,10 @@ export default function SchedulePage() {
                   key={scale}
                   onClick={() => setViewScale(scale)}
                   title={viewScaleLabels[scale]}
-                  className={`relative z-10 rounded-md px-3.5 py-1.5 text-[11px] font-medium transition-colors duration-150 ${
-                    isActive
-                      ? "text-white"
-                      : "text-zinc-500 hover:text-zinc-300"
-                  }`}
+                  className="stealth-tab"
+                  data-active={isActive}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="schedule-view-pill"
-                      className="absolute inset-0 rounded-md bg-white/[0.08]"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative">{viewScaleLabels[scale]}</span>
+                  {viewScaleLabels[scale]}
                 </button>
               );
             })}
@@ -639,7 +642,7 @@ export default function SchedulePage() {
           selectedDate={selectedDate}
         />
       ) : (
-      <div className="flex flex-1 overflow-hidden border-t border-white/[0.04]">
+      <div className="relative z-10 flex flex-1 overflow-hidden border-t border-white/[0.04]">
         {/* ── Timeline area ────────────────────────────────── */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Hour headers */}
@@ -731,7 +734,7 @@ export default function SchedulePage() {
                       }`}
                     >
                       {/* ── Resource column (sticky left) ──────── */}
-                      <div className="sticky left-0 z-10 box-border flex shrink-0 items-center gap-3 border-r border-white/[0.04] bg-[#050505] px-4" style={{ width: RESOURCE_COL_W, height: ROW_H }}>
+                      <div className="sticky left-0 z-10 box-border flex shrink-0 items-center gap-3 border-r border-white/[0.04] bg-[var(--background)] px-4" style={{ width: RESOURCE_COL_W, height: ROW_H }}>
                         <div className="relative">
                           <div className="tech-avatar-grayscale flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800/80 text-[10px] font-semibold tracking-wide text-zinc-400">
                             {tech.initials}
@@ -817,12 +820,23 @@ export default function SchedulePage() {
                             }}
                           />
 
-                          {/* ── "Laser" Now Line ─────────────────── */}
+                          {/* ── "Laser" Now Line — prominent current time ── */}
                           {isCurrentDay && (
                             <div className="absolute top-0 z-20 h-full" style={{ left: nowX }}>
-                              <div className="h-full w-[2px] bg-emerald-500/70 shadow-[0_0_10px_rgba(16,185,129,0.5),0_0_20px_rgba(16,185,129,0.2)]" />
+                              {/* Glow halo behind the line */}
+                              <div className="absolute -left-[6px] top-0 h-full w-[14px] bg-emerald-500/[0.06] blur-[4px]" />
+                              {/* Core laser line */}
+                              <div className="h-full w-[2px] bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6),0_0_24px_rgba(16,185,129,0.25),0_0_4px_rgba(16,185,129,0.8)]" />
+                              {/* Top dot — pulsing beacon */}
                               {techIdx === 0 && (
-                                <div className="absolute -top-1 -left-[5px] h-[12px] w-[12px] rounded-full bg-emerald-500 animate-laser-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                <>
+                                  <div className="absolute -top-1.5 -left-[6px] h-[14px] w-[14px] rounded-full bg-emerald-500 animate-laser-pulse shadow-[0_0_12px_rgba(16,185,129,0.6),0_0_4px_rgba(16,185,129,0.9)]" />
+                                  <div className="absolute -top-[10px] -left-[10px] h-[22px] w-[22px] rounded-full border border-emerald-500/20 animate-signal-pulse" />
+                                  {/* Time label */}
+                                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-emerald-500/90 px-1.5 py-0.5 font-mono text-[8px] font-bold text-black shadow-lg">
+                                    {formatHour(nowHour)}
+                                  </div>
+                                </>
                               )}
                             </div>
                           )}
@@ -883,6 +897,18 @@ export default function SchedulePage() {
                               );
                             })
                           }
+
+                          {/* ── Empty row hint (when tech has no blocks) ── */}
+                          {techBlocks.length === 0 && !loading && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="flex items-center gap-2 rounded-lg border border-dashed border-white/[0.04] bg-white/[0.008] px-4 py-2">
+                                <CalendarClock size={11} className="text-zinc-700" />
+                                <span className="font-mono text-[10px] text-zinc-700">
+                                  No jobs scheduled — drag from backlog or click to assign
+                                </span>
+                              </div>
+                            </div>
+                          )}
 
                           {/* ── Job Capsules (Glass & Spine) ────────── */}
                           {techBlocks.map((block, i) => {
@@ -1080,25 +1106,34 @@ export default function SchedulePage() {
               className="shrink-0 overflow-hidden border-l border-white/[0.04] bg-[#070707]"
             >
               <div className="flex h-full w-[300px] flex-col">
-                {/* Drawer header — glassmorphism */}
-                <div className="flex items-center justify-between border-b border-white/[0.04] bg-black/40 px-4 py-3 backdrop-blur-xl">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.04]">
-                      <Inbox size={12} strokeWidth={1.5} className="text-zinc-400" />
+                {/* Drawer header — glassmorphism with overline */}
+                <div className="border-b border-white/[0.04] bg-black/40 px-4 py-3 backdrop-blur-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="mb-1 font-mono text-[8px] font-medium tracking-[0.2em] text-zinc-600 uppercase">
+                        Backlog
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-medium text-zinc-200">Unassigned Jobs</span>
+                        {backlogJobs.length > 0 && (
+                          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white/[0.06] px-1.5 text-[10px] font-medium text-zinc-400">
+                            {backlogJobs.length}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-[13px] font-medium text-zinc-200">Unassigned</span>
-                    <span className="rounded-full bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">{backlogJobs.length}</span>
+                    <button
+                      onClick={() => setUnscheduledDrawerOpen(false)}
+                      className="rounded-md p-1 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-400"
+                    >
+                      <X size={13} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setUnscheduledDrawerOpen(false)}
-                    className="rounded-md p-1 text-zinc-600 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-400"
-                  >
-                    <X size={13} />
-                  </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto scrollbar-none p-3">
-                  <p className="mb-3 text-[10px] text-zinc-700">
+                  <p className="mb-3 flex items-center gap-1.5 text-[10px] text-zinc-700">
+                    <GripVertical size={9} className="text-zinc-700" />
                     Drag a job onto the timeline to schedule
                   </p>
                   <div className="space-y-2">
@@ -1269,7 +1304,7 @@ function JobPeekCard({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -8 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      className="absolute top-full left-0 z-50 mt-2 w-[320px] overflow-hidden rounded-xl border border-white/[0.06] bg-[#0A0A0A]/95 shadow-2xl backdrop-blur-xl"
+      className="absolute top-full left-0 z-50 mt-2 w-[320px] overflow-hidden rounded-xl border border-white/[0.06] bg-[var(--surface-1)]/95 shadow-2xl backdrop-blur-xl"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -1304,7 +1339,7 @@ function JobPeekCard({
       </div>
 
       {/* Mini map */}
-      <div className="relative h-[100px] bg-[#080808]">
+      <div className="relative h-[100px] bg-[var(--surface-1)]">
         {block.location ? (
           <img
             src={`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(block.location)}&zoom=15&size=640x200&scale=2&maptype=roadmap&style=element:geometry%7Ccolor:0x0a0a0a&style=feature:road%7Celement:geometry%7Ccolor:0x18181b&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x27272a&style=feature:road%7Celement:labels%7Cvisibility:off&style=feature:poi%7Cvisibility:off&style=feature:transit%7Cvisibility:off&style=feature:water%7Celement:geometry%7Ccolor:0x050505&style=feature:water%7Celement:labels%7Cvisibility:off&style=feature:landscape%7Celement:geometry%7Ccolor:0x0a0a0a&style=feature:administrative%7Celement:geometry.stroke%7Ccolor:0x27272a&style=element:labels.text.fill%7Ccolor:0x52525b&style=element:labels.text.stroke%7Ccolor:0x0a0a0a&markers=color:0x10B981%7C${encodeURIComponent(block.location)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}

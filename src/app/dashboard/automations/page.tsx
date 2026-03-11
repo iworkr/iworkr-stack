@@ -66,7 +66,7 @@ const tabs: { id: AutomationsTab; label: string; icon: typeof Zap }[] = [
 /* ── Status Config ────────────────────────────────────── */
 
 const execStatusConfig = {
-  success: { icon: CheckCircle, color: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", label: "OK", border: "border-[#00E676]/20" },
+  success: { icon: CheckCircle, color: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.08)]", label: "OK", border: "border-[#10B981]/20" },
   failed: { icon: XCircle, color: "text-red-400", bg: "bg-red-500/10", label: "ERR", border: "border-red-500/20" },
   skipped: { icon: Clock, color: "text-zinc-500", bg: "bg-zinc-500/10", label: "SKIP", border: "border-zinc-500/20" },
 };
@@ -79,31 +79,41 @@ function EmptyState({ onCreateFlow, loading }: { onCreateFlow: () => void; loadi
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="flex flex-col items-center justify-center py-20 text-center"
+      className="stealth-paywall"
     >
+      {/* Radial glow behind upgrade area */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2"
+        style={{
+          width: 480,
+          height: 320,
+          background: "radial-gradient(ellipse at center, rgba(16,185,129,0.06) 0%, transparent 70%)",
+        }}
+      />
+
       {/* Animated circuit board / machine visualization */}
-      <div className="relative mb-6">
+      <div className="relative z-10 mb-8">
         {/* Outer pulse ring */}
         <motion.div
           animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 rounded-xl bg-[#00E676]/10"
+          className="absolute inset-0 rounded-xl bg-[var(--brand)]/10"
           style={{ margin: "-16px" }}
         />
         {/* Middle ring */}
         <motion.div
           animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0, 0.2] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          className="absolute inset-0 rounded-xl bg-[#00E676]/5"
+          className="absolute inset-0 rounded-xl bg-[var(--brand)]/5"
           style={{ margin: "-8px" }}
         />
         {/* Core icon */}
         <motion.div
           animate={{ rotate: [0, 360] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="relative flex h-20 w-20 items-center justify-center rounded-xl bg-[rgba(0,230,118,0.06)] ring-1 ring-[#00E676]/15"
+          className="relative flex h-20 w-20 items-center justify-center rounded-xl border border-[var(--brand)]/15 bg-[var(--brand)]/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
         >
-          <Cpu size={36} strokeWidth={0.8} className="text-[#00E676]" />
+          <Cpu size={36} strokeWidth={0.8} className="text-[var(--brand)]" />
         </motion.div>
         {/* Orbiting dots */}
         <motion.div
@@ -112,8 +122,8 @@ function EmptyState({ onCreateFlow, loading }: { onCreateFlow: () => void; loadi
           className="absolute inset-0"
           style={{ margin: "-20px" }}
         >
-          <div className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#00E676]/60" />
-          <div className="absolute bottom-0 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#00E676]/30" />
+          <div className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[var(--brand)]/60" />
+          <div className="absolute bottom-0 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[var(--brand)]/30" />
         </motion.div>
         <motion.div
           animate={{ rotate: [360, 0] }}
@@ -121,21 +131,21 @@ function EmptyState({ onCreateFlow, loading }: { onCreateFlow: () => void; loadi
           className="absolute inset-0"
           style={{ margin: "-32px" }}
         >
-          <div className="absolute left-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-[#00E676]/40" />
-          <div className="absolute right-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-[#00E676]/20" />
+          <div className="absolute left-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-[var(--brand)]/40" />
+          <div className="absolute right-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-[var(--brand)]/20" />
         </motion.div>
       </div>
 
-      <h3 className="text-[16px] font-medium tracking-tight text-zinc-200">
+      <h3 className="relative z-10 text-[16px] font-medium tracking-tight text-zinc-200">
         Automate the Boring Stuff.
       </h3>
-      <p className="mt-2 max-w-[300px] text-[12px] leading-relaxed text-zinc-600">
+      <p className="relative z-10 mt-2 max-w-[320px] text-[13px] leading-relaxed text-[var(--text-muted)]">
         Build logic flows that send reminders, chase invoices, and notify your team — all on autopilot.
       </p>
       <button
         onClick={onCreateFlow}
         disabled={loading}
-        className="mt-6 flex items-center gap-2 rounded-xl bg-[#00E676] px-6 py-2.5 text-[13px] font-medium text-black shadow-[0_0_20px_-6px_rgba(0,230,118,0.15)] transition-all hover:bg-[#00C853] hover:shadow-[0_0_24px_-6px_rgba(0,230,118,0.2)]"
+        className="stealth-btn-brand relative z-10 mt-8 gap-2 px-6 py-2.5 text-[13px] shadow-[0_0_20px_-6px_rgba(16,185,129,0.2)] transition-all hover:shadow-[0_0_28px_-6px_rgba(16,185,129,0.3)]"
       >
         <Plus size={15} strokeWidth={2} />
         {loading ? "Creating..." : "Create First Flow"}
@@ -148,7 +158,7 @@ function EmptyState({ onCreateFlow, loading }: { onCreateFlow: () => void; loadi
 
 function TraceStepRow({ step, index }: { step: TraceStep; index: number }) {
   const statusColors = {
-    passed: { text: "text-[#00E676]", bg: "bg-[rgba(0,230,118,0.08)]", dot: "bg-[#00E676]" },
+    passed: { text: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.08)]", dot: "bg-[#10B981]" },
     simulated: { text: "text-amber-400", bg: "bg-amber-500/10", dot: "bg-amber-400" },
     failed: { text: "text-red-400", bg: "bg-red-500/10", dot: "bg-red-400" },
     skipped: { text: "text-zinc-500", bg: "bg-zinc-500/10", dot: "bg-zinc-500" },
@@ -247,7 +257,7 @@ function RunDetailModal({
           <div className="flex items-center gap-2">
             <button
               onClick={onViewFlow}
-              className="flex items-center gap-1 rounded-lg border border-white/[0.08] px-3 py-1.5 text-[11px] text-zinc-400 transition-colors hover:border-[#00E676]/30 hover:text-zinc-200"
+              className="flex items-center gap-1 rounded-lg border border-white/[0.08] px-3 py-1.5 text-[11px] text-zinc-400 transition-colors hover:border-[#10B981]/30 hover:text-zinc-200"
             >
               <ExternalLink size={11} />
               View Flow
@@ -291,7 +301,7 @@ function RunDetailModal({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
               >
-                <RefreshCw size={20} className="text-[#00E676]" />
+                <RefreshCw size={20} className="text-[#10B981]" />
               </motion.div>
               <p className="mt-3 text-[11px] text-zinc-600">Loading execution trace...</p>
             </div>
@@ -411,8 +421,8 @@ function ExecutionsTab() {
         className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-3"
       >
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(0,230,118,0.08)]">
-            <History size={13} className="text-[#00E676]" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(16,185,129,0.08)]">
+            <History size={13} className="text-[#10B981]" />
           </div>
           <div>
             <p className="text-[10px] text-zinc-600">Total Runs</p>
@@ -423,12 +433,12 @@ function ExecutionsTab() {
         <div className="h-8 w-px bg-white/[0.06]" />
 
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(0,230,118,0.08)]">
-            <CheckCircle size={13} className="text-[#00E676]" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(16,185,129,0.08)]">
+            <CheckCircle size={13} className="text-[#10B981]" />
           </div>
           <div>
             <p className="text-[10px] text-zinc-600">Success</p>
-            <p className="text-[14px] font-semibold text-[#00E676]">{successCount}</p>
+            <p className="text-[14px] font-semibold text-[#10B981]">{successCount}</p>
           </div>
         </div>
 
@@ -463,7 +473,7 @@ function ExecutionsTab() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="h-7 appearance-none rounded-lg border border-white/[0.08] bg-white/[0.03] pl-7 pr-6 text-[10px] text-zinc-400 outline-none transition-colors focus:border-[#00E676]/30"
+              className="h-7 appearance-none rounded-lg border border-white/[0.08] bg-white/[0.03] pl-7 pr-6 text-[10px] text-zinc-400 outline-none transition-colors focus:border-[#10B981]/30"
             >
               <option value="all">All Status</option>
               <option value="success">Success</option>
@@ -478,7 +488,7 @@ function ExecutionsTab() {
             <select
               value={flowFilter}
               onChange={(e) => setFlowFilter(e.target.value)}
-              className="h-7 max-w-[180px] appearance-none truncate rounded-lg border border-white/[0.08] bg-white/[0.03] pl-7 pr-6 text-[10px] text-zinc-400 outline-none transition-colors focus:border-[#00E676]/30"
+              className="h-7 max-w-[180px] appearance-none truncate rounded-lg border border-white/[0.08] bg-white/[0.03] pl-7 pr-6 text-[10px] text-zinc-400 outline-none transition-colors focus:border-[#10B981]/30"
             >
               <option value="all">All Flows</option>
               {flowOptions.map((f) => (
@@ -490,7 +500,7 @@ function ExecutionsTab() {
 
           <button
             onClick={() => loadRuns()}
-            className="flex h-7 items-center gap-1 rounded-lg border border-white/[0.08] px-2.5 text-[10px] text-zinc-500 transition-colors hover:border-[#00E676]/30 hover:text-zinc-300"
+            className="flex h-7 items-center gap-1 rounded-lg border border-white/[0.08] px-2.5 text-[10px] text-zinc-500 transition-colors hover:border-[#10B981]/30 hover:text-zinc-300"
           >
             <RefreshCw size={10} className={runsLoading ? "animate-spin" : ""} />
             Refresh
@@ -501,7 +511,7 @@ function ExecutionsTab() {
       {/* Data grid header */}
       <motion.div
         variants={itemVariants}
-        className="sticky top-0 z-10 grid grid-cols-12 gap-3 rounded-t-lg bg-[#050505]/90 px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-zinc-600 backdrop-blur-md"
+        className="sticky top-0 z-10 grid grid-cols-12 gap-3 rounded-t-lg bg-[var(--background)]/90 px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-zinc-600 backdrop-blur-md"
       >
         <span className="col-span-1">STS</span>
         <span className="col-span-3">Flow</span>
@@ -519,7 +529,7 @@ function ExecutionsTab() {
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           >
-            <RefreshCw size={20} className="text-[#00E676]" />
+            <RefreshCw size={20} className="text-[#10B981]" />
           </motion.div>
           <p className="mt-3 text-[11px] text-zinc-600">Loading execution history...</p>
         </div>
@@ -583,7 +593,7 @@ function ExecutionsTab() {
 
                 {/* Detail arrow */}
                 <div className="col-span-1 flex justify-end">
-                  <ArrowRight size={12} className="text-zinc-700 transition-colors group-hover:text-[#00E676]" />
+                  <ArrowRight size={12} className="text-zinc-700 transition-colors group-hover:text-[#10B981]" />
                 </div>
               </motion.div>
             );
@@ -719,7 +729,10 @@ export default function AutomationsPage() {
   }, [filteredFlows]);
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="relative flex h-full flex-col bg-[var(--background)]">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
+
       {/* ── Header — Staggered Fade-In ──────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
@@ -729,6 +742,9 @@ export default function AutomationsPage() {
       >
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
+            <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+              Automations
+            </p>
             <h1 className="text-[15px] font-medium tracking-tight text-zinc-200">Logic Core</h1>
             <p className="mt-0.5 text-[12px] text-zinc-600">
               Build logic flows that run your business on autopilot.
@@ -739,13 +755,13 @@ export default function AutomationsPage() {
             {/* Stats */}
             <div className="flex items-center gap-4 pr-3">
               <div className="flex items-center gap-1.5">
-                <Zap size={12} className="text-[#00E676]" />
+                <Zap size={12} className="text-[var(--brand)]" />
                 <span className="text-[11px] text-zinc-500">
                   <span className="font-medium text-zinc-300">{activeCount}</span> Active
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Activity size={12} className="text-[#00E676]" />
+                <Activity size={12} className="text-[var(--brand)]" />
                 <span className="text-[11px] text-zinc-500">
                   <span className="font-medium text-zinc-300">{totalRuns.toLocaleString()}</span> runs/24h
                 </span>
@@ -770,13 +786,13 @@ export default function AutomationsPage() {
               })()}
             </div>
 
-            {/* Master Pause — PRD: Neon green toggle style */}
+            {/* Master Pause — PRD: Brand green toggle style */}
             <button
               onClick={handleMasterPause}
               disabled={masterPauseLoading}
-              className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[11px] font-medium transition-all ${
+              className={`flex h-8 items-center gap-1.5 rounded-[var(--radius-button)] border px-3 text-[11px] font-medium transition-all ${
                 masterPaused
-                  ? "border-[#00E676]/30 bg-[rgba(0,230,118,0.08)] text-[#00E676] hover:bg-[rgba(0,230,118,0.12)]"
+                  ? "border-[var(--brand)]/30 bg-[var(--brand)]/[0.08] text-[var(--brand)] hover:bg-[var(--brand)]/[0.12]"
                   : "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/15"
               } ${masterPauseLoading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
@@ -784,7 +800,7 @@ export default function AutomationsPage() {
               {masterPauseLoading ? "Saving..." : masterPaused ? "Resume All" : "Pause All"}
             </button>
 
-            {/* Search — PRD: ghost input, green focus glow */}
+            {/* Search — PRD: ghost input, brand focus glow */}
             <div className="relative">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600" />
               <input
@@ -792,15 +808,15 @@ export default function AutomationsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search flows..."
-                className="h-8 w-48 rounded-lg border border-white/[0.08] bg-white/[0.03] pl-8 pr-3 text-[12px] text-zinc-300 placeholder-zinc-600 outline-none transition-colors focus:border-[#00E676]/30 focus:shadow-[0_0_12px_-4px_rgba(0,230,118,0.15)]"
+                className="h-8 w-48 rounded-[var(--radius-input)] border border-[var(--border-base)] bg-white/[0.03] pl-8 pr-3 text-[12px] text-zinc-300 placeholder-zinc-600 outline-none transition-colors focus:border-[var(--brand)]/30 focus:shadow-[var(--brand-glow-subtle)]"
               />
             </div>
 
-            {/* New Flow — PRD: Neon Green, black text, NO BLUE */}
+            {/* New Flow — PRD: Brand Green, black text */}
             <button
               onClick={handleNewFlow}
               disabled={creatingFlow}
-              className={`flex h-8 items-center gap-1.5 rounded-lg bg-[#00E676] px-4 text-[12px] font-medium text-black transition-all duration-200 hover:bg-[#00C853] ${
+              className={`stealth-btn-brand h-8 gap-1.5 px-4 text-[12px] ${
                 creatingFlow ? "opacity-60 cursor-not-allowed" : ""
               }`}
             >
@@ -831,14 +847,14 @@ export default function AutomationsPage() {
                   </span>
                 )}
                 {tab.id === "executions" && runs.length > 0 && (
-                  <span className="ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[rgba(0,230,118,0.08)] px-1 text-[9px] font-medium text-[#00E676]">
+                  <span className="ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--brand)]/[0.08] px-1 text-[9px] font-medium text-[var(--brand)]">
                     {runs.length}
                   </span>
                 )}
                 {isActive && (
                   <motion.div
                     layoutId="automations-tab-indicator"
-                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[#00E676]"
+                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[var(--brand)]"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -894,7 +910,7 @@ export default function AutomationsPage() {
             {/* Terminal header — sticky glassmorphism */}
             <motion.div
               variants={itemVariants}
-              className="sticky top-0 z-10 grid grid-cols-12 gap-3 rounded-t-lg bg-[#050505]/90 px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-zinc-600 backdrop-blur-md"
+              className="sticky top-0 z-10 grid grid-cols-12 gap-3 rounded-t-lg bg-[var(--background)]/90 px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-zinc-600 backdrop-blur-md"
             >
               <span className="col-span-1">STS</span>
               <span className="col-span-3">Flow</span>
@@ -930,7 +946,7 @@ export default function AutomationsPage() {
                       </div>
                       {/* Flow name */}
                       <div className="col-span-3">
-                        <p className={`truncate text-[12px] font-medium ${isFailed ? "text-red-400" : "text-[#00E676]"}`}>
+                        <p className={`truncate text-[12px] font-medium ${isFailed ? "text-red-400" : "text-[#10B981]"}`}>
                           {log.flowTitle}
                         </p>
                       </div>
@@ -972,10 +988,10 @@ export default function AutomationsPage() {
                           <div className={`rounded-lg border px-4 py-3 font-mono ${
                             isFailed
                               ? "border-red-500/15 bg-red-500/5"
-                              : "border-[#00E676]/15 bg-[rgba(0,230,118,0.03)]"
+                              : "border-[#10B981]/15 bg-[rgba(16,185,129,0.03)]"
                           }`}>
                             <p className={`text-[10px] font-medium uppercase tracking-wider ${
-                              isFailed ? "text-red-400" : "text-[#00E676]"
+                              isFailed ? "text-red-400" : "text-[#10B981]"
                             }`}>
                               {isFailed ? "Error Trace" : "Execution Details"}
                             </p>

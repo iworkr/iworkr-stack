@@ -137,7 +137,10 @@ export default function NewQuotePage() {
   });
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
+      {/* Noise texture */}
+      <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-[var(--noise-opacity)]" />
+
       {/* Sent animation overlay */}
       <AnimatePresence>
         {sentAnim && (
@@ -151,7 +154,7 @@ export default function NewQuotePage() {
               initial={{ scale: 1, y: 0, opacity: 1 }}
               animate={{ scale: 0.3, y: -300, x: 300, opacity: 0, rotate: -15 }}
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center gap-2 rounded-xl bg-[#00E676]/20 px-6 py-4 text-[#00E676] backdrop-blur-sm"
+              className="flex items-center gap-2 rounded-xl bg-emerald-500/20 px-6 py-4 text-emerald-400 backdrop-blur-sm"
             >
               <Send size={24} />
               <span className="text-lg font-medium">Sent!</span>
@@ -161,7 +164,7 @@ export default function NewQuotePage() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-2.5">
+      <div className="relative z-10 flex items-center justify-between border-b border-[var(--border-base)] px-5 py-2.5">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/dashboard/finance")}
@@ -176,7 +179,7 @@ export default function NewQuotePage() {
             whileTap={{ scale: 0.98 }}
             onClick={() => handleSave(false)}
             disabled={saving || sending}
-            className="flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[12px] text-zinc-400 transition-colors hover:text-zinc-200"
+            className="flex items-center gap-1.5 rounded-[var(--radius-button)] border border-[var(--border-base)] px-3 py-1.5 text-[12px] text-zinc-400 transition-colors hover:text-zinc-200"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
             Save Draft
@@ -186,7 +189,7 @@ export default function NewQuotePage() {
               whileTap={{ scale: 0.98 }}
               onClick={() => handleSave(true)}
               disabled={saving || sending}
-              className="flex items-center gap-1.5 rounded-md bg-[#00E676] px-3 py-1.5 text-[12px] font-medium text-black transition-colors duration-200 hover:bg-[#00C853]"
+              className="flex items-center gap-1.5 rounded-[var(--radius-button)] bg-emerald-500 px-3 py-1.5 text-[12px] font-medium text-black transition-colors duration-200 hover:bg-emerald-600"
             >
               {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
               Save & Send
@@ -196,14 +199,14 @@ export default function NewQuotePage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="relative z-10 flex-1 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="mx-auto max-w-3xl px-6 py-8"
         >
           {/* The "Paper" */}
-          <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/80 p-8 backdrop-blur-sm">
+          <div className="rounded-[var(--radius-card)] border border-[var(--border-active)] bg-[var(--surface-1)]/80 p-8 backdrop-blur-sm">
             {/* Title */}
             <input
               value={title}
@@ -215,18 +218,18 @@ export default function NewQuotePage() {
             {/* Client Details */}
             <div className="mb-8 grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1 block font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                   Client Name *
                 </label>
                 <input
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   placeholder="Full name or company"
-                  className="h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/30"
+                  className="h-9 w-full rounded-lg border border-[var(--border-active)] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-emerald-500/30"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1 block font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                   Email
                 </label>
                 <input
@@ -234,18 +237,18 @@ export default function NewQuotePage() {
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
                   placeholder="client@example.com"
-                  className="h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/30"
+                  className="h-9 w-full rounded-lg border border-[var(--border-active)] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-emerald-500/30"
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1 block font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                   Address
                 </label>
                 <input
                   value={clientAddress}
                   onChange={(e) => setClientAddress(e.target.value)}
                   placeholder="Street address, city, state"
-                  className="h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/30"
+                  className="h-9 w-full rounded-lg border border-[var(--border-active)] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-emerald-500/30"
                 />
               </div>
             </div>
@@ -253,24 +256,24 @@ export default function NewQuotePage() {
             {/* Settings row */}
             <div className="mb-8 grid grid-cols-3 gap-4">
               <div>
-                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1 block font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                   Valid Until
                 </label>
                 <input
                   type="date"
                   value={validUntil}
                   onChange={(e) => setValidUntil(e.target.value)}
-                  className="h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/30"
+                  className="h-9 w-full rounded-lg border border-[var(--border-active)] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-emerald-500/30"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1 block font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                   Terms
                 </label>
                 <select
                   value={terms}
                   onChange={(e) => setTerms(e.target.value)}
-                  className="h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none"
+                  className="h-9 w-full rounded-lg border border-[var(--border-active)] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none"
                 >
                   <option value="Net 7">Net 7</option>
                   <option value="Net 14">Net 14</option>
@@ -279,21 +282,21 @@ export default function NewQuotePage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+                <label className="mb-1 block font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                   Tax Rate (%)
                 </label>
                 <input
                   type="number"
                   value={taxRate}
                   onChange={(e) => setTaxRate(Number(e.target.value))}
-                  className="h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#00E676]/30"
+                  className="h-9 w-full rounded-lg border border-[var(--border-active)] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-emerald-500/30"
                 />
               </div>
             </div>
 
             {/* Line Items */}
             <div className="mb-6">
-              <div className="mb-2 grid grid-cols-12 gap-2 text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+              <div className="mb-2 grid grid-cols-12 gap-2 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                 <div className="col-span-1" />
                 <div className="col-span-5">Item</div>
                 <div className="col-span-2 text-center">Qty</div>
@@ -322,7 +325,7 @@ export default function NewQuotePage() {
                         value={item.description}
                         onChange={(e) => updateItem(item.id, "description", e.target.value)}
                         placeholder="Line item description"
-                        className="h-8 w-full rounded border border-white/[0.06] bg-white/[0.02] px-2 text-[12px] text-zinc-200 outline-none focus:border-[#00E676]/30"
+                        className="h-8 w-full rounded border border-[var(--border-base)] bg-white/[0.02] px-2 text-[12px] text-zinc-200 outline-none focus:border-emerald-500/30"
                       />
                     </div>
                     <div className="col-span-2">
@@ -331,7 +334,7 @@ export default function NewQuotePage() {
                         value={item.quantity}
                         onChange={(e) => updateItem(item.id, "quantity", Number(e.target.value))}
                         min={1}
-                        className="h-8 w-full rounded border border-white/[0.06] bg-white/[0.02] px-2 text-center text-[12px] text-zinc-200 outline-none focus:border-[#00E676]/30"
+                        className="h-8 w-full rounded border border-[var(--border-base)] bg-white/[0.02] px-2 text-center text-[12px] text-zinc-200 outline-none focus:border-emerald-500/30"
                       />
                     </div>
                     <div className="col-span-2">
@@ -341,10 +344,10 @@ export default function NewQuotePage() {
                         onChange={(e) => updateItem(item.id, "unit_price", Number(e.target.value))}
                         min={0}
                         step={0.01}
-                        className="h-8 w-full rounded border border-white/[0.06] bg-white/[0.02] px-2 text-center text-[12px] text-zinc-200 outline-none focus:border-[#00E676]/30"
+                        className="h-8 w-full rounded border border-[var(--border-base)] bg-white/[0.02] px-2 text-center text-[12px] text-zinc-200 outline-none focus:border-emerald-500/30"
                       />
                     </div>
-                    <div className="col-span-1 text-right text-[12px] tabular-nums text-zinc-400">
+                    <div className="col-span-1 text-right font-mono text-[12px] tabular-nums text-zinc-400">
                       ${(item.quantity * item.unit_price).toFixed(2)}
                     </div>
                     <div className="col-span-1 flex justify-center">
@@ -369,20 +372,20 @@ export default function NewQuotePage() {
             </div>
 
             {/* Totals */}
-            <div className="border-t border-white/[0.06] pt-4">
+            <div className="border-t border-[var(--border-base)] pt-4">
               <div className="flex justify-end">
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between text-[12px]">
                     <span className="text-zinc-500">Subtotal</span>
-                    <span className="tabular-nums text-zinc-300">${subtotal.toFixed(2)}</span>
+                    <span className="font-mono tabular-nums text-zinc-300">${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-[12px]">
                     <span className="text-zinc-500">Tax ({taxRate}%)</span>
-                    <span className="tabular-nums text-zinc-300">${tax.toFixed(2)}</span>
+                    <span className="font-mono tabular-nums text-zinc-300">${tax.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-white/[0.08] pt-2 text-[15px] font-medium">
-                    <span className="text-zinc-300">Total</span>
-                    <span className="tabular-nums text-[#00E676]">${total.toFixed(2)}</span>
+                  <div className="flex justify-between border-t border-[var(--border-active)] pt-2 text-[15px] font-medium">
+                    <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-300 uppercase">Total</span>
+                    <span className="font-mono tabular-nums text-emerald-400">${total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -390,7 +393,7 @@ export default function NewQuotePage() {
 
             {/* Notes */}
             <div className="mt-6">
-              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+              <label className="mb-1 block font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                 Notes / Terms
               </label>
               <textarea
@@ -398,7 +401,7 @@ export default function NewQuotePage() {
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
                 placeholder="Additional terms, conditions, or notes..."
-                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2 text-[12px] leading-relaxed text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[#00E676]/30"
+                className="w-full rounded-[var(--radius-input)] border border-[var(--border-active)] bg-white/[0.02] px-3 py-2 text-[12px] leading-relaxed text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500/30"
               />
             </div>
           </div>

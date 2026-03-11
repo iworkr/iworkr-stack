@@ -219,7 +219,7 @@ export default function JobDetailPage() {
 
   if (!job) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#050505]">
+      <div className="flex h-full items-center justify-center bg-[var(--background)]">
         <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.012]" />
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -267,10 +267,13 @@ export default function JobDetailPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-      className="flex h-full flex-col bg-[#050505]"
+      className="relative flex h-full flex-col bg-[var(--background)]"
     >
+      {/* Noise texture */}
+      <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-[var(--noise-opacity)]" />
+
       {/* ── Sticky Header — Glassmorphism ─────────────────── */}
-      <div className="sticky top-0 z-10 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 border-b border-[var(--border-base)] bg-[var(--header-bg)] backdrop-blur-[var(--header-blur)]">
         <div className="flex items-center justify-between px-6 py-2.5">
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1.5">
@@ -289,7 +292,7 @@ export default function JobDetailPage() {
             </span>
             <ChevronRight size={10} className="text-zinc-700" />
             <span
-              className="cursor-pointer font-mono text-[12px] font-medium text-zinc-400 transition-colors hover:text-zinc-200"
+              className="cursor-pointer font-mono text-[11px] font-medium tracking-wide text-zinc-500 transition-colors hover:text-zinc-200"
               onContextMenu={(e) => {
                 e.preventDefault();
                 setCtxMenu({ open: true, x: e.clientX, y: e.clientY });
@@ -405,17 +408,17 @@ export default function JobDetailPage() {
               {job.labels.map((label) => (
                 <span
                   key={label}
-                  className="rounded-md border border-white/[0.04] bg-white/[0.02] px-2 py-0.5 text-[11px] font-medium text-zinc-500"
+                  className="rounded-[var(--radius-badge)] border border-[var(--border-base)] bg-white/[0.02] px-2 py-0.5 text-[10px] font-medium text-zinc-500"
                 >
                   {label}
                 </span>
               ))}
-              <span className="font-mono text-[11px] text-zinc-700">{job.created}</span>
+              <span className="font-mono text-[10px] tabular-nums text-zinc-700">{job.created}</span>
             </div>
 
             {/* ── Description ────────────────────────────────── */}
             <div className="relative mb-8">
-              <h3 className="mb-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+              <h3 className="mb-2 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                 Description
               </h3>
               {editingDesc ? (
@@ -455,12 +458,12 @@ export default function JobDetailPage() {
             {(lineItems.length > 0 || lineItemsLoaded) && (
               <div className="mb-8">
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="flex items-center gap-1.5 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                  <h3 className="flex items-center gap-1.5 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                     <Receipt size={12} />
                     Estimate
                   </h3>
                   {lineItems.length > 0 && (
-                    <span className="text-[14px] font-semibold tracking-tight text-zinc-200">
+                    <span className="font-mono text-[14px] font-semibold tabular-nums tracking-tight text-zinc-200">
                       $
                       {(
                         lineItems.reduce(
@@ -472,9 +475,9 @@ export default function JobDetailPage() {
                   )}
                 </div>
 
-                <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+                <div className="rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02]">
                   {lineItems.length > 0 && (
-                    <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+                    <div className="divide-y divide-[var(--border-base)]">
                       {lineItems.map((li) => (
                         <motion.div
                           key={li.id}
@@ -488,7 +491,7 @@ export default function JobDetailPage() {
                           <span className="text-[10px] text-zinc-600">
                             ×{li.quantity}
                           </span>
-                          <span className="w-20 text-right text-[12px] font-medium text-zinc-300">
+                          <span className="w-20 text-right font-mono text-[12px] font-medium tabular-nums text-zinc-300">
                             ${(li.unit_price_cents / 100).toLocaleString()}
                           </span>
                           <button
@@ -509,7 +512,7 @@ export default function JobDetailPage() {
                   )}
 
                   {/* Add new line item */}
-                  <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.04)] px-4 py-2.5">
+                  <div className="flex items-center gap-2 border-t border-[var(--border-base)] px-4 py-2.5">
                     <Plus size={12} className="shrink-0 text-zinc-600" />
                     <input
                       ref={newItemRef}
@@ -568,11 +571,11 @@ export default function JobDetailPage() {
 
                   {/* Total row */}
                   {lineItems.length > 0 && (
-                    <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.08)] px-4 py-3">
-                      <span className="text-[11px] font-medium text-zinc-500">
+                    <div className="flex items-center justify-between border-t border-[var(--border-base)] px-4 py-3">
+                      <span className="font-mono text-[9px] font-medium tracking-widest text-zinc-500 uppercase">
                         Total
                       </span>
-                      <span className="text-[16px] font-semibold tracking-tight text-zinc-100">
+                      <span className="font-mono text-[16px] font-semibold tabular-nums tracking-tight text-zinc-100">
                         $
                         {(
                           lineItems.reduce(
@@ -591,7 +594,7 @@ export default function JobDetailPage() {
             {subtasks.length > 0 && (
               <div className="mb-8">
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                  <h3 className="font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                     Sub-tasks
                   </h3>
                   <div className="flex items-center gap-2">
@@ -613,7 +616,7 @@ export default function JobDetailPage() {
                         cy={10}
                         r={8}
                         fill="none"
-                        stroke={subtaskProgress === 1 ? "#34d399" : "#00E676"}
+                        stroke={subtaskProgress === 1 ? "#34d399" : "#10B981"}
                         strokeWidth={2}
                         strokeLinecap="round"
                         strokeDasharray={`${2 * Math.PI * 8}`}
@@ -684,11 +687,11 @@ export default function JobDetailPage() {
             {/* ── Map Widget ─────────────────────────────────── */}
             {job.location && (
               <div className="mb-8">
-                <h3 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+                <h3 className="mb-3 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                   Location
                 </h3>
-                <div className="overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)]">
-                  <div className="relative h-[200px] bg-[#0a0a0a]">
+                <div className="overflow-hidden rounded-xl border border-[var(--border-base)]">
+                  <div className="relative h-[200px] bg-[var(--surface-1)]">
                     {job.locationCoords ? (
                       <InlineMap lat={job.locationCoords.lat} lng={job.locationCoords.lng} zoom={15} className="h-full w-full" />
                     ) : (
@@ -696,7 +699,7 @@ export default function JobDetailPage() {
                         <MapPin size={20} strokeWidth={1} className="text-zinc-700" />
                       </div>
                     )}
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[var(--surface-1)] to-transparent" />
                     <div className="absolute right-3 bottom-3 z-10 rounded-md bg-black/60 px-2.5 py-1 text-[11px] text-zinc-400 backdrop-blur-sm">
                       <div className="flex items-center gap-1.5">
                         <MapPin size={10} className="text-zinc-500" />
@@ -710,13 +713,13 @@ export default function JobDetailPage() {
 
             {/* ── Activity Stream ────────────────────────────── */}
             <div>
-              <h3 className="mb-4 flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+              <h3 className="mb-4 flex items-center gap-2 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                 <MessageSquare size={12} />
                 Activity
               </h3>
               <div className="relative pl-6">
                 {/* Timeline line */}
-                <div className="absolute top-2 bottom-2 left-[7px] w-px bg-[rgba(255,255,255,0.06)]" />
+                <div className="absolute top-2 bottom-2 left-[7px] w-px bg-[var(--border-base)]" />
 
                 <div className="space-y-4">
                   {(job.activity || []).map((entry, i) => {
@@ -730,7 +733,7 @@ export default function JobDetailPage() {
                         className="relative flex gap-3"
                       >
                         {/* Dot */}
-                        <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[rgba(255,255,255,0.1)] bg-[#0a0a0a]">
+                        <div className="absolute -left-6 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[var(--border-base)] bg-[var(--surface-1)]">
                           <Icon size={8} className="text-zinc-500" />
                         </div>
 
@@ -774,11 +777,11 @@ export default function JobDetailPage() {
 
             {/* ── Job Chat ──────────────────────────────────── */}
             <div className="mt-6">
-              <h3 className="mb-3 flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+              <h3 className="mb-3 flex items-center gap-2 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                 <MessageSquare size={12} />
                 Chat
               </h3>
-              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)] p-3">
+              <div className="rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.01] p-3">
                 <JobChat jobId={job.id} jobTitle={job.title} />
               </div>
             </div>
@@ -786,7 +789,7 @@ export default function JobDetailPage() {
         </div>
 
         {/* ── HUD (Right 30%) ───────────────────────────────── */}
-        <div className="w-[320px] shrink-0 overflow-y-auto border-l border-white/[0.05] bg-[#080808]">
+        <div className="w-[320px] shrink-0 overflow-y-auto border-l border-[var(--border-base)] bg-[var(--surface-1)]">
           <div className="p-5">
             {/* ── Status Pill ────────────────────────────────── */}
             <div className="relative mb-6">
@@ -844,24 +847,24 @@ export default function JobDetailPage() {
             </div>
 
             {/* ── Financial Pulse ────────────────────────────── */}
-            <div className="mb-6 rounded-lg border border-white/[0.05] bg-white/[0.02] p-4">
-              <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+            <div className="mb-6 rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02] p-4">
+              <h4 className="mb-3 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                 Financial Pulse
               </h4>
               <div className="mb-3 flex items-end justify-between">
                 <div>
-                  <div className="text-[22px] font-semibold tracking-tight text-zinc-100">
+                  <div className="font-mono text-[22px] font-semibold tabular-nums tracking-tight text-zinc-100">
                     ${(job.revenue || 0).toLocaleString()}
                   </div>
-                  <div className="text-[11px] text-zinc-600">Revenue</div>
+                  <div className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">Revenue</div>
                 </div>
                 <div className="text-right">
                   <div
-                    className={`text-[15px] font-medium ${margin >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                    className={`font-mono text-[15px] font-medium tabular-nums ${margin >= 0 ? "text-emerald-400" : "text-red-400"}`}
                   >
                     {margin >= 0 ? "+" : ""}${margin.toLocaleString()}
                   </div>
-                  <div className="text-[11px] text-zinc-600">
+                  <div className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">
                     {marginPercent}% margin
                   </div>
                 </div>
@@ -913,14 +916,14 @@ export default function JobDetailPage() {
               </div>
 
               {/* Cost breakdown */}
-              <div className="mt-3 flex items-center justify-between border-t border-white/[0.04] pt-3">
-                <div className="text-[11px] text-zinc-600">
+              <div className="mt-3 flex items-center justify-between border-t border-[var(--border-base)] pt-3">
+                <div className="font-mono text-[10px] tabular-nums text-zinc-600">
                   Cost:{" "}
                   <span className="text-zinc-400">
                     ${(job.cost || 0).toLocaleString()}
                   </span>
                 </div>
-                <div className="text-[11px] text-zinc-600">
+                <div className="font-mono text-[10px] tabular-nums text-zinc-600">
                   Hours:{" "}
                   <span className="text-zinc-400">
                     {job.actualHours || 0}/{job.estimatedHours || 0}h
@@ -930,7 +933,7 @@ export default function JobDetailPage() {
             </div>
 
             {/* ── Properties ─────────────────────────────────── */}
-            <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
+            <h4 className="mb-3 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
               Properties
             </h4>
             <div className="space-y-1">
@@ -1048,13 +1051,13 @@ export default function JobDetailPage() {
               </PropertyRow>
 
               {/* Labels */}
-              <div className="flex items-start justify-between rounded-md px-3 py-2">
-                <span className="text-[11px] text-zinc-600">Labels</span>
+              <div className="flex items-start justify-between rounded-[var(--radius-sm)] px-3 py-2">
+                <span className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">Labels</span>
                 <div className="flex flex-wrap justify-end gap-1">
                   {job.labels.map((label) => (
                     <span
                       key={label}
-                      className="rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[10px] text-zinc-500"
+                      className="rounded-[var(--radius-badge)] border border-[var(--border-base)] px-1.5 py-0.5 text-[10px] text-zinc-500"
                     >
                       {label}
                     </span>
@@ -1065,7 +1068,7 @@ export default function JobDetailPage() {
               {/* Hours */}
               <PropertyRow label="Hours">
                 <Clock size={12} className="text-zinc-600" />
-                <span className="text-[12px] text-zinc-400">
+                <span className="font-mono text-[12px] tabular-nums text-zinc-400">
                   {job.actualHours || 0}h / {job.estimatedHours || 0}h est.
                 </span>
               </PropertyRow>
@@ -1073,7 +1076,7 @@ export default function JobDetailPage() {
               {/* Created */}
               <PropertyRow label="Created">
                 <Sparkles size={12} className="text-zinc-600" />
-                <span className="text-[12px] text-zinc-500">{job.created}</span>
+                <span className="font-mono text-[12px] text-zinc-500">{job.created}</span>
               </PropertyRow>
             </div>
           </div>
@@ -1107,13 +1110,13 @@ function PropertyRow({
   return (
     <div
       onClick={onClick}
-      className={`flex items-center justify-between rounded-md px-3 py-2 transition-colors duration-150 ${
+      className={`flex items-center justify-between rounded-[var(--radius-sm)] px-3 py-2 transition-colors duration-150 ${
         onClick
           ? "cursor-pointer hover:bg-white/[0.03]"
           : ""
       }`}
     >
-      <span className="text-[11px] text-zinc-600">{label}</span>
+      <span className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">{label}</span>
       <div className="flex items-center gap-1.5">{children}</div>
     </div>
   );

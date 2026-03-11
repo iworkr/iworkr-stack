@@ -60,18 +60,30 @@ export default function DashboardPage() {
 
   return (
     <div className="relative p-6 lg:p-8">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
+
+      {/* Radial glow — atmosphere behind header */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.02) 0%, transparent 60%)" }}
+      />
+
       {/* Page header — stagger in first */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="mb-6 flex items-center justify-between"
+        className="relative mb-6 flex items-center justify-between"
       >
         <div>
-          <h1 className="font-display text-[18px] font-semibold tracking-tighter text-white">
+          <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+            COMMAND CENTER
+          </span>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
             Dashboard
           </h1>
-          <p className="mt-0.5 text-[12px] text-zinc-600">
+          <p className="mt-1 border-l-2 border-emerald-500/30 pl-2 text-[12px] text-zinc-600">
             {dateLabel.dayName}{dateLabel.dayName && `, ${dateLabel.monthDay}`}
             {activeJobCount !== null ? ` — ${activeJobCount} active job${activeJobCount !== 1 ? "s" : ""}` : ""}
           </p>
@@ -84,10 +96,10 @@ export default function DashboardPage() {
         >
           <button
             onClick={() => setEditMode(!editMode)}
-            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-medium transition-all duration-200 ${
+            className={`stealth-btn-ghost gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-medium ${
               editMode
-                ? "border border-white/20 bg-white/10 text-white shadow-[0_0_20px_-6px_rgba(255,255,255,0.08)]"
-                : "border border-white/[0.04] text-zinc-600 hover:border-white/[0.08] hover:text-zinc-400"
+                ? "!border-white/20 !bg-white/10 !text-white shadow-[0_0_20px_-6px_rgba(255,255,255,0.08)]"
+                : ""
             }`}
           >
             <Pencil size={11} />
@@ -95,11 +107,11 @@ export default function DashboardPage() {
           </button>
 
           <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.04] px-3 py-1.5">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-40" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="relative flex h-2 w-2">
+              <span className="animate-signal-pulse absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-40" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
             </span>
-            <span className="text-[11px] text-zinc-600">Live</span>
+            <span className="text-[11px] text-zinc-500">Live</span>
           </div>
         </motion.div>
       </motion.div>

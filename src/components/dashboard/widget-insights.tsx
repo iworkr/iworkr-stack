@@ -10,10 +10,10 @@ import { WidgetShell } from "./widget-shell";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const typeConfig = {
-  warning: { icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-500/8", dot: "bg-amber-500" },
-  alert: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/8", dot: "bg-red-500" },
-  info: { icon: Info, color: "text-emerald-500", bg: "bg-emerald-500/8", dot: "bg-emerald-500" },
-  success: { icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/8", dot: "bg-emerald-500" },
+  warning: { icon: AlertTriangle, color: "var(--ghost-amber-text)", bg: "var(--ghost-amber)", dot: "var(--ghost-amber-text)" },
+  alert: { icon: AlertTriangle, color: "var(--ghost-rose-text)", bg: "var(--ghost-rose)", dot: "var(--ghost-rose-text)" },
+  info: { icon: Info, color: "var(--ghost-emerald-text)", bg: "var(--ghost-emerald)", dot: "var(--brand)" },
+  success: { icon: CheckCircle2, color: "var(--ghost-emerald-text)", bg: "var(--ghost-emerald)", dot: "var(--brand)" },
 };
 
 const emptyInsight: AIInsight = {
@@ -87,12 +87,12 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
       <WidgetShell delay={0.25}>
         <div className="flex h-full flex-col items-center justify-center p-3 text-center">
           <div className="relative mb-1.5">
-            <Sparkles size={14} className="text-zinc-400" />
+            <Sparkles size={14} className="text-[var(--text-muted)]" />
           </div>
-          <div className={`flex h-5 w-5 items-center justify-center rounded ${config.bg} mb-1`}>
-            <Icon size={10} className={config.color} />
+          <div className="mb-1 flex h-5 w-5 items-center justify-center rounded" style={{ background: config.bg }}>
+            <Icon size={10} style={{ color: config.color }} />
           </div>
-          <span className="line-clamp-2 text-[9px] leading-tight text-zinc-500">
+          <span className="line-clamp-2 font-mono text-[9px] leading-tight text-[var(--text-muted)]">
             {insight.title}
           </span>
         </div>
@@ -117,9 +117,9 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
 
           <div className="relative z-10 p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Sparkles size={14} className="text-zinc-400" />
-              <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">AI Insights</span>
-              <span className="text-[10px] text-zinc-700">{insights.length} active</span>
+              <Sparkles size={14} className="text-[var(--text-muted)]" />
+              <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">AI Insights</span>
+              <span className="font-mono text-[9px] tabular-nums text-[var(--text-dim)]">{insights.length} active</span>
             </div>
 
             <div className="space-y-1.5">
@@ -132,18 +132,19 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 + i * 0.08 }}
-                    className="flex items-start gap-2.5 rounded-lg border border-white/[0.03] bg-white/[0.02] p-2.5 transition-colors duration-200 hover:border-white/[0.06]"
+                    className="flex items-start gap-2.5 rounded-lg border p-2.5 transition-colors duration-200 hover:border-[var(--border-active)]"
+                    style={{ borderColor: "var(--border-base)", background: "var(--subtle-bg)" }}
                   >
-                    <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${cfg.bg}`}>
-                      <InsIcon size={12} strokeWidth={1.5} className={cfg.color} />
+                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md" style={{ background: cfg.bg }}>
+                      <InsIcon size={12} strokeWidth={1.5} style={{ color: cfg.color }} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-[11px] font-medium text-zinc-300">{ins.title}</h4>
-                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-zinc-600">{ins.body}</p>
+                      <h4 className="text-[11px] font-medium text-[var(--text-body)]">{ins.title}</h4>
+                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-[var(--text-dim)]">{ins.body}</p>
                       {ins.action && ins.action_route && (
                         <button
                           onClick={() => router.push(ins.action_route!)}
-                          className="mt-1.5 flex items-center gap-1 text-[9px] font-medium text-zinc-500 transition-colors hover:text-white"
+                          className="mt-1.5 flex items-center gap-1 font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
                         >
                           <Calendar size={9} /> {ins.action}
                         </button>
@@ -173,20 +174,21 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
 
         <div className="relative z-10">
           <div className="mb-3 flex items-center gap-2">
-            <Sparkles size={14} className="text-zinc-400" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">AI Insight</span>
+            <Sparkles size={14} className="text-[var(--text-muted)]" />
+            <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">AI Insight</span>
           </div>
           <div className="flex items-start gap-3">
-            <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${config.bg}`}>
-              <Icon size={14} strokeWidth={1.5} className={config.color} />
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: config.bg }}>
+              <Icon size={14} strokeWidth={1.5} style={{ color: config.color }} />
             </div>
             <div className="min-w-0 flex-1">
-              <h4 className="text-[13px] font-medium text-zinc-200">{insight.title}</h4>
-              <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">{insight.body}</p>
+              <h4 className="text-[13px] font-medium text-[var(--text-body)]">{insight.title}</h4>
+              <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">{insight.body}</p>
               {insight.action && insight.action_route && (
                 <button
                   onClick={() => router.push(insight.action_route!)}
-                  className="mt-3 flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-all duration-200 hover:border-white/[0.12] hover:bg-white/[0.04] hover:text-zinc-200"
+                  className="mt-3 flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-mono text-[9px] font-medium uppercase tracking-widest transition-all duration-200 hover:border-[var(--border-active)] hover:text-[var(--text-primary)]"
+                  style={{ borderColor: "var(--border-base)", background: "var(--subtle-bg)", color: "var(--text-muted)" }}
                 >
                   <Calendar size={11} /> {insight.action}
                 </button>

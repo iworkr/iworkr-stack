@@ -76,7 +76,7 @@ export default function AssetDetailPage() {
   const status = statusConfig[asset.status];
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* ── Header ───────────────────────────────────────── */}
       <div className="sticky top-0 z-10 border-b border-white/[0.04] bg-zinc-950/80 px-5 py-2.5 backdrop-blur-xl">
         <div className="flex items-center justify-between">
@@ -143,7 +143,7 @@ export default function AssetDetailPage() {
               <MapPin size={12} className="text-zinc-600" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Last Known Location</span>
             </div>
-            <div className="relative h-40 overflow-hidden rounded-xl border border-white/[0.04] bg-[#080808]">
+            <div className="relative h-40 overflow-hidden rounded-xl border border-white/[0.04] bg-[var(--surface-1)]">
               <div
                 className="absolute inset-0 opacity-[0.03]"
                 style={{
@@ -193,7 +193,7 @@ export default function AssetDetailPage() {
                 </div>
               </div>
 
-              <div className="absolute bottom-3 left-3 rounded-lg border border-white/[0.06] bg-[#0A0A0A]/90 px-3 py-2 backdrop-blur-sm">
+              <div className="absolute bottom-3 left-3 rounded-lg border border-white/[0.06] bg-[var(--surface-1)]/90 px-3 py-2 backdrop-blur-sm">
                 <p className="text-[11px] font-medium text-zinc-300">{asset.location}</p>
                 {asset.assignee && (
                   <p className="mt-0.5 text-[9px] text-zinc-600">

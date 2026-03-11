@@ -177,10 +177,18 @@ function AcceptInviteContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
+      {/* Noise — standardized */}
+      <div className="stealth-noise fixed" />
+
+      {/* Atmospheric glow */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-[var(--brand)] opacity-[0.025] blur-[180px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
         {/* ── Glass Modal ────────────────────────────── */}
-        <div className="bg-zinc-950 border border-white/5 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-[var(--surface-1)] border border-[var(--border-base)] rounded-2xl p-8 shadow-2xl">
 
           {step === "loading" && (
             <div className="flex flex-col items-center gap-4 py-8">
@@ -225,7 +233,7 @@ function AcceptInviteContent() {
               <div className="space-y-3">
                 <div>
                   <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-1.5 block">Email</label>
-                  <div className="w-full px-4 py-3 bg-zinc-900/50 border border-white/5 rounded-lg text-sm text-zinc-400">
+                  <div className="w-full px-4 py-3 bg-white/[0.03] border border-[var(--border-base)] rounded-lg text-sm text-zinc-400">
                     {inviteData.email}
                   </div>
                 </div>
@@ -238,7 +246,7 @@ function AcceptInviteContent() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Create a secure password"
-                      className="w-full px-4 py-3 bg-zinc-900/50 border border-white/5 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
+                      className="w-full px-4 py-3 bg-white/[0.03] border border-[var(--border-base)] rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
                     />
                     <button
                       type="button"
@@ -257,7 +265,7 @@ function AcceptInviteContent() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm password"
-                    className="w-full px-4 py-3 bg-zinc-900/50 border border-white/5 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
+                    className="w-full px-4 py-3 bg-white/[0.03] border border-[var(--border-base)] rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
                   />
                 </div>
 
@@ -304,7 +312,7 @@ function AcceptInviteContent() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Your full name"
-                    className="w-full px-4 py-3 bg-zinc-900/50 border border-white/5 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
+                    className="w-full px-4 py-3 bg-white/[0.03] border border-[var(--border-base)] rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
                   />
                 </div>
 
@@ -315,7 +323,7 @@ function AcceptInviteContent() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+1 234 567 890 (optional)"
-                    className="w-full px-4 py-3 bg-zinc-900/50 border border-white/5 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
+                    className="w-full px-4 py-3 bg-white/[0.03] border border-[var(--border-base)] rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
                   />
                 </div>
               </div>
@@ -368,7 +376,7 @@ export default function AcceptInvitePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
         </div>
       }

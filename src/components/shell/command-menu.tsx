@@ -137,11 +137,11 @@ export function CommandMenu() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -8 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-[18%] left-1/2 z-50 w-full max-w-[560px] -translate-x-1/2 overflow-hidden rounded-[8px] border border-[rgba(255,255,255,0.08)] bg-[#0F0F0F] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
+            className="fixed top-[18%] left-1/2 z-50 w-full max-w-[560px] -translate-x-1/2 overflow-hidden rounded-[8px] border border-[var(--card-border)] bg-[var(--surface-1)] shadow-[var(--shadow-deep)]"
           >
             {/* Search input */}
-            <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3.5">
-              <Search size={15} className="shrink-0 text-zinc-600" />
+            <div className="flex items-center gap-3 border-b border-[var(--border-base)] px-4 py-3.5">
+              <Search size={15} className="shrink-0 text-[var(--text-dim)]" />
               <input
                 ref={inputRef}
                 type="text"
@@ -152,9 +152,9 @@ export function CommandMenu() {
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a command or search..."
-                className="flex-1 bg-transparent text-[14px] text-zinc-100 outline-none placeholder:text-zinc-600"
+                className="flex-1 bg-transparent text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-dim)]"
               />
-              <kbd className="rounded-md border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
+              <kbd className="rounded-md border border-[var(--border-base)] bg-[var(--card-bg)] px-1.5 py-0.5 font-mono text-[9px] text-[var(--text-dim)]">
                 ESC
               </kbd>
             </div>
@@ -163,7 +163,7 @@ export function CommandMenu() {
             <div ref={listRef} className="max-h-[360px] overflow-y-auto scrollbar-none p-1.5">
               {groups.map((group) => (
                 <div key={group}>
-                  <p className="px-2.5 py-1.5 text-[9px] font-bold tracking-widest text-zinc-700 uppercase">
+                  <p className="px-2.5 py-1.5 text-[9px] font-bold tracking-widest text-[var(--text-dim)] uppercase">
                     {group}
                   </p>
                   {filtered
@@ -181,19 +181,19 @@ export function CommandMenu() {
                           onMouseEnter={() => setSelectedIndex(globalIdx)}
                           className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-all duration-100 ${
                             isActive
-                              ? "bg-white/[0.05] text-zinc-100"
-                              : "text-zinc-400 hover:bg-white/[0.03]"
+                              ? "bg-[var(--subtle-bg-hover)] text-[var(--text-primary)]"
+                              : "text-[var(--text-muted)] hover:bg-[var(--subtle-bg)]"
                           }`}
                         >
                           <Icon size={15} className="shrink-0" strokeWidth={1.5} />
                           <span className="flex-1 text-[13px]">{cmd.label}</span>
                           {isActive && (
-                            <ArrowRight size={12} className="text-zinc-600" />
+                            <ArrowRight size={12} className="text-[var(--text-dim)]" />
                           )}
                           {cmd.shortcut && (
                             <div className="flex items-center gap-0.5">
                               {cmd.shortcut.split(" ").map((k, i) => (
-                                <kbd key={i} className="rounded border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
+                                <kbd key={i} className="rounded border border-[var(--border-base)] bg-[var(--card-bg)] px-1.5 py-0.5 font-mono text-[9px] text-[var(--text-dim)]">
                                   {k}
                                 </kbd>
                               ))}
@@ -206,8 +206,8 @@ export function CommandMenu() {
               ))}
               {filtered.length === 0 && (
                 <div className="flex flex-col items-center py-10">
-                  <Hash size={18} className="mb-2 text-zinc-700" />
-                  <p className="text-[12px] text-zinc-600">
+                  <Hash size={18} className="mb-2 text-[var(--text-dim)]" />
+                  <p className="text-[12px] text-[var(--text-muted)]">
                     No results for &ldquo;{search}&rdquo;
                   </p>
                 </div>
@@ -215,22 +215,22 @@ export function CommandMenu() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center gap-4 border-t border-white/[0.05] px-4 py-2">
-              <span className="flex items-center gap-1 text-[9px] text-zinc-600">
-                <kbd className="rounded border border-white/[0.06] bg-white/[0.03] px-1 py-0.5 font-mono">↑↓</kbd>
+            <div className="flex items-center gap-4 border-t border-[var(--border-base)] px-4 py-2">
+              <span className="flex items-center gap-1 text-[9px] text-[var(--text-dim)]">
+                <kbd className="rounded border border-[var(--border-base)] bg-[var(--card-bg)] px-1 py-0.5 font-mono">↑↓</kbd>
                 navigate
               </span>
-              <span className="flex items-center gap-1 text-[9px] text-zinc-600">
-                <kbd className="rounded border border-white/[0.06] bg-white/[0.03] px-1 py-0.5 font-mono">↵</kbd>
+              <span className="flex items-center gap-1 text-[9px] text-[var(--text-dim)]">
+                <kbd className="rounded border border-[var(--border-base)] bg-[var(--card-bg)] px-1 py-0.5 font-mono">↵</kbd>
                 select
               </span>
-              <span className="flex items-center gap-1 text-[9px] text-zinc-600">
-                <kbd className="rounded border border-white/[0.06] bg-white/[0.03] px-1 py-0.5 font-mono">esc</kbd>
+              <span className="flex items-center gap-1 text-[9px] text-[var(--text-dim)]">
+                <kbd className="rounded border border-[var(--border-base)] bg-[var(--card-bg)] px-1 py-0.5 font-mono">esc</kbd>
                 close
               </span>
-              <span className="ml-auto flex items-center gap-1 text-[9px] text-zinc-700">
-                <kbd className="rounded border border-white/[0.06] bg-white/[0.03] px-1 py-0.5 font-mono">⌘</kbd>
-                <kbd className="rounded border border-white/[0.06] bg-white/[0.03] px-1 py-0.5 font-mono">K</kbd>
+              <span className="ml-auto flex items-center gap-1 text-[9px] text-[var(--text-dim)]">
+                <kbd className="rounded border border-[var(--border-base)] bg-[var(--card-bg)] px-1 py-0.5 font-mono">⌘</kbd>
+                <kbd className="rounded border border-[var(--border-base)] bg-[var(--card-bg)] px-1 py-0.5 font-mono">K</kbd>
                 toggle
               </span>
             </div>

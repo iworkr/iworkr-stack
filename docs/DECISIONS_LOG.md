@@ -45,6 +45,22 @@
 - **Consequences**: All components must be designed dark-first. Light mode supported but secondary. Green usage must be disciplined (≤10% rule).
 - **Owner**: Design
 
+### 2026-03-11 — Design System Revamp: Full Obsidian Enforcement
+
+- **Decision**: Execute comprehensive design system rework across all web pages, components, and Flutter mobile tokens. Eradicate all design drift.
+- **Why**: Product had drifted from the Obsidian design system — neon green (#00E676) leaked into 46+ files, hardcoded hex colors (#050505, #080808, #0A0A0A) appeared instead of CSS variable tokens, button/tab/empty-state patterns were inconsistent across modules, and many pages lacked the atmospheric texture (noise, glow) that defines the brand.
+- **What changed**:
+  - Token enforcement across 60+ files, neon green eradication in 46 files
+  - New CSS utilities: `stealth-btn-*`, `stealth-tab`, `stealth-table-*`, `stealth-settings-*`, `stealth-empty-state`, `stealth-paywall`, `stealth-noise`
+  - Ghost-tint CSS variable tokens for all semantic status colors
+  - Mono overline labels on every dashboard module and settings page
+  - Atmospheric treatment (noise texture + emerald radial glow) on all pages
+  - All 6 dashboard widgets upgraded with analytical density
+  - Flutter Alabaster light theme corrected (6 token fixes), empty state animations aligned
+  - Landing page darkened, paywall redesigned as aspirational surface
+- **Consequences**: All new UI must use CSS variable tokens from globals.css. Hardcoded hex colors are a blocking review issue.
+- **Owner**: Design System Team
+
 ### 2026-02-15 — Zustand for client state management
 - **Decision**: Use Zustand for all client-side state management on web.
 - **Why**: Minimal API, excellent TypeScript support, no boilerplate, works well with React 19. Simpler than Redux for our use case.

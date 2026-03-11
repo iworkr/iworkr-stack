@@ -118,8 +118,8 @@ export function IntegrationCard({ integration: int, index }: IntegrationCardProp
 
           {isSyncing && (
             <div className="flex items-center gap-1.5">
-              <RefreshCw size={10} className="animate-spin text-[#00E676]" />
-              <span className="text-[9px] text-[#00E676]">Syncing</span>
+              <RefreshCw size={10} className="animate-spin text-[#10B981]" />
+              <span className="text-[9px] text-[#10B981]">Syncing</span>
             </div>
           )}
 

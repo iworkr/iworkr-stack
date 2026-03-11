@@ -217,7 +217,7 @@ export default function PhoneAgentPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full flex-col bg-[#050505]">
+      <div className="flex h-full flex-col bg-[var(--background)]">
         <div className="border-b border-white/5 bg-zinc-950/80 px-6 py-4">
           <div className="h-6 w-48 animate-pulse rounded bg-zinc-900/50" />
           <div className="mt-2 h-4 w-64 animate-pulse rounded bg-zinc-900/30" />
@@ -233,9 +233,9 @@ export default function PhoneAgentPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-[#050505]">
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* PRD 60: Detail header — Back + Title + iOS toggle (no big Enable block) */}
-      <div className="sticky top-0 z-20 border-b border-white/5 bg-[#050505]/95 backdrop-blur-xl">
+      <div className="sticky top-0 z-20 border-b border-white/5 bg-[var(--background)]/95 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
             <Link href="/dashboard/ai-agent" className="flex items-center gap-1.5 text-[12px] text-zinc-500 transition-colors hover:text-white">
@@ -479,7 +479,7 @@ export default function PhoneAgentPage() {
         {transcriptCall && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setTranscriptCallId(null)} className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ x: 400 }} animate={{ x: 0 }} exit={{ x: 400 }} className="fixed right-0 top-0 z-50 flex h-full w-[400px] flex-col border-l border-white/5 bg-[#050505]">
+            <motion.div initial={{ x: 400 }} animate={{ x: 0 }} exit={{ x: 400 }} className="fixed right-0 top-0 z-50 flex h-full w-[400px] flex-col border-l border-white/5 bg-[var(--background)]">
               <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
                 <div>
                   <h2 className="text-[14px] font-medium text-white">Transcript</h2>

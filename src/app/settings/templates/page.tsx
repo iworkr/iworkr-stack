@@ -13,10 +13,18 @@ const templates = [
 export default function TemplatesPage() {
   return (
     <>
+      {/* ─── Page intro — premium control-center header ─── */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight text-zinc-100">Templates</h1>
-          <p className="mt-1 text-[13px] text-zinc-600">Reusable job descriptions and checklists.</p>
+          <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+            Templates
+          </span>
+          <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+            Templates
+          </h1>
+          <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+            Reusable job descriptions and checklists.
+          </p>
         </div>
         <button className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-[13px] font-medium text-black hover:bg-zinc-200">
           <Plus size={14} /> New template

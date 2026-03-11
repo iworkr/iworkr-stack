@@ -63,7 +63,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
         organizationName: data.organization_name,
         organizationSlug: data.organization_slug,
         organizationLogo: data.organization_logo || null,
-        brandColor: data.brand_color || "#00E676",
+        brandColor: data.brand_color || "#10B981",
         inviterName: data.inviter_name || "Your team",
         expiresAt: data.expires_at,
       }}

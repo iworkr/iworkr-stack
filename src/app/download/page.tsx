@@ -93,19 +93,25 @@ export default function DownloadPage() {
   const primaryDownload = getPrimaryDownload(platform, versionInfo);
 
   return (
-    <div className="min-h-screen bg-[#050505]">
+    <div className="relative min-h-screen bg-[var(--background)]">
+      {/* Noise texture overlay */}
+      <div className="stealth-noise" />
+
+      {/* Atmospheric glow */}
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-emerald-500/[0.04] blur-[120px]" />
+
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#050505]/80 backdrop-blur-xl">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-base)] bg-[var(--header-bg)] backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <a href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#00E676] to-[#00C853]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand)] to-[var(--brand-hover)]">
               <span className="text-sm font-bold text-black">W</span>
             </div>
-            <span className="text-[15px] font-semibold text-zinc-200">Workspace</span>
+            <span className="text-[15px] font-semibold text-[var(--text-primary)]">Workspace</span>
           </a>
           <a
             href="/auth"
-            className="rounded-lg bg-white/[0.06] px-4 py-2 text-[12px] font-medium text-zinc-300 transition-colors hover:bg-white/[0.1]"
+            className="rounded-[var(--radius-button)] bg-[var(--subtle-bg)] px-4 py-2 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--subtle-bg-hover)]"
           >
             Sign In
           </a>
@@ -113,21 +119,22 @@ export default function DownloadPage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center px-6 pt-40 pb-20">
+      <section className="relative z-10 flex flex-col items-center justify-center px-6 pt-40 pb-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-center"
         >
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03]">
-            <Monitor size={28} className="text-[#00E676]" />
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)]">
+            <Monitor size={28} className="text-[var(--brand)]" />
           </div>
 
-          <h1 className="text-[42px] font-bold leading-tight tracking-tight text-zinc-100">
+          <span className="mb-3 inline-block font-mono text-[9px] font-bold tracking-widest text-[var(--brand)] uppercase">The Obsidian Monolith</span>
+          <h1 className="text-[42px] font-bold leading-tight tracking-tight text-[var(--text-heading)]">
             Desktop App
           </h1>
-          <p className="mx-auto mt-4 max-w-lg text-[16px] leading-relaxed text-zinc-500">
+          <p className="mx-auto mt-4 max-w-lg text-[16px] leading-relaxed text-[var(--text-muted)]">
             A dedicated command center. No browser distractions.
             Native notifications. Always one click away.
           </p>
@@ -141,7 +148,7 @@ export default function DownloadPage() {
           >
             <a
               href={primaryDownload.url}
-              className="group flex items-center gap-3 rounded-lg bg-gradient-to-b from-[#00E676] to-[#00C853] px-8 py-4 text-[15px] font-semibold text-black shadow-[0_0_40px_-10px_rgba(0,230,118,0.3)] transition-all hover:shadow-[0_0_60px_-10px_rgba(0,230,118,0.5)]"
+              className="group flex items-center gap-3 rounded-[var(--radius-button)] bg-gradient-to-b from-[var(--brand)] to-[var(--brand-hover)] px-8 py-4 text-[15px] font-semibold text-black shadow-[var(--brand-glow)] transition-all hover:shadow-[0_0_60px_-10px_rgba(16,185,129,0.5)]"
             >
               <Download size={18} />
               {primaryDownload.label}
@@ -151,10 +158,10 @@ export default function DownloadPage() {
               />
             </a>
 
-            <div className="flex items-center gap-4 text-[11px] text-zinc-600">
+            <div className="flex items-center gap-4 font-mono text-[10px] text-[var(--text-dim)]">
               {versionInfo && (
                 <span className="flex items-center gap-1">
-                  <Check size={10} className="text-[#00E676]" />
+                  <Check size={10} className="text-[var(--brand)]" />
                   v{versionInfo.version}
                 </span>
               )}
@@ -175,7 +182,7 @@ export default function DownloadPage() {
           >
             <button
               onClick={() => setShowAllPlatforms(!showAllPlatforms)}
-              className="flex items-center gap-1 text-[12px] text-zinc-500 transition-colors hover:text-zinc-300 mx-auto"
+              className="flex items-center gap-1 text-[12px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] mx-auto"
             >
               Other platforms
               <ChevronDown
@@ -220,20 +227,20 @@ export default function DownloadPage() {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="mx-auto mt-16 w-full max-w-4xl"
         >
-          <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl">
+          <div className="overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--surface-1)] shadow-2xl">
             {/* Fake title bar */}
-            <div className="flex h-10 items-center border-b border-white/[0.06] px-4">
+            <div className="flex h-10 items-center border-b border-[var(--border-base)] px-4">
               <div className="flex gap-2">
                 <div className="h-3 w-3 rounded-full bg-[#ff5f57]" />
                 <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
                 <div className="h-3 w-3 rounded-full bg-[#28c840]" />
               </div>
-              <span className="ml-4 text-[11px] text-zinc-600">Workspace</span>
+              <span className="ml-4 text-[11px] text-[var(--text-dim)]">Workspace</span>
             </div>
             {/* Content area */}
             <div className="flex h-[340px]">
               {/* Sidebar skeleton */}
-              <div className="w-[200px] border-r border-white/[0.06] p-4">
+              <div className="w-[200px] border-r border-[var(--border-base)] p-4">
                 <div className="mb-4 h-8 w-8 rounded-lg bg-white/[0.04]" />
                 <div className="space-y-2">
                   <div className="h-7 w-[70%] rounded-md bg-white/[0.06]" />
@@ -256,7 +263,7 @@ export default function DownloadPage() {
                       className="h-28 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
                     >
                       <div className="mb-2 h-3 w-16 rounded bg-white/[0.06]" />
-                      <div className="mt-3 h-8 w-12 rounded bg-[#00E676]/10" />
+                      <div className="mt-3 h-8 w-12 rounded bg-[#10B981]/10" />
                     </div>
                   ))}
                 </div>
@@ -271,12 +278,12 @@ export default function DownloadPage() {
       </section>
 
       {/* Features Grid */}
-      <section className="mx-auto max-w-4xl px-6 py-20">
+      <section className="relative z-10 mx-auto max-w-4xl px-6 py-20">
         <motion.h2
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-600"
+          className="mb-2 text-center font-mono text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]"
         >
           Why Desktop?
         </motion.h2>
@@ -284,7 +291,7 @@ export default function DownloadPage() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mb-12 text-center text-[24px] font-bold text-zinc-200"
+          className="mb-12 text-center text-[24px] font-bold text-[var(--text-heading)]"
         >
           Built for operators who live in their workspace.
         </motion.p>
@@ -297,11 +304,11 @@ export default function DownloadPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 transition-colors hover:border-white/[0.12]"
+              className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6 transition-colors hover:border-[var(--card-border-hover)]"
             >
-              <f.icon size={20} className="mb-3 text-[#00E676]" />
-              <p className="text-[14px] font-medium text-zinc-200">{f.label}</p>
-              <p className="mt-1 text-[12px] leading-relaxed text-zinc-500">
+              <f.icon size={20} className="mb-3 text-[var(--brand)]" />
+              <p className="text-[14px] font-medium text-[var(--text-primary)]">{f.label}</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-muted)]">
                 {f.desc}
               </p>
             </motion.div>
@@ -310,30 +317,31 @@ export default function DownloadPage() {
       </section>
 
       {/* System Requirements */}
-      <section className="border-t border-white/[0.06] py-16">
+      <section className="relative z-10 border-t border-[var(--border-base)] py-16">
         <div className="mx-auto max-w-4xl px-6">
-          <h3 className="mb-8 text-center text-[18px] font-semibold text-zinc-300">
+          <span className="mb-2 block text-center font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Compatibility</span>
+          <h3 className="mb-8 text-center text-[18px] font-semibold text-[var(--text-primary)]">
             System Requirements
           </h3>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6">
+            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
               <div className="mb-3 flex items-center gap-2">
-                <Apple size={16} className="text-zinc-400" />
-                <span className="text-[14px] font-medium text-zinc-300">macOS</span>
+                <Apple size={16} className="text-[var(--text-muted)]" />
+                <span className="text-[14px] font-medium text-[var(--text-primary)]">macOS</span>
               </div>
-              <ul className="space-y-1.5 text-[12px] text-zinc-500">
+              <ul className="space-y-1.5 text-[12px] text-[var(--text-muted)]">
                 <li>macOS 12 Monterey or later</li>
                 <li>Apple Silicon (M1+) or Intel</li>
                 <li>200 MB disk space</li>
                 <li>Signed & Notarized by Apple</li>
               </ul>
             </div>
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6">
+            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
               <div className="mb-3 flex items-center gap-2">
                 <WindowsIcon />
-                <span className="text-[14px] font-medium text-zinc-300">Windows</span>
+                <span className="text-[14px] font-medium text-[var(--text-primary)]">Windows</span>
               </div>
-              <ul className="space-y-1.5 text-[12px] text-zinc-500">
+              <ul className="space-y-1.5 text-[12px] text-[var(--text-muted)]">
                 <li>Windows 10 version 1903 or later</li>
                 <li>x64 or ARM64 processor</li>
                 <li>200 MB disk space</li>
@@ -345,11 +353,11 @@ export default function DownloadPage() {
       </section>
 
       {/* Footer CTA */}
-      <section className="border-t border-white/[0.06] py-16">
+      <section className="relative z-10 border-t border-[var(--border-base)] py-16">
         <div className="text-center">
-          <p className="text-[12px] text-zinc-600">
+          <p className="text-[12px] text-[var(--text-dim)]">
             Also available on{" "}
-            <a href="/dashboard/get-app" className="text-zinc-400 underline hover:text-zinc-300">
+            <a href="/dashboard/get-app" className="text-[var(--text-muted)] underline hover:text-[var(--text-primary)]">
               iOS & Android
             </a>
           </p>
@@ -375,8 +383,8 @@ function PlatformLink({
       href={href}
       className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-[12px] font-medium transition-all ${
         active
-          ? "border-[#00E676]/30 bg-[#00E676]/[0.06] text-zinc-200"
-          : "border-white/[0.08] bg-white/[0.02] text-zinc-400 hover:border-white/[0.15]"
+          ? "border-[var(--brand)]/30 bg-[rgba(16,185,129,0.06)] text-[var(--text-primary)]"
+          : "border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-muted)] hover:border-[var(--card-border-hover)]"
       }`}
     >
       {icon}
