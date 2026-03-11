@@ -63,44 +63,54 @@ export async function POST(req: NextRequest) {
 
   // Create subscription with payment_behavior: default_incomplete
   // This gives us a PaymentIntent client_secret to confirm on frontend
-  const subscription = await stripe.subscriptions.create({
-    customer: customerId,
-    items: [{ price: priceId }],
-    payment_behavior: "default_incomplete",
-    payment_settings: {
-      save_default_payment_method: "on_subscription",
-    },
-    trial_period_days: 14,
-    metadata: { organization_id: orgId },
-    expand: ["latest_invoice.payment_intent", "pending_setup_intent"],
-  });
+  try {
+    console.log(`[Stripe] Creating subscription: customer=${customerId}, price=${priceId}, org=${orgId}`);
 
-  // For trials, we get a SetupIntent (no charge yet)
-  // For immediate charges, we get a PaymentIntent
-  const latestInvoice = subscription.latest_invoice as any;
-  const setupIntent = subscription.pending_setup_intent as any;
+    const subscription = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: priceId }],
+      payment_behavior: "default_incomplete",
+      payment_settings: {
+        save_default_payment_method: "on_subscription",
+      },
+      trial_period_days: 14,
+      metadata: { organization_id: orgId },
+      expand: ["latest_invoice.payment_intent", "pending_setup_intent"],
+    });
 
-  let clientSecret: string;
-  let type: "setup" | "payment";
+    // For trials, we get a SetupIntent (no charge yet)
+    // For immediate charges, we get a PaymentIntent
+    const latestInvoice = subscription.latest_invoice as any;
+    const setupIntent = subscription.pending_setup_intent as any;
 
-  if (setupIntent?.client_secret) {
-    // Trial — needs card for future charges
-    clientSecret = setupIntent.client_secret;
-    type = "setup";
-  } else if (latestInvoice?.payment_intent?.client_secret) {
-    // Immediate payment
-    clientSecret = latestInvoice.payment_intent.client_secret;
-    type = "payment";
-  } else {
+    let clientSecret: string;
+    let type: "setup" | "payment";
+
+    if (setupIntent?.client_secret) {
+      // Trial — needs card for future charges
+      clientSecret = setupIntent.client_secret;
+      type = "setup";
+    } else if (latestInvoice?.payment_intent?.client_secret) {
+      // Immediate payment
+      clientSecret = latestInvoice.payment_intent.client_secret;
+      type = "payment";
+    } else {
+      return NextResponse.json(
+        { error: "Could not create subscription payment" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      subscriptionId: subscription.id,
+      clientSecret,
+      type,
+    });
+  } catch (err: any) {
+    console.error(`[Stripe] Subscription creation failed:`, err.message, `priceId=${priceId}, stripeKey starts with=${process.env.STRIPE_SECRET_KEY?.slice(0, 10)}`);
     return NextResponse.json(
-      { error: "Could not create subscription payment" },
+      { error: err.message || "Stripe subscription creation failed" },
       { status: 500 }
     );
   }
-
-  return NextResponse.json({
-    subscriptionId: subscription.id,
-    clientSecret,
-    type,
-  });
 }
