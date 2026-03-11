@@ -10,6 +10,7 @@ import { z } from "zod";
 const CreateOrganizationSchema = z.object({
   name: z.string().min(1, "Organization name is required").max(100),
   trade: z.string().max(100).optional().nullable(),
+  industryType: z.enum(["trades", "care"]).optional().nullable(),
 });
 
 const UpdateTradeSchema = z.string().min(1, "Trade is required").max(100);
@@ -26,6 +27,7 @@ function slugify(text: string): string {
 export async function createOrganization(data: {
   name: string;
   trade: string | null;
+  industryType?: string | null;
 }) {
   // Validate input
   const parsed = CreateOrganizationSchema.safeParse(data);
@@ -61,6 +63,17 @@ export async function createOrganization(data: {
 
   if (error) {
     return { error: error.message };
+  }
+
+  // Set the industry type on the new org if specified
+  if (data.industryType && result) {
+    const orgId = typeof result === "string" ? result : (result as any)?.id;
+    if (orgId) {
+      await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from("organizations")
+        .update({ industry_type: data.industryType })
+        .eq("id", orgId);
+    }
   }
 
   return { organization: result };

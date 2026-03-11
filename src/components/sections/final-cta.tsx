@@ -52,10 +52,10 @@ export function FinalCTA() {
                 backgroundClip: "text",
               }}
             >
-              Built for the future of trade.
+              Built for trades. Built for care.
             </span>
             <br />
-            <span className="text-[var(--text-muted)]">Available today.</span>
+            <span className="text-[var(--text-muted)]">One platform. Available today.</span>
           </h2>
         </FadeIn>
 
@@ -63,7 +63,7 @@ export function FinalCTA() {
           <p className="mx-auto mt-6 max-w-lg text-base text-[var(--text-muted)]">
             {isAuthenticated
               ? "Your workspace is ready. Pick up where you left off."
-              : "Join 2,000+ service businesses already running on iWorkr. 14-day free trial. No credit card required."}
+              : "Join 2,000+ trades and care businesses already running on iWorkr. 14-day free trial. No credit card required."}
           </p>
         </FadeIn>
 

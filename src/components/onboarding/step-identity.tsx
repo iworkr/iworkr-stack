@@ -8,8 +8,9 @@ import { CheckmarkDraw } from "./spinner";
 import { createOrganization } from "@/app/actions/onboarding";
 
 export function StepIdentity() {
-  const { companyName, workspaceSlug, setCompanyName, advanceStep, setOrganizationId, selectedTrade } =
+  const { companyName, workspaceSlug, setCompanyName, advanceStep, setOrganizationId, selectedTrade, industryType } =
     useOnboardingStore();
+  const isCare = industryType === "care";
   const [submitting, setSubmitting] = useState(false);
   const [localName, setLocalName] = useState(companyName);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export function StepIdentity() {
         const res = await createOrganization({
           name: localName,
           trade: selectedTrade,
+          industryType: industryType,
         });
         if ("error" in res && res.error) {
           setError(res.error as string);
@@ -121,7 +123,7 @@ export function StepIdentity() {
             value={localName}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="e.g. Apex Plumbing"
+            placeholder={isCare ? "e.g. BrightPath Care Services" : "e.g. Apex Plumbing"}
             className="w-full border-b border-[rgba(255,255,255,0.1)] bg-transparent py-3 text-xl font-medium text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-700 focus:border-white"
             autoComplete="off"
           />

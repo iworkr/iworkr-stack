@@ -16,11 +16,27 @@ const testimonials = [
   },
   {
     quote:
+      "Credential tracking alone saved us from two audit findings. Everything is enforced before a shift even starts.",
+    name: "Rachel Nguyen",
+    role: "Compliance Manager",
+    company: "BrightPath Disability Services",
+    metric: "Zero audit gaps",
+  },
+  {
+    quote:
       "The AI phone agent alone pays for itself. We capture every lead now — even at 2 AM on a Saturday.",
     name: "Sarah Chen",
     role: "Operations Manager",
     company: "ClearWater HVAC",
     metric: "3x more leads",
+  },
+  {
+    quote:
+      "We moved from paper MARs to iWorkr in a weekend. The eMAR module is exactly what NDIS providers need.",
+    name: "Dr. Priya Mehta",
+    role: "Clinical Director",
+    company: "CareBridge Allied Health",
+    metric: "Digital-first care",
   },
   {
     quote:
@@ -32,11 +48,11 @@ const testimonials = [
   },
   {
     quote:
-      "Our field techs actually like using it. The offline-first mobile app works even in basements with zero signal.",
-    name: "Lisa Park",
-    role: "Field Supervisor",
-    company: "Summit Services",
-    metric: "100% adoption",
+      "Our support workers clock in with GPS verification. The progress notes mean no more chasing shift reports.",
+    name: "Tom Whitfield",
+    role: "Operations Lead",
+    company: "NurtureCo Home Care",
+    metric: "Real-time visibility",
   },
   {
     quote:
@@ -130,7 +146,7 @@ export function Testimonials() {
       <FadeIn>
         <SectionHeader
           label="Testimonials"
-          title="Trusted by operators who demand precision."
+          title="Trusted by teams who demand precision."
           description="Real results from trade businesses that switched to iWorkr."
           className="text-center mx-auto"
         />

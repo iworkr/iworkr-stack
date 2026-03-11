@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type OnboardingStep =
+  | "sector"
   | "identity"
   | "trade"
   | "team"
@@ -9,7 +10,10 @@ export type OnboardingStep =
   | "integrations"
   | "complete";
 
+export type IndustryType = "trades" | "care";
+
 export const STEP_ORDER: OnboardingStep[] = [
+  "sector",
   "identity",
   "trade",
   "team",
@@ -34,6 +38,7 @@ export interface OnboardingState {
   completedSteps: OnboardingStep[];
 
   // Step data
+  industryType: IndustryType | null;
   companyName: string;
   workspaceSlug: string;
   selectedTrade: string | null;
@@ -46,6 +51,7 @@ export interface OnboardingState {
 
   // Actions
   setAuth: (email: string, name: string) => void;
+  setIndustryType: (type: IndustryType) => void;
   setCompanyName: (name: string) => void;
   setTrade: (trade: string) => void;
   addTeamInvite: (email: string) => void;
@@ -71,8 +77,9 @@ const initialState = {
   isAuthenticated: false,
   userEmail: null,
   userName: null,
-  currentStep: "identity" as OnboardingStep,
+  currentStep: "sector" as OnboardingStep,
   completedSteps: [] as OnboardingStep[],
+  industryType: null as IndustryType | null,
   companyName: "",
   workspaceSlug: "",
   selectedTrade: null,
@@ -89,6 +96,8 @@ export const useOnboardingStore = create<OnboardingState>()(
 
       setAuth: (email, name) =>
         set({ isAuthenticated: true, userEmail: email, userName: name }),
+
+      setIndustryType: (type) => set({ industryType: type }),
 
       setCompanyName: (name) =>
         set({ companyName: name, workspaceSlug: slugify(name) }),

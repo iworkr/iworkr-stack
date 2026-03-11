@@ -9,11 +9,15 @@ import { Section, SectionHeader } from "@/components/ui/section";
 const faqs = [
   {
     q: "How long does setup take?",
-    a: "Most teams are fully operational within 24 hours. Our onboarding flow imports your existing client data, configures your schedule, and connects your payment processor in a guided setup.",
+    a: "Most teams are fully operational within 24 hours. Our onboarding flow detects whether you're a trades or care business, imports your existing data, configures compliance and scheduling, and connects your payment processor in a guided setup.",
   },
   {
     q: "Does iWorkr work offline?",
-    a: "Yes. The mobile app is offline-first by design. Field technicians can clock in, view job details, capture photos, and collect signatures without signal. Everything syncs automatically when connectivity returns.",
+    a: "Yes. The mobile app is offline-first by design. Field technicians and support workers can clock in, view job or shift details, capture photos, and collect signatures without signal. Everything syncs automatically when connectivity returns.",
+  },
+  {
+    q: "Does iWorkr support NDIS and aged care providers?",
+    a: "Absolutely. iWorkr includes purpose-built features for care organisations: workforce credential enforcement (NDIS screening, WWCC, First Aid), electronic medication records (eMAR), incident reporting, health observations, progress notes with GPS-verified shift tracking, and service agreement management.",
   },
   {
     q: "How does the AI Phone Agent work?",
@@ -28,8 +32,12 @@ const faqs = [
     a: "No contracts. No setup fees. Cancel anytime. We believe our product should earn your business every month. Start with a 14-day free trial — no credit card required.",
   },
   {
-    q: "What trades does iWorkr support?",
-    a: "iWorkr is purpose-built for service trades: plumbing, electrical, HVAC, roofing, painting, landscaping, and general contracting. The platform is configurable for any field service workflow.",
+    q: "What industries does iWorkr support?",
+    a: "iWorkr serves two sectors: trades (plumbing, electrical, HVAC, cleaning, carpentry, landscaping, general contracting) and care (NDIS providers, aged care, disability support, allied health, home care). The platform dynamically adapts its terminology, compliance rules, and features based on your industry.",
+  },
+  {
+    q: "How does credential compliance work?",
+    a: "For care organisations, iWorkr enforces credential requirements at the scheduling level. Workers cannot be assigned to shifts unless their NDIS screening, Working With Children Check, and First Aid certifications are current. Expired or missing credentials trigger automatic alerts and block assignments until resolved.",
   },
 ];
 

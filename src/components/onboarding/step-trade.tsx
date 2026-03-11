@@ -10,9 +10,15 @@ import {
   SprayCan,
   Hammer,
   ClipboardList,
+  Heart,
+  Home,
+  Users,
+  Brain,
+  Stethoscope,
+  HandHelping,
 } from "lucide-react";
 
-const trades = [
+const tradesOptions = [
   { id: "plumbing", label: "Plumbing", icon: Wrench },
   { id: "electrical", label: "Electrical", icon: Zap },
   { id: "hvac", label: "HVAC", icon: Fan },
@@ -21,9 +27,21 @@ const trades = [
   { id: "general", label: "General", icon: ClipboardList },
 ];
 
+const careOptions = [
+  { id: "ndis", label: "NDIS Provider", icon: Heart },
+  { id: "aged_care", label: "Aged Care", icon: Home },
+  { id: "disability", label: "Disability Support", icon: Users },
+  { id: "allied_health", label: "Allied Health", icon: Stethoscope },
+  { id: "mental_health", label: "Mental Health", icon: Brain },
+  { id: "home_care", label: "Home Care", icon: HandHelping },
+];
+
 export function StepTrade() {
-  const { selectedTrade, setTrade, advanceStep } = useOnboardingStore();
+  const { selectedTrade, setTrade, advanceStep, industryType } = useOnboardingStore();
   const [selected, setSelected] = useState<string | null>(selectedTrade);
+  
+  const isCare = industryType === "care";
+  const options = isCare ? careOptions : tradesOptions;
 
   function handleSelect(tradeId: string) {
     setSelected(tradeId);
@@ -45,7 +63,7 @@ export function StepTrade() {
           transition={{ delay: 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="text-2xl font-medium tracking-tight text-zinc-100 md:text-3xl"
         >
-          What is your primary trade?
+          {isCare ? "What type of care do you provide?" : "What is your primary trade?"}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -53,7 +71,9 @@ export function StepTrade() {
           transition={{ delay: 0.2, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="text-sm text-zinc-500"
         >
-          This configures your default templates, job types, and terminology.
+          {isCare
+            ? "This configures your compliance frameworks, terminology, and clinical features."
+            : "This configures your default templates, job types, and terminology."}
         </motion.p>
       </div>
 
@@ -64,7 +84,7 @@ export function StepTrade() {
         transition={{ delay: 0.3, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="grid grid-cols-2 gap-3 sm:grid-cols-3"
       >
-        {trades.map((trade, i) => {
+        {options.map((trade, i) => {
           const isSelected = selected === trade.id;
           const isOtherSelected = selected !== null && !isSelected;
           const Icon = trade.icon;

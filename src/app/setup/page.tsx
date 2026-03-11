@@ -2,6 +2,7 @@
 
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { OnboardingLayout } from "@/components/onboarding/onboarding-layout";
+import { StepSector } from "@/components/onboarding/step-sector";
 import { StepIdentity } from "@/components/onboarding/step-identity";
 import { StepTrade } from "@/components/onboarding/step-trade";
 import { StepTeam } from "@/components/onboarding/step-team";
@@ -10,6 +11,7 @@ import { StepIntegrations } from "@/components/onboarding/step-integrations";
 import { StepComplete } from "@/components/onboarding/step-complete";
 
 const stepComponents: Record<string, React.ComponentType> = {
+  sector: StepSector,
   identity: StepIdentity,
   trade: StepTrade,
   team: StepTeam,
@@ -20,7 +22,7 @@ const stepComponents: Record<string, React.ComponentType> = {
 
 export default function SetupPage() {
   const currentStep = useOnboardingStore((s) => s.currentStep);
-  const StepComponent = stepComponents[currentStep] || StepIdentity;
+  const StepComponent = stepComponents[currentStep] || StepSector;
 
   return (
     <OnboardingLayout stepKey={currentStep}>
