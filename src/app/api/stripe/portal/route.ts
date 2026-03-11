@@ -1,14 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2026-01-28.clover" as Stripe.LatestApiVersion,
-  });
-}
+export const dynamic = "force-dynamic";
 
+/**
+ * POST /api/stripe/portal
+ *
+ * Creates a Stripe Billing Portal session so the customer can
+ * manage payment methods, view invoices, and update billing info.
+ */
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -21,8 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
   }
 
-  const stripe = getStripe();
-
+  // Verify admin role
   const { data: member } = await supabase
     .from("organization_members")
     .select("role")
@@ -34,21 +35,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Only admins can manage billing" }, { status: 403 });
   }
 
+  // Get stripe_customer_id from the organizations table directly
   const { data: org } = await (supabase as any)
     .from("organizations")
-    .select("settings")
+    .select("stripe_customer_id")
     .eq("id", orgId)
     .single();
 
-  const stripeCustomerId = (org?.settings as Record<string, unknown>)?.stripe_customer_id as string | undefined;
-
-  if (!stripeCustomerId) {
-    return NextResponse.json({ error: "No billing account found" }, { status: 404 });
+  if (!org?.stripe_customer_id) {
+    return NextResponse.json({ error: "No billing account found. Please subscribe to a plan first." }, { status: 404 });
   }
 
+  const stripe = getStripe();
+
   const session = await stripe.billingPortal.sessions.create({
-    customer: stripeCustomerId,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing`,
+    customer: org.stripe_customer_id,
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://iworkrapp.com"}/settings/billing`,
   });
 
   return NextResponse.json({ url: session.url });
