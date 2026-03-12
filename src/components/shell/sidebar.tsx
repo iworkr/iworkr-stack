@@ -8,16 +8,17 @@ import {
   Users,
   Banknote,
   LayoutDashboard,
+  LayoutGrid,
   Settings,
   HelpCircle,
   UserPlus,
   PanelLeftClose,
   PanelLeftOpen,
-  Command,
   Warehouse,
   Plug,
   FileText,
   UsersRound,
+  UserCircle,
   Workflow,
   Sun,
   Moon,
@@ -25,14 +26,16 @@ import {
   Smartphone,
   Map,
   Activity,
-  Target,
-  Shield,
-  Receipt,
-  Clock,
+  DollarSign,
+  ShieldCheck,
+  GitMerge,
+  Zap,
+  Package,
+  ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useRef, useEffect, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect } from "react";
 import { useShellStore } from "@/lib/shell-store";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { useAuthStore } from "@/lib/auth-store";
@@ -51,60 +54,99 @@ import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Data ─────────────────────────────────────────────── */
 
-const navItems = [
-  { id: "nav_dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", shortcut: "G D", careOnly: false },
-  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I", careOnly: false },
-  { id: "nav_jobs", label: "My Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J", careOnly: false },
-  { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S", careOnly: false },
-  { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P", careOnly: false },
-  { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C", careOnly: false },
-  { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R", careOnly: false },
-  { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F", careOnly: false },
-  // ─── Care Sector — Nightingale Command ──────────────────
-  { id: "nav_care_command", label: "Care Command", icon: Activity, href: "/dashboard/care", careOnly: true },
-  { id: "nav_clinical_timeline", label: "Clinical Timeline", icon: Clock, href: "/dashboard/care/clinical-timeline", careOnly: true },
-  { id: "nav_compliance_hub", label: "Compliance Hub", icon: Shield, href: "/dashboard/care/compliance-hub", careOnly: true },
-  { id: "nav_funding_engine", label: "Funding Engine", icon: Receipt, href: "/dashboard/care/funding-engine", careOnly: true },
-  { id: "nav_roster_intel", label: "Roster Intelligence", icon: Target, href: "/dashboard/care/roster-intelligence", careOnly: true },
-  // ─── General ──────────────────────────────────────
-  { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A", careOnly: false },
-  { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms", careOnly: false },
-  { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "G T", careOnly: false },
-  { id: "nav_automations", label: "Automations", icon: Workflow, href: "/dashboard/automations", shortcut: "G W", careOnly: false },
-  { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations", careOnly: false },
-  { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent", careOnly: false },
+/** Trades navigation — flat list, no care-specific items */
+const tradesNavItems = [
+  { id: "nav_dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", shortcut: "G D" },
+  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
+  { id: "nav_jobs", label: "My Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
+  { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
+  { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P" },
+  { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
+  { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R" },
+  { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
+  { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A" },
+  { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
+  { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "G T" },
+  { id: "nav_automations", label: "Automations", icon: Workflow, href: "/dashboard/automations", shortcut: "G W" },
+  { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations" },
+  { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent" },
 ];
 
 /**
- * Returns nav items with labels translated through the industry lexicon,
- * grouped into sections. For trades orgs, labels pass through unchanged and
- * care-only items are hidden.
+ * Care navigation — PRD-aligned three-zone architecture:
+ * Zone 1: WORKSPACE (daily execution)
+ * Zone 2: CLINICAL & FINANCIAL (the care engine)
+ * Zone 3: OPERATIONS (infrastructure & settings)
  */
-function useTranslatedNavItems() {
-  const { t, isCare } = useIndustryLexicon();
-  return navItems
-    .filter((item) => !item.careOnly || isCare)
-    .map((item) => ({ ...item, label: t(item.label) }));
+interface NavSection {
+  label: string | null;
+  collapsible: boolean;
+  items: NavItem[];
 }
 
-function useCareNavSections() {
-  const { isCare } = useIndustryLexicon();
-  const items = useTranslatedNavItems();
-  if (!isCare) return [{ label: null, items }];
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  href: string;
+  shortcut?: string;
+  badge?: "PRO";
+}
 
-  // Split into workspace items, Nightingale command items, and general items
-  const nightingaleIds = new Set(["nav_care_command", "nav_clinical_timeline", "nav_compliance_hub", "nav_funding_engine", "nav_roster_intel"]);
-  const generalIds = new Set(["nav_assets", "nav_forms", "nav_team", "nav_automations", "nav_integrations", "nav_ai_agent"]);
+function useCareNavSections(): NavSection[] {
+  const { t, isCare } = useIndustryLexicon();
 
-  const workspace = items.filter((i) => !nightingaleIds.has(i.id) && !generalIds.has(i.id));
-  const nightingale = items.filter((i) => nightingaleIds.has(i.id));
-  const general = items.filter((i) => generalIds.has(i.id));
+  if (!isCare) {
+    // Trades: flat list with translated labels, no sections
+    return [{
+      label: null,
+      collapsible: false,
+      items: tradesNavItems.map((item) => ({ ...item, label: t(item.label) })),
+    }];
+  }
 
+  // Care: PRD three-zone architecture
   return [
-    { label: null, items: workspace },
-    { label: "Nightingale", items: nightingale },
-    { label: "Operations", items: general },
+    {
+      label: "WORKSPACE",
+      collapsible: true,
+      items: [
+        { id: "nav_dashboard", label: "Care Dashboard", icon: LayoutGrid, href: "/dashboard/care", shortcut: "G D" },
+        { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
+        { id: "nav_jobs", label: "My Shifts", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
+        { id: "nav_schedule", label: "Roster & Dispatch", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
+        { id: "nav_clients", label: "Participants", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
+        { id: "nav_crm", label: "Referral Pipeline", icon: GitMerge, href: "/dashboard/crm", shortcut: "G R" },
+      ],
+    },
+    {
+      label: "CLINICAL & FINANCIAL",
+      collapsible: true,
+      items: [
+        { id: "nav_care_command", label: "Care Command", icon: Activity, href: "/dashboard/care/clinical-timeline" },
+        { id: "nav_funding", label: "Funding & Claims", icon: DollarSign, href: "/dashboard/care/funding-engine" },
+        { id: "nav_compliance", label: "Compliance Hub", icon: ShieldCheck, href: "/dashboard/care/compliance-hub" },
+      ],
+    },
+    {
+      label: "OPERATIONS",
+      collapsible: true,
+      items: [
+        { id: "nav_team", label: "Support Team", icon: UserCircle, href: "/dashboard/team", shortcut: "G T" },
+        { id: "nav_assets", label: "Assets", icon: Package, href: "/dashboard/assets", shortcut: "G A" },
+        { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
+        { id: "nav_automations", label: "Automations", icon: Zap, href: "/dashboard/automations", badge: "PRO" },
+        { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations", badge: "PRO" },
+        { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent" },
+      ],
+    },
   ];
+}
+
+/** Legacy helper — used by role-based filtering */
+function useTranslatedNavItems() {
+  const sections = useCareNavSections();
+  return sections.flatMap((s) => s.items);
 }
 
 type SidebarTeamMember = { name: string; initials: string; status: "online" | "away"; role: string };
@@ -125,7 +167,7 @@ function NavLink({
   badge,
   proBadge,
 }: {
-  item: (typeof navItems)[0];
+  item: NavItem;
   active: boolean;
   collapsed: boolean;
   badge?: number;
@@ -141,15 +183,23 @@ function NavLink({
       data-nav-label={item.label}
       className={`group relative flex items-center gap-2.5 rounded-lg px-2 py-[7px] transition-all duration-150 ${
         collapsed ? "justify-center" : ""
-      } ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+      } ${active ? "text-[var(--brand)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
     >
+      {/* Active state: glass pill + left accent bar */}
       {active && (
-        <motion.div
-          layoutId="sidebar-glass-pill"
-          className="absolute inset-0 rounded-lg shadow-[inset_0_0_0_1px_var(--border-active)]"
-          style={{ background: "var(--surface-2)" }}
-          transition={{ type: "spring", stiffness: 350, damping: 28 }}
-        />
+        <>
+          <motion.div
+            layoutId="sidebar-glass-pill"
+            className="absolute inset-0 rounded-lg shadow-[inset_0_0_0_1px_var(--border-active)]"
+            style={{ background: "var(--surface-2)" }}
+            transition={{ type: "spring", stiffness: 350, damping: 28 }}
+          />
+          <motion.div
+            layoutId="sidebar-left-accent"
+            className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-[var(--brand)]"
+            transition={{ type: "spring", stiffness: 350, damping: 28 }}
+          />
+        </>
       )}
 
       {!active && (
@@ -159,7 +209,7 @@ function NavLink({
       <Icon
         size={16}
         strokeWidth={active ? 2 : 1.5}
-        className="relative z-10 shrink-0 transition-all duration-150"
+        className={`relative z-10 shrink-0 transition-all duration-150 ${active ? "text-[var(--brand)]" : ""}`}
       />
 
       <AnimatePresence>
@@ -252,13 +302,12 @@ export function Sidebar() {
     };
   }, [orgId, loadBilling]);
 
-  const gatedNavIds = new Set(["nav_automations", "nav_integrations"]);
-
   const membership = useAuthStore((s) => s.currentMembership);
   const userRole = (membership?.role ?? "technician") as RoleId;
   const roleDef = roleDefinitions.find((r) => r.id === userRole);
   const navModuleMap: Record<string, PermissionModule> = {
     nav_invoices: "finance",
+    nav_funding: "finance",
     nav_team: "team",
     nav_automations: "integrations",
     nav_integrations: "integrations",
@@ -278,6 +327,22 @@ export function Sidebar() {
     ...section,
     items: section.items.filter((i) => visibleIds.has(i.id)),
   })).filter((s) => s.items.length > 0);
+
+  // ── Collapsible section state (persisted to localStorage) ──
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const stored = localStorage.getItem("iworkr-nav-collapsed");
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+  const toggleSection = (label: string) => {
+    setCollapsedSections((prev) => {
+      const next = { ...prev, [label]: !prev[label] };
+      try { localStorage.setItem("iworkr-nav-collapsed", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const unreadCount = useInboxStore((s) => s.items.filter(i => !i.read && !i.archived).length);
 
@@ -301,6 +366,8 @@ export function Sidebar() {
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
+    // Care dashboard: exact match only (avoid matching sub-routes like clinical-timeline)
+    if (href === "/dashboard/care") return pathname === "/dashboard/care";
     return pathname.startsWith(href);
   };
 
@@ -377,47 +444,72 @@ export function Sidebar() {
 
         {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto scrollbar-none px-2 pt-2">
-          <AnimatePresence>
-            {!sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="mb-1 px-2"
-              >
-                <span className="text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-                  Workspace
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {filteredSections.map((section, sIdx) => {
+            const sectionKey = section.label || "root";
+            const isCollapsed = section.collapsible && collapsedSections[sectionKey];
 
-          {filteredSections.map((section, sIdx) => (
-            <div key={sIdx} className={sIdx > 0 ? "mt-4" : ""}>
-              {section.label && !sidebarCollapsed && (
-                <div className="mb-1 px-2 pt-1">
-                  <span className="text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase" style={sidebarIsCare && sIdx === 1 ? { color: "rgba(96,165,250,0.6)" } : undefined}>
-                    {section.label}
-                  </span>
-                </div>
-              )}
-              {section.label && sidebarCollapsed && (
-                <div className="my-1.5 mx-3 h-px bg-[var(--border-base)]" />
-              )}
-              <div className="space-y-px">
-                {section.items.map((item) => (
-                  <NavLink
-                    key={item.id}
-                    item={item}
-                    active={isActive(item.href)}
-                    collapsed={sidebarCollapsed}
-                    badge={item.id === "nav_inbox" ? unreadCount : undefined}
-                    proBadge={isFree && gatedNavIds.has(item.id)}
-                  />
-                ))}
+            return (
+              <div key={sIdx} className={sIdx > 0 ? "mt-3" : ""}>
+                {/* Section header */}
+                {section.label && !sidebarCollapsed && (
+                  <button
+                    onClick={() => section.collapsible && toggleSection(sectionKey)}
+                    className={`mb-1 flex w-full items-center gap-1 px-2 pt-1 text-left group ${
+                      section.collapsible ? "cursor-pointer" : "cursor-default"
+                    }`}
+                  >
+                    <span
+                      className="text-[9px] font-bold tracking-[0.12em] uppercase transition-colors"
+                      style={{
+                        color: sidebarIsCare && section.label === "CLINICAL & FINANCIAL"
+                          ? "rgba(96,165,250,0.7)"
+                          : "var(--text-muted)",
+                      }}
+                    >
+                      {section.label}
+                    </span>
+                    {section.collapsible && (
+                      <ChevronDown
+                        size={10}
+                        className={`text-[var(--text-muted)] opacity-0 transition-all duration-200 group-hover:opacity-60 ${
+                          isCollapsed ? "-rotate-90" : ""
+                        }`}
+                      />
+                    )}
+                  </button>
+                )}
+                {section.label && sidebarCollapsed && (
+                  <div className="my-1.5 mx-3 h-px bg-[var(--border-base)]" />
+                )}
+
+                {/* Section items */}
+                <AnimatePresence initial={false}>
+                  {!isCollapsed && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-px">
+                        {section.items.map((item) => (
+                          <NavLink
+                            key={item.id}
+                            item={item}
+                            active={isActive(item.href)}
+                            collapsed={sidebarCollapsed}
+                            badge={item.id === "nav_inbox" ? unreadCount : undefined}
+                            proBadge={(isFree && item.badge === "PRO") || false}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* ── Team Section (visible to roles with team.view) ── */}
           <AnimatePresence>
