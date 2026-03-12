@@ -8,6 +8,7 @@ import { useOrg } from "@/lib/hooks/use-org";
 import { getAIInsights, type AIInsight } from "@/app/actions/dashboard";
 import { WidgetShell } from "./widget-shell";
 import { useDashboardStore } from "@/lib/dashboard-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const typeConfig = {
@@ -17,14 +18,16 @@ const typeConfig = {
   success: { icon: CheckCircle2, color: "var(--ghost-emerald-text)", bg: "var(--ghost-emerald)", dot: "var(--brand)" },
 };
 
-const emptyInsight: AIInsight = {
-  type: "success",
-  title: "No active insights",
-  body: "Schedule is optimized. We\u2019ll surface recommendations here when action is needed.",
-  priority: 0,
-  action: "",
-  action_route: "",
-};
+function getEmptyInsight(t: (key: string) => string): AIInsight {
+  return {
+    type: "success",
+    title: "No active insights",
+    body: `${t("Schedule")} is optimized. We\u2019ll surface recommendations here when action is needed.`,
+    priority: 0,
+    action: "",
+    action_route: "",
+  };
+}
 
 /* ── Loading state with Lottie-style animation ────────── */
 function InsightSkeleton({ size }: { size: WidgetSize }) {
@@ -65,6 +68,7 @@ function InsightSkeleton({ size }: { size: WidgetSize }) {
 export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
+  const { t } = useIndustryLexicon();
   const cachedInsights = useDashboardStore((s) => s.widgetInsights);
   const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
   const isWidgetFresh = useDashboardStore((s) => s.isWidgetFresh);
@@ -92,6 +96,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
     });
   }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const emptyInsight = getEmptyInsight(t);
   const insight = insights.length > 0 ? insights[0] : emptyInsight;
   const config = typeConfig[insight.type] || typeConfig.warning;
   const Icon = config.icon;
@@ -119,7 +124,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
 
   /* ── LARGE: Multiple insights list ──────────────────── */
   if (size === "large") {
-    const displayInsights = insights.length > 0 ? insights.slice(0, 4) : [emptyInsight];
+    const displayInsights = insights.length > 0 ? insights.slice(0, 4) : [getEmptyInsight(t)];
 
     return (
       <WidgetShell delay={0.25}>

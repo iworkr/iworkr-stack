@@ -34,6 +34,8 @@ const CARE_LEXICON: Record<string, string> = {
   Technicians: "Support Workers",
   technician: "support worker",
   technicians: "support workers",
+  Techs: "Workers",
+  techs: "workers",
   Invoice: "Claim",
   Invoices: "Claims",
   invoice: "claim",
@@ -49,22 +51,95 @@ const CARE_LEXICON: Record<string, string> = {
   // Actions & descriptions
   "Create Job": "Create Shift",
   "New Job": "New Shift",
+  "New Invoice": "New Claim",
   "Add Client": "Add Participant",
+  "Create a new job order": "Create a new shift",
+  "Generate a new invoice": "Generate a new claim",
+  "Register a new client": "Register a new participant",
   "Go to Jobs": "Go to Shifts",
   "Go to Clients": "Go to Participants",
   "Go to Team": "Go to Support Team",
 
   // Schedule
   Schedule: "Roster",
+  schedule: "roster",
   "Tactical Timeline": "Roster Timeline",
 
   // Team roles
   "Senior Tech": "Senior Support Worker",
+  senior_tech: "Senior Support Worker",
   Apprentice: "Trainee",
+  apprentice: "trainee",
   Subcontractor: "Agency Worker",
+  subcontractor: "agency worker",
 
   // Finance
   "Sales Pipeline": "Referral Pipeline",
+  "sales pipeline": "referral pipeline",
+
+  // Widget library labels & descriptions
+  "Live Dispatch": "Live Roster",
+  "My Schedule": "My Roster",
+  "Team Status": "Support Team Status",
+  "Real-time technician locations": "Real-time support worker locations",
+  "Today's job schedule": "Today\u2019s shift roster",
+  "Create jobs, invoices, clients": "Create shifts, claims, participants",
+
+  // Dashboard
+  "COMMAND CENTER": "CARE CENTER",
+  "Command Center": "Care Center",
+  Dashboard: "Care Dashboard",
+  "active jobs": "active shifts",
+  "active job": "active shift",
+
+  // CRM / Pipeline
+  Deal: "Referral",
+  Deals: "Referrals",
+  deal: "referral",
+  deals: "referrals",
+  Lead: "Referral Lead",
+  Leads: "Referral Leads",
+  "New Lead": "New Referral Lead",
+  "new lead": "new referral lead",
+  "New Deal": "New Referral",
+  Pipeline: "Referral Pipeline",
+  "Add Lead": "Add Referral Lead",
+  "Add New Lead": "Add New Referral Lead",
+  "No closed deals yet": "No closed referrals yet",
+  "Closed deals appear here. Keep it up!": "Closed referrals appear here. Keep it up!",
+  "Review lost deals to improve your close rate.": "Review lost referrals to improve your intake rate.",
+  "Add your first lead to get the pipeline started.": "Add your first referral lead to get the pipeline started.",
+  "New leads land here": "New referral leads land here",
+  "Drag leads here once you've started quoting.": "Drag referral leads here once you've started quoting.",
+  "Quotes sent to clients will appear here.": "Agreements sent to participants will appear here.",
+  "No active quotes": "No active agreements",
+  "No pending approvals": "No pending approvals",
+  "No lost opportunities": "No lost referrals",
+  "Add a new prospect to your sales pipeline": "Add a new referral to your pipeline",
+
+  // Clients page
+  VIP: "Priority",
+  "Client Dossier": "Participant Profile",
+  Residential: "Home Care",
+  Commercial: "Facility",
+  LTV: "Funding",
+  "Total LTV": "Total Funding",
+  "Open Dossier": "Open Profile",
+
+  // Dispatch
+  "Fleet Command": "Roster Command",
+  "God Mode Dispatch": "Live Roster",
+  "Fleet Tracking": "Worker Tracking",
+  fleet: "workers",
+
+  // Team
+  "On Job": "On Shift",
+  "En Route": "Travelling",
+
+  // General
+  "job site": "participant home",
+  "Job Site": "Participant Home",
+  Backlog: "Unassigned",
 };
 
 // ─── Hook ───────────────────────────────────────────────────────────────────

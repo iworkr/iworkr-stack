@@ -11,7 +11,7 @@ import {
   Brain,
   AlertCircle,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { createClient } from "@/lib/supabase/client";
 
@@ -81,7 +81,7 @@ export default function ObservationsPage() {
   const [typeFilter, setTypeFilter] = useState<ObservationType | "all">("all");
 
   // Load observations
-  useState(() => {
+  useEffect(() => {
     if (!orgId) return;
     setLoading(true);
     const supabase = createClient();
@@ -103,7 +103,7 @@ export default function ObservationsPage() {
         }
         setLoading(false);
       });
-  });
+  }, [orgId]);
 
   const filtered = useMemo(() => {
     let result = observations;
@@ -128,8 +128,14 @@ export default function ObservationsPage() {
   }), [observations]);
 
   return (
-    <div className="stealth-noise min-h-screen">
-      <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
+    <div className="relative min-h-screen bg-[var(--background)]">
+      <div className="stealth-noise" />
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
+      />
+      <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8 space-y-6">
         {/* Header */}
         <div>
           <p className="stealth-overline mb-1">CLINICAL</p>
@@ -144,7 +150,7 @@ export default function ObservationsPage() {
           {[
             { label: "Total Records", value: stats.total, icon: Activity, color: "text-[var(--text-primary)]" },
             { label: "Abnormal", value: stats.abnormal, icon: AlertCircle, color: "text-rose-400" },
-            { label: "Today", value: stats.today, icon: Activity, color: "text-emerald-400" },
+            { label: "Today", value: stats.today, icon: Activity, color: "text-sky-400" },
             { label: "Types Tracked", value: stats.types, icon: Heart, color: "text-purple-400" },
           ].map((card) => {
             const Icon = card.icon;
@@ -165,7 +171,7 @@ export default function ObservationsPage() {
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search observations..."
-              className="w-full pl-9 pr-3 py-2 bg-[var(--subtle-bg)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-emerald-500/50" />
+              className="w-full pl-9 pr-3 py-2 bg-[var(--subtle-bg)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-sky-500/50" />
           </div>
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as ObservationType | "all")}
             className="px-3 py-2 bg-[var(--subtle-bg)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-secondary)] focus:outline-none">

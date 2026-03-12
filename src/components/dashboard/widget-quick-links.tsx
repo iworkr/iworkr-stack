@@ -3,6 +3,7 @@
 import { Link as LinkIcon, Briefcase, Calendar, Banknote, Users, Inbox, Warehouse, FileText, Workflow, Plug } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDashboardStore } from "@/lib/dashboard-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { WidgetShell } from "./widget-shell";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
@@ -13,6 +14,7 @@ const iconMap: Record<string, typeof LinkIcon> = {
 export function WidgetQuickLinks({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const quickLinks = useDashboardStore((s) => s.quickLinks);
+  const { t } = useIndustryLexicon();
 
   /* ── SMALL: Icon grid only ──────────────────────────── */
   if (size === "small") {
@@ -26,7 +28,7 @@ export function WidgetQuickLinks({ size = "medium" }: { size?: WidgetSize }) {
                 key={`${link.href}-${i}`}
                 onClick={() => router.push(link.href)}
                 className="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[rgba(255,255,255,0.06)]"
-                title={link.label}
+                title={t(link.label)}
               >
                 <Icon size={14} strokeWidth={1.5} className="text-zinc-500 hover:text-zinc-300" />
               </button>
@@ -58,7 +60,7 @@ export function WidgetQuickLinks({ size = "medium" }: { size?: WidgetSize }) {
               className="flex items-center gap-2.5 rounded-md px-3 py-2 text-left text-[12px] text-zinc-500 transition-colors duration-150 hover:bg-white/[0.03] hover:text-zinc-200"
             >
               <Icon size={14} strokeWidth={1.5} className="shrink-0 text-zinc-600" />
-              {link.label}
+              {t(link.label)}
             </button>
           );
         })}

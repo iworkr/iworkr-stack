@@ -11,6 +11,7 @@ import { useMapbox, MAPBOX_ACCESS_TOKEN } from "@/components/maps/mapbox-provide
 import { MapOfflineFallback } from "@/components/maps/map-offline-fallback";
 import { OBSIDIAN_MAP_STYLE, applyObsidianStyle, DEFAULT_MAP_CENTER } from "@/components/maps/obsidian-map-styles";
 import { useDashboardStore } from "@/lib/dashboard-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 /* ── Types ──────────────────────────────────────────── */
@@ -24,10 +25,10 @@ interface Pin {
   lng: number;
 }
 
-const statusConfig = {
-  on_job: { label: "On Job" },
-  en_route: { label: "En Route" },
-  idle: { label: "Idle" },
+const statusConfigBase = {
+  on_job: { labelKey: "On Job" },
+  en_route: { labelKey: "En Route" },
+  idle: { labelKey: "Idle" },
 };
 
 /* ── Mapbox Map Sub-component ───────────────────────── */
@@ -117,7 +118,7 @@ function DispatchMapbox({
           cursor: pointer;
           transition: transform 0.15s ease;
         `;
-        el.title = pin.name ? `${pin.name} · ${pin.task} · ${statusConfig[pin.status].label}` : pin.task;
+        el.title = pin.name ? `${pin.name} · ${pin.task} · ${statusConfigBase[pin.status].labelKey}` : pin.task;
         el.addEventListener("mouseenter", () => { el.style.transform = "scale(1.4)"; });
         el.addEventListener("mouseleave", () => { el.style.transform = "scale(1)"; });
 
@@ -153,6 +154,7 @@ function DispatchMapbox({
 export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
+  const { t } = useIndustryLexicon();
   const { isLoaded, loadError } = useMapbox();
   const cachedDispatch = useDashboardStore((s) => s.widgetDispatch);
   const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
@@ -236,7 +238,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         >
           <Radio size={14} className="mb-1.5 text-zinc-500" />
           <span className="text-[20px] font-medium text-zinc-100">{activeCount}</span>
-          <span className="text-[9px] text-zinc-600">Active Techs</span>
+          <span className="text-[9px] text-zinc-600">Active {t("Techs")}</span>
           <div className="mt-1.5 flex items-center gap-2">
             <span className="flex items-center gap-1 text-[8px] text-zinc-600">
               <span className="h-1 w-1 rounded-full bg-emerald-500" /> {onJobCount}
@@ -276,7 +278,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           <div className="flex items-center gap-2">
             <Radio size={14} className="text-zinc-400" />
             <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-              {size === "medium" ? "Dispatch" : "Live Dispatch"}
+              {size === "medium" ? t("Dispatch") : `Live ${t("Dispatch")}`}
             </span>
             <span className="text-[10px] text-zinc-600">Offline</span>
           </div>
@@ -297,7 +299,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         header={
           <div className="flex items-center gap-2">
             <Radio size={14} className="text-zinc-400" />
-            <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Dispatch</span>
+            <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">{t("Dispatch")}</span>
             <span className="text-[10px] text-zinc-500">{activeCount} active</span>
           </div>
         }
@@ -321,8 +323,8 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-8 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
           <div className="absolute bottom-2 left-3 z-30 flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> On Job</span>
-            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> En Route</span>
+            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> {t("On Job")}</span>
+            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> {t("En Route")}</span>
           </div>
         </div>
       </WidgetShell>
@@ -336,7 +338,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
       header={
         <div className="flex items-center gap-2">
           <Radio size={14} className="text-zinc-400" />
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Live Dispatch</span>
+          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Live {t("Dispatch")}</span>
           <span className="flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-zinc-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             {activeCount} Active
@@ -345,7 +347,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
       }
       action={
         <button onClick={() => router.push("/dashboard/schedule")} className="flex items-center gap-1 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300">
-          Open Dispatch <ArrowRight size={12} />
+          Open {t("Dispatch")} <ArrowRight size={12} />
         </button>
       }
     >
@@ -357,15 +359,15 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
             <div className="text-center">
               <MapPinIcon size={20} strokeWidth={1} className="mx-auto mb-1.5 text-zinc-700" />
               <p className="text-[11px] text-zinc-600">No active dispatches</p>
-              <p className="mt-0.5 text-[9px] text-zinc-700">Technicians will appear here when jobs are in progress.</p>
+              <p className="mt-0.5 text-[9px] text-zinc-700">{t("Technicians")} will appear here when {t("jobs")} are in progress.</p>
             </div>
           </div>
         )}
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
         <div className="absolute bottom-3 left-3 z-30 flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> On Job</span>
-          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> En Route</span>
+          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {t("On Job")}</span>
+          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {t("En Route")}</span>
           <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-zinc-600" /> Idle</span>
         </div>
       </div>

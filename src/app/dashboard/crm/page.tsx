@@ -28,6 +28,7 @@ import {
 import { useOrg } from "@/lib/hooks/use-org";
 import { createClient } from "@/lib/supabase/client";
 import { useToastStore } from "@/components/app/action-toast";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Types ───────────────────────────────────────────────── */
 
@@ -180,6 +181,7 @@ function getGradient(initials: string): string {
 export default function CRMPipelinePage() {
   const { orgId } = useOrg();
   const { addToast } = useToastStore();
+  const { t, isCare } = useIndustryLexicon();
 
   const [clients, setClients] = useState<PipelineClient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -418,12 +420,12 @@ export default function CRMPipelinePage() {
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">SALES PIPELINE</span>
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{isCare ? "REFERRAL PIPELINE" : "SALES PIPELINE"}</span>
               <ChevronRight size={10} className="text-zinc-700" />
               <span className="font-medium text-white">CRM</span>
             </div>
             <span className="text-[11px] text-zinc-600">
-              Drag clients through your sales funnel
+              {isCare ? "Drag referrals through your intake pipeline" : "Drag clients through your sales funnel"}
             </span>
           </div>
 
@@ -432,7 +434,7 @@ export default function CRMPipelinePage() {
             <div className="hidden items-center gap-2 md:flex">
               <div className="flex items-center gap-1.5 rounded-md bg-white/[0.03] px-2.5 py-1 text-[10px]">
                 <DollarSign size={10} className="text-emerald-400" />
-                <span className="text-zinc-500">Pipeline</span>
+                <span className="text-zinc-500">{t("Pipeline")}</span>
                 <span className="font-mono font-medium text-emerald-400">
                   {formatCurrency(totalPipelineValue)}
                 </span>
@@ -459,7 +461,7 @@ export default function CRMPipelinePage() {
               className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
             >
               <Plus size={12} />
-              Add Lead
+              {t("Add Lead")}
             </motion.button>
           </div>
         </div>
@@ -477,6 +479,7 @@ export default function CRMPipelinePage() {
                   key={col.id}
                   column={col}
                   clients={columnData[col.id]}
+                  t={t}
                 />
               ))}
             </div>
@@ -491,6 +494,7 @@ export default function CRMPipelinePage() {
             saving={saving}
             onClose={() => setAddModalOpen(false)}
             onSubmit={handleAddLead}
+            t={t}
           />
         )}
       </AnimatePresence>
@@ -503,9 +507,11 @@ export default function CRMPipelinePage() {
 function KanbanColumn({
   column,
   clients,
+  t,
 }: {
   column: (typeof COLUMNS)[number];
   clients: PipelineClient[];
+  t: (key: string) => string;
 }) {
   const totalValue = clients.reduce(
     (sum, c) => sum + (c.estimated_value || 0),
@@ -522,7 +528,7 @@ function KanbanColumn({
           <div className="flex items-center gap-2">
             <span className={`h-1.5 w-1.5 rounded-full ${column.dot}`} />
             <span className="font-mono text-[10px] font-semibold tracking-wide text-zinc-300 uppercase">
-              {column.label}
+              {t(column.label)}
             </span>
             <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 font-mono text-[9px] font-medium text-zinc-500">
               {clients.length}
@@ -557,10 +563,10 @@ function KanbanColumn({
                   />
                 </div>
                 <p className="text-[11px] font-medium text-zinc-500">
-                  {column.emptyText}
+                  {t(column.emptyText)}
                 </p>
                 <p className="mt-1 max-w-[200px] text-[10px] leading-relaxed text-zinc-700">
-                  {column.emptyHint}
+                  {t(column.emptyHint)}
                 </p>
               </div>
             )}
@@ -762,6 +768,7 @@ function AddLeadModal({
   saving,
   onClose,
   onSubmit,
+  t,
 }: {
   saving: boolean;
   onClose: () => void;
@@ -774,6 +781,7 @@ function AddLeadModal({
     estimated_value: string;
     notes: string;
   }) => void;
+  t: (key: string) => string;
 }) {
   const [form, setForm] = useState({
     name: "",
@@ -823,10 +831,10 @@ function AddLeadModal({
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-[15px] font-semibold text-white">
-              Add New Lead
+              {t("Add New Lead")}
             </h2>
             <p className="mt-0.5 text-[11px] text-zinc-600">
-              Add a new prospect to your sales pipeline
+              {t("Add a new prospect to your sales pipeline")}
             </p>
           </div>
           <button
@@ -894,23 +902,23 @@ function AddLeadModal({
                 Type
               </label>
               <div className="flex gap-1">
-                {(["residential", "commercial"] as const).map((t) => (
+                {(["residential", "commercial"] as const).map((tp) => (
                   <button
-                    key={t}
+                    key={tp}
                     type="button"
-                    onClick={() => update("type", t)}
+                    onClick={() => update("type", tp)}
                     className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-[11px] font-medium transition-colors ${
-                      form.type === t
+                      form.type === tp
                         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                         : "border-white/[0.06] text-zinc-500 hover:bg-white/[0.03]"
                     }`}
                   >
-                    {t === "residential" ? (
+                    {tp === "residential" ? (
                       <User size={10} />
                     ) : (
                       <Building2 size={10} />
                     )}
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                    {tp.charAt(0).toUpperCase() + tp.slice(1)}
                   </button>
                 ))}
               </div>
@@ -983,7 +991,7 @@ function AddLeadModal({
               ) : (
                 <Plus size={12} />
               )}
-              {saving ? "Adding..." : "Add Lead"}
+              {saving ? "Adding..." : t("Add Lead")}
             </motion.button>
           </div>
         </form>

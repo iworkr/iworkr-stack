@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { getLiveDispatch, getFootprintTrails, snapFootprintToRoads, type DispatchPin } from "@/app/actions/dashboard";
 import { createClient } from "@/lib/supabase/client";
 import { useShellStore } from "@/lib/shell-store";
@@ -23,6 +24,7 @@ import { FeatureGate } from "@/components/app/feature-gate";
 
 export default function DispatchPage() {
   const { orgId } = useOrg();
+  const { t, isCare } = useIndustryLexicon();
   const { isLoaded, loadError } = useMapbox();
   const openSlideOver = useShellStore((s) => s.openSlideOver);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -283,8 +285,8 @@ export default function DispatchPage() {
   return (
     <FeatureGate
       requiredTier="pro"
-      featureTitle="God Mode Dispatch"
-      featureDescription="Unlock real-time fleet tracking, road-snapped routing, and GPS footprint trails for your entire operation."
+      featureTitle={t("God Mode Dispatch")}
+      featureDescription={`Unlock real-time ${t("fleet")} tracking, road-snapped routing, and GPS footprint trails for your entire operation.`}
     >
     {/* ── PRD §4.1 Z-Index Registry ────────────────────────
          z-0:  Map canvas (Mapbox GL)
@@ -309,10 +311,10 @@ export default function DispatchPage() {
         <div className="pointer-events-auto relative flex items-center justify-between px-5 py-3">
           <div className="flex flex-col">
             <span className="mb-0.5 font-mono text-[9px] font-medium tracking-[0.2em] text-emerald-500/60 uppercase">
-              Live Dispatch
+              {isCare ? "Live Roster" : "Live Dispatch"}
             </span>
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold tracking-tight text-white">Fleet Command</h1>
+              <h1 className="text-lg font-semibold tracking-tight text-white">{t("Fleet Command")}</h1>
               {dispatchPins.length > 0 && (
                 <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/15 bg-emerald-500/[0.06] px-2 py-0.5 text-[10px] font-medium text-emerald-400">
                   <span className="relative flex h-1.5 w-1.5">
@@ -329,7 +331,7 @@ export default function DispatchPage() {
               onClick={() => setSearchOpen(true)}
               className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-black/40 px-3 py-1.5 text-[11px] text-zinc-500 backdrop-blur-sm transition-colors hover:border-white/[0.1] hover:text-zinc-300"
             >
-              Search fleet & jobs
+              Search {t("fleet")} & {t("jobs")}
               <kbd className="rounded bg-white/[0.04] px-1 py-0.5 font-mono text-[8px] text-zinc-600">⌘K</kbd>
             </button>
           </div>

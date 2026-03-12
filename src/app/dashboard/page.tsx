@@ -9,6 +9,7 @@ import { useDashboardStore } from "@/lib/dashboard-store";
 import { getDashboardSnapshot, loadDashboardLayout } from "@/app/actions/dashboard";
 import type { DashboardSnapshot } from "@/lib/dashboard-store";
 import { motion } from "framer-motion";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 function formatDate() {
   const now = new Date();
@@ -23,6 +24,7 @@ export default function DashboardPage() {
   useEffect(() => { setDateLabel(formatDate()); }, []);
 
   const { orgId } = useOrg();
+  const { t, isCare } = useIndustryLexicon();
   const jobsLoaded = useJobsStore((s) => s.loaded);
   const jobsFromStore = useJobsStore((s) => s.jobs);
   const editMode = useDashboardStore((s) => s.editMode);
@@ -78,14 +80,14 @@ export default function DashboardPage() {
       >
         <div>
           <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-            COMMAND CENTER
+            {t("COMMAND CENTER")}
           </span>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
-            Dashboard
+            {t("Dashboard")}
           </h1>
-          <p className="mt-1 border-l-2 border-zinc-700 pl-2 text-[12px] text-zinc-600">
+          <p className="mt-1 border-l-2 pl-2 text-[12px] text-zinc-600" style={{ borderColor: isCare ? "rgba(59,130,246,0.3)" : "rgb(63,63,70)" }}>
             {dateLabel.dayName}{dateLabel.dayName && `, ${dateLabel.monthDay}`}
-            {activeJobCount !== null ? ` — ${activeJobCount} active job${activeJobCount !== 1 ? "s" : ""}` : ""}
+            {activeJobCount !== null ? ` — ${activeJobCount} ${t(activeJobCount !== 1 ? "active jobs" : "active job")}` : ""}
           </p>
         </div>
         <motion.div

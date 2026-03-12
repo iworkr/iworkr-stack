@@ -39,6 +39,7 @@ import { useToastStore } from "@/components/app/action-toast";
 import { useClientsStore } from "@/lib/clients-store";
 import { getClientDetails } from "@/app/actions/clients";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 
 /* ── Constants ────────────────────────────────────────────── */
@@ -146,6 +147,7 @@ function useCountUp(target: number, duration = 600) {
 export default function ClientDossierPage() {
   const params = useParams();
   const router = useRouter();
+  const { t, isCare } = useIndustryLexicon();
   const clientId = params.id as string;
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
@@ -371,7 +373,7 @@ export default function ClientDossierPage() {
               className="ml-2 flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-[12px] font-medium text-black transition-all hover:bg-zinc-200"
             >
               <Plus size={12} />
-              Create Job
+              {t("Create Job")}
             </motion.button>
           </div>
         </div>
@@ -629,7 +631,7 @@ export default function ClientDossierPage() {
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-white py-2 text-[12px] font-medium text-black transition-all hover:bg-zinc-200"
               >
                 <Briefcase size={12} />
-                Create Job
+                {t("Create Job")}
               </motion.button>
               <button
                 onClick={async () => {
@@ -677,10 +679,10 @@ export default function ClientDossierPage() {
               accent={outstandingBalance > 0 ? "rose" : "zinc"}
             />
             <StatCard
-              label="Total Jobs"
+              label={`Total ${t("Jobs")}`}
               icon={<Briefcase size={10} />}
               value={String(client.totalJobs)}
-              subtext={client.lastJob !== "Never" ? `Last: ${client.lastJob}` : "No jobs yet"}
+              subtext={client.lastJob !== "Never" ? `Last: ${client.lastJob}` : `No ${t("jobs")} yet`}
               accent="zinc"
             />
           </div>
@@ -764,7 +766,7 @@ export default function ClientDossierPage() {
                     }`}
                   >
                     <Icon size={12} />
-                    {tab.label}
+                    {t(tab.label)}
                     {isActive && (
                       <motion.div
                         layoutId="dossier-tab-indicator"
@@ -1095,19 +1097,20 @@ function InlineJobsList({
   clientName: string;
   router: any;
 }) {
+  const { t } = useIndustryLexicon();
   if (jobs.length === 0) {
     return (
       <div className="py-12 text-center">
         <Briefcase size={24} className="mx-auto mb-3 text-zinc-700" />
-        <p className="text-[13px] text-zinc-500">No jobs yet</p>
-        <p className="mt-1 text-[11px] text-zinc-600">Create a job to get started.</p>
+        <p className="text-[13px] text-zinc-500">No {t("jobs")} yet</p>
+        <p className="mt-1 text-[11px] text-zinc-600">Create a {t("job")} to get started.</p>
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={() => router.push(`/dashboard/jobs?clientId=${clientId}&clientName=${encodeURIComponent(clientName)}`)}
           className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-[12px] font-medium text-black transition-all hover:bg-zinc-200"
         >
           <Plus size={12} />
-          Create Job
+          {t("Create Job")}
         </motion.button>
       </div>
     );

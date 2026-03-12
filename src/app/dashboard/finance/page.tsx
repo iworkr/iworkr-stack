@@ -39,6 +39,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu
 import { useShellStore } from "@/lib/shell-store";
 import { getQuotes, type Quote } from "@/app/actions/quotes";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Status config ───────────────────────────────────────── */
 
@@ -183,6 +184,7 @@ export default function FinancePage() {
   const { setCreateInvoiceModalOpen } = useShellStore();
 
   const { orgId } = useOrg();
+  const { t } = useIndustryLexicon();
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -307,7 +309,7 @@ export default function FinancePage() {
   const payoutSparkData = useMemo(() => [3.2, 2.8, 3.1, 2.5, 2.4, 2.1, 2.4], []);
 
   /* ── Shared-axis tab direction ───────────────────────────── */
-  const tabOrder = tabs.map((t) => t.id);
+  const tabOrder = tabs.map((tab) => tab.id);
   const prevTabRef = useRef(activeTab);
   const [tabDir, setTabDir] = useState<"left" | "right">("right");
 
@@ -356,7 +358,7 @@ export default function FinancePage() {
             </div>
             <div className="ml-1 h-6 w-px bg-white/[0.06]" />
             <span className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5 font-mono text-[11px] text-zinc-500">
-              {invoices.length} invoices
+              {invoices.length} {t("invoices")}
             </span>
             {overdueInvoices.length > 0 && (
               <button
@@ -386,7 +388,7 @@ export default function FinancePage() {
                     onChange={(e) => { setSearch(e.target.value); setFocusedIndex(0); }}
                     onFocus={() => setSearchFocused(true)}
                     onBlur={() => setSearchFocused(false)}
-                    placeholder="Search invoices..."
+                    placeholder={`Search ${t("invoices")}...`}
                     className="w-40 bg-transparent text-[12px] text-zinc-300 outline-none placeholder:text-zinc-700"
                   />
                   {!searchFocused && !search && (
@@ -415,7 +417,7 @@ export default function FinancePage() {
                 className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
               >
                 <Plus size={12} />
-                New Quote
+                New {t("Quote")}
               </motion.button>
             ) : (
               <motion.button
@@ -424,7 +426,7 @@ export default function FinancePage() {
                 className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
               >
                 <Plus size={12} />
-                New Invoice
+                New {t("Invoice")}
               </motion.button>
             )}
           </div>
@@ -449,7 +451,7 @@ export default function FinancePage() {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-              <span className="relative">{tab.label}</span>
+              <span className="relative">{tab.id === "invoices" ? t("Invoices") : tab.id === "quotes" ? t("Quotes") : tab.label}</span>
             </button>
           ))}
         </div>
@@ -603,7 +605,7 @@ export default function FinancePage() {
                           ${dailyRevenue[hoveredPoint].amount.toLocaleString()}
                         </div>
                         <div className="text-[9px] text-zinc-600">
-                          {dailyRevenue[hoveredPoint].invoiceCount} invoice{dailyRevenue[hoveredPoint].invoiceCount !== 1 ? "s" : ""} paid
+                          {dailyRevenue[hoveredPoint].invoiceCount} {dailyRevenue[hoveredPoint].invoiceCount !== 1 ? t("invoices") : t("invoice")} paid
                         </div>
                       </motion.div>
                     )}
@@ -765,7 +767,7 @@ export default function FinancePage() {
                 <div className="mb-1 flex items-center rounded-md bg-white/[0.015] px-3 py-1.5">
                   <div className="w-20 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">Status</div>
                   <div className="w-20 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">ID</div>
-                  <div className="flex-1 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">Client</div>
+                  <div className="flex-1 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">{t("Client")}</div>
                   <div className="w-24 font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">Date</div>
                   <div className="w-24 text-right font-mono text-[8px] font-bold tracking-widest text-zinc-700 uppercase">Amount</div>
                   <div className="w-6" />
@@ -821,9 +823,9 @@ export default function FinancePage() {
               {/* Column headers */}
               <div className="flex items-center border-b border-white/[0.06] bg-[var(--surface-1)]/80 backdrop-blur-sm px-5 py-2">
                 <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Invoice</div>
+                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Invoice")}</div>
                 <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
-                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
+                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Client")}</div>
                 <div className="w-28 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Amount</div>
                 <div className="w-20" />
               </div>
@@ -833,7 +835,7 @@ export default function FinancePage() {
                   <LedgerEmptyState
                     title="The ledger is empty"
                     subtitle={search ? "Try a different search term." : "Start earning."}
-                    cta={!search ? "Create First Invoice" : undefined}
+                    cta={!search ? `Create First ${t("Invoice")}` : undefined}
                     onCta={!search ? () => router.push("/dashboard/finance/invoices/new") : undefined}
                   />
                 ) : (
@@ -922,8 +924,8 @@ export default function FinancePage() {
             >
               <div className="flex items-center border-b border-white/[0.06] bg-[var(--surface-1)]/80 backdrop-blur-sm px-5 py-2">
                 <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Quote</div>
-                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
+                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Quote")}</div>
+                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Client")}</div>
                 <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Valid Until</div>
                 <div className="w-28 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Amount</div>
                 <div className="w-8" />
@@ -932,9 +934,9 @@ export default function FinancePage() {
               <div className="flex-1">
                 {quotes.length === 0 && !quotesLoading ? (
                   <LedgerEmptyState
-                    title="No quotes yet"
-                    subtitle="Create your first quote to start the sales pipeline."
-                    cta="New Quote"
+                    title={`No ${t("quotes")} yet`}
+                    subtitle={`Create your first ${t("quote")} to start the ${t("sales pipeline")}.`}
+                    cta={`New ${t("Quote")}`}
                     onCta={() => router.push("/dashboard/finance/quotes/new")}
                   />
                 ) : (
@@ -1008,7 +1010,7 @@ export default function FinancePage() {
                 {payouts.length === 0 && !loading && (
                   <LedgerEmptyState
                     title="No payouts yet"
-                    subtitle="Payouts will appear here once invoices are paid."
+                    subtitle={`Payouts will appear here once ${t("invoices")} are paid.`}
                   />
                 )}
                 {payouts.map((payout, i) => {
@@ -1074,7 +1076,7 @@ export default function FinancePage() {
                           >
                             <div className="px-5 py-3">
                               <div className="mb-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
-                                Source Invoices
+                                Source {t("Invoices")}
                               </div>
                               <div className="space-y-0.5">
                                 {linkedInvoices.map((inv) => (
@@ -1123,7 +1125,9 @@ export default function FinancePage() {
         open={ctxMenu.open}
         x={ctxMenu.x}
         y={ctxMenu.y}
-        items={contextItems}
+        items={contextItems.map((item) =>
+          item.divider ? item : { ...item, label: item.label.replace("Invoice", t("Invoice")) }
+        )}
         onSelect={handleContextAction}
         onClose={() => setCtxMenu((p) => ({ ...p, open: false }))}
       />
@@ -1137,6 +1141,7 @@ export default function FinancePage() {
 
 function ConnectPaymentsTab() {
   const org = useOrg();
+  const { t } = useIndustryLexicon();
   const toast = useToastStore();
   const [loading, setLoading] = useState(true);
   const [connectStatus, setConnectStatus] = useState<{
@@ -1251,7 +1256,7 @@ function ConnectPaymentsTab() {
 
         <h2 className="text-xl font-bold text-white tracking-tight mb-2">Get paid 3× faster with iWorkr Pay</h2>
         <p className="text-[13px] text-zinc-500 text-center max-w-md mb-2 leading-relaxed">
-          Accept credit cards, Apple Pay, and Google Pay directly from your invoices and in the field via Tap-to-Pay.
+          Accept credit cards, Apple Pay, and Google Pay directly from your {t("invoices")} and in the field via Tap-to-Pay.
           Funds land in your bank account in 2 business days.
         </p>
         <p className="text-[11px] text-zinc-700 text-center max-w-sm mb-8">
@@ -1260,7 +1265,7 @@ function ConnectPaymentsTab() {
 
         <div className="grid grid-cols-3 gap-3 max-w-md w-full mb-10">
           {[
-            { icon: <CreditCard size={16} />, label: "Web Invoices", sub: "Clients pay via link" },
+            { icon: <CreditCard size={16} />, label: `Web ${t("Invoices")}`, sub: `${t("Clients")} pay via link` },
             { icon: <Wallet size={16} />, label: "Tap-to-Pay", sub: "NFC field payments" },
             { icon: <Shield size={16} />, label: "PCI Compliant", sub: "Stripe handles cards" },
           ].map((item) => (
@@ -1348,7 +1353,7 @@ function ConnectPaymentsTab() {
           {recentPayments.length === 0 && (
             <div className="px-5 py-10 text-center">
               <p className="text-sm text-zinc-600">No transactions yet</p>
-              <p className="text-[11px] text-zinc-700 mt-1">Payments will appear here as clients pay your invoices.</p>
+              <p className="text-[11px] text-zinc-700 mt-1">Payments will appear here as {t("clients")} pay your {t("invoices")}.</p>
             </div>
           )}
           {recentPayments.map((payment) => {

@@ -45,6 +45,7 @@ import {
 import { MemberDrawer } from "@/components/team/member-drawer";
 import { InviteModal } from "@/components/team/invite-modal";
 import { useToastStore } from "@/components/app/action-toast";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useBillingStore } from "@/lib/billing-store";
 import { getPlanByKey } from "@/lib/plans";
 import { useUpgradeModal } from "@/lib/upgrade-modal-store";
@@ -143,6 +144,7 @@ export default function TeamPage() {
     resendInvite,
   } = useTeamStore();
   const { addToast } = useToastStore();
+  const { t, isCare } = useIndustryLexicon();
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -193,7 +195,7 @@ export default function TeamPage() {
         (m) =>
           m.name.toLowerCase().includes(q) ||
           m.email.toLowerCase().includes(q) ||
-          getRoleLabel(m.role).toLowerCase().includes(q)
+          t(getRoleLabel(m.role)).toLowerCase().includes(q)
       );
     }
     return items.sort((a, b) => {
@@ -201,7 +203,7 @@ export default function TeamPage() {
       if (a.status !== "active" && b.status === "active") return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [members, filterBranch, filterRole, filterSkill, searchQuery]);
+  }, [members, filterBranch, filterRole, filterSkill, searchQuery, t]);
 
   const drawerOpen = !!selectedMemberId;
 
@@ -227,11 +229,11 @@ export default function TeamPage() {
               <div className="flex items-center gap-1.5 text-[12px] mb-0.5">
                 <span className="text-zinc-600">Dashboard</span>
                 <ChevronRightIcon size={10} className="text-zinc-700" />
-                <span className="font-medium text-white">Team</span>
+                <span className="font-medium text-white">{t("Team")}</span>
               </div>
               {/* Mono overline — PRD: "PERSONNEL" */}
               <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
-                PERSONNEL
+                {isCare ? "SUPPORT TEAM" : "PERSONNEL"}
               </span>
             </div>
 
@@ -346,7 +348,7 @@ export default function TeamPage() {
                 return (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => useUpgradeModal.getState().openUpgrade({ feature: "Team Seats", description: "Upgrade your plan to add more team members." })}
+                    onClick={() => useUpgradeModal.getState().openUpgrade({ feature: `${t("Team")} Seats`, description: `Upgrade your plan to add more ${isCare ? "support team" : "team"} members.` })}
                     className="flex h-7 items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 text-[11px] font-medium text-amber-400 transition-all duration-200 hover:bg-amber-500/20"
                   >
                     <UserPlus size={13} strokeWidth={2} />
@@ -361,7 +363,7 @@ export default function TeamPage() {
                   className="flex h-7 items-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
                 >
                   <UserPlus size={13} strokeWidth={2} className="text-black" />
-                  Invite
+                  {t("Invite")}
                 </motion.button>
               );
             })()}
@@ -395,7 +397,7 @@ export default function TeamPage() {
                   className="h-6 rounded-md border border-white/[0.06] bg-transparent px-2 text-[10px] text-zinc-400 outline-none"
                 >
                   <option value="all">All Roles</option>
-                  {roleDefinitions.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+                  {roleDefinitions.map((r) => <option key={r.id} value={r.id}>{t(r.label)}</option>)}
                 </select>
                 <select
                   value={filterSkill}
@@ -511,7 +513,7 @@ export default function TeamPage() {
                       <div className="w-28 px-2">
                         <span className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium ${roleBadge.bg} ${roleBadge.border} ${roleBadge.text}`}>
                           {member.role === "owner" && <span className="text-[8px] opacity-90">★</span>}
-                          {getRoleLabel(member.role)}
+                          {t(getRoleLabel(member.role))}
                         </span>
                       </div>
 
@@ -651,7 +653,7 @@ export default function TeamPage() {
                                       }}
                                       className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-rose-400 transition-colors hover:bg-rose-500/10"
                                     >
-                                      <UserMinus size={11} /> Remove from Team
+                                      <UserMinus size={11} /> Remove from {t("Team")}
                                     </button>
                                   </>
                                 )}
@@ -720,7 +722,7 @@ export default function TeamPage() {
                           <div className="mt-1.5">
                             <span className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium ${roleBadge.bg} ${roleBadge.border} ${roleBadge.text}`}>
                               {member.role === "owner" && <span className="text-[8px]">★</span>}
-                              {getRoleLabel(member.role)}
+                              {t(getRoleLabel(member.role))}
                             </span>
                           </div>
 

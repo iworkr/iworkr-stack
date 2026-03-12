@@ -13,7 +13,7 @@ import {
   ChevronDown,
   User,
 } from "lucide-react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   useMedicationsStore,
   ROUTE_LABELS,
@@ -54,9 +54,9 @@ export default function MedicationsPage() {
   const [tab, setTab] = useState<"chart" | "history">("chart");
 
   // Load medications on mount
-  useState(() => {
+  useEffect(() => {
     if (orgId) loadMedications(orgId);
-  });
+  }, [orgId, loadMedications]);
 
   const searched = useMemo(() => {
     if (!search) return medications;
@@ -81,8 +81,14 @@ export default function MedicationsPage() {
   }, [searched]);
 
   return (
-    <div className="stealth-noise min-h-screen">
-      <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
+    <div className="relative min-h-screen bg-[var(--background)]">
+      <div className="stealth-noise" />
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
+      />
+      <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -97,7 +103,7 @@ export default function MedicationsPage() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Active Medications", value: medications.filter((m) => m.is_active).length, icon: Pill, color: "text-emerald-400" },
+            { label: "Active Medications", value: medications.filter((m) => m.is_active).length, icon: Pill, color: "text-sky-400" },
             { label: "PRN Medications", value: medications.filter((m) => m.is_prn).length, icon: AlertTriangle, color: "text-purple-400" },
             { label: "Today's Administrations", value: marEntries.filter((e) => new Date(e.administered_at).toDateString() === new Date().toDateString()).length, icon: CheckCircle2, color: "text-sky-400" },
             { label: "Missed/Refused", value: marEntries.filter((e) => ["refused", "absent", "withheld"].includes(e.outcome)).length, icon: XCircle, color: "text-rose-400" },
@@ -135,7 +141,7 @@ export default function MedicationsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search medications..."
-            className="w-full pl-9 pr-3 py-2 bg-[var(--subtle-bg)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+            className="w-full pl-9 pr-3 py-2 bg-[var(--subtle-bg)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-sky-500/50"
           />
         </div>
 
@@ -165,7 +171,7 @@ export default function MedicationsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Pill className="w-4 h-4 text-emerald-400" />
+                      <Pill className="w-4 h-4 text-sky-400" />
                       <h3 className="text-sm font-semibold text-[var(--text-primary)]">{med.medication_name}</h3>
                       <FrequencyBadge frequency={med.frequency} isPrn={med.is_prn} />
                     </div>

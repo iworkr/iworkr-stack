@@ -9,6 +9,7 @@ import { useOrg } from "@/lib/hooks/use-org";
 import { getDashboardStats, type DashboardStats } from "@/app/actions/dashboard";
 import { WidgetShell } from "./widget-shell";
 import { useDashboardStore } from "@/lib/dashboard-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 /* ── SVG helpers ───────────────────────────────────── */
@@ -61,6 +62,7 @@ function formatTooltipDate(dateStr: string): string {
 export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
+  const { t } = useIndustryLexicon();
   const dailyRevenue = useFinanceStore((s) => s.dailyRevenue);
   const financeLoaded = useFinanceStore((s) => s.loaded);
   const cachedStats = useDashboardStore((s) => s.widgetRevenueStats);
@@ -336,7 +338,7 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
                 <div className="mt-0.5 font-mono text-sm font-medium tabular-nums text-[var(--text-body)]">${stats.revenue_previous.toLocaleString()}</div>
               </div>
               <div>
-                <div className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Active Jobs</div>
+                <div className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Active {t("Jobs")}</div>
                 <div className="mt-0.5 font-mono text-sm font-medium tabular-nums text-[var(--text-body)]">{stats.active_jobs_count}</div>
               </div>
               <div>

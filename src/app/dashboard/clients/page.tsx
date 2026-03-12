@@ -29,6 +29,7 @@ import { importClientsFromCSV } from "@/app/actions/clients";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Status config ────────────────────────────────────────── */
 
@@ -104,6 +105,7 @@ function useCountUp(target: number, duration = 600) {
 
 export default function ClientsPage() {
   const router = useRouter();
+  const { t, isCare } = useIndustryLexicon();
   const { addToast } = useToastStore();
   const { setCreateClientModalOpen } = useShellStore();
   const { orgId } = useOrg();
@@ -243,14 +245,15 @@ export default function ClientsPage() {
           <div className="flex items-center gap-3">
             {/* Breadcrumbs */}
             <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">CLIENT INTELLIGENCE</span>
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{isCare ? "PARTICIPANT RECORDS" : "CLIENT INTELLIGENCE"}</span>
               <ChevronRight size={10} className="text-zinc-700" />
-              <span className="font-medium text-white">Clients</span>
+              <span className="font-medium text-white">{t("Clients")}</span>
             </div>
 
             {/* Tabs with Emerald dot indicator */}
             <div className="ml-4 flex items-center gap-0.5">
               {tabs.map((tab) => {
+                const translatedLabel = tab.id === "all" ? (isCare ? "All Participants" : tab.label) : tab.id === "vip" ? t("VIP") : tab.id === "leads" ? t("Leads") : tab.label;
                 const isActive = activeTab === tab.id;
                 const count = tab.id === "vip" ? vipCount : tab.id === "leads" ? leadCount : tab.id === "churned" ? clientsList.filter((c) => c.status === "churned").length : clientsList.length;
                 return (
@@ -262,7 +265,7 @@ export default function ClientsPage() {
                     }`}
                   >
                     <span className="relative">
-                      {tab.label}
+                      {translatedLabel}
                       {isActive && (
                         <motion.div
                           layoutId="clients-tab-dot"
@@ -379,7 +382,7 @@ export default function ClientsPage() {
                     <div>
                       <span className="mb-1.5 block text-[10px] font-medium text-zinc-600">Type</span>
                       <div className="flex gap-1">
-                        {([{ value: "residential", label: "Residential", icon: <User size={9} /> }, { value: "commercial", label: "Commercial", icon: <Building2 size={9} /> }] as const).map(({ value, label, icon }) => {
+                        {([{ value: "residential" as const, label: t("Residential"), icon: <User size={9} /> }, { value: "commercial" as const, label: t("Commercial"), icon: <Building2 size={9} /> }]).map(({ value, label, icon }) => {
                           const isActive = filterType === value;
                           return (
                             <button
@@ -431,14 +434,14 @@ export default function ClientsPage() {
               <Upload size={13} />
             </button>
 
-            {/* Add Client — solid Emerald */}
+            {/* Add Client/Participant — solid CTA */}
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => setCreateClientModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 ${isCare ? "bg-blue-600 hover:bg-blue-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
             >
               <Plus size={12} />
-              Add Client
+              {t("Add Client")}
             </motion.button>
           </div>
         </div>
@@ -446,12 +449,12 @@ export default function ClientsPage() {
 
       {/* ── Column headers ─────────────────────────────────────── */}
       <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
-        <div className="w-64 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Client</div>
+        <div className="w-64 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Client")}</div>
         <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
         <div className="w-20 px-2 text-center font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Contact</div>
         <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Email</div>
-        <div className="w-16 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Jobs</div>
-        <div className="w-28 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">LTV</div>
+        <div className="w-16 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Jobs")}</div>
+        <div className="w-28 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("LTV")}</div>
         <div className="w-24 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Active</div>
         <div className="w-24" />
       </div>
@@ -522,21 +525,21 @@ export default function ClientsPage() {
             </div>
             <div className="h-3 w-px bg-white/[0.04]" />
             <div className="flex items-center gap-1.5">
-              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">Total LTV</span>
+              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">{t("Total LTV")}</span>
               <span className="font-mono text-[11px] font-medium text-emerald-400">
                 ${animatedLTV.toLocaleString()}
               </span>
             </div>
             <div className="h-3 w-px bg-white/[0.04]" />
             <div className="flex items-center gap-1.5">
-              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">VIP</span>
+              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">{t("VIP")}</span>
               <span className="font-mono text-[11px] font-medium text-amber-400/80">
                 {vipCount}
               </span>
             </div>
             <div className="h-3 w-px bg-white/[0.04]" />
             <div className="flex items-center gap-1.5">
-              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">Leads</span>
+              <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">{t("Leads")}</span>
               <span className="font-mono text-[11px] font-medium text-sky-400/80">
                 {leadCount}
               </span>

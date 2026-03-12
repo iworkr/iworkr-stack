@@ -37,6 +37,7 @@ import { PopoverMenu } from "@/components/app/popover-menu";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import type { JobStatus, Priority } from "@/lib/data";
 import { useTeamStore } from "@/lib/team-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import {
   getJobLineItems,
   addJobLineItem,
@@ -94,6 +95,7 @@ const headerContextItems: ContextMenuItem[] = [
 export default function JobDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useIndustryLexicon();
   const jobId = params.id as string;
 
   const { jobs, updateJobServer, deleteJobServer, restoreJobs, toggleSubtaskServer } = useJobsStore();
@@ -243,7 +245,7 @@ export default function JobDetailPage() {
             onClick={() => router.push("/dashboard/jobs")}
             className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-[12px] font-medium text-zinc-400 transition-all duration-200 hover:border-white/[0.1] hover:text-zinc-200"
           >
-            Back to Jobs
+            Back to {t("Jobs")}
           </button>
         </motion.div>
       </div>
@@ -1045,7 +1047,7 @@ export default function JobDetailPage() {
               </PropertyRow>
 
               {/* Client */}
-              <PropertyRow label="Customer">
+              <PropertyRow label={t("Client")}>
                 <User size={12} className="text-zinc-600" />
                 <span className="text-[12px] text-zinc-400">{job.client}</span>
               </PropertyRow>

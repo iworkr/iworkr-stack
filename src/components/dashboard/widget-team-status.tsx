@@ -5,11 +5,13 @@ import { Users } from "lucide-react";
 import { useTeamStore } from "@/lib/team-store";
 import { WidgetShell } from "./widget-shell";
 import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
   const members = useTeamStore((s) => s.members);
   const loaded = useTeamStore((s) => s.loaded);
+  const { t } = useIndustryLexicon();
 
   const onlineMembers = members.filter(
     (m) => m.onlineStatus === "online" || m.onlineStatus === "idle"
@@ -53,7 +55,7 @@ export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
       header={
         <div className="flex items-center gap-2">
           <Users size={14} strokeWidth={1.5} className="text-[var(--text-muted)]" />
-          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Team Status</span>
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">{t("Team")} Status</span>
           <span className="font-mono text-[9px] tabular-nums text-[var(--text-dim)]">{onlineMembers.length} online</span>
         </div>
       }

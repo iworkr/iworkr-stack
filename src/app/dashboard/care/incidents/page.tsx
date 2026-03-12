@@ -223,8 +223,14 @@ export default function IncidentsPage() {
 
   return (
     <>
-      <div className="stealth-noise min-h-screen">
-        <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
+      <div className="relative min-h-screen bg-[var(--background)]">
+        <div className="stealth-noise" />
+        {/* Atmospheric glow */}
+        <div
+          className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
+          style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
+        />
+        <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>

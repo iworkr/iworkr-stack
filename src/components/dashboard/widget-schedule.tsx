@@ -11,6 +11,7 @@ import { WidgetShell } from "./widget-shell";
 import { LottieIcon } from "./lottie-icon";
 import { emptyCalendarAnimation } from "./lottie-data";
 import { useDashboardStore } from "@/lib/dashboard-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
 const statusAccent: Record<string, { bg: string; text: string; dot: string }> = {
@@ -48,6 +49,7 @@ interface DisplayBlock {
 }
 
 function ScheduleEmptyState() {
+  const { t } = useIndustryLexicon();
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <LottieIcon
@@ -62,7 +64,7 @@ function ScheduleEmptyState() {
         transition={{ delay: 0.5 }}
         className="mt-3 text-[13px] font-medium text-[var(--text-muted)]"
       >
-        Clear schedule today
+        Clear {t("schedule")} today
       </motion.p>
       <motion.p
         initial={{ opacity: 0 }}
@@ -70,7 +72,7 @@ function ScheduleEmptyState() {
         transition={{ delay: 0.7 }}
         className="mt-1 text-[10px] text-[var(--text-dim)]"
       >
-        Jobs will appear here when assigned
+        {t("Jobs")} will appear here when assigned
       </motion.p>
       <motion.div
         initial={{ opacity: 0, y: 4 }}
@@ -89,6 +91,7 @@ function ScheduleEmptyState() {
 export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
+  const { t } = useIndustryLexicon();
   const storeBlocks = useScheduleStore((s) => s.blocks);
   const scheduleLoaded = useScheduleStore((s) => s.loaded);
   const cachedSchedule = useDashboardStore((s) => s.widgetSchedule);
@@ -179,7 +182,7 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
               </div>
             </>
           ) : (
-            <span className="text-[11px] text-[var(--text-dim)]">No upcoming jobs</span>
+            <span className="text-[11px] text-[var(--text-dim)]">No upcoming {t("jobs")}</span>
           )}
         </div>
       </WidgetShell>
@@ -194,7 +197,7 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
       header={
         <div className="flex items-center gap-2">
           <CalendarDays size={14} className="text-[var(--text-dim)]" />
-          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">My Schedule</span>
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">My {t("Schedule")}</span>
           <span className="font-mono text-[9px] text-[var(--text-dim)]">Today</span>
         </div>
       }

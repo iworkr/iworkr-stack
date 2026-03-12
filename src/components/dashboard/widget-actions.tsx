@@ -5,16 +5,17 @@ import { motion } from "framer-motion";
 import { Briefcase, FileText, UserPlus, Megaphone, Zap } from "lucide-react";
 import { useShellStore } from "@/lib/shell-store";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { WidgetShell } from "./widget-shell";
 import { BroadcastModal } from "@/components/messenger/broadcast-modal";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
-const actions = [
+const actionsConfig = [
   {
     id: "new-job",
     icon: Briefcase,
-    label: "New Job",
-    description: "Create a new job order",
+    labelKey: "New Job",
+    descriptionKey: "Create a new job order",
     action: "createJob",
     ghost: "var(--ghost-emerald)",
     ghostText: "var(--ghost-emerald-text)",
@@ -22,8 +23,8 @@ const actions = [
   {
     id: "new-invoice",
     icon: FileText,
-    label: "New Invoice",
-    description: "Generate a new invoice",
+    labelKey: "New Invoice",
+    descriptionKey: "Generate a new invoice",
     action: "createInvoice",
     ghost: "var(--ghost-blue)",
     ghostText: "var(--ghost-blue-text)",
@@ -31,8 +32,8 @@ const actions = [
   {
     id: "add-client",
     icon: UserPlus,
-    label: "Add Client",
-    description: "Register a new client",
+    labelKey: "Add Client",
+    descriptionKey: "Register a new client",
     action: "createClient",
     ghost: "var(--ghost-violet)",
     ghostText: "var(--ghost-violet-text)",
@@ -40,8 +41,8 @@ const actions = [
   {
     id: "broadcast",
     icon: Megaphone,
-    label: "Broadcast",
-    description: "Send a team broadcast",
+    labelKey: "Broadcast",
+    descriptionKey: "Send a team broadcast",
     action: "broadcast",
     ghost: "var(--ghost-amber)",
     ghostText: "var(--ghost-amber-text)",
@@ -51,7 +52,14 @@ const actions = [
 export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
   const { setCreateClientModalOpen, setCreateInvoiceModalOpen, setCreateJobModalOpen } = useShellStore();
   const { orgId, userId } = useOrg();
+  const { t } = useIndustryLexicon();
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+
+  const actions = actionsConfig.map((a) => ({
+    ...a,
+    label: t(a.labelKey),
+    description: t(a.descriptionKey),
+  }));
 
   const handleAction = (actionId: string) => {
     switch (actionId) {

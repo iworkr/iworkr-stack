@@ -72,14 +72,35 @@ const navItems = [
 ];
 
 /**
- * Returns nav items with labels translated through the industry lexicon.
- * For trades orgs, labels pass through unchanged and care-only items are hidden.
+ * Returns nav items with labels translated through the industry lexicon,
+ * grouped into sections. For trades orgs, labels pass through unchanged and
+ * care-only items are hidden.
  */
 function useTranslatedNavItems() {
   const { t, isCare } = useIndustryLexicon();
   return navItems
     .filter((item) => !item.careOnly || isCare)
     .map((item) => ({ ...item, label: t(item.label) }));
+}
+
+function useCareNavSections() {
+  const { isCare } = useIndustryLexicon();
+  const items = useTranslatedNavItems();
+  if (!isCare) return [{ label: null, items }];
+
+  // Split into workspace items, care-specific items, and general items
+  const careIds = new Set(["nav_medications", "nav_incidents", "nav_observations"]);
+  const generalIds = new Set(["nav_assets", "nav_forms", "nav_team", "nav_automations", "nav_integrations", "nav_ai_agent"]);
+
+  const workspace = items.filter((i) => !careIds.has(i.id) && !generalIds.has(i.id));
+  const care = items.filter((i) => careIds.has(i.id));
+  const general = items.filter((i) => generalIds.has(i.id));
+
+  return [
+    { label: null, items: workspace },
+    { label: "Clinical & Governance", items: care },
+    { label: "Operations", items: general },
+  ];
 }
 
 type SidebarTeamMember = { name: string; initials: string; status: "online" | "away"; role: string };
@@ -239,12 +260,20 @@ export function Sidebar() {
     nav_integrations: "integrations",
     nav_ai_agent: "integrations",
   };
+  const { t: sidebarT, isCare: sidebarIsCare } = useIndustryLexicon();
+  const navSections = useCareNavSections();
   const translatedNavItems = useTranslatedNavItems();
   const visibleNavItems = translatedNavItems.filter((item) => {
     const module = navModuleMap[item.id];
     if (!module) return true;
     return roleDef?.permissions[module]?.includes("view") ?? false;
   });
+  // Build filtered sections
+  const visibleIds = new Set(visibleNavItems.map((i) => i.id));
+  const filteredSections = navSections.map((section) => ({
+    ...section,
+    items: section.items.filter((i) => visibleIds.has(i.id)),
+  })).filter((s) => s.items.length > 0);
 
   const unreadCount = useInboxStore((s) => s.items.filter(i => !i.read && !i.archived).length);
 
@@ -259,12 +288,12 @@ export function Sidebar() {
           name: m.name || "Team Member",
           initials: m.initials || m.name?.substring(0, 2).toUpperCase() || "??",
           status: (m.status === "on_job" || m.status === "en_route" ? "online" : "away") as "online" | "away",
-          role: m.status === "on_job" ? "On Job" : m.status === "en_route" ? "En Route" : "Idle",
+          role: m.status === "on_job" ? sidebarT("On Job") : m.status === "en_route" ? sidebarT("En Route") : "Idle",
         })));
       }
       setTeamLoading(false);
     }).catch(() => setTeamLoading(false));
-  }, [orgId]);
+  }, [orgId, sidebarT]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -359,18 +388,32 @@ export function Sidebar() {
             )}
           </AnimatePresence>
 
-          <div className="space-y-px">
-            {visibleNavItems.map((item) => (
-              <NavLink
-                key={item.id}
-                item={item}
-                active={isActive(item.href)}
-                collapsed={sidebarCollapsed}
-                badge={item.id === "nav_inbox" ? unreadCount : undefined}
-                proBadge={isFree && gatedNavIds.has(item.id)}
-              />
-            ))}
-          </div>
+          {filteredSections.map((section, sIdx) => (
+            <div key={sIdx} className={sIdx > 0 ? "mt-4" : ""}>
+              {section.label && !sidebarCollapsed && (
+                <div className="mb-1 px-2 pt-1">
+                  <span className="text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase" style={sidebarIsCare && sIdx === 1 ? { color: "rgba(96,165,250,0.6)" } : undefined}>
+                    {section.label}
+                  </span>
+                </div>
+              )}
+              {section.label && sidebarCollapsed && (
+                <div className="my-1.5 mx-3 h-px bg-[var(--border-base)]" />
+              )}
+              <div className="space-y-px">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.id}
+                    item={item}
+                    active={isActive(item.href)}
+                    collapsed={sidebarCollapsed}
+                    badge={item.id === "nav_inbox" ? unreadCount : undefined}
+                    proBadge={isFree && gatedNavIds.has(item.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
 
           {/* ── Team Section (visible to roles with team.view) ── */}
           <AnimatePresence>
@@ -383,7 +426,7 @@ export function Sidebar() {
               >
                 <div className="mb-1 px-2">
                   <span className="text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-                    Your Team
+                    {sidebarT("Your Team")}
                   </span>
                 </div>
                 <div className="space-y-px">

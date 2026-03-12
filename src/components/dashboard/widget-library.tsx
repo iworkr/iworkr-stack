@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, TrendingUp, Radio, Inbox, Calendar, Zap, Sparkles, Users, Link, FileText } from "lucide-react";
 import { useDashboardStore, WIDGET_REGISTRY } from "@/lib/dashboard-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 const iconMap: Record<string, typeof TrendingUp> = {
   TrendingUp, Radio, Inbox, Calendar, Zap, Sparkles, Users, Link, FileText,
@@ -13,6 +14,7 @@ export function WidgetLibrary() {
   const setDrawerOpen = useDashboardStore((s) => s.setDrawerOpen);
   const activeWidgets = useDashboardStore((s) => s.activeWidgets);
   const addWidget = useDashboardStore((s) => s.addWidget);
+  const { t } = useIndustryLexicon();
 
   const availableWidgets = WIDGET_REGISTRY.filter(
     (w) => !activeWidgets.includes(w.id)
@@ -80,10 +82,10 @@ export function WidgetLibrary() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-[13px] font-medium text-zinc-300">
-                            {widget.label}
+                            {t(widget.label)}
                           </div>
                           <div className="mt-0.5 text-[11px] text-zinc-600">
-                            {widget.description}
+                            {t(widget.description)}
                           </div>
                         </div>
                         <Plus size={16} className="mt-1 shrink-0 text-zinc-600" />

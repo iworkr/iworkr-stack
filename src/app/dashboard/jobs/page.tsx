@@ -29,6 +29,7 @@ import { useShellStore } from "@/lib/shell-store";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { emptyCalendarAnimation } from "@/components/dashboard/lottie-data";
 import type { Job, Priority, JobStatus } from "@/lib/data";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Status helpers ──────────────────────────────────── */
 
@@ -219,6 +220,7 @@ function FilterPopover({
 /* ── Lottie Empty State ──────────────────────────────── */
 
 function EmptyState({ hasFilter }: { hasFilter: boolean }) {
+  const { t } = useIndustryLexicon();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -249,7 +251,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
         transition={{ delay: 0.3 }}
         className="text-[16px] font-semibold tracking-tight text-zinc-200"
       >
-        {hasFilter ? "No jobs match your filters" : "No jobs yet"}
+        {hasFilter ? `No ${t("jobs")} match your filters` : `No ${t("jobs")} yet`}
       </motion.h3>
       <motion.p
         initial={{ opacity: 0 }}
@@ -259,7 +261,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
       >
         {hasFilter
           ? "Try adjusting your filters or search query."
-          : "Create your first job to start tracking work."}
+          : `Create your first ${t("job")} to start tracking work.`}
       </motion.p>
       {!hasFilter && (
         <motion.div
@@ -269,7 +271,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
         >
           <button className="mt-5 flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200">
             <Plus size={14} />
-            Create Job
+            {t("Create Job")}
           </button>
         </motion.div>
       )}
@@ -281,6 +283,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
 
 export default function JobsPage() {
   const router = useRouter();
+  const { t, isCare } = useIndustryLexicon();
   const {
     jobs: jobsList,
     focusedIndex,
@@ -439,7 +442,7 @@ export default function JobsPage() {
     try {
       await Promise.all(bulkDeleteJobs.map((j) => deleteJobServer(j.id)));
       clearSelection();
-      addToast(`${bulkDeleteJobs.length} jobs deleted`);
+      addToast(`${bulkDeleteJobs.length} ${t("jobs")} deleted`);
     } catch { addToast("Failed to delete some jobs"); }
     finally { setIsBulkDeleteModalOpen(false); setBulkDeleteJobs([]); setIsDeleting(false); }
   }
@@ -463,18 +466,18 @@ export default function JobsPage() {
           <div className="flex flex-col gap-0.5">
             <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Operations</span>
             <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] cursor-pointer">Dashboard</span>
+              <span className="text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] cursor-pointer">{t("Dashboard")}</span>
               <ChevronRight size={10} className="text-zinc-700" />
-              <span className="font-semibold text-[var(--text-primary)]">Jobs</span>
+              <span className="font-semibold text-[var(--text-primary)]">{t("Jobs")}</span>
             </div>
           </div>
 
           {/* Tab Switcher */}
           <div className="flex items-center">
             {([
-              { key: "all" as ViewFilter, label: "All Jobs", count: jobsList.length },
+              { key: "all" as ViewFilter, label: isCare ? `All ${t("Shifts")}` : "All Jobs", count: jobsList.length },
               { key: "active" as ViewFilter, label: "Active", count: activeCount },
-              { key: "backlog" as ViewFilter, label: "Backlog", count: backlogCount },
+              { key: "backlog" as ViewFilter, label: t("Backlog"), count: backlogCount },
               { key: "done" as ViewFilter, label: "Done", count: doneCount },
             ]).map((tab) => (
               <button
@@ -549,7 +552,7 @@ export default function JobsPage() {
             <FilterPopover open={showFilterPopover} onClose={() => setShowFilterPopover(false)} filters={advancedFilters} onApply={setAdvancedFilters} anchorRef={filterBtnRef} />
           </div>
 
-          {/* New Job — Obsidian primary CTA */}
+          {/* New Job/Shift — Obsidian primary CTA */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -557,7 +560,7 @@ export default function JobsPage() {
             className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200"
           >
             <Plus size={13} strokeWidth={2} />
-            New Job
+            {t("New Job")}
           </motion.button>
         </div>
       </div>
@@ -569,7 +572,7 @@ export default function JobsPage() {
         <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">ID</div>
         <div className="px-1 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Status</div>
         <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Title</div>
-        <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Client</div>
+        <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">{t("Client")}</div>
         <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Location</div>
         <div />
         <div className="px-2 font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Due</div>

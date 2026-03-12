@@ -37,6 +37,7 @@ import { timelineClockAnimation } from "@/components/dashboard/lottie-data-relay
 import { createClient } from "@/lib/supabase/client";
 import { ScheduleWeekView } from "@/components/schedule/schedule-week-view";
 import { ScheduleMonthView } from "@/components/schedule/schedule-month-view";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -188,6 +189,7 @@ interface DragState {
 
 export default function SchedulePage() {
   const router = useRouter();
+  const { t, isCare } = useIndustryLexicon();
   const {
     blocks,
     technicians: storeTechnicians,
@@ -535,7 +537,7 @@ export default function SchedulePage() {
           {/* Date Navigator — Stealth style */}
           <div className="flex flex-col">
             <span className="mb-1 font-mono text-[9px] font-medium tracking-[0.2em] text-zinc-600 uppercase">
-              Tactical Timeline
+              {t("Tactical Timeline")}
             </span>
             <div className="group/nav flex items-center gap-1">
               <button
@@ -695,9 +697,9 @@ export default function SchedulePage() {
                   <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
                   <div className="absolute inset-[-8px] rounded-full border border-white/[0.02] animate-signal-pulse" style={{ animationDelay: "0.8s" }} />
                 </motion.div>
-                <h3 className="text-[15px] font-medium text-zinc-200">No schedule data</h3>
+                <h3 className="text-[15px] font-medium text-zinc-200">No {isCare ? "roster" : "schedule"} data</h3>
                 <p className="mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-zinc-600">
-                  Assign technicians and jobs to see the dispatch timeline.
+                  Assign {t("technicians")} and {t("jobs")} to see the {isCare ? "roster" : "dispatch"} timeline.
                 </p>
                 <button
                   onClick={() => setUnscheduledDrawerOpen(true)}
@@ -755,7 +757,7 @@ export default function SchedulePage() {
                             {tech.name}
                           </div>
                           <div className="mt-0.5 text-[9px] text-zinc-600">
-                            Technician
+                            {t("Technician")}
                           </div>
                           <div className="mt-1.5 flex items-center gap-1.5">
                             <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/[0.04]">
@@ -902,7 +904,7 @@ export default function SchedulePage() {
                               <div className="flex items-center gap-2 rounded-lg border border-dashed border-white/[0.04] bg-white/[0.008] px-4 py-2">
                                 <CalendarClock size={11} className="text-zinc-700" />
                                 <span className="font-mono text-[10px] text-zinc-700">
-                                  No jobs scheduled — drag from backlog or click to assign
+                                  No {t("jobs")} scheduled — drag from {isCare ? "unassigned" : "backlog"} or click to assign
                                 </span>
                               </div>
                             </div>
@@ -1132,7 +1134,7 @@ export default function SchedulePage() {
                 <div className="flex-1 overflow-y-auto scrollbar-none p-3">
                   <p className="mb-3 flex items-center gap-1.5 text-[10px] text-zinc-700">
                     <GripVertical size={9} className="text-zinc-700" />
-                    Drag a job onto the timeline to schedule
+                    Drag a {t("job")} onto the timeline to schedule
                   </p>
                   <div className="space-y-2">
                     {backlogJobs.length > 0 ? (
