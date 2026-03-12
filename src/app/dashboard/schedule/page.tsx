@@ -732,7 +732,7 @@ export default function SchedulePage() {
                       transition={{ delay: techIdx * 0.04, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                       className={`group flex border-b transition-colors duration-150 ${
                         isDropRow
-                          ? "border-emerald-500/15 bg-emerald-500/[0.015]"
+                          ? "border-[var(--brand)]/15 bg-[var(--brand)]/[0.015]"
                           : "border-white/[0.03] hover:bg-white/[0.01]"
                       }`}
                     >
@@ -745,7 +745,7 @@ export default function SchedulePage() {
                           <div
                             className={`absolute -right-0.5 -bottom-0.5 h-[7px] w-[7px] rounded-full ring-2 ring-[#050505] ${
                               tech.status === "online"
-                                ? "bg-emerald-500"
+                                ? "bg-[var(--brand)]"
                                 : tech.status === "away"
                                   ? "bg-amber-500"
                                   : "bg-zinc-600"
@@ -1297,6 +1297,7 @@ function JobPeekCard({
 }) {
   const colors = statusColorMap[block.status] || statusColorMap.scheduled;
   const { addToast } = useToastStore();
+  const { t } = useIndustryLexicon();
 
   return (
     <motion.div
@@ -1356,7 +1357,7 @@ function JobPeekCard({
         )}
         <button
           onClick={() => {
-            if (!block.location) { addToast("No location set for this job"); return; }
+            if (!block.location) { addToast(t("No location set for this job")); return; }
             window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}`, "_blank");
           }}
           className="absolute right-2 bottom-2 z-10 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm transition-colors hover:text-white"
@@ -1441,7 +1442,7 @@ function JobPeekCard({
           </button>
           <button
             onClick={() => {
-              if (!block.location) { addToast("No location set for this job"); return; }
+              if (!block.location) { addToast(t("No location set for this job")); return; }
               window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}`, "_blank");
             }}
             className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"

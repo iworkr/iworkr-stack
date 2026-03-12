@@ -222,6 +222,79 @@ const CARE_LEXICON: Record<string, string> = {
 
   // Settings sidebar
   JOBS: "SHIFTS",
+
+  // ── Phase 4: Full natural parity ─────────────────────────────────────────
+
+  // Finance page hardcoded labels
+  FINANCE: "FUNDING",
+  Finance: "Funding",
+  finance: "funding",
+  "Total Revenue MTD": "Total Funding MTD",
+  Payouts: "Payouts",
+
+  // Job status labels (visible on jobs/shifts page)
+  // NOTE: "En Route" and "Backlog" already defined above — not duplicated here
+  "On Site": "On Location",
+  "On site": "On location",
+  Invoiced: "Claimed",
+  invoiced: "claimed",
+  "In Progress": "Active",
+  Scheduled: "Rostered",
+  scheduled: "rostered",
+  backlog: "unassigned",
+
+  // Context menu items
+  "Open Invoice": "Open Claim",
+  "Send Invoice": "Send Claim",
+  "Void Invoice": "Void Claim",
+  "Copy Link": "Copy Link",
+
+  // Schedule page
+  "No location set for this job": "No location set for this shift",
+  "No blocks scheduled": "No shifts rostered",
+
+  // Settings sections
+  Branches: "Service Regions",
+  branches: "service regions",
+  Templates: "Templates",
+  Statuses: "Statuses",
+  Workflow: "Workflow",
+  Administration: "Administration",
+
+  // Team roles (displayed in team page, sidebar, widgets)
+  // NOTE: "Senior Tech", Apprentice, Subcontractor, Technician already defined above — not duplicated
+  "Office Admin": "Care Coordinator",
+  "office_admin": "Care Coordinator",
+  "Experienced technician. Can manage their own jobs and mentees.":
+    "Experienced support worker. Can manage their own shifts and mentees.",
+  "Field tech. Views assigned jobs, tracks time, fills forms.":
+    "Support worker. Views assigned shifts, tracks time, fills progress notes.",
+  "Learning. Supervised access only.":
+    "Trainee. Supervised access only.",
+  "Handles scheduling, invoicing, and client communication.":
+    "Handles rostering, claiming, and participant coordination.",
+  "Manages operations, team, and finances.":
+    "Manages care operations, support team, and funding.",
+  "External contractor with limited access.":
+    "Agency worker with limited access.",
+
+  // Skill definitions
+  Plumbing: "Personal Care",
+  Electrical: "Community Access",
+  "Gas Fitting": "Behaviour Support",
+  HVAC: "Allied Health",
+  Drainage: "Social Support",
+  Roofing: "Transport",
+  Welding: "Meal Preparation",
+  Carpentry: "Domestic Assistance",
+
+  // Live indicator
+  Live: "Live",
+
+  // Misc hardcoded labels
+  "No clients match your search": "No participants match your search",
+  "job order": "shift",
+  "Job #": "Shift #",
 };
 
 // ─── Hook ───────────────────────────────────────────────────────────────────

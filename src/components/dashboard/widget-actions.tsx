@@ -52,13 +52,16 @@ const actionsConfig = [
 export function WidgetActions({ size = "medium" }: { size?: WidgetSize }) {
   const { setCreateClientModalOpen, setCreateInvoiceModalOpen, setCreateJobModalOpen } = useShellStore();
   const { orgId, userId } = useOrg();
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
   const [broadcastOpen, setBroadcastOpen] = useState(false);
 
   const actions = actionsConfig.map((a) => ({
     ...a,
     label: t(a.labelKey),
     description: t(a.descriptionKey),
+    // In care mode, the primary action ("New Job"→"New Visit") uses blue ghost instead of emerald
+    ghost: a.id === "new-job" && isCare ? "var(--ghost-blue)" : a.ghost,
+    ghostText: a.id === "new-job" && isCare ? "var(--ghost-blue-text)" : a.ghostText,
   }));
 
   const handleAction = (actionId: string) => {

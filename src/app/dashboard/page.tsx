@@ -110,7 +110,7 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.04] px-3 py-1.5">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
             </span>
             <span className="text-[11px] text-zinc-500">Live</span>
           </div>

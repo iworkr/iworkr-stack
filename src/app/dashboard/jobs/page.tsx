@@ -74,9 +74,11 @@ const contextItems: ContextMenuItem[] = [
 
 /* ── Confetti Burst ────────────────────────────────── */
 
-function ConfettiBurst({ x, y }: { x: number; y: number }) {
+function ConfettiBurst({ x, y, isCare = false }: { x: number; y: number; isCare?: boolean }) {
   const particles = useMemo(() => {
-    const colors = ["#34d399", "#6ee7b7", "#a7f3d0", "#10b981", "#059669"];
+    const colors = isCare
+      ? ["#60a5fa", "#93c5fd", "#bfdbfe", "#3b82f6", "#2563eb"]
+      : ["#34d399", "#6ee7b7", "#a7f3d0", "#10b981", "#059669"];
     return Array.from({ length: 12 }, (_, i) => {
       const angle = (i / 12) * 360;
       const distance = 20 + Math.random() * 30;
@@ -90,7 +92,7 @@ function ConfettiBurst({ x, y }: { x: number; y: number }) {
         delay: Math.random() * 0.1,
       };
     });
-  }, []);
+  }, [isCare]);
 
   return (
     <div className="pointer-events-none fixed z-[200]" style={{ left: x, top: y }}>
@@ -108,7 +110,7 @@ function ConfettiBurst({ x, y }: { x: number; y: number }) {
         initial={{ scale: 0, opacity: 0.6 }}
         animate={{ scale: 2, opacity: 0 }}
         transition={{ duration: 0.4 }}
-        className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400"
+        className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ${isCare ? "bg-blue-400" : "bg-emerald-400"}`}
       />
     </div>
   );
@@ -134,6 +136,7 @@ function FilterPopover({
   onApply: (f: FilterState) => void;
   anchorRef: React.RefObject<HTMLButtonElement | null>;
 }) {
+  const { t, isCare } = useIndustryLexicon();
   const [local, setLocal] = useState<FilterState>(filters);
   const [section, setSection] = useState<"main" | "priority" | "status">("main");
 
@@ -165,11 +168,11 @@ function FilterPopover({
                   <div className="px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-zinc-600 uppercase">Filter by</div>
                   <button onClick={() => setSection("priority")} className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200">
                     <span className="flex items-center gap-2.5"><PriorityIcon priority="high" size={12} />Priority</span>
-                    {local.priority && <span className="text-[10px] text-emerald-400">{PRIORITY_OPTIONS.find((p) => p.value === local.priority)?.label}</span>}
+                    {local.priority && <span className={`text-[10px] ${isCare ? "text-blue-400" : "text-emerald-400"}`}>{PRIORITY_OPTIONS.find((p) => p.value === local.priority)?.label}</span>}
                   </button>
                   <button onClick={() => setSection("status")} className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200">
                     <span className="flex items-center gap-2.5"><StatusIcon status="in_progress" size={12} />Status</span>
-                    {local.status && <span className="text-[10px] text-emerald-400">{formatStatus(local.status)}</span>}
+                    {local.status && <span className={`text-[10px] ${isCare ? "text-blue-400" : "text-emerald-400"}`}>{formatStatus(local.status)}</span>}
                   </button>
                   {hasActiveFilters && (
                     <button onClick={() => { const cleared = { priority: null, status: null }; setLocal(cleared); onApply(cleared); onClose(); }}
@@ -189,7 +192,7 @@ function FilterPopover({
                     <button key={p.value} onClick={() => { const next: FilterState = { ...local, priority: local.priority === p.value ? null : p.value }; setLocal(next); onApply(next); onClose(); }}
                       className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] transition-colors ${local.priority === p.value ? "bg-white/[0.04] text-zinc-200" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}`}>
                       <PriorityIcon priority={p.value} size={12} />{p.label}
-                      {local.priority === p.value && <Check size={10} className="ml-auto text-emerald-400" />}
+                      {local.priority === p.value && <Check size={10} className={`ml-auto ${isCare ? "text-blue-400" : "text-emerald-400"}`} />}
                     </button>
                   ))}
                 </motion.div>
@@ -203,8 +206,8 @@ function FilterPopover({
                   {STATUS_OPTIONS.map((s) => (
                     <button key={s.value} onClick={() => { const next: FilterState = { ...local, status: local.status === s.value ? null : s.value }; setLocal(next); onApply(next); onClose(); }}
                       className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] transition-colors ${local.status === s.value ? "bg-white/[0.04] text-zinc-200" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}`}>
-                      <StatusIcon status={s.value} size={12} />{s.label}
-                      {local.status === s.value && <Check size={10} className="ml-auto text-emerald-400" />}
+                      <StatusIcon status={s.value} size={12} />{t(s.label)}
+                      {local.status === s.value && <Check size={10} className={`ml-auto ${isCare ? "text-blue-400" : "text-emerald-400"}`} />}
                     </button>
                   ))}
                 </motion.div>
@@ -495,7 +498,7 @@ export default function JobsPage() {
                 )}
                 {viewFilter === tab.key && (
                   <motion.div layoutId="jobs-tab-indicator" className="absolute bottom-0 left-3 right-3 flex justify-center" transition={{ type: "spring", stiffness: 400, damping: 30 }}>
-                    <div className="h-1 w-1 rounded-full bg-emerald-500" />
+                    <div className={`h-1 w-1 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} />
                   </motion.div>
                 )}
               </button>
@@ -507,12 +510,12 @@ export default function JobsPage() {
           {/* Stealth Search — always visible */}
           <div className={`relative flex items-center gap-2 rounded-lg px-2.5 py-1.5 transition-all duration-200 ${searchFocused ? "" : ""}`}>
             <motion.div
-              className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+              className={`absolute left-0 top-1 bottom-1 w-[2px] rounded-r ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}
               initial={false}
               animate={{ opacity: searchFocused ? 1 : 0, scaleY: searchFocused ? 1 : 0 }}
               transition={{ duration: 0.15 }}
             />
-            <Search size={13} className={`shrink-0 transition-colors duration-150 ${searchFocused ? "text-emerald-500" : "text-zinc-600"}`} />
+            <Search size={13} className={`shrink-0 transition-colors duration-150 ${searchFocused ? (isCare ? "text-blue-500" : "text-emerald-500") : "text-zinc-600"}`} />
             <input
               ref={searchRef}
               value={searchQuery}
@@ -540,13 +543,13 @@ export default function JobsPage() {
               onClick={() => setShowFilterPopover(!showFilterPopover)}
               className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] transition-all duration-150 ${
                 activeFilterCount > 0
-                  ? "border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-400"
+                  ? (isCare ? "border-blue-500/20 bg-blue-500/[0.04] text-blue-400" : "border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-400")
                   : "border-white/[0.06] text-zinc-500 hover:border-white/[0.1] hover:text-zinc-300"
               }`}
             >
               <Filter size={12} />Filter
               {activeFilterCount > 0 && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/20 text-[9px] font-semibold text-emerald-400">{activeFilterCount}</span>
+                <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold ${isCare ? "bg-blue-500/20 text-blue-400" : "bg-emerald-500/20 text-emerald-400"}`}>{activeFilterCount}</span>
               )}
             </button>
             <FilterPopover open={showFilterPopover} onClose={() => setShowFilterPopover(false)} filters={advancedFilters} onApply={setAdvancedFilters} anchorRef={filterBtnRef} />
@@ -750,7 +753,7 @@ export default function JobsPage() {
       </div>
 
       {/* Confetti */}
-      <AnimatePresence>{confetti && <ConfettiBurst key={confetti.id} x={confetti.x} y={confetti.y} />}</AnimatePresence>
+      <AnimatePresence>{confetti && <ConfettiBurst key={confetti.id} x={confetti.x} y={confetti.y} isCare={isCare} />}</AnimatePresence>
 
       {/* Context Menu */}
       <ContextMenu open={ctxMenu.open} x={ctxMenu.x} y={ctxMenu.y} items={contextItems} onSelect={handleContextAction} onClose={() => setCtxMenu((p) => ({ ...p, open: false }))} />
@@ -768,7 +771,7 @@ export default function JobsPage() {
                 return (
                   <button key={opt.value} onClick={(e) => handleStatusChange(ctxStatusMenu.jobId, opt.value, e.currentTarget)}
                     className={`flex h-7 w-full items-center gap-2.5 rounded px-2 text-left text-[13px] transition-colors duration-100 ${isActive ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>
-                    <StatusIcon status={opt.value} size={12} />{opt.label}
+                    <StatusIcon status={opt.value} size={12} />{t(opt.label)}
                   </button>
                 );
               })}
@@ -788,7 +791,7 @@ export default function JobsPage() {
               return (
                 <button key={opt.value} onClick={(e) => handleStatusChange(statusDropdown.jobId, opt.value, e.currentTarget)}
                   className={`flex h-7 w-full items-center gap-2.5 rounded px-2 text-left text-[13px] transition-colors duration-100 ${isActive ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>
-                  <StatusIcon status={opt.value} size={12} />{opt.label}
+                  <StatusIcon status={opt.value} size={12} />{t(opt.label)}
                 </button>
               );
             })}

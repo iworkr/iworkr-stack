@@ -94,6 +94,13 @@
   --selection-bg: rgba(16, 185, 129, 0.15);
   --scrollbar-thumb: rgba(255, 255, 255, 0.06);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.12);
+  /* Nightingale: Care-sector brand overrides (applied via .care class on <html>) */
+  --brand-care: #3B82F6;
+  --brand-care-hover: #2563EB;
+  --brand-care-glow: 0 0 12px rgba(59, 130, 246, 0.12);
+  --brand-care-subtle: rgba(59, 130, 246, 0.08);
+  --brand-care-text: #60A5FA;
+  --brand-care-selection: rgba(59, 130, 246, 0.15);
   /* Landing page tokens */
   --card-bg: rgba(255, 255, 255, 0.02);
   --card-border: rgba(255, 255, 255, 0.08);
@@ -133,6 +140,21 @@
   --ghost-zinc: rgba(161, 161, 170, 0.08);
   --ghost-zinc-text: #71717a;
   color-scheme: dark;
+}
+
+/* ── Nightingale Care Theme Override ──────────────────── */
+/* Applied via <html class="care"> when org.industry_type === "care" */
+.care,
+.care.dark {
+  --brand: #3B82F6;
+  --brand-hover: #2563EB;
+  --brand-glow: 0 0 12px rgba(59, 130, 246, 0.12);
+  --brand-glow-subtle: 0 0 8px -5px rgba(59, 130, 246, 0.08);
+  --selection-bg: rgba(59, 130, 246, 0.15);
+  --search-spine: #3B82F6;
+  --ghost-emerald: rgba(59, 130, 246, 0.05);
+  --ghost-emerald-text: #60a5fa;
+  --ghost-emerald-strong: rgba(59, 130, 246, 0.10);
 }
 
 /* ── Light Theme ─────────────────────────────────────── */

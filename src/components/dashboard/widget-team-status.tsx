@@ -11,7 +11,7 @@ import type { WidgetSize } from "@/lib/dashboard-store";
 export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
   const members = useTeamStore((s) => s.members);
   const loaded = useTeamStore((s) => s.loaded);
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
 
   const onlineMembers = members.filter(
     (m) => m.onlineStatus === "online" || m.onlineStatus === "idle"
@@ -105,7 +105,7 @@ export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
                 </span>
                 {size === "large" && m.role && (
                   <span className="font-mono text-[9px] text-[var(--text-dim)]">
-                    {String(m.role).replace(/_/g, " ")}
+                    {t(String(m.role).replace(/_/g, " "))}
                   </span>
                 )}
               </motion.div>

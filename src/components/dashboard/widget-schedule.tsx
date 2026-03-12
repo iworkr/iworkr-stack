@@ -49,7 +49,7 @@ interface DisplayBlock {
 }
 
 function ScheduleEmptyState() {
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <LottieIcon
@@ -82,7 +82,7 @@ function ScheduleEmptyState() {
         style={{ background: "var(--ghost-emerald)", color: "var(--ghost-emerald-text)" }}
       >
         <CalendarDays size={9} />
-        No blocks scheduled
+        {t("No blocks scheduled")}
       </motion.div>
     </div>
   );
@@ -91,7 +91,7 @@ function ScheduleEmptyState() {
 export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
   const storeBlocks = useScheduleStore((s) => s.blocks);
   const scheduleLoaded = useScheduleStore((s) => s.loaded);
   const cachedSchedule = useDashboardStore((s) => s.widgetSchedule);
@@ -276,7 +276,7 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
                       style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}
                     >
                       <span className="relative flex h-1 w-1">
-                        <span className="relative inline-flex h-1 w-1 rounded-full bg-emerald-500" />
+                        <span className={`relative inline-flex h-1 w-1 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} />
                       </span>
                       Next Up
                     </motion.div>

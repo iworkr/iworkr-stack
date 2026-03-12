@@ -33,11 +33,18 @@ import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Status config ────────────────────────────────────────── */
 
-const statusConfig: Record<string, { label: string; dot: string; text: string; bg: string }> = {
+// NOTE: statusConfig is static but "active" uses the brand accent (emerald/blue).
+// The care-aware override is applied at render time via `getStatusConfig()`.
+const _statusConfigBase: Record<string, { label: string; dot: string; text: string; bg: string }> = {
   active: { label: "Active", dot: "bg-emerald-400", text: "text-emerald-400", bg: "bg-emerald-500/15" },
   lead: { label: "Lead", dot: "bg-sky-400", text: "text-sky-400", bg: "bg-sky-500/15" },
   churned: { label: "Churned", dot: "bg-rose-400", text: "text-rose-400", bg: "bg-rose-500/15" },
   inactive: { label: "Inactive", dot: "bg-zinc-500", text: "text-zinc-500", bg: "bg-zinc-500/15" },
+};
+
+const _statusConfigCare: Record<string, { label: string; dot: string; text: string; bg: string }> = {
+  ..._statusConfigBase,
+  active: { label: "Active", dot: "bg-blue-400", text: "text-blue-400", bg: "bg-blue-500/15" },
 };
 
 type TabId = "all" | "vip" | "leads" | "churned";
@@ -49,15 +56,15 @@ const tabs: { id: TabId; label: string }[] = [
   { id: "churned", label: "Churned" },
 ];
 
-const contextItems: ContextMenuItem[] = [
-  { id: "open", label: "Open Dossier", icon: <Pencil size={13} />, shortcut: "↵" },
-  { id: "newjob", label: "New Job", icon: <Briefcase size={13} /> },
-  { id: "email", label: "Send Email", icon: <Mail size={13} /> },
-  { id: "call", label: "Call", icon: <Phone size={13} /> },
-  { id: "copy", label: "Copy Email", icon: <Copy size={13} /> },
-  { id: "divider", label: "", divider: true },
-  { id: "archive", label: "Archive", icon: <Trash2 size={13} />, danger: true },
-];
+const contextItemDefs = [
+  { id: "open", labelKey: "Open Dossier", icon: <Pencil size={13} />, shortcut: "↵" },
+  { id: "newjob", labelKey: "New Job", icon: <Briefcase size={13} /> },
+  { id: "email", labelKey: "Send Email", icon: <Mail size={13} /> },
+  { id: "call", labelKey: "Call", icon: <Phone size={13} /> },
+  { id: "copy", labelKey: "Copy Email", icon: <Copy size={13} /> },
+  { id: "divider", labelKey: "", divider: true },
+  { id: "archive", labelKey: "Archive", icon: <Trash2 size={13} />, danger: true },
+] as const;
 
 /* ── Avatar gradient ──────────────────────────────────────── */
 
@@ -106,6 +113,7 @@ function useCountUp(target: number, duration = 600) {
 export default function ClientsPage() {
   const router = useRouter();
   const { t, isCare } = useIndustryLexicon();
+  const statusConfig = isCare ? _statusConfigCare : _statusConfigBase;
   const { addToast } = useToastStore();
   const { setCreateClientModalOpen } = useShellStore();
   const { orgId } = useOrg();
@@ -128,6 +136,14 @@ export default function ClientsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const filterRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const contextItems: ContextMenuItem[] = useMemo(() =>
+    contextItemDefs.map((item) => ({
+      ...item,
+      label: item.labelKey ? t(item.labelKey) : "",
+    })),
+    [t]
+  );
 
   const [ctxMenu, setCtxMenu] = useState<{ open: boolean; x: number; y: number; clientId: string }>({
     open: false, x: 0, y: 0, clientId: "",
@@ -291,13 +307,13 @@ export default function ClientsPage() {
             {/* Stealth Search */}
             <div className="relative flex items-center gap-2">
               <motion.div
-                className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
+                className={`absolute left-0 top-1 bottom-1 w-[2px] rounded-r ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}
                 initial={false}
                 animate={{ opacity: searchFocused ? 1 : 0, scaleY: searchFocused ? 1 : 0 }}
                 transition={{ duration: 0.15 }}
               />
               <div className="flex items-center gap-2 pl-2">
-                <Search size={12} className={`shrink-0 transition-colors duration-150 ${searchFocused ? "text-emerald-500" : "text-zinc-600"}`} />
+                <Search size={12} className={`shrink-0 transition-colors duration-150 ${searchFocused ? (isCare ? "text-blue-500" : "text-emerald-500") : "text-zinc-600"}`} />
                 <input
                   ref={searchRef}
                   value={search}
@@ -321,14 +337,14 @@ export default function ClientsPage() {
                 onClick={() => setFilterOpen((v) => !v)}
                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                   hasActiveFilters
-                    ? "bg-emerald-500/[0.06] text-emerald-400"
+                    ? (isCare ? "bg-blue-500/[0.06] text-blue-400" : "bg-emerald-500/[0.06] text-emerald-400")
                     : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
                 }`}
               >
                 <SlidersHorizontal size={12} />
                 Filter
                 {hasActiveFilters && (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white">
+                  <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}>
                     {(filterStatus ? 1 : 0) + (filterType ? 1 : 0)}
                   </span>
                 )}
@@ -526,7 +542,7 @@ export default function ClientsPage() {
             <div className="h-3 w-px bg-white/[0.04]" />
             <div className="flex items-center gap-1.5">
               <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">{t("Total LTV")}</span>
-              <span className="font-mono text-[11px] font-medium text-emerald-400">
+              <span className={`font-mono text-[11px] font-medium ${isCare ? "text-blue-400" : "text-emerald-400"}`}>
                 ${animatedLTV.toLocaleString()}
               </span>
             </div>
@@ -572,7 +588,7 @@ export default function ClientsPage() {
                   setCtxMenu({ open: true, x: e.clientX, y: e.clientY, clientId: client.id });
                 }}
                 className={`group relative flex cursor-pointer items-center border-b border-white/[0.03] px-5 transition-colors duration-100 ${
-                  isFocused ? "bg-emerald-500/[0.04]" : "hover:bg-white/[0.02]"
+                  isFocused ? (isCare ? "bg-blue-500/[0.04]" : "bg-emerald-500/[0.04]") : "hover:bg-white/[0.02]"
                 }`}
                 style={{ height: 64 }}
               >
@@ -580,7 +596,7 @@ export default function ClientsPage() {
                 {isFocused && (
                   <motion.div
                     layoutId="client-focus-spine"
-                    className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r bg-emerald-500"
+                    className={`absolute left-0 top-2 bottom-2 w-[2px] rounded-r ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -614,7 +630,7 @@ export default function ClientsPage() {
                       ) : (
                         <User size={8} />
                       )}
-                      {client.type ? client.type.charAt(0).toUpperCase() + client.type.slice(1) : "Client"}
+                      {client.type ? client.type.charAt(0).toUpperCase() + client.type.slice(1) : t("Client")}
                     </div>
                   </div>
                 </div>
@@ -665,7 +681,7 @@ export default function ClientsPage() {
 
                 {/* LTV — Emerald-400 monospace */}
                 <div className="w-28 px-2 text-right">
-                  <LTVCell value={client.lifetimeValueNum || 0} formatted={client.lifetimeValue} isVIP={isVIP} />
+                  <LTVCell value={client.lifetimeValueNum || 0} formatted={client.lifetimeValue} isVIP={isVIP} isCare={isCare} />
                 </div>
 
                 {/* Last Active */}
@@ -724,20 +740,24 @@ export default function ClientsPage() {
 
 /* ── LTV Cell with count-up effect ────────────────────────── */
 
-function LTVCell({ value, formatted, isVIP }: { value: number; formatted: string; isVIP: boolean }) {
+function LTVCell({ value, formatted, isVIP, isCare }: { value: number; formatted: string; isVIP: boolean; isCare: boolean }) {
   const displayed = useCountUp(value, 500);
 
   if (value === 0) {
     return <span className="font-mono text-[12px] text-zinc-700">$0</span>;
   }
 
+  const colorClass = isCare
+    ? (isVIP ? "text-blue-400" : "text-blue-400/70")
+    : (isVIP ? "text-emerald-400" : "text-emerald-400/70");
+
   return (
     <span
-      className={`font-mono text-[12px] font-medium ${isVIP ? "text-emerald-400" : "text-emerald-400/70"}`}
+      className={`font-mono text-[12px] font-medium ${colorClass}`}
       style={
         isVIP
           ? {
-              textShadow: "0 0 12px rgba(16, 185, 129, 0.3)",
+              textShadow: isCare ? "0 0 12px rgba(59, 130, 246, 0.3)" : "0 0 12px rgba(16, 185, 129, 0.3)",
             }
           : undefined
       }

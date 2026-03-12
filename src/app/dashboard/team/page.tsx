@@ -39,6 +39,7 @@ import {
   getRoleColor,
   branches,
   skillDefinitions,
+  careSkillDefinitions,
   roleDefinitions,
   type RoleId,
 } from "@/lib/team-data";
@@ -75,7 +76,7 @@ function getRoleBadge(roleId: string) {
 /* ── Online Status Config ───────────────────────────────── */
 
 const onlineConfig = {
-  online: { dot: "bg-emerald-500", pulse: true, label: "Online" },
+  online: { dot: "bg-[var(--brand)]", pulse: true, label: "Online" },
   idle: { dot: "bg-amber-500", pulse: false, label: "Idle" },
   offline: { dot: "border-2 border-zinc-700 bg-transparent", pulse: false, label: "Offline" },
 };
@@ -101,13 +102,13 @@ function RosterEmptyState() {
           <div className="absolute inset-0 rounded-xl border border-white/[0.04] animate-signal-pulse" />
           <div className="absolute inset-2 rounded-lg border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.5s" }} />
           <motion.div
-            className="absolute inset-x-2 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"
+            className="absolute inset-x-2 h-px bg-gradient-to-r from-transparent via-[var(--brand)]/40 to-transparent"
             animate={{ top: ["25%", "75%", "25%"] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           />
           <div className="absolute inset-0 animate-orbit" style={{ animationDuration: "6s" }}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 flex h-2 w-2 items-center justify-center rounded-full bg-emerald-500/30">
-              <div className="h-1 w-1 rounded-full bg-emerald-500" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 flex h-2 w-2 items-center justify-center rounded-full bg-[var(--brand)]/30">
+              <div className="h-1 w-1 rounded-full bg-[var(--brand)]" />
             </div>
           </div>
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
@@ -220,7 +221,7 @@ export default function TeamPage() {
         {/* ── Header ───────────────────────────────────────── */}
         <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         {/* Atmospheric glow — PRD Design Revamp */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-gradient-to-b from-emerald-500/[0.03] to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-gradient-to-b from-[var(--brand)]/[0.03] to-transparent" />
         <div className="pointer-events-none absolute top-0 left-1/2 h-[100px] w-[400px] -translate-x-1/2 rounded-full bg-white/[0.02] blur-[80px]" />
 
         <div className="relative flex items-center justify-between px-5 py-2.5">
@@ -247,16 +248,16 @@ export default function TeamPage() {
               </div>
               <div className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2.5 py-1">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-40" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand)] opacity-40" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
                 </span>
                 <span className="font-mono text-[11px] text-zinc-300">{onlineCount}</span>
                 <span className="text-[10px] text-zinc-600">online</span>
               </div>
               {onJobCount > 0 && (
-                <div className="flex items-center gap-1.5 rounded-md border border-emerald-500/10 bg-emerald-500/[0.04] px-2.5 py-1">
-                  <Briefcase size={9} className="text-emerald-500/70" />
-                  <span className="font-mono text-[11px] text-emerald-400">{onJobCount}</span>
+                <div className="flex items-center gap-1.5 rounded-md border border-[var(--brand)]/10 bg-[var(--brand)]/[0.04] px-2.5 py-1">
+                  <Briefcase size={9} className="text-[var(--brand)]/70" />
+                  <span className="font-mono text-[11px] text-[var(--brand)]">{onJobCount}</span>
                   <span className="text-[10px] text-zinc-600">on job</span>
                 </div>
               )}
@@ -303,7 +304,7 @@ export default function TeamPage() {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[11px] transition-all duration-150 ${
                 hasActiveFilters
-                  ? "bg-emerald-500/[0.06] text-emerald-400"
+                  ? "bg-[var(--brand)]/[0.06] text-[var(--brand)]"
                   : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
               }`}
             >
@@ -405,7 +406,7 @@ export default function TeamPage() {
                   className="h-6 rounded-md border border-white/[0.06] bg-transparent px-2 text-[10px] text-zinc-400 outline-none"
                 >
                   <option value="all">All Skills</option>
-                  {skillDefinitions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  {(isCare ? careSkillDefinitions : skillDefinitions).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
                 {hasActiveFilters && (
                   <button
@@ -472,9 +473,9 @@ export default function TeamPage() {
                             <motion.span
                               animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
                               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                              className="absolute inset-0 rounded-full bg-emerald-500"
+                              className="absolute inset-0 rounded-full bg-[var(--brand)]"
                             />
-                            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                            <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--brand)]" />
                           </span>
                         ) : member.onlineStatus === "idle" ? (
                           <span className="inline-flex h-2 w-2 rounded-full bg-amber-500" />
@@ -488,7 +489,7 @@ export default function TeamPage() {
                         <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/5 bg-zinc-800 text-[10px] font-semibold text-white">
                           {member.initials}
                           {member.onlineStatus === "online" && (
-                            <div className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#050505] bg-emerald-500" />
+                            <div className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#050505] bg-[var(--brand)]" />
                           )}
                         </div>
                         <div className="min-w-0">
@@ -525,7 +526,8 @@ export default function TeamPage() {
                       {/* Skills */}
                       <div className="w-36 px-2 flex items-center gap-1">
                         {member.skills.slice(0, 3).map((skillId) => {
-                          const skill = skillDefinitions.find((s) => s.id === skillId);
+                          const activeSkills = isCare ? careSkillDefinitions : skillDefinitions;
+                          const skill = activeSkills.find((s) => s.id === skillId);
                           if (!skill) return null;
                           const Icon = skillIconMap[skill.icon] || Wrench;
                           return (
@@ -702,11 +704,11 @@ export default function TeamPage() {
                               {member.initials}
                             </div>
                             {member.onlineStatus === "online" && (
-                              <div className="absolute -right-0.5 bottom-0 h-3.5 w-3.5 rounded-full border-[2.5px] border-[#0A0A0A] bg-emerald-500">
+                              <div className="absolute -right-0.5 bottom-0 h-3.5 w-3.5 rounded-full border-[2.5px] border-[#0A0A0A] bg-[var(--brand)]">
                                 <motion.div
                                   animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
                                   transition={{ duration: 2, repeat: Infinity }}
-                                  className="absolute inset-0 rounded-full bg-emerald-500"
+                                  className="absolute inset-0 rounded-full bg-[var(--brand)]"
                                 />
                               </div>
                             )}
@@ -729,7 +731,8 @@ export default function TeamPage() {
                           {/* Skills */}
                           <div className="mt-2 flex items-center gap-1">
                             {member.skills.slice(0, 3).map((skillId) => {
-                              const skill = skillDefinitions.find((s) => s.id === skillId);
+                              const activeSkills = isCare ? careSkillDefinitions : skillDefinitions;
+                              const skill = activeSkills.find((s) => s.id === skillId);
                               if (!skill) return null;
                               const Icon = skillIconMap[skill.icon] || Wrench;
                               return (
@@ -746,7 +749,7 @@ export default function TeamPage() {
 
                           {/* Last Active */}
                           <p className={`mt-2 text-[10px] ${
-                            member.onlineStatus === "online" ? "text-emerald-500" : "text-zinc-600"
+                            member.onlineStatus === "online" ? "text-[var(--brand)]" : "text-zinc-600"
                           }`}>
                             {member.onlineStatus === "online" ? "Online now" : member.lastActive}
                           </p>

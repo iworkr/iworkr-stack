@@ -17,6 +17,7 @@ import { useCredentialsStore } from "@/lib/credentials-store";
 import { useIncidentsStore } from "@/lib/incidents-store";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useFleetTracking } from "@/lib/hooks/use-fleet-tracking";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /**
  * Loads data from Supabase into Zustand stores when the user is authenticated.
@@ -31,6 +32,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const addRealtimeItem = useInboxStore((s) => s.addRealtimeItem);
 
   useFleetTracking({ orgId, enabled: !!orgId });
+
+  // ── Nightingale: Apply .care class to <html> for CSS theme overrides ──
+  const { isCare } = useIndustryLexicon();
+  useEffect(() => {
+    const html = document.documentElement;
+    if (isCare) {
+      html.classList.add("care");
+    } else {
+      html.classList.remove("care");
+    }
+    return () => { html.classList.remove("care"); };
+  }, [isCare]);
 
   // Fire as soon as orgId is available (instant from cache, or after network)
   useEffect(() => {

@@ -454,7 +454,7 @@ export function Sidebar() {
                           <div
                             className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] ${
                               member.status === "online"
-                                ? "bg-emerald-500"
+                                ? "bg-[var(--brand)]"
                                 : "bg-zinc-600"
                             }`}
                             style={{ borderColor: "var(--surface-0)" }}

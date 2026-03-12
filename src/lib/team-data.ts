@@ -70,6 +70,20 @@ export const skillDefinitions: Skill[] = [
   { id: "carpentry", label: "Carpentry", icon: "Hammer" },
 ];
 
+/** Care-specific skills — used when org.industry_type === "care" */
+export const careSkillDefinitions: Skill[] = [
+  { id: "personal_care", label: "Personal Care", icon: "Heart" },
+  { id: "community_access", label: "Community Access", icon: "MapPin" },
+  { id: "behaviour_support", label: "Behaviour Support", icon: "Brain" },
+  { id: "allied_health", label: "Allied Health", icon: "Activity" },
+  { id: "social_support", label: "Social Support", icon: "Users" },
+  { id: "transport", label: "Transport", icon: "Car" },
+  { id: "meal_prep", label: "Meal Preparation", icon: "ChefHat" },
+  { id: "domestic", label: "Domestic Assistance", icon: "Home" },
+  { id: "medication_admin", label: "Medication Administration", icon: "Pill" },
+  { id: "manual_handling", label: "Manual Handling", icon: "Move" },
+];
+
 /* ── Role Definitions ─────────────────────────────────── */
 
 export const roleDefinitions: RoleDefinition[] = [

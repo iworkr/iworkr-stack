@@ -17,7 +17,7 @@ const careMenuItems = [
   { icon: FileText, label: "Create Shift", shortcut: "C", highlight: true },
   { icon: CalendarDays, label: "Open Roster", shortcut: "S", highlight: false },
   { icon: Users, label: "View Participants", shortcut: "L", highlight: false },
-  { icon: Receipt, label: "New Invoice", shortcut: "I", highlight: false },
+  { icon: Receipt, label: "New Claim", shortcut: "I", highlight: false },
 ];
 
 export function StepTraining() {
