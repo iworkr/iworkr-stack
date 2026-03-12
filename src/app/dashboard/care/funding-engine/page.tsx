@@ -106,7 +106,7 @@ const TABS: { key: FundingTab; label: string; icon: React.ElementType }[] = [
 
 const CLAIM_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   draft: { label: "Draft", color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
-  approved: { label: "Approved", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  approved: { label: "Approved", color: "text-[var(--brand)]", bg: "bg-[color-mix(in_srgb,var(--brand),transparent_90%)]", border: "border-white/[0.08]" },
   submitted: { label: "Submitted", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
   paid: { label: "Paid", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
   rejected: { label: "Rejected", color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20" },
@@ -201,7 +201,7 @@ function UtilizationRing({ percentage, size = 96 }: { percentage: number; size?:
       ? "stroke-rose-500"
       : percentage >= 75
         ? "stroke-amber-500"
-        : "stroke-blue-500";
+        : "stroke-[var(--brand)]";
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -353,7 +353,7 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
 
   if (allocationsLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-5">
         <MetricSkeleton />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <MetricSkeleton />
@@ -370,7 +370,7 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-5">
       {/* ── Hero Metric Card ───── */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -384,13 +384,13 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
           <div className="flex items-center gap-5">
             <UtilizationRing percentage={totals.utilization} size={96} />
             <div>
-              <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">
                 Total Budget
               </p>
-              <p className="font-mono text-3xl font-bold text-zinc-100 tabular-nums tracking-tight">
+              <p className="font-mono text-[28px] font-semibold text-white tabular-nums tracking-tighter">
                 {fmt(totals.total)}
               </p>
-              <p className="text-[12px] text-zinc-500 mt-0.5">
+              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
                 {totals.utilization}% utilization
               </p>
             </div>
@@ -405,7 +405,7 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                   Consumed
                 </p>
               </div>
@@ -429,7 +429,7 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <div className="h-2 w-2 rounded-full bg-amber-500" />
-                <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                   Committed
                 </p>
               </div>
@@ -452,17 +452,17 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
             {/* Available */}
             <div>
               <div className="flex items-center gap-1.5 mb-1">
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
-                <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                <div className="h-2 w-2 rounded-full bg-zinc-400" />
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                   Available
                 </p>
               </div>
-              <p className="font-mono text-xl font-semibold text-blue-400 tabular-nums">
+              <p className="font-mono text-xl font-semibold text-zinc-300 tabular-nums">
                 {fmt(totals.available)}
               </p>
               <div className="mt-2 h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
                 <motion.div
-                  className="h-full rounded-full bg-blue-500"
+                  className="h-full rounded-full bg-zinc-400"
                   initial={{ width: "0%" }}
                   animate={{ width: `${pct(totals.available, totals.total)}%` }}
                   transition={{ duration: 0.8, ease, delay: 0.5 }}
@@ -512,7 +512,7 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
 
               <div className="grid grid-cols-3 gap-3 mt-4">
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-600 mb-0.5">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">
                     Consumed
                   </p>
                   <p className="font-mono text-[13px] text-zinc-300 tabular-nums">
@@ -520,7 +520,7 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-600 mb-0.5">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">
                     Committed
                   </p>
                   <p className="font-mono text-[13px] text-zinc-300 tabular-nums">
@@ -528,10 +528,10 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-600 mb-0.5">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">
                     Available
                   </p>
-                  <p className="font-mono text-[13px] text-blue-400 tabular-nums font-medium">
+                  <p className="font-mono text-[13px] text-zinc-300 tabular-nums font-medium">
                     {fmt(available)}
                   </p>
                 </div>
@@ -556,7 +556,7 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
             </h3>
             <button
               onClick={() => setSortAsc(!sortAsc)}
-              className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors font-mono"
+              className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-zinc-300 transition-colors font-mono"
             >
               Utilization
               {sortAsc ? (
@@ -568,15 +568,15 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
           </div>
 
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_100px_80px_1fr] items-center gap-4 px-5 py-2.5 border-b border-white/[0.04] text-[10px] font-mono uppercase tracking-widest text-zinc-600">
-            <span>Participant</span>
-            <span className="text-right">Total Budget</span>
-            <span className="text-right">Utilization</span>
-            <span>Category Breakdown</span>
+          <div className="grid grid-cols-[1fr_100px_80px_1fr] items-center gap-4 px-5 py-2.5 border-b border-white/[0.04] bg-[var(--surface-1)]">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Participant</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Total Budget</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Utilization</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Category Breakdown</span>
           </div>
 
           {/* Table rows */}
-          <div className="divide-y divide-white/[0.04]">
+          <div className="divide-y divide-white/[0.03]">
             <AnimatePresence>
               {sortedParticipants.map((row, idx) => (
                 <motion.div
@@ -708,7 +708,7 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <MetricSkeleton key={i} />
@@ -720,7 +720,7 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-5">
       {/* ── Stats Row ───── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
@@ -728,8 +728,8 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
             label: "Total Submitted",
             value: fmt(stats.totalSubmitted),
             icon: FileText,
-            color: "text-blue-400",
-            border: "border-blue-500/20",
+            color: "text-zinc-300",
+            border: "border-white/[0.06]",
           },
           {
             label: "Paid",
@@ -763,11 +763,11 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
           >
             <div className="flex items-center gap-2 mb-2">
               <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
-              <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                 {stat.label}
               </p>
             </div>
-            <p className={`font-mono text-xl font-semibold tabular-nums ${stat.color}`}>
+            <p className={`font-mono text-[28px] font-semibold tabular-nums tracking-tighter ${stat.color}`}>
               {stat.value}
             </p>
           </motion.div>
@@ -783,7 +783,7 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
               onClick={() => setStatusFilter(s)}
               className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
                 statusFilter === s
-                  ? "bg-blue-500/15 text-blue-400 border border-blue-500/25"
+                  ? "bg-white/[0.06] text-white border border-white/[0.08]"
                   : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
@@ -792,10 +792,13 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
           ))}
         </div>
 
-        <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white text-[12px] font-semibold hover:bg-blue-600 transition-colors shadow-[0_0_20px_-6px_rgba(59,130,246,0.4)]">
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          className="inline-flex items-center gap-2 bg-white px-3 py-1.5 text-[12px] font-semibold text-black hover:bg-zinc-200 transition-colors rounded-lg"
+        >
           <Receipt className="w-3.5 h-3.5" />
           Generate PRODA Batch
-        </button>
+        </motion.button>
       </div>
 
       {/* ── Claims Table ───── */}
@@ -807,19 +810,19 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
         style={{ boxShadow: "var(--shadow-inset-bevel)" }}
       >
         {/* Header */}
-        <div className="grid grid-cols-[90px_1fr_100px_1fr_60px_70px_80px_80px] items-center gap-2 px-5 py-2.5 border-b border-white/[0.05] text-[10px] font-mono uppercase tracking-widest text-zinc-600">
-          <span>Date</span>
-          <span>Participant</span>
-          <span>NDIS Item</span>
-          <span>Description</span>
-          <span className="text-right">Qty</span>
-          <span className="text-right">Rate</span>
-          <span className="text-right">Total</span>
-          <span className="text-center">Status</span>
+        <div className="grid grid-cols-[90px_1fr_100px_1fr_60px_70px_80px_80px] items-center gap-2 px-5 py-2.5 border-b border-white/[0.05] bg-[var(--surface-1)]">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Date</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Participant</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">NDIS Item</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Description</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Qty</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Rate</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Total</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Status</span>
         </div>
 
         {/* Rows */}
-        <div className="divide-y divide-white/[0.04] max-h-[480px] overflow-y-auto scrollbar-thin">
+        <div className="divide-y divide-white/[0.03] max-h-[480px] overflow-y-auto scrollbar-none">
           {filteredLines.length === 0 && (
             <div className="px-5 py-12 text-center">
               <Receipt className="w-6 h-6 text-zinc-700 mx-auto mb-2" />
@@ -828,7 +831,7 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
           )}
 
           <AnimatePresence>
-            {filteredLines.map((line, idx) => {
+            {filteredLines.map((line) => {
               const statusCfg = CLAIM_STATUS_CONFIG[line.status] || CLAIM_STATUS_CONFIG.draft;
               const isExpanded = expandedRow === line.id;
               const isRejected = line.status === "rejected";
@@ -836,7 +839,7 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
               return (
                 <motion.div key={line.id} layout>
                   <div
-                    className={`grid grid-cols-[90px_1fr_100px_1fr_60px_70px_80px_80px] items-center gap-2 px-5 py-3 hover:bg-white/[0.02] transition-colors cursor-pointer ${
+                    className={`grid grid-cols-[90px_1fr_100px_1fr_60px_70px_80px_80px] items-center gap-2 px-5 py-3 hover:bg-white/[0.02] transition-colors cursor-pointer border-b border-white/[0.03] ${
                       isRejected ? "bg-rose-500/[0.02]" : ""
                     }`}
                     onClick={() => isRejected && setExpandedRow(isExpanded ? null : line.id)}
@@ -849,7 +852,7 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
                       {line.participant_profiles?.ndis_number || line.participant_id.slice(0, 8)}
                     </span>
 
-                    <span className="font-mono text-[11px] text-blue-400 tabular-nums">
+                    <span className="font-mono text-[11px] text-zinc-400 tabular-nums">
                       {line.ndis_item_number || "—"}
                     </span>
 
@@ -932,10 +935,10 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
                 className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-[11px] text-blue-400">
+                  <span className="font-mono text-[11px] text-zinc-300">
                     {batch.batch_number || batch.id.slice(0, 8)}
                   </span>
-                  <span className="text-[11px] text-zinc-500">
+                  <span className="text-[11px] text-[var(--text-muted)]">
                     {batch.total_claims} claims
                   </span>
                 </div>
@@ -950,7 +953,7 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
                         : batch.status === "failed"
                           ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                           : batch.status === "submitted" || batch.status === "processing"
-                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                            ? "bg-white/[0.06] text-zinc-300 border border-white/[0.08]"
                             : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
                     }`}
                   >
@@ -1011,14 +1014,14 @@ function NDISPricingTab({ orgId }: { orgId: string }) {
 
   const categoryColor = (cat: string): string => {
     const lower = cat.toLowerCase();
-    if (lower.includes("core")) return "text-blue-400 bg-blue-500/10 border-blue-500/20";
+    if (lower.includes("core")) return "text-zinc-300 bg-white/[0.06] border-white/[0.08]";
     if (lower.includes("capacity")) return "text-violet-400 bg-violet-500/10 border-violet-500/20";
     if (lower.includes("capital")) return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
     return "text-zinc-400 bg-zinc-500/10 border-zinc-500/20";
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 p-5">
       {/* ── Search + Filters ───── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
         <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
@@ -1030,7 +1033,7 @@ function NDISPricingTab({ orgId }: { orgId: string }) {
               placeholder="Search item number or name…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[13px] text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/30 focus:bg-white/[0.06] transition-all font-mono"
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[13px] text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-white/[0.15] focus:bg-white/[0.06] transition-all font-mono"
             />
           </div>
 
@@ -1042,7 +1045,7 @@ function NDISPricingTab({ orgId }: { orgId: string }) {
                 onClick={() => setCategoryFilter(f.key)}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
                   categoryFilter === f.key
-                    ? "bg-blue-500/15 text-blue-400 border border-blue-500/25"
+                    ? "bg-white/[0.06] text-white border border-white/[0.08]"
                     : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] border border-transparent"
                 }`}
               >
@@ -1079,13 +1082,13 @@ function NDISPricingTab({ orgId }: { orgId: string }) {
         style={{ boxShadow: "var(--shadow-inset-bevel)" }}
       >
         {/* Header */}
-        <div className="grid grid-cols-[110px_1fr_70px_90px_130px_100px] items-center gap-3 px-5 py-2.5 border-b border-white/[0.05] text-[10px] font-mono uppercase tracking-widest text-zinc-600">
-          <span>Item Number</span>
-          <span>Item Name</span>
-          <span>Unit</span>
-          <span className="text-right">Rate</span>
-          <span>Category</span>
-          <span>Effective From</span>
+        <div className="grid grid-cols-[110px_1fr_70px_90px_130px_100px] items-center gap-3 px-5 py-2.5 border-b border-white/[0.05] bg-[var(--surface-1)]">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Item Number</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Item Name</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Unit</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Rate</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Category</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Effective From</span>
         </div>
 
         {/* Loading */}
@@ -1103,16 +1106,16 @@ function NDISPricingTab({ orgId }: { orgId: string }) {
 
         {/* Rows */}
         {!loading && catalogue.length > 0 && (
-          <div className="divide-y divide-white/[0.04] max-h-[520px] overflow-y-auto scrollbar-thin">
+          <div className="divide-y divide-white/[0.03] max-h-[520px] overflow-y-auto scrollbar-none">
             {catalogue.map((item, idx) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: idx * 0.015, duration: 0.3 }}
-                className="grid grid-cols-[110px_1fr_70px_90px_130px_100px] items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors"
+                className="grid grid-cols-[110px_1fr_70px_90px_130px_100px] items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors border-b border-white/[0.03]"
               >
-                <span className="font-mono text-[12px] text-blue-400 tabular-nums font-medium">
+                <span className="font-mono text-[12px] text-zinc-300 tabular-nums font-medium">
                   {item.support_item_number}
                 </span>
 
@@ -1120,7 +1123,7 @@ function NDISPricingTab({ orgId }: { orgId: string }) {
                   {item.support_item_name}
                 </span>
 
-                <span className="font-mono text-[11px] text-zinc-500">
+                <span className="font-mono text-[11px] text-[var(--text-muted)]">
                   {item.unit}
                 </span>
 
@@ -1136,7 +1139,7 @@ function NDISPricingTab({ orgId }: { orgId: string }) {
                   {item.support_category}
                 </span>
 
-                <span className="font-mono text-[11px] text-zinc-500 tabular-nums">
+                <span className="font-mono text-[11px] text-[var(--text-muted)] tabular-nums">
                   {dateShort(item.effective_from)}
                 </span>
               </motion.div>
@@ -1193,9 +1196,9 @@ export default function FundingEnginePage() {
 
   if (orgLoading) {
     return (
-      <div className="relative min-h-screen bg-[var(--background)]">
+      <div className="flex h-full flex-col bg-[var(--background)]">
         <div className="stealth-noise" />
-        <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
+        <div className="px-5 py-6 space-y-6">
           <div className="space-y-2">
             <div className="h-3 w-32 rounded skeleton-shimmer" />
             <div className="h-6 w-48 rounded skeleton-shimmer" />
@@ -1212,7 +1215,7 @@ export default function FundingEnginePage() {
 
   if (!orgId) {
     return (
-      <div className="relative min-h-screen bg-[var(--background)]">
+      <div className="flex h-full flex-col bg-[var(--background)]">
         <div className="stealth-noise" />
         <FundingEmptyState />
       </div>
@@ -1220,78 +1223,70 @@ export default function FundingEnginePage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="relative min-h-screen bg-[var(--background)]"
-    >
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* Noise overlay */}
       <div className="stealth-noise" />
 
-      {/* Atmospheric glow — blue tint for funding */}
+      {/* Neutral radial glow */}
       <div
-        className="pointer-events-none absolute top-0 left-0 right-0 h-72 z-0"
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64"
         style={{
           background:
-            "radial-gradient(ellipse at center top, rgba(59,130,246,0.025) 0%, transparent 60%)",
+            "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)",
         }}
       />
 
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8 space-y-6">
-        {/* ── Header ────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease }}
-        >
-          <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-blue-400/60 mb-1">
-            Financial Intelligence
-          </p>
-          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
-            Funding Engine
-          </h1>
-          <p className="text-[13px] text-zinc-500 mt-1">
-            NDIS budget tracking, claims management, and pricing intelligence in one view.
-          </p>
-        </motion.div>
+      {/* ── Sticky Header ────── */}
+      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-5 py-2.5">
+          <div>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+              <span>Dashboard</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-zinc-300">Funding & Claims</span>
+            </div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mt-1">
+              FUNDING & CLAIMS
+            </p>
+          </div>
+        </div>
+      </div>
 
-        {/* ── Tab Bar ────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4, ease }}
-          className="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl w-fit"
-        >
+      {/* ── Tab Bar ────── */}
+      <div className="flex items-center border-b border-white/[0.06] bg-[var(--surface-1)] px-5">
+        <div className="flex items-center gap-1 py-1.5">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${
+                className={`relative rounded-md px-3 py-1.5 text-[12px] transition-colors duration-150 ${
                   isActive
-                    ? "text-zinc-100"
+                    ? "font-medium text-white"
                     : "text-zinc-500 hover:text-zinc-300"
                 }`}
               >
                 {isActive && (
                   <motion.div
-                    layoutId="funding-tab-active"
-                    className="absolute inset-0 bg-white/[0.06] border border-white/[0.08] rounded-lg"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                    layoutId="funding-tab-pill"
+                    className="absolute inset-0 rounded-md bg-white/[0.06]"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                <span className="relative z-10 flex items-center gap-2">
+                <span className="relative flex items-center gap-2">
                   <tab.icon className="w-3.5 h-3.5" />
                   {tab.label}
                 </span>
               </button>
             );
           })}
-        </motion.div>
+        </div>
+      </div>
 
-        {/* ── Tab Content ────── */}
+      {/* ── Tab Content ────── */}
+      <div className="flex-1 overflow-y-auto scrollbar-none">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -1306,23 +1301,6 @@ export default function FundingEnginePage() {
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* ── Custom scrollbar styles ────── */}
-      <style>{`
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 4px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.08);
-          border-radius: 2px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.15);
-        }
-      `}</style>
-    </motion.div>
+    </div>
   );
 }

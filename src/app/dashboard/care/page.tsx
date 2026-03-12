@@ -34,10 +34,6 @@ import Link from "next/link";
 
 const EASE_STEALTH: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-const STAGGER_CHILDREN = {
-  animate: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
-};
-
 const FADE_UP = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
@@ -53,30 +49,6 @@ const MOOD_COLORS: Record<string, { bg: string; text: string; label: string }> =
   sad: { bg: "bg-violet-500", text: "text-violet-400", label: "Sad" },
   agitated: { bg: "bg-orange-500", text: "text-orange-400", label: "Agitated" },
 };
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Shimmer skeleton
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function _Shimmer({ className = "" }: { className?: string }) {
-  return (
-    <div
-      className={`animate-pulse rounded-lg bg-white/[0.04] ${className}`}
-    />
-  );
-}
-
-function _ShimmerCard({ className = "" }: { className?: string }) {
-  return (
-    <div
-      className={`rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-5 ${className}`}
-    >
-      <_Shimmer className="mb-3 h-3 w-20" />
-      <_Shimmer className="mb-2 h-8 w-16" />
-      <_Shimmer className="h-3 w-32" />
-    </div>
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -128,7 +100,7 @@ interface MetricCardProps {
   value: string | number;
   subStats?: { label: string; value: number; color?: string }[];
   progress?: number; // 0-100
-  accent?: "blue" | "emerald" | "rose" | "amber";
+  accent?: "brand" | "emerald" | "rose" | "amber";
   glow?: boolean;
   delay?: number;
 }
@@ -139,15 +111,39 @@ function _MetricCard({
   value,
   subStats,
   progress,
-  accent = "blue",
+  accent = "brand",
   glow = false,
   delay = 0,
 }: MetricCardProps) {
   const accentMap = {
-    blue: { text: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", bar: "bg-blue-500", glowShadow: "shadow-[0_0_20px_-4px_rgba(59,130,246,0.15)]" },
-    emerald: { text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", bar: "bg-emerald-500", glowShadow: "shadow-[0_0_20px_-4px_rgba(16,185,129,0.15)]" },
-    rose: { text: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20", bar: "bg-rose-500", glowShadow: "shadow-[0_0_20px_-4px_rgba(244,63,94,0.2)]" },
-    amber: { text: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", bar: "bg-amber-500", glowShadow: "shadow-[0_0_20px_-4px_rgba(245,158,11,0.15)]" },
+    brand: {
+      text: "text-[var(--brand)]",
+      bg: "bg-[var(--ghost-emerald)]",
+      border: "border-[var(--brand)]/20",
+      bar: "bg-[var(--brand)]",
+      glowShadow: "shadow-[var(--brand-glow)]",
+    },
+    emerald: {
+      text: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+      bar: "bg-emerald-500",
+      glowShadow: "shadow-[0_0_20px_-4px_rgba(16,185,129,0.15)]",
+    },
+    rose: {
+      text: "text-rose-400",
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
+      bar: "bg-rose-500",
+      glowShadow: "shadow-[0_0_20px_-4px_rgba(244,63,94,0.2)]",
+    },
+    amber: {
+      text: "text-amber-400",
+      bg: "bg-amber-500/10",
+      border: "border-amber-500/20",
+      bar: "bg-amber-500",
+      glowShadow: "shadow-[0_0_20px_-4px_rgba(245,158,11,0.15)]",
+    },
   };
   const a = accentMap[accent];
 
@@ -156,22 +152,23 @@ function _MetricCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
-      className={`col-span-3 rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-5 transition-colors hover:border-white/[0.08] ${
+      className={`r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--border-active)] ${
         glow ? a.glowShadow : ""
       }`}
+      style={{ boxShadow: glow ? undefined : "var(--shadow-inset-bevel)" }}
     >
       {/* Icon + label */}
       <div className="mb-3 flex items-center gap-2.5">
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${a.bg} ${a.text}`}>
           {icon}
         </div>
-        <span className="font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-500">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
           {label}
         </span>
       </div>
 
       {/* Value */}
-      <div className="mb-1 text-2xl font-semibold tracking-tight text-white">
+      <div className="mb-1 font-mono text-[28px] font-semibold tracking-tighter text-white">
         {typeof value === "number" ? _formatNumber(value) : value}
       </div>
 
@@ -179,7 +176,7 @@ function _MetricCard({
       {subStats && subStats.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
           {subStats.map((s) => (
-            <span key={s.label} className="text-[11px] text-zinc-500">
+            <span key={s.label} className="font-mono text-[11px] text-[var(--text-muted)]">
               <span className={`font-medium ${s.color || "text-zinc-300"}`}>{s.value}</span>{" "}
               {s.label}
             </span>
@@ -199,9 +196,9 @@ function _MetricCard({
             />
           </div>
           <div className="mt-1 flex justify-between">
-            <span className="text-[10px] text-zinc-600">0%</span>
+            <span className="text-[10px] text-[var(--text-muted)]">0%</span>
             <span className={`text-[10px] font-medium ${a.text}`}>{progress.toFixed(1)}%</span>
-            <span className="text-[10px] text-zinc-600">100%</span>
+            <span className="text-[10px] text-[var(--text-muted)]">100%</span>
           </div>
         </div>
       )}
@@ -231,27 +228,28 @@ function _ClinicalPulseCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
-      className="col-span-6 rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-5"
+      className="r-card col-span-6 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
     >
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
         <Heart size={14} className="text-rose-400" />
-        <span className="font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-blue-400/60">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
           CLINICAL PULSE
         </span>
       </div>
 
       {loading || !clinical ? (
         <div className="grid grid-cols-2 gap-4">
-          <_Shimmer className="h-24" />
-          <_Shimmer className="h-24" />
-          <_Shimmer className="col-span-2 h-16" />
+          <div className="skeleton-shimmer h-24 rounded" />
+          <div className="skeleton-shimmer h-24 rounded" />
+          <div className="skeleton-shimmer col-span-2 h-16 rounded" />
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {/* MAR Compliance Ring */}
-          <div className="flex flex-col items-center justify-center rounded-lg border border-white/[0.04] bg-white/[0.02] p-4">
-            <span className="mb-2 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-4">
+            <span className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
               MAR Compliance
             </span>
             <div className="relative flex h-20 w-20 items-center justify-center">
@@ -282,7 +280,7 @@ function _ClinicalPulseCard({
                 {compliance.toFixed(0)}%
               </span>
             </div>
-            <span className="mt-1 text-[10px] text-zinc-600">
+            <span className="mt-1 font-mono text-[10px] text-[var(--text-muted)]">
               {clinical.mar_entries_24h} entries today
             </span>
           </div>
@@ -290,20 +288,20 @@ function _ClinicalPulseCard({
           {/* Observations & Notes */}
           <div className="flex flex-col gap-3">
             {/* Observations */}
-            <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
+            <div className="rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                   Observations 24h
                 </span>
                 <Eye size={12} className="text-sky-400" />
               </div>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-xl font-semibold text-white">
+                <span className="font-mono text-xl font-semibold text-white">
                   {clinical.observations_24h}
                 </span>
                 {clinical.abnormal_observations > 0 && (
                   <span className="flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-400">
-                    <AlertTriangle size={9} />
+                    <AlertTriangle size={10} />
                     {clinical.abnormal_observations} abnormal
                   </span>
                 )}
@@ -311,26 +309,26 @@ function _ClinicalPulseCard({
             </div>
 
             {/* Progress notes */}
-            <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
+            <div className="rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                   Progress Notes 7d
                 </span>
                 <ClipboardList size={12} className="text-emerald-400" />
               </div>
-              <div className="mt-1 text-xl font-semibold text-white">
+              <div className="mt-1 font-mono text-xl font-semibold text-white">
                 {clinical.progress_notes_7d}
               </div>
             </div>
           </div>
 
           {/* Mood Distribution */}
-          <div className="col-span-2 rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
-            <span className="mb-2.5 block font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+          <div className="col-span-2 rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3">
+            <span className="mb-2.5 block font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
               Mood Distribution
             </span>
             {Object.keys(clinical.mood_distribution).length === 0 ? (
-              <span className="text-[11px] text-zinc-600">No mood data recorded yet</span>
+              <span className="font-mono text-[11px] text-[var(--text-muted)]">No mood data recorded yet</span>
             ) : (
               <div className="flex items-end gap-2">
                 {Object.entries(clinical.mood_distribution).map(([mood, count]) => {
@@ -354,7 +352,7 @@ function _ClinicalPulseCard({
                         transition={{ duration: 0.8, ease: EASE_STEALTH, delay: delay + 0.3 }}
                         style={{ minHeight: 4, maxHeight: 32 }}
                       />
-                      <span className="text-[8px] capitalize text-zinc-600">{config.label}</span>
+                      <span className="text-[10px] capitalize text-[var(--text-muted)]">{config.label}</span>
                     </div>
                   );
                 })}
@@ -385,19 +383,20 @@ function _SentinelFeedCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
-      className="col-span-6 rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-5"
+      className="r-card col-span-6 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
     >
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield size={14} className="text-amber-400" />
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-blue-400/60">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
             LIVE SENTINEL FEED
           </span>
         </div>
         <Link
           href="/dashboard/care/compliance-hub"
-          className="flex items-center gap-1 text-[11px] text-zinc-500 transition-colors hover:text-blue-400"
+          className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] transition-colors hover:text-[var(--brand)]"
         >
           View All
           <ChevronRight size={12} />
@@ -407,14 +406,14 @@ function _SentinelFeedCard({
       {loading ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <_Shimmer key={i} className="h-12" />
+            <div key={i} className="skeleton-shimmer h-12 rounded" />
           ))}
         </div>
       ) : alerts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <Shield size={24} className="mb-2 text-emerald-400/40" />
-          <span className="text-[12px] text-zinc-500">All clear — no active alerts</span>
-          <span className="mt-1 text-[10px] text-zinc-600">
+          <span className="text-[12px] text-[var(--text-muted)]">All clear — no active alerts</span>
+          <span className="mt-1 font-mono text-[10px] text-[var(--text-muted)]">
             Sentinel is monitoring your organization
           </span>
         </div>
@@ -432,14 +431,14 @@ function _SentinelFeedCard({
                 initial={{ opacity: 0, x: -4 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{
-                  duration: 0.4,
+                  delay: Math.min(idx * 0.02, 0.3),
+                  duration: 0.25,
                   ease: EASE_STEALTH,
-                  delay: delay + 0.1 + idx * 0.06,
                 }}
                 className={`group flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
                   isCritical
                     ? "border-rose-500/10 bg-rose-500/[0.03] shadow-[0_0_12px_-2px_rgba(244,63,94,0.08)]"
-                    : "border-white/[0.04] bg-white/[0.02] hover:border-white/[0.06]"
+                    : "border-[var(--border-base)] bg-white/[0.02] hover:border-[var(--border-active)]"
                 }`}
               >
                 {/* Severity dot */}
@@ -457,17 +456,17 @@ function _SentinelFeedCard({
                     <span className="truncate text-[12px] font-medium text-zinc-200 group-hover:text-white">
                       {alert.title}
                     </span>
-                    <span className="flex-shrink-0 text-[10px] text-zinc-600">
+                    <span className="flex-shrink-0 font-mono text-[10px] text-[var(--text-muted)]">
                       {_relativeTime(alert.created_at)}
                     </span>
                   </div>
                   <div className="mt-1 flex items-center gap-2">
                     <span
-                      className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${sev.bg} ${sev.color} ${sev.border} border`}
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${sev.bg} ${sev.color} ${sev.border} border`}
                     >
                       {sev.label}
                     </span>
-                    <span className="rounded-full bg-white/[0.04] px-1.5 py-0.5 text-[9px] capitalize text-zinc-500">
+                    <span className="rounded-full bg-white/[0.04] px-1.5 py-0.5 text-[10px] capitalize text-[var(--text-muted)]">
                       {typeLabel}
                     </span>
                   </div>
@@ -506,15 +505,18 @@ function _QuickAccessCard({
       className="col-span-3"
     >
       <Link href={href} className="group block h-full">
-        <div className="flex h-full flex-col justify-between rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-4 transition-all hover:border-blue-500/20 hover:bg-blue-500/[0.02] hover:shadow-[0_0_20px_-6px_rgba(59,130,246,0.08)]">
+        <div
+          className="r-card flex h-full flex-col justify-between border border-[var(--border-base)] bg-[var(--surface-1)] p-4 transition-all hover:border-[var(--border-active)] hover:bg-[var(--surface-2)]"
+          style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+        >
           <div>
             <span className="mb-2 block text-lg">{emoji}</span>
             <h3 className="text-[13px] font-medium text-zinc-200 group-hover:text-white">
               {title}
             </h3>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">{subtitle}</p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--text-muted)]">{subtitle}</p>
           </div>
-          <div className="mt-3 flex items-center gap-1 text-[10px] text-zinc-600 transition-colors group-hover:text-blue-400">
+          <div className="mt-3 flex items-center gap-1 text-[10px] text-[var(--text-muted)] transition-colors group-hover:text-[var(--brand)]">
             Open
             <ChevronRight size={10} className="transition-transform group-hover:translate-x-0.5" />
           </div>
@@ -549,16 +551,19 @@ function _StatBar({
       transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
       className="col-span-12"
     >
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.05] bg-[#0A0A0A] px-4 py-3">
+      <div
+        className="r-card flex flex-wrap items-center gap-2 border border-[var(--border-base)] bg-[var(--surface-1)] px-4 py-3"
+        style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+      >
         {items.map((item, idx) => (
           <div key={item.label} className="flex items-center">
             {idx > 0 && (
               <div className="mx-3 h-4 w-px bg-white/[0.06]" />
             )}
             <div className="flex items-center gap-2">
-              <span className={`${item.color || "text-zinc-500"}`}>{item.icon}</span>
-              <span className="text-[11px] text-zinc-500">{item.label}</span>
-              <span className="text-[12px] font-medium text-zinc-300">
+              <span className={`${item.color || "text-[var(--text-muted)]"}`}>{item.icon}</span>
+              <span className="font-mono text-[11px] text-[var(--text-muted)]">{item.label}</span>
+              <span className="font-mono text-[12px] font-medium text-zinc-300">
                 {typeof item.value === "number" ? _formatNumber(item.value) : item.value}
               </span>
             </div>
@@ -594,7 +599,7 @@ function _SeverityDots({
         <span key={item.label} className="flex items-center gap-1 text-[10px]">
           <span className={`inline-block h-1.5 w-1.5 rounded-full ${item.dot}`} />
           <span className={item.color}>{item.count}</span>
-          <span className="text-zinc-600">{item.label.toLowerCase()}</span>
+          <span className="text-[var(--text-muted)]">{item.label.toLowerCase()}</span>
         </span>
       ))}
     </div>
@@ -633,16 +638,16 @@ export default function CareCommandCenterPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="relative min-h-screen p-6 lg:p-8" style={{ backgroundColor: "#050505" }}>
+    <div className="relative p-6 lg:p-8">
       {/* Stealth noise overlay */}
       <div className="stealth-noise" />
 
-      {/* Radial glow — subtle blue atmosphere */}
+      {/* Radial glow — subtle white/neutral atmosphere */}
       <div
-        className="pointer-events-none absolute top-0 left-0 right-0 h-72"
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64"
         style={{
           background:
-            "radial-gradient(ellipse at center top, rgba(59,130,246,0.03) 0%, transparent 60%)",
+            "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)",
         }}
       />
 
@@ -655,27 +660,23 @@ export default function CareCommandCenterPage() {
       >
         {/* Overline */}
         <div className="mb-1 flex items-center gap-2">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[3px] text-blue-400/60">
-            NIGHTINGALE COMMAND
-          </span>
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-40" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500" />
+          <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+            CARE COMMAND CENTER
           </span>
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-semibold tracking-tight text-white">
-          Care Command Center
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+          Care Dashboard
         </h1>
 
-        {/* Subtitle with blue left border */}
-        <p className="mt-1.5 border-l-2 border-blue-500/30 pl-2.5 text-[12px] text-zinc-500">
+        {/* Subtitle */}
+        <p className="mt-1.5 border-l-2 border-[var(--brand)]/30 pl-2.5 text-[12px] text-[var(--text-muted)]">
           {liveTime}
           {s && (
             <>
               {" — "}
-              <span className="text-zinc-400">{s.participants.active}</span> active participants
+              <span className="text-[var(--text-primary)]">{s.participants.active}</span> active participants
             </>
           )}
         </p>
@@ -686,10 +687,17 @@ export default function CareCommandCenterPage() {
         {/* ═══════════ Row 1 — Key Metrics ═══════════ */}
         {loading ? (
           <>
-            <_ShimmerCard className="col-span-3" />
-            <_ShimmerCard className="col-span-3" />
-            <_ShimmerCard className="col-span-3" />
-            <_ShimmerCard className="col-span-3" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
+                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+              >
+                <div className="skeleton-shimmer mb-3 h-3 w-20 rounded" />
+                <div className="skeleton-shimmer mb-2 h-8 w-16 rounded" />
+                <div className="skeleton-shimmer h-3 w-32 rounded" />
+              </div>
+            ))}
           </>
         ) : (
           <>
@@ -698,7 +706,7 @@ export default function CareCommandCenterPage() {
               icon={<Users size={16} />}
               label="Active Participants"
               value={s?.participants.active ?? 0}
-              accent="blue"
+              accent="brand"
               delay={0.1}
             />
 
@@ -733,27 +741,28 @@ export default function CareCommandCenterPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: EASE_STEALTH, delay: 0.22 }}
-              className={`col-span-3 rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-5 transition-colors hover:border-white/[0.08] ${
+              className={`r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--border-active)] ${
                 (s?.sentinel.critical ?? 0) > 0
                   ? "shadow-[0_0_20px_-4px_rgba(244,63,94,0.15)]"
                   : ""
               }`}
+              style={{ boxShadow: (s?.sentinel.critical ?? 0) > 0 ? undefined : "var(--shadow-inset-bevel)" }}
             >
               <div className="mb-3 flex items-center gap-2.5">
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                     (s?.sentinel.critical ?? 0) > 0
                       ? "bg-rose-500/10 text-rose-400"
-                      : "bg-blue-500/10 text-blue-400"
+                      : "bg-[var(--ghost-emerald)] text-[var(--brand)]"
                   }`}
                 >
                   <Shield size={16} />
                 </div>
-                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-500">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                   Sentinel Alerts
                 </span>
               </div>
-              <div className="mb-1 text-2xl font-semibold tracking-tight text-white">
+              <div className="mb-1 font-mono text-[28px] font-semibold tracking-tighter text-white">
                 {s?.sentinel.total ?? 0}
               </div>
               <_SeverityDots
@@ -774,7 +783,7 @@ export default function CareCommandCenterPage() {
                   ? "rose"
                   : (s?.budget.utilization_pct ?? 0) > 75
                     ? "amber"
-                    : "blue"
+                    : "brand"
               }
               delay={0.28}
             />
@@ -784,8 +793,16 @@ export default function CareCommandCenterPage() {
         {/* ═══════════ Row 2 — Intelligence Panels ═══════════ */}
         {loading ? (
           <>
-            <_ShimmerCard className="col-span-6 !h-72" />
-            <_ShimmerCard className="col-span-6 !h-72" />
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div
+                key={i}
+                className="r-card col-span-6 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
+                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+              >
+                <div className="skeleton-shimmer mb-4 h-4 w-32 rounded" />
+                <div className="skeleton-shimmer h-56 rounded" />
+              </div>
+            ))}
           </>
         ) : (
           <>
@@ -834,7 +851,12 @@ export default function CareCommandCenterPage() {
 
         {/* ═══════════ Row 4 — Quick Stats Bar ═══════════ */}
         {loading ? (
-          <_ShimmerCard className="col-span-12" />
+          <div
+            className="r-card col-span-12 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
+            style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+          >
+            <div className="skeleton-shimmer h-8 rounded" />
+          </div>
         ) : (
           <_StatBar
             delay={0.7}
@@ -849,7 +871,7 @@ export default function CareCommandCenterPage() {
                 icon: <TrendingUp size={13} />,
                 label: "Goals In Progress",
                 value: s?.care_plans.needs_review ?? 0,
-                color: "text-blue-400",
+                color: "text-[var(--brand)]",
               },
               {
                 icon: <AlertTriangle size={13} />,
@@ -858,7 +880,7 @@ export default function CareCommandCenterPage() {
                 color:
                   (s?.credentials.expiring_30d ?? 0) > 0
                     ? "text-amber-400"
-                    : "text-zinc-500",
+                    : "text-[var(--text-muted)]",
               },
               {
                 icon: <Zap size={13} />,
@@ -867,7 +889,7 @@ export default function CareCommandCenterPage() {
                 color:
                   (s?.incidents.critical ?? 0) > 0
                     ? "text-rose-400"
-                    : "text-zinc-500",
+                    : "text-[var(--text-muted)]",
               },
               {
                 icon: <Brain size={13} />,
@@ -889,61 +911,73 @@ export default function CareCommandCenterPage() {
           >
             <div className="grid grid-cols-4 gap-3">
               {/* Budget Total */}
-              <div className="rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-4">
+              <div
+                className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
+                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+              >
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/10">
-                    <Wallet size={12} className="text-blue-400" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--ghost-emerald)]">
+                    <Wallet size={12} className="text-[var(--brand)]" />
                   </div>
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                     Total Budget
                   </span>
                 </div>
-                <div className="mt-2 text-lg font-semibold text-white">
+                <div className="mt-2 font-mono text-lg font-semibold text-white">
                   {_formatCurrency(s.budget.total)}
                 </div>
               </div>
 
               {/* Consumed */}
-              <div className="rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-4">
+              <div
+                className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
+                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+              >
                 <div className="flex items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10">
                     <Activity size={12} className="text-emerald-400" />
                   </div>
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                     Consumed
                   </span>
                 </div>
-                <div className="mt-2 text-lg font-semibold text-white">
+                <div className="mt-2 font-mono text-lg font-semibold text-white">
                   {_formatCurrency(s.budget.consumed)}
                 </div>
               </div>
 
               {/* Quarantined */}
-              <div className="rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-4">
+              <div
+                className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
+                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+              >
                 <div className="flex items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10">
                     <AlertTriangle size={12} className="text-amber-400" />
                   </div>
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                     Quarantined
                   </span>
                 </div>
-                <div className="mt-2 text-lg font-semibold text-white">
+                <div className="mt-2 font-mono text-lg font-semibold text-white">
                   {_formatCurrency(s.budget.quarantined)}
                 </div>
               </div>
 
               {/* Available */}
-              <div className="rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-4">
+              <div
+                className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
+                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+              >
                 <div className="flex items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10">
                     <TrendingUp size={12} className="text-sky-400" />
                   </div>
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                     Available
                   </span>
                 </div>
-                <div className="mt-2 text-lg font-semibold text-white">
+                <div className="mt-2 font-mono text-lg font-semibold text-white">
                   {_formatCurrency(s.budget.available)}
                 </div>
               </div>
@@ -959,36 +993,39 @@ export default function CareCommandCenterPage() {
             transition={{ duration: 0.5, ease: EASE_STEALTH, delay: 0.82 }}
             className="col-span-12"
           >
-            <div className="rounded-xl border border-white/[0.05] bg-[#0A0A0A] p-4">
+            <div
+              className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
+              style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+            >
               <div className="mb-3 flex items-center gap-2">
                 <Brain size={14} className="text-violet-400" />
-                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-blue-400/60">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                   CLAIMS PIPELINE
                 </span>
               </div>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <span className="text-[10px] text-zinc-500">Total Claims</span>
-                  <div className="mt-0.5 text-lg font-semibold text-white">
+                  <span className="font-mono text-[10px] text-[var(--text-muted)]">Total Claims</span>
+                  <div className="mt-0.5 font-mono text-lg font-semibold text-white">
                     {_formatNumber(s.claims.total_count)}
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-zinc-500">Total Submitted</span>
-                  <div className="mt-0.5 text-lg font-semibold text-sky-400">
+                  <span className="font-mono text-[10px] text-[var(--text-muted)]">Total Submitted</span>
+                  <div className="mt-0.5 font-mono text-lg font-semibold text-sky-400">
                     {_formatCurrency(s.claims.total_submitted)}
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-zinc-500">Total Paid</span>
-                  <div className="mt-0.5 text-lg font-semibold text-emerald-400">
+                  <span className="font-mono text-[10px] text-[var(--text-muted)]">Total Paid</span>
+                  <div className="mt-0.5 font-mono text-lg font-semibold text-emerald-400">
                     {_formatCurrency(s.claims.total_paid)}
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-zinc-500">Rejected</span>
+                  <span className="font-mono text-[10px] text-[var(--text-muted)]">Rejected</span>
                   <div
-                    className={`mt-0.5 text-lg font-semibold ${
+                    className={`mt-0.5 font-mono text-lg font-semibold ${
                       s.claims.total_rejected > 0 ? "text-rose-400" : "text-zinc-400"
                     }`}
                   >
@@ -1000,20 +1037,6 @@ export default function CareCommandCenterPage() {
           </motion.div>
         )}
       </div>
-
-      {/* ──────────────────────────── Footer Tag ───────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, ease: EASE_STEALTH, delay: 0.9 }}
-        className="mt-8 flex items-center justify-center gap-2"
-      >
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
-        <span className="font-mono text-[9px] uppercase tracking-[3px] text-zinc-700">
-          Nightingale · Powered by iWorkr
-        </span>
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
-      </motion.div>
     </div>
   );
 }

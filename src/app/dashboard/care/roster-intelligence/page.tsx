@@ -59,7 +59,7 @@ const FILTER_OPTIONS: { id: PlanFilter; label: string }[] = [
 ];
 
 const DOMAIN_COLORS: Record<string, string> = {
-  daily_living: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  daily_living: "bg-white/[0.06] text-zinc-300 border-white/[0.08]",
   community_participation: "bg-violet-500/10 text-violet-400 border-violet-500/20",
   health_wellbeing: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   employment: "bg-amber-500/10 text-amber-400 border-amber-500/20",
@@ -231,51 +231,67 @@ export default function RosterIntelligencePage() {
   }, []);
 
   return (
-    <div className="relative flex h-full min-h-screen flex-col bg-[#0A0A0A]">
-      {/* ── Header ───────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="border-b border-white/[0.05] px-6 pb-0 pt-6"
-      >
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-blue-400/60">
-          Roster Intelligence
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">
-          Roster Intelligence
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          SCHADS-aware shift management, care plan oversight, and workforce compliance
-        </p>
+    <div className="flex h-full flex-col bg-[var(--background)]">
+      {/* Noise overlay */}
+      <div className="stealth-noise" />
 
-        {/* Tab bar */}
-        <div className="mt-5 flex items-center gap-1">
+      {/* Neutral radial glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64"
+        style={{
+          background:
+            "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)",
+        }}
+      />
+
+      {/* ── Sticky Header ───────────────────────────────────── */}
+      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-5 py-2.5">
+          <div>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+              <span>Dashboard</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-zinc-300">Care Plans</span>
+            </div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mt-1">
+              CARE PLANS
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tab Bar ─────────────────────────────────────────── */}
+      <div className="flex items-center border-b border-white/[0.06] bg-[var(--surface-1)] px-5">
+        <div className="flex items-center gap-1 py-1.5">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`relative flex items-center gap-1.5 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+              className={`relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] transition-colors duration-150 ${
                 tab === t.id
-                  ? "bg-white/[0.03] text-white"
+                  ? "font-medium text-white"
                   : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              {t.icon}
-              {t.label}
               {tab === t.id && (
                 <motion.div
-                  layoutId="roster-tab-indicator"
-                  className="absolute inset-x-0 -bottom-px h-px bg-blue-500"
-                  transition={{ type: "spring", damping: 30, stiffness: 400 }}
+                  layoutId="roster-tab-pill"
+                  className="absolute inset-0 rounded-md bg-white/[0.06]"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
+              <span className="relative flex items-center gap-1.5">
+                {t.icon}
+                {t.label}
+              </span>
             </button>
           ))}
         </div>
-      </motion.div>
+      </div>
 
       {/* ── Content ──────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto scrollbar-none">
         <AnimatePresence mode="wait">
           {tab === "care-plans" ? (
             <motion.div
@@ -359,7 +375,7 @@ function _CarePlansTab({
   setSelectedPlanId: (id: string | null) => void;
 }) {
   return (
-    <div className="p-6">
+    <div className="p-5">
       {/* Stats row */}
       <motion.div
         variants={stagger}
@@ -368,41 +384,49 @@ function _CarePlansTab({
         className="grid grid-cols-2 gap-3 sm:grid-cols-4"
       >
         {[
-          { label: "Active Plans", value: stats.active, icon: <FileText className="h-4 w-4" />, accent: "text-emerald-400", bg: "bg-emerald-500/8" },
-          { label: "Total Goals", value: stats.totalGoals, icon: <Target className="h-4 w-4" />, accent: "text-blue-400", bg: "bg-blue-500/8" },
-          { label: "Goals Achieved", value: stats.achieved, icon: <CheckCircle2 className="h-4 w-4" />, accent: "text-sky-400", bg: "bg-sky-500/8" },
-          { label: "Needs Review", value: stats.needsReview, icon: <AlertTriangle className="h-4 w-4" />, accent: "text-amber-400", bg: "bg-amber-500/8" },
+          { label: "Active Plans", value: stats.active, icon: <FileText className="h-4 w-4" />, accent: "text-emerald-400", bg: "bg-emerald-500/10" },
+          { label: "Total Goals", value: stats.totalGoals, icon: <Target className="h-4 w-4" />, accent: "text-zinc-300", bg: "bg-white/[0.06]" },
+          { label: "Goals Achieved", value: stats.achieved, icon: <CheckCircle2 className="h-4 w-4" />, accent: "text-sky-400", bg: "bg-sky-500/10" },
+          { label: "Needs Review", value: stats.needsReview, icon: <AlertTriangle className="h-4 w-4" />, accent: "text-amber-400", bg: "bg-amber-500/10" },
         ].map((s) => (
           <motion.div
             key={s.label}
             variants={fadeIn}
-            className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4"
+            className="r-card border border-white/[0.06] bg-white/[0.02] p-4"
+            style={{ boxShadow: "var(--shadow-inset-bevel)" }}
           >
             <div className="flex items-center gap-2">
               <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${s.bg} ${s.accent}`}>
                 {s.icon}
               </div>
-              <span className="text-xs text-zinc-500">{s.label}</span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{s.label}</span>
             </div>
-            <p className={`mt-2 text-2xl font-semibold tracking-tight ${s.accent}`}>{s.value}</p>
+            <p className={`mt-2 font-mono text-[28px] font-semibold tracking-tighter ${s.accent}`}>{s.value}</p>
           </motion.div>
         ))}
       </motion.div>
 
       {/* Filter + Search row */}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-1 rounded-lg border border-white/[0.05] bg-white/[0.02] p-1">
+        <div className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-1">
           {FILTER_OPTIONS.map((f) => (
             <button
               key={f.id}
               onClick={() => setPlanFilter(f.id)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`relative rounded-md px-3 py-1.5 text-[12px] font-medium transition-all ${
                 planFilter === f.id
-                  ? "bg-blue-500/15 text-blue-400"
+                  ? "text-white"
                   : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              {f.label}
+              {planFilter === f.id && (
+                <motion.div
+                  layoutId="plan-filter-pill"
+                  className="absolute inset-0 rounded-md bg-white/[0.06]"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className="relative">{f.label}</span>
             </button>
           ))}
         </div>
@@ -414,7 +438,7 @@ function _CarePlansTab({
             placeholder="Search plans, assessors, domains..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 w-full rounded-lg border border-white/[0.05] bg-white/[0.02] pl-9 pr-4 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-blue-500/30 focus:ring-1 focus:ring-blue-500/20 sm:w-72"
+            className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.04] pl-9 pr-4 text-[13px] text-white placeholder-zinc-600 outline-none transition-colors focus:border-white/[0.15] focus:bg-white/[0.06] sm:w-72"
           />
         </div>
       </div>
@@ -428,15 +452,15 @@ function _CarePlansTab({
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-500" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)]/30 border-t-[var(--brand)]" />
           </div>
         ) : plans.length === 0 ? (
           <motion.div variants={fadeIn} className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/8 text-blue-400">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.06] text-zinc-400">
               <FileText className="h-7 w-7" />
             </div>
-            <p className="mt-4 text-sm font-medium text-zinc-300">No care plans found</p>
-            <p className="mt-1 text-xs text-zinc-600">
+            <p className="mt-4 text-[13px] font-medium text-zinc-300">No care plans found</p>
+            <p className="mt-1 text-[12px] text-zinc-600">
               {planFilter !== "all" ? "Try changing the filter or search query" : "Care plans will appear here once created"}
             </p>
           </motion.div>
@@ -479,8 +503,8 @@ function _CarePlanCard({
       onClick={onSelect}
       className={`group w-full rounded-xl border text-left transition-all ${
         isSelected
-          ? "border-blue-500/30 bg-blue-500/[0.04] shadow-[0_0_20px_-4px_rgba(59,130,246,0.15)]"
-          : "border-white/[0.05] bg-white/[0.02] hover:border-white/[0.08] hover:bg-white/[0.03]"
+          ? "border-white/[0.12] bg-white/[0.04]"
+          : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.08] hover:bg-white/[0.03]"
       }`}
     >
       <div className="p-4">
@@ -488,7 +512,7 @@ function _CarePlanCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5">
-              <h3 className="truncate text-sm font-medium text-white">{plan.title}</h3>
+              <h3 className="truncate text-[13px] font-medium text-white">{plan.title}</h3>
               <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusCfg.bg} ${statusCfg.color}`}>
                 {statusCfg.label}
               </span>
@@ -496,7 +520,7 @@ function _CarePlanCard({
 
             {/* Assessor */}
             {plan.assessor_name && (
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-zinc-500">
+              <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]">
                 <User className="h-3 w-3" />
                 <span>{plan.assessor_name}</span>
                 {plan.assessor_role && (
@@ -508,7 +532,7 @@ function _CarePlanCard({
 
           <ChevronRight
             className={`h-4 w-4 shrink-0 text-zinc-600 transition-transform ${
-              isSelected ? "rotate-90 text-blue-400" : "group-hover:translate-x-0.5"
+              isSelected ? "rotate-90 text-zinc-300" : "group-hover:translate-x-0.5"
             }`}
           />
         </div>
@@ -516,14 +540,14 @@ function _CarePlanCard({
         {/* Middle: goals progress */}
         <div className="mt-3 flex items-center gap-3">
           <div className="flex-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-zinc-500">
+            <div className="flex items-center justify-between text-[12px]">
+              <span className="text-[var(--text-muted)]">
                 {progress.total === 0
                   ? "No goals defined"
                   : `${progress.inProgress} of ${progress.total} goals in progress`}
               </span>
               {progress.total > 0 && (
-                <span className="font-mono text-[10px] text-blue-400">{progress.pct}%</span>
+                <span className="font-mono text-[10px] text-zinc-300">{progress.pct}%</span>
               )}
             </div>
             {progress.total > 0 && (
@@ -532,7 +556,7 @@ function _CarePlanCard({
                   initial={{ width: 0 }}
                   animate={{ width: `${progress.pct}%` }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-400"
+                  className="h-full rounded-full bg-[var(--brand)]"
                 />
               </div>
             )}
@@ -619,10 +643,10 @@ function _PlanDetailPanel({
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-white/[0.05] bg-[#0A0A0A] shadow-2xl shadow-black/40 md:max-w-lg"
+      className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-white/[0.06] bg-[var(--background)] shadow-2xl shadow-black/40 md:max-w-lg"
     >
       {/* Panel header */}
-      <div className="flex items-start justify-between border-b border-white/[0.05] p-5">
+      <div className="flex items-start justify-between border-b border-white/[0.06] p-5">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5">
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusCfg.bg} ${statusCfg.color}`}>
@@ -634,7 +658,7 @@ function _PlanDetailPanel({
           </div>
           <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">{plan.title}</h2>
           {plan.assessor_name && (
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-[12px] text-[var(--text-muted)]">
               Assessed by {plan.assessor_name}{plan.assessor_role ? ` — ${plan.assessor_role}` : ""}
             </p>
           )}
@@ -648,7 +672,7 @@ function _PlanDetailPanel({
       </div>
 
       {/* Panel body — scrollable */}
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto scrollbar-none p-5">
         {/* Dates row */}
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -656,12 +680,12 @@ function _PlanDetailPanel({
             { label: "Last Review", value: formatDate(plan.review_date), icon: <Clock className="h-3 w-3" /> },
             { label: "Next Review", value: formatDate(plan.next_review_date), icon: <AlertTriangle className="h-3 w-3" /> },
           ].map((d) => (
-            <div key={d.label} className="rounded-lg border border-white/[0.05] bg-white/[0.02] p-3">
+            <div key={d.label} className="r-card border border-white/[0.06] bg-white/[0.02] p-3" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
               <div className="flex items-center gap-1.5 text-zinc-600">
                 {d.icon}
-                <span className="text-[10px] uppercase tracking-wide">{d.label}</span>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest">{d.label}</span>
               </div>
-              <p className="mt-1 text-xs font-medium text-zinc-300">{d.value}</p>
+              <p className="mt-1 text-[12px] font-medium text-zinc-300">{d.value}</p>
             </div>
           ))}
         </div>
@@ -669,8 +693,8 @@ function _PlanDetailPanel({
         {/* Notes */}
         {plan.notes && (
           <div className="mt-5">
-            <h4 className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Notes</h4>
-            <p className="mt-1.5 rounded-lg border border-white/[0.05] bg-white/[0.02] p-3 text-xs leading-relaxed text-zinc-400">
+            <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Notes</h4>
+            <p className="mt-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-[12px] leading-relaxed text-zinc-400">
               {plan.notes}
             </p>
           </div>
@@ -679,17 +703,17 @@ function _PlanDetailPanel({
         {/* Domains */}
         {domains.length > 0 && (
           <div className="mt-5">
-            <h4 className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Domains</h4>
+            <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Domains</h4>
             <div className="mt-2 space-y-2">
               {domains.map(([key, val]) => (
                 <div
                   key={key}
-                  className={`rounded-lg border p-3 ${DOMAIN_COLORS[key]?.replace("text-", "border-").replace(/border-\S+\/20/, "border-white/[0.05]") || "border-white/[0.05]"} bg-white/[0.02]`}
+                  className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3"
                 >
-                  <p className={`text-[10px] font-semibold uppercase tracking-wide ${DOMAIN_COLORS[key]?.split(" ")[1] || "text-zinc-400"}`}>
+                  <p className={`font-mono text-[10px] font-bold uppercase tracking-widest ${DOMAIN_COLORS[key]?.split(" ")[1] || "text-zinc-400"}`}>
                     {domainLabel(key)}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-zinc-400">{val}</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-zinc-400">{val}</p>
                 </div>
               ))}
             </div>
@@ -699,12 +723,12 @@ function _PlanDetailPanel({
         {/* Goals */}
         <div className="mt-5">
           <div className="flex items-center justify-between">
-            <h4 className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+            <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
               Goals · {progress.achieved}/{progress.total} achieved
             </h4>
             <button
               onClick={() => setShowAddGoal(!showAddGoal)}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-blue-400 transition-colors hover:bg-blue-500/10"
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-zinc-300 transition-colors hover:bg-white/[0.08]"
             >
               <Zap className="h-3 w-3" />
               Add Goal
@@ -718,21 +742,21 @@ function _PlanDetailPanel({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-3 overflow-hidden rounded-lg border border-blue-500/20 bg-blue-500/[0.04] p-3"
+                className="mt-3 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.03] p-3"
               >
                 <input
                   type="text"
                   placeholder="Goal title"
                   value={newGoalTitle}
                   onChange={(e) => setNewGoalTitle(e.target.value)}
-                  className="h-8 w-full rounded-md border border-white/[0.08] bg-white/[0.03] px-3 text-xs text-white placeholder-zinc-600 outline-none focus:border-blue-500/30"
+                  className="h-8 w-full rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] text-white placeholder-zinc-600 outline-none focus:border-white/[0.15]"
                 />
                 <textarea
                   placeholder="Description (optional)"
                   value={newGoalDescription}
                   onChange={(e) => setNewGoalDescription(e.target.value)}
                   rows={2}
-                  className="mt-2 w-full rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-white placeholder-zinc-600 outline-none focus:border-blue-500/30"
+                  className="mt-2 w-full rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-[12px] text-white placeholder-zinc-600 outline-none focus:border-white/[0.15]"
                 />
                 <div className="mt-2 flex justify-end gap-2">
                   <button
@@ -741,13 +765,14 @@ function _PlanDetailPanel({
                   >
                     Cancel
                   </button>
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
                     onClick={onAddGoal}
                     disabled={!newGoalTitle.trim()}
-                    className="rounded-md bg-blue-500/15 px-3 py-1.5 text-[10px] font-medium text-blue-400 transition-colors hover:bg-blue-500/25 disabled:opacity-40"
+                    className="rounded-md bg-white px-3 py-1.5 text-[10px] font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-40"
                   >
                     Save Goal
-                  </button>
+                  </motion.button>
                 </div>
               </motion.div>
             )}
@@ -756,7 +781,7 @@ function _PlanDetailPanel({
           {/* Goals list */}
           <div className="mt-3 space-y-2">
             {goals.length === 0 ? (
-              <p className="py-6 text-center text-xs text-zinc-600">No goals defined for this plan</p>
+              <p className="py-6 text-center text-[12px] text-zinc-600">No goals defined for this plan</p>
             ) : (
               goals.map((goal) => {
                 const gcfg = GOAL_STATUS_CONFIG[goal.status] || GOAL_STATUS_CONFIG.not_started;
@@ -766,18 +791,19 @@ function _PlanDetailPanel({
                 return (
                   <div
                     key={goal.id}
-                    className="rounded-lg border border-white/[0.05] bg-white/[0.02] p-3"
+                    className="r-card border border-white/[0.06] bg-white/[0.02] p-3"
+                    style={{ boxShadow: "var(--shadow-inset-bevel)" }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <h5 className="truncate text-xs font-medium text-white">{goal.title}</h5>
-                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-medium ${gcfg.bg} ${gcfg.color}`}>
+                          <h5 className="truncate text-[12px] font-medium text-white">{goal.title}</h5>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${gcfg.bg} ${gcfg.color}`}>
                             {gcfg.label}
                           </span>
                         </div>
                         {goal.description && (
-                          <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">{goal.description}</p>
+                          <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">{goal.description}</p>
                         )}
                       </div>
 
@@ -804,7 +830,7 @@ function _PlanDetailPanel({
                         </div>
                         <div className="mt-1 h-0.5 overflow-hidden rounded-full bg-white/[0.05]">
                           <div
-                            className="h-full rounded-full bg-blue-500/60"
+                            className="h-full rounded-full bg-[var(--brand)]"
                             style={{ width: `${milestonesTotal > 0 ? (milestonesDone / milestonesTotal) * 100 : 0}%` }}
                           />
                         </div>
@@ -814,8 +840,8 @@ function _PlanDetailPanel({
                     {/* Target outcome */}
                     {goal.target_outcome && (
                       <div className="mt-2 flex items-start gap-1.5">
-                        <Target className="mt-0.5 h-3 w-3 shrink-0 text-blue-400/50" />
-                        <p className="text-[10px] text-zinc-500">{goal.target_outcome}</p>
+                        <Target className="mt-0.5 h-3 w-3 shrink-0 text-zinc-500" />
+                        <p className="text-[10px] text-[var(--text-muted)]">{goal.target_outcome}</p>
                       </div>
                     )}
                   </div>
@@ -827,29 +853,31 @@ function _PlanDetailPanel({
       </div>
 
       {/* Panel footer — actions */}
-      <div className="flex items-center gap-2 border-t border-white/[0.05] p-4">
+      <div className="flex items-center gap-2 border-t border-white/[0.06] p-4">
         {plan.status === "draft" && (
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={onActivate}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-500/15 py-2.5 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/25"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white py-2.5 text-[12px] font-semibold text-black transition-colors hover:bg-zinc-200"
           >
             <CheckCircle2 className="h-4 w-4" />
             Activate Plan
-          </button>
+          </motion.button>
         )}
         {plan.status === "under_review" && (
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={onActivate}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-500/15 py-2.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/25"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white py-2.5 text-[12px] font-semibold text-black transition-colors hover:bg-zinc-200"
           >
             <CheckCircle2 className="h-4 w-4" />
             Approve & Activate
-          </button>
+          </motion.button>
         )}
         {plan.status !== "archived" && (
           <button
             onClick={onArchive}
-            className="flex items-center justify-center gap-2 rounded-lg border border-white/[0.05] bg-white/[0.02] px-4 py-2.5 text-sm font-medium text-zinc-500 transition-colors hover:border-rose-500/20 hover:text-rose-400"
+            className="flex items-center justify-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:border-rose-500/20 hover:text-rose-400"
           >
             Archive
           </button>
@@ -871,7 +899,7 @@ function _ShiftComplianceTab({
   const [expandedRule, setExpandedRule] = useState<string | null>(null);
 
   return (
-    <div className="p-6">
+    <div className="p-5">
       {/* Compliance Summary */}
       <motion.div
         initial="hidden"
@@ -879,12 +907,12 @@ function _ShiftComplianceTab({
         variants={stagger}
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/8 text-blue-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-zinc-300">
             <Shield className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-white">SCHADS Award Compliance</h2>
-            <p className="text-[11px] text-zinc-500">Real-time workforce monitoring against Social, Community, Home Care and Disability Services Industry Award</p>
+            <h2 className="text-[13px] font-semibold text-white">SCHADS Award Compliance</h2>
+            <p className="text-[11px] text-[var(--text-muted)]">Real-time workforce monitoring against Social, Community, Home Care and Disability Services Industry Award</p>
           </div>
         </div>
 
@@ -897,7 +925,7 @@ function _ShiftComplianceTab({
               sublabel: "workers at risk",
               icon: <AlertTriangle className="h-4 w-4" />,
               accent: stats.fatigueAtRisk > 0 ? "text-rose-400" : "text-emerald-400",
-              bg: stats.fatigueAtRisk > 0 ? "bg-rose-500/8" : "bg-emerald-500/8",
+              bg: stats.fatigueAtRisk > 0 ? "bg-rose-500/10" : "bg-emerald-500/10",
               description: "10-hour break rule violations",
             },
             {
@@ -906,7 +934,7 @@ function _ShiftComplianceTab({
               sublabel: "on overtime",
               icon: <Clock className="h-4 w-4" />,
               accent: stats.overtimeWorkers > 0 ? "text-amber-400" : "text-emerald-400",
-              bg: stats.overtimeWorkers > 0 ? "bg-amber-500/8" : "bg-emerald-500/8",
+              bg: stats.overtimeWorkers > 0 ? "bg-amber-500/10" : "bg-emerald-500/10",
               description: ">38hrs this week",
             },
             {
@@ -915,7 +943,7 @@ function _ShiftComplianceTab({
               sublabel: "under minimum",
               icon: <Users className="h-4 w-4" />,
               accent: stats.underMinimum > 0 ? "text-amber-400" : "text-emerald-400",
-              bg: stats.underMinimum > 0 ? "bg-amber-500/8" : "bg-emerald-500/8",
+              bg: stats.underMinimum > 0 ? "bg-amber-500/10" : "bg-emerald-500/10",
               description: "Shifts < 2hr minimum",
             },
             {
@@ -923,25 +951,26 @@ function _ShiftComplianceTab({
               value: stats.avgHours,
               sublabel: "per worker/week",
               icon: <TrendingUp className="h-4 w-4" />,
-              accent: "text-blue-400",
-              bg: "bg-blue-500/8",
+              accent: "text-zinc-300",
+              bg: "bg-white/[0.06]",
               description: "Across active roster",
             },
           ].map((card) => (
             <motion.div
               key={card.label}
               variants={fadeIn}
-              className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4"
+              className="r-card border border-white/[0.06] bg-white/[0.02] p-4"
+              style={{ boxShadow: "var(--shadow-inset-bevel)" }}
             >
               <div className="flex items-center gap-2">
                 <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${card.bg} ${card.accent}`}>
                   {card.icon}
                 </div>
                 <div>
-                  <span className="text-[10px] text-zinc-500">{card.label}</span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{card.label}</span>
                 </div>
               </div>
-              <p className={`mt-2 text-2xl font-semibold tracking-tight ${card.accent}`}>{card.value}</p>
+              <p className={`mt-2 font-mono text-[28px] font-semibold tracking-tighter ${card.accent}`}>{card.value}</p>
               <p className="text-[10px] text-zinc-600">{card.sublabel}</p>
               <p className="mt-1 text-[10px] text-zinc-600">{card.description}</p>
             </motion.div>
@@ -958,8 +987,8 @@ function _ShiftComplianceTab({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <h3 className="text-sm font-semibold text-white">Workforce Compliance — This Week</h3>
-            <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+            <h3 className="text-[13px] font-semibold text-white">Workforce Compliance — This Week</h3>
+            <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-zinc-300">
               {MOCK_WORKERS.length} workers
             </span>
           </div>
@@ -969,15 +998,15 @@ function _ShiftComplianceTab({
           </div>
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-xl border border-white/[0.05]">
+        <div className="mt-3 overflow-hidden rounded-xl border border-white/[0.06]">
           {/* Table header */}
-          <div className="grid grid-cols-12 gap-2 border-b border-white/[0.05] bg-white/[0.02] px-4 py-2.5">
-            <div className="col-span-3 text-[10px] font-medium uppercase tracking-wide text-zinc-600">Worker</div>
-            <div className="col-span-2 text-[10px] font-medium uppercase tracking-wide text-zinc-600">Role</div>
-            <div className="col-span-1 text-center text-[10px] font-medium uppercase tracking-wide text-zinc-600">Hours</div>
-            <div className="col-span-2 text-center text-[10px] font-medium uppercase tracking-wide text-zinc-600">Fatigue</div>
-            <div className="col-span-1 text-center text-[10px] font-medium uppercase tracking-wide text-zinc-600">OT</div>
-            <div className="col-span-3 text-[10px] font-medium uppercase tracking-wide text-zinc-600">Location</div>
+          <div className="grid grid-cols-12 gap-2 border-b border-white/[0.05] bg-[var(--surface-1)] px-4 py-2.5">
+            <div className="col-span-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Worker</div>
+            <div className="col-span-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Role</div>
+            <div className="col-span-1 text-center font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Hours</div>
+            <div className="col-span-2 text-center font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Fatigue</div>
+            <div className="col-span-1 text-center font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">OT</div>
+            <div className="col-span-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Location</div>
           </div>
 
           {/* Table rows */}
@@ -999,19 +1028,19 @@ function _ShiftComplianceTab({
                     {worker.name.split(" ").map((n) => n[0]).join("")}
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-white">{worker.name}</p>
+                    <p className="text-[12px] font-medium text-white">{worker.name}</p>
                     <p className="text-[10px] text-zinc-600">{worker.shiftsToday} shifts today</p>
                   </div>
                 </div>
 
                 {/* Role */}
                 <div className="col-span-2 flex items-center">
-                  <span className="text-xs text-zinc-400">{worker.role}</span>
+                  <span className="text-[12px] text-zinc-400">{worker.role}</span>
                 </div>
 
                 {/* Hours */}
                 <div className="col-span-1 flex items-center justify-center">
-                  <span className={`font-mono text-xs font-medium ${worker.hoursThisWeek > 38 ? "text-amber-400" : "text-zinc-300"}`}>
+                  <span className={`font-mono text-[12px] font-medium ${worker.hoursThisWeek > 38 ? "text-amber-400" : "text-zinc-300"}`}>
                     {worker.hoursThisWeek}
                   </span>
                 </div>
@@ -1038,7 +1067,7 @@ function _ShiftComplianceTab({
                 {/* Location */}
                 <div className="col-span-3 flex items-center gap-1.5">
                   <MapPin className="h-3 w-3 shrink-0 text-zinc-600" />
-                  <span className="truncate text-[10px] text-zinc-500">{worker.location}</span>
+                  <span className="truncate text-[10px] text-[var(--text-muted)]">{worker.location}</span>
                 </div>
               </motion.div>
             );
@@ -1050,7 +1079,7 @@ function _ShiftComplianceTab({
           {(Object.entries(FATIGUE_CONFIG) as [keyof typeof FATIGUE_CONFIG, typeof FATIGUE_CONFIG[keyof typeof FATIGUE_CONFIG]][]).map(([key, cfg]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
-              <span className="text-[10px] text-zinc-500">{cfg.label}</span>
+              <span className="text-[10px] text-[var(--text-muted)]">{cfg.label}</span>
             </div>
           ))}
           <span className="text-[10px] text-zinc-600">|</span>
@@ -1068,18 +1097,18 @@ function _ShiftComplianceTab({
         className="mt-8"
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/8 text-violet-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
             <Brain className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">SCHADS Award Rules Reference</h3>
-            <p className="text-[11px] text-zinc-500">Key compliance requirements from the Social, Community, Home Care and Disability Services Industry Award 2010</p>
+            <h3 className="text-[13px] font-semibold text-white">SCHADS Award Rules Reference</h3>
+            <p className="text-[11px] text-[var(--text-muted)]">Key compliance requirements from the Social, Community, Home Care and Disability Services Industry Award 2010</p>
           </div>
         </div>
 
         <div className="mt-4 space-y-2">
           {SCHADS_RULES.map((rule) => (
-            <motion.div key={rule.id} layout className="overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02]">
+            <motion.div key={rule.id} layout className="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]">
               <button
                 onClick={() => setExpandedRule(expandedRule === rule.id ? null : rule.id)}
                 className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-white/[0.02]"
@@ -1089,7 +1118,7 @@ function _ShiftComplianceTab({
                     <Shield className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-white">{rule.title}</p>
+                    <p className="text-[12px] font-medium text-white">{rule.title}</p>
                     <p className="text-[10px] text-zinc-600">{rule.section}</p>
                   </div>
                 </div>
@@ -1110,7 +1139,7 @@ function _ShiftComplianceTab({
                     className="overflow-hidden"
                   >
                     <div className="border-t border-white/[0.05] px-4 py-3">
-                      <p className="text-xs leading-relaxed text-zinc-400">{rule.description}</p>
+                      <p className="text-[12px] leading-relaxed text-zinc-400">{rule.description}</p>
                       <div className="mt-2 flex items-center gap-1.5 text-[10px] text-violet-400/60">
                         <FileText className="h-3 w-3" />
                         <span>{rule.section} — SCHADS Industry Award 2010</span>
@@ -1128,8 +1157,8 @@ function _ShiftComplianceTab({
           <div className="flex gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400/60" />
             <div>
-              <p className="text-xs font-medium text-amber-400/80">Compliance Advisory</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+              <p className="text-[12px] font-medium text-amber-400/80">Compliance Advisory</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
                 Roster Intelligence provides automated monitoring and alerts based on SCHADS Award requirements.
                 This does not constitute legal advice. Always consult your industrial relations advisor or the
                 Fair Work Commission for binding interpretations. Award conditions may vary based on individual

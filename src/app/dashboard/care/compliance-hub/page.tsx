@@ -73,12 +73,12 @@ const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ className?
 const CREDENTIAL_STATUS_CONFIG = {
   expired: { label: "Expired", color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20" },
   expiring_7d: { label: "< 7 Days", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-  expiring_30d: { label: "< 30 Days", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  expiring_30d: { label: "< 30 Days", color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/20" },
   valid: { label: "Valid", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
 } as const;
 
 const SCOPE_BADGES: Record<ScopeType, { label: string; color: string }> = {
-  participant: { label: "Participant", color: "bg-blue-500/10 text-blue-400" },
+  participant: { label: "Participant", color: "bg-emerald-500/10 text-emerald-400" },
   organization: { label: "Organization", color: "bg-violet-500/10 text-violet-400" },
   date_range: { label: "Date Range", color: "bg-amber-500/10 text-amber-400" },
 };
@@ -104,7 +104,7 @@ function getCredentialStatus(daysRemaining: number) {
 
 function CardSkeleton() {
   return (
-    <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-5 space-y-3 animate-pulse">
+    <div className="r-card border border-white/[0.05] bg-white/[0.02] p-5 space-y-3 animate-pulse" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
       <div className="flex items-start gap-3">
         <div className="h-2.5 w-2.5 rounded-full bg-white/5 mt-1.5" />
         <div className="flex-1 space-y-2">
@@ -142,16 +142,12 @@ function StatCard({
   label,
   count,
   color,
-  border,
-  glow,
   delay,
   icon: Icon,
 }: {
   label: string;
   count: number;
   color: string;
-  border: string;
-  glow?: string;
   delay: number;
   icon?: React.ComponentType<{ className?: string }>;
 }) {
@@ -160,15 +156,16 @@ function StatCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className={`rounded-xl border ${border} bg-white/[0.02] p-4 ${glow ?? ""}`}
+      className="r-card border border-white/[0.06] bg-[var(--surface-1)] p-5"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
     >
       <div className="flex items-center justify-between mb-1">
-        <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
           {label}
         </p>
         {Icon && <Icon className={`w-3.5 h-3.5 ${color} opacity-50`} />}
       </div>
-      <p className={`font-mono text-2xl font-semibold tabular-nums ${color}`}>
+      <p className={`font-mono text-[28px] font-semibold tracking-tighter tabular-nums text-white`}>
         {count}
       </p>
     </motion.div>
@@ -216,11 +213,12 @@ function SentinelAlertCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4, transition: { duration: 0.2 } }}
       transition={{ delay: index * 0.03, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className={`rounded-xl border bg-white/[0.02] overflow-hidden transition-colors hover:border-white/[0.1] ${
+      className={`r-card border bg-[var(--surface-1)] overflow-hidden transition-colors hover:border-white/[0.1] ${
         isCritical && isActive
-          ? "border-rose-500/25 animate-[compliance-breathe_3s_ease-in-out_infinite]"
+          ? "border-rose-500/25"
           : "border-white/[0.06]"
       }`}
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
     >
       {/* Main Row */}
       <button
@@ -245,12 +243,12 @@ function SentinelAlertCard({
               {ALERT_TYPE_LABELS[alert.alert_type] ?? alert.alert_type}
             </span>
             <span
-              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${config?.bg} ${config?.color}`}
+              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${config?.bg} ${config?.color}`}
             >
               {config?.label}
             </span>
             {alert.status !== "active" && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider bg-white/[0.04] text-zinc-500">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-white/[0.04] text-zinc-500">
                 {alert.status}
               </span>
             )}
@@ -314,7 +312,7 @@ function SentinelAlertCard({
             <div className="px-5 pb-5 pt-2 border-t border-white/[0.04] ml-[15px]">
               {/* Full description */}
               <div className="mb-4">
-                <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-1">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">
                   Full Description
                 </p>
                 <p className="text-[13px] text-zinc-400 leading-relaxed">
@@ -326,35 +324,35 @@ function SentinelAlertCard({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 {alert.source_table && (
                   <div>
-                    <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-0.5">Source</p>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5">Source</p>
                     <p className="text-[12px] text-zinc-400 font-mono">{alert.source_table}</p>
                   </div>
                 )}
                 {alert.source_id && (
                   <div>
-                    <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-0.5">Record ID</p>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5">Record ID</p>
                     <p className="text-[12px] text-zinc-400 font-mono">{alert.source_id.slice(0, 12)}…</p>
                   </div>
                 )}
                 {alert.shift_id && (
                   <div>
-                    <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-0.5">Shift</p>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5">Shift</p>
                     <p className="text-[12px] text-zinc-400 font-mono">{alert.shift_id.slice(0, 12)}…</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-0.5">Status</p>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5">Status</p>
                   <p className={`text-[12px] font-medium ${config?.color ?? "text-zinc-400"}`}>{alert.status}</p>
                 </div>
               </div>
 
               {/* Resolution info */}
               {alert.resolution_notes && (
-                <div className="mb-4 p-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-1">Resolution</p>
+                <div className="mb-4 p-3 r-card bg-white/[0.02] border border-white/[0.05]">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Resolution</p>
                   <p className="text-[12px] text-zinc-400">{alert.resolution_notes}</p>
                   {alert.resolved_at && (
-                    <p className="text-[10px] text-zinc-600 font-mono mt-1">Resolved: {fmtDateTime(alert.resolved_at)}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] font-mono mt-1">Resolved: {fmtDateTime(alert.resolved_at)}</p>
                   )}
                 </div>
               )}
@@ -365,7 +363,7 @@ function SentinelAlertCard({
                   <button
                     onClick={() => handleAction("acknowledged")}
                     disabled={actionLoading !== null}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-white/[0.04] text-zinc-300 border border-white/[0.08] hover:bg-white/[0.08] transition-colors disabled:opacity-40"
                   >
                     <CheckCircle2 className="w-3 h-3" />
                     {actionLoading === "acknowledged" ? "Acknowledging…" : "Acknowledge"}
@@ -400,7 +398,7 @@ function SentinelAlertCard({
                           }
                         }}
                         placeholder="Reason for dismissal…"
-                        className="w-48 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[12px] text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-white/[0.15] transition-colors"
+                        className="w-48 px-2.5 py-1.5 r-input bg-white/[0.04] border border-white/[0.08] text-[12px] text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-white/[0.15] transition-colors"
                       />
                       <button
                         onClick={() => dismissNotes.trim() && handleAction("dismissed_false_positive", dismissNotes)}
@@ -463,7 +461,7 @@ function CredentialRow({ cred, index }: { cred: CredentialAlert; index: number }
       {/* Worker name */}
       <div className="min-w-0">
         <p className="text-[13px] text-zinc-200 font-medium truncate">{cred.worker_name}</p>
-        <p className="text-[11px] text-zinc-600 font-mono mt-0.5">{cred.id.slice(0, 12)}…</p>
+        <p className="text-[11px] text-[var(--text-muted)] font-mono mt-0.5">{cred.id.slice(0, 12)}…</p>
       </div>
 
       {/* Credential type */}
@@ -506,7 +504,7 @@ function AuditRow({ session, index }: { session: AuditSession; index: number }) 
     >
       <div className="min-w-0">
         <p className="text-[13px] text-zinc-200 truncate font-medium">{session.title || "Untitled Session"}</p>
-        <p className="text-[10px] text-zinc-600 font-mono mt-0.5">{session.id.slice(0, 12)}…</p>
+        <p className="text-[10px] text-[var(--text-muted)] font-mono mt-0.5">{session.id.slice(0, 12)}…</p>
       </div>
       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${scope.color}`}>
         {scope.label}
@@ -544,13 +542,12 @@ function SentinelEmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="relative mb-6">
-        <div className="absolute inset-0 rounded-full border border-zinc-800 animate-[zen-ring_3s_ease-in-out_infinite]" />
-        <div className="w-14 h-14 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center animate-[zen-breathe_4s_ease-in-out_infinite]">
+        <div className="w-14 h-14 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
           <Shield className="w-5 h-5 text-zinc-600" />
         </div>
       </div>
       <h3 className="text-sm font-semibold text-zinc-300 mb-1">All clear</h3>
-      <p className="text-[13px] text-zinc-600 max-w-xs">
+      <p className="text-[13px] text-[var(--text-muted)] max-w-xs">
         No active sentinel alerts. Your organization is being continuously monitored.
       </p>
     </div>
@@ -564,7 +561,7 @@ function CredentialsEmptyState() {
         <ShieldCheck className="w-5 h-5 text-zinc-600" />
       </div>
       <h3 className="text-sm font-semibold text-zinc-300 mb-1">All credentials current</h3>
-      <p className="text-[13px] text-zinc-600 max-w-xs">
+      <p className="text-[13px] text-[var(--text-muted)] max-w-xs">
         No expiring or expired credentials found. All team members are compliant.
       </p>
     </div>
@@ -578,7 +575,7 @@ function AuditEmptyState() {
         <FileSearch className="w-5 h-5 text-zinc-600" />
       </div>
       <h3 className="text-sm font-semibold text-zinc-300 mb-1">No audit sessions yet</h3>
-      <p className="text-[13px] text-zinc-600 max-w-xs">
+      <p className="text-[13px] text-[var(--text-muted)] max-w-xs">
         Generate your first audit dossier to create a compliance record with secure magic-link access.
       </p>
     </div>
@@ -642,11 +639,11 @@ function CreateAuditModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full max-w-md mx-4 bg-[#0A0A0A] border border-white/[0.08] rounded-xl p-6 shadow-2xl"
+            className="relative w-full max-w-[420px] mx-4 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#141414] p-6 shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-blue-400/60 mb-0.5">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5">
                   NEW SESSION
                 </p>
                 <h2 className="text-base font-semibold text-zinc-100 tracking-tight">
@@ -664,20 +661,20 @@ function CreateAuditModal({
             <div className="space-y-4">
               {/* Title */}
               <div>
-                <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-1.5">
+                <label className="block font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5">
                   Title
                 </label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Q1 Compliance Review"
-                  className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[13px] text-zinc-200 placeholder:text-zinc-700 outline-none focus:border-blue-500/30 transition-colors"
+                  className="w-full px-3 py-2 r-input bg-white/[0.03] border border-white/[0.08] text-[13px] text-zinc-200 placeholder:text-zinc-700 outline-none focus:border-white/[0.15] transition-colors"
                 />
               </div>
 
               {/* Scope */}
               <div>
-                <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-1.5">
+                <label className="block font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5">
                   Scope
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -687,7 +684,7 @@ function CreateAuditModal({
                       onClick={() => setScope(s)}
                       className={`px-3 py-2 rounded-lg text-[11px] font-medium border transition-colors ${
                         scope === s
-                          ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                          ? "bg-white/[0.06] text-white font-medium border-white/[0.12]"
                           : "bg-white/[0.02] text-zinc-500 border-white/[0.06] hover:border-white/[0.1]"
                       }`}
                     >
@@ -700,14 +697,14 @@ function CreateAuditModal({
               {/* Participant ID (conditional) */}
               {scope === "participant" && (
                 <div>
-                  <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-1.5">
+                  <label className="block font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5">
                     Participant ID
                   </label>
                   <input
                     value={participantId}
                     onChange={(e) => setParticipantId(e.target.value)}
                     placeholder="Enter participant ID…"
-                    className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[13px] text-zinc-200 placeholder:text-zinc-700 outline-none focus:border-blue-500/30 transition-colors"
+                    className="w-full px-3 py-2 r-input bg-white/[0.03] border border-white/[0.08] text-[13px] text-zinc-200 placeholder:text-zinc-700 outline-none focus:border-white/[0.15] transition-colors"
                   />
                 </div>
               )}
@@ -715,25 +712,25 @@ function CreateAuditModal({
               {/* Date range */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-1.5">
+                  <label className="block font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5">
                     From
                   </label>
                   <input
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[12px] text-zinc-300 outline-none focus:border-blue-500/30 transition-colors"
+                    className="w-full px-3 py-2 r-input bg-white/[0.03] border border-white/[0.08] text-[12px] text-zinc-300 outline-none focus:border-white/[0.15] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-1.5">
+                  <label className="block font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5">
                     To
                   </label>
                   <input
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[12px] text-zinc-300 outline-none focus:border-blue-500/30 transition-colors"
+                    className="w-full px-3 py-2 r-input bg-white/[0.03] border border-white/[0.08] text-[12px] text-zinc-300 outline-none focus:border-white/[0.15] transition-colors"
                   />
                 </div>
               </div>
@@ -742,11 +739,11 @@ function CreateAuditModal({
               <button
                 onClick={handleSubmit}
                 disabled={loading || (scope === "participant" && !participantId.trim())}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-semibold bg-blue-500 text-white hover:bg-blue-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-semibold bg-white text-black hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                     Generating…
                   </>
                 ) : (
@@ -921,67 +918,52 @@ export default function ComplianceHubPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="relative min-h-screen bg-[#050505]"
-    >
+    <div className="flex h-full flex-col bg-[var(--background)]">
       {/* Noise overlay */}
       <div className="stealth-noise" />
 
-      {/* Atmospheric glow — blue tint for governance */}
+      {/* Atmospheric glow */}
       <div
-        className="pointer-events-none absolute top-0 left-0 right-0 h-72 z-0"
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64"
         style={{
           background:
-            "radial-gradient(ellipse at center top, rgba(59,130,246,0.025) 0%, transparent 60%)",
+            "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)",
         }}
       />
 
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8 space-y-6">
-        {/* ── Header ──────────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-blue-400/60 mb-1">
-            GOVERNANCE ENGINE
-          </p>
-          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
-            Compliance Hub
-          </h1>
-          <p className="text-[13px] text-zinc-500 mt-1 max-w-lg">
-            Unified governance center — sentinel alerts, credential monitoring, and audit management in one place.
-          </p>
-        </motion.div>
+      {/* ── Sticky Header ──────────────────────────────────────── */}
+      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-5 py-2.5">
+          <div>
+            {/* Breadcrumbs */}
+            <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)] mb-0.5">
+              <span>Dashboard</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-zinc-300">Compliance Hub</span>
+            </div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+              COMPLIANCE HUB
+            </p>
+          </div>
 
-        {/* ── Error Toast ─────────────────────────────────────── */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[13px] text-rose-400"
-            >
-              <XCircle className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1">{error}</span>
-              <button onClick={() => setError(null)} className="p-0.5 hover:text-rose-300 transition-colors">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </motion.div>
+          {/* Search input */}
+          {activeTab !== "audit" && (
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search ${activeTab === "sentinel" ? "alerts" : "credentials"}…`}
+                className="w-52 pl-8 pr-3 py-1.5 r-input bg-white/[0.03] border border-white/[0.06] text-[12px] text-zinc-300 placeholder:text-zinc-700 outline-none focus:border-white/[0.15] transition-colors"
+              />
+            </div>
           )}
-        </AnimatePresence>
+        </div>
+      </div>
 
-        {/* ── Tab Bar ─────────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="flex items-center gap-1 border-b border-white/[0.05] pb-0"
-        >
+      {/* ── Tab Bar ─────────────────────────────────────────── */}
+      <div className="flex items-center border-b border-white/[0.06] bg-[var(--surface-1)] px-5">
+        <div className="flex items-center gap-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
             const Icon = tab.icon;
@@ -992,372 +974,365 @@ export default function ComplianceHubPage() {
                   setActiveTab(tab.key);
                   setSearchQuery("");
                 }}
-                className={`relative inline-flex items-center gap-2 px-4 py-3 text-[13px] font-medium transition-colors ${
+                className={`relative rounded-md px-3 py-1.5 text-[12px] transition-colors duration-150 ${
                   isActive
-                    ? "text-blue-400"
+                    ? "font-medium text-white"
                     : "text-zinc-500 hover:text-zinc-300"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                {tab.label}
-
-                {/* Active sentinel count badge */}
-                {tab.key === "sentinel" && sentinelStats.critical > 0 && (
-                  <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500/15 px-1 font-mono text-[9px] font-medium text-rose-400">
-                    {sentinelStats.critical}
-                  </span>
-                )}
-
-                {/* Credential alert count */}
-                {tab.key === "credentials" && (snapshotCredentials?.expired ?? 0) > 0 && (
-                  <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-500/15 px-1 font-mono text-[9px] font-medium text-amber-400">
-                    {snapshotCredentials?.expired}
-                  </span>
-                )}
-
-                {/* Active indicator bar */}
                 {isActive && (
                   <motion.div
-                    layoutId="compliance-tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-400 rounded-full"
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    layoutId="compliance-tab-pill"
+                    className="absolute inset-0 rounded-md bg-white/[0.06]"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
+                <span className="relative inline-flex items-center gap-2">
+                  <Icon className="w-3.5 h-3.5" />
+                  {tab.label}
+
+                  {/* Active sentinel count badge */}
+                  {tab.key === "sentinel" && sentinelStats.critical > 0 && (
+                    <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500/15 px-1 font-mono text-[10px] font-medium text-rose-400">
+                      {sentinelStats.critical}
+                    </span>
+                  )}
+
+                  {/* Credential alert count */}
+                  {tab.key === "credentials" && (snapshotCredentials?.expired ?? 0) > 0 && (
+                    <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-500/15 px-1 font-mono text-[10px] font-medium text-amber-400">
+                      {snapshotCredentials?.expired}
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}
+        </div>
+      </div>
 
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Search input */}
-          {activeTab !== "audit" && (
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search ${activeTab === "sentinel" ? "alerts" : "credentials"}…`}
-                className="w-52 pl-8 pr-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-zinc-300 placeholder:text-zinc-700 outline-none focus:border-blue-500/30 transition-colors"
-              />
-            </div>
-          )}
-        </motion.div>
-
-        {/* ── Tab Content ─────────────────────────────────────── */}
-        <AnimatePresence mode="wait">
-          {/* ═══════ SENTINEL TAB ═══════ */}
-          {activeTab === "sentinel" && (
-            <motion.div
-              key="sentinel"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-5"
-            >
-              {/* Summary stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard
-                  label="Critical"
-                  count={sentinelStats.critical}
-                  color="text-rose-400"
-                  border="border-rose-500/20"
-                  glow={sentinelStats.critical > 0 ? "shadow-[0_0_15px_-4px_rgba(244,63,94,0.2)]" : undefined}
-                  delay={0.05}
-                  icon={AlertTriangle}
-                />
-                <StatCard
-                  label="Warnings"
-                  count={sentinelStats.warnings}
-                  color="text-amber-400"
-                  border="border-amber-500/20"
-                  delay={0.1}
-                  icon={AlertTriangle}
-                />
-                <StatCard
-                  label="Info"
-                  count={sentinelStats.info}
-                  color="text-sky-400"
-                  border="border-sky-500/20"
-                  delay={0.15}
-                  icon={Eye}
-                />
-                <StatCard
-                  label="Resolved"
-                  count={sentinelStats.resolved}
-                  color="text-zinc-400"
-                  border="border-white/[0.06]"
-                  delay={0.2}
-                  icon={CheckCircle2}
-                />
-              </div>
-
-              {/* Severity filter chips */}
-              <div className="flex items-center gap-2">
-                <Filter className="w-3.5 h-3.5 text-zinc-600" />
-                {(["all", "critical", "warning", "info"] as SeverityFilter[]).map((severity) => {
-                  const isActive = severityFilter === severity;
-                  const chipColors: Record<SeverityFilter, string> = {
-                    all: isActive ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-white/[0.02] text-zinc-500 border-white/[0.06]",
-                    critical: isActive ? "bg-rose-500/15 text-rose-400 border-rose-500/30" : "bg-white/[0.02] text-zinc-500 border-white/[0.06]",
-                    warning: isActive ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : "bg-white/[0.02] text-zinc-500 border-white/[0.06]",
-                    info: isActive ? "bg-sky-500/15 text-sky-400 border-sky-500/30" : "bg-white/[0.02] text-zinc-500 border-white/[0.06]",
-                  };
-                  return (
-                    <button
-                      key={severity}
-                      onClick={() => setSeverityFilter(severity)}
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium border transition-colors ${chipColors[severity]}`}
-                    >
-                      {severity === "all" ? "All Severities" : SEVERITY_CONFIG[severity]?.label ?? severity}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Alerts list */}
-              <div className="space-y-2">
-                {alertsLoading && (
-                  <div className="space-y-2">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <CardSkeleton key={i} />
-                    ))}
-                  </div>
-                )}
-
-                {!alertsLoading && filteredAlerts.length === 0 && <SentinelEmptyState />}
-
-                <AnimatePresence mode="popLayout">
-                  {!alertsLoading &&
-                    filteredAlerts.map((alert, idx) => (
-                      <SentinelAlertCard
-                        key={alert.id}
-                        alert={alert}
-                        index={idx}
-                        expanded={expandedAlertId === alert.id}
-                        onToggle={() =>
-                          setExpandedAlertId((prev) => (prev === alert.id ? null : alert.id))
-                        }
-                        onAction={handleAlertAction}
-                      />
-                    ))}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ═══════ CREDENTIALS TAB ═══════ */}
-          {activeTab === "credentials" && (
-            <motion.div
-              key="credentials"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-5"
-            >
-              {/* Credential stats bar */}
-              <div className="grid grid-cols-3 gap-3">
-                <StatCard
-                  label="Verified"
-                  count={credentialStats.verified || (snapshotCredentials ? 0 : 0)}
-                  color="text-emerald-400"
-                  border="border-emerald-500/20"
-                  delay={0.05}
-                  icon={ShieldCheck}
-                />
-                <StatCard
-                  label="Expiring Soon"
-                  count={credentialStats.expiring || (snapshotCredentials?.expiring_30d ?? 0)}
-                  color="text-amber-400"
-                  border="border-amber-500/20"
-                  glow={(credentialStats.expiring || (snapshotCredentials?.expiring_30d ?? 0)) > 0 ? "shadow-[0_0_12px_-4px_rgba(245,158,11,0.15)]" : undefined}
-                  delay={0.1}
-                  icon={Clock}
-                />
-                <StatCard
-                  label="Expired"
-                  count={credentialStats.expired || (snapshotCredentials?.expired ?? 0)}
-                  color="text-rose-400"
-                  border="border-rose-500/20"
-                  glow={(credentialStats.expired || (snapshotCredentials?.expired ?? 0)) > 0 ? "shadow-[0_0_12px_-4px_rgba(244,63,94,0.15)]" : undefined}
-                  delay={0.15}
-                  icon={XCircle}
-                />
-              </div>
-
-              {/* Utilization bar */}
-              {(credentialStats.verified + credentialStats.expiring + credentialStats.expired) > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, scaleX: 0.9 }}
-                  animate={{ opacity: 1, scaleX: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4"
-                >
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-2">
-                    Credential Compliance
-                  </p>
-                  <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.03]">
-                    {credentialStats.verified > 0 && (
-                      <div
-                        className="bg-emerald-500 transition-all duration-700"
-                        style={{
-                          width: `${(credentialStats.verified / (credentialStats.verified + credentialStats.expiring + credentialStats.expired)) * 100}%`,
-                        }}
-                      />
-                    )}
-                    {credentialStats.expiring > 0 && (
-                      <div
-                        className="bg-amber-500 transition-all duration-700"
-                        style={{
-                          width: `${(credentialStats.expiring / (credentialStats.verified + credentialStats.expiring + credentialStats.expired)) * 100}%`,
-                        }}
-                      />
-                    )}
-                    {credentialStats.expired > 0 && (
-                      <div
-                        className="bg-rose-500 transition-all duration-700"
-                        style={{
-                          width: `${(credentialStats.expired / (credentialStats.verified + credentialStats.expiring + credentialStats.expired)) * 100}%`,
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-500">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" /> Verified
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-500">
-                      <span className="w-2 h-2 rounded-full bg-amber-500" /> Expiring
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-500">
-                      <span className="w-2 h-2 rounded-full bg-rose-500" /> Expired
-                    </span>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Credentials table */}
-              <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] overflow-hidden">
-                {/* Table header */}
-                <div className="grid grid-cols-[1fr_140px_120px_80px_100px] gap-4 px-5 py-3 border-b border-white/[0.05]">
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600">Worker</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600">Type</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600">Expires</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600">Days</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600 text-center">Status</span>
-                </div>
-
-                {/* Rows */}
-                {filteredCredentials.length === 0 && !alertsLoading && <CredentialsEmptyState />}
-                {filteredCredentials.map((cred, idx) => (
-                  <CredentialRow key={cred.id} cred={cred} index={idx} />
-                ))}
-
-                {/* Show snapshot fallback if no credential alerts but snapshot has data */}
-                {filteredCredentials.length === 0 && snapshotCredentials && (snapshotCredentials.expiring_30d > 0 || snapshotCredentials.expired > 0) && (
-                  <div className="px-5 py-8 text-center">
-                    <p className="text-[13px] text-zinc-500 mb-1">
-                      {snapshotCredentials.expiring_30d + snapshotCredentials.expired} credential issues detected
-                    </p>
-                    <p className="text-[11px] text-zinc-600">
-                      {snapshotCredentials.expiring_30d} expiring within 30 days · {snapshotCredentials.expired} expired
-                    </p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* ═══════ AUDIT TRAIL TAB ═══════ */}
-          {activeTab === "audit" && (
-            <motion.div
-              key="audit"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-5"
-            >
-              {/* Generate button + info row */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[13px] text-zinc-500">
-                    Generate compliance dossiers with secure magic-link access for auditors.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowCreateAudit(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold bg-blue-500 text-white hover:bg-blue-600 transition-colors shadow-[0_0_20px_-4px_rgba(59,130,246,0.25)]"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Generate Audit Dossier
+      {/* ── Scrollable Content ─────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto scrollbar-none">
+        <div className="px-5 py-5 space-y-5">
+          {/* ── Error Toast ─────────────────────────────────────── */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="flex items-center gap-2 px-4 py-3 r-card bg-rose-500/10 border border-rose-500/20 text-[13px] text-rose-400"
+              >
+                <XCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">{error}</span>
+                <button onClick={() => setError(null)} className="p-0.5 hover:text-rose-300 transition-colors">
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              {/* Summary cards */}
-              <div className="grid grid-cols-3 gap-3">
-                <StatCard
-                  label="Total Sessions"
-                  count={auditSessions.length}
-                  color="text-blue-400"
-                  border="border-blue-500/20"
-                  delay={0.05}
-                  icon={FileSearch}
-                />
-                <StatCard
-                  label="Active Links"
-                  count={auditSessions.filter((s) => new Date(s.expires_at) > new Date()).length}
-                  color="text-emerald-400"
-                  border="border-emerald-500/20"
-                  delay={0.1}
-                  icon={Lock}
-                />
-                <StatCard
-                  label="Total Views"
-                  count={auditSessions.reduce((sum, s) => sum + s.access_count, 0)}
-                  color="text-zinc-300"
-                  border="border-white/[0.06]"
-                  delay={0.15}
-                  icon={Eye}
-                />
-              </div>
-
-              {/* History table */}
-              <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] overflow-hidden">
-                {/* Table header */}
-                <div className="grid grid-cols-[1fr_100px_120px_100px_60px_80px] gap-4 px-5 py-3 border-b border-white/[0.05]">
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600">Title</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600">Scope</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600">Generated</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600">Expires</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600 text-center">Views</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-zinc-600 text-right">Actions</span>
+          {/* ── Tab Content ─────────────────────────────────────── */}
+          <AnimatePresence mode="wait">
+            {/* ═══════ SENTINEL TAB ═══════ */}
+            {activeTab === "sentinel" && (
+              <motion.div
+                key="sentinel"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-5"
+              >
+                {/* Summary stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <StatCard
+                    label="Critical"
+                    count={sentinelStats.critical}
+                    color="text-rose-400"
+                    delay={0.05}
+                    icon={AlertTriangle}
+                  />
+                  <StatCard
+                    label="Warnings"
+                    count={sentinelStats.warnings}
+                    color="text-amber-400"
+                    delay={0.1}
+                    icon={AlertTriangle}
+                  />
+                  <StatCard
+                    label="Info"
+                    count={sentinelStats.info}
+                    color="text-[var(--text-muted)]"
+                    delay={0.15}
+                    icon={Eye}
+                  />
+                  <StatCard
+                    label="Resolved"
+                    count={sentinelStats.resolved}
+                    color="text-zinc-400"
+                    delay={0.2}
+                    icon={CheckCircle2}
+                  />
                 </div>
 
-                {/* Loading skeletons */}
-                {auditLoading && auditSessions.length === 0 && (
-                  <div>
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <TableRowSkeleton key={i} />
-                    ))}
-                  </div>
+                {/* Severity filter chips */}
+                <div className="flex items-center gap-2">
+                  <Filter className="w-3.5 h-3.5 text-zinc-600" />
+                  {(["all", "critical", "warning", "info"] as SeverityFilter[]).map((severity) => {
+                    const isFilterActive = severityFilter === severity;
+                    return (
+                      <button
+                        key={severity}
+                        onClick={() => setSeverityFilter(severity)}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium border transition-colors ${
+                          isFilterActive
+                            ? "bg-white/[0.06] text-white font-medium border-white/[0.12]"
+                            : "bg-white/[0.02] text-zinc-500 border-white/[0.06] hover:border-white/[0.1]"
+                        }`}
+                      >
+                        {severity === "all" ? "All Severities" : SEVERITY_CONFIG[severity]?.label ?? severity}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Alerts list */}
+                <div className="space-y-2">
+                  {alertsLoading && (
+                    <div className="space-y-2">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <CardSkeleton key={i} />
+                      ))}
+                    </div>
+                  )}
+
+                  {!alertsLoading && filteredAlerts.length === 0 && <SentinelEmptyState />}
+
+                  <AnimatePresence mode="popLayout">
+                    {!alertsLoading &&
+                      filteredAlerts.map((alert, idx) => (
+                        <SentinelAlertCard
+                          key={alert.id}
+                          alert={alert}
+                          index={idx}
+                          expanded={expandedAlertId === alert.id}
+                          onToggle={() =>
+                            setExpandedAlertId((prev) => (prev === alert.id ? null : alert.id))
+                          }
+                          onAction={handleAlertAction}
+                        />
+                      ))}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ═══════ CREDENTIALS TAB ═══════ */}
+            {activeTab === "credentials" && (
+              <motion.div
+                key="credentials"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-5"
+              >
+                {/* Credential stats bar */}
+                <div className="grid grid-cols-3 gap-3">
+                  <StatCard
+                    label="Verified"
+                    count={credentialStats.verified || (snapshotCredentials ? 0 : 0)}
+                    color="text-emerald-400"
+                    delay={0.05}
+                    icon={ShieldCheck}
+                  />
+                  <StatCard
+                    label="Expiring Soon"
+                    count={credentialStats.expiring || (snapshotCredentials?.expiring_30d ?? 0)}
+                    color="text-amber-400"
+                    delay={0.1}
+                    icon={Clock}
+                  />
+                  <StatCard
+                    label="Expired"
+                    count={credentialStats.expired || (snapshotCredentials?.expired ?? 0)}
+                    color="text-rose-400"
+                    delay={0.15}
+                    icon={XCircle}
+                  />
+                </div>
+
+                {/* Utilization bar */}
+                {(credentialStats.verified + credentialStats.expiring + credentialStats.expired) > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scaleX: 0.9 }}
+                    animate={{ opacity: 1, scaleX: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="r-card border border-white/[0.06] bg-[var(--surface-1)] p-4"
+                    style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+                  >
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">
+                      Credential Compliance
+                    </p>
+                    <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.03]">
+                      {credentialStats.verified > 0 && (
+                        <div
+                          className="bg-emerald-500 transition-all duration-700"
+                          style={{
+                            width: `${(credentialStats.verified / (credentialStats.verified + credentialStats.expiring + credentialStats.expired)) * 100}%`,
+                          }}
+                        />
+                      )}
+                      {credentialStats.expiring > 0 && (
+                        <div
+                          className="bg-amber-500 transition-all duration-700"
+                          style={{
+                            width: `${(credentialStats.expiring / (credentialStats.verified + credentialStats.expiring + credentialStats.expired)) * 100}%`,
+                          }}
+                        />
+                      )}
+                      {credentialStats.expired > 0 && (
+                        <div
+                          className="bg-rose-500 transition-all duration-700"
+                          style={{
+                            width: `${(credentialStats.expired / (credentialStats.verified + credentialStats.expiring + credentialStats.expired)) * 100}%`,
+                          }}
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-500">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" /> Verified
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-500">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" /> Expiring
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-500">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" /> Expired
+                      </span>
+                    </div>
+                  </motion.div>
                 )}
 
-                {/* Empty state */}
-                {!auditLoading && auditSessions.length === 0 && <AuditEmptyState />}
+                {/* Credentials table */}
+                <div className="r-card border border-white/[0.06] bg-[var(--surface-1)] overflow-hidden" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
+                  {/* Table header */}
+                  <div className="grid grid-cols-[1fr_140px_120px_80px_100px] gap-4 px-5 py-3 border-b border-white/[0.06] bg-[var(--surface-1)]">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Worker</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Type</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Expires</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Days</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Status</span>
+                  </div>
 
-                {/* Rows */}
-                <AnimatePresence>
-                  {auditSessions.map((session, idx) => (
-                    <AuditRow key={session.id} session={session} index={idx} />
+                  {/* Rows */}
+                  {filteredCredentials.length === 0 && !alertsLoading && <CredentialsEmptyState />}
+                  {filteredCredentials.map((cred, idx) => (
+                    <CredentialRow key={cred.id} cred={cred} index={idx} />
                   ))}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+                  {/* Show snapshot fallback if no credential alerts but snapshot has data */}
+                  {filteredCredentials.length === 0 && snapshotCredentials && (snapshotCredentials.expiring_30d > 0 || snapshotCredentials.expired > 0) && (
+                    <div className="px-5 py-8 text-center">
+                      <p className="text-[13px] text-zinc-500 mb-1">
+                        {snapshotCredentials.expiring_30d + snapshotCredentials.expired} credential issues detected
+                      </p>
+                      <p className="text-[11px] text-[var(--text-muted)]">
+                        {snapshotCredentials.expiring_30d} expiring within 30 days · {snapshotCredentials.expired} expired
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ═══════ AUDIT TRAIL TAB ═══════ */}
+            {activeTab === "audit" && (
+              <motion.div
+                key="audit"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-5"
+              >
+                {/* Generate button + info row */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[13px] text-zinc-500">
+                      Generate compliance dossiers with secure magic-link access for auditors.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowCreateAudit(true)}
+                    className="inline-flex items-center gap-2 bg-white px-3 py-1.5 text-[12px] font-semibold text-black hover:bg-zinc-200 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Generate Audit Dossier
+                  </button>
+                </div>
+
+                {/* Summary cards */}
+                <div className="grid grid-cols-3 gap-3">
+                  <StatCard
+                    label="Total Sessions"
+                    count={auditSessions.length}
+                    color="text-zinc-300"
+                    delay={0.05}
+                    icon={FileSearch}
+                  />
+                  <StatCard
+                    label="Active Links"
+                    count={auditSessions.filter((s) => new Date(s.expires_at) > new Date()).length}
+                    color="text-emerald-400"
+                    delay={0.1}
+                    icon={Lock}
+                  />
+                  <StatCard
+                    label="Total Views"
+                    count={auditSessions.reduce((sum, s) => sum + s.access_count, 0)}
+                    color="text-zinc-300"
+                    delay={0.15}
+                    icon={Eye}
+                  />
+                </div>
+
+                {/* History table */}
+                <div className="r-card border border-white/[0.06] bg-[var(--surface-1)] overflow-hidden" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
+                  {/* Table header */}
+                  <div className="grid grid-cols-[1fr_100px_120px_100px_60px_80px] gap-4 px-5 py-3 border-b border-white/[0.06] bg-[var(--surface-1)]">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Title</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Scope</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Generated</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Expires</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Views</span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Actions</span>
+                  </div>
+
+                  {/* Loading skeletons */}
+                  {auditLoading && auditSessions.length === 0 && (
+                    <div>
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <TableRowSkeleton key={i} />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Empty state */}
+                  {!auditLoading && auditSessions.length === 0 && <AuditEmptyState />}
+
+                  {/* Rows */}
+                  <AnimatePresence>
+                    {auditSessions.map((session, idx) => (
+                      <AuditRow key={session.id} session={session} index={idx} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* ── Create Audit Modal ──────────────────────────────── */}
@@ -1367,28 +1342,6 @@ export default function ComplianceHubPage() {
         onSubmit={handleCreateAudit}
         loading={auditCreating}
       />
-
-      {/* ── Inline CSS Keyframes ────────────────────────────── */}
-      <style>{`
-        @keyframes compliance-breathe {
-          0%, 100% {
-            border-color: rgba(244, 63, 94, 0.15);
-            box-shadow: 0 0 4px rgba(244, 63, 94, 0.05);
-          }
-          50% {
-            border-color: rgba(244, 63, 94, 0.30);
-            box-shadow: 0 0 15px -4px rgba(244, 63, 94, 0.15);
-          }
-        }
-        @keyframes zen-ring {
-          0%, 100% { transform: scale(1); opacity: 0.3; }
-          50% { transform: scale(1.15); opacity: 0.1; }
-        }
-        @keyframes zen-breathe {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.04); }
-        }
-      `}</style>
-    </motion.div>
+    </div>
   );
 }
