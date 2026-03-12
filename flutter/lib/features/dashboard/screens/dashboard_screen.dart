@@ -17,13 +17,16 @@ import 'package:iworkr_mobile/core/services/schedule_provider.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/services/credentials_provider.dart';
 import 'package:iworkr_mobile/core/services/incidents_provider.dart';
+import 'package:iworkr_mobile/core/services/timeclock_provider.dart';
 import 'package:iworkr_mobile/core/database/sync_engine.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
 import 'package:iworkr_mobile/features/scan/screens/scanner_screen.dart';
 import 'package:iworkr_mobile/features/search/screens/command_palette_screen.dart';
 import 'package:iworkr_mobile/features/workspace/widgets/workspace_switcher_sheet.dart';
+import 'package:iworkr_mobile/models/job.dart';
 import 'package:iworkr_mobile/models/schedule_block.dart';
 
 // ═══════════════════════════════════════════════════════════
@@ -78,7 +81,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Stack(
             children: [
               RefreshIndicator(
-                color: ObsidianTheme.emerald,
+                color: ref.watch(isCareProvider) ? ObsidianTheme.careBlue : ObsidianTheme.emerald,
                 backgroundColor: c.surface,
                 onRefresh: _refresh,
                 edgeOffset: 100,
@@ -89,19 +92,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                       sliver: SliverList.list(
-                        children: [
-                          _RevenueCard(ref: ref),
-                          const SizedBox(height: 12),
-                          _DispatchCard(),
-                          const SizedBox(height: 12),
-                          _ScheduleCard(ref: ref),
-                          const SizedBox(height: 12),
-                          _TriageCard(ref: ref),
-                          const SizedBox(height: 16),
-                          _QuickActionsRow(),
-                          // Project Nightingale: Care compliance summary
-                          _CareComplianceBanner(ref: ref),
-                        ],
+                        children: ref.watch(isCareProvider)
+                            ? _buildCareDashboard(ref, context)
+                            : _buildTradesDashboard(ref),
                       ),
                     ),
                   ],
@@ -120,6 +113,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
     );
   }
+
+  /// Trades-specific dashboard layout
+  List<Widget> _buildTradesDashboard(WidgetRef ref) => [
+        _RevenueCard(ref: ref),
+        const SizedBox(height: 12),
+        _DispatchCard(),
+        const SizedBox(height: 12),
+        _ScheduleCard(ref: ref),
+        const SizedBox(height: 12),
+        _TriageCard(ref: ref),
+        const SizedBox(height: 16),
+        _QuickActionsRow(),
+      ];
+
+  /// Care-specific dashboard layout (Project Nightingale)
+  List<Widget> _buildCareDashboard(WidgetRef ref, BuildContext context) => [
+        _CareClockInCard(ref: ref),
+        const SizedBox(height: 12),
+        _CareTodayRoster(ref: ref),
+        const SizedBox(height: 12),
+        _CareComplianceBanner(ref: ref),
+        const SizedBox(height: 12),
+        _CareQuickActions(),
+        const SizedBox(height: 12),
+        _ScheduleCard(ref: ref),
+      ];
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -739,6 +758,7 @@ class _QuickActionsRow extends ConsumerWidget {
       _QA(icon: PhosphorIconsLight.magnifyingGlass, label: 'SEARCH', onTap: () => showCommandPalette(context)),
       _QA(icon: PhosphorIconsLight.timer, label: t('CLOCK IN'), onTap: () {
         HapticFeedback.mediumImpact();
+        context.push('/profile/timeclock');
       }),
     ];
 
@@ -1179,4 +1199,545 @@ class _WormholeTransitionState extends State<WormholeTransition>
       child: widget.child,
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ── Care: Clock In / Out Card ────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+class _CareClockInCard extends ConsumerStatefulWidget {
+  final WidgetRef ref;
+  const _CareClockInCard({required this.ref});
+
+  @override
+  ConsumerState<_CareClockInCard> createState() => _CareClockInCardState();
+}
+
+class _CareClockInCardState extends ConsumerState<_CareClockInCard> {
+  bool _loading = false;
+
+  Future<Position?> _getPosition() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
+        return null;
+      }
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _handleClockIn() async {
+    setState(() => _loading = true);
+    HapticFeedback.heavyImpact();
+    final pos = await _getPosition();
+    final orgId = await ref.read(organizationIdProvider.future);
+    if (orgId != null) {
+      await clockIn(
+        organizationId: orgId,
+        lat: pos?.latitude,
+        lng: pos?.longitude,
+      );
+    }
+    ref.invalidate(activeTimeEntryProvider);
+    ref.invalidate(weeklyHoursProvider);
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _handleClockOut() async {
+    final entry = ref.read(activeTimeEntryProvider).valueOrNull;
+    if (entry == null) return;
+    setState(() => _loading = true);
+    HapticFeedback.heavyImpact();
+    final pos = await _getPosition();
+    final clockInTime = DateTime.parse(entry['clock_in']);
+    final breakMins = entry['break_duration_minutes'] as int? ?? 0;
+    await clockOut(
+      entryId: entry['id'],
+      clockInTime: clockInTime,
+      lat: pos?.latitude,
+      lng: pos?.longitude,
+      breakMinutes: breakMins,
+    );
+    ref.invalidate(activeTimeEntryProvider);
+    ref.invalidate(weeklyHoursProvider);
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    final entryAsync = ref.watch(activeTimeEntryProvider);
+    final weeklyAsync = ref.watch(weeklyHoursProvider);
+    final isClockedIn = entryAsync.valueOrNull != null;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: ObsidianTheme.radiusLg,
+        border: Border.all(
+          color: isClockedIn
+              ? ObsidianTheme.careBlue.withValues(alpha: 0.3)
+              : c.border,
+        ),
+        boxShadow: isClockedIn
+            ? [BoxShadow(color: ObsidianTheme.careBlue.withValues(alpha: 0.08), blurRadius: 20)]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: (isClockedIn ? ObsidianTheme.careBlue : ObsidianTheme.textTertiary)
+                      .withValues(alpha: 0.15),
+                  borderRadius: ObsidianTheme.radiusMd,
+                ),
+                child: Icon(
+                  isClockedIn ? PhosphorIconsFill.clockCountdown : PhosphorIconsLight.clockClockwise,
+                  size: 20,
+                  color: isClockedIn ? ObsidianTheme.careBlue : ObsidianTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isClockedIn ? 'ON SHIFT' : 'OFF SHIFT',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                        color: isClockedIn ? ObsidianTheme.careBlue : ObsidianTheme.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    if (isClockedIn && entryAsync.valueOrNull != null)
+                      _ElapsedTimer(clockIn: DateTime.parse(entryAsync.value!['clock_in']))
+                    else
+                      Text(
+                        'Tap to start your shift',
+                        style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textSecondary),
+                      ),
+                  ],
+                ),
+              ),
+              // Weekly hours
+              weeklyAsync.when(
+                data: (hrs) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${hrs.toStringAsFixed(1)}h',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: ObsidianTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'this week',
+                      style: GoogleFonts.inter(fontSize: 10, color: ObsidianTheme.textMuted),
+                    ),
+                  ],
+                ),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Clock In / Out Button
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _loading ? null : (isClockedIn ? _handleClockOut : _handleClockIn),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isClockedIn
+                    ? ObsidianTheme.rose.withValues(alpha: 0.15)
+                    : ObsidianTheme.careBlue,
+                foregroundColor: isClockedIn ? ObsidianTheme.rose : Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: isClockedIn
+                      ? BorderSide(color: ObsidianTheme.rose.withValues(alpha: 0.3))
+                      : BorderSide.none,
+                ),
+              ),
+              child: _loading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: isClockedIn ? ObsidianTheme.rose : Colors.white,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isClockedIn ? PhosphorIconsBold.stop : PhosphorIconsBold.play,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isClockedIn ? 'END SHIFT' : 'START SHIFT',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms).moveY(begin: 10, end: 0, duration: 400.ms, curve: Curves.easeOutQuart);
+  }
+}
+
+/// Live elapsed timer that ticks every second
+class _ElapsedTimer extends StatefulWidget {
+  final DateTime clockIn;
+  const _ElapsedTimer({required this.clockIn});
+
+  @override
+  State<_ElapsedTimer> createState() => _ElapsedTimerState();
+}
+
+class _ElapsedTimerState extends State<_ElapsedTimer> {
+  late final Stream<int> _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Stream.periodic(const Duration(seconds: 1), (i) => i);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: _ticker,
+      builder: (context, _) {
+        final elapsed = DateTime.now().difference(widget.clockIn);
+        final h = elapsed.inHours.toString().padLeft(2, '0');
+        final m = (elapsed.inMinutes % 60).toString().padLeft(2, '0');
+        final s = (elapsed.inSeconds % 60).toString().padLeft(2, '0');
+        return Text(
+          '$h:$m:$s',
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: ObsidianTheme.careBlue,
+            letterSpacing: 2,
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ── Care: Today's Roster ─────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+class _CareTodayRoster extends ConsumerWidget {
+  final WidgetRef ref;
+  const _CareTodayRoster({required this.ref});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.iColors;
+    final jobsAsync = ref.watch(jobsStreamProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: ObsidianTheme.radiusLg,
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(PhosphorIconsFill.calendarCheck, size: 18, color: ObsidianTheme.careBlue),
+              const SizedBox(width: 8),
+              Text(
+                'TODAY\'S ROSTER',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  color: ObsidianTheme.careBlue,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => context.go('/schedule'),
+                child: Text(
+                  'View Full Roster →',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: ObsidianTheme.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          jobsAsync.when(
+            data: (jobs) {
+              final today = DateTime.now();
+              final todayJobs = jobs.where((j) {
+                final due = j.dueDate;
+                if (due == null) return false;
+                return due.year == today.year &&
+                    due.month == today.month &&
+                    due.day == today.day;
+              }).toList();
+
+              if (todayJobs.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(PhosphorIconsLight.sunHorizon, size: 32, color: ObsidianTheme.textTertiary),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No shifts scheduled today',
+                          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: todayJobs.take(4).map((job) {
+                  final status = job.status;
+                  final title = job.title;
+                  final clientName = job.clientName ?? '';
+
+                  Color statusColor;
+                  String statusLabel;
+                  if (status.isActive) {
+                    statusColor = ObsidianTheme.careBlue;
+                    statusLabel = 'IN PROGRESS';
+                  } else if (status.isTerminal && status != JobStatus.cancelled) {
+                    statusColor = ObsidianTheme.emerald;
+                    statusLabel = 'COMPLETED';
+                  } else if (status == JobStatus.scheduled || status == JobStatus.todo) {
+                    statusColor = ObsidianTheme.amber;
+                    statusLabel = 'UPCOMING';
+                  } else {
+                    statusColor = ObsidianTheme.textTertiary;
+                    statusLabel = status.label.toUpperCase();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: GestureDetector(
+                      onTap: () => context.push('/jobs/${job.id}'),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: c.canvas,
+                          borderRadius: ObsidianTheme.radiusMd,
+                          border: Border.all(
+                            color: status.isActive
+                                ? ObsidianTheme.careBlue.withValues(alpha: 0.3)
+                                : c.border,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Status indicator
+                            Container(
+                              width: 4,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: ObsidianTheme.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  if (clientName.isNotEmpty)
+                                    Text(
+                                      clientName,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        color: ObsidianTheme.textSecondary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                statusLabel,
+                                style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: CupertinoActivityIndicator()),
+            ),
+            error: (_, __) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text('Unable to load roster', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted)),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 100.ms, duration: 400.ms).moveY(begin: 10, end: 0, delay: 100.ms, duration: 400.ms, curve: Curves.easeOutQuart);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ── Care: Quick Actions ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+class _CareQuickActions extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    final actions = [
+      _CareAction('Medications', PhosphorIconsLight.pill, '/care/medications', ObsidianTheme.careBlue),
+      _CareAction('Observations', PhosphorIconsLight.heartbeat, '/care/observations', ObsidianTheme.violet),
+      _CareAction('Incidents', PhosphorIconsLight.warningCircle, '/care/incidents', ObsidianTheme.amber),
+      _CareAction('Credentials', PhosphorIconsLight.certificate, '/care/credentials', ObsidianTheme.emerald),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 10),
+          child: Text(
+            'CARE TOOLS',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+              color: ObsidianTheme.textMuted,
+            ),
+          ),
+        ),
+        Row(
+          children: actions.map((a) => Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: a == actions.last ? 0 : 8),
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push(a.route);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    borderRadius: ObsidianTheme.radiusMd,
+                    border: Border.all(color: c.border),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: a.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(a.icon, size: 18, color: a.color),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        a.label,
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: ObsidianTheme.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )).toList(),
+        ),
+      ],
+    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).moveY(begin: 10, end: 0, delay: 200.ms, duration: 400.ms, curve: Curves.easeOutQuart);
+  }
+}
+
+class _CareAction {
+  final String label;
+  final IconData icon;
+  final String route;
+  final Color color;
+  const _CareAction(this.label, this.icon, this.route, this.color);
 }

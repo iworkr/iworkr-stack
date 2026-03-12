@@ -43,13 +43,16 @@ import 'package:iworkr_mobile/features/hr/screens/time_clock_screen.dart';
 import 'package:iworkr_mobile/features/hr/screens/leave_request_screen.dart';
 import 'package:iworkr_mobile/features/assets/screens/asset_vault_screen.dart';
 import 'package:iworkr_mobile/features/assets/screens/asset_detail_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/budget_dashboard_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/care_hub_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/care_plans_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/credentials_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/medications_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/incident_detail_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/incidents_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/observations_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/progress_notes_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/sentinel_screen.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/widgets/shell_scaffold.dart';
 
@@ -540,6 +543,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const ProgressNotesScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      // ── Phase 3 & 4: Care Plans, Sentinel, Budget ─────────
+      GoRoute(
+        path: '/care/plans',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const CarePlansScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/sentinel',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const SentinelScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/budget',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const BudgetDashboardScreen(),
           transitionsBuilder: _slideUpTransition,
         ),
       ),

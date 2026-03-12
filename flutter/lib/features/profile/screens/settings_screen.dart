@@ -12,6 +12,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/permission_service.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
 import 'package:iworkr_mobile/core/services/settings_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -126,6 +127,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final s = ref.watch(settingsProvider);
     _syncControllers(s);
     final c = context.iColors;
+    final isCare = ref.watch(isCareProvider);
 
     return Scaffold(
       backgroundColor: c.canvas,
@@ -296,15 +298,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         child: Text('TRIGGERS', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
                       ),
                       _ToggleRow(
-                        icon: PhosphorIconsLight.briefcase,
-                        label: 'New Job Assigned',
+                        icon: isCare ? PhosphorIconsLight.calendarCheck : PhosphorIconsLight.briefcase,
+                        label: isCare ? 'New Shift Assigned' : 'New Job Assigned',
                         value: s.jobAssigned,
                         onChanged: (v) => _toggleNotif('job_assigned', v),
                       ),
                       _Divider(),
                       _ToggleRow(
                         icon: PhosphorIconsLight.arrowsClockwise,
-                        label: 'Job Status Change',
+                        label: isCare ? 'Shift Status Change' : 'Job Status Change',
                         value: s.jobStatusChange,
                         onChanged: (v) => _toggleNotif('job_status_change', v),
                       ),

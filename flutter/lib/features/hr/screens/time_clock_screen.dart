@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/timeclock_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -108,6 +109,9 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
+    final isCare = ref.watch(isCareProvider);
+    final accent = isCare ? ObsidianTheme.careBlue : ObsidianTheme.emerald;
+    final accentDim = isCare ? ObsidianTheme.careBlue.withValues(alpha: 0.12) : ObsidianTheme.emeraldDim;
     final activeAsync = ref.watch(activeTimeEntryProvider);
     final recentAsync = ref.watch(recentTimeEntriesProvider);
     final weeklyAsync = ref.watch(weeklyHoursProvider);
@@ -146,7 +150,7 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'My Time',
+                        isCare ? 'My Shifts' : 'My Time',
                         style: GoogleFonts.inter(
                           fontSize: 20, fontWeight: FontWeight.w600,
                           color: c.textPrimary, letterSpacing: -0.3,
@@ -173,6 +177,7 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                 elapsed: _elapsed,
                 formatDuration: _formatDuration,
                 pulseController: _pulseController,
+                accent: accent,
                 onLongPress: () => _handleClockAction(active),
                 onBreakTap: isClockedIn && !isOnBreak
                     ? () => _handleBreak(active['id'] as String)
@@ -194,10 +199,10 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                       width: 40, height: 40,
                       decoration: BoxDecoration(
                         borderRadius: ObsidianTheme.radiusMd,
-                        color: ObsidianTheme.emeraldDim,
+                        color: accentDim,
                       ),
-                      child: const Center(
-                        child: Icon(PhosphorIconsLight.chartBar, size: 18, color: ObsidianTheme.emerald),
+                      child: Center(
+                        child: Icon(PhosphorIconsLight.chartBar, size: 18, color: accent),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -219,7 +224,7 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                     ),
                     Text(
                       '${hours.toStringAsFixed(1)}h',
-                      style: GoogleFonts.jetBrainsMono(fontSize: 18, fontWeight: FontWeight.w700, color: ObsidianTheme.emerald),
+                      style: GoogleFonts.jetBrainsMono(fontSize: 18, fontWeight: FontWeight.w700, color: accent),
                     ),
                   ],
                 ),
@@ -253,12 +258,12 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
                   children: completed.asMap().entries.map((e) {
                     final i = e.key;
                     final entry = e.value;
-                    return _ShiftHistoryCard(entry: entry, index: i);
+                    return _ShiftHistoryCard(entry: entry, index: i, accent: accent);
                   }).toList(),
                 );
               },
               loading: () => Center(
-                child: CircularProgressIndicator(color: ObsidianTheme.emerald, strokeWidth: 2),
+                child: CircularProgressIndicator(color: accent, strokeWidth: 2),
               ),
               error: (_, __) => const SizedBox.shrink(),
             ),
@@ -277,6 +282,7 @@ class _Chronometer extends StatelessWidget {
   final Duration elapsed;
   final String Function(Duration) formatDuration;
   final AnimationController pulseController;
+  final Color accent;
   final VoidCallback onLongPress;
   final VoidCallback? onBreakTap;
 
@@ -286,6 +292,7 @@ class _Chronometer extends StatelessWidget {
     required this.elapsed,
     required this.formatDuration,
     required this.pulseController,
+    this.accent = ObsidianTheme.emerald,
     required this.onLongPress,
     this.onBreakTap,
   });
@@ -296,7 +303,7 @@ class _Chronometer extends StatelessWidget {
     final Color ringColor = isOnBreak
         ? ObsidianTheme.amber
         : isClockedIn
-            ? ObsidianTheme.emerald
+            ? accent
             : c.textTertiary;
 
     final String stateLabel = isOnBreak
@@ -509,8 +516,9 @@ class _ChronoRingPainter extends CustomPainter {
 class _ShiftHistoryCard extends StatelessWidget {
   final Map<String, dynamic> entry;
   final int index;
+  final Color accent;
 
-  const _ShiftHistoryCard({required this.entry, required this.index});
+  const _ShiftHistoryCard({required this.entry, required this.index, this.accent = ObsidianTheme.emerald});
 
   @override
   Widget build(BuildContext context) {
@@ -607,7 +615,7 @@ class _ShiftHistoryCard extends StatelessWidget {
             '${hours.toStringAsFixed(1)}h',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 14, fontWeight: FontWeight.w600,
-              color: ObsidianTheme.emerald,
+              color: accent,
             ),
           ),
         ],

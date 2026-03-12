@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/invoice_provider.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -330,6 +331,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
+    final isCare = ref.watch(isCareProvider);
 
     return PopScope(
       canPop: !_hasUnsavedChanges,
@@ -348,7 +350,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'NEW INVOICE',
+          isCare ? 'NEW CLAIM' : 'NEW INVOICE',
           style: GoogleFonts.jetBrainsMono(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -371,7 +373,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
               children: [
                 // Client
-                _SectionHeader(label: 'CLIENT'),
+                _SectionHeader(label: isCare ? 'PARTICIPANT' : 'CLIENT'),
                 const SizedBox(height: 8),
                 _clientName.isEmpty
                     ? GestureDetector(
@@ -388,7 +390,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               Icon(PhosphorIconsLight.userPlus, color: c.textTertiary, size: 18),
                               const SizedBox(width: 12),
                               Text(
-                                'Select client',
+                                isCare ? 'Select participant' : 'Select client',
                                 style: GoogleFonts.inter(color: c.textTertiary, fontSize: 14),
                               ),
                             ],
@@ -707,7 +709,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               const Icon(PhosphorIconsBold.paperPlaneTilt, size: 16),
                               const SizedBox(width: 8),
                               Text(
-                                'SEND INVOICE',
+                                isCare ? 'SEND CLAIM' : 'SEND INVOICE',
                                 style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1),
                               ),
                             ],

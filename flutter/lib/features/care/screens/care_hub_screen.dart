@@ -8,10 +8,13 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:iworkr_mobile/core/services/budget_provider.dart';
+import 'package:iworkr_mobile/core/services/care_plans_provider.dart';
 import 'package:iworkr_mobile/core/services/credentials_provider.dart';
 import 'package:iworkr_mobile/core/services/incidents_provider.dart';
 import 'package:iworkr_mobile/core/services/observations_provider.dart';
 import 'package:iworkr_mobile/core/services/medications_provider.dart';
+import 'package:iworkr_mobile/core/services/sentinel_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
@@ -33,6 +36,9 @@ class CareHubScreen extends ConsumerWidget {
     final incidentStats = ref.watch(incidentStatsProvider);
     final todaysObs = ref.watch(todaysObservationsProvider);
     final medsAsync = ref.watch(medicationsStreamProvider);
+    final planStats = ref.watch(carePlanStatsProvider);
+    final sentinelStats = ref.watch(sentinelStatsProvider);
+    final budgetSummary = ref.watch(budgetSummaryProvider);
 
     return Scaffold(
       backgroundColor: c.canvas,
@@ -148,6 +154,67 @@ class CareHubScreen extends ConsumerWidget {
                   color: ObsidianTheme.indigo,
                   onTap: () => context.push('/care/progress-notes'),
                 ).animate().fadeIn(delay: 250.ms, duration: 300.ms).moveY(begin: 10, end: 0),
+
+                const SizedBox(height: 24),
+
+                // ── Care Plans (Phase 4) ─────────────────
+                _SectionHeader(title: 'Care Plans', subtitle: 'Structured plans & goal tracking'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _QuickStatCard(
+                      icon: PhosphorIconsLight.target,
+                      label: 'Active Plans',
+                      value: '${planStats.active}',
+                      color: ObsidianTheme.careBlue,
+                      onTap: () => context.push('/care/plans'),
+                    )),
+                    const SizedBox(width: 8),
+                    Expanded(child: _QuickStatCard(
+                      icon: PhosphorIconsLight.flagCheckered,
+                      label: 'Goals Active',
+                      value: '${planStats.activeGoals}',
+                      color: ObsidianTheme.emerald,
+                      onTap: () => context.push('/care/plans'),
+                    )),
+                    const SizedBox(width: 8),
+                    Expanded(child: _QuickStatCard(
+                      icon: PhosphorIconsLight.calendarCheck,
+                      label: 'Needs Review',
+                      value: '${planStats.needsReview}',
+                      color: planStats.needsReview > 0 ? ObsidianTheme.amber : ObsidianTheme.emerald,
+                      onTap: () => context.push('/care/plans'),
+                    )),
+                  ],
+                ).animate().fadeIn(delay: 300.ms, duration: 300.ms).moveY(begin: 10, end: 0),
+
+                const SizedBox(height: 24),
+
+                // ── Sentinel (Phase 4) ───────────────────
+                _SectionHeader(title: 'Risk Radar', subtitle: 'Automated sentinel alerts'),
+                const SizedBox(height: 12),
+                _NavTile(
+                  icon: PhosphorIconsLight.shieldWarning,
+                  title: 'Sentinel Alerts',
+                  subtitle: '${sentinelStats.active} active${sentinelStats.critical > 0 ? ' · ${sentinelStats.critical} critical' : ''}',
+                  color: sentinelStats.critical > 0 ? ObsidianTheme.rose : ObsidianTheme.careBlue,
+                  onTap: () => context.push('/care/sentinel'),
+                ).animate().fadeIn(delay: 350.ms, duration: 300.ms).moveY(begin: 10, end: 0),
+
+                const SizedBox(height: 24),
+
+                // ── Budget (Phase 3) ─────────────────────
+                _SectionHeader(title: 'NDIS Budget', subtitle: 'Budget tracking & utilization'),
+                const SizedBox(height: 12),
+                _NavTile(
+                  icon: PhosphorIconsLight.wallet,
+                  title: 'Budget Dashboard',
+                  subtitle: budgetSummary.totalBudget > 0
+                      ? '\$${budgetSummary.totalBudget.toStringAsFixed(0)} allocated · ${budgetSummary.utilizationPercent.toStringAsFixed(0)}% used'
+                      : 'No budget allocations yet',
+                  color: ObsidianTheme.careBlue,
+                  onTap: () => context.push('/care/budget'),
+                ).animate().fadeIn(delay: 400.ms, duration: 300.ms).moveY(begin: 10, end: 0),
               ]),
             ),
           ),

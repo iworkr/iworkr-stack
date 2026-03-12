@@ -145,7 +145,7 @@ class JobsScreen extends ConsumerWidget {
                   }
 
                   return RefreshIndicator(
-                    color: ObsidianTheme.emerald,
+                    color: ref.watch(isCareProvider) ? ObsidianTheme.careBlue : ObsidianTheme.emerald,
                     backgroundColor: c.surface,
                     onRefresh: () async {
                       HapticFeedback.mediumImpact();

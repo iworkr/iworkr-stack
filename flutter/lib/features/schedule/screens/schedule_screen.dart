@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/schedule_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -36,6 +37,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   Timer? _laserTimer;
   double _laserOffset = 0;
   bool _showTodayButton = false;
+
+  /// Dynamic accent: careBlue for care orgs, emerald for trades
+  Color get _accent => ref.watch(isCareProvider) ? ObsidianTheme.careBlue : ObsidianTheme.emerald;
 
   // Drag state
   bool _isDragging = false;
@@ -285,7 +289,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Schedule',
+                  ref.watch(isCareProvider) ? 'Roster' : 'Schedule',
                   style: GoogleFonts.inter(
                     fontSize: 20, fontWeight: FontWeight.w600,
                     color: c.textPrimary, letterSpacing: -0.3,
@@ -298,15 +302,15 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: ObsidianTheme.emerald.withValues(alpha: 0.08),
-                    border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.15)),
+                    color: _accent.withValues(alpha: 0.08),
+                    border: Border.all(color: _accent.withValues(alpha: 0.15)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(PhosphorIconsLight.mapTrifold, size: 14, color: ObsidianTheme.emerald),
+                      Icon(PhosphorIconsLight.mapTrifold, size: 14, color: _accent),
                       const SizedBox(width: 5),
-                      Text('Flight Path', style: GoogleFonts.jetBrainsMono(color: ObsidianTheme.emerald, fontSize: 10, fontWeight: FontWeight.w500, letterSpacing: 0.5)),
+                      Text('Flight Path', style: GoogleFonts.jetBrainsMono(color: _accent, fontSize: 10, fontWeight: FontWeight.w500, letterSpacing: 0.5)),
                     ],
                   ),
                 ),
@@ -508,14 +512,14 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
     Color statusColor;
     switch (block.status) {
-      case ScheduleBlockStatus.inProgress: statusColor = ObsidianTheme.emerald;
+      case ScheduleBlockStatus.inProgress: statusColor = _accent;
       case ScheduleBlockStatus.enRoute: statusColor = ObsidianTheme.amber;
       case ScheduleBlockStatus.onSite: statusColor = const Color(0xFF8B5CF6); // violet
       case ScheduleBlockStatus.complete: statusColor = c.textTertiary;
       case ScheduleBlockStatus.cancelled: statusColor = ObsidianTheme.rose;
       default: statusColor = ObsidianTheme.blue;
     }
-    if (isActive) statusColor = ObsidianTheme.emerald;
+    if (isActive) statusColor = _accent;
 
     Widget capsule = Positioned(
       top: top,
@@ -690,6 +694,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   }
 
   Widget _buildLaserLine() {
+    final laserColor = _accent;
     return Positioned(
       top: _laserOffset - 1, left: 0, right: 0,
       child: Row(
@@ -703,10 +708,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 margin: const EdgeInsets.only(right: 4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: ObsidianTheme.emerald,
+                  color: laserColor,
                   boxShadow: [
-                    BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.5), blurRadius: 8),
-                    BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.2), blurRadius: 16),
+                    BoxShadow(color: laserColor.withValues(alpha: 0.5), blurRadius: 8),
+                    BoxShadow(color: laserColor.withValues(alpha: 0.2), blurRadius: 16),
                   ],
                 ),
               ),
@@ -716,10 +721,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             child: Container(
               height: 2,
               decoration: BoxDecoration(
-                color: ObsidianTheme.emerald,
+                color: laserColor,
                 boxShadow: [
-                  BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.4), blurRadius: 8),
-                  BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.15), blurRadius: 16),
+                  BoxShadow(color: laserColor.withValues(alpha: 0.4), blurRadius: 8),
+                  BoxShadow(color: laserColor.withValues(alpha: 0.15), blurRadius: 16),
                 ],
               ),
             ),

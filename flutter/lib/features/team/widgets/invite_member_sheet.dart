@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/team_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -94,27 +95,35 @@ class _InviteMemberSheetState extends ConsumerState<InviteMemberSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Invite Team Member', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3)),
-              const SizedBox(height: 4),
-              Text('They\'ll receive a magic link to join your workspace.', style: GoogleFonts.inter(fontSize: 13, color: c.textMuted)),
-              const SizedBox(height: 20),
+              Builder(builder: (_) {
+                final isCare = ref.watch(isCareProvider);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(isCare ? 'Invite Support Worker' : 'Invite Team Member', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3)),
+                    const SizedBox(height: 4),
+                    Text('They\'ll receive a magic link to join your workspace.', style: GoogleFonts.inter(fontSize: 13, color: c.textMuted)),
+                    const SizedBox(height: 20),
 
-              _StealthField(controller: _emailCtrl, label: 'Email Address', keyboardType: TextInputType.emailAddress),
-              const SizedBox(height: 14),
+                    _StealthField(controller: _emailCtrl, label: 'Email Address', keyboardType: TextInputType.emailAddress),
+                    const SizedBox(height: 14),
 
-              _StealthField(controller: _nameCtrl, label: 'Full Name'),
-              const SizedBox(height: 14),
+                    _StealthField(controller: _nameCtrl, label: 'Full Name'),
+                    const SizedBox(height: 14),
 
-              Text('ROLE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  _RoleChip(label: 'Admin', value: 'admin', selected: _selectedRole == 'admin', onTap: () => setState(() => _selectedRole = 'admin')),
-                  _RoleChip(label: 'Dispatcher', value: 'manager', selected: _selectedRole == 'manager', onTap: () => setState(() => _selectedRole = 'manager')),
-                  _RoleChip(label: 'Technician', value: 'technician', selected: _selectedRole == 'technician', onTap: () => setState(() => _selectedRole = 'technician')),
-                ],
-              ),
+                    Text('ROLE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        _RoleChip(label: 'Admin', value: 'admin', selected: _selectedRole == 'admin', onTap: () => setState(() => _selectedRole = 'admin')),
+                        _RoleChip(label: isCare ? 'Coordinator' : 'Dispatcher', value: 'manager', selected: _selectedRole == 'manager', onTap: () => setState(() => _selectedRole = 'manager')),
+                        _RoleChip(label: isCare ? 'Support Worker' : 'Technician', value: 'technician', selected: _selectedRole == 'technician', onTap: () => setState(() => _selectedRole = 'technician')),
+                      ],
+                    ),
+                  ],
+                );
+              }),
 
               if (_error != null) ...[
                 const SizedBox(height: 12),

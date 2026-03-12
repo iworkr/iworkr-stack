@@ -48,14 +48,18 @@ platform :ios do
       in_house: false
     )
 
-    # 1. Build Flutter first — run manually before this lane if pods mismatch:
-    #    cd flutter && flutter build ios --release --no-codesign
-    # Skip if Runner.app already exists from a recent build
-    unless File.exist?("../build/ios/iphoneos/Runner.app")
-      sh("cd .. && flutter build ios --release --no-codesign")
+    # 1. Verify Runner.app exists from a prior `flutter build ios` run.
+    #    Build Flutter BEFORE running this lane:
+    #      flutter build ios --release --no-codesign \
+    #        --dart-define=SUPABASE_URL=<url> \
+    #        --dart-define=SUPABASE_ANON_KEY=<key>
+    runner_app = File.expand_path("../../build/ios/iphoneos/Runner.app")
+    unless File.exist?(runner_app)
+      UI.user_error!("Runner.app not found. Run `flutter build ios --release --no-codesign --dart-define=...` first.")
     end
+    UI.success("Found Runner.app — skipping Flutter build")
 
-    # 2. Increment build number (auto-increment based on latest TestFlight build)
+    # 3. Increment build number (auto-increment based on latest TestFlight build)
     latest = begin
       latest_testflight_build_number(
         api_key: api_key,
@@ -71,19 +75,24 @@ platform :ios do
       xcodeproj: "Runner.xcodeproj"
     )
 
-    # 3. Build the signed IPA (allow Xcode to create/update provisioning profiles)
-    #    -allowProvisioningUpdates lets Xcode auto-manage profiles for both
-    #    the main app AND the widget extension target.
+    # 4. Write the API key to a temporary .p8 file for Xcode signing
+    require "base64"
+    api_key_path = File.join(Dir.tmpdir, "AuthKey_#{ENV['ASC_KEY_ID']}.p8")
+    File.write(api_key_path, Base64.decode64(ENV["ASC_KEY_CONTENT"]))
+
+    # 5. Build the signed IPA with automatic signing via ASC API key
+    #    -allowProvisioningUpdates + -authenticationKey* lets Xcode
+    #    auto-manage certificates and profiles for all targets.
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
       output_directory: "../build/ios/ipa",
       output_name: "iWorkr.ipa",
-      xcargs: "-allowProvisioningUpdates"
+      xcargs: "-allowProvisioningUpdates -authenticationKeyPath '#{api_key_path}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'"
     )
 
-    # 4. Upload to TestFlight
+    # 6. Upload to TestFlight
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true,

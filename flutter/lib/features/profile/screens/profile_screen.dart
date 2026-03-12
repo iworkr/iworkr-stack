@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
 import 'package:iworkr_mobile/core/services/timeclock_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -25,6 +26,9 @@ class ProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(profileProvider);
     final orgAsync = ref.watch(organizationProvider);
     final c = context.iColors;
+    final isCareTop = ref.watch(isCareProvider);
+    final accent = isCareTop ? ObsidianTheme.careBlue : ObsidianTheme.emerald;
+    final accentDim = isCareTop ? ObsidianTheme.careBlue.withValues(alpha: 0.12) : ObsidianTheme.emeraldDim;
 
     return Scaffold(
       body: SafeArea(
@@ -81,19 +85,19 @@ class ProfileScreen extends ConsumerWidget {
                         ? CircleAvatar(
                             radius: 26,
                             backgroundImage: NetworkImage(profile.avatarUrl!),
-                            backgroundColor: ObsidianTheme.emeraldDim,
+                            backgroundColor: accentDim,
                           )
                         : Container(
                             width: 52, height: 52,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: ObsidianTheme.emeraldDim,
-                              border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                              color: accentDim,
+                              border: Border.all(color: accent.withValues(alpha: 0.2)),
                             ),
                             child: Center(
                               child: Text(
                                 profile.initials,
-                                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: ObsidianTheme.emerald),
+                                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: accent),
                               ),
                             ),
                           ),
@@ -139,18 +143,19 @@ class ProfileScreen extends ConsumerWidget {
                 final String badgeLabel;
                 final IconData badgeIcon;
 
+                final isCare = ref.watch(isCareProvider);
                 if (role.isGodMode) {
                   badgeColor = const Color(0xFFA78BFA);
                   badgeLabel = 'GOD MODE';
                   badgeIcon = PhosphorIconsBold.crown;
                 } else if (role.isManager) {
-                  badgeColor = ObsidianTheme.amber;
-                  badgeLabel = 'DISPATCH';
+                  badgeColor = isCare ? ObsidianTheme.careBlue : ObsidianTheme.amber;
+                  badgeLabel = isCare ? 'COORDINATOR' : 'DISPATCH';
                   badgeIcon = PhosphorIconsBold.shieldStar;
                 } else {
-                  badgeColor = ObsidianTheme.emerald;
-                  badgeLabel = 'OPERATOR';
-                  badgeIcon = PhosphorIconsBold.wrench;
+                  badgeColor = isCare ? ObsidianTheme.careBlue : ObsidianTheme.emerald;
+                  badgeLabel = isCare ? 'SUPPORT WORKER' : 'OPERATOR';
+                  badgeIcon = isCare ? PhosphorIconsBold.heartbeat : PhosphorIconsBold.wrench;
                 }
 
                 return GlassCard(
@@ -246,12 +251,13 @@ class ProfileScreen extends ConsumerWidget {
                         final activeAsync = ref.watch(activeTimeEntryProvider);
                         final isActive = activeAsync.valueOrNull != null;
                         if (!isActive) return const SizedBox.shrink();
+                        final dotColor = ref.watch(isCareProvider) ? ObsidianTheme.careBlue : ObsidianTheme.emerald;
                         return Container(
                           width: 8, height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: ObsidianTheme.emerald,
-                            boxShadow: [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.5), blurRadius: 6)],
+                            color: dotColor,
+                            boxShadow: [BoxShadow(color: dotColor.withValues(alpha: 0.5), blurRadius: 6)],
                           ),
                         );
                       },
@@ -354,8 +360,8 @@ class ProfileScreen extends ConsumerWidget {
                       width: 6, height: 6,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: ObsidianTheme.emerald,
-                        boxShadow: [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.4), blurRadius: 4)],
+                        color: accent,
+                        boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 4)],
                       ),
                     ),
                     onTap: () => HapticFeedback.lightImpact(),

@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:iworkr_mobile/core/services/care_plans_provider.dart';
 import 'package:iworkr_mobile/core/services/progress_notes_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -92,6 +93,8 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
   bool _participantPresent = true;
   bool _incidentOccurred = false;
   bool _submitting = false;
+  final Set<String> _selectedGoalIds = {};
+  final Map<String, TextEditingController> _goalContributionCtrls = {};
 
   final _summaryCtrl = TextEditingController();
   final _goalsCtrl = TextEditingController();
@@ -116,6 +119,9 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
     _observationsCtrl.dispose();
     _incidentTitleCtrl.dispose();
     _incidentDescCtrl.dispose();
+    for (final ctrl in _goalContributionCtrls.values) {
+      ctrl.dispose();
+    }
     super.dispose();
   }
 
@@ -148,8 +154,15 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
     }
   }
 
+  bool get _hasActiveGoals {
+    final goals = ref.read(participantActiveGoalsProvider(widget.participantId));
+    return goals.isNotEmpty;
+  }
+
   bool get _isValid =>
-      _selectedMood != null && _summaryCtrl.text.trim().isNotEmpty;
+      _selectedMood != null &&
+      _summaryCtrl.text.trim().isNotEmpty &&
+      (!_hasActiveGoals || _selectedGoalIds.isNotEmpty);
 
   String get _elapsedFormatted {
     final hours = widget.elapsed.inHours;
@@ -168,11 +181,19 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
     HapticFeedback.heavyImpact();
 
     try {
-      await createProgressNote(
+      // Build goals addressed string from selected goals + free text
+      final selectedGoals = ref.read(participantActiveGoalsProvider(widget.participantId))
+          .where((g) => _selectedGoalIds.contains(g.id))
+          .toList();
+      final goalTitles = selectedGoals.map((g) => g.title).join(', ');
+      final freeText = _goalsCtrl.text.trim();
+      final goalsText = [if (goalTitles.isNotEmpty) goalTitles, if (freeText.isNotEmpty) freeText].join(' — ');
+
+      final note = await createProgressNote(
         jobId: widget.jobId,
         participantId: widget.participantId.isNotEmpty ? widget.participantId : null,
         summary: _summaryCtrl.text.trim(),
-        goalsAddressed: _goalsCtrl.text.trim().isNotEmpty ? _goalsCtrl.text.trim() : null,
+        goalsAddressed: goalsText.isNotEmpty ? goalsText : null,
         participantMood: _selectedMood,
         observations: _observationsCtrl.text.trim().isNotEmpty ? _observationsCtrl.text.trim() : null,
         participantPresent: _participantPresent,
@@ -180,6 +201,18 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
         clockOutLng: _evvLng,
         clockOutTime: DateTime.now(),
       );
+
+      // Link selected goals to the progress note
+      if (note != null) {
+        for (final goalId in _selectedGoalIds) {
+          final ctrl = _goalContributionCtrls[goalId];
+          await linkGoalToProgressNote(
+            goalId: goalId,
+            progressNoteId: note.id,
+            contributionSummary: ctrl?.text.trim().isNotEmpty == true ? ctrl!.text.trim() : null,
+          );
+        }
+      }
 
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -306,13 +339,16 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ── Goals Addressed ─────────────────────
-                    _buildSectionLabel('GOALS ADDRESSED'),
+                    // ── Care Plan Goals (Phase 4) ──────────
+                    _buildGoalSelector(c),
+
+                    // ── Additional Goals Notes ───────────────
+                    _buildSectionLabel('ADDITIONAL GOAL NOTES'),
                     const SizedBox(height: 8),
                     _buildTextField(
                       c,
                       controller: _goalsCtrl,
-                      hint: 'What goals were worked on?',
+                      hint: 'Any additional notes on goals worked on?',
                       maxLines: 3,
                     ),
                     const SizedBox(height: 20),
@@ -635,6 +671,152 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGoalSelector(IWorkrColors c) {
+    final goals = ref.watch(participantActiveGoalsProvider(widget.participantId));
+    if (goals.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel('GOALS WORKED ON', required_: true),
+        const SizedBox(height: 4),
+        Text(
+          'Select at least one active goal from the care plan',
+          style: GoogleFonts.inter(color: c.textTertiary, fontSize: 11),
+        ),
+        const SizedBox(height: 10),
+        ...goals.map((goal) {
+          final isSelected = _selectedGoalIds.contains(goal.id);
+          _goalContributionCtrls.putIfAbsent(goal.id, () => TextEditingController());
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  if (isSelected) {
+                    _selectedGoalIds.remove(goal.id);
+                  } else {
+                    _selectedGoalIds.add(goal.id);
+                  }
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: isSelected
+                      ? ObsidianTheme.careBlue.withValues(alpha: 0.08)
+                      : const Color(0xFF141414),
+                  border: Border.all(
+                    color: isSelected
+                        ? ObsidianTheme.careBlue.withValues(alpha: 0.4)
+                        : Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? ObsidianTheme.careBlue
+                                : Colors.transparent,
+                            border: Border.all(
+                              color: isSelected
+                                  ? ObsidianTheme.careBlue
+                                  : c.textTertiary,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: isSelected
+                              ? const Icon(PhosphorIconsBold.check,
+                                  size: 12, color: Colors.white)
+                              : null,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            goal.title,
+                            style: GoogleFonts.inter(
+                              color: isSelected
+                                  ? c.textPrimary
+                                  : c.textSecondary,
+                              fontSize: 13,
+                              fontWeight:
+                                  isSelected ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                        if (goal.supportCategory != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              color: ObsidianTheme.careBlue
+                                  .withValues(alpha: 0.12),
+                            ),
+                            child: Text(
+                              goal.supportCategory!,
+                              style: GoogleFonts.jetBrainsMono(
+                                color: ObsidianTheme.careBlue,
+                                fontSize: 9,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (isSelected) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFF0A0A0A),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.04)),
+                        ),
+                        child: TextField(
+                          controller: _goalContributionCtrls[goal.id],
+                          maxLines: 2,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 12,
+                            height: 1.5,
+                          ),
+                          decoration: InputDecoration(
+                            hintText:
+                                'How did you contribute to this goal?',
+                            hintStyle: GoogleFonts.inter(
+                              color: c.textTertiary,
+                              fontSize: 12,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+        const SizedBox(height: 20),
+      ],
     );
   }
 

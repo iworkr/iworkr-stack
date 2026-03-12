@@ -401,18 +401,19 @@ class _MemberRow extends StatelessWidget {
 
 // ── Role Badge ───────────────────────────────────────────
 
-class _RoleBadge extends StatelessWidget {
+class _RoleBadge extends ConsumerWidget {
   final String role;
   const _RoleBadge({required this.role});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCare = ref.watch(isCareProvider);
     final (Color bg, Color text, String label) = switch (role) {
       'owner' => (const Color(0x1AF59E0B), const Color(0xFFF59E0B), 'OWNER'),
       'admin' => (const Color(0x1A8B5CF6), const Color(0xFF8B5CF6), 'ADMIN'),
-      'manager' || 'office_admin' => (const Color(0x1A3B82F6), const Color(0xFF3B82F6), 'MANAGER'),
-      'senior_tech' => (const Color(0x1A10B981), const Color(0xFF10B981), 'SENIOR'),
-      _ => (const Color(0x0DFFFFFF), const Color(0xFFA1A1AA), 'TECH'),
+      'manager' || 'office_admin' => (const Color(0x1A3B82F6), const Color(0xFF3B82F6), isCare ? 'COORD' : 'MANAGER'),
+      'senior_tech' => (const Color(0x1A10B981), const Color(0xFF10B981), isCare ? 'SR SW' : 'SENIOR'),
+      _ => (const Color(0x0DFFFFFF), const Color(0xFFA1A1AA), isCare ? 'SW' : 'TECH'),
     };
 
     return Container(

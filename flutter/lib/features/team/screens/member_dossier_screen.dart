@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/team_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -189,12 +190,13 @@ class _MemberDossierScreenState extends ConsumerState<MemberDossierScreen> {
 
   Widget _buildRoleBadge(String role) {
     final c = context.iColors;
+    final isCare = ref.watch(isCareProvider);
     final (Color bg, Color text, String label) = switch (role) {
       'owner' => (ObsidianTheme.amberDim, ObsidianTheme.amber, 'OWNER'),
       'admin' => (ObsidianTheme.violetDim, ObsidianTheme.violet, 'ADMIN'),
-      'manager' || 'office_admin' => (ObsidianTheme.blueDim, ObsidianTheme.blue, 'MANAGER'),
-      'senior_tech' => (ObsidianTheme.emeraldDim, ObsidianTheme.emerald, 'SENIOR TECH'),
-      _ => (const Color(0x0DFFFFFF), c.textSecondary, 'TECHNICIAN'),
+      'manager' || 'office_admin' => (ObsidianTheme.blueDim, ObsidianTheme.blue, isCare ? 'COORDINATOR' : 'MANAGER'),
+      'senior_tech' => (ObsidianTheme.emeraldDim, ObsidianTheme.emerald, isCare ? 'SENIOR SW' : 'SENIOR TECH'),
+      _ => (const Color(0x0DFFFFFF), c.textSecondary, isCare ? 'SUPPORT WORKER' : 'TECHNICIAN'),
     };
 
     return Container(
@@ -223,12 +225,13 @@ class _MemberDossierScreenState extends ConsumerState<MemberDossierScreen> {
             runSpacing: 8,
             children: roles.map((r) {
               final active = r == _currentRole;
+              final isCare = ref.watch(isCareProvider);
               final label = switch (r) {
                 'admin' => 'Admin',
-                'manager' => 'Dispatcher',
-                'senior_tech' => 'Senior Tech',
-                'technician' => 'Technician',
-                'apprentice' => 'Apprentice',
+                'manager' => isCare ? 'Coordinator' : 'Dispatcher',
+                'senior_tech' => isCare ? 'Senior SW' : 'Senior Tech',
+                'technician' => isCare ? 'Support Worker' : 'Technician',
+                'apprentice' => isCare ? 'Trainee SW' : 'Apprentice',
                 _ => r,
               };
               return GestureDetector(
@@ -292,7 +295,7 @@ class _MemberDossierScreenState extends ConsumerState<MemberDossierScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _MetricCell(label: 'Jobs MTD', value: '—'),
+              _MetricCell(label: ref.watch(isCareProvider) ? 'Shifts MTD' : 'Jobs MTD', value: '—'),
               _MetricCell(label: 'Avg Rating', value: '—'),
               _MetricCell(label: 'Last Active', value: widget.member.lastActive != null ? _timeAgo(widget.member.lastActive!) : '—'),
             ],

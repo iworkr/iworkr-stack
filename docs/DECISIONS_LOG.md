@@ -94,6 +94,33 @@
 - **Reference**: `docs/PRD-Nightingale.md`
 - **Owner**: Architecture
 
+### 2026-03-12 — Project Nightingale Phase 3 & 4: Financial Engine & Quality Automation
+
+- **Decision**: Implement the NDIS Financial Engine (PRODA bulk claiming, budget quarantining, multi-funder split billing, SCHADS award compliance) and Quality Automation (structured care plans with goal-to-shift linkage, sentinel alerts for automated risk detection, audit dossier generation, OCR invoice parsing for plan managers).
+- **Why**: Phase 1 & 2 delivered clinical safety (credentials, eMAR, incidents, health observations). To achieve parity with legacy systems like BrevityCare and become the definitive Care Operating System, iWorkr must handle the financial and compliance dimensions natively — NDIS budget tracking, PRODA claiming, SCHADS award interpretation, and audit readiness.
+- **What changed (Phase 3)**:
+  - `ndis_catalogue` + `ndis_region_modifiers` tables (migration 068) — versioned NDIS price guide with temporal querying and MMM region loading
+  - `funders`, `budget_allocations`, `budget_quarantine_ledger`, `claim_line_items` tables (migration 069) — real-time budget quarantining, multi-funder split billing
+  - `proda_claim_batches` table (migration 070) — PRODA/PACE API bulk claim lifecycle tracking
+  - `plan_manager_invoices` table (migration 071) — OCR-driven invoice parsing for plan managers
+  - `award_rules`, `public_holidays`, `fatigue_overrides` tables (migration 072) — SCHADS award interpretation engine
+  - Edge Functions: `sync-ndis-catalogue`, `generate-proda-payload`, `process-inbound-invoice`
+  - Web pages: NDIS Pricing Matrix (`/dashboard/settings/ndis-pricing`), NDIS Claims Dashboard (`/dashboard/finance/ndis-claims`), Plan Manager Inbox (`/dashboard/finance/plan-manager`)
+  - Server actions: `src/app/actions/care.ts` — Zod-validated CRUD for all care entities
+  - Care-specific billing tiers: iWorkr Care ($149/mo), iWorkr Care Premium ($299/mo), Plan Manager Add-on (+$99/mo)
+- **What changed (Phase 4)**:
+  - `care_plans`, `care_goals`, `goal_progress_links` tables (migration 073) — structured care planning with auditable NDIS goal-to-shift linkage
+  - `audit_sessions` table (migration 074) — time-limited magic link audit portal for NDIS audits
+  - `sentinel_alerts`, `sentinel_keywords` tables (migration 075) — automated risk detection (NLP keyword scanning, health baseline deviations, medication non-compliance, credential expiry escalation)
+  - Edge Function: `sentinel-scan` — triggered on progress note/observation/MAR inserts
+  - Web pages: Care Plans (`/dashboard/care/plans`), Sentinel Alerts (`/dashboard/care/sentinel`), Audit Command Center (`/dashboard/admin/audit`)
+  - Zustand stores: `care-plans-store.ts`, `budget-store.ts`, `sentinel-store.ts`
+  - Sidebar updated with "Clinical & Governance" and "NDIS Finance" nav sections for care orgs
+- **All 8 migrations (068–075) applied to production Supabase** — 17 new tables, 5 enums, 8 helper functions, 34 seeded sentinel keywords
+- **Consequences**: Care orgs gain NDIS financial management, PRODA claiming, SCHADS compliance, care plan goal tracking, automated sentinel risk alerts, and one-click audit dossier generation. Feature-gated behind care-specific billing tiers. Zero regression for trades orgs.
+- **Reference**: `docs/PRD-Nightingale-Phase3-4.md`
+- **Owner**: Architecture
+
 ### 2026-02-15 — Zustand for client state management
 - **Decision**: Use Zustand for all client-side state management on web.
 - **Why**: Minimal API, excellent TypeScript support, no boilerplate, works well with React 19. Simpler than Redux for our use case.

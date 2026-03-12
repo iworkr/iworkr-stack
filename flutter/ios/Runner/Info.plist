@@ -42,7 +42,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>25</string>
+	<string>27</string>
 	<key>NSCameraUsageDescription</key>
 	<string>iWorkr requires camera access to scan equipment barcodes and capture mandatory photographic evidence for job completion.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -55,6 +55,8 @@
 	<string>iWorkr requires background location tracking to automatically clock your travel time, provide dispatch with your live ETA, and trigger arrival geofences even when your phone is in your pocket. This tracking strictly ends when you clock out.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>iWorkr uses Bluetooth to connect to Stripe Tap to Pay terminals and compatible scanning devices on the job site.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>iWorkr uses speech recognition to transcribe voice notes and hands-free dictation during field work so you can document without typing.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>iWorkr uses Face ID to secure access to the app and authorize sensitive operations like payments.</string>
 	<key>LSApplicationQueriesSchemes</key>

@@ -19,6 +19,15 @@ export interface PlanLimits {
   sso: boolean;
   prioritySupport: boolean;
   dedicatedManager: boolean;
+  /** Phase 3/4 Care-specific feature gates */
+  prodaClaiming: boolean;
+  schadsEngine: boolean;
+  auditDossier: boolean;
+  sentinelAlerts: boolean;
+  planManagerInbox: boolean;
+  ocrProcessing: boolean;
+  budgetQuarantining: boolean;
+  multiFunderSplitting: boolean;
 }
 
 export interface PlanDefinition {
@@ -62,6 +71,14 @@ export const PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: false,
       dedicatedManager: false,
+      prodaClaiming: false,
+      schadsEngine: false,
+      auditDossier: false,
+      sentinelAlerts: false,
+      planManagerInbox: false,
+      ocrProcessing: false,
+      budgetQuarantining: false,
+      multiFunderSplitting: false,
     },
     highlighted: false,
     features: [
@@ -95,6 +112,14 @@ export const PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: false,
       dedicatedManager: false,
+      prodaClaiming: false,
+      schadsEngine: false,
+      auditDossier: false,
+      sentinelAlerts: false,
+      planManagerInbox: false,
+      ocrProcessing: false,
+      budgetQuarantining: false,
+      multiFunderSplitting: false,
     },
     highlighted: false,
     features: [
@@ -131,6 +156,14 @@ export const PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: true,
       dedicatedManager: false,
+      prodaClaiming: false,
+      schadsEngine: false,
+      auditDossier: false,
+      sentinelAlerts: false,
+      planManagerInbox: false,
+      ocrProcessing: false,
+      budgetQuarantining: false,
+      multiFunderSplitting: false,
     },
     highlighted: true,
     badge: "Most popular",
@@ -169,6 +202,14 @@ export const PLANS: PlanDefinition[] = [
       sso: true,
       prioritySupport: true,
       dedicatedManager: true,
+      prodaClaiming: false,
+      schadsEngine: false,
+      auditDossier: false,
+      sentinelAlerts: false,
+      planManagerInbox: false,
+      ocrProcessing: false,
+      budgetQuarantining: false,
+      multiFunderSplitting: false,
     },
     highlighted: false,
     features: [
@@ -187,6 +228,149 @@ export const PLANS: PlanDefinition[] = [
   },
 ];
 
+/* ── Care-Specific Plans (Project Nightingale Phase 3) ───────────────────── */
+
+export const CARE_PLANS: PlanDefinition[] = [
+  {
+    key: "care_standard",
+    name: "iWorkr Care",
+    description: "Rostering, clinical safety, and compliance for care providers.",
+    monthlyPrice: 149,
+    yearlyPrice: 119,
+    stripePriceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_CARE_STANDARD_MONTHLY || "",
+    stripePriceIdYearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_CARE_STANDARD_YEARLY || "",
+    limits: {
+      maxUsers: 25,
+      maxJobsPerMonth: Infinity,
+      maxAutomations: Infinity,
+      apiAccess: true,
+      customForms: true,
+      multiBranch: false,
+      aiPhoneAgent: false,
+      integrations: true,
+      sso: false,
+      prioritySupport: true,
+      dedicatedManager: false,
+      prodaClaiming: false,
+      schadsEngine: false,
+      auditDossier: false,
+      sentinelAlerts: true,
+      planManagerInbox: false,
+      ocrProcessing: false,
+      budgetQuarantining: true,
+      multiFunderSplitting: false,
+    },
+    highlighted: false,
+    features: [
+      "Up to 25 users",
+      "Rostering & EVV progress notes",
+      "eMAR (medication tracking)",
+      "Incident & restrictive practice reporting",
+      "Health observations & trends",
+      "Care plans & goal tracking",
+      "Sentinel risk alerts",
+      "Budget tracking",
+      "CRM & participant profiles",
+      "Mobile app (iOS + Android)",
+    ],
+    ctaLabel: "Start free trial",
+    hasFreeTrial: true,
+    trialDays: 14,
+  },
+  {
+    key: "care_premium",
+    name: "iWorkr Care Premium",
+    description: "Full NDIS financial engine with PRODA claiming and SCHADS compliance.",
+    monthlyPrice: 299,
+    yearlyPrice: 239,
+    stripePriceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_CARE_PREMIUM_MONTHLY || "",
+    stripePriceIdYearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_CARE_PREMIUM_YEARLY || "",
+    limits: {
+      maxUsers: 100,
+      maxJobsPerMonth: Infinity,
+      maxAutomations: Infinity,
+      apiAccess: true,
+      customForms: true,
+      multiBranch: true,
+      aiPhoneAgent: true,
+      integrations: true,
+      sso: false,
+      prioritySupport: true,
+      dedicatedManager: false,
+      prodaClaiming: true,
+      schadsEngine: true,
+      auditDossier: true,
+      sentinelAlerts: true,
+      planManagerInbox: false,
+      ocrProcessing: false,
+      budgetQuarantining: true,
+      multiFunderSplitting: true,
+    },
+    highlighted: true,
+    badge: "Recommended",
+    features: [
+      "Up to 100 users",
+      "Everything in iWorkr Care",
+      "PRODA bulk claiming API",
+      "SCHADS award interpretation",
+      "Multi-funder split billing",
+      "Audit dossier generation",
+      "NDIS pricing matrix sync",
+      "Reconciliation dashboard",
+      "Advanced compliance automation",
+      "Priority support",
+    ],
+    ctaLabel: "Start free trial",
+    hasFreeTrial: true,
+    trialDays: 14,
+  },
+  {
+    key: "care_plan_manager",
+    name: "Plan Manager Add-on",
+    description: "OCR invoice parsing and third-party provider management.",
+    monthlyPrice: 99,
+    yearlyPrice: 79,
+    stripePriceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_CARE_PM_MONTHLY || "",
+    stripePriceIdYearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_CARE_PM_YEARLY || "",
+    limits: {
+      maxUsers: 0, // add-on, no user limit of its own
+      maxJobsPerMonth: 0,
+      maxAutomations: 0,
+      apiAccess: false,
+      customForms: false,
+      multiBranch: false,
+      aiPhoneAgent: false,
+      integrations: false,
+      sso: false,
+      prioritySupport: false,
+      dedicatedManager: false,
+      prodaClaiming: false,
+      schadsEngine: false,
+      auditDossier: false,
+      sentinelAlerts: false,
+      planManagerInbox: true,
+      ocrProcessing: true,
+      budgetQuarantining: false,
+      multiFunderSplitting: false,
+    },
+    highlighted: false,
+    badge: "Add-on",
+    features: [
+      "OCR invoice parsing inbox",
+      "Third-party provider management",
+      "Inbound email invoice processing",
+      "Auto-draft PRODA claims from invoices",
+      "Confidence-scored data extraction",
+    ],
+    ctaLabel: "Add to plan",
+    hasFreeTrial: true,
+    trialDays: 14,
+  },
+];
+
+/** All plans combined for lookup functions */
+export const ALL_PLANS = [...PLANS, ...CARE_PLANS];
+
 /** Helper: look up a plan by its key (handles monthly/annual suffixes) */
 export function getPlanByKey(planKey: string | null | undefined): PlanDefinition {
   if (!planKey) return PLANS[0]; // free
@@ -194,7 +378,7 @@ export function getPlanByKey(planKey: string | null | undefined): PlanDefinition
     .replace(/_monthly$/, "")
     .replace(/_annual$/, "")
     .replace(/_yearly$/, "");
-  return PLANS.find((p) => p.key === baseKey) || PLANS[0];
+  return ALL_PLANS.find((p) => p.key === baseKey) || PLANS[0];
 }
 
 /** Helper: determine if a given plan key has a specific feature */
@@ -210,7 +394,7 @@ export function planHasFeature(
 }
 
 /** Plan tier ordering for comparisons */
-const PLAN_ORDER = ["free", "starter", "pro", "business"];
+const PLAN_ORDER = ["free", "starter", "pro", "business", "care_standard", "care_premium"];
 
 /** Is plan A strictly higher tier than plan B? */
 export function isHigherTier(planA: string, planB: string): boolean {

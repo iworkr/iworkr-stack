@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/glass_card.dart';
@@ -62,6 +63,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
+    final isCare = ref.watch(isCareProvider);
     final sc = _statusColor(c);
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
@@ -96,11 +98,11 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _invoice.displayId ?? 'Invoice',
+                              _invoice.displayId ?? (isCare ? 'Claim' : 'Invoice'),
                               style: GoogleFonts.jetBrainsMono(fontSize: 14, fontWeight: FontWeight.w600, color: c.textPrimary),
                             ),
                             Text(
-                              _invoice.clientName ?? 'No Client',
+                              _invoice.clientName ?? (isCare ? 'No Participant' : 'No Client'),
                               style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
                             ),
                           ],
@@ -172,7 +174,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                         borderRadius: ObsidianTheme.radiusMd,
                         child: Column(
                           children: [
-                            _DetailRow(label: 'Client', value: _invoice.clientName ?? '-'),
+                            _DetailRow(label: isCare ? 'Participant' : 'Client', value: _invoice.clientName ?? '-'),
                             if (_invoice.clientEmail != null) _DetailRow(label: 'Email', value: _invoice.clientEmail!),
                             _DetailRow(label: 'Issued', value: _formatDate(_invoice.issueDate)),
                             _DetailRow(label: 'Due', value: _formatDate(_invoice.dueDate)),

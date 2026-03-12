@@ -24,9 +24,11 @@ import {
   Bot,
   Smartphone,
   Map,
-  Pill,
-  AlertTriangle,
   Activity,
+  Target,
+  Shield,
+  Receipt,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -58,10 +60,12 @@ const navItems = [
   { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C", careOnly: false },
   { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R", careOnly: false },
   { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F", careOnly: false },
-  // ─── Care Sector (Nightingale) ─────────────────────
-  { id: "nav_medications", label: "Medications", icon: Pill, href: "/dashboard/care/medications", careOnly: true },
-  { id: "nav_incidents", label: "Incidents", icon: AlertTriangle, href: "/dashboard/care/incidents", careOnly: true },
-  { id: "nav_observations", label: "Observations", icon: Activity, href: "/dashboard/care/observations", careOnly: true },
+  // ─── Care Sector — Nightingale Command ──────────────────
+  { id: "nav_care_command", label: "Care Command", icon: Activity, href: "/dashboard/care", careOnly: true },
+  { id: "nav_clinical_timeline", label: "Clinical Timeline", icon: Clock, href: "/dashboard/care/clinical-timeline", careOnly: true },
+  { id: "nav_compliance_hub", label: "Compliance Hub", icon: Shield, href: "/dashboard/care/compliance-hub", careOnly: true },
+  { id: "nav_funding_engine", label: "Funding Engine", icon: Receipt, href: "/dashboard/care/funding-engine", careOnly: true },
+  { id: "nav_roster_intel", label: "Roster Intelligence", icon: Target, href: "/dashboard/care/roster-intelligence", careOnly: true },
   // ─── General ──────────────────────────────────────
   { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A", careOnly: false },
   { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms", careOnly: false },
@@ -88,17 +92,17 @@ function useCareNavSections() {
   const items = useTranslatedNavItems();
   if (!isCare) return [{ label: null, items }];
 
-  // Split into workspace items, care-specific items, and general items
-  const careIds = new Set(["nav_medications", "nav_incidents", "nav_observations"]);
+  // Split into workspace items, Nightingale command items, and general items
+  const nightingaleIds = new Set(["nav_care_command", "nav_clinical_timeline", "nav_compliance_hub", "nav_funding_engine", "nav_roster_intel"]);
   const generalIds = new Set(["nav_assets", "nav_forms", "nav_team", "nav_automations", "nav_integrations", "nav_ai_agent"]);
 
-  const workspace = items.filter((i) => !careIds.has(i.id) && !generalIds.has(i.id));
-  const care = items.filter((i) => careIds.has(i.id));
+  const workspace = items.filter((i) => !nightingaleIds.has(i.id) && !generalIds.has(i.id));
+  const nightingale = items.filter((i) => nightingaleIds.has(i.id));
   const general = items.filter((i) => generalIds.has(i.id));
 
   return [
     { label: null, items: workspace },
-    { label: "Clinical & Governance", items: care },
+    { label: "Nightingale", items: nightingale },
     { label: "Operations", items: general },
   ];
 }
