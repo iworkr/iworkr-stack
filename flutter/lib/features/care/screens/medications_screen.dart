@@ -78,7 +78,7 @@ class _MedicationsScreenState extends ConsumerState<MedicationsScreen> {
                 error: (_, __) => const SizedBox(height: 56),
                 data: (meds) => Row(
                   children: [
-                    _SummaryTile(icon: PhosphorIconsLight.pill, label: 'Active', value: '${meds.length}', color: ObsidianTheme.emerald),
+                    _SummaryTile(icon: PhosphorIconsLight.pill, label: 'Active', value: '${meds.length}', color: ObsidianTheme.careBlue),
                     const SizedBox(width: 8),
                     _SummaryTile(icon: PhosphorIconsLight.clockAfternoon, label: 'PRN', value: '${meds.where((m) => m.isPrn).length}', color: ObsidianTheme.blue),
                     const SizedBox(width: 8),
@@ -235,7 +235,7 @@ class _MedicationCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(PhosphorIconsLight.pill, size: 20, color: ObsidianTheme.emerald),
+                Icon(PhosphorIconsLight.pill, size: 20, color: ObsidianTheme.careBlue),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -365,7 +365,7 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
   };
 
   Color _outcomeColor(MAROutcome outcome) => switch (outcome) {
-    MAROutcome.given => ObsidianTheme.emerald,
+    MAROutcome.given => ObsidianTheme.careBlue,
     MAROutcome.refused => ObsidianTheme.rose,
     MAROutcome.withheld => ObsidianTheme.amber,
     MAROutcome.notAvailable => ObsidianTheme.textTertiary,
@@ -446,7 +446,7 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
                   decoration: BoxDecoration(
                     color: c.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.2)),
+                    border: Border.all(color: ObsidianTheme.careBlue.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     children: [
@@ -454,10 +454,10 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: ObsidianTheme.emerald.withValues(alpha: 0.12),
+                          color: ObsidianTheme.careBlue.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(PhosphorIconsLight.pill, size: 20, color: ObsidianTheme.emerald),
+                        child: Icon(PhosphorIconsLight.pill, size: 20, color: ObsidianTheme.careBlue),
                       ),
                       const SizedBox(width: 12),
                       Expanded(

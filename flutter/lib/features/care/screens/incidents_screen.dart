@@ -41,8 +41,8 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
       backgroundColor: c.canvas,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showReportSheet(context),
-        backgroundColor: ObsidianTheme.emerald,
-        child: const Icon(PhosphorIconsFill.plus, color: Colors.black, size: 24),
+        backgroundColor: ObsidianTheme.careBlue,
+        child: const Icon(PhosphorIconsFill.plus, color: Colors.white, size: 24),
       ),
       body: CustomScrollView(
         slivers: [
@@ -86,7 +86,7 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
                   const SizedBox(width: 8),
                   _StatCard(label: 'Critical', value: stats.critical, color: ObsidianTheme.rose),
                   const SizedBox(width: 8),
-                  _StatCard(label: 'Resolved', value: stats.resolved, color: ObsidianTheme.emerald),
+                  _StatCard(label: 'Resolved', value: stats.resolved, color: ObsidianTheme.careBlue),
                 ],
               ),
             ).animate().fadeIn(duration: 300.ms).moveY(begin: 8, end: 0),
@@ -233,7 +233,7 @@ class _ToggleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
-    final activeColor = color ?? ObsidianTheme.emerald;
+    final activeColor = color ?? ObsidianTheme.careBlue;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -455,14 +455,14 @@ class _ReportIncidentSheetState extends ConsumerState<_ReportIncidentSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _category == cat ? ObsidianTheme.emerald.withValues(alpha: 0.15) : c.surface,
+                        color: _category == cat ? ObsidianTheme.careBlue.withValues(alpha: 0.15) : c.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _category == cat ? ObsidianTheme.emerald.withValues(alpha: 0.4) : c.border,
+                          color: _category == cat ? ObsidianTheme.careBlue.withValues(alpha: 0.4) : c.border,
                         ),
                       ),
                       child: Text(cat.label, style: GoogleFonts.inter(fontSize: 13,
-                          color: _category == cat ? ObsidianTheme.emerald : c.textSecondary)),
+                          color: _category == cat ? ObsidianTheme.careBlue : c.textSecondary)),
                     ),
                   )).toList(),
                 ),

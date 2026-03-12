@@ -129,7 +129,7 @@ class _ProgressNoteCard extends StatelessWidget {
           // Header
           Row(
             children: [
-              Icon(PhosphorIconsLight.notepad, size: 20, color: ObsidianTheme.emerald),
+              Icon(PhosphorIconsLight.notepad, size: 20, color: ObsidianTheme.careBlue),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -148,15 +148,15 @@ class _ProgressNoteCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: ObsidianTheme.emerald.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(PhosphorIconsLight.mapPin, size: 12, color: ObsidianTheme.emerald),
-                      const SizedBox(width: 4),
-                      Text('EVV', style: GoogleFonts.jetBrainsMono(fontSize: 10, fontWeight: FontWeight.w600, color: ObsidianTheme.emerald)),
+                  color: ObsidianTheme.careBlue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(PhosphorIconsLight.mapPin, size: 12, color: ObsidianTheme.careBlue),
+                    const SizedBox(width: 4),
+                    Text('EVV', style: GoogleFonts.jetBrainsMono(fontSize: 10, fontWeight: FontWeight.w600, color: ObsidianTheme.careBlue)),
                     ],
                   ),
                 ),

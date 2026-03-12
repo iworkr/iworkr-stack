@@ -234,14 +234,14 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
                 height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: ObsidianTheme.emerald.withValues(alpha: 0.1),
+                  color: ObsidianTheme.careBlue.withValues(alpha: 0.1),
                   border: Border.all(
-                    color: ObsidianTheme.emerald.withValues(alpha: 0.3),
+                    color: ObsidianTheme.careBlue.withValues(alpha: 0.3),
                   ),
                 ),
                 child: const Icon(
                   PhosphorIconsLight.clipboardText,
-                  color: ObsidianTheme.emerald,
+                  color: ObsidianTheme.careBlue,
                   size: 24,
                 ),
               )
@@ -254,7 +254,7 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
               Text(
                 'SHIFT REPORT',
                 style: GoogleFonts.jetBrainsMono(
-                  color: ObsidianTheme.emerald,
+                  color: ObsidianTheme.careBlue,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 2,
@@ -376,7 +376,7 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
                             height: 36,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: ObsidianTheme.emerald.withValues(alpha: 0.1),
+                              color: ObsidianTheme.careBlue.withValues(alpha: 0.1),
                             ),
                             child: _fetchingLocation
                                 ? const SizedBox(
@@ -385,7 +385,7 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
                                     child: Center(
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: ObsidianTheme.emerald,
+                                        color: ObsidianTheme.careBlue,
                                       ),
                                     ),
                                   )
@@ -394,7 +394,7 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
                                         ? PhosphorIconsBold.mapPinArea
                                         : PhosphorIconsLight.mapPinLine,
                                     color: _evvLat != null
-                                        ? ObsidianTheme.emerald
+                                        ? ObsidianTheme.careBlue
                                         : c.textTertiary,
                                     size: 18,
                                   ),
@@ -412,7 +412,7 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
                                           : 'GPS UNAVAILABLE',
                                   style: GoogleFonts.jetBrainsMono(
                                     color: _evvLat != null
-                                        ? ObsidianTheme.emerald
+                                        ? ObsidianTheme.careBlue
                                         : c.textTertiary,
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
@@ -449,11 +449,11 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
                                 : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _isValid
-                              ? ObsidianTheme.emerald
-                              : ObsidianTheme.emerald.withValues(alpha: 0.2),
+                              ? ObsidianTheme.careBlue
+                              : ObsidianTheme.careBlue.withValues(alpha: 0.2),
                           foregroundColor: Colors.white,
                           disabledBackgroundColor:
-                              ObsidianTheme.emerald.withValues(alpha: 0.15),
+                              ObsidianTheme.careBlue.withValues(alpha: 0.15),
                           disabledForegroundColor: Colors.white38,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -556,11 +556,11 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
               color: isSelected
-                  ? ObsidianTheme.emerald.withValues(alpha: 0.12)
+                  ? ObsidianTheme.careBlue.withValues(alpha: 0.12)
                   : const Color(0xFF141414),
               border: Border.all(
                 color: isSelected
-                    ? ObsidianTheme.emerald.withValues(alpha: 0.4)
+                    ? ObsidianTheme.careBlue.withValues(alpha: 0.4)
                     : Colors.white.withValues(alpha: 0.06),
               ),
             ),
@@ -570,13 +570,13 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
                 Icon(
                   _moodIcon(mood),
                   size: 14,
-                  color: isSelected ? ObsidianTheme.emerald : c.textTertiary,
+                  color: isSelected ? ObsidianTheme.careBlue : c.textTertiary,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   mood,
                   style: GoogleFonts.inter(
-                    color: isSelected ? ObsidianTheme.emerald : c.textSecondary,
+                    color: isSelected ? ObsidianTheme.careBlue : c.textSecondary,
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   ),
@@ -597,7 +597,7 @@ class _ShiftReportSheetState extends ConsumerState<_ShiftReportSheet> {
     required ValueChanged<bool> onChanged,
     Color? accentColor,
   }) {
-    final accent = accentColor ?? ObsidianTheme.emerald;
+    final accent = accentColor ?? ObsidianTheme.careBlue;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(

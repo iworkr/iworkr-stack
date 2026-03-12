@@ -77,6 +77,9 @@ class ObsidianTheme {
   static const Color blue = Color(0xFF3B82F6);
   static const Color blueDim = Color(0x1A3B82F6);
 
+  /// #3B82F6 — care brand accent (Project Nightingale)
+  static const Color careBlue = Color(0xFF3B82F6);
+
   /// #6366F1 — AI / intelligence / cortex
   static const Color indigo = Color(0xFF6366F1);
   static const Color indigoDim = Color(0x1A6366F1);

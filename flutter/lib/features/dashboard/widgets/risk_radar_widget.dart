@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/state_machine_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
@@ -38,6 +39,7 @@ class _RiskContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(labelTranslatorProvider);
     final overdueAsync = ref.watch(overdueJobsProvider(orgId));
     final outstandingAsync = ref.watch(outstandingInvoicesProvider(orgId));
 
@@ -52,7 +54,7 @@ class _RiskContent extends ConsumerWidget {
       alerts.add(_Alert(
         icon: PhosphorIconsBold.warning,
         color: ObsidianTheme.rose,
-        title: '${overdueJobs.length} Overdue Job${overdueJobs.length > 1 ? 's' : ''}',
+        title: '${overdueJobs.length} Overdue ${t('Job')}${overdueJobs.length > 1 ? 's' : ''}',
         subtitle: 'Past due date, not completed',
         severity: _Severity.critical,
       ));
@@ -62,7 +64,7 @@ class _RiskContent extends ConsumerWidget {
       alerts.add(_Alert(
         icon: PhosphorIconsBold.currencyCircleDollar,
         color: ObsidianTheme.textSecondary,
-        title: '$overdueInvoices Unpaid Invoice${overdueInvoices > 1 ? 's' : ''}',
+        title: '$overdueInvoices Unpaid ${t('Invoice')}${overdueInvoices > 1 ? 's' : ''}',
         subtitle: '\$${totalDebt.toStringAsFixed(0)} outstanding',
         severity: _Severity.warning,
       ));

@@ -74,6 +74,7 @@ class ShellScaffold extends ConsumerWidget {
       bottomNavigationBar: _ObsidianDock(
         tabs: tabs,
         currentIndex: current,
+        isCare: isCare,
         onTabTap: (index) {
           if (index != current) {
             HapticFeedback.selectionClick();
@@ -117,6 +118,7 @@ class _ObsidianDock extends StatelessWidget {
   final ValueChanged<int> onTabTap;
   final VoidCallback onSearchTap;
   final UserRole? role;
+  final bool isCare;
 
   const _ObsidianDock({
     required this.tabs,
@@ -124,6 +126,7 @@ class _ObsidianDock extends StatelessWidget {
     required this.onTabTap,
     required this.onSearchTap,
     this.role,
+    this.isCare = false,
   });
 
   @override
@@ -159,6 +162,7 @@ class _ObsidianDock extends StatelessWidget {
                 ...List.generate(3, (i) => _DockButton(
                   tab: tabs[i],
                   isActive: i == currentIndex,
+                  isCare: isCare,
                   onTap: () => onTabTap(i),
                 )),
 
@@ -171,6 +175,7 @@ class _ObsidianDock extends StatelessWidget {
                   return _DockButton(
                     tab: tabs[i],
                     isActive: i == currentIndex,
+                    isCare: isCare,
                     onTap: () => onTabTap(i),
                   );
                 }),
@@ -194,16 +199,19 @@ class _ObsidianDock extends StatelessWidget {
 class _DockButton extends StatelessWidget {
   final _DockTab tab;
   final bool isActive;
+  final bool isCare;
   final VoidCallback onTap;
 
   const _DockButton({
     required this.tab,
     required this.isActive,
+    this.isCare = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = isCare ? ObsidianTheme.careBlue : ObsidianTheme.emerald;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -230,7 +238,7 @@ class _DockButton extends StatelessWidget {
                 isActive ? tab.activeIcon : tab.icon,
                 key: ValueKey('${tab.routePrefix}_$isActive'),
                 size: 22,
-                color: isActive ? ObsidianTheme.emerald : ObsidianTheme.textTertiary,
+                color: isActive ? accentColor : ObsidianTheme.textTertiary,
               ),
             ),
             const SizedBox(height: 4),
@@ -240,10 +248,10 @@ class _DockButton extends StatelessWidget {
               width: isActive ? 4 : 0,
               height: isActive ? 4 : 0,
               decoration: BoxDecoration(
-                color: ObsidianTheme.emerald,
+                color: accentColor,
                 shape: BoxShape.circle,
                 boxShadow: isActive
-                    ? [BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.4), blurRadius: 6)]
+                    ? [BoxShadow(color: accentColor.withValues(alpha: 0.4), blurRadius: 6)]
                     : null,
               ),
             ),

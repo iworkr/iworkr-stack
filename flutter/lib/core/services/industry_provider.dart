@@ -76,6 +76,10 @@ const _careLexicon = <String, String>{
   'My Jobs': 'My Shifts',
   'Assets': 'Aids & Equipment',
   'Sales Pipeline': 'Referral Pipeline',
+  'REVENUE': 'FUNDING',
+  'Overdue': 'Overdue',
+  'Outstanding': 'Outstanding',
+  'Invoiced': 'Claimed',
 };
 
 /// Translate a UI label based on org industry type

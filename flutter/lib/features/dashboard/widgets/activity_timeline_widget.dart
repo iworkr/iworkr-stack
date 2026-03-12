@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/state_machine_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -36,6 +37,7 @@ class _TimelineContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(labelTranslatorProvider);
     final auditAsync = ref.watch(recentAuditLogProvider(orgId));
 
     return auditAsync.when(
@@ -45,7 +47,7 @@ class _TimelineContent extends ConsumerWidget {
         if (entries.isEmpty) {
           return _EmptyTimeline(expanded: expanded);
         }
-        return _TimelineView(entries: entries, expanded: expanded);
+        return _TimelineView(entries: entries, expanded: expanded, t: t);
       },
     );
   }
@@ -54,7 +56,8 @@ class _TimelineContent extends ConsumerWidget {
 class _TimelineView extends StatelessWidget {
   final List<Map<String, dynamic>> entries;
   final bool expanded;
-  const _TimelineView({required this.entries, required this.expanded});
+  final String Function(String) t;
+  const _TimelineView({required this.entries, required this.expanded, required this.t});
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +97,7 @@ class _TimelineView extends StatelessWidget {
             entry: entry,
             isLast: isLast,
             expanded: expanded,
+            t: t,
           )
               .animate()
               .fadeIn(
@@ -117,11 +121,13 @@ class _TimelineEntry extends StatelessWidget {
   final Map<String, dynamic> entry;
   final bool isLast;
   final bool expanded;
+  final String Function(String) t;
 
   const _TimelineEntry({
     required this.entry,
     required this.isLast,
     required this.expanded,
+    required this.t,
   });
 
   @override
@@ -289,9 +295,9 @@ class _TimelineEntry extends StatelessWidget {
 
   String _entityLabel(String type) {
     switch (type) {
-      case 'job': return 'Job';
-      case 'invoice': return 'Invoice';
-      case 'quote': return 'Quote';
+      case 'job': return t('Job');
+      case 'invoice': return t('Invoice');
+      case 'quote': return t('Quote');
       default: return type;
     }
   }

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/state_machine_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -38,12 +39,13 @@ class _PipelineContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isCare = ref.watch(isCareProvider);
     final statsAsync = ref.watch(pipelineStatsProvider(orgId));
 
     return statsAsync.when(
       loading: () => const _PipelineShimmer(),
       error: (_, __) => const SizedBox.shrink(),
-      data: (stats) => _PipelineView(stats: stats, compact: compact),
+      data: (stats) => _PipelineView(stats: stats, compact: compact, isCare: isCare),
     );
   }
 }
@@ -51,7 +53,8 @@ class _PipelineContent extends ConsumerWidget {
 class _PipelineView extends StatefulWidget {
   final Map<String, int> stats;
   final bool compact;
-  const _PipelineView({required this.stats, required this.compact});
+  final bool isCare;
+  const _PipelineView({required this.stats, required this.compact, required this.isCare});
 
   @override
   State<_PipelineView> createState() => _PipelineViewState();
@@ -74,13 +77,13 @@ class _PipelineViewState extends State<_PipelineView>
     super.dispose();
   }
 
-  static List<_Stage> _buildStages(IWorkrColors c) => [
+  List<_Stage> _buildStages(IWorkrColors c) => [
     _Stage('Draft', 'backlog', PhosphorIconsLight.noteBlank, c.textMuted),
     _Stage('Queued', 'todo', PhosphorIconsLight.queue, c.textSecondary),
     _Stage('Scheduled', 'scheduled', PhosphorIconsLight.calendarCheck, c.textSecondary),
     _Stage('Executing', 'in_progress', PhosphorIconsLight.lightning, ObsidianTheme.emerald),
     _Stage('Completed', 'done', PhosphorIconsLight.checkCircle, ObsidianTheme.emerald),
-    _Stage('Invoiced', 'invoiced', PhosphorIconsLight.receipt, c.textSecondary),
+    _Stage(widget.isCare ? 'Claimed' : 'Invoiced', 'invoiced', PhosphorIconsLight.receipt, c.textSecondary),
   ];
 
   @override

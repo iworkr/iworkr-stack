@@ -42,8 +42,8 @@ class _CredentialsScreenState extends ConsumerState<CredentialsScreen> {
       backgroundColor: c.canvas,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddCredentialSheet(context),
-        backgroundColor: ObsidianTheme.emerald,
-        child: const Icon(PhosphorIconsFill.plus, color: Colors.black, size: 24),
+        backgroundColor: ObsidianTheme.careBlue,
+        child: const Icon(PhosphorIconsFill.plus, color: Colors.white, size: 24),
       ),
       body: CustomScrollView(
         slivers: [
@@ -85,7 +85,7 @@ class _CredentialsScreenState extends ConsumerState<CredentialsScreen> {
                 children: [
                   _StatChip(label: 'Total', value: stats.total, color: ObsidianTheme.textSecondary),
                   const SizedBox(width: 8),
-                  _StatChip(label: 'Verified', value: stats.verified, color: ObsidianTheme.emerald),
+                  _StatChip(label: 'Verified', value: stats.verified, color: ObsidianTheme.careBlue),
                   const SizedBox(width: 8),
                   _StatChip(label: 'Expiring', value: stats.expiring, color: ObsidianTheme.amber),
                   const SizedBox(width: 8),
@@ -255,18 +255,18 @@ class _FilterChip extends StatelessWidget {
         height: 40,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.15) : c.surface,
+          color: isActive ? ObsidianTheme.careBlue.withValues(alpha: 0.15) : c.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border),
+          border: Border.all(color: isActive ? ObsidianTheme.careBlue.withValues(alpha: 0.3) : c.border),
         ),
         alignment: Alignment.center,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(PhosphorIconsLight.funnel, size: 16, color: isActive ? ObsidianTheme.emerald : c.textTertiary),
+            Icon(PhosphorIconsLight.funnel, size: 16, color: isActive ? ObsidianTheme.careBlue : c.textTertiary),
             const SizedBox(width: 6),
             Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500,
-                color: isActive ? ObsidianTheme.emerald : c.textSecondary)),
+                color: isActive ? ObsidianTheme.careBlue : c.textSecondary)),
           ],
         ),
       ),
@@ -283,13 +283,13 @@ class _CredentialCard extends StatelessWidget {
     final c = context.iColors;
     final expiry = credential.expiryStatus;
     final statusColor = switch (credential.verificationStatus) {
-      VerificationStatus.verified => ObsidianTheme.emerald,
+      VerificationStatus.verified => ObsidianTheme.careBlue,
       VerificationStatus.pending => ObsidianTheme.amber,
       VerificationStatus.rejected => ObsidianTheme.rose,
       VerificationStatus.expired => ObsidianTheme.rose,
     };
     final expiryColor = switch (expiry) {
-      ExpiryStatus.valid => ObsidianTheme.emerald,
+      ExpiryStatus.valid => ObsidianTheme.careBlue,
       ExpiryStatus.expiring => ObsidianTheme.amber,
       ExpiryStatus.expired => ObsidianTheme.rose,
       ExpiryStatus.unknown => c.textTertiary,
@@ -403,7 +403,7 @@ class _AddCredentialSheetState extends ConsumerState<_AddCredentialSheet> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.dark(
-              primary: ObsidianTheme.emerald,
+              primary: ObsidianTheme.careBlue,
               onPrimary: Colors.black,
               surface: c.canvas,
               onSurface: c.textPrimary,
@@ -457,7 +457,7 @@ class _AddCredentialSheetState extends ConsumerState<_AddCredentialSheet> {
           SnackBar(
             content: Text('Credential added',
                 style: GoogleFonts.inter(color: Colors.white)),
-            backgroundColor: ObsidianTheme.emerald,
+            backgroundColor: ObsidianTheme.careBlue,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -519,10 +519,10 @@ class _AddCredentialSheetState extends ConsumerState<_AddCredentialSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? ObsidianTheme.emerald.withValues(alpha: 0.15) : c.surface,
+                          color: isSelected ? ObsidianTheme.careBlue.withValues(alpha: 0.15) : c.surface,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isSelected ? ObsidianTheme.emerald.withValues(alpha: 0.4) : c.border,
+                            color: isSelected ? ObsidianTheme.careBlue.withValues(alpha: 0.4) : c.border,
                           ),
                         ),
                         child: Row(
@@ -531,13 +531,13 @@ class _AddCredentialSheetState extends ConsumerState<_AddCredentialSheet> {
                             Icon(
                               PhosphorIconsLight.shieldCheck,
                               size: 14,
-                              color: isSelected ? ObsidianTheme.emerald : c.textTertiary,
+                              color: isSelected ? ObsidianTheme.careBlue : c.textTertiary,
                             ),
                             const SizedBox(width: 6),
                             Text(type.label, style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: isSelected ? ObsidianTheme.emerald : c.textSecondary,
+                              color: isSelected ? ObsidianTheme.careBlue : c.textSecondary,
                             )),
                           ],
                         ),
@@ -658,13 +658,13 @@ class _AddCredentialSheetState extends ConsumerState<_AddCredentialSheet> {
               child: ElevatedButton(
                 onPressed: _submitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: ObsidianTheme.emerald,
-                  foregroundColor: Colors.black,
+                  backgroundColor: ObsidianTheme.careBlue,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: _submitting
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : Text('Add Credential', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),

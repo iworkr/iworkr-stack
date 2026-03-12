@@ -59,7 +59,7 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
     IncidentStatus.reported => ObsidianTheme.amber,
     IncidentStatus.underReview => ObsidianTheme.blue,
     IncidentStatus.investigation => ObsidianTheme.indigo,
-    IncidentStatus.resolved => ObsidianTheme.emerald,
+    IncidentStatus.resolved => ObsidianTheme.careBlue,
     IncidentStatus.closed => ObsidianTheme.textMuted,
   };
 
@@ -94,7 +94,7 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
           SnackBar(
             content: Text('Status updated to ${newStatus.label}',
                 style: GoogleFonts.inter(color: Colors.white)),
-            backgroundColor: ObsidianTheme.emerald,
+            backgroundColor: ObsidianTheme.careBlue,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -334,7 +334,7 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
                         const SizedBox(height: 16),
                         _DetailSection(
                           label: 'RESOLUTION NOTES',
-                          accentColor: ObsidianTheme.emerald,
+                          accentColor: ObsidianTheme.careBlue,
                           child: Text(
                             incident.resolutionNotes!,
                             style: GoogleFonts.inter(fontSize: 14, color: c.textSecondary, height: 1.5),
@@ -347,10 +347,10 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(PhosphorIconsLight.checkCircle, size: 14, color: ObsidianTheme.emerald),
+                            Icon(PhosphorIconsLight.checkCircle, size: 14, color: ObsidianTheme.careBlue),
                             const SizedBox(width: 6),
                             Text('Resolved ${_formatDateTime(incident.resolvedAt!)}',
-                                style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.emerald)),
+                                style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.careBlue)),
                           ],
                         ),
                       ],

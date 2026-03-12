@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/dashboard_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/route_provider.dart';
@@ -70,22 +71,23 @@ class _RevenueWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = ref.watch(labelTranslatorProvider);
     final statsAsync = ref.watch(revenueStatsProvider);
 
     return statsAsync.when(
       loading: () => _WidgetShimmer(),
-      error: (_, __) => _WidgetError(label: 'Revenue'),
+      error: (_, __) => _WidgetError(label: t('Revenue')),
       data: (stats) {
         final revenue = stats['totalRevenue'] ?? 0;
         final formatted = NumberFormat.currency(symbol: '\$', decimalDigits: 0).format(revenue);
 
         switch (size) {
           case WidgetSize.small:
-            return _SmallRevenue(formatted: formatted);
+            return _SmallRevenue(formatted: formatted, revenueLabel: t('Revenue').toUpperCase());
           case WidgetSize.medium:
-            return _MediumRevenue(formatted: formatted, stats: stats);
+            return _MediumRevenue(formatted: formatted, stats: stats, revenueLabel: t('Revenue MTD').toUpperCase());
           case WidgetSize.large:
-            return _LargeRevenue(formatted: formatted, stats: stats);
+            return _LargeRevenue(formatted: formatted, stats: stats, revenueLabel: t('Revenue MTD').toUpperCase());
         }
       },
     );
@@ -94,7 +96,8 @@ class _RevenueWidget extends StatelessWidget {
 
 class _SmallRevenue extends StatelessWidget {
   final String formatted;
-  const _SmallRevenue({required this.formatted});
+  final String revenueLabel;
+  const _SmallRevenue({required this.formatted, required this.revenueLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +106,7 @@ class _SmallRevenue extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('REVENUE', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1.5)),
+        Text(revenueLabel, style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1.5)),
         Text(
           formatted,
           style: GoogleFonts.jetBrainsMono(fontSize: 22, fontWeight: FontWeight.w700, color: c.textPrimary, letterSpacing: -1),
@@ -117,7 +120,8 @@ class _SmallRevenue extends StatelessWidget {
 class _MediumRevenue extends StatelessWidget {
   final String formatted;
   final Map<String, double> stats;
-  const _MediumRevenue({required this.formatted, required this.stats});
+  final String revenueLabel;
+  const _MediumRevenue({required this.formatted, required this.stats, required this.revenueLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +131,7 @@ class _MediumRevenue extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('REVENUE MTD', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
+            Text(revenueLabel, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -166,7 +170,8 @@ class _MediumRevenue extends StatelessWidget {
 class _LargeRevenue extends StatelessWidget {
   final String formatted;
   final Map<String, double> stats;
-  const _LargeRevenue({required this.formatted, required this.stats});
+  final String revenueLabel;
+  const _LargeRevenue({required this.formatted, required this.stats, required this.revenueLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -176,7 +181,7 @@ class _LargeRevenue extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('REVENUE MTD', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
+            Text(revenueLabel, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -209,6 +214,7 @@ class _StatsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
+    final t = ref.watch(labelTranslatorProvider);
     final statsAsync = ref.watch(revenueStatsProvider);
 
     return statsAsync.when(
@@ -227,7 +233,7 @@ class _StatsWidget extends StatelessWidget {
                 children: [
                   Icon(PhosphorIconsLight.briefcase, size: 12, color: c.textMuted),
                   const SizedBox(width: 4),
-                  Text('JOBS', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1.5)),
+                  Text(t('Jobs').toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 8, color: c.textTertiary, letterSpacing: 1.5)),
                 ],
               ),
               Row(
@@ -727,6 +733,7 @@ class _ScheduleWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
+    final t = ref.watch(labelTranslatorProvider);
     final blocksAsync = ref.watch(myTodayBlocksProvider);
 
     return blocksAsync.when(
@@ -742,7 +749,7 @@ class _ScheduleWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text("TODAY'S SCHEDULE", style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
+                Text("TODAY'S ${t('Schedule').toUpperCase()}", style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary, letterSpacing: 1.5)),
                 const Spacer(),
                 GestureDetector(
                   onTap: () => context.go('/schedule'),

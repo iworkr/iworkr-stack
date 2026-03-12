@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/invoice_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
@@ -20,6 +21,8 @@ class FinanceScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.iColors;
+    final t = ref.watch(labelTranslatorProvider);
+    final isCare = ref.watch(isCareProvider);
     final invoicesAsync = ref.watch(invoicesProvider);
 
     return Scaffold(
@@ -70,7 +73,7 @@ class FinanceScreen extends ConsumerWidget {
                         children: [
                           Icon(PhosphorIconsLight.plus, size: 14, color: c.textSecondary),
                           const SizedBox(width: 6),
-                          Text('Invoice', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary)),
+                          Text(t('Invoice'), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: c.textPrimary)),
                         ],
                       ),
                     ),
@@ -86,10 +89,12 @@ class FinanceScreen extends ConsumerWidget {
               child: invoicesAsync.when(
                 data: (invoices) {
                   if (invoices.isEmpty) {
-                    return const AnimatedEmptyState(
+                    return AnimatedEmptyState(
                       type: EmptyStateType.generic,
                       title: 'The ledger is empty',
-                      subtitle: 'Create your first invoice to start tracking revenue.',
+                      subtitle: isCare
+                          ? 'Create your first claim to start tracking funding.'
+                          : 'Create your first invoice to start tracking revenue.',
                     );
                   }
 
@@ -102,13 +107,13 @@ class FinanceScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
                     children: [
                       // ── Hero Revenue Card ────────────
-                      _buildRevenueCard(totalRevenue, outstanding, overdueCount, c),
+                      _buildRevenueCard(totalRevenue, outstanding, overdueCount, c, t),
 
                       const SizedBox(height: 24),
 
                       // ── Invoice List ─────────────────
                       Text(
-                        'INVOICES',
+                        t('Invoices').toUpperCase(),
                         style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
                       ),
                       const SizedBox(height: 10),
@@ -129,14 +134,14 @@ class FinanceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRevenueCard(double revenue, double outstanding, int overdue, IWorkrColors c) {
+  Widget _buildRevenueCard(double revenue, double outstanding, int overdue, IWorkrColors c, String Function(String) t) {
     return GlassCard(
       padding: const EdgeInsets.all(20),
       borderRadius: ObsidianTheme.radiusLg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('REVENUE', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
+          Text(t('Revenue').toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5)),
           const SizedBox(height: 8),
           Text(
             _formatCurrency(revenue),

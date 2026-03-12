@@ -40,8 +40,8 @@ class _ObservationsScreenState extends ConsumerState<ObservationsScreen> {
       backgroundColor: c.canvas,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showRecordSheet(context),
-        backgroundColor: ObsidianTheme.emerald,
-        child: const Icon(PhosphorIconsFill.plus, color: Colors.black, size: 24),
+        backgroundColor: ObsidianTheme.careBlue,
+        child: const Icon(PhosphorIconsFill.plus, color: Colors.white, size: 24),
       ),
       body: CustomScrollView(
         slivers: [
@@ -92,10 +92,10 @@ class _ObservationsScreenState extends ConsumerState<ObservationsScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: ObsidianTheme.emerald.withValues(alpha: 0.12),
+                        color: ObsidianTheme.careBlue.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(PhosphorIconsLight.heartbeat, size: 24, color: ObsidianTheme.emerald),
+                      child: Icon(PhosphorIconsLight.heartbeat, size: 24, color: ObsidianTheme.careBlue),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -308,7 +308,7 @@ class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet
           SnackBar(
             content: Text('${_selectedType.label} recorded',
                 style: GoogleFonts.inter(color: Colors.white)),
-            backgroundColor: ObsidianTheme.emerald,
+            backgroundColor: ObsidianTheme.careBlue,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -377,10 +377,10 @@ class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: isSelected ? ObsidianTheme.emerald.withValues(alpha: 0.15) : c.surface,
+                            color: isSelected ? ObsidianTheme.careBlue.withValues(alpha: 0.15) : c.surface,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: isSelected ? ObsidianTheme.emerald.withValues(alpha: 0.4) : c.border,
+                              color: isSelected ? ObsidianTheme.careBlue.withValues(alpha: 0.4) : c.border,
                             ),
                           ),
                           alignment: Alignment.center,
@@ -392,7 +392,7 @@ class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet
                               Text(type.label, style: GoogleFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: isSelected ? ObsidianTheme.emerald : c.textSecondary,
+                                color: isSelected ? ObsidianTheme.careBlue : c.textSecondary,
                               )),
                             ],
                           ),
@@ -469,13 +469,13 @@ class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet
               child: ElevatedButton(
                 onPressed: _submitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: ObsidianTheme.emerald,
-                  foregroundColor: Colors.black,
+                  backgroundColor: ObsidianTheme.careBlue,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: _submitting
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : Text('Record Observation', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),
@@ -541,10 +541,10 @@ class _TypeChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.12) : c.surface,
+          color: isActive ? ObsidianTheme.careBlue.withValues(alpha: 0.12) : c.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isActive ? ObsidianTheme.emerald.withValues(alpha: 0.3) : c.border,
+            color: isActive ? ObsidianTheme.careBlue.withValues(alpha: 0.3) : c.border,
           ),
         ),
         alignment: Alignment.center,
@@ -554,7 +554,7 @@ class _TypeChip extends StatelessWidget {
             Text(emoji, style: const TextStyle(fontSize: 14)),
             const SizedBox(width: 6),
             Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500,
-                color: isActive ? ObsidianTheme.emerald : c.textSecondary)),
+                color: isActive ? ObsidianTheme.careBlue : c.textSecondary)),
           ],
         ),
       ),
@@ -592,7 +592,7 @@ class _ObservationCard extends StatelessWidget {
               ),
               Text(
                 observation.displayValue,
-                style: GoogleFonts.jetBrainsMono(fontSize: 16, fontWeight: FontWeight.w700, color: ObsidianTheme.emerald),
+                style: GoogleFonts.jetBrainsMono(fontSize: 16, fontWeight: FontWeight.w700, color: ObsidianTheme.careBlue),
               ),
             ],
           ),

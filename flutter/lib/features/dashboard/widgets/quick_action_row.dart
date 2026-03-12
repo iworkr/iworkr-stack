@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
@@ -17,20 +19,21 @@ import 'package:iworkr_mobile/features/search/screens/command_palette_screen.dar
 /// - bg: bg-white/[0.02]
 /// - hover border: border-emerald-500/30
 /// - rounded-lg (8px)
-class QuickActionRow extends StatelessWidget {
+class QuickActionRow extends ConsumerWidget {
   const QuickActionRow({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(labelTranslatorProvider);
     final actions = [
       _QuickAction(
         icon: PhosphorIconsLight.plus,
-        label: 'New Job',
+        label: t('New Job'),
         onTap: () => showCreateJobSheet(context),
       ),
       _QuickAction(
         icon: PhosphorIconsLight.calendarPlus,
-        label: 'Schedule',
+        label: t('Schedule'),
         onTap: () => context.go('/schedule'),
       ),
       _QuickAction(
@@ -60,12 +63,12 @@ class QuickActionRow extends StatelessWidget {
       ),
       _QuickAction(
         icon: PhosphorIconsLight.package,
-        label: 'Inventory',
+        label: t('Inventory'),
         onTap: () => context.push('/inventory'),
       ),
       _QuickAction(
         icon: PhosphorIconsLight.van,
-        label: 'Fleet',
+        label: t('Fleet'),
         onTap: () => context.push('/fleet'),
       ),
       _QuickAction(
