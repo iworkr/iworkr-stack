@@ -21,8 +21,8 @@ const typeConfig = {
 function getEmptyInsight(t: (key: string) => string): AIInsight {
   return {
     type: "success",
-    title: "No active insights",
-    body: `${t("Schedule")} is optimized. We\u2019ll surface recommendations here when action is needed.`,
+    title: t("Schedule looks optimized"),
+    body: t("All jobs are assigned and invoices are up to date. Your operations are running smoothly."),
     priority: 0,
     action: "",
     action_route: "",

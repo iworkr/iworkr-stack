@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/job_execution_provider.dart';
 import 'package:iworkr_mobile/core/services/telemetry_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -233,7 +234,9 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                 const SizedBox(height: 16),
 
                 Text(
-                  _canComplete ? 'JOB DEBRIEF' : 'INCOMPLETE TASKS',
+                  _canComplete
+                      ? (ref.read(isCareProvider) ? 'SHIFT DEBRIEF' : 'JOB DEBRIEF')
+                      : 'INCOMPLETE TASKS',
                   style: GoogleFonts.jetBrainsMono(
                     color: _canComplete ? ObsidianTheme.emerald : ObsidianTheme.amber,
                     fontSize: 14,
@@ -518,7 +521,9 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet>
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
-                                        _canComplete ? 'SUBMIT JOB REPORT' : 'REVIEW TASKS',
+                                        _canComplete
+                                            ? (ref.read(isCareProvider) ? 'SUBMIT SHIFT REPORT' : 'SUBMIT JOB REPORT')
+                                            : 'REVIEW TASKS',
                                         style: GoogleFonts.jetBrainsMono(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,

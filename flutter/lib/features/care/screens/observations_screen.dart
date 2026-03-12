@@ -195,9 +195,333 @@ class _ObservationsScreenState extends ConsumerState<ObservationsScreen> {
 
   void _showRecordSheet(BuildContext context) {
     HapticFeedback.mediumImpact();
-    // TODO: Implement observation recording sheet
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Record observation — coming soon')),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _RecordObservationSheet(),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ── Record Observation Bottom Sheet ──────────────────────
+// ═══════════════════════════════════════════════════════════
+
+class _RecordObservationSheet extends ConsumerStatefulWidget {
+  const _RecordObservationSheet();
+
+  @override
+  ConsumerState<_RecordObservationSheet> createState() => _RecordObservationSheetState();
+}
+
+class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet> {
+  final _valueCtrl = TextEditingController();
+  final _secondaryValueCtrl = TextEditingController(); // For BP diastolic
+  final _notesCtrl = TextEditingController();
+  final _participantIdCtrl = TextEditingController();
+  ObservationType _selectedType = ObservationType.heartRate;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _valueCtrl.dispose();
+    _secondaryValueCtrl.dispose();
+    _notesCtrl.dispose();
+    _participantIdCtrl.dispose();
+    super.dispose();
+  }
+
+  String get _valueLabel => switch (_selectedType) {
+    ObservationType.bloodPressure => 'Systolic (mmHg)',
+    ObservationType.heartRate => 'BPM',
+    ObservationType.temperature => '°C',
+    ObservationType.bloodGlucose => 'mmol/L',
+    ObservationType.oxygenSaturation => 'SpO2 %',
+    ObservationType.weight => 'kg',
+    ObservationType.painLevel => 'Level (0-10)',
+    ObservationType.moodRating => 'Rating (1-5)',
+    ObservationType.fluidIntake => 'ml',
+    ObservationType.bowelMovement => 'Bristol Scale (1-7)',
+    ObservationType.sleepQuality => 'Hours',
+    ObservationType.respiration => 'Breaths/min',
+    ObservationType.general => 'Summary',
+  };
+
+  String get _valueHint => switch (_selectedType) {
+    ObservationType.bloodPressure => 'e.g. 120',
+    ObservationType.heartRate => 'e.g. 72',
+    ObservationType.temperature => 'e.g. 36.5',
+    ObservationType.bloodGlucose => 'e.g. 5.5',
+    ObservationType.oxygenSaturation => 'e.g. 98',
+    ObservationType.weight => 'e.g. 75.0',
+    ObservationType.painLevel => 'e.g. 3',
+    ObservationType.moodRating => 'e.g. 4',
+    ObservationType.fluidIntake => 'e.g. 250',
+    ObservationType.bowelMovement => 'e.g. 4',
+    ObservationType.sleepQuality => 'e.g. 7.5',
+    ObservationType.respiration => 'e.g. 16',
+    ObservationType.general => 'Brief summary',
+  };
+
+  Map<String, dynamic> _buildValues() {
+    final raw = _valueCtrl.text.trim();
+    return switch (_selectedType) {
+      ObservationType.bloodPressure => {
+        'systolic': num.tryParse(raw),
+        'diastolic': num.tryParse(_secondaryValueCtrl.text.trim()),
+      },
+      ObservationType.heartRate => {'bpm': num.tryParse(raw)},
+      ObservationType.temperature => {'celsius': num.tryParse(raw)},
+      ObservationType.bloodGlucose => {'mmol': num.tryParse(raw)},
+      ObservationType.oxygenSaturation => {'spo2': num.tryParse(raw)},
+      ObservationType.weight => {'kg': num.tryParse(raw)},
+      ObservationType.painLevel => {'level': int.tryParse(raw)},
+      ObservationType.moodRating => {'rating': int.tryParse(raw)},
+      ObservationType.fluidIntake => {'ml': num.tryParse(raw)},
+      ObservationType.bowelMovement => {'type': int.tryParse(raw)},
+      ObservationType.sleepQuality => {'hours': num.tryParse(raw)},
+      ObservationType.respiration => {'rate': num.tryParse(raw)},
+      ObservationType.general => {'summary': raw},
+    };
+  }
+
+  Future<void> _submit() async {
+    if (_valueCtrl.text.trim().isEmpty) return;
+    if (_selectedType == ObservationType.bloodPressure && _secondaryValueCtrl.text.trim().isEmpty) return;
+
+    setState(() => _submitting = true);
+    try {
+      await recordObservation(
+        participantId: _participantIdCtrl.text.trim().isNotEmpty
+            ? _participantIdCtrl.text.trim()
+            : 'default',
+        type: _selectedType,
+        values: _buildValues(),
+        notes: _notesCtrl.text.trim().isNotEmpty ? _notesCtrl.text.trim() : null,
+      );
+
+      HapticFeedback.mediumImpact();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_selectedType.label} recorded',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: ObsidianTheme.emerald,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to record: $e', style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: ObsidianTheme.rose,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+      decoration: BoxDecoration(
+        color: c.canvas,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: c.borderMedium, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 16),
+          Text('Record Observation', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600, color: c.textPrimary)),
+          const SizedBox(height: 20),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              children: [
+                // ── Observation Type Selector ──────────────
+                Text('OBSERVATION TYPE', style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11, fontWeight: FontWeight.w600, color: c.textTertiary, letterSpacing: 0.8)),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: ObservationType.values.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 6),
+                    itemBuilder: (context, index) {
+                      final type = ObservationType.values[index];
+                      final isSelected = _selectedType == type;
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedType = type;
+                            _valueCtrl.clear();
+                            _secondaryValueCtrl.clear();
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected ? ObsidianTheme.emerald.withValues(alpha: 0.15) : c.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected ? ObsidianTheme.emerald.withValues(alpha: 0.4) : c.border,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(type.icon, style: const TextStyle(fontSize: 14)),
+                              const SizedBox(width: 6),
+                              Text(type.label, style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: isSelected ? ObsidianTheme.emerald : c.textSecondary,
+                              )),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── Value Field ───────────────────────────
+                Text('VALUE', style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11, fontWeight: FontWeight.w600, color: c.textTertiary, letterSpacing: 0.8)),
+                const SizedBox(height: 6),
+                if (_selectedType == ObservationType.bloodPressure) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ObsidianTextField(
+                          controller: _valueCtrl,
+                          label: _valueLabel,
+                          hint: _valueHint,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('/', style: GoogleFonts.jetBrainsMono(
+                            fontSize: 24, color: c.textTertiary, fontWeight: FontWeight.w300)),
+                      ),
+                      Expanded(
+                        child: _ObsidianTextField(
+                          controller: _secondaryValueCtrl,
+                          label: 'Diastolic (mmHg)',
+                          hint: 'e.g. 80',
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  _ObsidianTextField(
+                    controller: _valueCtrl,
+                    label: _valueLabel,
+                    hint: _valueHint,
+                    keyboardType: _selectedType == ObservationType.general
+                        ? TextInputType.text
+                        : TextInputType.number,
+                  ),
+                ],
+                const SizedBox(height: 16),
+
+                // ── Notes ─────────────────────────────────
+                Text('NOTES', style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11, fontWeight: FontWeight.w600, color: c.textTertiary, letterSpacing: 0.8)),
+                const SizedBox(height: 6),
+                _ObsidianTextField(
+                  controller: _notesCtrl,
+                  label: 'Notes',
+                  hint: 'Additional observations...',
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+
+          // ── Submit Button ──────────────────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _submitting ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ObsidianTheme.emerald,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: _submitting
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                    : Text('Record Observation', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ObsidianTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final int maxLines;
+  final TextInputType keyboardType;
+
+  const _ObsidianTextField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    this.maxLines = 1,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: c.border),
+      ),
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines,
+        keyboardType: keyboardType,
+        style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(fontSize: 14, color: c.textTertiary),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        ),
+      ),
     );
   }
 }

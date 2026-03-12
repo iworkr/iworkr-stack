@@ -316,7 +316,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/60">
               <div className="text-center">
                 <MapPinIcon size={16} strokeWidth={1} className="mx-auto mb-1 text-zinc-700" />
-                <p className="text-[10px] text-zinc-600">No active dispatches</p>
+                <p className="text-[10px] text-zinc-600">{t("No active dispatches")}</p>
               </div>
             </div>
           )}
@@ -358,7 +358,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/60">
             <div className="text-center">
               <MapPinIcon size={20} strokeWidth={1} className="mx-auto mb-1.5 text-zinc-700" />
-              <p className="text-[11px] text-zinc-600">No active dispatches</p>
+              <p className="text-[11px] text-zinc-600">{t("No active dispatches")}</p>
               <p className="mt-0.5 text-[9px] text-zinc-700">{t("Technicians")} will appear here when {t("jobs")} are in progress.</p>
             </div>
           </div>

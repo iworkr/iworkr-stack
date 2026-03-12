@@ -269,7 +269,7 @@ export default function ClientsPage() {
                       {isActive && (
                         <motion.div
                           layoutId="clients-tab-dot"
-                          className="absolute -bottom-1.5 left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full bg-emerald-500"
+                          className={`absolute -bottom-1.5 left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}
                           transition={{ type: "spring", stiffness: 400, damping: 30 }}
                         />
                       )}
@@ -304,7 +304,7 @@ export default function ClientsPage() {
                   onChange={(e) => { setSearch(e.target.value); setFocusedIndex(0); }}
                   onFocus={() => setSearchFocused(true)}
                   onBlur={() => setSearchFocused(false)}
-                  placeholder="Search clients, emails, phones..."
+                  placeholder={t("Search clients, emails, phones...")}
                   className="w-44 bg-transparent text-[12px] text-zinc-300 outline-none placeholder:text-zinc-700"
                 />
                 {!searchFocused && !search && (
@@ -483,17 +483,17 @@ export default function ClientsPage() {
                 autoplay
                 className="opacity-50"
               />
-              <div className="absolute inset-0 rounded-full border border-emerald-500/[0.06] animate-signal-pulse" />
+              <div className={`absolute inset-0 rounded-full border animate-signal-pulse ${isCare ? "border-blue-500/[0.06]" : "border-emerald-500/[0.06]"}`} />
             </motion.div>
             <h3 className="text-[15px] font-medium text-zinc-200">
               {hasActiveFilters || search || activeTab !== "all"
-                ? "No clients match"
-                : "No clients yet"}
+                ? t("No clients match")
+                : t("No clients yet")}
             </h3>
             <p className="mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-zinc-600">
               {hasActiveFilters || search || activeTab !== "all"
                 ? "Try adjusting your filters or search terms."
-                : "Add your first client to start building your CRM."}
+                : t("Add your first client to start building your CRM.")}
             </p>
             {(hasActiveFilters || search || activeTab !== "all") ? (
               <button
@@ -505,10 +505,10 @@ export default function ClientsPage() {
             ) : (
               <button
                 onClick={() => setCreateClientModalOpen(true)}
-                className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 hover:bg-emerald-500"
+                className={`mt-5 flex items-center gap-2 rounded-lg px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 ${isCare ? "bg-blue-600 hover:bg-blue-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
               >
                 <Plus size={14} />
-                Add First Client
+                {t("Add First Client")}
               </button>
             )}
           </motion.div>
@@ -687,10 +687,10 @@ export default function ClientsPage() {
                       router.push(`/dashboard/jobs?clientId=${client.id}&clientName=${encodeURIComponent(client.name)}`);
                     }}
                     className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
-                    title="New Job"
+                    title={t("New Job")}
                   >
                     <Briefcase size={10} />
-                    Job
+                    {isCare ? "Shift" : "Job"}
                   </button>
                   <button
                     onClick={(e) => {

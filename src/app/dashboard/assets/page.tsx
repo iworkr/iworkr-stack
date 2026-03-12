@@ -31,11 +31,12 @@ import { StockModal } from "@/components/assets/stock-modal";
 import { ScannerOverlay } from "@/components/assets/scanner-overlay";
 import { scanLookup } from "@/app/actions/assets";
 import { type Asset } from "@/lib/assets-data";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Tab Config ─────────────────────────────────────────── */
 
-const tabs: { id: AssetsTab; label: string; icon: typeof Truck }[] = [
-  { id: "fleet", label: "Fleet & Tools", icon: Truck },
+const tabsConfig: { id: AssetsTab; label: string; careLabel?: string; icon: typeof Truck }[] = [
+  { id: "fleet", label: "Fleet & Tools", careLabel: "Equipment & Supplies", icon: Truck },
   { id: "inventory", label: "Inventory", icon: Package },
   { id: "audits", label: "Audits", icon: ClipboardList },
 ];
@@ -201,6 +202,7 @@ const categoryIconMap: Record<string, typeof Truck> = {
 export default function AssetsPage() {
   const router = useRouter();
   const { currentOrg } = useAuthStore();
+  const { t, isCare } = useIndustryLexicon();
   const orgId = currentOrg?.id;
   const {
     assets,
@@ -373,7 +375,7 @@ export default function AssetsPage() {
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">ASSET COMMAND</span>
+              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("ASSET COMMAND")}</span>
               <ChevronRightIcon size={10} className="text-zinc-700" />
               <span className="font-medium text-white">Assets</span>
             </div>
@@ -471,7 +473,7 @@ export default function AssetsPage() {
               <DollarSign size={14} className="text-zinc-500 transition-colors group-hover:text-emerald-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Fleet Value</div>
+              <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Fleet Value")}</div>
               <div className="font-mono text-[18px] font-semibold tabular-nums tracking-tight text-emerald-400">
                 <AnimatedNumber value={totalValue} />
               </div>
@@ -540,9 +542,10 @@ export default function AssetsPage() {
 
         {/* ── Tabs (Sliding Pill) ────────────────────────── */}
         <div className="flex gap-0.5 px-5 pb-1">
-          {tabs.map((tab) => {
+          {tabsConfig.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const label = isCare && tab.careLabel ? tab.careLabel : tab.label;
             return (
               <button
                 key={tab.id}
@@ -560,7 +563,7 @@ export default function AssetsPage() {
                 )}
                 <span className="relative flex items-center gap-1.5">
                   <Icon size={13} strokeWidth={1.5} />
-                  {tab.label}
+                  {label}
                 </span>
               </button>
             );
@@ -600,9 +603,9 @@ export default function AssetsPage() {
                 {filteredAssets.length === 0 ? (
                   <DepotEmptyState
                     icon={Truck}
-                    title={kpiFilter === "maintenance" ? "No assets in maintenance" : "The depot is empty"}
-                    subtitle={searchQuery ? "No assets match your search." : kpiFilter === "maintenance" ? "All assets are operational." : "Assets will appear here once added."}
-                    cta={!searchQuery && kpiFilter === "all" ? "Add First Asset" : undefined}
+                    title={kpiFilter === "maintenance" ? "No assets in maintenance" : t("The depot is empty")}
+                    subtitle={searchQuery ? "No assets match your search." : kpiFilter === "maintenance" ? "All assets are operational." : t("Assets will appear here once added.")}
+                    cta={!searchQuery && kpiFilter === "all" ? t("Add First Asset") : undefined}
                     onCta={!searchQuery && kpiFilter === "all" ? () => setAssetDrawerOpen(true) : undefined}
                   />
                 ) : viewMode === "grid" ? (

@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/billing_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/team_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -73,6 +74,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
+    final t = ref.watch(labelTranslatorProvider);
     final teamState = ref.watch(teamProvider);
     final members = teamState.filtered;
 
@@ -99,7 +101,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
               child: Center(child: Icon(PhosphorIconsLight.arrowLeft, color: c.textPrimary, size: 22)),
             ),
             title: Text(
-              'Team Directory',
+              '${t('Team')} Directory',
               style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3),
             ),
             actions: [
@@ -135,6 +137,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
               onSearch: (q) => ref.read(teamProvider.notifier).setSearch(q),
               activeFilter: teamState.filter,
               onFilter: (f) => ref.read(teamProvider.notifier).setFilter(f),
+              translator: t,
             ),
           ),
 
@@ -188,12 +191,14 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
   final ValueChanged<String> onSearch;
   final TeamFilter activeFilter;
   final ValueChanged<TeamFilter> onFilter;
+  final String Function(String) translator;
 
   _SearchBarDelegate({
     required this.searchCtrl,
     required this.onSearch,
     required this.activeFilter,
     required this.onFilter,
+    required this.translator,
   });
 
   @override
@@ -226,7 +231,7 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
                   style: GoogleFonts.inter(color: c.textPrimary, fontSize: 14),
                   cursorColor: ObsidianTheme.emerald,
                   decoration: InputDecoration(
-                    hintText: 'Search team...',
+                    hintText: 'Search ${translator('Team').toLowerCase()}...',
                     hintStyle: GoogleFonts.inter(color: c.textTertiary, fontSize: 14),
                     prefixIcon: Icon(CupertinoIcons.search, color: c.textTertiary, size: 16),
                     border: InputBorder.none,
@@ -246,7 +251,7 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
                     final label = switch (f) {
                       TeamFilter.all => 'All',
                       TeamFilter.admins => 'Admins',
-                      TeamFilter.techs => 'Techs',
+                      TeamFilter.techs => translator('Technicians'),
                       TeamFilter.offline => 'Offline',
                     };
                     return Padding(
@@ -289,7 +294,8 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _SearchBarDelegate oldDelegate) =>
-      oldDelegate.activeFilter != activeFilter;
+      oldDelegate.activeFilter != activeFilter ||
+      oldDelegate.translator != translator;
 }
 
 // ── Member Row ───────────────────────────────────────────

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -30,6 +31,7 @@ class JobsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.iColors;
+    final t = ref.watch(labelTranslatorProvider);
     final jobsAsync = ref.watch(jobsStreamProvider);
     final filter = ref.watch(jobFilterProvider);
 
@@ -45,7 +47,7 @@ class JobsScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   Text(
-                    'Jobs',
+                    t('Jobs'),
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -123,7 +125,7 @@ class JobsScreen extends ConsumerWidget {
                   SizedBox(width: 20, child: Text('S', style: _headerStyle(c))),
                   const SizedBox(width: 10),
                   Expanded(child: Text('TITLE', style: _headerStyle(c))),
-                  SizedBox(width: 80, child: Text('CLIENT', style: _headerStyle(c))),
+                  SizedBox(width: 80, child: Text(t('Client').toUpperCase(), style: _headerStyle(c))),
                 ],
               ),
             ).animate().fadeIn(delay: 120.ms, duration: 200.ms),
@@ -135,9 +137,9 @@ class JobsScreen extends ConsumerWidget {
                   final filtered = filter == null ? jobs : jobs.where((j) => j.status == filter).toList();
 
                   if (filtered.isEmpty) {
-                    return const AnimatedEmptyState(
+                    return AnimatedEmptyState(
                       type: EmptyStateType.briefcase,
-                      title: 'No jobs found',
+                      title: t('No jobs yet'),
                       subtitle: 'Enjoy the silence.',
                     );
                   }

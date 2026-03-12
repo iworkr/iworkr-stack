@@ -140,6 +140,88 @@ const CARE_LEXICON: Record<string, string> = {
   "job site": "participant home",
   "Job Site": "Participant Home",
   Backlog: "Unassigned",
+
+  // Revenue / Finance widget
+  "Revenue MTD": "Funding MTD",
+  "Revenue": "Funding",
+  revenue: "funding",
+  "REVENUE MTD": "FUNDING MTD",
+  "Total Revenue": "Total Funding",
+
+  // Dispatch widget empty states
+  "No active dispatches": "No workers assigned",
+  "No active dispatches.": "No workers assigned.",
+
+  // AI Insight widget
+  "Schedule looks optimized": "Roster looks optimized",
+  "All jobs are assigned and invoices are up to date. Your operations are running smoothly.":
+    "All shifts are assigned and claims are up to date. Your care operations are running smoothly.",
+
+  // Clients / Participants empty state
+  "No clients yet": "No participants yet",
+  "No clients match": "No participants match",
+  "Add your first client to start building your CRM.":
+    "Add your first participant to start building your records.",
+  "Add First Client": "Add First Participant",
+  "Search clients, emails, phones...": "Search participants, emails, phones...",
+  "No email configured": "No email configured",
+
+  // Assets page
+  "ASSET COMMAND": "CARE EQUIPMENT",
+  "Fleet Value": "Equipment Value",
+  "FLEET VALUE": "EQUIPMENT VALUE",
+  "Fleet & Tools": "Equipment & Supplies",
+  "The depot is empty": "No equipment registered",
+  "Assets will appear here once added.": "Equipment and supplies will appear here once added.",
+  "Add First Asset": "Add First Item",
+  "Low Stock": "Low Stock",
+
+  // Forms page
+  "Safety checks": "Care plans",
+  "Field inspections": "Risk assessments",
+  "Digital signatures": "Progress notes",
+  "No forms deployed": "No forms deployed",
+  "Build your first digital blueprint for forensic traceability.":
+    "Build your first care form for compliance and documentation.",
+
+  // Automations page
+  "Automate the Boring Stuff.": "Automate Care Workflows.",
+  "Build logic flows that send reminders, chase invoices, and notify your team — all on autopilot.":
+    "Build logic flows that send shift reminders, follow up on claims, and notify your support team — all on autopilot.",
+  "Automate the Boring Stuff": "Automate Care Workflows",
+  "Handle 10x jobs without 10x effort": "Handle 10x shifts without 10x effort",
+  "Jobs created from phone calls": "Shifts created from phone calls",
+  "Zero missed leads, ever": "Zero missed referrals, ever",
+  "Technician efficiency metrics": "Support worker efficiency metrics",
+  "Client LTV": "Participant Funding",
+  "Scale with Automations": "Scale with Automations",
+  "Put your business on autopilot. Save 20+ hours a week.":
+    "Put your care operations on autopilot. Save 20+ hours a week.",
+
+  // AI Agent page
+  "AI Workforce Hub": "AI Care Hub",
+  "Deploy synthetic receptionists and automated dispatchers to scale your operations without scaling payroll.":
+    "Deploy synthetic receptionists and automated care coordinators to scale your operations without scaling payroll.",
+  "The Synthetic Roster": "The Synthetic Care Team",
+  "Deploy synthetic agents to automate your operations.":
+    "Deploy synthetic agents to automate your care coordination.",
+  "Dispatch Copilot": "Roster Copilot",
+  "Analyzes schedule density and suggests optimal routing and reassignment to reduce windshield time.":
+    "Analyzes roster density and suggests optimal scheduling and reassignment to improve coverage.",
+  "Answers calls 24/7, books jobs, and handles FAQs via Vapi/Twilio.":
+    "Answers calls 24/7, books shifts, and handles FAQs via Vapi/Twilio.",
+  "qualifying leads into the Triage inbox.":
+    "qualifying referral leads into the Triage inbox.",
+  "texts clients for reviews 24hrs post-job.":
+    "texts participants for feedback 24hrs post-shift.",
+
+  // Integrations page
+  "Scale with Integrations": "Scale with Integrations",
+  "Connect your workspace to your favourite tools — Stripe, Xero, and more.":
+    "Connect your workspace to NDIS portals, Stripe, Xero, and more.",
+
+  // Settings sidebar
+  JOBS: "SHIFTS",
 };
 
 // ─── Hook ───────────────────────────────────────────────────────────────────

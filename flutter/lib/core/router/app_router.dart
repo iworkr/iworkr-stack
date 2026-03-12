@@ -46,6 +46,7 @@ import 'package:iworkr_mobile/features/assets/screens/asset_detail_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/care_hub_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/credentials_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/medications_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/incident_detail_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/incidents_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/observations_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/progress_notes_screen.dart';
@@ -514,6 +515,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const IncidentsScreen(),
           transitionsBuilder: _slideUpTransition,
         ),
+      ),
+      GoRoute(
+        path: '/care/incidents/:incidentId',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final incidentId = state.pathParameters['incidentId']!;
+          return CustomTransitionPage(
+            child: IncidentDetailScreen(incidentId: incidentId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
       ),
       GoRoute(
         path: '/care/observations',

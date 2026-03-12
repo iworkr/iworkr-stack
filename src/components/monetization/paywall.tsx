@@ -26,6 +26,7 @@ import {
 import { useState } from "react";
 import type { GatedFeature, FeatureConfig } from "./feature-gate";
 import { useUpgradeModal } from "@/lib/upgrade-modal-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Feature icon map ──────────────────────────────────── */
 
@@ -295,7 +296,9 @@ function FullPagePaywall({ feature, config }: { feature: GatedFeature; config: F
   const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { openUpgrade } = useUpgradeModal();
-  const bentoProps = bentoPropsMap[feature] || bentoPropsMap.automations;
+  const { t, isCare } = useIndustryLexicon();
+  const bentoPropsRaw = bentoPropsMap[feature] || bentoPropsMap.automations;
+  const bentoProps = bentoPropsRaw.map((b) => ({ ...b, desc: t(b.desc) }));
 
   const handleUpgrade = () => {
     setLoading(true);
@@ -344,7 +347,7 @@ function FullPagePaywall({ feature, config }: { feature: GatedFeature; config: F
           transition={{ delay: 0.7, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="text-2xl font-semibold tracking-tight text-white"
         >
-          Scale with {config.label}
+          {t(`Scale with ${config.label}`)}
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 16 }}
@@ -352,7 +355,7 @@ function FullPagePaywall({ feature, config }: { feature: GatedFeature; config: F
           transition={{ delay: 0.75, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="mt-2 max-w-sm text-[14px] leading-relaxed text-zinc-500"
         >
-          {config.description}
+          {t(config.description)}
         </motion.p>
 
         {/* Bento Grid */}

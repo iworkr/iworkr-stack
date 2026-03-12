@@ -21,6 +21,8 @@ import 'package:iworkr_mobile/features/execution/widgets/slide_to_engage.dart';
 import 'package:iworkr_mobile/features/execution/widgets/hud_subtask_list.dart';
 import 'package:iworkr_mobile/features/execution/widgets/evidence_locker_sheet.dart';
 import 'package:iworkr_mobile/features/execution/widgets/job_completion_sheet.dart';
+import 'package:iworkr_mobile/features/execution/widgets/shift_report_sheet.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/features/payments/screens/terminal_screen.dart';
 import 'package:iworkr_mobile/features/forms/screens/compliance_packet_screen.dart';
 import 'package:iworkr_mobile/features/forms/screens/form_runner_screen.dart';
@@ -50,6 +52,8 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
   _HudPhase _phase = _HudPhase.brief;
   bool _hazardActive = false;
 
+  late final String Function(String) t;
+
   bool get _engaged => _phase == _HudPhase.working;
   bool get _completed => _phase == _HudPhase.completed;
 
@@ -66,6 +70,8 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
   @override
   void initState() {
     super.initState();
+    t = ref.read(labelTranslatorProvider);
+
     _pulseBorder = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
@@ -336,6 +342,21 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
         if (mounted) showEvidenceLocker(context, jobId: widget.jobId);
         return;
       }
+    }
+
+    if (!mounted) return;
+
+    // ── Care: Shift Report before completion ──────────
+    final isCare = ref.read(isCareProvider);
+    if (isCare && mounted) {
+      final job = await ref.read(jobDetailProvider(widget.jobId).future);
+      final shiftReported = await showShiftReportSheet(
+        context,
+        jobId: widget.jobId,
+        participantId: job?.clientId ?? '',
+        elapsed: _elapsed,
+      );
+      if (!shiftReported) return; // User cancelled
     }
 
     if (!mounted) return;
@@ -750,7 +771,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
             _BriefInfoCard(
               icon: PhosphorIconsLight.notepad,
-              label: 'SCOPE OF WORK',
+              label: ref.read(isCareProvider) ? 'SUPPORT PLAN' : 'SCOPE OF WORK',
               content: job.description ?? job.title,
               accentColor: ObsidianTheme.emerald,
               delay: 100,
@@ -811,7 +832,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
             SlideToEngage(
               onEngaged: _onStartTravel,
-              label: 'SLIDE TO START TRAVEL',
+              label: ref.read(isCareProvider) ? 'SLIDE TO START SHIFT' : 'SLIDE TO START TRAVEL',
             ),
           ],
         );
@@ -901,7 +922,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
             _BriefInfoCard(
               icon: PhosphorIconsLight.notepad,
-              label: 'SCOPE OF WORK',
+              label: ref.read(isCareProvider) ? 'SUPPORT PLAN' : 'SCOPE OF WORK',
               content: job.description ?? job.title,
               accentColor: ObsidianTheme.emerald,
               delay: 150,
@@ -1021,7 +1042,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
             _BriefInfoCard(
               icon: PhosphorIconsLight.notepad,
-              label: 'SCOPE OF WORK',
+              label: ref.read(isCareProvider) ? 'SUPPORT PLAN' : 'SCOPE OF WORK',
               content: job.description ?? job.title,
               accentColor: ObsidianTheme.emerald,
               delay: 100,
@@ -1146,7 +1167,9 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
                     SlideToEngage(
                       onEngaged: _onEngaged,
                       enabled: isUnlocked,
-                      label: isUnlocked ? 'SLIDE TO START WORK' : 'COMPLETE SAFETY CHECK',
+                      label: isUnlocked
+                          ? (ref.read(isCareProvider) ? 'SLIDE TO START SHIFT' : 'SLIDE TO START WORK')
+                          : 'COMPLETE SAFETY CHECK',
                     ),
                   ],
                 );
@@ -1625,7 +1648,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
               const Icon(PhosphorIconsLight.flagCheckered, size: 18),
               const SizedBox(width: 8),
               Text(
-                'COMPLETE JOB',
+                'COMPLETE ${t('Job').toUpperCase()}',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

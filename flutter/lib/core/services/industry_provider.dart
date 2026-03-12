@@ -55,6 +55,27 @@ const _careLexicon = <String, String>{
   'Equipment': 'Aids & Equipment',
   'Fleet': 'Transport',
   'Inventory': 'Supplies',
+  // ── Extended care nomenclature ──
+  'Team': 'Support Team',
+  'Revenue': 'Funding',
+  'Revenue MTD': 'Funding MTD',
+  'REVENUE MTD': 'FUNDING MTD',
+  'LIVE DISPATCH': 'LIVE COORDINATION',
+  'NEW JOB': 'NEW SHIFT',
+  'CLOCK IN': 'START SHIFT',
+  'COMPLETE JOB': 'COMPLETE SHIFT',
+  'JOB DEBRIEF': 'SHIFT DEBRIEF',
+  'SUBMIT JOB REPORT': 'SUBMIT SHIFT REPORT',
+  'SCOPE OF WORK': 'SUPPORT PLAN',
+  'job': 'shift',
+  'client': 'participant',
+  'Active Jobs': 'Active Shifts',
+  'No jobs yet': 'No shifts yet',
+  'Create Job': 'Create Shift',
+  'New Job': 'New Shift',
+  'My Jobs': 'My Shifts',
+  'Assets': 'Aids & Equipment',
+  'Sales Pipeline': 'Referral Pipeline',
 };
 
 /// Translate a UI label based on org industry type

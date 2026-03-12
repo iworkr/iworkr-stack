@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { useFormsStore, type FormsTab } from "@/lib/forms-store";
 import { FormCard } from "@/components/forms/form-card";
 import { SubmissionsList } from "@/components/forms/submissions-list";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Tab Config ───────────────────────────────────────── */
 
@@ -35,11 +36,13 @@ function ForensicEmptyState({
   subtitle,
   cta,
   onCta,
+  hints,
 }: {
   title: string;
   subtitle: string;
   cta?: string;
   onCta?: () => void;
+  hints?: { icon: typeof ShieldCheck; label: string }[];
 }) {
   return (
     <motion.div
@@ -75,11 +78,11 @@ function ForensicEmptyState({
 
       {/* Capability hints — show system potential */}
       <div className="mt-6 flex items-center gap-4">
-        {[
+        {(hints ?? [
           { icon: ShieldCheck, label: "Safety checks" },
           { icon: ClipboardCheck, label: "Field inspections" },
           { icon: PenTool, label: "Digital signatures" },
-        ].map(({ icon: HintIcon, label }) => (
+        ]).map(({ icon: HintIcon, label }) => (
           <div key={label} className="flex items-center gap-1.5 text-[10px] text-zinc-700">
             <HintIcon size={10} strokeWidth={1.5} />
             <span>{label}</span>
@@ -122,6 +125,7 @@ function HeartbeatLoader() {
 
 export default function FormsPage() {
   const router = useRouter();
+  const { t, isCare } = useIndustryLexicon();
   const {
     templates,
     submissions,
@@ -346,14 +350,19 @@ export default function FormsPage() {
                   </div>
                 ) : (
                   <ForensicEmptyState
-                    title={activeTab === "my_forms" ? "No forms deployed" : "No library templates found"}
+                    title={activeTab === "my_forms" ? t("No forms deployed") : "No library templates found"}
                     subtitle={
                       activeTab === "my_forms"
-                        ? "Build your first digital blueprint for forensic traceability."
+                        ? t("Build your first digital blueprint for forensic traceability.")
                         : "Try adjusting your search."
                     }
                     cta={activeTab === "my_forms" ? "New Form" : undefined}
                     onCta={activeTab === "my_forms" ? () => router.push("/dashboard/forms/builder/new") : undefined}
+                    hints={isCare ? [
+                      { icon: ShieldCheck, label: "Care plans" },
+                      { icon: ClipboardCheck, label: "Risk assessments" },
+                      { icon: PenTool, label: "Progress notes" },
+                    ] : undefined}
                   />
                 )}
               </motion.div>

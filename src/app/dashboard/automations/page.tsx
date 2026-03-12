@@ -39,6 +39,7 @@ import {
 } from "@/lib/automations-data";
 import { FlowCard } from "@/components/automations/flow-card";
 import { useToastStore } from "@/components/app/action-toast";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Motion variants — staggered page load ──────────────── */
 
@@ -73,7 +74,8 @@ const execStatusConfig = {
 
 /* ── Animated Empty State (Lottie-style CSS) ──────────── */
 
-function EmptyState({ onCreateFlow, loading }: { onCreateFlow: () => void; loading: boolean }) {
+function EmptyState({ onCreateFlow, loading, t }: { onCreateFlow: () => void; loading: boolean; t?: (key: string) => string }) {
+  const tr = t || ((k: string) => k);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -137,10 +139,10 @@ function EmptyState({ onCreateFlow, loading }: { onCreateFlow: () => void; loadi
       </div>
 
       <h3 className="relative z-10 text-[16px] font-medium tracking-tight text-zinc-200">
-        Automate the Boring Stuff.
+        {tr("Automate the Boring Stuff.")}
       </h3>
       <p className="relative z-10 mt-2 max-w-[320px] text-[13px] leading-relaxed text-[var(--text-muted)]">
-        Build logic flows that send reminders, chase invoices, and notify your team — all on autopilot.
+        {tr("Build logic flows that send reminders, chase invoices, and notify your team — all on autopilot.")}
       </p>
       <button
         onClick={onCreateFlow}
@@ -636,6 +638,7 @@ function ExecutionsTab() {
 
 export default function AutomationsPage() {
   const router = useRouter();
+  const { t: lexT } = useIndustryLexicon();
   const {
     flows,
     logs,
@@ -889,7 +892,7 @@ export default function AutomationsPage() {
             </motion.div>
           ) : flows.length === 0 && !searchQuery ? (
             /* ── PRD: Beautiful animated empty state ── */
-            <EmptyState onCreateFlow={handleNewFlow} loading={creatingFlow} />
+            <EmptyState onCreateFlow={handleNewFlow} loading={creatingFlow} t={lexT} />
           ) : (
             <motion.div
               initial={{ opacity: 0 }}

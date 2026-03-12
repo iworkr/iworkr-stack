@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
@@ -34,6 +35,7 @@ class JobDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.iColors;
+    final t = ref.watch(labelTranslatorProvider);
     final jobAsync = ref.watch(jobDetailProvider(jobId));
     final subtasksAsync = ref.watch(jobSubtasksProvider(jobId));
     final activityAsync = ref.watch(jobActivityProvider(jobId));
@@ -43,10 +45,10 @@ class JobDetailScreen extends ConsumerWidget {
         data: (job) {
           if (job == null) {
             return Center(
-              child: Text('Job not found', style: TextStyle(color: c.textTertiary)),
+              child: Text('${t('Job')} not found', style: TextStyle(color: c.textTertiary)),
             );
           }
-          return _JobDetailBody(job: job, subtasksAsync: subtasksAsync, activityAsync: activityAsync);
+          return _JobDetailBody(job: job, subtasksAsync: subtasksAsync, activityAsync: activityAsync, translator: t);
         },
         loading: () => const SafeArea(child: PageSkeleton()),
         error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: ObsidianTheme.rose))),
@@ -59,16 +61,19 @@ class _JobDetailBody extends StatelessWidget {
   final Job job;
   final AsyncValue<List<Map<String, dynamic>>> subtasksAsync;
   final AsyncValue<List<Map<String, dynamic>>> activityAsync;
+  final String Function(String) translator;
 
   const _JobDetailBody({
     required this.job,
     required this.subtasksAsync,
     required this.activityAsync,
+    required this.translator,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
+    final t = translator;
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -158,7 +163,7 @@ class _JobDetailBody extends StatelessWidget {
                     ),
                     if (job.clientName != null)
                       _PropertyCard(
-                        label: 'CLIENT',
+                        label: t('Client').toUpperCase(),
                         index: 2,
                         child: Text(job.clientName!, style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
                       ),
@@ -231,8 +236,8 @@ class _JobDetailBody extends StatelessWidget {
                         const SizedBox(width: 10),
                         Text(
                           job.status == JobStatus.cancelled
-                              ? 'JOB CANCELLED'
-                              : 'JOB ${job.status.label.toUpperCase()}',
+                              ? '${t('Job').toUpperCase()} CANCELLED'
+                              : '${t('Job').toUpperCase()} ${job.status.label.toUpperCase()}',
                           style: GoogleFonts.jetBrainsMono(
                             color: c.textTertiary,
                             fontSize: 13,
@@ -274,7 +279,7 @@ class _JobDetailBody extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            job.status.isActive ? 'CONTINUE JOB' : 'EXECUTE JOB',
+                            job.status.isActive ? 'CONTINUE ${t('Job').toUpperCase()}' : 'EXECUTE ${t('Job').toUpperCase()}',
                             style: GoogleFonts.jetBrainsMono(
                               color: ObsidianTheme.emerald,
                               fontSize: 13,
@@ -519,7 +524,7 @@ class _JobDetailBody extends StatelessWidget {
                             children: [
                               Icon(PhosphorIconsLight.fileText, size: 14, color: c.textSecondary),
                               const SizedBox(width: 6),
-                              Text('Create Quote', style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
+                              Text('Create ${t('Quote')}', style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
@@ -552,7 +557,7 @@ class _JobDetailBody extends StatelessWidget {
                             children: [
                               Icon(PhosphorIconsLight.receipt, size: 14, color: c.textSecondary),
                               const SizedBox(width: 6),
-                              Text('Invoice', style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
+                              Text(t('Invoice'), style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),

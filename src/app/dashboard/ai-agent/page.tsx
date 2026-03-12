@@ -14,6 +14,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useEffect, useState } from "react";
 import { getAgentConfig } from "@/app/actions/ai-agent";
 import { FeatureGate } from "@/components/app/feature-gate";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── PRD 60: Agent definitions (The Synthetic Roster) ───── */
 
@@ -62,11 +63,13 @@ function AgentCard({
   isActive,
   onActivate,
   index,
+  t,
 }: {
   agent: (typeof AGENTS)[number];
   isActive: boolean;
   onActivate?: () => void;
   index: number;
+  t?: (key: string) => string;
 }) {
   const Icon = agent.icon;
 
@@ -112,7 +115,7 @@ function AgentCard({
             </div>
             <div>
               <h3 className="text-[13px] font-medium tracking-tight text-zinc-200">
-                {agent.name}
+                {t ? t(agent.name) : agent.name}
               </h3>
               {isActive && (
                 <span className="relative mt-0.5 flex items-center gap-1">
@@ -126,7 +129,7 @@ function AgentCard({
           </div>
         </div>
         <p className="mb-4 text-[11px] leading-relaxed text-[var(--text-muted)]">
-          {agent.description}
+          {t ? t(agent.description) : agent.description}
         </p>
 
         <div className="mt-auto flex items-center gap-2">
@@ -157,6 +160,7 @@ function AgentCard({
 
 export default function AIWorkforceHubPage() {
   const { currentOrg } = useAuthStore();
+  const { t } = useIndustryLexicon();
   const [phoneEnabled, setPhoneEnabled] = useState(false);
   const [tasksToday] = useState(142);
 
@@ -173,8 +177,8 @@ export default function AIWorkforceHubPage() {
   return (
     <FeatureGate
       requiredTier="business"
-      featureTitle="AI Workforce Hub"
-      featureDescription="Deploy synthetic receptionists and automated dispatchers to scale your operations without scaling payroll."
+      featureTitle={t("AI Workforce Hub")}
+      featureDescription={t("Deploy synthetic receptionists and automated dispatchers to scale your operations without scaling payroll.")}
     >
       <div className="relative flex h-full flex-col bg-[var(--background)]">
         {/* Noise texture */}
@@ -196,10 +200,10 @@ export default function AIWorkforceHubPage() {
             AI Workforce
           </p>
           <h1 className="text-[15px] font-medium tracking-tight text-zinc-200">
-            The Synthetic Roster
+            {t("The Synthetic Roster")}
           </h1>
           <p className="mt-0.5 text-[12px] text-zinc-600">
-            Deploy synthetic agents to automate your operations.
+            {t("Deploy synthetic agents to automate your operations.")}
           </p>
           {/* Micro-metric bar */}
           <div className="mt-3 flex items-center gap-4 font-mono text-[11px]">
@@ -223,6 +227,7 @@ export default function AIWorkforceHubPage() {
                 key={agent.id}
                 agent={agent}
                 index={i}
+                t={t}
                 isActive={
                   agent.id === "phone" ? phoneEnabled : false
                 }

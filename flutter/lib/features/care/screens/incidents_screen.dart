@@ -268,7 +268,12 @@ class _IncidentCard extends StatelessWidget {
     final c = context.iColors;
     final sevColor = _severityColor();
 
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        context.push('/care/incidents/${incident.id}');
+      },
+      child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.surface,
@@ -338,6 +343,7 @@ class _IncidentCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

@@ -62,7 +62,7 @@ function formatTooltipDate(dateStr: string): string {
 export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
   const dailyRevenue = useFinanceStore((s) => s.dailyRevenue);
   const financeLoaded = useFinanceStore((s) => s.loaded);
   const cachedStats = useDashboardStore((s) => s.widgetRevenueStats);
@@ -176,7 +176,7 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
           className="flex h-full cursor-pointer flex-col items-center justify-center p-4"
           onClick={() => router.push("/dashboard/finance")}
         >
-          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">Revenue</span>
+          <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-[var(--text-muted)]">{t("Revenue")}</span>
           <div className="mt-1.5 flex items-baseline gap-0.5">
             <span className={`font-mono text-[10px] tabular-nums ${isZero ? "text-zinc-700" : "text-[var(--text-dim)]"}`}>$</span>
             <span className={`font-mono text-[24px] font-medium tabular-nums tracking-tight ${isZero ? "text-zinc-700" : "text-[var(--text-primary)]"}`}>
@@ -207,7 +207,7 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
       header={
         <div className="flex items-center gap-2">
           <TrendingUp size={14} className="text-zinc-600" />
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Revenue MTD</span>
+          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">{t("Revenue MTD")}</span>
         </div>
       }
       action={
@@ -233,8 +233,8 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
         >
           <defs>
             <linearGradient id="revenueGradFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--brand)" stopOpacity="0.15" />
-              <stop offset="95%" stopColor="var(--brand)" stopOpacity="0" />
+              <stop offset="5%" stopColor={isCare ? "#3b82f6" : "var(--brand)"} stopOpacity="0.15" />
+              <stop offset="95%" stopColor={isCare ? "#3b82f6" : "var(--brand)"} stopOpacity="0" />
             </linearGradient>
           </defs>
 
@@ -254,7 +254,7 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
           <motion.path
             d={linePath}
             fill="none"
-            stroke="var(--brand)"
+            stroke={isCare ? "#3b82f6" : "var(--brand)"}
             strokeWidth="2"
             strokeLinecap="round"
             style={{ strokeDasharray: 2000, strokeDashoffset: lineLen }}
@@ -267,7 +267,7 @@ export function WidgetRevenue({ size = "medium" }: { size?: WidgetSize }) {
               cy={points[hoverIndex].y}
               r={3}
               fill="var(--surface-0)"
-              stroke="var(--brand)"
+              stroke={isCare ? "#3b82f6" : "var(--brand)"}
               strokeWidth={1.5}
               className="transition-all duration-150"
             />

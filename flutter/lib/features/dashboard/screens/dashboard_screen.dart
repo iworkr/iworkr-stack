@@ -367,13 +367,14 @@ class _RevenueCard extends StatelessWidget {
           final revenue = stats['totalRevenue'] ?? 0;
           final formatted = NumberFormat.currency(symbol: '\$', decimalDigits: 0).format(revenue);
 
+          final t = ref.read(labelTranslatorProvider);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Text(
-                    'REVENUE MTD',
+                    t('REVENUE MTD'),
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 9,
                       color: c.textTertiary,
@@ -430,10 +431,11 @@ class _RevenueCard extends StatelessWidget {
 // ── Core Widget 2: Live Dispatch (Map) ──────────────────
 // ═══════════════════════════════════════════════════════════
 
-class _DispatchCard extends StatelessWidget {
+class _DispatchCard extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.iColors;
+    final t = ref.watch(labelTranslatorProvider);
     return _TapCard(
       padding: EdgeInsets.zero,
       onTap: () => context.push('/overwatch'),
@@ -455,7 +457,7 @@ class _DispatchCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'LIVE DISPATCH',
+                  t('LIVE DISPATCH'),
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 9,
                     color: c.textTertiary,
@@ -725,16 +727,17 @@ class _TriageCard extends StatelessWidget {
 // ── Core Widget 5: Quick Actions ────────────────────────
 // ═══════════════════════════════════════════════════════════
 
-class _QuickActionsRow extends StatelessWidget {
+class _QuickActionsRow extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(labelTranslatorProvider);
     final actions = [
       _QA(icon: PhosphorIconsLight.barcode, label: 'SCAN', onTap: () {
         Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const ScannerScreen()));
       }),
-      _QA(icon: PhosphorIconsLight.plus, label: 'NEW JOB', onTap: () => showCreateJobSheet(context)),
+      _QA(icon: PhosphorIconsLight.plus, label: t('NEW JOB'), onTap: () => showCreateJobSheet(context)),
       _QA(icon: PhosphorIconsLight.magnifyingGlass, label: 'SEARCH', onTap: () => showCommandPalette(context)),
-      _QA(icon: PhosphorIconsLight.timer, label: 'CLOCK IN', onTap: () {
+      _QA(icon: PhosphorIconsLight.timer, label: t('CLOCK IN'), onTap: () {
         HapticFeedback.mediumImpact();
       }),
     ];
