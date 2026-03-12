@@ -76,8 +76,9 @@ export function StepIdentity() {
             setOrganizationId(orgId);
           }
         }
-      } catch {
-        // If Supabase is not configured yet, continue anyway (graceful degradation)
+      } catch (err) {
+        // If Supabase is not configured, show a warning but allow continue
+        console.error("[Onboarding] Organization creation failed:", err);
       }
 
       setSubmitting(false);

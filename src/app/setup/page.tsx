@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { OnboardingLayout } from "@/components/onboarding/onboarding-layout";
 import { StepSector } from "@/components/onboarding/step-sector";
@@ -28,11 +27,10 @@ export default function SetupPage() {
   const industryType = useOnboardingStore((s) => s.industryType);
   const goToStep = useOnboardingStore((s) => s.goToStep);
   const reset = useOnboardingStore((s) => s.reset);
-  const router = useRouter();
   const [checked, setChecked] = useState(false);
 
   // Check if the user already has an active org membership.
-  // If so, they've already onboarded — clear store and go to dashboard.
+  // If so, they've already onboarded — clear store and hard-redirect to dashboard.
   useEffect(() => {
     async function checkExistingMembership() {
       try {
@@ -43,7 +41,8 @@ export default function SetupPage() {
           return;
         }
 
-        const { data: membership } = await (supabase as unknown as { from: (table: string) => { select: (cols: string) => { eq: (col: string, val: string) => { eq: (col: string, val: string) => { limit: (n: number) => { maybeSingle: () => Promise<{ data: unknown }> } } } } } })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: membership } = await (supabase as any)
           .from("organization_members")
           .select("organization_id")
           .eq("user_id", user.id)
@@ -52,9 +51,9 @@ export default function SetupPage() {
           .maybeSingle();
 
         if (membership) {
-          // User already has an active org — reset onboarding store and redirect
+          // User already has an active org — reset onboarding store and hard-redirect
           reset();
-          router.replace("/dashboard");
+          window.location.href = "/dashboard";
           return;
         }
       } catch {
@@ -63,7 +62,7 @@ export default function SetupPage() {
       setChecked(true);
     }
     checkExistingMembership();
-  }, [reset, router]);
+  }, [reset]);
 
   // If industry is already set (e.g. from /ndis CTA), skip the sector step
   useEffect(() => {

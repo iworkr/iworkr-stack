@@ -63,7 +63,8 @@ export async function updateSession(request: NextRequest) {
   // If signed in and visiting /dashboard, check if user has an org
   // Redirect to /setup if they haven't completed onboarding (no org membership)
   if (user && pathname.startsWith("/dashboard")) {
-    const { data: membership } = await (supabase as any)
+    // First check for active membership (includes any status filter)
+    const { data: membership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
       .from("organization_members")
       .select("organization_id, role")
       .eq("user_id", user.id)
@@ -72,6 +73,31 @@ export async function updateSession(request: NextRequest) {
       .maybeSingle();
 
     if (!membership) {
+      // Also check if membership exists with ANY status (could be pending/invited)
+      const { data: anyMembership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from("organization_members")
+        .select("organization_id, role, status")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (anyMembership) {
+        // Membership exists but not active — let them through (dashboard can handle)
+        return supabaseResponse;
+      }
+
+      // Check if onboarding was already marked complete (prevents infinite loop)
+      const { data: profile } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile?.onboarding_completed) {
+        // Onboarding completed but no org — let them through rather than loop
+        return supabaseResponse;
+      }
+
       const url = request.nextUrl.clone();
       url.pathname = "/setup";
       return NextResponse.redirect(url);
