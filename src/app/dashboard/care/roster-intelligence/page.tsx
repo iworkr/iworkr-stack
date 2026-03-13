@@ -1008,17 +1008,9 @@ export default function RosterIntelligencePage() {
       {/* ── Sticky Header ───────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
-          <div>
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-1.5 text-[12px] mb-0.5">
-              <span className="text-[var(--text-muted)]">Dashboard</span>
-              <ChevronRight size={10} className="text-zinc-700" />
-              <span className="font-medium text-white">Care Plans</span>
-            </div>
-            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-              CARE PLANS
-            </span>
-          </div>
+          <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+            CARE PLANS
+          </span>
         </div>
       </div>
 

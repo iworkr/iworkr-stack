@@ -17,7 +17,6 @@ import {
   FileText,
   CreditCard,
   ChevronDown,
-  ChevronRight as ChevronRightIcon,
   Building2,
   Banknote,
   ArrowUpRight,
@@ -355,17 +354,10 @@ export default function FinancePage() {
 
         <div className="relative flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <div>
-              <div className="flex items-center gap-1.5 text-[12px] mb-0.5">
-                <span className="text-zinc-600">Dashboard</span>
-                <ChevronRightIcon size={10} className="text-zinc-700" />
-                <span className="font-medium text-white">Finance</span>
-              </div>
-              {/* Mono overline — PRD: "FINANCE" */}
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
-                {t("FINANCE")}
-              </span>
-            </div>
+            {/* Mono overline — PRD: "FINANCE" */}
+            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+              {t("FINANCE")}
+            </span>
             <div className="ml-1 h-6 w-px bg-white/[0.06]" />
             <span className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5 font-mono text-[11px] text-zinc-500">
               {invoices.length} {t("invoices")}

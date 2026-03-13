@@ -17,7 +17,6 @@ import {
   ArrowRight,
   Cog,
   Box,
-  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -374,11 +373,7 @@ export default function AssetsPage() {
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("ASSET COMMAND")}</span>
-              <ChevronRightIcon size={10} className="text-zinc-700" />
-              <span className="font-medium text-white">Assets</span>
-            </div>
+            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("ASSET COMMAND")}</span>
             <span className="rounded-full bg-white/[0.03] px-2 py-0.5 font-mono text-[10px] text-zinc-500">
               {assets.length}
             </span>

@@ -27,7 +27,6 @@ import {
   List,
   Briefcase,
   Star,
-  ChevronRight as ChevronRightIcon,
   MessageSquare,
   Pencil,
 } from "lucide-react";
@@ -258,17 +257,10 @@ export default function TeamPage() {
 
         <div className="relative flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <div>
-              <div className="flex items-center gap-1.5 text-[12px] mb-0.5">
-                <span className="text-zinc-600">Dashboard</span>
-                <ChevronRightIcon size={10} className="text-zinc-700" />
-                <span className="font-medium text-white">{t("Team")}</span>
-              </div>
-              {/* Mono overline — PRD: "PERSONNEL" */}
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
-                {isCare ? "SUPPORT TEAM" : "PERSONNEL"}
-              </span>
-            </div>
+            {/* Mono overline — PRD: "PERSONNEL" */}
+            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+              {isCare ? "SUPPORT TEAM" : "PERSONNEL"}
+            </span>
 
             {/* Command bar stats — PRD 57.0 (JetBrains Mono, neutral pills) */}
             <div className="ml-2 h-6 w-px bg-white/[0.06]" />

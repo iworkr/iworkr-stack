@@ -17,7 +17,6 @@ import {
   X,
   Check,
   UserPlus,
-  ChevronRight,
 } from "lucide-react";
 import { PriorityIcon } from "@/components/app/priority-icon";
 import { StatusIcon } from "@/components/app/status-icon";
@@ -485,15 +484,8 @@ export default function JobsPage() {
       {/* ── Command Bar Header ─────────────────────────────── */}
       <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[var(--border-base)] bg-[var(--header-bg)] px-5 py-2.5 backdrop-blur-xl">
         <div className="flex items-center gap-5">
-          {/* Overline + Breadcrumbs */}
-          <div className="flex flex-col gap-0.5">
-            <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Operations</span>
-            <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] cursor-pointer">{t("Dashboard")}</span>
-              <ChevronRight size={10} className="text-zinc-700" />
-              <span className="font-semibold text-[var(--text-primary)]">{t("Jobs")}</span>
-            </div>
-          </div>
+          {/* Overline */}
+          <span className="font-mono text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">Operations</span>
 
           {/* Tab Switcher */}
           <div className="flex items-center">

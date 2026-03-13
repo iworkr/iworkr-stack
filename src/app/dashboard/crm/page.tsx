@@ -14,7 +14,6 @@ import {
   Mail,
   Building2,
   User,
-  ChevronRight,
   DollarSign,
   Clock,
   Tag,
@@ -513,11 +512,7 @@ export default function CRMPipelinePage() {
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{isCare ? "REFERRAL PIPELINE" : "SALES PIPELINE"}</span>
-              <ChevronRight size={10} className="text-zinc-700" />
-              <span className="font-medium text-white">CRM</span>
-            </div>
+            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{isCare ? "REFERRAL PIPELINE" : "SALES PIPELINE"}</span>
             <span className="text-[11px] text-zinc-600">
               {isCare ? "Drag referrals through your intake pipeline" : "Drag clients through your sales funnel"}
             </span>
