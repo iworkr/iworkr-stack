@@ -4,23 +4,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Upload,
-  RefreshCw,
-  DollarSign,
   ArrowUpDown,
   Database,
   CheckCircle2,
-  Clock,
   AlertCircle,
-  ChevronDown,
   FileSpreadsheet,
-  Download,
-  Trash2,
   History,
   X,
   Loader2,
-  Filter,
   Hash,
-  MapPin,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
@@ -96,7 +88,7 @@ function SkeletonRow() {
 
 /* ── Metric Card ──────────────────────────────────────── */
 
-function MetricCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: typeof DollarSign; color: string }) {
+function MetricCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: typeof Database; color: string }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
       <div className="flex items-center gap-2 mb-2">
@@ -369,23 +361,27 @@ export default function NDISPricingPage() {
     try {
       const status = await fetchNDISSyncStatus();
       setSyncStatus(status);
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error("[NDIS] Failed to load sync status:", err);
+    }
   }, []);
 
   // Load items
   const loadItems = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, total } = await fetchNDISCatalogue(
+      const result = await fetchNDISCatalogue(
         debouncedSearch || undefined,
         category === "all" ? undefined : category,
         200,
         0,
       );
-      setItems(data);
-      setTotalItems(total);
+      setItems(result.data ?? []);
+      setTotalItems(result.total ?? 0);
     } catch (err) {
-      console.error("Failed to load NDIS catalogue:", err);
+      console.error("[NDIS] Failed to load catalogue items:", err);
+      setItems([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
@@ -396,7 +392,9 @@ export default function NDISPricingPage() {
     try {
       const history = await fetchNDISSyncHistory();
       setSyncHistory(history);
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error("[NDIS] Failed to load sync history:", err);
+    }
   }, []);
 
   useEffect(() => { loadSyncStatus(); loadHistory(); }, [loadSyncStatus, loadHistory]);

@@ -96,37 +96,30 @@ export async function fetchNDISSyncStatus(): Promise<NDISSyncStatus> {
     .limit(1)
     .maybeSingle();
 
-  // Category counts
-  const { data: catData } = await (supabase as any)
-    .rpc("get_ndis_category_counts");
-
-  // If RPC doesn't exist, do manual counts
-  let categoryCounts = { core: 0, capacity_building: 0, capital: 0 };
-  if (catData) {
-    for (const row of catData) {
-      if (row.support_category in categoryCounts) {
-        categoryCounts[row.support_category as keyof typeof categoryCounts] = row.count;
-      }
-    }
-  } else {
-    // Manual fallback
-    for (const cat of ["core", "capacity_building", "capital"] as const) {
-      const { count } = await (supabase as any)
-        .from("ndis_catalogue")
-        .select("*", { count: "exact", head: true })
-        .is("effective_to", null)
-        .eq("support_category", cat);
-      categoryCounts[cat] = count || 0;
-    }
+  // Category counts — use direct queries (most reliable)
+  const categoryCounts = { core: 0, capacity_building: 0, capital: 0 };
+  for (const cat of ["core", "capacity_building", "capital"] as const) {
+    const { count } = await (supabase as any)
+      .from("ndis_catalogue")
+      .select("*", { count: "exact", head: true })
+      .is("effective_to", null)
+      .eq("support_category", cat);
+    categoryCounts[cat] = count || 0;
   }
 
-  // Last sync log
-  const { data: lastSync } = await (supabase as any)
-    .from("ndis_sync_log")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Last sync log (may return null if no logs yet — that's fine)
+  let lastSync = null;
+  try {
+    const { data } = await (supabase as any)
+      .from("ndis_sync_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    lastSync = data;
+  } catch {
+    // sync_log table might not be visible — ignore
+  }
 
   return {
     active_items: activeCount || 0,
