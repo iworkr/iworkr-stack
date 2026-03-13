@@ -1,0 +1,222 @@
+/**
+ * ingest-telemetry — Project Panopticon
+ *
+ * Edge Function: Receives autopsy payloads from client-side capture engines
+ * (Next.js GlobalErrorBoundary + Flutter RepaintBoundary).
+ *
+ * Features:
+ *   - Rate limiting (max 10 events/min per device)
+ *   - Screenshot upload to telemetry_snapshots storage bucket
+ *   - Structured insert into partitioned telemetry_events table
+ *   - Crash-loop detection (drops payloads if flooding)
+ *
+ * POST body: The full Autopsy Report JSON (see PRD §4)
+ * Optional: Base64 screenshot in payload.visual_evidence.screenshot_base64
+ */
+
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decode as base64Decode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+/* ── Rate Limiter (in-memory, per-instance) ───────────────────── */
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 10;       // Max events per window
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false; // Rate limited
+  }
+
+  entry.count++;
+  return true;
+}
+
+// Clean stale entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetAt) rateLimitMap.delete(key);
+  }
+}, 30000);
+
+/* ── Main Handler ─────────────────────────────────────────────── */
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceKey);
+
+    const body = await req.json();
+
+    // ── Extract identity for rate limiting ───────────────────
+    const userId = body.identity?.user_id || "anonymous";
+    const deviceKey = `${userId}_${body.environment?.device_model || "web"}`;
+
+    if (!checkRateLimit(deviceKey)) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limited: crash loop detected",
+          message: "Too many telemetry events from this device. Payloads dropped to protect the database.",
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Handle screenshot upload ─────────────────────────────
+    let screenshotPath: string | null = null;
+    const screenshotBase64 = body.visual_evidence?.screenshot_base64;
+
+    if (screenshotBase64) {
+      try {
+        const eventId = body.event_id || crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+        const orgId = body.identity?.organization_id || "unknown";
+        const fileName = `${orgId}/${eventId}_snapshot.png`;
+        const imageBytes = base64Decode(screenshotBase64);
+
+        const { error: uploadError } = await supabase.storage
+          .from("telemetry_snapshots")
+          .upload(fileName, imageBytes, {
+            contentType: "image/png",
+            upsert: true,
+          });
+
+        if (!uploadError) {
+          screenshotPath = `telemetry_snapshots/${fileName}`;
+        } else {
+          console.error("Screenshot upload failed:", uploadError.message);
+        }
+      } catch (screenshotErr) {
+        console.error("Screenshot processing error:", screenshotErr);
+      }
+    }
+
+    // ── Build telemetry record ───────────────────────────────
+    const record = {
+      severity: body.error_details?.name?.includes("Fatal") ? "fatal" :
+        body.severity || (body.error_details ? "warning" : "info"),
+      status: "unresolved",
+
+      // Identity
+      organization_id: body.identity?.organization_id || null,
+      user_id: body.identity?.user_id || null,
+      user_email: body.identity?.email || null,
+      branch_id: body.identity?.branch_id || null,
+      industry_mode: body.identity?.industry_mode || null,
+      user_role: body.identity?.role || null,
+
+      // Environment
+      platform: normalizePlatform(body.environment?.platform),
+      os_version: body.environment?.os_version || null,
+      app_version: body.environment?.app_version || null,
+      device_model: body.environment?.device_model || null,
+
+      // Telemetry
+      network_type: body.telemetry?.network_type || null,
+      effective_bandwidth: body.telemetry?.effective_bandwidth || null,
+      is_offline_mode: body.telemetry?.is_offline_mode || false,
+      gps_lat: body.telemetry?.gps_location?.lat || null,
+      gps_lng: body.telemetry?.gps_location?.lng || null,
+      memory_usage_mb: body.telemetry?.memory_usage_mb || null,
+      battery_level: body.telemetry?.battery_level || null,
+
+      // Context
+      route: body.context?.current_route || null,
+      last_action: body.context?.last_action || null,
+      error_name: body.error_details?.name || null,
+      error_message: body.error_details?.message || null,
+      stack_trace: body.error_details?.stack_trace || null,
+
+      // Full payload (strip screenshot base64 to save DB space)
+      payload: sanitizePayload(body),
+
+      // Visual evidence
+      has_screenshot: !!screenshotPath,
+      screenshot_path: screenshotPath,
+
+      // Console buffer
+      console_buffer: body.context?.console_buffer || [],
+    };
+
+    const { data, error } = await supabase
+      .from("telemetry_events")
+      .insert(record)
+      .select("id, event_timestamp")
+      .single();
+
+    if (error) {
+      console.error("Telemetry insert failed:", error.message);
+      return new Response(
+        JSON.stringify({ error: "Failed to store telemetry event", detail: error.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        event_id: data.id,
+        timestamp: data.event_timestamp,
+        screenshot_stored: !!screenshotPath,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("Telemetry ingestion error:", err);
+    return new Response(
+      JSON.stringify({ error: (err as Error).message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
+
+/* ── Helpers ───────────────────────────────────────────────────── */
+
+function normalizePlatform(raw?: string): string {
+  if (!raw) return "web";
+  const lower = raw.toLowerCase();
+  if (lower.includes("ios") || lower.includes("iphone") || lower.includes("ipad")) return "mobile_ios";
+  if (lower.includes("android")) return "mobile_android";
+  if (lower.includes("electron") || lower.includes("desktop")) return "desktop";
+  if (lower.includes("edge") || lower.includes("function") || lower.includes("deno")) return "edge_function";
+  return "web";
+}
+
+function sanitizePayload(body: Record<string, unknown>): Record<string, unknown> {
+  const cleaned = { ...body };
+  // Remove base64 screenshot data from the stored JSON (already in storage)
+  if (cleaned.visual_evidence && typeof cleaned.visual_evidence === "object") {
+    const ve = { ...(cleaned.visual_evidence as Record<string, unknown>) };
+    delete ve.screenshot_base64;
+    cleaned.visual_evidence = ve;
+  }
+  // Remove any auth tokens that might have leaked
+  if (cleaned.context && typeof cleaned.context === "object") {
+    const ctx = { ...(cleaned.context as Record<string, unknown>) };
+    delete (ctx as Record<string, unknown>).auth_token;
+    delete (ctx as Record<string, unknown>).session_token;
+    cleaned.context = ctx;
+  }
+  return cleaned;
+}

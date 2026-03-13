@@ -42,6 +42,7 @@ import {
   BookOpen,
   Lightbulb,
   Timer,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -116,7 +117,7 @@ function useCareNavSections(): NavSection[] {
         { id: "nav_schedule", label: "Roster", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
         { id: "nav_master_roster", label: "Master Roster", icon: CalendarClock, href: "/dashboard/roster/master" },
         { id: "nav_jobs", label: "Shifts", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
-        { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
+        { id: "nav_care_comms", label: "Care Comms", icon: MessageSquare, href: "/dashboard/care/comms", shortcut: "G I" },
       ],
     },
     {

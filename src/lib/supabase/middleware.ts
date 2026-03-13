@@ -36,6 +36,34 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // ─── Project Olympus: Super Admin Route Gate ───────────────────
+  // Returns hard 404 (not 401) to prevent path enumeration
+  if (pathname.startsWith("/olympus")) {
+    if (!user) {
+      // Not authenticated → 404
+      const url = request.nextUrl.clone();
+      url.pathname = "/not-found";
+      return NextResponse.rewrite(url);
+    }
+
+    // Check is_super_admin flag on profile
+    const { data: adminProfile } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      .from("profiles")
+      .select("is_super_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!adminProfile?.is_super_admin) {
+      // Not a super admin → 404 (stealth denial)
+      const url = request.nextUrl.clone();
+      url.pathname = "/not-found";
+      return NextResponse.rewrite(url);
+    }
+
+    // Super admin verified — allow through
+    return supabaseResponse;
+  }
+
   // Allow public routes (auth, invite acceptance, landing, api)
   const publicPaths = ["/auth", "/accept-invite", "/join", "/invite", "/api"];
   if (publicPaths.some((p) => pathname.startsWith(p)) || pathname === "/") {

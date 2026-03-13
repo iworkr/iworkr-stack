@@ -11,6 +11,35 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("[Global Error]", error);
+    // Project Panopticon: Best-effort telemetry for global crashes
+    try {
+      const endpoint = process.env.NEXT_PUBLIC_SUPABASE_URL
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/ingest-telemetry`
+        : null;
+      if (endpoint) {
+        fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+          },
+          body: JSON.stringify({
+            severity: "fatal",
+            identity: {},
+            environment: { platform: "web", os_version: navigator?.userAgent?.slice(0, 100) || "unknown" },
+            telemetry: { network_type: navigator?.onLine ? "online" : "offline" },
+            context: { current_route: typeof window !== "undefined" ? window.location.pathname : "unknown" },
+            error_details: {
+              name: error.name || "GlobalError",
+              message: error.message || "Unknown global error",
+              stack_trace: (error.stack || "").slice(0, 3000),
+              digest: error.digest,
+            },
+          }),
+        }).catch(() => {});
+      }
+    } catch { /* Never break the global error page */ }
   }, [error]);
 
   return (

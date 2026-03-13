@@ -15,6 +15,8 @@ import { BrandProvider } from "@/components/providers/brand-provider";
 import { useShellStore } from "@/lib/shell-store";
 import { PastDueBanner } from "@/components/app/feature-gate";
 import { useAuthStore } from "@/lib/auth-store";
+import { GlobalErrorBoundary } from "@/components/telemetry/global-error-boundary";
+import { TelemetryProvider } from "@/components/telemetry/telemetry-provider";
 
 const DesktopBridge = dynamic(() => import("@/lib/desktop/desktop-bridge").then((m) => m.DesktopBridge), { ssr: false });
 const DesktopBadge = dynamic(() => import("@/lib/desktop/desktop-badge").then((m) => m.DesktopBadge), { ssr: false });
@@ -197,8 +199,10 @@ export default function DashboardLayout({
           className="flex-1 overflow-y-auto overflow-x-hidden"
           style={{ background: "var(--surface-0)" }}
         >
+          <TelemetryProvider>
           <DataProvider>
             <BrandProvider>
+              <GlobalErrorBoundary>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={pathname}
@@ -211,8 +215,10 @@ export default function DashboardLayout({
                   {children}
                 </motion.div>
               </AnimatePresence>
+              </GlobalErrorBoundary>
             </BrandProvider>
           </DataProvider>
+          </TelemetryProvider>
         </motion.main>
       </div>
 

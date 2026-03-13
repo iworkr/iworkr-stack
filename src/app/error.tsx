@@ -13,6 +13,10 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error("[Error]", error);
+    // Project Panopticon: Send fatal telemetry
+    import("@/lib/telemetry/capture-engine").then(({ captureAndSend }) => {
+      captureAndSend(error, "fatal", { includeScreenshot: true }).catch(() => {});
+    }).catch(() => {});
   }, [error]);
 
   return (
