@@ -160,7 +160,7 @@ export default function DashboardLayout({
     return () => mql.removeEventListener("change", update);
   }, []);
 
-  const mainMarginLeft = isMobile ? 0 : sidebarCollapsed ? 64 : 240;
+  const mainMarginLeft = isMobile ? 0 : sidebarCollapsed ? 64 : 220;
 
   return (
     <MapboxProvider>

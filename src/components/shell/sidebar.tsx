@@ -20,8 +20,6 @@ import {
   UsersRound,
   UserCircle,
   Workflow,
-  Sun,
-  Moon,
   Bot,
   Smartphone,
   Map,
@@ -30,21 +28,20 @@ import {
   ShieldCheck,
   Zap,
   Package,
-  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useShellStore } from "@/lib/shell-store";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useTeamStore } from "@/lib/team-store";
 import { useOrg } from "@/lib/hooks/use-org";
-import { getTeamStatus, type TeamMemberStatus } from "@/app/actions/dashboard";
 import { useInboxStore } from "@/lib/inbox-store";
-import { useState } from "react";
-import { Shimmer, ShimmerTeamRow } from "@/components/ui/shimmer";
-import { useTheme } from "@/components/providers/theme-provider";
+import { Shimmer } from "@/components/ui/shimmer";
 import { useBillingStore } from "@/lib/billing-store";
 import { createClient } from "@/lib/supabase/client";
 import { ProBadge } from "@/components/monetization/pro-badge";
@@ -52,37 +49,7 @@ import { roleDefinitions, type RoleId, type PermissionModule } from "@/lib/team-
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useBrandingStore } from "@/lib/stores/branding-store";
 
-/* ── Data ─────────────────────────────────────────────── */
-
-/** Trades navigation — flat list, no care-specific items */
-const tradesNavItems = [
-  { id: "nav_dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", shortcut: "G D" },
-  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
-  { id: "nav_jobs", label: "My Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
-  { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
-  { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P" },
-  { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
-  { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R" },
-  { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
-  { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A" },
-  { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
-  { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "G T" },
-  { id: "nav_automations", label: "Automations", icon: Workflow, href: "/dashboard/automations", shortcut: "G W" },
-  { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations" },
-  { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent" },
-];
-
-/**
- * Care navigation — PRD-aligned three-zone architecture:
- * Zone 1: WORKSPACE (daily execution)
- * Zone 2: CLINICAL & FINANCIAL (the care engine)
- * Zone 3: OPERATIONS (infrastructure & settings)
- */
-interface NavSection {
-  label: string | null;
-  collapsible: boolean;
-  items: NavItem[];
-}
+/* ── Types ─────────────────────────────────────────────── */
 
 interface NavItem {
   id: string;
@@ -91,45 +58,65 @@ interface NavItem {
   href: string;
   shortcut?: string;
   badge?: "PRO";
+  hasSubmenu?: boolean;
 }
+
+interface NavSection {
+  label: string | null;
+  items: NavItem[];
+}
+
+/* ── Navigation Data ──────────────────────────────────── */
+
+const tradesNavItems: NavItem[] = [
+  { id: "nav_dashboard", label: "Overview", icon: LayoutDashboard, href: "/dashboard", shortcut: "G D" },
+  { id: "nav_jobs", label: "Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
+  { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
+  { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P" },
+  { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
+  { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
+  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
+  { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R" },
+  { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A" },
+  { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
+  { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "G T" },
+  { id: "nav_automations", label: "Automations", icon: Workflow, href: "/dashboard/automations", shortcut: "G W" },
+  { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations" },
+  { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent" },
+];
 
 function useCareNavSections(): NavSection[] {
   const { t, isCare } = useIndustryLexicon();
 
   if (!isCare) {
-    // Trades: flat list with translated labels, no sections
     return [{
       label: null,
-      collapsible: false,
       items: tradesNavItems.map((item) => ({ ...item, label: t(item.label) })),
     }];
   }
 
-  // Care: PRD three-zone architecture
   return [
     {
-      label: "WORKSPACE",
-      collapsible: true,
+      label: null,
       items: [
-        { id: "nav_dashboard", label: "Care Dashboard", icon: LayoutGrid, href: "/dashboard/care", shortcut: "G D" },
-        { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
-        { id: "nav_jobs", label: "My Shifts", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
-        { id: "nav_schedule", label: "Roster & Dispatch", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
+        { id: "nav_dashboard", label: "Overview", icon: LayoutGrid, href: "/dashboard/care", shortcut: "G D" },
+        { id: "nav_jobs", label: "Shifts", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
+        { id: "nav_schedule", label: "Roster", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
         { id: "nav_clients", label: "Participants", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
+        { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
       ],
     },
     {
-      label: "CLINICAL & FINANCIAL",
-      collapsible: true,
+      label: null,
       items: [
-        { id: "nav_care_command", label: "Care Command", icon: Activity, href: "/dashboard/care/clinical-timeline" },
+        { id: "nav_care_command", label: "Clinical Timeline", icon: Activity, href: "/dashboard/care/clinical-timeline" },
         { id: "nav_funding", label: "Funding & Claims", icon: DollarSign, href: "/dashboard/care/funding-engine" },
-        { id: "nav_compliance", label: "Compliance Hub", icon: ShieldCheck, href: "/dashboard/care/compliance-hub" },
+        { id: "nav_compliance", label: "Compliance", icon: ShieldCheck, href: "/dashboard/care/compliance-hub" },
+        { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
       ],
     },
     {
-      label: "OPERATIONS",
-      collapsible: true,
+      label: null,
       items: [
         { id: "nav_team", label: "Support Team", icon: UserCircle, href: "/dashboard/team", shortcut: "G T" },
         { id: "nav_assets", label: "Assets", icon: Package, href: "/dashboard/assets", shortcut: "G A" },
@@ -142,22 +129,12 @@ function useCareNavSections(): NavSection[] {
   ];
 }
 
-/** Legacy helper — used by role-based filtering */
 function useTranslatedNavItems() {
   const sections = useCareNavSections();
   return sections.flatMap((s) => s.items);
 }
 
-type SidebarTeamMember = { name: string; initials: string; status: "online" | "away"; role: string };
-
-const systemItems = [
-  { label: "Get App", icon: Smartphone, href: "/dashboard/get-app", action: null },
-  { label: "Settings", icon: Settings, href: "/settings", action: null },
-  { label: "Help", icon: HelpCircle, href: "/dashboard/help", action: null },
-  { label: "Invite Team", icon: UserPlus, href: null, action: "invite" },
-];
-
-/* ── Nav Item ─────────────────────────────────────────── */
+/* ── Nav Link ─────────────────────────────────────────── */
 
 function NavLink({
   item,
@@ -180,35 +157,18 @@ function NavLink({
       title={collapsed ? item.label : undefined}
       data-testid={item.id}
       data-nav-label={item.label}
-      className={`group relative flex items-center gap-2.5 rounded-lg px-2 py-[7px] transition-all duration-150 ${
+      className={`group relative flex items-center gap-2.5 rounded-md px-2 py-[6px] transition-all duration-100 ${
         collapsed ? "justify-center" : ""
-      } ${active ? "text-[var(--brand)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+      } ${
+        active
+          ? "bg-white/[0.06] text-[var(--text-primary)]"
+          : "text-[var(--text-muted)] hover:bg-white/[0.04] hover:text-[var(--text-primary)]"
+      }`}
     >
-      {/* Active state: glass pill + left accent bar */}
-      {active && (
-        <>
-          <motion.div
-            layoutId="sidebar-glass-pill"
-            className="absolute inset-0 rounded-lg shadow-[inset_0_0_0_1px_var(--border-active)]"
-            style={{ background: "var(--surface-2)" }}
-            transition={{ type: "spring", stiffness: 350, damping: 28 }}
-          />
-          <motion.div
-            layoutId="sidebar-left-accent"
-            className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-[var(--brand)]"
-            transition={{ type: "spring", stiffness: 350, damping: 28 }}
-          />
-        </>
-      )}
-
-      {!active && (
-        <div className="absolute inset-0 rounded-lg opacity-0 transition-opacity duration-150 group-hover:opacity-100 bg-[var(--surface-2)]" />
-      )}
-
       <Icon
         size={16}
-        strokeWidth={active ? 2 : 1.5}
-        className={`relative z-10 shrink-0 transition-all duration-150 ${active ? "text-[var(--brand)]" : ""}`}
+        strokeWidth={1.5}
+        className={`shrink-0 ${active ? "text-[var(--text-primary)]" : ""}`}
       />
 
       <AnimatePresence>
@@ -217,21 +177,19 @@ function NavLink({
             initial={{ opacity: 0, width: 0 }}
             animate={{ opacity: 1, width: "auto" }}
             exit={{ opacity: 0, width: 0 }}
-            transition={{ duration: 0.15 }}
-            className="relative z-10 flex flex-1 items-center justify-between overflow-hidden text-[13px]"
+            transition={{ duration: 0.12 }}
+            className="flex flex-1 items-center justify-between overflow-hidden text-[13px]"
           >
-            <span className={active ? "font-medium" : ""}>{item.label}</span>
+            <span className={active ? "font-medium" : "font-normal"}>{item.label}</span>
             <span className="flex items-center gap-1.5">
               {proBadge && <ProBadge size="xs" />}
               {badge !== undefined && badge > 0 && (
-                <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500/15 px-1 font-mono text-[9px] font-medium text-rose-400">
+                <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[var(--brand)]/15 px-1 font-mono text-[9px] font-medium text-[var(--brand)]">
                   {badge}
                 </span>
               )}
-              {item.shortcut && !proBadge && (
-                <kbd className="hidden rounded border px-1 py-0.5 font-mono text-[9px] text-[var(--text-muted)] group-hover:inline-block" style={{ borderColor: "var(--border-base)", background: "var(--surface-1)" }}>
-                  {item.shortcut}
-                </kbd>
+              {item.hasSubmenu && (
+                <ChevronRight size={12} className="text-zinc-600" />
               )}
             </span>
           </motion.span>
@@ -241,6 +199,62 @@ function NavLink({
   );
 }
 
+/* ── System Tray Link ─────────────────────────────────── */
+
+function SystemLink({
+  label,
+  icon: Icon,
+  collapsed,
+  onClick,
+  href,
+  active,
+}: {
+  label: string;
+  icon: React.ElementType;
+  collapsed: boolean;
+  onClick?: () => void;
+  href?: string;
+  active?: boolean;
+}) {
+  const cls = `flex w-full items-center gap-2.5 rounded-md px-2 py-[6px] text-[13px] transition-all duration-100 ${
+    collapsed ? "justify-center" : ""
+  } ${
+    active
+      ? "bg-white/[0.06] text-[var(--text-primary)]"
+      : "text-[var(--text-muted)] hover:bg-white/[0.04] hover:text-[var(--text-primary)]"
+  }`;
+
+  const content = (
+    <>
+      <Icon size={16} strokeWidth={1.5} className="shrink-0" />
+      <AnimatePresence>
+        {!collapsed && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1 }}
+            className="flex flex-1 items-center justify-between"
+          >
+            <span>{label}</span>
+            {(label === "Settings" || label === "Help") && (
+              <ChevronRight size={12} className="text-zinc-600" />
+            )}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </>
+  );
+
+  if (onClick) {
+    return <button title={collapsed ? label : undefined} className={cls} onClick={onClick}>{content}</button>;
+  }
+  if (href) {
+    return <Link title={collapsed ? label : undefined} href={href} className={cls}>{content}</Link>;
+  }
+  return null;
+}
+
 /* ── Main Sidebar ─────────────────────────────────────── */
 
 export function Sidebar() {
@@ -248,7 +262,6 @@ export function Sidebar() {
   const router = useRouter();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useShellStore();
   const { setInviteModalOpen } = useTeamStore();
-  const { theme, toggle: toggleTheme } = useTheme();
   const onboardingName = useOnboardingStore((s) => s.companyName);
   const { currentOrg } = useAuthStore();
   const { orgId } = useOrg();
@@ -262,44 +275,18 @@ export function Sidebar() {
     if (orgId) loadBilling(orgId);
   }, [orgId, loadBilling]);
 
-  // ── Realtime: auto-refresh billing when subscription or org changes ──
+  // Realtime billing sync
   useEffect(() => {
     if (!orgId) return;
     const supabase = createClient();
 
     const channel = supabase
       .channel(`billing-sync-${orgId}`)
-      .on(
-        "postgres_changes" as any,
-        {
-          event: "*",
-          schema: "public",
-          table: "subscriptions",
-          filter: `organization_id=eq.${orgId}`,
-        },
-        () => {
-          // Subscription row changed — reload billing
-          loadBilling(orgId);
-        }
-      )
-      .on(
-        "postgres_changes" as any,
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "organizations",
-          filter: `id=eq.${orgId}`,
-        },
-        () => {
-          // Org plan_tier changed — reload billing
-          loadBilling(orgId);
-        }
-      )
+      .on("postgres_changes" as any, { event: "*", schema: "public", table: "subscriptions", filter: `organization_id=eq.${orgId}` }, () => loadBilling(orgId))
+      .on("postgres_changes" as any, { event: "UPDATE", schema: "public", table: "organizations", filter: `id=eq.${orgId}` }, () => loadBilling(orgId))
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [orgId, loadBilling]);
 
   const membership = useAuthStore((s) => s.currentMembership);
@@ -313,6 +300,7 @@ export function Sidebar() {
     nav_integrations: "integrations",
     nav_ai_agent: "integrations",
   };
+
   const { t: sidebarT } = useIndustryLexicon();
   const navSections = useCareNavSections();
   const translatedNavItems = useTranslatedNavItems();
@@ -321,59 +309,26 @@ export function Sidebar() {
     if (!module) return true;
     return roleDef?.permissions[module]?.includes("view") ?? false;
   });
-  // Build filtered sections
   const visibleIds = new Set(visibleNavItems.map((i) => i.id));
   const filteredSections = navSections.map((section) => ({
     ...section,
     items: section.items.filter((i) => visibleIds.has(i.id)),
   })).filter((s) => s.items.length > 0);
 
-  // ── Collapsible section state (persisted to localStorage) ──
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const stored = localStorage.getItem("iworkr-nav-collapsed");
-      return stored ? JSON.parse(stored) : {};
-    } catch { return {}; }
-  });
-  const toggleSection = (label: string) => {
-    setCollapsedSections((prev) => {
-      const next = { ...prev, [label]: !prev[label] };
-      try { localStorage.setItem("iworkr-nav-collapsed", JSON.stringify(next)); } catch {}
-      return next;
-    });
-  };
-
   const unreadCount = useInboxStore((s) => s.items.filter(i => !i.read && !i.archived).length);
 
-  const [teamMembers, setTeamMembers] = useState<SidebarTeamMember[]>([]);
-  const [teamLoading, setTeamLoading] = useState(true);
-
-  useEffect(() => {
-    if (!orgId) return;
-    getTeamStatus(orgId).then(({ data }) => {
-      if (data && data.length > 0) {
-        setTeamMembers(data.map((m: TeamMemberStatus) => ({
-          name: m.name || "Team Member",
-          initials: m.initials || m.name?.substring(0, 2).toUpperCase() || "??",
-          status: (m.status === "on_job" || m.status === "en_route" ? "online" : "away") as "online" | "away",
-          role: m.status === "on_job" ? sidebarT("On Job") : m.status === "en_route" ? sidebarT("En Route") : "Idle",
-        })));
-      }
-      setTeamLoading(false);
-    }).catch(() => setTeamLoading(false));
-  }, [orgId, sidebarT]);
-
-  const isActive = (href: string) => {
+  const isActive = useCallback((href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
-    // Care dashboard: exact match only (avoid matching sub-routes like clinical-timeline)
     if (href === "/dashboard/care") return pathname === "/dashboard/care";
     return pathname.startsWith(href);
-  };
+  }, [pathname]);
 
   useEffect(() => {
     setMobileSidebarOpen(false);
   }, [pathname, setMobileSidebarOpen]);
+
+  // Plan label
+  const planLabel = planKey === "free" ? null : planKey.charAt(0).toUpperCase() + planKey.slice(1);
 
   return (
     <>
@@ -398,7 +353,7 @@ export function Sidebar() {
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
         style={{
-          width: sidebarCollapsed ? 64 : 240,
+          width: sidebarCollapsed ? 64 : 220,
           background: "var(--surface-0)",
           borderColor: "var(--border-base)",
           paddingTop: typeof window !== "undefined" && (window as any).iworkr ? 6 : 0,
@@ -409,16 +364,16 @@ export function Sidebar() {
           <div className="h-[30px] w-full shrink-0" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
         )}
 
-        {/* ── Workspace Switcher ── */}
-        <div className="flex h-12 items-center border-b px-3" style={{ borderColor: "var(--border-base)" }}>
+        {/* ── Project Switcher (Vercel-style) ── */}
+        <div className="flex items-center px-3 pt-3 pb-2">
           <button
             onClick={() => useShellStore.getState().setCommandMenuOpen(true)}
-            className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[var(--surface-2)]"
+            className="flex w-full items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-white/[0.04]"
           >
             <img
               src={brandingLogo || "/logos/logo-dark-streamline.png"}
               alt="Logo"
-              className={`h-[22px] w-[22px] shrink-0 object-contain ${brandingLogo ? "" : "brightness-150"}`}
+              className={`h-5 w-5 shrink-0 rounded object-contain ${brandingLogo ? "" : "brightness-150"}`}
             />
             <AnimatePresence>
               {!sidebarCollapsed && (
@@ -426,264 +381,139 @@ export function Sidebar() {
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex flex-1 items-center justify-between overflow-hidden"
+                  transition={{ duration: 0.12 }}
+                  className="flex flex-1 items-center gap-1.5 overflow-hidden"
                 >
-                  <span className="truncate text-[13px] font-medium text-[var(--text-primary)]">
+                  <span className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
                     {companyName || <Shimmer className="h-3 w-24" />}
                   </span>
-                  <div className="flex items-center gap-0.5">
-                    <kbd className="rounded border px-1 py-0.5 font-mono text-[9px] text-[var(--text-muted)]" style={{ borderColor: "var(--border-base)", background: "var(--surface-1)" }}>⌘</kbd>
-                    <kbd className="rounded border px-1 py-0.5 font-mono text-[9px] text-[var(--text-muted)]" style={{ borderColor: "var(--border-base)", background: "var(--surface-1)" }}>K</kbd>
-                  </div>
+                  {planLabel && (
+                    <span className="shrink-0 rounded bg-white/[0.08] px-1.5 py-[1px] text-[10px] font-medium text-zinc-400">
+                      {planLabel}
+                    </span>
+                  )}
+                  <ChevronUp size={12} className="ml-auto shrink-0 text-zinc-600 rotate-180" />
                 </motion.div>
               )}
             </AnimatePresence>
           </button>
         </div>
 
+        {/* ── Search Bar (Vercel-style) ── */}
+        {!sidebarCollapsed && (
+          <div className="px-3 pb-2">
+            <button
+              onClick={() => useShellStore.getState().setCommandMenuOpen(true)}
+              className="flex w-full items-center gap-2 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-[5px] text-[13px] text-zinc-600 transition-colors hover:border-white/[0.1] hover:bg-white/[0.04]"
+            >
+              <Search size={14} strokeWidth={1.5} className="shrink-0" />
+              <span className="flex-1 text-left">Find...</span>
+              <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-[1px] font-mono text-[10px] text-zinc-600">
+                ⌘K
+              </kbd>
+            </button>
+          </div>
+        )}
+
         {/* ── Navigation ── */}
-        <nav className="flex-1 overflow-y-auto scrollbar-none px-2 pt-2">
-          {filteredSections.map((section, sIdx) => {
-            const sectionKey = section.label || "root";
-            const isCollapsed = section.collapsible && collapsedSections[sectionKey];
-
-            return (
-              <div key={sIdx} className={sIdx > 0 ? "mt-3" : ""}>
-                {/* Section header */}
-                {section.label && !sidebarCollapsed && (
-                  <button
-                    onClick={() => section.collapsible && toggleSection(sectionKey)}
-                    className={`mb-1 flex w-full items-center gap-1 px-2 pt-1 text-left group ${
-                      section.collapsible ? "cursor-pointer" : "cursor-default"
-                    }`}
-                  >
-                    <span
-                      className="text-[9px] font-bold tracking-[0.12em] uppercase transition-colors"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {section.label}
-                    </span>
-                    {section.collapsible && (
-                      <ChevronDown
-                        size={10}
-                        className={`text-[var(--text-muted)] opacity-0 transition-all duration-200 group-hover:opacity-60 ${
-                          isCollapsed ? "-rotate-90" : ""
-                        }`}
-                      />
-                    )}
-                  </button>
-                )}
-                {section.label && sidebarCollapsed && (
-                  <div className="my-1.5 mx-3 h-px bg-[var(--border-base)]" />
-                )}
-
-                {/* Section items */}
-                <AnimatePresence initial={false}>
-                  {!isCollapsed && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="space-y-px">
-                        {section.items.map((item) => (
-                          <NavLink
-                            key={item.id}
-                            item={item}
-                            active={isActive(item.href)}
-                            collapsed={sidebarCollapsed}
-                            badge={item.id === "nav_inbox" ? unreadCount : undefined}
-                            proBadge={(isFree && item.badge === "PRO") || false}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+        <nav className="flex-1 overflow-y-auto scrollbar-none px-2">
+          {filteredSections.map((section, sIdx) => (
+            <div key={sIdx}>
+              {/* Separator between sections — thin line, no labels */}
+              {sIdx > 0 && (
+                <div className="mx-1 my-1.5 h-px bg-white/[0.06]" />
+              )}
+              <div className="space-y-[1px]">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.id}
+                    item={item}
+                    active={isActive(item.href)}
+                    collapsed={sidebarCollapsed}
+                    badge={item.id === "nav_inbox" ? unreadCount : undefined}
+                    proBadge={(isFree && item.badge === "PRO") || false}
+                  />
+                ))}
               </div>
-            );
-          })}
-
-          {/* ── Team Section (visible to roles with team.view) ── */}
-          <AnimatePresence>
-            {!sidebarCollapsed && roleDef?.permissions.team?.includes("view") && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-5 overflow-hidden"
-              >
-                <div className="mb-1 px-2">
-                  <span className="text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-                    {sidebarT("Your Team")}
-                  </span>
-                </div>
-                <div className="space-y-px">
-                  {teamLoading && teamMembers.length === 0 ? (
-                    <>
-                      <ShimmerTeamRow />
-                      <ShimmerTeamRow />
-                      <ShimmerTeamRow />
-                    </>
-                  ) : teamMembers.length === 0 ? (
-                    <p className="px-2 py-2 text-[11px] text-[var(--text-muted)]">No team members online</p>
-                  ) : (
-                    teamMembers.map((member) => (
-                      <button
-                        key={member.name}
-                        onClick={() => router.push("/dashboard/team")}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-[5px] text-left transition-colors hover:bg-[var(--surface-2)]"
-                      >
-                        <div className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] text-[8px] font-medium text-[var(--text-muted)]">
-                          {member.initials}
-                          <div
-                            className={`absolute -right-px -bottom-px h-[7px] w-[7px] rounded-full border-[1.5px] ${
-                              member.status === "online"
-                                ? "bg-[var(--brand)]"
-                                : "bg-zinc-600"
-                            }`}
-                            style={{ borderColor: "var(--surface-0)" }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[13px] text-[var(--text-muted)]">
-                            {member.name}
-                          </div>
-                        </div>
-                        <span className="font-mono text-[9px] text-[var(--text-muted)]">
-                          {member.role}
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            </div>
+          ))}
         </nav>
 
         {/* ── System Tray ── */}
-        <div className="border-t px-2 py-1.5" style={{ borderColor: "var(--border-base)" }}>
-          <div className="space-y-px">
-            {systemItems.map((item) => {
-              const Icon = item.icon;
-              if (item.action === "invite") {
-                if (!roleDef?.scopes.canManageTeam) return null;
-                return (
-                  <button
-                    key={item.label}
-                    onClick={() => setInviteModalOpen(true)}
-                    title={sidebarCollapsed ? item.label : undefined}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
-                      sidebarCollapsed ? "justify-center" : ""
-                    }`}
-                  >
-                    <Icon size={14} strokeWidth={1.5} className="shrink-0" />
-                    <AnimatePresence>
-                      {!sidebarCollapsed && (
-                        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                          {item.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </button>
-                );
-              }
-              if (item.href?.startsWith("mailto:") || item.href?.startsWith("http")) {
-                return (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    title={sidebarCollapsed ? item.label : undefined}
-                    className={`flex items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
-                      sidebarCollapsed ? "justify-center" : ""
-                    }`}
-                  >
-                    <Icon size={14} strokeWidth={1.5} className="shrink-0" />
-                    <AnimatePresence>
-                      {!sidebarCollapsed && (
-                        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                          {item.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </a>
-                );
-              }
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href || "#"}
-                  title={sidebarCollapsed ? item.label : undefined}
-                  className={`flex items-center gap-2 rounded-lg px-2 py-[5px] text-[13px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
-                    sidebarCollapsed ? "justify-center" : ""
-                  }`}
-                >
-                  <Icon size={14} strokeWidth={1.5} className="shrink-0" />
-                  <AnimatePresence>
-                    {!sidebarCollapsed && (
-                      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        {item.label}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Link>
-              );
-            })}
+        <div className="border-t border-white/[0.06] px-2 py-1.5">
+          <div className="space-y-[1px]">
+            <SystemLink
+              label="Get App"
+              icon={Smartphone}
+              collapsed={sidebarCollapsed}
+              href="/dashboard/get-app"
+              active={pathname.startsWith("/dashboard/get-app")}
+            />
+            {roleDef?.scopes.canManageTeam && (
+              <SystemLink
+                label="Invite Team"
+                icon={UserPlus}
+                collapsed={sidebarCollapsed}
+                onClick={() => setInviteModalOpen(true)}
+              />
+            )}
+            <SystemLink
+              label="Settings"
+              icon={Settings}
+              collapsed={sidebarCollapsed}
+              href="/settings"
+              active={pathname.startsWith("/settings")}
+            />
           </div>
+        </div>
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            title={sidebarCollapsed ? (theme === "dark" ? "Light Mode" : "Dark Mode") : undefined}
-            className={`flex items-center gap-2 rounded-lg px-2 py-[5px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
-              sidebarCollapsed ? "w-full justify-center" : "w-full"
-            }`}
-          >
-            {theme === "dark" ? (
-              <Sun size={14} strokeWidth={1.5} />
-            ) : (
-              <Moon size={14} strokeWidth={1.5} />
-            )}
-            <AnimatePresence>
-              {!sidebarCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[13px]"
+        {/* ── Footer — User / Workspace (Vercel-style) ── */}
+        <div className="border-t border-white/[0.06] px-3 py-2">
+          {!sidebarCollapsed ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <UserAvatar />
+                <span className="truncate text-[12px] text-zinc-500">{companyName}</span>
+              </div>
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={toggleSidebar}
+                  title="Collapse sidebar (⌘[)"
+                  className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
                 >
-                  {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </button>
-
-          {/* Collapse */}
-          <button
-            onClick={toggleSidebar}
-            title={sidebarCollapsed ? "Expand sidebar (⌘[)" : undefined}
-            className={`mt-0.5 flex items-center gap-2 rounded-lg px-2 py-[5px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] ${
-              sidebarCollapsed ? "w-full justify-center" : "w-full"
-            }`}
-          >
-            {sidebarCollapsed ? (
-              <PanelLeftOpen size={14} strokeWidth={1.5} />
-            ) : (
-              <>
-                <PanelLeftClose size={14} strokeWidth={1.5} />
-                <span className="text-[13px]">Collapse</span>
-                <kbd className="ml-auto rounded border px-1 py-0.5 font-mono text-[9px] text-[var(--text-muted)]" style={{ borderColor: "var(--border-base)", background: "var(--surface-1)" }}>
-                  ⌘[
-                </kbd>
-              </>
-            )}
-          </button>
+                  <PanelLeftClose size={14} strokeWidth={1.5} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-1.5">
+              <UserAvatar />
+              <button
+                onClick={toggleSidebar}
+                title="Expand sidebar (⌘[)"
+                className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
+              >
+                <PanelLeftOpen size={14} strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
         </div>
       </motion.aside>
     </>
+  );
+}
+
+/* ── User Avatar ─────────────────────────────────────── */
+
+function UserAvatar() {
+  const profile = useAuthStore((s) => s.profile);
+  const initials = profile?.full_name
+    ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : profile?.email?.[0]?.toUpperCase() || "?";
+
+  return (
+    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/15 text-[9px] font-bold text-[var(--brand)]">
+      {initials}
+    </div>
   );
 }
