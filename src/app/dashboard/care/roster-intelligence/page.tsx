@@ -20,7 +20,7 @@ import {
   MapPin,
   X,
 } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
   useCareCommandStore,
@@ -34,6 +34,10 @@ import {
   createCareGoalAction,
   updateCareGoalAction,
 } from "@/app/actions/care";
+import {
+  getOrgStaffProfiles,
+  type StaffProfileWithMeta,
+} from "@/app/actions/staff-profiles";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Types & Config
@@ -66,17 +70,7 @@ const DOMAIN_COLORS: Record<string, string> = {
   lifelong_learning: "bg-orange-500/10 text-orange-400 border-orange-500/20",
 };
 
-/** Mock compliance data — SCHADS-aware workforce analytics */
-const MOCK_WORKERS = [
-  { id: "w1", name: "Sarah Chen", role: "Support Worker L3", consecutiveDays: 4, hoursThisWeek: 42.5, breakCompliance: true, fatigueRisk: "low" as const, overtime: false, location: "Participant Home — 12 Maple St" },
-  { id: "w2", name: "Marcus Johnson", role: "Support Worker L2", consecutiveDays: 6, hoursThisWeek: 51.0, breakCompliance: false, fatigueRisk: "high" as const, overtime: true, location: "Day Program — Northside Hub" },
-  { id: "w3", name: "Emily Nguyen", role: "Team Leader L4", consecutiveDays: 3, hoursThisWeek: 38.0, breakCompliance: true, fatigueRisk: "low" as const, overtime: false, location: "Office — HQ" },
-  { id: "w4", name: "David Williams", role: "Support Worker L2", consecutiveDays: 5, hoursThisWeek: 47.5, breakCompliance: true, fatigueRisk: "medium" as const, overtime: true, location: "Community — Westfield Mall" },
-  { id: "w5", name: "Lisa Park", role: "Support Worker L1", consecutiveDays: 2, hoursThisWeek: 12.0, breakCompliance: true, fatigueRisk: "low" as const, overtime: false, location: "Participant Home — 8 Oak Ave" },
-  { id: "w6", name: "James O'Brien", role: "Night Support L3", consecutiveDays: 5, hoursThisWeek: 44.0, breakCompliance: false, fatigueRisk: "medium" as const, overtime: false, location: "SIL House — Banksia" },
-  { id: "w7", name: "Priya Sharma", role: "Support Worker L2", consecutiveDays: 3, hoursThisWeek: 36.0, breakCompliance: true, fatigueRisk: "low" as const, overtime: false, location: "Respite — Elm Lodge" },
-  { id: "w8", name: "Tom Fletcher", role: "Support Worker L3", consecutiveDays: 7, hoursThisWeek: 53.5, breakCompliance: false, fatigueRisk: "high" as const, overtime: true, location: "Participant Home — 3 Pine Crt" },
-];
+/* Mock workers removed — real data fetched from staff_profiles + schedule_blocks */
 
 const FATIGUE_CONFIG = {
   low: { label: "Clear", color: "text-emerald-400", bg: "bg-emerald-500/10", dot: "bg-emerald-500" },
@@ -664,16 +658,54 @@ function CarePlansTab({
    SCHADS Compliance Tab
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-function SCHADSComplianceTab() {
+function SCHADSComplianceTab({ orgId }: { orgId: string }) {
   const [expandedRule, setExpandedRule] = useState<string | null>(null);
+  const [staffData, setStaffData] = useState<StaffProfileWithMeta[]>([]);
+  const [staffLoading, setStaffLoading] = useState(true);
 
-  /* ── Compliance stats from mock data ───── */
+  // Fetch real staff data
+  useEffect(() => {
+    if (!orgId) return;
+    setStaffLoading(true);
+    getOrgStaffProfiles(orgId)
+      .then((data) => setStaffData(data))
+      .catch((err) => console.error("Failed to load staff data:", err))
+      .finally(() => setStaffLoading(false));
+  }, [orgId]);
+
+  // Map real data to worker rows
+  const workerRows = useMemo(() => {
+    return staffData.map((sp) => {
+      const hoursThisWeek = sp.weekly_hours_scheduled || 0;
+      const maxHours = sp.max_weekly_hours || 38;
+      const overtime = hoursThisWeek > maxHours;
+      const fatigueRisk: "low" | "medium" | "high" =
+        sp.credential_summary.expired > 0 ? "high"
+        : hoursThisWeek > maxHours * 0.9 ? "medium"
+        : "low";
+      const breakCompliance = sp.credential_summary.expired === 0 && sp.credential_summary.pending === 0;
+
+      return {
+        id: sp.user_id,
+        name: sp.full_name,
+        role: `Level ${sp.schads_level} · ${sp.employment_type.replace(/_/g, " ")}`,
+        hoursThisWeek,
+        maxHours,
+        breakCompliance,
+        fatigueRisk,
+        overtime,
+        credentialStatus: sp.credential_summary,
+      };
+    });
+  }, [staffData]);
+
+  /* ── Compliance stats from real data ───── */
   const complianceStats = useMemo(() => {
-    const fatigueAtRisk = MOCK_WORKERS.filter((w) => w.fatigueRisk === "high").length;
-    const overtimeHours = MOCK_WORKERS.filter((w) => w.overtime).reduce((a, w) => a + Math.max(0, w.hoursThisWeek - 38), 0);
-    const minEngagementViolations = MOCK_WORKERS.filter((w) => w.hoursThisWeek > 0 && w.hoursThisWeek < 2).length;
+    const fatigueAtRisk = workerRows.filter((w) => w.fatigueRisk === "high").length;
+    const overtimeHours = workerRows.filter((w) => w.overtime).reduce((a, w) => a + Math.max(0, w.hoursThisWeek - w.maxHours), 0);
+    const minEngagementViolations = workerRows.filter((w) => w.hoursThisWeek > 0 && w.hoursThisWeek < 2).length;
     return { fatigueAtRisk, overtimeHours: overtimeHours.toFixed(1), minEngagementViolations };
-  }, []);
+  }, [workerRows]);
 
   return (
     <div className="p-5 space-y-6">
@@ -739,84 +771,86 @@ function SCHADSComplianceTab() {
             Workforce Compliance — This Week
           </h3>
           <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-zinc-300">
-            {MOCK_WORKERS.length} workers
+            {workerRows.length} workers
           </span>
         </div>
 
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_60px_80px_100px_80px] items-center gap-3 px-5 py-2.5 border-b border-white/[0.04] bg-[var(--surface-1)]">
+        <div className="grid grid-cols-[1fr_80px_100px_80px] items-center gap-3 px-5 py-2.5 border-b border-white/[0.04] bg-[var(--surface-1)]">
           <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Worker</span>
-          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Days</span>
           <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Hours</span>
-          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Break</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Credentials</span>
           <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Status</span>
         </div>
 
         {/* Table rows */}
-        <div className="divide-y divide-white/[0.03]">
-          {MOCK_WORKERS.map((worker, i) => {
-            const fatigue = FATIGUE_CONFIG[worker.fatigueRisk];
-            return (
-              <motion.div
-                key={worker.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.02 * i }}
-                className={`grid grid-cols-[1fr_60px_80px_100px_80px] items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02] ${
-                  worker.fatigueRisk === "high" ? "bg-rose-500/[0.02]" : ""
-                }`}
-              >
-                {/* Worker */}
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.05] text-[10px] font-semibold text-zinc-400 flex-shrink-0">
-                    {worker.name.split(" ").map((n) => n[0]).join("")}
+        {staffLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--brand)]/30 border-t-[var(--brand)]" />
+          </div>
+        ) : workerRows.length === 0 ? (
+          <div className="py-12 text-center text-[12px] text-zinc-600">
+            No staff profiles found. Create staff profiles in Team → Member to see compliance data.
+          </div>
+        ) : (
+          <div className="divide-y divide-white/[0.03]">
+            {workerRows.map((worker, i) => {
+              const fatigue = FATIGUE_CONFIG[worker.fatigueRisk];
+              return (
+                <motion.div
+                  key={worker.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.02 * i }}
+                  className={`grid grid-cols-[1fr_80px_100px_80px] items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02] ${
+                    worker.fatigueRisk === "high" ? "bg-rose-500/[0.02]" : ""
+                  }`}
+                >
+                  {/* Worker */}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.05] text-[10px] font-semibold text-zinc-400 flex-shrink-0">
+                      {worker.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-medium text-white truncate">{worker.name}</p>
+                      <p className="text-[10px] text-zinc-600 truncate">{worker.role}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[12px] font-medium text-white truncate">{worker.name}</p>
-                    <p className="text-[10px] text-zinc-600 truncate">{worker.role}</p>
+
+                  {/* Hours This Week */}
+                  <div className="flex items-center justify-center">
+                    <span className={`font-mono text-[12px] font-medium ${worker.hoursThisWeek > worker.maxHours ? "text-amber-400" : "text-zinc-300"}`}>
+                      {worker.hoursThisWeek}h<span className="text-zinc-600">/{worker.maxHours}</span>
+                    </span>
                   </div>
-                </div>
 
-                {/* Consecutive Days */}
-                <div className="flex items-center justify-center">
-                  <span className={`font-mono text-[12px] font-medium ${worker.consecutiveDays >= 6 ? "text-rose-400" : worker.consecutiveDays >= 5 ? "text-amber-400" : "text-zinc-300"}`}>
-                    {worker.consecutiveDays}
-                  </span>
-                </div>
+                  {/* Credential Compliance */}
+                  <div className="flex items-center justify-center">
+                    {worker.breakCompliance ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        {worker.credentialStatus.verified}/{worker.credentialStatus.total}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-400">
+                        <AlertTriangle className="h-2.5 w-2.5" />
+                        {worker.credentialStatus.expired} expired
+                      </span>
+                    )}
+                  </div>
 
-                {/* Hours This Week */}
-                <div className="flex items-center justify-center">
-                  <span className={`font-mono text-[12px] font-medium ${worker.hoursThisWeek > 38 ? "text-amber-400" : "text-zinc-300"}`}>
-                    {worker.hoursThisWeek}h
-                  </span>
-                </div>
-
-                {/* Break Compliance */}
-                <div className="flex items-center justify-center">
-                  {worker.breakCompliance ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
-                      <CheckCircle2 className="h-2.5 w-2.5" />
-                      Compliant
+                  {/* Fatigue Status */}
+                  <div className="flex items-center justify-center">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium ${fatigue.bg} ${fatigue.color}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${fatigue.dot}`} />
+                      {fatigue.label}
                     </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-400">
-                      <AlertTriangle className="h-2.5 w-2.5" />
-                      Violation
-                    </span>
-                  )}
-                </div>
-
-                {/* Fatigue Status */}
-                <div className="flex items-center justify-center">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium ${fatigue.bg} ${fatigue.color}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${fatigue.dot}`} />
-                    {fatigue.label}
-                  </span>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Legend */}
         <div className="px-5 py-2.5 border-t border-white/[0.05] flex flex-wrap items-center gap-4">
@@ -1089,7 +1123,7 @@ export default function RosterIntelligencePage() {
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.3, ease }}
             >
-              <SCHADSComplianceTab />
+              <SCHADSComplianceTab orgId={orgId || ""} />
             </motion.div>
           )}
         </AnimatePresence>

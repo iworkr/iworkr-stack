@@ -1147,3 +1147,132 @@ export async function validateScheduleDrop(
     return { data: null, error: error.message || "Failed to validate" };
   }
 }
+
+/* ── Fatigue Compliance Check (SCHADS 10-Hour Rest Rule) ─── */
+
+export async function checkFatigueCompliance(
+  workerId: string,
+  proposedStart: string,
+  orgId: string,
+): Promise<{
+  compliant: boolean;
+  gap_hours: number | null;
+  minimum_required: number;
+  earliest_allowed_start: string | null;
+  last_shift_end: string | null;
+}> {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    // Get the worker's most recent shift end time before the proposed start
+    const { data: recentBlocks } = await (supabase as any)
+      .from("schedule_blocks")
+      .select("end_time")
+      .eq("organization_id", orgId)
+      .eq("technician_id", workerId)
+      .lt("end_time", proposedStart)
+      .neq("status", "cancelled")
+      .order("end_time", { ascending: false })
+      .limit(1);
+
+    // Get the fatigue gap from award_rules (default 10h)
+    let fatigueGap = 10;
+    try {
+      const { data: ruleVal } = await (supabase as any).rpc("get_award_rule", {
+        p_organization_id: orgId,
+        p_rule_type: "fatigue_gap_hours",
+      });
+      if (ruleVal) fatigueGap = parseFloat(ruleVal);
+    } catch { /* use default */ }
+
+    if (!recentBlocks || recentBlocks.length === 0) {
+      return {
+        compliant: true,
+        gap_hours: null,
+        minimum_required: fatigueGap,
+        earliest_allowed_start: null,
+        last_shift_end: null,
+      };
+    }
+
+    const lastEnd = new Date(recentBlocks[0].end_time);
+    const propStart = new Date(proposedStart);
+    const gapHours = (propStart.getTime() - lastEnd.getTime()) / 3600000;
+
+    const earliestAllowed = new Date(lastEnd.getTime() + fatigueGap * 3600000);
+
+    return {
+      compliant: gapHours >= fatigueGap,
+      gap_hours: Math.round(gapHours * 10) / 10,
+      minimum_required: fatigueGap,
+      earliest_allowed_start: earliestAllowed.toISOString(),
+      last_shift_end: recentBlocks[0].end_time,
+    };
+  } catch (error: any) {
+    logger.error("Failed to check fatigue compliance", "schedule", error);
+    return {
+      compliant: true, // fail-open to not block scheduling
+      gap_hours: null,
+      minimum_required: 10,
+      earliest_allowed_start: null,
+      last_shift_end: null,
+    };
+  }
+}
+
+/* ── Get Weekly Hours for a Worker ──────────────────────── */
+
+export async function getWorkerWeeklyHours(
+  workerId: string,
+  orgId: string,
+  weekDate?: string,
+): Promise<{
+  scheduled_hours: number;
+  max_hours: number;
+  overtime_risk: boolean;
+  blocks_count: number;
+}> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const date = weekDate ? new Date(weekDate) : new Date();
+
+    const day = date.getDay();
+    const weekStart = new Date(date);
+    weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1));
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const { data: blocks } = await (supabase as any)
+      .from("schedule_blocks")
+      .select("start_time, end_time")
+      .eq("organization_id", orgId)
+      .eq("technician_id", workerId)
+      .gte("start_time", weekStart.toISOString())
+      .lt("end_time", weekEnd.toISOString())
+      .neq("status", "cancelled");
+
+    const hours = (blocks || []).reduce((sum: number, b: any) => {
+      return sum + (new Date(b.end_time).getTime() - new Date(b.start_time).getTime()) / 3600000;
+    }, 0);
+
+    // Get max hours from staff profile
+    let maxHours = 38;
+    const { data: sp } = await (supabase as any)
+      .from("staff_profiles")
+      .select("max_weekly_hours")
+      .eq("user_id", workerId)
+      .eq("organization_id", orgId)
+      .maybeSingle();
+    if (sp?.max_weekly_hours) maxHours = sp.max_weekly_hours;
+
+    return {
+      scheduled_hours: Math.round(hours * 10) / 10,
+      max_hours: maxHours,
+      overtime_risk: hours >= maxHours * 0.9,
+      blocks_count: (blocks || []).length,
+    };
+  } catch {
+    return { scheduled_hours: 0, max_hours: 38, overtime_risk: false, blocks_count: 0 };
+  }
+}

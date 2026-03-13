@@ -4,13 +4,17 @@
  * Edge Function: Scheduling Hard Gate
  *
  * Called before a schedule block is created/updated for "care" organizations.
- * Validates that the assigned worker holds all mandatory, non-expired credentials.
+ * Validates:
+ *   1. Mandatory credentials (NDIS_SCREENING, WWCC, FIRST_AID)
+ *   2. 10-hour fatigue rest rule (SCHADS compliance)
+ *   3. Qualification match (worker qualifications vs participant requirements)
+ *   4. Weekly hours / overtime warning
  *
  * For "trades" organizations, this function passes through immediately (no checks).
  *
  * Returns:
- *   200 — All credentials valid, safe to proceed
- *   409 — Missing or expired credentials (body contains details)
+ *   200 — All checks passed (may include warnings)
+ *   409 — Hard block (credentials or fatigue breach)
  *   400 — Invalid request
  *   401 — Unauthorized
  */
@@ -24,7 +28,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Mandatory credentials for care sector workers assigned to shifts
+// Mandatory credentials for care sector workers
 const MANDATORY_CREDENTIAL_TYPES = [
   "NDIS_SCREENING",
   "WWCC",
@@ -34,15 +38,23 @@ const MANDATORY_CREDENTIAL_TYPES = [
 interface ValidationRequest {
   organization_id: string;
   worker_id: string;
-  /** Optional: additional credential types required for this specific shift */
+  /** Proposed shift start (ISO string) — for fatigue & hours checks */
+  shift_start?: string;
+  /** Proposed shift end (ISO string) — for hours checks */
+  shift_end?: string;
+  /** Participant ID — for qualification matching */
+  participant_id?: string;
+  /** Additional credential types required for this shift */
   required_credentials?: string[];
+  /** Additional qualifications required (from care plan) */
+  required_qualifications?: string[];
 }
 
-interface CredentialIssue {
-  credential_type: string;
-  credential_name: string;
-  status: "missing" | "expired" | "pending" | "rejected";
-  expiry_date?: string;
+interface ValidationIssue {
+  type: "credential" | "fatigue" | "qualification" | "overtime";
+  severity: "hard_block" | "warning";
+  message: string;
+  details?: Record<string, unknown>;
 }
 
 serve(async (req) => {
@@ -52,7 +64,15 @@ serve(async (req) => {
 
   try {
     const body: ValidationRequest = await req.json();
-    const { organization_id, worker_id, required_credentials } = body;
+    const {
+      organization_id,
+      worker_id,
+      shift_start,
+      shift_end,
+      participant_id,
+      required_credentials,
+      required_qualifications,
+    } = body;
 
     if (!organization_id || !worker_id) {
       return new Response(
@@ -98,122 +118,236 @@ serve(async (req) => {
     }
 
     // ─── TRADES PASS-THROUGH ───────────────────────────────────────
-    // For trades organizations, skip all credential checks
     if (org.industry_type !== "care") {
       return new Response(
-        JSON.stringify({ valid: true, industry_type: org.industry_type, message: "No credential checks required for trades organizations." }),
+        JSON.stringify({
+          allowed: true,
+          industry_type: org.industry_type,
+          message: "No compliance checks required for trades organizations.",
+          reasons: [],
+        }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ─── CARE SECTOR: CREDENTIAL VALIDATION ────────────────────────
+    // ─── CARE SECTOR: FULL VALIDATION ──────────────────────────────
 
-    // Build the list of required credential types
-    const requiredTypes = [
-      ...MANDATORY_CREDENTIAL_TYPES,
-      ...(required_credentials ?? []),
-    ];
-    // De-duplicate
-    const uniqueRequired = [...new Set(requiredTypes)];
+    const reasons: ValidationIssue[] = [];
+    const today = new Date().toISOString().split("T")[0];
 
-    // Fetch all credentials for this worker in this org
-    const { data: credentials, error: credError } = await adminClient
+    // ── 1. CREDENTIAL CHECK ────────────────────────────────────────
+    const requiredTypes = [...new Set([...MANDATORY_CREDENTIAL_TYPES, ...(required_credentials ?? [])])];
+
+    const { data: credentials } = await adminClient
       .from("worker_credentials")
       .select("credential_type, credential_name, expiry_date, verification_status")
       .eq("organization_id", organization_id)
       .eq("user_id", worker_id);
 
-    if (credError) {
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch worker credentials" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const issues: CredentialIssue[] = [];
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-
-    for (const requiredType of uniqueRequired) {
+    for (const requiredType of requiredTypes) {
       const cred = credentials?.find((c: any) => c.credential_type === requiredType);
 
       if (!cred) {
-        // Missing credential entirely
-        issues.push({
-          credential_type: requiredType,
-          credential_name: requiredType.replace(/_/g, " "),
-          status: "missing",
+        reasons.push({
+          type: "credential",
+          severity: "hard_block",
+          message: `Missing credential: ${requiredType.replace(/_/g, " ")}`,
+          details: { credential_type: requiredType, status: "missing" },
         });
         continue;
       }
 
-      // Check verification status
-      if (cred.verification_status === "rejected") {
-        issues.push({
-          credential_type: requiredType,
-          credential_name: cred.credential_name || requiredType.replace(/_/g, " "),
-          status: "rejected",
-          expiry_date: cred.expiry_date,
+      if (cred.verification_status === "rejected" || cred.verification_status === "expired") {
+        reasons.push({
+          type: "credential",
+          severity: "hard_block",
+          message: `${cred.credential_name || requiredType.replace(/_/g, " ")} is ${cred.verification_status}`,
+          details: { credential_type: requiredType, status: cred.verification_status, expiry_date: cred.expiry_date },
         });
         continue;
       }
 
-      if (cred.verification_status === "expired") {
-        issues.push({
-          credential_type: requiredType,
-          credential_name: cred.credential_name || requiredType.replace(/_/g, " "),
-          status: "expired",
-          expiry_date: cred.expiry_date,
-        });
-        continue;
-      }
-
-      // Check if expired by date (in case auto-expire cron hasn't run yet)
       if (cred.expiry_date && cred.expiry_date < today) {
-        issues.push({
-          credential_type: requiredType,
-          credential_name: cred.credential_name || requiredType.replace(/_/g, " "),
-          status: "expired",
-          expiry_date: cred.expiry_date,
+        reasons.push({
+          type: "credential",
+          severity: "hard_block",
+          message: `${cred.credential_name || requiredType.replace(/_/g, " ")} expired on ${cred.expiry_date}`,
+          details: { credential_type: requiredType, status: "expired", expiry_date: cred.expiry_date },
         });
         continue;
       }
 
       if (cred.verification_status === "pending") {
-        issues.push({
-          credential_type: requiredType,
-          credential_name: cred.credential_name || requiredType.replace(/_/g, " "),
-          status: "pending",
-          expiry_date: cred.expiry_date,
+        reasons.push({
+          type: "credential",
+          severity: "hard_block",
+          message: `${cred.credential_name || requiredType.replace(/_/g, " ")} is pending verification`,
+          details: { credential_type: requiredType, status: "pending" },
         });
-        continue;
       }
-
-      // Credential is verified and not expired — valid ✓
     }
 
-    if (issues.length > 0) {
-      // ─── COMPLIANCE FAILURE: BLOCK SCHEDULING ───────────────────
-      return new Response(
-        JSON.stringify({
-          valid: false,
-          industry_type: "care",
-          message: `Worker is missing ${issues.length} required credential(s). Cannot assign to shift.`,
-          issues,
-          worker_id,
-        }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // ── 2. FATIGUE CHECK (10-hour rest rule) ──────────────────────
+    if (shift_start) {
+      const proposedStart = new Date(shift_start);
+
+      // Get worker's most recent shift end before proposed start
+      const { data: recentBlocks } = await adminClient
+        .from("schedule_blocks")
+        .select("end_time")
+        .eq("organization_id", organization_id)
+        .eq("technician_id", worker_id)
+        .lt("end_time", shift_start)
+        .neq("status", "cancelled")
+        .order("end_time", { ascending: false })
+        .limit(1);
+
+      if (recentBlocks && recentBlocks.length > 0) {
+        const lastEnd = new Date(recentBlocks[0].end_time);
+        const gapHours = (proposedStart.getTime() - lastEnd.getTime()) / 3600000;
+
+        // Get org fatigue gap setting (default 10h)
+        let fatigueGap = 10;
+        try {
+          const { data: ruleVal } = await adminClient.rpc("get_award_rule", {
+            p_organization_id: organization_id,
+            p_rule_type: "fatigue_gap_hours",
+          });
+          if (ruleVal) fatigueGap = parseFloat(ruleVal);
+        } catch { /* use default */ }
+
+        if (gapHours < fatigueGap) {
+          const earliestStart = new Date(lastEnd.getTime() + fatigueGap * 3600000);
+          const earliestFormatted = earliestStart.toLocaleTimeString("en-AU", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+
+          reasons.push({
+            type: "fatigue",
+            severity: "hard_block",
+            message: `SCHADS 10-Hour Rest Breach: Only ${gapHours.toFixed(1)}h gap. Earliest start: ${earliestFormatted}`,
+            details: {
+              gap_hours: Math.round(gapHours * 10) / 10,
+              minimum_required: fatigueGap,
+              last_shift_end: recentBlocks[0].end_time,
+              earliest_allowed_start: earliestStart.toISOString(),
+            },
+          });
+        }
+      }
     }
 
-    // ─── ALL CLEAR ──────────────────────────────────────────────────
+    // ── 3. QUALIFICATION CHECK ───────────────────────────────────
+    if (required_qualifications && required_qualifications.length > 0) {
+      const { data: staffProfile } = await adminClient
+        .from("staff_profiles")
+        .select("qualifications")
+        .eq("user_id", worker_id)
+        .eq("organization_id", organization_id)
+        .maybeSingle();
+
+      const workerQuals = new Set(staffProfile?.qualifications || []);
+
+      for (const reqQual of required_qualifications) {
+        if (!workerQuals.has(reqQual)) {
+          reasons.push({
+            type: "qualification",
+            severity: "hard_block",
+            message: `Missing required qualification: ${reqQual.replace(/_/g, " ")}`,
+            details: { qualification: reqQual },
+          });
+        }
+      }
+    }
+
+    // ── 4. WEEKLY HOURS / OVERTIME CHECK ─────────────────────────
+    if (shift_start && shift_end) {
+      const shiftStart = new Date(shift_start);
+      const shiftEnd = new Date(shift_end);
+      const shiftHours = (shiftEnd.getTime() - shiftStart.getTime()) / 3600000;
+
+      // Get week boundaries (Monday start)
+      const day = shiftStart.getDay();
+      const weekStart = new Date(shiftStart);
+      weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1));
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+
+      const { data: weekBlocks } = await adminClient
+        .from("schedule_blocks")
+        .select("start_time, end_time")
+        .eq("organization_id", organization_id)
+        .eq("technician_id", worker_id)
+        .gte("start_time", weekStart.toISOString())
+        .lt("end_time", weekEnd.toISOString())
+        .neq("status", "cancelled");
+
+      const currentWeeklyHours = (weekBlocks || []).reduce((sum: number, b: any) => {
+        return sum + (new Date(b.end_time).getTime() - new Date(b.start_time).getTime()) / 3600000;
+      }, 0);
+
+      const projectedTotal = currentWeeklyHours + shiftHours;
+
+      // Get max weekly hours from staff profile
+      let maxHours = 38;
+      const { data: sp } = await adminClient
+        .from("staff_profiles")
+        .select("max_weekly_hours")
+        .eq("user_id", worker_id)
+        .eq("organization_id", organization_id)
+        .maybeSingle();
+      if (sp?.max_weekly_hours) maxHours = sp.max_weekly_hours;
+
+      if (projectedTotal > maxHours) {
+        reasons.push({
+          type: "overtime",
+          severity: "warning",
+          message: `Overtime risk: ${projectedTotal.toFixed(1)}h projected (max ${maxHours}h). Overtime rates may apply.`,
+          details: {
+            current_weekly_hours: Math.round(currentWeeklyHours * 10) / 10,
+            shift_hours: Math.round(shiftHours * 10) / 10,
+            projected_total: Math.round(projectedTotal * 10) / 10,
+            max_weekly_hours: maxHours,
+          },
+        });
+      } else if (projectedTotal >= maxHours * 0.9) {
+        reasons.push({
+          type: "overtime",
+          severity: "warning",
+          message: `Approaching limit: ${projectedTotal.toFixed(1)}/${maxHours}h this week`,
+          details: {
+            current_weekly_hours: Math.round(currentWeeklyHours * 10) / 10,
+            projected_total: Math.round(projectedTotal * 10) / 10,
+            max_weekly_hours: maxHours,
+          },
+        });
+      }
+    }
+
+    // ── RESPONSE ─────────────────────────────────────────────────
+    const hardBlocks = reasons.filter(r => r.severity === "hard_block");
+    const warnings = reasons.filter(r => r.severity === "warning");
+    const allowed = hardBlocks.length === 0;
+
     return new Response(
       JSON.stringify({
-        valid: true,
+        allowed,
         industry_type: "care",
-        message: "All required credentials verified.",
-        credentials_checked: uniqueRequired.length,
+        message: allowed
+          ? (warnings.length > 0 ? `Passed with ${warnings.length} warning(s)` : "All compliance checks passed.")
+          : `Blocked: ${hardBlocks.length} compliance issue(s)`,
+        reasons,
+        hard_blocks: hardBlocks.length,
+        warnings: warnings.length,
+        credentials_checked: requiredTypes.length,
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: allowed ? 200 : 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
 
   } catch (err) {
