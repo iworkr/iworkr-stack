@@ -22,15 +22,37 @@ async function verifySuperAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
   const admin = createAdminSupabaseClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id, email, is_super_admin")
-    .eq("id", user.id)
-    .maybeSingle();
 
-  if (!profile?.is_super_admin) return null;
-  return { id: user.id, email: profile.email };
+  try {
+    const { data: profile, error: profileError } = await admin
+      .from("profiles")
+      .select("id, email, is_super_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      // Column may not exist yet — fallback to email check
+      if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+        return { id: user.id, email: user.email || "" };
+      }
+      return null;
+    }
+
+    if (!profile?.is_super_admin) {
+      if (SUPER_ADMIN_EMAILS.includes(profile?.email || user.email || "")) {
+        return { id: user.id, email: profile?.email || user.email || "" };
+      }
+      return null;
+    }
+    return { id: user.id, email: profile.email };
+  } catch {
+    if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+      return { id: user.id, email: user.email || "" };
+    }
+    return null;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

@@ -23,14 +23,41 @@ async function verifySuperAdmin() {
   if (!user) return null;
 
   const admin = createAdminSupabaseClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id, email, is_super_admin")
-    .eq("id", user.id)
-    .maybeSingle();
 
-  if (!profile?.is_super_admin) return null;
-  return { id: user.id, email: profile.email };
+  // Try to check is_super_admin column; gracefully handle if migration 084
+  // hasn't been applied yet (column doesn't exist) by falling back to email check
+  const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
+
+  try {
+    const { data: profile, error: profileError } = await admin
+      .from("profiles")
+      .select("id, email, is_super_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      // Column likely doesn't exist — fall back to email allowlist
+      if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+        return { id: user.id, email: user.email || "" };
+      }
+      return null;
+    }
+
+    if (!profile?.is_super_admin) {
+      // Also check email allowlist as fallback (for when column exists but isn't set)
+      if (SUPER_ADMIN_EMAILS.includes(profile?.email || user.email || "")) {
+        return { id: user.id, email: profile?.email || user.email || "" };
+      }
+      return null;
+    }
+    return { id: user.id, email: profile.email };
+  } catch {
+    // Hard failure — fall back to email check
+    if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+      return { id: user.id, email: user.email || "" };
+    }
+    return null;
+  }
 }
 
 /** Log an action to the immutable audit trail */
@@ -46,19 +73,25 @@ async function logAudit(params: {
   mutationPayload?: any;
   notes?: string;
 }) {
-  const admin = createAdminSupabaseClient();
-  await admin.from("super_admin_audit_logs").insert({
-    admin_id: params.adminId,
-    admin_email: params.adminEmail,
-    action_type: params.actionType,
-    target_table: params.targetTable || null,
-    target_record_id: params.targetRecordId || null,
-    target_org_id: params.targetOrgId || null,
-    previous_state: params.previousState || null,
-    new_state: params.newState || null,
-    mutation_payload: params.mutationPayload || null,
-    notes: params.notes || null,
-  });
+  try {
+    const admin = createAdminSupabaseClient();
+    await admin.from("super_admin_audit_logs").insert({
+      admin_id: params.adminId,
+      admin_email: params.adminEmail,
+      action_type: params.actionType,
+      target_table: params.targetTable || null,
+      target_record_id: params.targetRecordId || null,
+      target_org_id: params.targetOrgId || null,
+      previous_state: params.previousState || null,
+      new_state: params.newState || null,
+      mutation_payload: params.mutationPayload || null,
+      notes: params.notes || null,
+    });
+  } catch {
+    // Audit table may not exist yet (migration 084 not applied)
+    // Silently skip — never block admin operations for audit failures
+    console.warn("[Olympus] Audit log failed — table may not exist yet");
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════

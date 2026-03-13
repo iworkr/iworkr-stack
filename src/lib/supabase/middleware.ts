@@ -47,17 +47,40 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Check is_super_admin flag on profile
-    const { data: adminProfile } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-      .from("profiles")
-      .select("is_super_admin")
-      .eq("id", user.id)
-      .maybeSingle();
+    // Gracefully handle case where column doesn't exist yet (migration not applied)
+    try {
+      const { data: adminProfile, error: profileError } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from("profiles")
+        .select("is_super_admin, email")
+        .eq("id", user.id)
+        .maybeSingle();
 
-    if (!adminProfile?.is_super_admin) {
-      // Not a super admin → 404 (stealth denial)
-      const url = request.nextUrl.clone();
-      url.pathname = "/not-found";
-      return NextResponse.rewrite(url);
+      // If the column doesn't exist yet (migration 084 not applied),
+      // fall back to email-based allowlist for initial access
+      if (profileError || adminProfile === null) {
+        const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
+        if (!SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/not-found";
+          return NextResponse.rewrite(url);
+        }
+        return supabaseResponse;
+      }
+
+      if (!adminProfile?.is_super_admin) {
+        // Not a super admin → 404 (stealth denial)
+        const url = request.nextUrl.clone();
+        url.pathname = "/not-found";
+        return NextResponse.rewrite(url);
+      }
+    } catch {
+      // If anything fails in the super admin check, fall back to email check
+      const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
+      if (!SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/not-found";
+        return NextResponse.rewrite(url);
+      }
     }
 
     // Super admin verified — allow through
