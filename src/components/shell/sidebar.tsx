@@ -32,6 +32,7 @@ import {
   Search,
   LogOut,
   ChevronsUpDown,
+  Heart,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -110,6 +111,7 @@ function useCareNavSections(): NavSection[] {
     {
       label: null,
       items: [
+        { id: "nav_participants", label: "Participants", icon: Heart, href: "/dashboard/care/participants" },
         { id: "nav_care_command", label: "Clinical Timeline", icon: Activity, href: "/dashboard/care/clinical-timeline" },
         { id: "nav_funding", label: "Funding & Claims", icon: DollarSign, href: "/dashboard/care/funding-engine" },
         { id: "nav_compliance", label: "Compliance", icon: ShieldCheck, href: "/dashboard/care/compliance-hub" },
