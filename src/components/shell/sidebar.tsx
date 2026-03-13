@@ -41,6 +41,7 @@ import {
   ShieldAlert,
   BookOpen,
   Lightbulb,
+  Timer,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -84,6 +85,7 @@ const tradesNavItems: NavItem[] = [
   { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
   { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P" },
   { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
+  { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets", shortcut: "G Y" },
   { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
   { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
   { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R" },
@@ -133,6 +135,7 @@ function useCareNavSections(): NavSection[] {
       label: null,
       items: [
         { id: "nav_funding", label: "Funding & Claims", icon: DollarSign, href: "/dashboard/care/funding-engine" },
+        { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets", shortcut: "G Y" },
         { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
         { id: "nav_compliance", label: "Compliance", icon: ShieldCheck, href: "/dashboard/care/compliance-hub" },
         { id: "nav_quality", label: "Quality & CI", icon: Lightbulb, href: "/dashboard/care/quality" },
