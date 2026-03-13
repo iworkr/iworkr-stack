@@ -112,10 +112,10 @@ export function StepComplete() {
             <motion.span
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className={`absolute inline-flex h-full w-full rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}
+              className="absolute inline-flex h-full w-full rounded-full bg-emerald-500"
             />
           </span>
-          <span className={`font-mono text-xs tracking-wider uppercase ${isCare ? "text-blue-400" : "text-emerald-400"}`}>
+          <span className="font-mono text-xs tracking-wider uppercase text-emerald-400">
             {isCare ? "Care Platform Ready" : "System Operational"}
           </span>
         </div>

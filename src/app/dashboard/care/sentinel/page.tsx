@@ -291,8 +291,7 @@ function AlertCard({
               <button
                 onClick={handleCreateIncident}
                 disabled={actionLoading !== null}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 r-button bg-blue-500 text-white text-[12px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-40"
-                style={{ backgroundColor: "#3B82F6" }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 r-button bg-[var(--brand)] text-white text-[12px] font-medium hover:brightness-110 transition-colors disabled:opacity-40"
               >
                 <ShieldAlert className="w-3 h-3" />
                 {actionLoading === "incident" ? "Creating…" : "Create Incident"}

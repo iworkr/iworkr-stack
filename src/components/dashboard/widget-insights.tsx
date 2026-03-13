@@ -11,21 +11,21 @@ import { useDashboardStore } from "@/lib/dashboard-store";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
-function getTypeConfig(isCare: boolean) {
+function getTypeConfig() {
   return {
     warning: { icon: AlertTriangle, color: "var(--ghost-amber-text)", bg: "var(--ghost-amber)", dot: "var(--ghost-amber-text)" },
     alert: { icon: AlertTriangle, color: "var(--ghost-rose-text)", bg: "var(--ghost-rose)", dot: "var(--ghost-rose-text)" },
     info: {
       icon: Info,
-      color: isCare ? "var(--ghost-blue-text)" : "var(--ghost-emerald-text)",
-      bg: isCare ? "var(--ghost-blue)" : "var(--ghost-emerald)",
-      dot: isCare ? "var(--brand-care)" : "var(--brand)",
+      color: "var(--ghost-emerald-text)",
+      bg: "var(--ghost-emerald)",
+      dot: "var(--brand)",
     },
     success: {
       icon: CheckCircle2,
-      color: isCare ? "var(--ghost-blue-text)" : "var(--ghost-emerald-text)",
-      bg: isCare ? "var(--ghost-blue)" : "var(--ghost-emerald)",
-      dot: isCare ? "var(--brand-care)" : "var(--brand)",
+      color: "var(--ghost-emerald-text)",
+      bg: "var(--ghost-emerald)",
+      dot: "var(--brand)",
     },
   };
 }
@@ -80,7 +80,7 @@ function InsightSkeleton({ size }: { size: WidgetSize }) {
 export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
-  const { t, isCare } = useIndustryLexicon();
+  const { t } = useIndustryLexicon();
   const cachedInsights = useDashboardStore((s) => s.widgetInsights);
   const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
   const isWidgetFresh = useDashboardStore((s) => s.isWidgetFresh);
@@ -108,7 +108,7 @@ export function WidgetInsights({ size = "medium" }: { size?: WidgetSize }) {
     });
   }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const typeConfig = getTypeConfig(isCare);
+  const typeConfig = getTypeConfig();
   const emptyInsight = getEmptyInsight(t);
   const insight = insights.length > 0 ? insights[0] : emptyInsight;
   const config = typeConfig[insight.type] || typeConfig.warning;

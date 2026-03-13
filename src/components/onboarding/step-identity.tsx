@@ -139,7 +139,7 @@ export function StepIdentity() {
           {/* Validation indicator */}
           <div className="absolute top-1/2 right-0 -translate-y-1/2">
             {validated && (
-              <span className={isCare ? "text-blue-400" : "text-emerald-400"}>
+              <span className="text-emerald-400">
                 <CheckmarkDraw size={20} />
               </span>
             )}

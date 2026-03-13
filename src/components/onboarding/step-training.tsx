@@ -264,8 +264,8 @@ export function StepTraining() {
                 transition={{ duration: 1, repeat: 2 }}
                 className="absolute inset-0 rounded-full border border-white/20"
               />
-              <div className={`flex h-16 w-16 items-center justify-center rounded-full ${isCare ? "bg-blue-500/20" : "bg-emerald-500/20"}`}>
-                <span className={isCare ? "text-blue-400" : "text-emerald-400"}>
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
+                <span className="text-emerald-400">
                   <CheckmarkDraw size={32} />
                 </span>
               </div>

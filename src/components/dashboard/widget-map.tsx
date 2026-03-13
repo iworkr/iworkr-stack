@@ -37,12 +37,10 @@ function DispatchMapbox({
   pins,
   center,
   className = "",
-  isCare = false,
 }: {
   pins: Pin[];
   center: [number, number];
   className?: string;
-  isCare?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -115,7 +113,7 @@ function DispatchMapbox({
           width: ${isActive ? "10px" : "8px"};
           height: ${isActive ? "10px" : "8px"};
           border-radius: 50%;
-          background: ${isActive ? (isCare ? "#3b82f6" : "#10B981") : "#52525b"};
+          background: ${isActive ? "#10B981" : "#52525b"};
           border: 2px solid #09090b;
           cursor: pointer;
           transition: transform 0.15s ease;
@@ -139,7 +137,7 @@ function DispatchMapbox({
         map.fitBounds(bounds, { padding: 50, maxZoom: 15, duration: 800 });
       }
     });
-  }, [pins, isCare]);
+  }, [pins]);
 
   return (
     <div className={`${className} relative`} style={{ background: "#050505" }}>
@@ -156,7 +154,7 @@ function DispatchMapbox({
 export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
   const router = useRouter();
   const { orgId } = useOrg();
-  const { t, isCare } = useIndustryLexicon();
+  const { t } = useIndustryLexicon();
   const { isLoaded, loadError } = useMapbox();
   const cachedDispatch = useDashboardStore((s) => s.widgetDispatch);
   const setWidgetCache = useDashboardStore((s) => s.setWidgetCache);
@@ -243,10 +241,10 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           <span className="text-[9px] text-zinc-600">Active {t("Techs")}</span>
           <div className="mt-1.5 flex items-center gap-2">
             <span className="flex items-center gap-1 text-[8px] text-zinc-600">
-              <span className={`h-1 w-1 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} /> {onJobCount}
+              <span className="h-1 w-1 rounded-full bg-emerald-500" /> {onJobCount}
             </span>
             <span className="flex items-center gap-1 text-[8px] text-zinc-600">
-              <span className={`h-1 w-1 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} /> {enRouteCount}
+              <span className="h-1 w-1 rounded-full bg-emerald-500" /> {enRouteCount}
             </span>
           </div>
         </div>
@@ -312,7 +310,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
         }
       >
         <div className="relative h-full min-h-[120px] overflow-hidden">
-          <DispatchMapbox pins={pins} center={mapCenter} className="h-full w-full" isCare={isCare} />
+          <DispatchMapbox pins={pins} center={mapCenter} className="h-full w-full" />
 
           {loaded && pins.length === 0 && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/60">
@@ -325,8 +323,8 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-8 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
           <div className="absolute bottom-2 left-3 z-30 flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className={`h-1 w-1 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} /> {t("On Job")}</span>
-            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className={`h-1 w-1 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} /> {t("En Route")}</span>
+            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> {t("On Job")}</span>
+            <span className="flex items-center gap-1 text-[8px] text-zinc-600"><span className="h-1 w-1 rounded-full bg-emerald-500" /> {t("En Route")}</span>
           </div>
         </div>
       </WidgetShell>
@@ -342,7 +340,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
           <Radio size={14} className="text-zinc-400" />
           <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Live {t("Dispatch")}</span>
           <span className="flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-zinc-400">
-            <span className={`h-1.5 w-1.5 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} />
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             {activeCount} Active
           </span>
         </div>
@@ -354,7 +352,7 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
       }
     >
       <div className="relative h-full min-h-[260px] overflow-hidden">
-        <DispatchMapbox pins={pins} center={mapCenter} className="h-full w-full" isCare={isCare} />
+        <DispatchMapbox pins={pins} center={mapCenter} className="h-full w-full" />
 
         {loaded && pins.length === 0 && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/60">
@@ -368,8 +366,8 @@ export function WidgetMap({ size = "large" }: { size?: WidgetSize }) {
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
         <div className="absolute bottom-3 left-3 z-30 flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className={`h-1.5 w-1.5 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} /> {t("On Job")}</span>
-          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className={`h-1.5 w-1.5 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} /> {t("En Route")}</span>
+          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {t("On Job")}</span>
+          <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {t("En Route")}</span>
           <span className="flex items-center gap-1 text-[9px] text-zinc-600"><span className="h-1.5 w-1.5 rounded-full bg-zinc-600" /> Idle</span>
         </div>
       </div>

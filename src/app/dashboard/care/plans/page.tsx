@@ -74,7 +74,7 @@ const STATUS_PILLS: Record<PlanStatus, { label: string; bg: string; text: string
 
 const GOAL_STATUS: Record<GoalStatus, { label: string; bg: string; text: string }> = {
   not_started: { label: "Not Started", bg: "bg-zinc-500/10", text: "text-zinc-400" },
-  in_progress: { label: "In Progress", bg: "bg-blue-500/10", text: "text-blue-400" },
+  in_progress: { label: "In Progress", bg: "bg-[var(--brand)]/10", text: "text-[var(--brand)]" },
   achieved: { label: "Achieved", bg: "bg-emerald-500/10", text: "text-emerald-400" },
   on_hold: { label: "On Hold", bg: "bg-amber-500/10", text: "text-amber-400" },
   discontinued: { label: "Discontinued", bg: "bg-rose-500/10", text: "text-rose-400" },
@@ -118,7 +118,7 @@ function MilestoneProgress({ milestones }: { milestones?: { title: string; achie
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
         <div
-          className="h-full rounded-full bg-[#3B82F6] transition-all duration-500"
+          className="h-full rounded-full bg-[var(--brand)] transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -207,7 +207,7 @@ function PlanSlideOver({
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
               <div className="flex items-center gap-2">
-                <ClipboardList className="w-4 h-4 text-[#3B82F6]" />
+                <ClipboardList className="w-4 h-4 text-[var(--brand)]" />
                 <h2 className="text-sm font-semibold text-[var(--text-primary)]">New Care Plan</h2>
               </div>
               <button onClick={onClose} className="p-1 rounded-md hover:bg-white/5 text-[var(--text-muted)]">
@@ -223,7 +223,7 @@ function PlanSlideOver({
                   value={participantId}
                   onChange={(e) => setParticipantId(e.target.value)}
                   placeholder="Enter participant UUID"
-                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
                 />
               </div>
               <div>
@@ -232,7 +232,7 @@ function PlanSlideOver({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., Individual Support Plan — 2026"
-                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -242,7 +242,7 @@ function PlanSlideOver({
                     value={assessorName}
                     onChange={(e) => setAssessorName(e.target.value)}
                     placeholder="Dr. Smith"
-                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
                   />
                 </div>
                 <div>
@@ -251,7 +251,7 @@ function PlanSlideOver({
                     value={assessorRole}
                     onChange={(e) => setAssessorRole(e.target.value)}
                     placeholder="Support Coordinator"
-                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
                   />
                 </div>
               </div>
@@ -262,7 +262,7 @@ function PlanSlideOver({
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
                   />
                 </div>
                 <div>
@@ -271,7 +271,7 @@ function PlanSlideOver({
                     type="date"
                     value={reviewDate}
                     onChange={(e) => setReviewDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
                   />
                 </div>
               </div>
@@ -282,7 +282,7 @@ function PlanSlideOver({
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
                   placeholder="Additional context or notes..."
-                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50 resize-none"
+                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50 resize-none"
                 />
               </div>
             </div>
@@ -293,7 +293,7 @@ function PlanSlideOver({
               <button
                 onClick={handleSubmit}
                 disabled={!title || !participantId || saving}
-                className="stealth-btn-brand bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="stealth-btn-brand bg-[var(--brand)] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {saving ? "Creating..." : "Create Plan"}
               </button>
@@ -372,7 +372,7 @@ function AddGoalModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
           <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-[#3B82F6]" />
+                <Target className="w-4 h-4 text-[var(--brand)]" />
             <h2 className="text-sm font-semibold text-[var(--text-primary)]">Add Goal</h2>
           </div>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-white/5 text-[var(--text-muted)]">
@@ -386,7 +386,7 @@ function AddGoalModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Improve social participation"
-              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
             />
           </div>
           <div>
@@ -396,7 +396,7 @@ function AddGoalModal({
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               placeholder="Describe the goal in detail..."
-              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50 resize-none"
+              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50 resize-none"
             />
           </div>
           <div>
@@ -405,7 +405,7 @@ function AddGoalModal({
               value={targetOutcome}
               onChange={(e) => setTargetOutcome(e.target.value)}
               placeholder="e.g., Attend community events 2x per week"
-              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
             />
           </div>
           <div>
@@ -413,7 +413,7 @@ function AddGoalModal({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as typeof category)}
-              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
             >
               <option value="core">Core Supports</option>
               <option value="capacity_building">Capacity Building</option>
@@ -426,7 +426,7 @@ function AddGoalModal({
           <button
             onClick={handleSubmit}
             disabled={!title || saving}
-            className="stealth-btn-brand bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="stealth-btn-brand bg-[var(--brand)] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {saving ? "Adding..." : "Add Goal"}
           </button>
@@ -516,7 +516,7 @@ function PlanDetail({
             <div className="space-y-1.5">
               {domainEntries.map(([key, val]) => (
                 <div key={key} className="flex items-start gap-2 text-xs">
-                  <span className="text-[#3B82F6] font-medium min-w-[100px]">{key}</span>
+                  <span className="text-[var(--brand)] font-medium min-w-[100px]">{key}</span>
                   <span className="text-[var(--text-primary)]">{val}</span>
                 </div>
               ))}
@@ -532,7 +532,7 @@ function PlanDetail({
             </h3>
             <button
               onClick={() => setAddGoalOpen(true)}
-              className="flex items-center gap-1 text-xs font-medium text-[#3B82F6] hover:text-[#60A5FA] transition-colors"
+              className="flex items-center gap-1 text-xs font-medium text-[var(--brand)] hover:brightness-125 transition-colors"
             >
               <Plus className="w-3 h-3" />
               Add Goal
@@ -674,7 +674,7 @@ export default function CarePlansPage() {
           <div className="px-6 pt-8 pb-0 space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[#3B82F6] mb-1">CARE PLANS</p>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--brand)] mb-1">CARE PLANS</p>
                 <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
                   {t("Participant")} Plans
                 </h1>
@@ -684,7 +684,7 @@ export default function CarePlansPage() {
               </div>
               <button
                 onClick={() => setCreateOpen(true)}
-                className="stealth-btn-brand bg-[#3B82F6] hover:bg-[#2563EB]"
+                className="stealth-btn-brand bg-[var(--brand)] hover:brightness-110"
               >
                 <Plus className="w-4 h-4" />
                 New Care Plan
@@ -719,7 +719,7 @@ export default function CarePlansPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search plans..."
-                className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+                className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
               />
             </div>
           </div>
@@ -757,7 +757,7 @@ export default function CarePlansPage() {
                 {!search && tab === "all" && (
                   <button
                     onClick={() => setCreateOpen(true)}
-                    className="stealth-btn-brand bg-[#3B82F6] hover:bg-[#2563EB] mt-2"
+                    className="stealth-btn-brand bg-[var(--brand)] hover:brightness-110 mt-2"
                   >
                     <Plus className="w-4 h-4" />
                     Create First Plan
@@ -779,7 +779,7 @@ export default function CarePlansPage() {
                     transition={{ delay: idx * 0.015 }}
                     data-selected={isSelected}
                     onClick={() => setSelectedPlan(plan)}
-                    className={`stealth-table-row mx-4 cursor-pointer rounded-lg ${isSelected ? "bg-[#3B82F6]/5 border-[#3B82F6]/10" : ""}`}
+                    className={`stealth-table-row mx-4 cursor-pointer rounded-lg ${isSelected ? "bg-[var(--brand)]/5 border-[var(--brand)]/10" : ""}`}
                   >
                     <span className="flex-[2] text-sm text-[var(--text-muted)] font-mono truncate">
                       {plan.participant_id.slice(0, 8)}…

@@ -50,13 +50,13 @@ export function OnboardingLayout({
 
       {/* Atmospheric glow — adapts to sector */}
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full opacity-[0.03] blur-[200px] ${isCare ? "bg-blue-500" : "bg-[var(--brand)]"}`} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full opacity-[0.03] blur-[200px] bg-[var(--brand)]" />
       </div>
 
       {/* Progress bar — thin gradient line at top */}
       <div className="fixed top-0 right-0 left-0 z-40 h-px bg-[rgba(255,255,255,0.06)]">
         <motion.div
-          className={`h-full ${isCare ? "bg-gradient-to-r from-blue-400/60 via-blue-400/40 to-blue-400/20" : "bg-gradient-to-r from-white/60 via-white/40 to-white/20"}`}
+          className="h-full bg-gradient-to-r from-white/60 via-white/40 to-white/20"
           initial={{ width: "0%" }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -74,7 +74,7 @@ export function OnboardingLayout({
           className="h-6 w-6 object-contain"
         />
         {isCare && (
-          <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-blue-400">
+          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-emerald-400">
             care
           </span>
         )}

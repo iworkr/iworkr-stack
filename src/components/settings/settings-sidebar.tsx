@@ -80,7 +80,7 @@ const sections: NavSection[] = [
 export function SettingsSidebar() {
   const pathname = usePathname();
   const { currentOrg } = useAuthStore();
-  const { t, isCare } = useIndustryLexicon();
+  const { t } = useIndustryLexicon();
   const teamName = currentOrg?.name || "";
 
   return (
@@ -144,7 +144,7 @@ export function SettingsSidebar() {
               href="/settings/workspace"
               className="flex items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-300"
             >
-              <span className={`h-2.5 w-2.5 rounded-sm ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} />
+              <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" />
               <span>{teamName || <Shimmer className="h-3 w-24" />}</span>
             </Link>
             <button className="flex items-center gap-2 rounded-md px-2 py-[5px] text-[13px] text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-400">

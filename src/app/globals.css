@@ -142,19 +142,14 @@
   color-scheme: dark;
 }
 
-/* ── Nightingale Care Theme Override ──────────────────── */
-/* Applied via <html class="care"> when org.industry_type === "care" */
+/* ── Nightingale Care Theme ──────────────────────────── */
+/* The .care class is applied to <html> when org.industry_type === "care".
+   We intentionally do NOT override --brand here. The app is black & white
+   with the same green accent for both trades and care. Care-specific blue
+   hints are available via --brand-care-* tokens for targeted use only. */
 .care,
 .care.dark {
-  --brand: #3B82F6;
-  --brand-hover: #2563EB;
-  --brand-glow: 0 0 12px rgba(59, 130, 246, 0.12);
-  --brand-glow-subtle: 0 0 8px -5px rgba(59, 130, 246, 0.08);
-  --selection-bg: rgba(59, 130, 246, 0.15);
-  --search-spine: #3B82F6;
-  --ghost-emerald: rgba(59, 130, 246, 0.05);
-  --ghost-emerald-text: #60a5fa;
-  --ghost-emerald-strong: rgba(59, 130, 246, 0.10);
+  /* No --brand override — keep emerald green across both industries */
 }
 
 /* ── Light Theme ─────────────────────────────────────── */

@@ -28,7 +28,6 @@ import {
   Activity,
   DollarSign,
   ShieldCheck,
-  GitMerge,
   Zap,
   Package,
   ChevronDown,
@@ -116,7 +115,6 @@ function useCareNavSections(): NavSection[] {
         { id: "nav_jobs", label: "My Shifts", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
         { id: "nav_schedule", label: "Roster & Dispatch", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
         { id: "nav_clients", label: "Participants", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
-        { id: "nav_crm", label: "Referral Pipeline", icon: GitMerge, href: "/dashboard/crm", shortcut: "G R" },
       ],
     },
     {
@@ -313,7 +311,7 @@ export function Sidebar() {
     nav_integrations: "integrations",
     nav_ai_agent: "integrations",
   };
-  const { t: sidebarT, isCare: sidebarIsCare } = useIndustryLexicon();
+  const { t: sidebarT } = useIndustryLexicon();
   const navSections = useCareNavSections();
   const translatedNavItems = useTranslatedNavItems();
   const visibleNavItems = translatedNavItems.filter((item) => {
@@ -460,11 +458,7 @@ export function Sidebar() {
                   >
                     <span
                       className="text-[9px] font-bold tracking-[0.12em] uppercase transition-colors"
-                      style={{
-                        color: sidebarIsCare && section.label === "CLINICAL & FINANCIAL"
-                          ? "rgba(96,165,250,0.7)"
-                          : "var(--text-muted)",
-                      }}
+                      style={{ color: "var(--text-muted)" }}
                     >
                       {section.label}
                     </span>

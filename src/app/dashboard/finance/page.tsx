@@ -150,8 +150,8 @@ function LedgerEmptyState({ title, subtitle, cta, onCta, isCare = false }: { tit
           <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
           <div className="absolute inset-2 rounded-full border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.5s" }} />
           <div className="absolute inset-0 animate-orbit" style={{ animationDuration: "5s" }}>
-            <div className={`absolute top-0 left-1/2 -translate-x-1/2 flex h-2 w-2 items-center justify-center rounded-full ${isCare ? "bg-blue-500/30" : "bg-emerald-500/30"}`}>
-              <div className={`h-1 w-1 rounded-full ${isCare ? "bg-blue-500" : "bg-emerald-500"}`} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 flex h-2 w-2 items-center justify-center rounded-full bg-emerald-500/30">
+              <div className="h-1 w-1 rounded-full bg-emerald-500" />
             </div>
           </div>
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
@@ -165,7 +165,7 @@ function LedgerEmptyState({ title, subtitle, cta, onCta, isCare = false }: { tit
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={onCta}
-          className={`mt-4 flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 ${isCare ? "bg-blue-600 hover:bg-blue-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
+          className="mt-4 flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 bg-emerald-600 hover:bg-emerald-500"
         >
           <Plus size={12} />
           {cta}
@@ -394,13 +394,13 @@ export default function FinancePage() {
             {activeTab === "invoices" && (
               <div className="relative flex items-center gap-2">
                 <motion.div
-                  className={`absolute left-0 top-1 bottom-1 w-[2px] rounded-r ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}
+                  className="absolute left-0 top-1 bottom-1 w-[2px] rounded-r bg-emerald-500"
                   initial={false}
                   animate={{ opacity: searchFocused ? 1 : 0, scaleY: searchFocused ? 1 : 0 }}
                   transition={{ duration: 0.15 }}
                 />
                 <div className="flex items-center gap-2 pl-2">
-                  <Search size={12} className={`shrink-0 transition-colors duration-150 ${searchFocused ? (isCare ? "text-blue-500" : "text-emerald-500") : "text-zinc-600"}`} />
+                  <Search size={12} className={`shrink-0 transition-colors duration-150 ${searchFocused ? "text-emerald-500" : "text-zinc-600"}`} />
                   <input
                     ref={searchRef}
                     value={search}
@@ -433,7 +433,7 @@ export default function FinancePage() {
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/finance/quotes/new")}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 ${isCare ? "bg-blue-600 hover:bg-blue-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 bg-emerald-600 hover:bg-emerald-500"
               >
                 <Plus size={12} />
                 New {t("Quote")}
@@ -442,7 +442,7 @@ export default function FinancePage() {
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/finance/invoices/new")}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 ${isCare ? "bg-blue-600 hover:bg-blue-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-white shadow-none transition-all duration-200 bg-emerald-600 hover:bg-emerald-500"
               >
                 <Plus size={12} />
                 New {t("Invoice")}
@@ -511,7 +511,7 @@ export default function FinancePage() {
                       if (growthPct === null) return null;
                       const isUp = growthPct >= 0;
                       return (
-                        <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${isUp ? (isCare ? "bg-blue-500/10 text-blue-400" : "bg-emerald-500/10 text-emerald-400") : "bg-rose-500/10 text-rose-400"}`}>
+                        <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${isUp ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
                           {isUp ? <TrendingUp size={10} /> : <ArrowDownRight size={10} />}
                           {isUp ? "+" : ""}{Math.abs(Math.round(growthPct))}% vs last month
                         </span>
@@ -620,7 +620,7 @@ export default function FinancePage() {
                         <div className="text-[11px] text-zinc-400">
                           {dailyRevenue[hoveredPoint].date}
                         </div>
-                        <div className={`font-mono text-[15px] font-semibold ${isCare ? "text-blue-400" : "text-emerald-400"}`}>
+                        <div className="font-mono text-[15px] font-semibold text-emerald-400">
                           ${dailyRevenue[hoveredPoint].amount.toLocaleString()}
                         </div>
                         <div className="text-[9px] text-zinc-600">
@@ -661,7 +661,7 @@ export default function FinancePage() {
                         <CreditCard size={10} className="transition-colors duration-200 group-hover:text-zinc-400" />
                         Stripe Balance
                       </span>
-                      <span className={`rounded-md px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider uppercase ${isCare ? "bg-blue-500/[0.06] text-blue-500/70" : "bg-emerald-500/[0.06] text-emerald-500/70"}`}>Live</span>
+                      <span className="rounded-md px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider uppercase bg-emerald-500/[0.06] text-emerald-500/70">Live</span>
                     </div>
                     <div className="mb-1 font-mono text-[32px] font-semibold tracking-tighter text-white">
                       <AnimatedNumber value={stripeBalance} />
@@ -684,7 +684,7 @@ export default function FinancePage() {
                         initial={{ width: 0 }}
                         animate={{ width: "65%" }}
                         transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
-                        className={`h-full rounded-full ${isCare ? "bg-blue-500/60" : "bg-emerald-500/60"}`}
+                        className="h-full rounded-full bg-emerald-500/60"
                       />
                     </div>
                   </div>
@@ -759,7 +759,7 @@ export default function FinancePage() {
                       <Sparkline data={payoutSparkData} color={avgPayoutDays <= 3 ? "#10B981" : "#F59E0B"} />
                     </div>
                     {avgPayoutDays > 0 && (
-                      <div className={`flex items-center gap-1 font-mono text-[9px] ${avgPayoutDays <= 3 ? (isCare ? "text-blue-400/80" : "text-emerald-400/80") : "text-amber-400/80"}`}>
+                      <div className={`flex items-center gap-1 font-mono text-[9px] ${avgPayoutDays <= 3 ? "text-emerald-400/80" : "text-amber-400/80"}`}>
                         <TrendingUp size={9} />
                         {avgPayoutDays <= 3 ? "Faster than industry avg" : "On par with industry avg"}
                       </div>
@@ -776,7 +776,7 @@ export default function FinancePage() {
                   </h3>
                   <button
                     onClick={() => setActiveTab("invoices")}
-                    className={`flex items-center gap-1 font-mono text-[9px] text-zinc-700 transition-colors ${isCare ? "hover:text-blue-400" : "hover:text-emerald-400"}`}
+                    className="flex items-center gap-1 font-mono text-[9px] text-zinc-700 transition-colors hover:text-emerald-400"
                   >
                     View all <ArrowRight size={9} />
                   </button>
@@ -881,14 +881,14 @@ export default function FinancePage() {
                           setCtxMenu({ open: true, x: e.clientX, y: e.clientY, invoiceId: inv.id });
                         }}
                         className={`group relative flex cursor-pointer items-center border-b border-white/[0.03] px-5 transition-colors duration-100 ${
-                          isFocused ? (isCare ? "bg-blue-500/[0.04]" : "bg-emerald-500/[0.04]") : "hover:bg-white/[0.02]"
+                          isFocused ? "bg-emerald-500/[0.04]" : "hover:bg-white/[0.02]"
                         }`}
                         style={{ height: 48 }}
                       >
                         {isFocused && (
                           <motion.div
                             layoutId="invoice-focus-spine"
-                            className={`absolute left-0 top-2 bottom-2 w-[2px] rounded-r ${isCare ? "bg-blue-500" : "bg-emerald-500"}`}
+                            className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r bg-emerald-500"
                             transition={{ type: "spring", stiffness: 400, damping: 30 }}
                           />
                         )}
@@ -952,7 +952,7 @@ export default function FinancePage() {
                 </div>
                 <button
                   onClick={() => router.push("/dashboard/care/funding-engine")}
-                  className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-blue-500"
+                  className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-emerald-500"
                 >
                   <Zap size={12} />
                   Open Funding Engine
@@ -1101,7 +1101,7 @@ export default function FinancePage() {
                   );
                   const psColor =
                     payout.status === "completed"
-                      ? (isCare ? "text-blue-400 bg-blue-500/10" : "text-emerald-400 bg-emerald-500/10")
+                      ? "text-emerald-400 bg-emerald-500/10"
                       : payout.status === "processing"
                         ? "text-sky-400 bg-sky-500/10"
                         : "text-amber-400 bg-amber-500/10";
@@ -1130,7 +1130,7 @@ export default function FinancePage() {
                         </span>
                         <div className="flex items-center gap-1.5">
                           {payout.status === "completed" ? (
-                            <ArrowDownRight size={12} className={isCare ? "text-blue-400" : "text-emerald-400"} />
+                            <ArrowDownRight size={12} className="text-emerald-400" />
                           ) : (
                             <ArrowUpRight size={12} className="text-sky-400" />
                           )}
@@ -1331,7 +1331,7 @@ function ConnectPaymentsTab() {
         <div className="relative mb-8">
           <div className="absolute inset-0 bg-white/[0.02] blur-3xl rounded-full" />
           <div className="relative w-20 h-20 rounded-2xl bg-zinc-950 border border-white/10 flex items-center justify-center">
-            <Zap className={`w-9 h-9 ${isCare ? "text-blue-400" : "text-emerald-400"}`} />
+            <Zap className="w-9 h-9 text-emerald-400" />
           </div>
         </div>
 
@@ -1384,10 +1384,10 @@ function ConnectPaymentsTab() {
 
   return (
     <div className="space-y-6">
-      <div className={`flex items-center justify-between rounded-xl px-5 py-3 ${isCare ? "bg-blue-500/5 border border-blue-500/10" : "bg-emerald-500/5 border border-emerald-500/10"}`}>
+      <div className="flex items-center justify-between rounded-xl px-5 py-3 bg-emerald-500/5 border border-emerald-500/10">
         <div className="flex items-center gap-3">
-          <div className={`w-2 h-2 rounded-full animate-pulse ${isCare ? "bg-blue-400" : "bg-emerald-400"}`} />
-          <span className={`text-[13px] font-medium ${isCare ? "text-blue-400" : "text-emerald-400"}`}>iWorkr Pay Active</span>
+          <div className="w-2 h-2 rounded-full animate-pulse bg-emerald-400" />
+          <span className="text-[13px] font-medium text-emerald-400">iWorkr Pay Active</span>
           {connectStatus.connect_onboarded_at && (
             <span className="text-[10px] text-zinc-600">
               Since {new Date(connectStatus.connect_onboarded_at).toLocaleDateString()}
@@ -1420,7 +1420,7 @@ function ConnectPaymentsTab() {
         <div className="rounded-xl bg-zinc-950 border border-white/5 p-4">
           <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Payouts</div>
           <div className="flex items-center gap-1.5">
-            <div className={`w-1.5 h-1.5 rounded-full ${connectStatus.payouts_enabled ? (isCare ? "bg-blue-400" : "bg-emerald-400") : "bg-amber-400"}`} />
+            <div className={`w-1.5 h-1.5 rounded-full ${connectStatus.payouts_enabled ? "bg-emerald-400" : "bg-amber-400"}`} />
             <span className="text-sm text-zinc-300">{connectStatus.payouts_enabled ? "Enabled" : "Pending"}</span>
           </div>
         </div>
@@ -1439,7 +1439,7 @@ function ConnectPaymentsTab() {
           )}
           {recentPayments.map((payment) => {
             const statusColor = payment.status === "succeeded"
-              ? (isCare ? "text-blue-400 bg-blue-500/10" : "text-emerald-400 bg-emerald-500/10")
+              ? "text-emerald-400 bg-emerald-500/10"
               : payment.status === "failed"
                 ? "text-rose-400 bg-rose-500/10"
                 : "text-zinc-400 bg-zinc-500/10";
