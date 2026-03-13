@@ -536,7 +536,15 @@ export async function fetchNDISCatalogueAction(search?: string, category?: strin
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return data;
+
+  // Supabase returns `numeric` columns as strings — coerce to numbers
+  // and map DB column names to the UI interface field names
+  return (data || []).map((row: any) => ({
+    ...row,
+    national_price: parseFloat(row.base_rate_national) || 0,
+    remote_price: row.base_rate_remote != null ? parseFloat(row.base_rate_remote) || null : null,
+    very_remote_price: row.base_rate_very_remote != null ? parseFloat(row.base_rate_very_remote) || null : null,
+  }));
 }
 
 // ── Budget ───────────────────────────────────────────────────────────────────
