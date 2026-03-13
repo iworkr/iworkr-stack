@@ -160,7 +160,7 @@ function AgentCard({
 
 export default function AIWorkforceHubPage() {
   const { currentOrg } = useAuthStore();
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
   const [phoneEnabled, setPhoneEnabled] = useState(false);
   const [tasksToday] = useState(142);
 

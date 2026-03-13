@@ -21,6 +21,7 @@ import { DispatchSearch } from "@/components/dispatch/dispatch-search";
 import { HoverDialog, type HoverDialogTech } from "@/components/dispatch/hover-dialog";
 import { useJobsStore } from "@/lib/jobs-store";
 import { FeatureGate } from "@/components/app/feature-gate";
+import Link from "next/link";
 
 export default function DispatchPage() {
   const { orgId } = useOrg();
@@ -324,7 +325,20 @@ export default function DispatchPage() {
                   {dispatchPins.filter(p => p.status === "online" || p.status === "en_route" || p.status === "on_site").length} active
                 </span>
               )}
+              {isCare && (
+                <span className="font-mono text-[11px] text-[var(--text-muted)]">
+                  Shift Coverage: 12/15 rostered
+                </span>
+              )}
             </div>
+            {isCare && (
+              <Link
+                href="/dashboard/care/roster-intelligence"
+                className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-emerald-500/70 transition-colors hover:text-emerald-400"
+              >
+                Roster Intelligence →
+              </Link>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -396,6 +410,27 @@ export default function DispatchPage() {
             </div>
           </DispatchMapProvider>
         )}
+      </div>
+
+      {/* ── z-38: Map Legend ────────────────────────────── */}
+      <div className="pointer-events-none absolute bottom-6 right-14 z-[38]">
+        <div className="pointer-events-auto rounded-lg border border-white/[0.06] bg-black/60 px-3 py-2 backdrop-blur-sm">
+          <div className="mb-1.5 font-mono text-[8px] font-bold tracking-[0.15em] text-zinc-600 uppercase">Legend</div>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="text-[10px] text-zinc-400">{t("Technicians")}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-sm bg-sky-400" />
+              <span className="text-[10px] text-zinc-400">{t("Job Sites")}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full border border-amber-500 bg-amber-500/30" />
+              <span className="text-[10px] text-zinc-400">{t("Active Jobs")}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── z-35: Edge vignettes for command center depth ── */}

@@ -27,6 +27,11 @@ import {
   Plus,
   Receipt,
   Briefcase,
+  Heart,
+  Pill,
+  Eye,
+  ClipboardList,
+  ExternalLink,
 } from "lucide-react";
 import { useJobsStore } from "@/lib/jobs-store";
 import { InlineMap } from "@/components/maps/inline-map";
@@ -82,20 +87,24 @@ const activityIcons: Record<string, typeof MessageSquare> = {
   assignment: Users,
 };
 
-const headerContextItems: ContextMenuItem[] = [
-  { id: "copy", label: "Copy Job ID", icon: <Copy size={13} />, shortcut: "⌘L" },
-  { id: "print", label: "Print", icon: <Printer size={13} /> },
-  { id: "share", label: "Share link", icon: <Share2 size={13} /> },
-  { id: "divider", label: "", divider: true },
-  { id: "delete", label: "Delete Job", icon: <Trash2 size={13} />, danger: true },
-];
+// Context menu items are generated inside the component to access t()
+
 
 /* ── Page Component ───────────────────────────────────────── */
 
 export default function JobDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
+
+  const headerContextItems: ContextMenuItem[] = [
+    { id: "copy", label: `Copy ${t("Job")} ID`, icon: <Copy size={13} />, shortcut: "⌘L" },
+    { id: "print", label: "Print", icon: <Printer size={13} /> },
+    { id: "share", label: "Share link", icon: <Share2 size={13} /> },
+    { id: "divider", label: "", divider: true },
+    { id: "delete", label: `Delete ${t("Job")}`, icon: <Trash2 size={13} />, danger: true },
+  ];
+
   const jobId = params.id as string;
 
   const { jobs, updateJobServer, deleteJobServer, restoreJobs, toggleSubtaskServer } = useJobsStore();
@@ -237,9 +246,9 @@ export default function JobDetailPage() {
               <Briefcase size={18} strokeWidth={1.5} className="text-zinc-600" />
             </div>
           </div>
-          <h2 className="mb-1.5 text-[16px] font-semibold tracking-tight text-zinc-200">Job not found</h2>
+          <h2 className="mb-1.5 text-[16px] font-semibold tracking-tight text-zinc-200">{t("Job")} not found</h2>
           <p className="mb-5 text-[13px] text-zinc-600">
-            This job may have been deleted or doesn&apos;t exist.
+            This {t("job")} may have been deleted or doesn&apos;t exist.
           </p>
           <button
             onClick={() => router.push("/dashboard/jobs")}
@@ -284,7 +293,7 @@ export default function JobDetailPage() {
               className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] text-zinc-500 transition-all duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
             >
               <ArrowLeft size={12} />
-              Jobs
+              {t("Jobs")}
             </button>
             <ChevronRight size={10} className="text-zinc-700" />
             <span className="text-[12px] text-zinc-500">
@@ -340,12 +349,12 @@ export default function JobDetailPage() {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   updateJobServer(job.id, { status: "done" });
-                  addToast("Job marked as complete");
+                  addToast(`${t("Job")} marked as complete`);
                 }}
                 className="ml-2 flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200"
               >
                 <Check size={13} />
-                Complete Job
+                Complete {t("Job")}
               </motion.button>
             )}
 
@@ -455,6 +464,84 @@ export default function JobDetailPage() {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* ── Care: Participant Info ──────────────────────── */}
+            {isCare && job.client && (
+              <div className="mb-8 rounded-[var(--radius-card)] border border-emerald-500/10 bg-emerald-500/[0.02] p-4">
+                <h3 className="mb-3 flex items-center gap-1.5 font-mono text-[9px] font-medium tracking-widest text-emerald-500/60 uppercase">
+                  <Heart size={12} />
+                  Participant
+                </h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-[11px] font-bold text-emerald-400">
+                      {job.client.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+                    </div>
+                    <div>
+                      <div className="text-[14px] font-medium text-zinc-200">{job.client}</div>
+                      <div className="text-[10px] text-zinc-600">Active Participant</div>
+                    </div>
+                  </div>
+                  {job.clientId && (
+                    <button
+                      onClick={() => router.push(`/dashboard/clients/${job.clientId}`)}
+                      className="flex items-center gap-1 rounded-lg border border-white/[0.06] px-3 py-1.5 text-[11px] text-zinc-400 transition-colors hover:border-white/[0.12] hover:text-zinc-200"
+                    >
+                      View Profile
+                      <ExternalLink size={10} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Care: Progress Notes ─────────────────────────── */}
+            {isCare && (
+              <div className="mb-8">
+                <h3 className="mb-3 flex items-center gap-1.5 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
+                  <ClipboardList size={12} />
+                  Progress Notes
+                </h3>
+                <div className="rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02] p-6">
+                  <div className="text-center">
+                    <ClipboardList size={20} className="mx-auto mb-2 text-zinc-700" />
+                    <p className="text-[12px] text-zinc-600">No progress notes recorded for this shift</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Care: Health Observations ─────────────────────── */}
+            {isCare && (
+              <div className="mb-8">
+                <h3 className="mb-3 flex items-center gap-1.5 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
+                  <Eye size={12} />
+                  Health Observations
+                </h3>
+                <div className="rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02] p-6">
+                  <div className="text-center">
+                    <Eye size={20} className="mx-auto mb-2 text-zinc-700" />
+                    <p className="text-[12px] text-zinc-600">No observations recorded</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Care: Medications Administered ────────────────── */}
+            {isCare && (
+              <div className="mb-8">
+                <h3 className="mb-3 flex items-center gap-1.5 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
+                  <Pill size={12} />
+                  Medications Administered
+                </h3>
+                <div className="rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02] p-6">
+                  <div className="text-center">
+                    <Pill size={20} className="mx-auto mb-2 text-zinc-700" />
+                    <p className="text-[12px] text-zinc-600">No medications recorded for this shift</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ── Estimate / Line Items ──────────────────────── */}
             {(lineItems.length > 0 || lineItemsLoaded) && (
@@ -814,7 +901,7 @@ export default function JobDetailPage() {
                 <div className="flex items-center gap-2">
                   <StatusIcon status={job.status} size={16} />
                   <span className="text-[13px] font-medium text-zinc-200">
-                    {statusOptions.find((s) => s.value === job.status)?.label}
+                    {t(statusOptions.find((s) => s.value === job.status)?.label || "")}
                   </span>
                 </div>
                 <ChevronRight
@@ -832,14 +919,14 @@ export default function JobDetailPage() {
                   onClose={() => setActivePopover(null)}
                   items={statusOptions.map((s) => ({
                     value: s.value,
-                    label: s.label,
+                    label: t(s.label),
                     icon: <StatusIcon status={s.value} size={13} />,
                   }))}
                   selected={job.status}
                     onSelect={(v) => {
                     updateJobServer(job.id, { status: v });
                     addToast(
-                      `Status changed to ${statusOptions.find((s) => s.value === v)?.label}`
+                      `Status changed to ${t(statusOptions.find((s) => s.value === v)?.label || "")}`
                     );
                   }}
                   width={280}
@@ -851,14 +938,14 @@ export default function JobDetailPage() {
             {/* ── Financial Pulse ────────────────────────────── */}
             <div className="mb-6 rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02] p-4">
               <h4 className="mb-3 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
-                Financial Pulse
+                {isCare ? "Funding Pulse" : "Financial Pulse"}
               </h4>
               <div className="mb-3 flex items-end justify-between">
                 <div>
                   <div className="font-mono text-[22px] font-semibold tabular-nums tracking-tight text-zinc-100">
                     ${(job.revenue || 0).toLocaleString()}
                   </div>
-                  <div className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">Revenue</div>
+                  <div className="font-mono text-[9px] tracking-widest text-zinc-600 uppercase">{t("Revenue")}</div>
                 </div>
                 <div className="text-right">
                   <div

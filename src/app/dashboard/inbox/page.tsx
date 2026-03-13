@@ -12,6 +12,7 @@ import { MentionsPanel } from "@/components/messenger/mentions-panel";
 import { createClient } from "@/lib/supabase/client";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { Message } from "@/lib/stores/messenger-store";
 
 /* ── Empty state: Holographic Radar — PRD Design Revamp: richer + intentional ── */
@@ -105,6 +106,7 @@ function EmptyStateRadar() {
 }
 
 export default function InboxPage() {
+  const { t, isCare } = useIndustryLexicon();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
   const currentOrg = useAuthStore((s) => s.currentOrg);

@@ -103,8 +103,8 @@ const CARE_LEXICON: Record<string, string> = {
   "new lead": "new referral lead",
   "New Deal": "New Referral",
   Pipeline: "Referral Pipeline",
-  "Add Lead": "Add Referral Lead",
-  "Add New Lead": "Add New Referral Lead",
+  "Add Lead": "Add Referral",
+  "Add New Lead": "Add New Referral",
   "No closed deals yet": "No closed referrals yet",
   "Closed deals appear here. Keep it up!": "Closed referrals appear here. Keep it up!",
   "Review lost deals to improve your close rate.": "Review lost referrals to improve your intake rate.",
@@ -131,6 +131,10 @@ const CARE_LEXICON: Record<string, string> = {
   "God Mode Dispatch": "Live Roster",
   "Fleet Tracking": "Worker Tracking",
   fleet: "workers",
+  "Job Locations": "Participant Locations",
+  "Active Techs": "Support Workers",
+  "Job Sites": "Participant Homes",
+  "Active Jobs": "Active Shifts",
 
   // Team
   "On Job": "On Shift",
@@ -171,10 +175,14 @@ const CARE_LEXICON: Record<string, string> = {
   "Fleet Value": "Equipment Value",
   "FLEET VALUE": "EQUIPMENT VALUE",
   "Fleet & Tools": "Equipment & Supplies",
-  "The depot is empty": "No equipment registered",
-  "Assets will appear here once added.": "Equipment and supplies will appear here once added.",
-  "Add First Asset": "Add First Item",
+  "The depot is empty": "No care equipment tracked",
+  "Assets will appear here once added.": "Track mobility aids, medical devices, and assistive technology for your participants.",
+  "Add First Asset": "Add Equipment",
   "Low Stock": "Low Stock",
+  Tools: "Medical Devices",
+  Equipment: "Mobility Aids",
+  "Service Due": "Calibration Due",
+  "assigned to job": "assigned to shift",
 
   // Forms page
   "Safety checks": "Care plans",
@@ -217,6 +225,7 @@ const CARE_LEXICON: Record<string, string> = {
 
   // Integrations page
   "Scale with Integrations": "Scale with Integrations",
+  "Connected Tools": "Connected Systems",
   "Connect your workspace to your favourite tools — Stripe, Xero, and more.":
     "Connect your workspace to NDIS portals, Stripe, Xero, and more.",
 
@@ -231,9 +240,15 @@ const CARE_LEXICON: Record<string, string> = {
   finance: "funding",
   "Total Revenue MTD": "Total Funding MTD",
   Payouts: "Payouts",
+  Outstanding: "Outstanding Claims",
+  Overdue: "Overdue Claims",
+  "NDIS Claims": "NDIS Claims",
+  "Start earning.": "Submit your first NDIS claim to begin tracking funding.",
 
   // Job status labels (visible on jobs/shifts page)
   // NOTE: "En Route" and "Backlog" already defined above — not duplicated here
+  Draft: "Unrostered",
+  draft: "unrostered",
   "On Site": "On Location",
   "On site": "On location",
   Invoiced: "Claimed",
@@ -242,10 +257,25 @@ const CARE_LEXICON: Record<string, string> = {
   Scheduled: "Rostered",
   scheduled: "rostered",
   backlog: "unassigned",
+  Done: "Completed",
+  done: "completed",
+  "To Do": "To Do",
+
+  // Invoice / Claim builder labels
+  "Line Items": "Support Items",
+  "line items": "support items",
+  "Send Invoice": "Submit Claim",
+  "Save Draft": "Save Draft",
+  "Invoice Details": "Claim Details",
+  "Invoice #": "Claim #",
+  "Bill To": "Claim For",
+  "Submit Claim": "Submit Claim",
+  "New line item": "New support item",
+  "Add line item": "Add support item",
+  "Payment Status": "Funding Status",
 
   // Context menu items
   "Open Invoice": "Open Claim",
-  "Send Invoice": "Send Claim",
   "Void Invoice": "Void Claim",
   "Copy Link": "Copy Link",
 
@@ -290,6 +320,27 @@ const CARE_LEXICON: Record<string, string> = {
 
   // Live indicator
   Live: "Live",
+
+  // Jobs/Shifts page empty state
+  "No jobs yet": "No shifts rostered",
+  "Create your first job to start tracking work.":
+    "Create a shift to get started with participant support.",
+  "No jobs match your filters": "No shifts match your filters",
+
+  // Clients/Participants page context menu
+  "View Care Plan": "View Care Plan",
+  "View Funding": "View Funding",
+
+  // Credentials page
+  "Team Credentials": "Worker Credentials",
+  "Workforce Credentials": "Worker Credentials",
+  "Add team member credentials to track compliance.":
+    "Add worker credentials such as NDIS Screening, First Aid, or WWCC to track compliance.",
+  "Add Credential": "Add Credential",
+
+  // Forms CTA
+  "New Form": "Create Care Form",
+  "Create Form": "Create Care Form",
 
   // Misc hardcoded labels
   "No clients match your search": "No participants match your search",

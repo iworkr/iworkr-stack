@@ -13,6 +13,12 @@ import {
   Layers,
   X,
   PenTool,
+  Heart,
+  AlertTriangle,
+  Activity,
+  Pill,
+  FileCheck,
+  Brain,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -117,6 +123,44 @@ function HeartbeatLoader() {
         <div className="h-3 w-3 rounded-full bg-emerald-500/40" />
       </motion.div>
       <p className="text-[12px] text-zinc-600">Loading vault…</p>
+    </div>
+  );
+}
+
+/* ── Care Form Suggestions ────────────────────────────── */
+
+const CARE_FORM_SUGGESTIONS = [
+  { icon: AlertTriangle, label: "Incident Report Form", desc: "Document workplace incidents and near-misses for NDIS compliance." },
+  { icon: FileCheck, label: "Progress Note Template", desc: "Standardised shift-level participant progress notes." },
+  { icon: Activity, label: "Health Observation Form", desc: "Record vitals, symptoms, and daily health observations." },
+  { icon: Pill, label: "Medication Administration Record", desc: "Track medication dispensing with time, dose, and worker sign-off." },
+  { icon: ShieldCheck, label: "Risk Assessment", desc: "Assess participant and environment risks before service delivery." },
+  { icon: Brain, label: "Behaviour Support Plan", desc: "Document behaviour triggers, strategies, and de-escalation protocols." },
+];
+
+function CareFormSuggestions({ onSelect }: { onSelect: () => void }) {
+  return (
+    <div className="mt-6 w-full max-w-2xl mx-auto">
+      <p className="text-[11px] font-mono font-bold uppercase tracking-[0.12em] text-zinc-600 mb-3">
+        Suggested Care Templates
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {CARE_FORM_SUGGESTIONS.map(({ icon: Icon, label, desc }) => (
+          <button
+            key={label}
+            onClick={onSelect}
+            className="group flex items-start gap-3 rounded-lg border border-white/[0.05] bg-white/[0.01] px-3.5 py-3 text-left transition-all duration-150 hover:border-emerald-500/20 hover:bg-emerald-500/[0.03]"
+          >
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.02] transition-colors group-hover:border-emerald-500/20">
+              <Icon size={13} strokeWidth={1.5} className="text-zinc-500 transition-colors group-hover:text-emerald-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-medium text-zinc-300 group-hover:text-white transition-colors">{label}</p>
+              <p className="text-[10px] text-zinc-600 leading-relaxed mt-0.5">{desc}</p>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -278,7 +322,7 @@ export default function FormsPage() {
               className="flex h-7 items-center gap-1.5 rounded-md border border-white/[0.08] bg-[#1A1A1A] px-3 text-[11px] font-medium text-white transition-all duration-150 hover:border-emerald-500/30 hover:text-emerald-400"
             >
               <Plus size={13} strokeWidth={2} />
-              New Form
+              {isCare ? "Create Care Form" : "New Form"}
             </motion.button>
           </div>
         </div>
@@ -349,21 +393,26 @@ export default function FormsPage() {
                     ))}
                   </div>
                 ) : (
-                  <ForensicEmptyState
-                    title={activeTab === "my_forms" ? t("No forms deployed") : "No library templates found"}
-                    subtitle={
-                      activeTab === "my_forms"
-                        ? t("Build your first digital blueprint for forensic traceability.")
-                        : "Try adjusting your search."
-                    }
-                    cta={activeTab === "my_forms" ? "New Form" : undefined}
-                    onCta={activeTab === "my_forms" ? () => router.push("/dashboard/forms/builder/new") : undefined}
-                    hints={isCare ? [
-                      { icon: ShieldCheck, label: "Care plans" },
-                      { icon: ClipboardCheck, label: "Risk assessments" },
-                      { icon: PenTool, label: "Progress notes" },
-                    ] : undefined}
-                  />
+                  <>
+                    <ForensicEmptyState
+                      title={activeTab === "my_forms" ? t("No forms deployed") : "No library templates found"}
+                      subtitle={
+                        activeTab === "my_forms"
+                          ? t("Build your first digital blueprint for forensic traceability.")
+                          : "Try adjusting your search."
+                      }
+                      cta={activeTab === "my_forms" ? (isCare ? "Create Care Form" : "New Form") : undefined}
+                      onCta={activeTab === "my_forms" ? () => router.push("/dashboard/forms/builder/new") : undefined}
+                      hints={isCare ? [
+                        { icon: ShieldCheck, label: "Care plans" },
+                        { icon: ClipboardCheck, label: "Risk assessments" },
+                        { icon: PenTool, label: "Progress notes" },
+                      ] : undefined}
+                    />
+                    {isCare && activeTab === "my_forms" && (
+                      <CareFormSuggestions onSelect={() => router.push("/dashboard/forms/builder/new")} />
+                    )}
+                  </>
                 )}
               </motion.div>
             )}

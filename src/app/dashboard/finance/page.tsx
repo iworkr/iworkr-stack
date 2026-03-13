@@ -52,7 +52,7 @@ const statusConfig: Record<string, { label: string; dot: string; text: string; b
   voided: { label: "Voided", dot: "bg-zinc-600", text: "text-zinc-600", bg: "bg-zinc-600/10" },
 };
 
-const tabs: { id: FinanceTab; label: string }[] = [
+const baseTabs: { id: FinanceTab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "invoices", label: "Invoices" },
   { id: "quotes", label: "Quotes" },
@@ -185,6 +185,16 @@ export default function FinancePage() {
 
   const { orgId } = useOrg();
   const { t, isCare } = useIndustryLexicon();
+
+  const tabs = useMemo(() => {
+    const list = [...baseTabs];
+    if (isCare) {
+      // Insert NDIS Claims tab after invoices (index 1 → after splice becomes index 2)
+      list.splice(2, 0, { id: "ndis-claims" as FinanceTab, label: "NDIS Claims" });
+    }
+    return list;
+  }, [isCare]);
+
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -366,7 +376,16 @@ export default function FinancePage() {
                 className="flex items-center gap-1 rounded-md border border-rose-500/15 bg-rose-500/[0.06] px-2 py-0.5 font-mono text-[11px] text-rose-400 transition-colors hover:bg-rose-500/10"
               >
                 <AlertTriangle size={9} />
-                {overdueInvoices.length} overdue
+                {overdueInvoices.length} {isCare ? "overdue claims" : "overdue"}
+              </button>
+            )}
+            {isCare && (
+              <button
+                onClick={() => router.push("/dashboard/care/funding-engine")}
+                className="flex items-center gap-1 text-[var(--brand)] text-[12px] hover:underline"
+              >
+                Open Funding Engine
+                <ArrowRight size={11} />
               </button>
             )}
           </div>
@@ -684,7 +703,7 @@ export default function FinancePage() {
                     <div className="mb-3 flex items-center justify-between">
                       <span className={`flex items-center gap-2 font-mono text-[9px] font-bold tracking-widest uppercase ${totalOverdue > 0 ? "text-rose-400/70" : "text-zinc-600"}`}>
                         <AlertTriangle size={10} />
-                        Overdue
+                        {t("Overdue")}
                       </span>
                       {overdueInvoices.length > 0 && (
                         <span className="font-mono text-[9px] font-medium text-rose-400/60">{overdueInvoices.length} inv</span>
@@ -833,8 +852,8 @@ export default function FinancePage() {
               <div className="flex-1">
                 {filteredInvoices.length === 0 && !loading ? (
                   <LedgerEmptyState
-                    title="The ledger is empty"
-                    subtitle={search ? "Try a different search term." : "Start earning."}
+                    title={isCare ? "No claims yet" : "The ledger is empty"}
+                    subtitle={search ? "Try a different search term." : t("Start earning.")}
                     cta={!search ? `Create First ${t("Invoice")}` : undefined}
                     onCta={!search ? () => router.push("/dashboard/finance/invoices/new") : undefined}
                     isCare={isCare}
@@ -909,6 +928,65 @@ export default function FinancePage() {
                 </AnimatePresence>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {/* ══════════════ NDIS CLAIMS TAB (Care only) ════════ */}
+          {activeTab === "ndis-claims" && isCare && (
+            <motion.div
+              key="ndis-claims"
+              custom={tabDir}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="p-6"
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-[15px] font-semibold text-white">NDIS Claims</h2>
+                  <p className="mt-0.5 text-[12px] text-zinc-600">
+                    Manage NDIS bulk claims, reconciliation, and portal submissions.
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push("/dashboard/care/funding-engine")}
+                  className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-blue-500"
+                >
+                  <Zap size={12} />
+                  Open Funding Engine
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="rounded-xl border border-white/[0.04] bg-zinc-900/30 p-4">
+                  <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase mb-2">Pending Claims</div>
+                  <div className="font-mono text-[28px] font-semibold tracking-tighter text-white">
+                    {invoices.filter((i) => i.status === "sent" || i.status === "draft").length}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/[0.04] bg-zinc-900/30 p-4">
+                  <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase mb-2">Approved</div>
+                  <div className="font-mono text-[28px] font-semibold tracking-tighter text-emerald-400">
+                    {invoices.filter((i) => i.status === "paid").length}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/[0.04] bg-zinc-900/30 p-4">
+                  <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase mb-2">Rejected / Overdue</div>
+                  <div className="font-mono text-[28px] font-semibold tracking-tighter text-rose-400">
+                    {overdueInvoices.length}
+                  </div>
+                </div>
+              </div>
+
+              <LedgerEmptyState
+                title="NDIS Claims Portal"
+                subtitle="Use the Funding Engine to submit bulk claims to the NDIS portal, track approvals, and reconcile payments."
+                cta="Open Funding Engine"
+                onCta={() => router.push("/dashboard/care/funding-engine")}
+                isCare={true}
+              />
             </motion.div>
           )}
 

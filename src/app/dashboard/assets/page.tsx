@@ -36,9 +36,9 @@ import { useIndustryLexicon } from "@/lib/industry-lexicon";
 /* ── Tab Config ─────────────────────────────────────────── */
 
 const tabsConfig: { id: AssetsTab; label: string; careLabel?: string; icon: typeof Truck }[] = [
-  { id: "fleet", label: "Fleet & Tools", careLabel: "Equipment & Supplies", icon: Truck },
-  { id: "inventory", label: "Inventory", icon: Package },
-  { id: "audits", label: "Audits", icon: ClipboardList },
+  { id: "fleet", label: "Fleet & Tools", careLabel: "Vehicles & Medical Devices", icon: Truck },
+  { id: "inventory", label: "Inventory", careLabel: "Mobility Aids & Supplies", icon: Package },
+  { id: "audits", label: "Audits", careLabel: "Audits & Compliance", icon: ClipboardList },
 ];
 
 /* ── Animated Counter ───────────────────────────────────── */
@@ -185,10 +185,10 @@ function ScanningLoader() {
 
 /* ── Status Config ──────────────────────────────────────── */
 
-const statusConfig: Record<string, { dot: string; label: string; text: string; bg: string }> = {
+const statusConfig: Record<string, { dot: string; label: string; careLabelKey?: string; text: string; bg: string }> = {
   available: { dot: "bg-emerald-500", label: "Available", text: "text-emerald-400", bg: "bg-emerald-500/10" },
-  assigned: { dot: "bg-sky-400", label: "On Job", text: "text-sky-400", bg: "bg-sky-500/10" },
-  maintenance: { dot: "bg-rose-500", label: "Broken", text: "text-rose-400", bg: "bg-rose-500/10" },
+  assigned: { dot: "bg-sky-400", label: "On Job", careLabelKey: "On Shift", text: "text-sky-400", bg: "bg-sky-500/10" },
+  maintenance: { dot: "bg-rose-500", label: "Broken", careLabelKey: "Calibration Due", text: "text-rose-400", bg: "bg-rose-500/10" },
 };
 
 const categoryIconMap: Record<string, typeof Truck> = {
@@ -524,7 +524,7 @@ export default function AssetsPage() {
               <Wrench size={14} className={`transition-colors ${maintenanceCount > 0 ? "text-rose-400" : "text-zinc-600"}`} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Maintenance</div>
+              <div className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{isCare ? "Calibration Due" : "Maintenance"}</div>
               <div className="flex items-baseline gap-1.5">
                 <span className={`font-mono text-[18px] font-semibold tabular-nums tracking-tight ${maintenanceCount > 0 ? "text-rose-400" : "text-zinc-400"}`}>
                   {maintenanceCount}
@@ -575,7 +575,7 @@ export default function AssetsPage() {
               onClick={() => setKpiFilter("all")}
               className="ml-2 flex items-center gap-1 rounded-md bg-white/[0.04] px-2 py-1 text-[10px] text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-200"
             >
-              Filtered: {kpiFilter === "low_stock" ? "Low Stock" : "Maintenance"}
+              Filtered: {kpiFilter === "low_stock" ? "Low Stock" : (isCare ? "Calibration Due" : "Maintenance")}
               <span className="ml-1 text-zinc-600">✕</span>
             </motion.button>
           )}
@@ -603,8 +603,8 @@ export default function AssetsPage() {
                 {filteredAssets.length === 0 ? (
                   <DepotEmptyState
                     icon={Truck}
-                    title={kpiFilter === "maintenance" ? "No assets in maintenance" : t("The depot is empty")}
-                    subtitle={searchQuery ? "No assets match your search." : kpiFilter === "maintenance" ? "All assets are operational." : t("Assets will appear here once added.")}
+                    title={kpiFilter === "maintenance" ? (isCare ? "No equipment due for calibration" : "No assets in maintenance") : t("The depot is empty")}
+                    subtitle={searchQuery ? "No assets match your search." : kpiFilter === "maintenance" ? (isCare ? "All equipment is calibrated and compliant." : "All assets are operational.") : t("Assets will appear here once added.")}
                     cta={!searchQuery && kpiFilter === "all" ? t("Add First Asset") : undefined}
                     onCta={!searchQuery && kpiFilter === "all" ? () => setAssetDrawerOpen(true) : undefined}
                   />
@@ -696,6 +696,7 @@ export default function AssetsPage() {
 
 function FleetListView({ assets }: { assets: Asset[] }) {
   const router = useRouter();
+  const { t, isCare } = useIndustryLexicon();
 
   return (
     <div>
@@ -707,7 +708,7 @@ function FleetListView({ assets }: { assets: Asset[] }) {
         <div className="w-28 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Assignee</div>
         <div className="w-28 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Location</div>
         <div className="w-20 px-2 text-right text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Value</div>
-        <div className="w-16 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Service</div>
+        <div className="w-16 px-2 text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Service Due")}</div>
         <div className="w-8" />
       </div>
 
@@ -737,7 +738,7 @@ function FleetListView({ assets }: { assets: Asset[] }) {
               <div className="w-24 px-2">
                 <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-medium ${status.bg} ${status.text}`}>
                   <span className={`h-1 w-1 rounded-full ${status.dot}`} />
-                  {status.label}
+                  {isCare && status.careLabelKey ? status.careLabelKey : status.label}
                 </span>
               </div>
               <div className="w-28 px-2 flex items-center gap-1.5">

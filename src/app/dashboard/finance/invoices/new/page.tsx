@@ -31,6 +31,7 @@ import { useClientsStore } from "@/lib/clients-store";
 import { useFinanceStore } from "@/lib/finance-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { InvoiceData, InvoiceLineItemData, WorkspaceBrand } from "@/components/pdf/invoice-types";
 import { calcInvoiceTotals, formatCurrency } from "@/components/pdf/invoice-types";
 import { InvoiceDocument } from "@/components/pdf/invoice-document";
@@ -94,6 +95,7 @@ export default function InvoiceBuilderPage() {
   const searchParams = useSearchParams();
   const { orgId } = useOrg();
   const { currentOrg } = useAuthStore();
+  const { t, isCare } = useIndustryLexicon();
   const storeClients = useClientsStore((s) => s.clients);
   const { createInvoiceServer } = useFinanceStore();
   const { addToast } = useToastStore();
@@ -322,7 +324,9 @@ export default function InvoiceBuilderPage() {
             {savedInvoice.displayId} Created
           </h2>
           <p className="mb-6 text-sm text-zinc-500">
-            Your invoice is ready. Share the payment link with your client.
+            {isCare
+              ? "Your claim is ready. Share the payment link or submit via PRODA."
+              : "Your invoice is ready. Share the payment link with your client."}
           </p>
 
           <div className="mb-4 rounded-xl border border-[var(--border-active)] bg-white/[0.03] p-4">
@@ -391,8 +395,8 @@ export default function InvoiceBuilderPage() {
             <ArrowLeft size={16} />
           </button>
           <div>
-            <h1 className="text-sm font-semibold text-zinc-200">New Invoice</h1>
-            <p className="text-[10px] text-zinc-600">WYSIWYG Builder</p>
+            <h1 className="text-sm font-semibold text-zinc-200">{t("New Invoice")}</h1>
+            <p className="text-[10px] text-zinc-600">{isCare ? "NDIS Claim Builder" : "WYSIWYG Builder"}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -410,7 +414,7 @@ export default function InvoiceBuilderPage() {
             className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-1.5 text-[11px] font-semibold text-black transition-all hover:bg-zinc-200 disabled:opacity-40"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-            Send Invoice
+            {t("Send Invoice")}
           </button>
         </div>
       </div>
@@ -422,8 +426,14 @@ export default function InvoiceBuilderPage() {
           {/* Client Selector */}
           <div className="mb-6">
             <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-              Bill To
+              {t("Bill To")}
             </label>
+            {isCare && (
+              <p className="mb-2 flex items-center gap-1.5 rounded-md bg-emerald-500/5 border border-emerald-500/10 px-2.5 py-1.5 text-[10px] text-emerald-400/80">
+                <span className="shrink-0">💡</span>
+                NDIS support items can be selected from the catalogue
+              </p>
+            )}
             {selectedClient ? (
               <div className="flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02] px-3 py-2.5">
                 <div>
@@ -447,7 +457,7 @@ export default function InvoiceBuilderPage() {
                     setShowClientDD(true);
                   }}
                   onFocus={() => setShowClientDD(true)}
-                  placeholder="Search clients…"
+                  placeholder={isCare ? "Search participants…" : "Search clients…"}
                   className="w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-white/[0.02] py-2.5 pl-9 pr-3 text-sm text-zinc-200 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
                 />
                 <AnimatePresence>
@@ -548,7 +558,7 @@ export default function InvoiceBuilderPage() {
           {/* ── Line Items ──────────────────────────────────── */}
           <div className="mb-4">
             <label className="mb-2 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-              Line Items
+              {t("Line Items")}
             </label>
             <div className="space-y-2">
               {lineItems.map((li) => (
@@ -621,7 +631,7 @@ export default function InvoiceBuilderPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") addCustomItem();
                   }}
-                  placeholder="Add item from catalog or type custom…"
+                  placeholder={isCare ? "Add NDIS support item or type custom…" : "Add item from catalog or type custom…"}
                   className="w-full rounded-lg border border-dashed border-[var(--border-active)] bg-transparent py-2 pl-9 pr-3 text-xs text-zinc-400 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
                 />
               </div>

@@ -68,7 +68,7 @@ const STATUS_CONFIG: Record<InvoiceStatus, { label: string; color: string; bg: s
   review_required: { label: "Review Required", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
   approved: { label: "Approved", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
   rejected: { label: "Rejected", color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20" },
-  claimed: { label: "Claimed", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  claimed: { label: "Claimed", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
 };
 
 /* ── Confidence Indicator ───────────────────────────────────────────────────── */
@@ -77,7 +77,7 @@ function ConfidenceDot({ confidence }: { confidence: number | null }) {
   if (confidence === null) return null;
   const color =
     confidence >= 95
-      ? "bg-blue-400"
+      ? "bg-emerald-400"
       : confidence >= 80
         ? "bg-amber-400"
         : "bg-rose-400";
@@ -91,7 +91,7 @@ function ConfidenceDot({ confidence }: { confidence: number | null }) {
 
 function confidenceBorder(confidence: number | null): string {
   if (confidence === null) return "border-white/[0.08]";
-  if (confidence >= 95) return "border-blue-500/30";
+  if (confidence >= 95) return "border-emerald-500/30";
   if (confidence >= 80) return "border-amber-500/30";
   return "border-rose-500/30";
 }
@@ -129,7 +129,7 @@ function PdfViewer({ invoice }: { invoice: PlanManagerInvoice }) {
             href={invoice.pdf_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"
           >
             Open PDF <ExternalLink className="w-3 h-3" />
           </a>
@@ -399,8 +399,7 @@ function InvoiceDetailForm({
               <button
                 onClick={handleApprove}
                 disabled={actionLoading !== null}
-                className="inline-flex items-center gap-1.5 px-5 py-2 r-button text-[13px] font-medium text-white transition-colors disabled:opacity-40"
-                style={{ backgroundColor: "#3B82F6" }}
+                className="inline-flex items-center gap-1.5 px-5 py-2 r-button bg-emerald-500 hover:bg-emerald-400 text-[13px] font-medium text-white transition-colors disabled:opacity-40"
               >
                 <Check className="w-3.5 h-3.5" />
                 {actionLoading === "approve" ? "Approving…" : "Approve & Queue for PRODA"}
@@ -571,12 +570,12 @@ export default function PlanManagerInboxPage() {
       {/* Noise */}
       <div className="stealth-noise" />
 
-      {/* Atmospheric glow — blue tint for finance */}
+      {/* Atmospheric glow — emerald tint for finance */}
       <div
         className="pointer-events-none absolute top-0 left-0 right-0 h-72 z-0"
         style={{
           background:
-            "radial-gradient(ellipse at center top, rgba(59,130,246,0.025) 0%, transparent 60%)",
+            "radial-gradient(ellipse at center top, rgba(16,185,129,0.025) 0%, transparent 60%)",
         }}
       />
 
@@ -634,6 +633,7 @@ export default function PlanManagerInboxPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="r-card border border-white/[0.06] bg-white/[0.01] overflow-hidden"
+            style={{ boxShadow: "var(--shadow-inset-bevel)" }}
           >
             {/* Table header */}
             <div className="stealth-table-header grid grid-cols-12 gap-2">
@@ -704,7 +704,7 @@ export default function PlanManagerInboxPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.25 }}
             className="flex gap-0 r-card border border-white/[0.06] bg-white/[0.01] overflow-hidden"
-            style={{ height: "calc(100vh - 280px)", minHeight: 500 }}
+            style={{ boxShadow: "var(--shadow-inset-bevel)", height: "calc(100vh - 280px)", minHeight: 500 }}
           >
             {/* Left pane — PDF viewer (40%) */}
             <div className="w-[40%] border-r border-white/[0.06] bg-white/[0.01] flex-shrink-0 hidden lg:flex flex-col">

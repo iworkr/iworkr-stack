@@ -51,6 +51,38 @@ import { useBillingStore } from "@/lib/billing-store";
 import { getPlanByKey } from "@/lib/plans";
 import { useUpgradeModal } from "@/lib/upgrade-modal-store";
 
+/* ── Care credential status helper ────────────────────── */
+
+type CredentialStatus = "valid" | "expiring_soon" | "expired";
+
+function getMemberCredentialStatus(memberId: string): CredentialStatus {
+  // Deterministic mock based on member id hash
+  let hash = 0;
+  for (let i = 0; i < memberId.length; i++) {
+    hash = (hash * 31 + memberId.charCodeAt(i)) | 0;
+  }
+  const bucket = Math.abs(hash) % 10;
+  if (bucket < 2) return "expired"; // ~20%
+  if (bucket < 4) return "expiring_soon"; // ~20%
+  return "valid"; // ~60%
+}
+
+function getMemberCareSkills(memberId: string): string[] {
+  // Deterministic mock: pick 2-3 care skills per member based on id hash
+  let hash = 0;
+  for (let i = 0; i < memberId.length; i++) {
+    hash = (hash * 37 + memberId.charCodeAt(i)) | 0;
+  }
+  const count = (Math.abs(hash) % 2) + 2; // 2 or 3
+  const skills: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = Math.abs((hash + i * 7) % careSkillDefinitions.length);
+    const skill = careSkillDefinitions[idx];
+    if (skill && !skills.includes(skill.id)) skills.push(skill.id);
+  }
+  return skills;
+}
+
 /* ── Skill icon map ─────────────────────────────────────── */
 
 const skillIconMap: Record<string, typeof Wrench> = {
@@ -332,6 +364,16 @@ export default function TeamPage() {
               </button>
             </div>
 
+            {/* Credentials link (care mode) */}
+            {isCare && (
+              <Link
+                href="/dashboard/team/credentials"
+                className="text-[12px] text-[var(--brand)] hover:underline"
+              >
+                Credentials →
+              </Link>
+            )}
+
             {/* Roles link */}
             <Link
               href="/dashboard/team/roles"
@@ -439,6 +481,9 @@ export default function TeamPage() {
                 <div className="w-8" />
                 <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Member</div>
                 <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Role</div>
+                {isCare && (
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Credentials</div>
+                )}
                 <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Branch</div>
                 <div className="w-36 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Skills</div>
                 <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Last Active</div>
@@ -518,35 +563,78 @@ export default function TeamPage() {
                         </span>
                       </div>
 
+                      {/* Credentials — care mode only */}
+                      {isCare && (() => {
+                        const credStatus = getMemberCredentialStatus(member.id);
+                        return (
+                          <div className="w-28 px-2 flex items-center gap-1.5">
+                            {credStatus === "expired" && (
+                              <span className="inline-flex items-center rounded-md border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[9px] font-semibold text-rose-400">
+                                Expired
+                              </span>
+                            )}
+                            {credStatus === "expiring_soon" && (
+                              <span className="inline-flex items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-semibold text-amber-400">
+                                Expiring Soon
+                              </span>
+                            )}
+                            {credStatus === "valid" && (
+                              <span className="text-[9px] text-zinc-600">Valid</span>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {/* Branch */}
                       <div className="w-24 px-2">
                         <span className="rounded-md bg-white/[0.03] px-1.5 py-0.5 text-[10px] text-zinc-500">{member.branch.replace(" HQ", "")}</span>
                       </div>
 
-                      {/* Skills */}
+                      {/* Skills / Care Skills */}
                       <div className="w-36 px-2 flex items-center gap-1">
-                        {member.skills.slice(0, 3).map((skillId) => {
+                        {(() => {
                           const activeSkills = isCare ? careSkillDefinitions : skillDefinitions;
-                          const skill = activeSkills.find((s) => s.id === skillId);
-                          if (!skill) return null;
-                          const Icon = skillIconMap[skill.icon] || Wrench;
+                          const memberSkillIds = isCare ? getMemberCareSkills(member.id) : member.skills;
+                          const visibleCount = isCare ? 2 : 3;
+                          const visible = memberSkillIds.slice(0, visibleCount);
+                          const overflowCount = memberSkillIds.length - visibleCount;
                           return (
-                            <div
-                              key={skillId}
-                              className="flex items-center gap-0.5 rounded-md bg-white/[0.03] px-1.5 py-0.5 text-[8px] font-medium text-zinc-500"
-                              title={skill.label}
-                            >
-                              <Icon size={8} strokeWidth={1.5} />
-                              <span className="hidden xl:inline">{skill.label.slice(0, 4)}</span>
-                            </div>
+                            <>
+                              {visible.map((skillId) => {
+                                const skill = activeSkills.find((s) => s.id === skillId);
+                                if (!skill) return null;
+                                if (isCare) {
+                                  return (
+                                    <span
+                                      key={skillId}
+                                      className="inline-flex items-center rounded-md border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 text-[8px] font-medium text-zinc-400"
+                                      title={skill.label}
+                                    >
+                                      {skill.label.length > 10 ? skill.label.slice(0, 9) + "…" : skill.label}
+                                    </span>
+                                  );
+                                }
+                                const Icon = skillIconMap[skill.icon] || Wrench;
+                                return (
+                                  <div
+                                    key={skillId}
+                                    className="flex items-center gap-0.5 rounded-md bg-white/[0.03] px-1.5 py-0.5 text-[8px] font-medium text-zinc-500"
+                                    title={skill.label}
+                                  >
+                                    <Icon size={8} strokeWidth={1.5} />
+                                    <span className="hidden xl:inline">{skill.label.slice(0, 4)}</span>
+                                  </div>
+                                );
+                              })}
+                              {overflowCount > 0 && (
+                                <span className="rounded-md bg-white/[0.03] px-1 py-0.5 text-[8px] font-medium text-zinc-600">
+                                  +{overflowCount}
+                                </span>
+                              )}
+                              {memberSkillIds.length === 0 && <span className="text-[9px] text-zinc-700">—</span>}
+                            </>
                           );
-                        })}
-                        {member.skills.length > 3 && (
-                          <span className="rounded-md bg-white/[0.03] px-1 py-0.5 text-[8px] font-medium text-zinc-600">
-                            +{member.skills.length - 3}
-                          </span>
-                        )}
-                        {member.skills.length === 0 && <span className="text-[9px] text-zinc-700">—</span>}
+                        })()}
                       </div>
 
                       {/* Last Active */}

@@ -55,13 +55,17 @@ const fmtCurrency = (n: number) =>
 /* ── Category Badge ───────────────────────────────────── */
 
 function CategoryBadge({ category }: { category: string }) {
-  const colors: Record<string, string> = {
-    core: "bg-[#3B82F6]/10 text-[#3B82F6]",
-    capacity_building: "bg-violet-500/10 text-violet-400",
-    capital: "bg-amber-500/10 text-amber-400",
+  const colors: Record<string, { bg: string; text: string }> = {
+    core: { bg: "var(--brand-care-subtle)", text: "var(--brand-care-text)" },
+    capacity_building: { bg: "rgba(139,92,246,0.08)", text: "#a78bfa" },
+    capital: { bg: "rgba(245,158,11,0.08)", text: "#fbbf24" },
   };
+  const c = colors[category] ?? { bg: "rgba(161,161,170,0.08)", text: "#a1a1aa" };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${colors[category] ?? "bg-zinc-500/10 text-zinc-400"}`}>
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium"
+      style={{ background: c.bg, color: c.text }}
+    >
       {CATEGORY_LABELS[category]?.short ?? category}
     </span>
   );
@@ -150,14 +154,14 @@ export default function NDISPricingPage() {
       <div className="stealth-noise" />
       <div
         className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(59,130,246,0.03) 0%, transparent 60%)" }}
+        style={{ background: "radial-gradient(ellipse at center top, var(--brand-care-subtle) 0%, transparent 60%)" }}
       />
 
       <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[#3B82F6] mb-1">NDIS PRICING MATRIX</p>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mb-1" style={{ color: "var(--brand-care-text)" }}>NDIS PRICING MATRIX</p>
             <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
               Support Catalogue & Rates
             </h1>
@@ -167,10 +171,10 @@ export default function NDISPricingPage() {
           </div>
           <div className="flex items-center gap-3">
             {/* Sync Indicator */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border-base)] rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border-base)] r-card">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3B82F6] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3B82F6]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "var(--brand-care)" }} />
+                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "var(--brand-care)" }} />
               </span>
               <span className="text-xs text-[var(--text-muted)]">
                 NDIS July 2026 <span className="text-emerald-400">• Up to date</span>
@@ -196,7 +200,7 @@ export default function NDISPricingPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search item numbers or names..."
-              className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+              className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             />
           </div>
           <div className="stealth-tabs border-b-0">
@@ -214,27 +218,27 @@ export default function NDISPricingPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-[var(--surface-1)] border border-[var(--border-base)] rounded-xl overflow-hidden">
+        <div className="bg-[var(--surface-1)] border border-[var(--border-base)] r-card overflow-hidden" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
           {/* Table Header */}
           <div className="grid grid-cols-[130px_1fr_80px_120px_120px_110px] gap-4 px-5 py-3 border-b border-[var(--border-base)]">
             <button
               onClick={() => handleSort("support_item_number")}
-              className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
             >
               Item Number
               <ArrowUpDown className="w-3 h-3" />
             </button>
-            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Item Name</span>
-            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Unit</span>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Item Name</span>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Unit</span>
             <button
               onClick={() => handleSort("base_rate")}
-              className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
             >
               Base Rate
               <ArrowUpDown className="w-3 h-3" />
             </button>
-            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Region Rate</span>
-            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Effective</span>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Region Rate</span>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Effective</span>
           </div>
 
           {/* Loading */}
@@ -261,7 +265,8 @@ export default function NDISPricingPage() {
               {!debouncedSearch && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="stealth-btn-brand bg-[#3B82F6] hover:bg-[#2563EB] mt-2"
+                  className="stealth-btn-brand mt-2"
+                  style={{ background: "var(--brand-care)" }}
                 >
                   <Upload className="w-4 h-4" />
                   Upload Price Guide
@@ -279,7 +284,7 @@ export default function NDISPricingPage() {
               transition={{ delay: idx * 0.01 }}
               className="grid grid-cols-[130px_1fr_80px_120px_120px_110px] gap-4 px-5 py-3.5 items-center border-b border-[var(--border-base)] last:border-b-0 hover:bg-white/[0.02] transition-colors"
             >
-              <span className="text-sm font-mono text-[#3B82F6] tracking-tight">{item.support_item_number}</span>
+              <span className="text-sm font-mono tracking-tight" style={{ color: "var(--brand-care-text)" }}>{item.support_item_number}</span>
               <div className="min-w-0">
                 <p className="text-sm text-[var(--text-primary)] truncate">{item.support_item_name}</p>
                 <CategoryBadge category={item.support_category} />

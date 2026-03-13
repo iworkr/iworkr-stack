@@ -67,7 +67,7 @@ const tabs: { id: AutomationsTab; label: string; icon: typeof Zap }[] = [
 /* ── Status Config ────────────────────────────────────── */
 
 const execStatusConfig = {
-  success: { icon: CheckCircle, color: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.08)]", label: "OK", border: "border-[#10B981]/20" },
+  success: { icon: CheckCircle, color: "text-[var(--brand)]", bg: "bg-[var(--brand)]/[0.08]", label: "OK", border: "border-[var(--brand)]/20" },
   failed: { icon: XCircle, color: "text-red-400", bg: "bg-red-500/10", label: "ERR", border: "border-red-500/20" },
   skipped: { icon: Clock, color: "text-zinc-500", bg: "bg-zinc-500/10", label: "SKIP", border: "border-zinc-500/20" },
 };
@@ -160,7 +160,7 @@ function EmptyState({ onCreateFlow, loading, t }: { onCreateFlow: () => void; lo
 
 function TraceStepRow({ step, index }: { step: TraceStep; index: number }) {
   const statusColors = {
-    passed: { text: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.08)]", dot: "bg-[#10B981]" },
+    passed: { text: "text-[var(--brand)]", bg: "bg-[var(--brand)]/[0.08]", dot: "bg-[var(--brand)]" },
     simulated: { text: "text-amber-400", bg: "bg-amber-500/10", dot: "bg-amber-400" },
     failed: { text: "text-red-400", bg: "bg-red-500/10", dot: "bg-red-400" },
     skipped: { text: "text-zinc-500", bg: "bg-zinc-500/10", dot: "bg-zinc-500" },
@@ -259,7 +259,7 @@ function RunDetailModal({
           <div className="flex items-center gap-2">
             <button
               onClick={onViewFlow}
-              className="flex items-center gap-1 rounded-lg border border-white/[0.08] px-3 py-1.5 text-[11px] text-zinc-400 transition-colors hover:border-[#10B981]/30 hover:text-zinc-200"
+              className="flex items-center gap-1 rounded-lg border border-white/[0.08] px-3 py-1.5 text-[11px] text-zinc-400 transition-colors hover:border-[var(--brand)]/30 hover:text-zinc-200"
             >
               <ExternalLink size={11} />
               View Flow
@@ -303,7 +303,7 @@ function RunDetailModal({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
               >
-                <RefreshCw size={20} className="text-[#10B981]" />
+                <RefreshCw size={20} className="text-[var(--brand)]" />
               </motion.div>
               <p className="mt-3 text-[11px] text-zinc-600">Loading execution trace...</p>
             </div>
@@ -423,8 +423,8 @@ function ExecutionsTab() {
         className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-3"
       >
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(16,185,129,0.08)]">
-            <History size={13} className="text-[#10B981]" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand)]/[0.08]">
+            <History size={13} className="text-[var(--brand)]" />
           </div>
           <div>
             <p className="text-[10px] text-zinc-600">Total Runs</p>
@@ -434,13 +434,13 @@ function ExecutionsTab() {
 
         <div className="h-8 w-px bg-white/[0.06]" />
 
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(16,185,129,0.08)]">
-            <CheckCircle size={13} className="text-[#10B981]" />
-          </div>
-          <div>
-            <p className="text-[10px] text-zinc-600">Success</p>
-            <p className="text-[14px] font-semibold text-[#10B981]">{successCount}</p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand)]/[0.08]">
+              <CheckCircle size={13} className="text-[var(--brand)]" />
+            </div>
+            <div>
+              <p className="text-[10px] text-zinc-600">Success</p>
+              <p className="text-[14px] font-semibold text-[var(--brand)]">{successCount}</p>
           </div>
         </div>
 
@@ -475,7 +475,7 @@ function ExecutionsTab() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="h-7 appearance-none rounded-lg border border-white/[0.08] bg-white/[0.03] pl-7 pr-6 text-[10px] text-zinc-400 outline-none transition-colors focus:border-[#10B981]/30"
+              className="h-7 appearance-none rounded-lg border border-white/[0.08] bg-white/[0.03] pl-7 pr-6 text-[10px] text-zinc-400 outline-none transition-colors focus:border-[var(--brand)]/30"
             >
               <option value="all">All Status</option>
               <option value="success">Success</option>
@@ -490,7 +490,7 @@ function ExecutionsTab() {
             <select
               value={flowFilter}
               onChange={(e) => setFlowFilter(e.target.value)}
-              className="h-7 max-w-[180px] appearance-none truncate rounded-lg border border-white/[0.08] bg-white/[0.03] pl-7 pr-6 text-[10px] text-zinc-400 outline-none transition-colors focus:border-[#10B981]/30"
+              className="h-7 max-w-[180px] appearance-none truncate rounded-lg border border-white/[0.08] bg-white/[0.03] pl-7 pr-6 text-[10px] text-zinc-400 outline-none transition-colors focus:border-[var(--brand)]/30"
             >
               <option value="all">All Flows</option>
               {flowOptions.map((f) => (
@@ -502,7 +502,7 @@ function ExecutionsTab() {
 
           <button
             onClick={() => loadRuns()}
-            className="flex h-7 items-center gap-1 rounded-lg border border-white/[0.08] px-2.5 text-[10px] text-zinc-500 transition-colors hover:border-[#10B981]/30 hover:text-zinc-300"
+            className="flex h-7 items-center gap-1 rounded-lg border border-white/[0.08] px-2.5 text-[10px] text-zinc-500 transition-colors hover:border-[var(--brand)]/30 hover:text-zinc-300"
           >
             <RefreshCw size={10} className={runsLoading ? "animate-spin" : ""} />
             Refresh
@@ -531,9 +531,9 @@ function ExecutionsTab() {
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           >
-            <RefreshCw size={20} className="text-[#10B981]" />
-          </motion.div>
-          <p className="mt-3 text-[11px] text-zinc-600">Loading execution history...</p>
+                <RefreshCw size={20} className="text-[var(--brand)]" />
+              </motion.div>
+              <p className="mt-3 text-[11px] text-zinc-600">Loading execution history...</p>
         </div>
       ) : (
         <AnimatePresence>
@@ -595,7 +595,7 @@ function ExecutionsTab() {
 
                 {/* Detail arrow */}
                 <div className="col-span-1 flex justify-end">
-                  <ArrowRight size={12} className="text-zinc-700 transition-colors group-hover:text-[#10B981]" />
+                  <ArrowRight size={12} className="text-zinc-700 transition-colors group-hover:text-[var(--brand)]" />
                 </div>
               </motion.div>
             );
@@ -638,7 +638,7 @@ function ExecutionsTab() {
 
 export default function AutomationsPage() {
   const router = useRouter();
-  const { t: lexT } = useIndustryLexicon();
+  const { t: lexT, isCare } = useIndustryLexicon();
   const {
     flows,
     logs,
@@ -949,7 +949,7 @@ export default function AutomationsPage() {
                       </div>
                       {/* Flow name */}
                       <div className="col-span-3">
-                        <p className={`truncate text-[12px] font-medium ${isFailed ? "text-red-400" : "text-[#10B981]"}`}>
+                        <p className={`truncate text-[12px] font-medium ${isFailed ? "text-red-400" : "text-[var(--brand)]"}`}>
                           {log.flowTitle}
                         </p>
                       </div>
@@ -991,10 +991,10 @@ export default function AutomationsPage() {
                           <div className={`rounded-lg border px-4 py-3 font-mono ${
                             isFailed
                               ? "border-red-500/15 bg-red-500/5"
-                              : "border-[#10B981]/15 bg-[rgba(16,185,129,0.03)]"
+                              : "border-[var(--brand)]/15 bg-[var(--brand)]/[0.03]"
                           }`}>
                             <p className={`text-[10px] font-medium uppercase tracking-wider ${
-                              isFailed ? "text-red-400" : "text-[#10B981]"
+                              isFailed ? "text-red-400" : "text-[var(--brand)]"
                             }`}>
                               {isFailed ? "Error Trace" : "Execution Details"}
                             </p>

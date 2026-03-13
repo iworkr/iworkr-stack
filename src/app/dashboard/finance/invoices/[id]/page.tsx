@@ -28,6 +28,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu
 import { downloadInvoicePDF } from "@/lib/pdf/generate-invoice";
 import { useOrg } from "@/lib/hooks/use-org";
 import { getOrgSettings } from "@/app/actions/finance";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 async function downloadReactPdf(invoiceId: string) {
   const resp = await fetch("/api/invoices/generate-pdf", {
@@ -94,6 +95,7 @@ export default function InvoiceDetailPage() {
   const { invoices, updateInvoice, updateLineItem, addLineItem, removeLineItem, updateInvoiceStatusServer, recalcInvoice, syncLineItemToServer } = useFinanceStore();
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
+  const { t, isCare } = useIndustryLexicon();
 
   const [orgSettings, setOrgSettings] = useState<{ name: string; settings: Record<string, any> } | null>(null);
 
@@ -215,7 +217,7 @@ export default function InvoiceDetailPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <h2 className="mb-2 text-lg font-medium text-zinc-300">Invoice not found</h2>
+          <h2 className="mb-2 text-lg font-medium text-zinc-300">{isCare ? "Claim not found" : "Invoice not found"}</h2>
           <button onClick={() => router.push("/dashboard/finance")} className="text-[13px] text-zinc-500 transition-colors hover:text-zinc-300">
             Back to Finance
           </button>
@@ -250,7 +252,7 @@ export default function InvoiceDetailPage() {
               Finance
             </button>
             <ChevronRight size={12} className="text-zinc-700" />
-            <span className="font-mono text-[12px] text-zinc-400">{invoice.id}</span>
+            <span className="font-mono text-[12px] text-zinc-400">{isCare ? invoice.id.replace("INV-", "CLM-") : invoice.id}</span>
             <span className={`ml-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] ${sc.border} ${sc.bg} ${sc.text}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
               {sc.label}
@@ -274,7 +276,7 @@ export default function InvoiceDetailPage() {
                 className="flex items-center gap-1.5 rounded-md bg-[#10B981] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#059669]"
               >
                 <Send size={12} />
-                Send Invoice
+                {t("Send Invoice")}
               </motion.button>
             )}
 
@@ -363,7 +365,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div className="text-right">
                   <div className="mb-1 font-mono text-[20px] font-semibold text-zinc-200">
-                    {invoice.id}
+                    {isCare ? invoice.id.replace("INV-", "CLM-") : invoice.id}
                   </div>
                   <div className="text-[10px] text-zinc-600">
                     Issued: {invoice.issueDate}<br />
@@ -380,11 +382,30 @@ export default function InvoiceDetailPage() {
 
               {/* Bill To */}
               <div className="mb-6 rounded-lg border border-[rgba(255,255,255,0.04)] bg-[rgba(255,255,255,0.02)] px-4 py-3">
-                <div className="mb-1 text-[9px] tracking-wider text-zinc-600 uppercase">Bill To</div>
+                <div className="mb-1 text-[9px] tracking-wider text-zinc-600 uppercase">{t("Bill To")}</div>
                 <div className="text-[13px] font-medium text-zinc-300">{invoice.clientName}</div>
                 <div className="text-[11px] text-zinc-500">{invoice.clientAddress}</div>
                 <div className="text-[11px] text-zinc-600">{invoice.clientEmail}</div>
               </div>
+
+              {/* NDIS Claim Reference + PRODA Status (care only) */}
+              {isCare && (
+                <div className="mb-6 grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-[rgba(255,255,255,0.04)] bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                    <div className="mb-1 text-[9px] tracking-wider text-zinc-600 uppercase">NDIS Claim Reference</div>
+                    <div className="font-mono text-[13px] font-medium text-zinc-300">
+                      NDIS-{(invoice.dbId || invoice.id).slice(0, 8).toUpperCase()}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-[rgba(255,255,255,0.04)] bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                    <div className="mb-1 text-[9px] tracking-wider text-zinc-600 uppercase">PRODA Status</div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-medium text-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                      Submitted
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Line Items Table */}
               <div className="mb-6">
@@ -502,7 +523,7 @@ export default function InvoiceDetailPage() {
                     className="mt-2 flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] text-zinc-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-zinc-400"
                   >
                     <Plus size={10} />
-                    Add line item
+                    {t("Add line item")}
                   </button>
                 )}
               </div>
@@ -631,12 +652,12 @@ export default function InvoiceDetailPage() {
             {/* Quick Stats */}
             <div className="mb-6">
               <h4 className="mb-3 text-[11px] font-medium tracking-wider text-zinc-600 uppercase">
-                Details
+                {t("Invoice Details")}
               </h4>
               <div className="space-y-1">
-                <DetailRow label="Client" value={invoice.clientName} />
+                <DetailRow label={t("Client")} value={invoice.clientName} />
                 <DetailRow label="Email" value={invoice.clientEmail} />
-                <DetailRow label="Items" value={`${invoice.lineItems.length} line items`} />
+                <DetailRow label="Items" value={`${invoice.lineItems.length} ${t("line items")}`} />
                 <DetailRow label="Subtotal" value={`$${invoice.subtotal.toLocaleString()}`} />
                 <DetailRow label="GST" value={`$${invoice.tax.toLocaleString()}`} />
                 <DetailRow
@@ -656,7 +677,7 @@ export default function InvoiceDetailPage() {
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#10B981] py-2.5 text-[12px] font-medium text-white transition-colors hover:bg-[#059669]"
                 >
                   <Send size={12} />
-                  Send Invoice
+                  {t("Send Invoice")}
                 </motion.button>
               )}
 
@@ -715,7 +736,7 @@ export default function InvoiceDetailPage() {
                   className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-[12px] text-zinc-600 transition-colors hover:text-red-400"
                 >
                   <Ban size={12} />
-                  Void Invoice
+                  {t("Void Invoice")}
                 </button>
               )}
             </div>

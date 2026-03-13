@@ -66,6 +66,42 @@ const contextItemDefs = [
   { id: "archive", labelKey: "Archive", icon: <Trash2 size={13} />, danger: true },
 ] as const;
 
+/* ── Care-specific helpers ────────────────────────────────── */
+
+/** Simple deterministic hash for consistent mock data per client id */
+function stableHash(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
+  return Math.abs(hash);
+}
+
+type FundingStatus = "funded" | "review_due" | "expired";
+const FUNDING_STATUSES: { value: FundingStatus; label: string; dot: string; text: string; bg: string }[] = [
+  { value: "funded", label: "Funded", dot: "bg-emerald-400", text: "text-emerald-400", bg: "bg-emerald-500/15" },
+  { value: "review_due", label: "Review Due", dot: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-500/15" },
+  { value: "expired", label: "Expired", dot: "bg-rose-400", text: "text-rose-400", bg: "bg-rose-500/15" },
+];
+
+/** Deterministic funding status per client — weighted: funded ~60%, review ~25%, expired ~15% */
+function getFundingStatus(id: string): (typeof FUNDING_STATUSES)[number] {
+  const h = stableHash(id) % 100;
+  if (h < 60) return FUNDING_STATUSES[0]; // Funded
+  if (h < 85) return FUNDING_STATUSES[1]; // Review Due
+  return FUNDING_STATUSES[2]; // Expired
+}
+
+/** Deterministic care plan status — ~70% active, ~30% pending */
+function hasActiveCareplan(id: string): boolean {
+  return stableHash(id + "_cp") % 100 < 70;
+}
+
+/** Generate a mock NDIS number based on client id (format: 43XXXXXXX) */
+function getMockNdisNumber(id: string): string {
+  const h = stableHash(id);
+  const num = 430000000 + (h % 10000000);
+  return num.toString();
+}
+
 /* ── Avatar gradient ──────────────────────────────────────── */
 
 const gradients = [
@@ -137,13 +173,22 @@ export default function ClientsPage() {
   const filterRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const contextItems: ContextMenuItem[] = useMemo(() =>
-    contextItemDefs.map((item) => ({
+  const contextItems: ContextMenuItem[] = useMemo(() => {
+    const base: ContextMenuItem[] = contextItemDefs.map((item) => ({
       ...item,
       label: item.labelKey ? t(item.labelKey) : "",
-    })),
-    [t]
-  );
+    }));
+    if (isCare) {
+      // Insert care-specific items before the divider
+      const dividerIdx = base.findIndex((item) => item.id === "divider");
+      const careItems: ContextMenuItem[] = [
+        { id: "careplan", label: "View Care Plan", icon: <Briefcase size={13} /> },
+        { id: "funding", label: "View Funding", icon: <Building2 size={13} /> },
+      ];
+      base.splice(dividerIdx, 0, ...careItems);
+    }
+    return base;
+  }, [t, isCare]);
 
   const [ctxMenu, setCtxMenu] = useState<{ open: boolean; x: number; y: number; clientId: string }>({
     open: false, x: 0, y: 0, clientId: "",
@@ -239,6 +284,12 @@ export default function ClientsPage() {
     } else if (actionId === "copy") {
       navigator.clipboard?.writeText(client.email);
       addToast("Email copied to clipboard");
+    } else if (actionId === "careplan") {
+      addToast(`Opening care plan for ${client.name}`);
+      router.push(`/dashboard/care/plans?participantId=${client.id}`);
+    } else if (actionId === "funding") {
+      addToast(`Opening funding for ${client.name}`);
+      router.push(`/dashboard/care/funding-engine?participantId=${client.id}`);
     } else if (actionId === "archive") {
       const archived = client;
       archiveClientServer(client.id);
@@ -466,7 +517,10 @@ export default function ClientsPage() {
       {/* ── Column headers ─────────────────────────────────────── */}
       <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
         <div className="w-64 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Client")}</div>
+        {isCare && <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">NDIS #</div>}
         <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
+        {isCare && <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Funding</div>}
+        {isCare && <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Care Plan</div>}
         <div className="w-20 px-2 text-center font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Contact</div>
         <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Email</div>
         <div className="w-16 px-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{t("Jobs")}</div>
@@ -504,12 +558,14 @@ export default function ClientsPage() {
             <h3 className="text-[15px] font-medium text-zinc-200">
               {hasActiveFilters || search || activeTab !== "all"
                 ? t("No clients match")
-                : t("No clients yet")}
+                : isCare ? "No participants yet" : t("No clients yet")}
             </h3>
             <p className="mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-zinc-600">
               {hasActiveFilters || search || activeTab !== "all"
                 ? "Try adjusting your filters or search terms."
-                : t("Add your first client to start building your CRM.")}
+                : isCare
+                  ? "Add your first participant to begin managing their care."
+                  : t("Add your first client to start building your CRM.")}
             </p>
             {(hasActiveFilters || search || activeTab !== "all") ? (
               <button
@@ -524,7 +580,7 @@ export default function ClientsPage() {
                 className={`mt-5 flex items-center gap-2 rounded-lg px-4 py-2 text-[12px] font-medium text-white shadow-none transition-all duration-200 ${isCare ? "bg-blue-600 hover:bg-blue-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
               >
                 <Plus size={14} />
-                {t("Add First Client")}
+                {isCare ? "Add Participant" : t("Add First Client")}
               </button>
             )}
           </motion.div>
@@ -635,6 +691,13 @@ export default function ClientsPage() {
                   </div>
                 </div>
 
+                {/* NDIS # (care only) */}
+                {isCare && (
+                  <div className="w-24 px-2">
+                    <span className="font-mono text-[11px] text-zinc-500">{getMockNdisNumber(client.id)}</span>
+                  </div>
+                )}
+
                 {/* Status Pill */}
                 <div className="w-24 px-2">
                   <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium ${sc.bg} ${sc.text}`}>
@@ -642,6 +705,34 @@ export default function ClientsPage() {
                     {sc.label}
                   </span>
                 </div>
+
+                {/* Funding status (care only) */}
+                {isCare && (() => {
+                  const fs = getFundingStatus(client.id);
+                  return (
+                    <div className="w-20 px-2">
+                      <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-medium ${fs.bg} ${fs.text}`}>
+                        <span className={`h-1 w-1 rounded-full ${fs.dot}`} />
+                        {fs.label}
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Care plan badge (care only) */}
+                {isCare && (
+                  <div className="w-20 px-2">
+                    {hasActiveCareplan(client.id) ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-medium text-blue-400">
+                        <Check size={8} />Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-zinc-500/10 px-1.5 py-0.5 text-[9px] font-medium text-zinc-500">
+                        Pending
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Contact icons (reveal on hover) */}
                 <div className="flex w-20 items-center justify-center gap-1 px-2">

@@ -57,7 +57,7 @@ type PipelineStatus =
 
 /* ── Column config ───────────────────────────────────────── */
 
-const COLUMNS: {
+interface ColumnConfig {
   id: PipelineStatus;
   label: string;
   border: string;
@@ -68,7 +68,9 @@ const COLUMNS: {
   text: string;
   emptyText: string;
   emptyHint: string;
-}[] = [
+}
+
+const TRADES_COLUMNS: ColumnConfig[] = [
   {
     id: "new_lead",
     label: "New Lead",
@@ -131,7 +133,95 @@ const COLUMNS: {
   },
 ];
 
+/** Care-specific pipeline stages — maps to same PipelineStatus IDs for DB compatibility */
+const CARE_COLUMNS: ColumnConfig[] = [
+  {
+    id: "new_lead",
+    label: "Inquiry",
+    border: "border-t-sky-500/20",
+    dot: "bg-sky-400",
+    bg: "bg-sky-500/10",
+    headerBg: "bg-sky-500/[0.06]",
+    headerBorder: "border-sky-500/[0.12]",
+    text: "text-sky-400",
+    emptyText: "No new inquiries",
+    emptyHint: "New referrals will appear here",
+  },
+  {
+    id: "quoting",
+    label: "Assessment",
+    border: "border-t-amber-500/20",
+    dot: "bg-amber-400",
+    bg: "bg-amber-500/10",
+    headerBg: "bg-amber-500/[0.06]",
+    headerBorder: "border-amber-500/[0.12]",
+    text: "text-amber-400",
+    emptyText: "No assessments pending",
+    emptyHint: "Referrals awaiting initial assessment",
+  },
+  {
+    id: "awaiting_approval",
+    label: "Onboarding",
+    border: "border-t-violet-500/20",
+    dot: "bg-violet-400",
+    bg: "bg-violet-500/10",
+    headerBg: "bg-violet-500/[0.06]",
+    headerBorder: "border-violet-500/[0.12]",
+    text: "text-violet-400",
+    emptyText: "No one onboarding",
+    emptyHint: "Participants being onboarded",
+  },
+  {
+    id: "won",
+    label: "Active",
+    border: "border-t-emerald-500/20",
+    dot: "bg-emerald-400",
+    bg: "bg-emerald-500/10",
+    headerBg: "bg-emerald-500/[0.06]",
+    headerBorder: "border-emerald-500/[0.12]",
+    text: "text-emerald-400",
+    emptyText: "No active participants",
+    emptyHint: "Active participants",
+  },
+  {
+    id: "lost",
+    label: "Exited",
+    border: "border-t-rose-500/20",
+    dot: "bg-rose-400",
+    bg: "bg-rose-500/10",
+    headerBg: "bg-rose-500/[0.06]",
+    headerBorder: "border-rose-500/[0.12]",
+    text: "text-rose-400",
+    emptyText: "No exited participants",
+    emptyHint: "Exited participants",
+  },
+];
+
+/** Kept for backward compat — trades columns as default */
+const COLUMNS = TRADES_COLUMNS;
+
 const COLUMN_MAP = Object.fromEntries(COLUMNS.map((c) => [c.id, c]));
+
+/* ── NDIS mock helpers (care mode) ────────────────────────── */
+
+const FUNDING_TYPES = ["Self-Managed", "Plan-Managed", "NDIA-Managed"] as const;
+
+function getMockNdisNumber(clientId: string): string {
+  let hash = 0;
+  for (let i = 0; i < clientId.length; i++) {
+    hash = (hash * 31 + clientId.charCodeAt(i)) | 0;
+  }
+  const num = Math.abs(hash) % 1_000_000_000;
+  return `4${String(num).padStart(9, "0")}`;
+}
+
+function getMockFundingType(clientId: string): string {
+  let hash = 0;
+  for (let i = 0; i < clientId.length; i++) {
+    hash = (hash * 37 + clientId.charCodeAt(i)) | 0;
+  }
+  return FUNDING_TYPES[Math.abs(hash) % FUNDING_TYPES.length];
+}
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -246,6 +336,10 @@ export default function CRMPipelinePage() {
       supabase.removeChannel(channel);
     };
   }, [orgId, fetchClients]);
+
+  /* ── Active columns (trades vs care) ──────────────────── */
+
+  const activeColumns = useMemo(() => isCare ? CARE_COLUMNS : TRADES_COLUMNS, [isCare]);
 
   /* ── Grouped by column ─────────────────────────────────── */
 
@@ -474,11 +568,12 @@ export default function CRMPipelinePage() {
         ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex h-full gap-3">
-              {COLUMNS.map((col) => (
+              {activeColumns.map((col) => (
                 <KanbanColumn
                   key={col.id}
                   column={col}
                   clients={columnData[col.id]}
+                  isCare={isCare}
                   t={t}
                 />
               ))}
@@ -507,10 +602,12 @@ export default function CRMPipelinePage() {
 function KanbanColumn({
   column,
   clients,
+  isCare,
   t,
 }: {
-  column: (typeof COLUMNS)[number];
+  column: ColumnConfig;
   clients: PipelineClient[];
+  isCare: boolean;
   t: (key: string) => string;
 }) {
   const totalValue = clients.reduce(
@@ -587,6 +684,7 @@ function KanbanColumn({
                     <PipelineCard
                       client={client}
                       isDragging={dragSnapshot.isDragging}
+                      isCare={isCare}
                     />
                   </div>
                 )}
@@ -605,9 +703,11 @@ function KanbanColumn({
 function PipelineCard({
   client,
   isDragging,
+  isCare = false,
 }: {
   client: PipelineClient;
   isDragging: boolean;
+  isCare?: boolean;
 }) {
   const initials = getInitials(client.name);
   const typeCfg = COLUMN_MAP[client.type === "commercial" ? "quoting" : "new_lead"];
@@ -674,6 +774,20 @@ function PipelineCard({
               <span>{client.phone}</span>
             </div>
           )}
+        </div>
+      )}
+
+      {/* NDIS fields — care mode */}
+      {isCare && (
+        <div className="mb-2 space-y-0.5 rounded-md border border-white/[0.04] bg-white/[0.01] px-2 py-1.5">
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <span className="text-zinc-600">NDIS #</span>
+            <span className="font-mono text-zinc-400">{getMockNdisNumber(client.id)}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <span className="text-zinc-600">Funding</span>
+            <span className="text-zinc-400">{getMockFundingType(client.id)}</span>
+          </div>
         </div>
       )}
 

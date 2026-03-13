@@ -26,7 +26,7 @@ import {
 
 /* ── Types ────────────────────────────────────────────── */
 
-export type FinanceTab = "overview" | "invoices" | "quotes" | "payouts" | "payments";
+export type FinanceTab = "overview" | "invoices" | "quotes" | "payouts" | "payments" | "ndis-claims";
 
 /* ── Store ────────────────────────────────────────────── */
 

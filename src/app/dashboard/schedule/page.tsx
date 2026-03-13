@@ -190,6 +190,21 @@ interface DragState {
 export default function SchedulePage() {
   const router = useRouter();
   const { t, isCare } = useIndustryLexicon();
+
+  /* ── SCHADS compliance helper (care mode) ──────────────── */
+  const getSchadsStatus = useCallback(
+    (block: ScheduleBlock, allBlocks: ScheduleBlock[]): "compliant" | "warning" => {
+      if (!isCare) return "compliant";
+      // Mock: warn if shift > 10 hours
+      if (block.duration > 10) return "warning";
+      // Mock: warn if this worker has > 5 consecutive day blocks
+      const techBlocks = allBlocks.filter((b) => b.technicianId === block.technicianId);
+      if (techBlocks.length > 5) return "warning";
+      return "compliant";
+    },
+    [isCare]
+  );
+
   const {
     blocks,
     technicians: storeTechnicians,
@@ -579,6 +594,17 @@ export default function SchedulePage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Care: Roster Intelligence link */}
+          {isCare && (
+            <button
+              onClick={() => router.push("/dashboard/care/roster-intelligence")}
+              className="flex items-center gap-1 text-[var(--brand)] text-[12px] hover:underline"
+            >
+              Roster Intelligence
+              <ChevronRight size={11} />
+            </button>
+          )}
+
           {conflictCount > 0 && (
             <span className="flex items-center gap-1.5 text-[11px] text-zinc-500">
               <motion.span
@@ -618,7 +644,7 @@ export default function SchedulePage() {
             }`}
           >
             <Inbox size={14} strokeWidth={1.5} />
-            Backlog
+            {t("Backlog")}
             {backlogJobs.length > 0 && (
               <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500/90 px-1 text-[9px] font-bold text-white">
                 {backlogJobs.length}
@@ -706,7 +732,7 @@ export default function SchedulePage() {
                   className="mt-5 flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[12px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
                 >
                   <CalendarClock size={14} />
-                  Open Backlog
+                  {isCare ? "Open Unassigned" : "Open Backlog"}
                 </button>
               </motion.div>
             )}
@@ -1003,11 +1029,19 @@ export default function SchedulePage() {
                                   }}
                                 >
                                   <div className="flex h-full flex-col justify-center truncate pl-3 pr-2">
-                                    {blockWidth > 60 && (
-                                      <span className={`font-mono text-[9px] ${colors.text} opacity-60`}>
-                                        {formatHour(block.startHour)} — {formatHour(block.startHour + block.duration)}
-                                      </span>
-                                    )}
+                                    <div className="flex items-center gap-1">
+                                      {blockWidth > 60 && (
+                                        <span className={`font-mono text-[9px] ${colors.text} opacity-60`}>
+                                          {formatHour(block.startHour)} — {formatHour(block.startHour + block.duration)}
+                                        </span>
+                                      )}
+                                      {/* Care: shift duration badge */}
+                                      {isCare && blockWidth > 60 && (
+                                        <span className="rounded bg-white/[0.06] px-1 py-px font-mono text-[8px] font-bold text-zinc-400">
+                                          {formatDuration(block.duration)}
+                                        </span>
+                                      )}
+                                    </div>
                                     <span className={`truncate text-[11px] font-medium ${colors.text}`}>{block.title}</span>
                                     {blockWidth > 80 && (
                                       <span className={`truncate text-[10px] ${colors.text} opacity-50`}>{block.client}</span>
@@ -1016,6 +1050,20 @@ export default function SchedulePage() {
                                       <span className={`truncate text-[9px] ${colors.text} opacity-30`}>{block.location}</span>
                                     )}
                                   </div>
+
+                                  {/* Care: SCHADS compliance indicator */}
+                                  {isCare && (
+                                    <div
+                                      className="absolute bottom-1.5 right-2 z-10"
+                                      title={getSchadsStatus(block, blocks) === "warning" ? "SCHADS limit warning" : "SCHADS compliant"}
+                                    >
+                                      <div className={`h-[6px] w-[6px] rounded-full ${
+                                        getSchadsStatus(block, blocks) === "warning"
+                                          ? "bg-amber-400 ring-1 ring-amber-400/30"
+                                          : "bg-emerald-400 ring-1 ring-emerald-400/20"
+                                      }`} />
+                                    </div>
+                                  )}
 
                                   {/* Conflict indicator */}
                                   {block.conflict && (
@@ -1111,10 +1159,10 @@ export default function SchedulePage() {
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
                       <span className="mb-1 font-mono text-[8px] font-medium tracking-[0.2em] text-zinc-600 uppercase">
-                        Backlog
+                        {t("Backlog")}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-medium text-zinc-200">Unassigned Jobs</span>
+                        <span className="text-[13px] font-medium text-zinc-200">{isCare ? "Unassigned Shifts" : "Unassigned Jobs"}</span>
                         {backlogJobs.length > 0 && (
                           <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white/[0.06] px-1.5 text-[10px] font-medium text-zinc-400">
                             {backlogJobs.length}
@@ -1204,9 +1252,9 @@ export default function SchedulePage() {
                           </div>
                           <div className="absolute inset-0 rounded-full border border-white/[0.03] animate-signal-pulse" />
                         </div>
-                        <p className="text-[12px] font-medium text-zinc-400">All jobs assigned</p>
+                        <p className="text-[12px] font-medium text-zinc-400">{isCare ? "All shifts assigned" : "All jobs assigned"}</p>
                         <p className="mt-1 text-[10px] text-zinc-600">
-                          Create a new job to see it here
+                          {isCare ? "Create a new shift to see it here" : "Create a new job to see it here"}
                         </p>
                       </div>
                     )}
@@ -1276,7 +1324,14 @@ export default function SchedulePage() {
         open={ctxMenu.open}
         x={ctxMenu.x}
         y={ctxMenu.y}
-        items={contextItems}
+        items={contextItems.map((item) =>
+          item.divider ? item : {
+            ...item,
+            label: item.label
+              .replace("Job", t("Job"))
+              .replace("Unschedule", isCare ? "Unroster" : "Unschedule"),
+          }
+        )}
         onSelect={handleContextAction}
         onClose={() => setCtxMenu((p) => ({ ...p, open: false }))}
       />

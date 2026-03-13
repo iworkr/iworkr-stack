@@ -17,10 +17,8 @@ import {
   Search,
   Filter,
   Zap,
-  ArrowRight,
-  Edit3,
-  Eye,
   MapPin,
+  X,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
@@ -32,23 +30,21 @@ import {
   type CareGoal,
 } from "@/lib/care-command-store";
 import {
-  fetchCarePlansAction,
-  createCarePlanAction,
   updateCarePlanAction,
   createCareGoalAction,
   updateCareGoalAction,
 } from "@/app/actions/care";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
- * Constants & Mock Data
- * ═══════════════════════════════════════════════════════════════════════════════ */
+   Types & Config
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-type Tab = "care-plans" | "shift-compliance";
-type PlanFilter = "all" | "draft" | "active" | "under_review";
+type Tab = "care-plans" | "schads-compliance";
+type PlanFilter = "all" | "active" | "draft" | "under_review" | "archived";
 
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "care-plans", label: "Care Plans", icon: <FileText className="h-3.5 w-3.5" /> },
-  { id: "shift-compliance", label: "Shift Compliance", icon: <Shield className="h-3.5 w-3.5" /> },
+const TABS: { id: Tab; label: string }[] = [
+  { id: "care-plans", label: "Care Plans" },
+  { id: "schads-compliance", label: "SCHADS Compliance" },
 ];
 
 const FILTER_OPTIONS: { id: PlanFilter; label: string }[] = [
@@ -56,6 +52,7 @@ const FILTER_OPTIONS: { id: PlanFilter; label: string }[] = [
   { id: "active", label: "Active" },
   { id: "draft", label: "Draft" },
   { id: "under_review", label: "Under Review" },
+  { id: "archived", label: "Archived" },
 ];
 
 const DOMAIN_COLORS: Record<string, string> = {
@@ -71,14 +68,14 @@ const DOMAIN_COLORS: Record<string, string> = {
 
 /** Mock compliance data — SCHADS-aware workforce analytics */
 const MOCK_WORKERS = [
-  { id: "w1", name: "Sarah Chen", role: "Support Worker L3", hoursThisWeek: 42.5, shiftsToday: 2, fatigueRisk: "low" as const, overtime: false, lastBreak: "2h ago", minEngagementMet: true, location: "Participant Home — 12 Maple St" },
-  { id: "w2", name: "Marcus Johnson", role: "Support Worker L2", hoursThisWeek: 51.0, shiftsToday: 3, fatigueRisk: "high" as const, overtime: true, lastBreak: "5h ago", minEngagementMet: true, location: "Day Program — Northside Hub" },
-  { id: "w3", name: "Emily Nguyen", role: "Team Leader L4", hoursThisWeek: 38.0, shiftsToday: 1, fatigueRisk: "low" as const, overtime: false, lastBreak: "1h ago", minEngagementMet: true, location: "Office — HQ" },
-  { id: "w4", name: "David Williams", role: "Support Worker L2", hoursThisWeek: 47.5, shiftsToday: 2, fatigueRisk: "medium" as const, overtime: true, lastBreak: "3h ago", minEngagementMet: true, location: "Community — Westfield Mall" },
-  { id: "w5", name: "Lisa Park", role: "Support Worker L1", hoursThisWeek: 12.0, shiftsToday: 1, fatigueRisk: "low" as const, overtime: false, lastBreak: "30m ago", minEngagementMet: false, location: "Participant Home — 8 Oak Ave" },
-  { id: "w6", name: "James O'Brien", role: "Night Support L3", hoursThisWeek: 44.0, shiftsToday: 1, fatigueRisk: "medium" as const, overtime: false, lastBreak: "6h ago", minEngagementMet: true, location: "SIL House — Banksia" },
-  { id: "w7", name: "Priya Sharma", role: "Support Worker L2", hoursThisWeek: 36.0, shiftsToday: 2, fatigueRisk: "low" as const, overtime: false, lastBreak: "45m ago", minEngagementMet: true, location: "Respite — Elm Lodge" },
-  { id: "w8", name: "Tom Fletcher", role: "Support Worker L3", hoursThisWeek: 53.5, shiftsToday: 2, fatigueRisk: "high" as const, overtime: true, lastBreak: "4h ago", minEngagementMet: true, location: "Participant Home — 3 Pine Crt" },
+  { id: "w1", name: "Sarah Chen", role: "Support Worker L3", consecutiveDays: 4, hoursThisWeek: 42.5, breakCompliance: true, fatigueRisk: "low" as const, overtime: false, location: "Participant Home — 12 Maple St" },
+  { id: "w2", name: "Marcus Johnson", role: "Support Worker L2", consecutiveDays: 6, hoursThisWeek: 51.0, breakCompliance: false, fatigueRisk: "high" as const, overtime: true, location: "Day Program — Northside Hub" },
+  { id: "w3", name: "Emily Nguyen", role: "Team Leader L4", consecutiveDays: 3, hoursThisWeek: 38.0, breakCompliance: true, fatigueRisk: "low" as const, overtime: false, location: "Office — HQ" },
+  { id: "w4", name: "David Williams", role: "Support Worker L2", consecutiveDays: 5, hoursThisWeek: 47.5, breakCompliance: true, fatigueRisk: "medium" as const, overtime: true, location: "Community — Westfield Mall" },
+  { id: "w5", name: "Lisa Park", role: "Support Worker L1", consecutiveDays: 2, hoursThisWeek: 12.0, breakCompliance: true, fatigueRisk: "low" as const, overtime: false, location: "Participant Home — 8 Oak Ave" },
+  { id: "w6", name: "James O'Brien", role: "Night Support L3", consecutiveDays: 5, hoursThisWeek: 44.0, breakCompliance: false, fatigueRisk: "medium" as const, overtime: false, location: "SIL House — Banksia" },
+  { id: "w7", name: "Priya Sharma", role: "Support Worker L2", consecutiveDays: 3, hoursThisWeek: 36.0, breakCompliance: true, fatigueRisk: "low" as const, overtime: false, location: "Respite — Elm Lodge" },
+  { id: "w8", name: "Tom Fletcher", role: "Support Worker L3", consecutiveDays: 7, hoursThisWeek: 53.5, breakCompliance: false, fatigueRisk: "high" as const, overtime: true, location: "Participant Home — 3 Pine Crt" },
 ];
 
 const FATIGUE_CONFIG = {
@@ -96,12 +93,12 @@ const SCHADS_RULES = [
   { id: "sleepover", title: "Sleepover Provisions", description: "Sleepover allowance applies when worker is required to sleep at workplace. If disturbed, minimum 1-hour payment at overtime rates for each disturbance.", section: "Clause 25.7" },
 ];
 
-/* ═══════════════════════════════════════════════════════════════════════════════
- * Animation Variants
- * ═══════════════════════════════════════════════════════════════════════════════ */
+const ease = [0.16, 1, 0.3, 1] as const;
 
-const fadeIn = { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } };
-const stagger = { visible: { transition: { staggerChildren: 0.04 } } };
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Animation Variants
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 const slideRight = {
   hidden: { opacity: 0, x: 320 },
   visible: { opacity: 1, x: 0, transition: { type: "spring" as const, damping: 28, stiffness: 300 } },
@@ -109,8 +106,8 @@ const slideRight = {
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════════
- * Helper Utilities
- * ═══════════════════════════════════════════════════════════════════════════════ */
+   Helper Utilities
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
 function daysUntil(dateStr: string | null | undefined): number | null {
   if (!dateStr) return null;
@@ -135,355 +132,10 @@ function goalProgress(goals: CareGoal[] | undefined): { total: number; inProgres
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
- * Main Page
- * ═══════════════════════════════════════════════════════════════════════════════ */
+   Care Plan Card
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-export default function RosterIntelligencePage() {
-  const { orgId } = useOrg();
-  const { plans, plansLoading, fetchPlans } = useCareCommandStore();
-
-  const [tab, setTab] = useState<Tab>("care-plans");
-  const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [showAddGoal, setShowAddGoal] = useState(false);
-  const [newGoalTitle, setNewGoalTitle] = useState("");
-  const [newGoalDescription, setNewGoalDescription] = useState("");
-
-  // ── Load plans ────────────────────────────────────────
-  useEffect(() => {
-    if (orgId) fetchPlans(orgId);
-  }, [orgId, fetchPlans]);
-
-  // ── Derived data ──────────────────────────────────────
-  const filteredPlans = useMemo(() => {
-    let result = plans;
-    if (planFilter !== "all") result = result.filter((p) => p.status === planFilter);
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.assessor_name?.toLowerCase().includes(q) ||
-          Object.keys(p.domains || {}).some((d) => domainLabel(d).toLowerCase().includes(q))
-      );
-    }
-    return result;
-  }, [plans, planFilter, searchQuery]);
-
-  const selectedPlan = useMemo(() => plans.find((p) => p.id === selectedPlanId) ?? null, [plans, selectedPlanId]);
-
-  const stats = useMemo(() => {
-    const active = plans.filter((p) => p.status === "active").length;
-    const allGoals = plans.flatMap((p) => p.care_goals || []);
-    const achieved = allGoals.filter((g) => g.status === "achieved").length;
-    const needsReview = plans.filter((p) => {
-      const d = daysUntil(p.next_review_date);
-      return d !== null && d <= 30 && p.status === "active";
-    }).length;
-    return { active, totalGoals: allGoals.length, achieved, needsReview };
-  }, [plans]);
-
-  // ── Handlers ──────────────────────────────────────────
-  const handleActivatePlan = async (plan: CarePlan) => {
-    if (!orgId) return;
-    await updateCarePlanAction(plan.id, { status: "active" });
-    fetchPlans(orgId);
-  };
-
-  const handleArchivePlan = async (plan: CarePlan) => {
-    if (!orgId) return;
-    await updateCarePlanAction(plan.id, { status: "archived" });
-    setSelectedPlanId(null);
-    fetchPlans(orgId);
-  };
-
-  const handleAddGoal = async () => {
-    if (!orgId || !selectedPlan || !newGoalTitle.trim()) return;
-    await createCareGoalAction({
-      care_plan_id: selectedPlan.id,
-      organization_id: orgId,
-      participant_id: selectedPlan.participant_id,
-      title: newGoalTitle.trim(),
-      description: newGoalDescription.trim() || null,
-      priority: 1,
-      milestones: [],
-    });
-    setNewGoalTitle("");
-    setNewGoalDescription("");
-    setShowAddGoal(false);
-    fetchPlans(orgId);
-  };
-
-  const handleUpdateGoalStatus = async (goalId: string, status: string) => {
-    if (!orgId) return;
-    await updateCareGoalAction(goalId, { status });
-    fetchPlans(orgId);
-  };
-
-  // ── Compliance stats (derived from mock data) ─────────
-  const complianceStats = useMemo(() => {
-    const fatigueAtRisk = MOCK_WORKERS.filter((w) => w.fatigueRisk === "high").length;
-    const overtimeWorkers = MOCK_WORKERS.filter((w) => w.overtime).length;
-    const underMinimum = MOCK_WORKERS.filter((w) => !w.minEngagementMet).length;
-    const avgHours = MOCK_WORKERS.reduce((a, w) => a + w.hoursThisWeek, 0) / MOCK_WORKERS.length;
-    return { fatigueAtRisk, overtimeWorkers, underMinimum, avgHours: avgHours.toFixed(1) };
-  }, []);
-
-  return (
-    <div className="flex h-full flex-col bg-[var(--background)]">
-      {/* Noise overlay */}
-      <div className="stealth-noise" />
-
-      {/* Neutral radial glow */}
-      <div
-        className="pointer-events-none absolute top-0 left-0 right-0 h-64"
-        style={{
-          background:
-            "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)",
-        }}
-      />
-
-      {/* ── Sticky Header ───────────────────────────────────── */}
-      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-5 py-2.5">
-          <div>
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
-              <span>Dashboard</span>
-              <ChevronRight className="w-3 h-3" />
-              <span className="text-zinc-300">Care Plans</span>
-            </div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mt-1">
-              CARE PLANS
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Tab Bar ─────────────────────────────────────────── */}
-      <div className="flex items-center border-b border-white/[0.06] bg-[var(--surface-1)] px-5">
-        <div className="flex items-center gap-1 py-1.5">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] transition-colors duration-150 ${
-                tab === t.id
-                  ? "font-medium text-white"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              {tab === t.id && (
-                <motion.div
-                  layoutId="roster-tab-pill"
-                  className="absolute inset-0 rounded-md bg-white/[0.06]"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              <span className="relative flex items-center gap-1.5">
-                {t.icon}
-                {t.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Content ──────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto scrollbar-none">
-        <AnimatePresence mode="wait">
-          {tab === "care-plans" ? (
-            <motion.div
-              key="care-plans"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="relative"
-            >
-              <_CarePlansTab
-                plans={filteredPlans}
-                loading={plansLoading}
-                stats={stats}
-                planFilter={planFilter}
-                setPlanFilter={setPlanFilter}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                selectedPlanId={selectedPlanId}
-                setSelectedPlanId={setSelectedPlanId}
-              />
-
-              {/* Detail slide-over */}
-              <AnimatePresence>
-                {selectedPlan && (
-                  <_PlanDetailPanel
-                    plan={selectedPlan}
-                    onClose={() => setSelectedPlanId(null)}
-                    onActivate={() => handleActivatePlan(selectedPlan)}
-                    onArchive={() => handleArchivePlan(selectedPlan)}
-                    showAddGoal={showAddGoal}
-                    setShowAddGoal={setShowAddGoal}
-                    newGoalTitle={newGoalTitle}
-                    setNewGoalTitle={setNewGoalTitle}
-                    newGoalDescription={newGoalDescription}
-                    setNewGoalDescription={setNewGoalDescription}
-                    onAddGoal={handleAddGoal}
-                    onUpdateGoalStatus={handleUpdateGoalStatus}
-                  />
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="shift-compliance"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <_ShiftComplianceTab stats={complianceStats} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
- * Tab: Care Plans
- * ═══════════════════════════════════════════════════════════════════════════════ */
-
-function _CarePlansTab({
-  plans,
-  loading,
-  stats,
-  planFilter,
-  setPlanFilter,
-  searchQuery,
-  setSearchQuery,
-  selectedPlanId,
-  setSelectedPlanId,
-}: {
-  plans: CarePlan[];
-  loading: boolean;
-  stats: { active: number; totalGoals: number; achieved: number; needsReview: number };
-  planFilter: PlanFilter;
-  setPlanFilter: (f: PlanFilter) => void;
-  searchQuery: string;
-  setSearchQuery: (q: string) => void;
-  selectedPlanId: string | null;
-  setSelectedPlanId: (id: string | null) => void;
-}) {
-  return (
-    <div className="p-5">
-      {/* Stats row */}
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-      >
-        {[
-          { label: "Active Plans", value: stats.active, icon: <FileText className="h-4 w-4" />, accent: "text-emerald-400", bg: "bg-emerald-500/10" },
-          { label: "Total Goals", value: stats.totalGoals, icon: <Target className="h-4 w-4" />, accent: "text-zinc-300", bg: "bg-white/[0.06]" },
-          { label: "Goals Achieved", value: stats.achieved, icon: <CheckCircle2 className="h-4 w-4" />, accent: "text-sky-400", bg: "bg-sky-500/10" },
-          { label: "Needs Review", value: stats.needsReview, icon: <AlertTriangle className="h-4 w-4" />, accent: "text-amber-400", bg: "bg-amber-500/10" },
-        ].map((s) => (
-          <motion.div
-            key={s.label}
-            variants={fadeIn}
-            className="r-card border border-white/[0.06] bg-white/[0.02] p-4"
-            style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-          >
-            <div className="flex items-center gap-2">
-              <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${s.bg} ${s.accent}`}>
-                {s.icon}
-              </div>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{s.label}</span>
-            </div>
-            <p className={`mt-2 font-mono text-[28px] font-semibold tracking-tighter ${s.accent}`}>{s.value}</p>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Filter + Search row */}
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-1">
-          {FILTER_OPTIONS.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setPlanFilter(f.id)}
-              className={`relative rounded-md px-3 py-1.5 text-[12px] font-medium transition-all ${
-                planFilter === f.id
-                  ? "text-white"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              {planFilter === f.id && (
-                <motion.div
-                  layoutId="plan-filter-pill"
-                  className="absolute inset-0 rounded-md bg-white/[0.06]"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              <span className="relative">{f.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
-          <input
-            type="text"
-            placeholder="Search plans, assessors, domains..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.04] pl-9 pr-4 text-[13px] text-white placeholder-zinc-600 outline-none transition-colors focus:border-white/[0.15] focus:bg-white/[0.06] sm:w-72"
-          />
-        </div>
-      </div>
-
-      {/* Plan cards list */}
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate="visible"
-        className="mt-5 space-y-3"
-      >
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)]/30 border-t-[var(--brand)]" />
-          </div>
-        ) : plans.length === 0 ? (
-          <motion.div variants={fadeIn} className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.06] text-zinc-400">
-              <FileText className="h-7 w-7" />
-            </div>
-            <p className="mt-4 text-[13px] font-medium text-zinc-300">No care plans found</p>
-            <p className="mt-1 text-[12px] text-zinc-600">
-              {planFilter !== "all" ? "Try changing the filter or search query" : "Care plans will appear here once created"}
-            </p>
-          </motion.div>
-        ) : (
-          plans.map((plan) => (
-            <_CarePlanCard
-              key={plan.id}
-              plan={plan}
-              isSelected={selectedPlanId === plan.id}
-              onSelect={() => setSelectedPlanId(selectedPlanId === plan.id ? null : plan.id)}
-            />
-          ))
-        )}
-      </motion.div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
- * Care Plan Card
- * ═══════════════════════════════════════════════════════════════════════════════ */
-
-function _CarePlanCard({
+function CarePlanCard({
   plan,
   isSelected,
   onSelect,
@@ -499,113 +151,128 @@ function _CarePlanCard({
 
   return (
     <motion.button
-      variants={fadeIn}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease }}
       onClick={onSelect}
-      className={`group w-full rounded-xl border text-left transition-all ${
+      className={`group w-full text-left transition-all r-card p-4 ${
         isSelected
-          ? "border-white/[0.12] bg-white/[0.04]"
-          : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.08] hover:bg-white/[0.03]"
+          ? "border border-white/[0.12] bg-white/[0.04]"
+          : "border border-white/[0.06] bg-white/[0.02] hover:border-white/[0.08] hover:bg-white/[0.03]"
       }`}
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
     >
-      <div className="p-4">
-        {/* Top row: title + status */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2.5">
-              <h3 className="truncate text-[13px] font-medium text-white">{plan.title}</h3>
-              <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusCfg.bg} ${statusCfg.color}`}>
-                {statusCfg.label}
-              </span>
-            </div>
-
-            {/* Assessor */}
-            {plan.assessor_name && (
-              <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]">
-                <User className="h-3 w-3" />
-                <span>{plan.assessor_name}</span>
-                {plan.assessor_role && (
-                  <span className="text-zinc-600">· {plan.assessor_role}</span>
-                )}
-              </div>
-            )}
+      {/* Top row: status pill + title */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2.5">
+            <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
+              {statusCfg.label}
+            </span>
+            <h3 className="truncate text-[13px] font-medium text-white">{plan.title}</h3>
           </div>
 
-          <ChevronRight
-            className={`h-4 w-4 shrink-0 text-zinc-600 transition-transform ${
-              isSelected ? "rotate-90 text-zinc-300" : "group-hover:translate-x-0.5"
-            }`}
-          />
-        </div>
-
-        {/* Middle: goals progress */}
-        <div className="mt-3 flex items-center gap-3">
-          <div className="flex-1">
-            <div className="flex items-center justify-between text-[12px]">
-              <span className="text-[var(--text-muted)]">
-                {progress.total === 0
-                  ? "No goals defined"
-                  : `${progress.inProgress} of ${progress.total} goals in progress`}
-              </span>
-              {progress.total > 0 && (
-                <span className="font-mono text-[10px] text-zinc-300">{progress.pct}%</span>
+          {/* Participant info */}
+          {plan.assessor_name && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]">
+              <User className="h-3 w-3" />
+              <span>{plan.assessor_name}</span>
+              {plan.assessor_role && (
+                <span className="text-zinc-600">· {plan.assessor_role}</span>
               )}
             </div>
+          )}
+        </div>
+
+        <ChevronRight
+          className={`h-4 w-4 shrink-0 text-zinc-600 transition-transform ${
+            isSelected ? "rotate-90 text-zinc-300" : "group-hover:translate-x-0.5"
+          }`}
+        />
+      </div>
+
+      {/* Dates */}
+      <div className="mt-3 flex items-center gap-4 text-[11px] text-[var(--text-muted)]">
+        {plan.start_date && (
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            <span>Start: {formatDate(plan.start_date)}</span>
+          </div>
+        )}
+        {plan.next_review_date && (
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            <span>Review: {formatDate(plan.next_review_date)}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Goals progress */}
+      <div className="mt-3 flex items-center gap-3">
+        <div className="flex-1">
+          <div className="flex items-center justify-between text-[12px]">
+            <span className="text-[var(--text-muted)]">
+              {progress.total === 0
+                ? "No goals defined"
+                : `${progress.achieved} of ${progress.total} goals achieved`}
+            </span>
             {progress.total > 0 && (
-              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/[0.05]">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress.pct}%` }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="h-full rounded-full bg-[var(--brand)]"
-                />
-              </div>
+              <span className="font-mono text-[10px] text-zinc-300">{progress.pct}%</span>
             )}
           </div>
+          {progress.total > 0 && (
+            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/[0.05]">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress.pct}%` }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="h-full rounded-full bg-[var(--brand)]"
+              />
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Bottom: review date + domain tags */}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {/* Review countdown */}
-          {reviewDays !== null && (
-            <span
-              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium ${
-                reviewDays <= 14
-                  ? "bg-rose-500/10 text-rose-400"
-                  : reviewDays <= 30
+      {/* Review countdown + domain tags */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {reviewDays !== null && (
+          <span
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium ${
+              reviewDays <= 14
+                ? "bg-rose-500/10 text-rose-400"
+                : reviewDays <= 30
                   ? "bg-amber-500/10 text-amber-400"
                   : "bg-zinc-500/10 text-zinc-400"
-              }`}
-            >
-              <Calendar className="h-2.5 w-2.5" />
-              Review in {reviewDays}d
-            </span>
-          )}
+            }`}
+          >
+            <Calendar className="h-2.5 w-2.5" />
+            Review in {reviewDays}d
+          </span>
+        )}
 
-          {/* Domain tags */}
-          {domains.slice(0, 3).map((d) => (
-            <span
-              key={d}
-              className={`rounded-md border px-2 py-0.5 text-[10px] font-medium ${
-                DOMAIN_COLORS[d] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
-              }`}
-            >
-              {domainLabel(d)}
-            </span>
-          ))}
-          {domains.length > 3 && (
-            <span className="text-[10px] text-zinc-600">+{domains.length - 3} more</span>
-          )}
-        </div>
+        {domains.slice(0, 3).map((d) => (
+          <span
+            key={d}
+            className={`rounded-md border px-2 py-0.5 text-[10px] font-medium ${
+              DOMAIN_COLORS[d] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+            }`}
+          >
+            {domainLabel(d)}
+          </span>
+        ))}
+        {domains.length > 3 && (
+          <span className="text-[10px] text-zinc-600">+{domains.length - 3} more</span>
+        )}
       </div>
     </motion.button>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
- * Plan Detail Panel (slide-in)
- * ═══════════════════════════════════════════════════════════════════════════════ */
+   Plan Detail Panel (slide-over from right)
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-function _PlanDetailPanel({
+function PlanDetailPanel({
   plan,
   onClose,
   onActivate,
@@ -649,7 +316,7 @@ function _PlanDetailPanel({
       <div className="flex items-start justify-between border-b border-white/[0.06] p-5">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5">
-            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusCfg.bg} ${statusCfg.color}`}>
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
               {statusCfg.label}
             </span>
             <span className="text-[10px] text-zinc-600">
@@ -667,7 +334,7 @@ function _PlanDetailPanel({
           onClick={onClose}
           className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-white"
         >
-          ✕
+          <X className="h-4 w-4" />
         </button>
       </div>
 
@@ -676,13 +343,13 @@ function _PlanDetailPanel({
         {/* Dates row */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Start Date", value: formatDate(plan.start_date), icon: <Calendar className="h-3 w-3" /> },
-            { label: "Last Review", value: formatDate(plan.review_date), icon: <Clock className="h-3 w-3" /> },
-            { label: "Next Review", value: formatDate(plan.next_review_date), icon: <AlertTriangle className="h-3 w-3" /> },
+            { label: "Start Date", value: formatDate(plan.start_date), icon: Calendar },
+            { label: "Last Review", value: formatDate(plan.review_date), icon: Clock },
+            { label: "Next Review", value: formatDate(plan.next_review_date), icon: AlertTriangle },
           ].map((d) => (
             <div key={d.label} className="r-card border border-white/[0.06] bg-white/[0.02] p-3" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
               <div className="flex items-center gap-1.5 text-zinc-600">
-                {d.icon}
+                <d.icon className="h-3 w-3" />
                 <span className="font-mono text-[10px] font-bold uppercase tracking-widest">{d.label}</span>
               </div>
               <p className="mt-1 text-[12px] font-medium text-zinc-300">{d.value}</p>
@@ -728,7 +395,7 @@ function _PlanDetailPanel({
             </h4>
             <button
               onClick={() => setShowAddGoal(!showAddGoal)}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-zinc-300 transition-colors hover:bg-white/[0.08]"
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium bg-white/[0.04] text-zinc-300 transition-colors hover:bg-white/[0.08]"
             >
               <Zap className="h-3 w-3" />
               Add Goal
@@ -742,6 +409,7 @@ function _PlanDetailPanel({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease }}
                 className="mt-3 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.03] p-3"
               >
                 <input
@@ -778,7 +446,7 @@ function _PlanDetailPanel({
             )}
           </AnimatePresence>
 
-          {/* Goals list */}
+          {/* Goals list with status, priority, milestones */}
           <div className="mt-3 space-y-2">
             {goals.length === 0 ? (
               <p className="py-6 text-center text-[12px] text-zinc-600">No goals defined for this plan</p>
@@ -821,19 +489,34 @@ function _PlanDetailPanel({
                       </div>
                     </div>
 
-                    {/* Milestones */}
+                    {/* Milestones — checkbox style with date */}
                     {milestonesTotal > 0 && (
-                      <div className="mt-2">
+                      <div className="mt-2.5 space-y-1.5">
                         <div className="flex items-center justify-between text-[10px] text-zinc-600">
                           <span>Milestones</span>
                           <span className="font-mono">{milestonesDone}/{milestonesTotal}</span>
                         </div>
-                        <div className="mt-1 h-0.5 overflow-hidden rounded-full bg-white/[0.05]">
-                          <div
-                            className="h-full rounded-full bg-[var(--brand)]"
-                            style={{ width: `${milestonesTotal > 0 ? (milestonesDone / milestonesTotal) * 100 : 0}%` }}
-                          />
-                        </div>
+                        {goal.milestones?.map((ms, msIdx) => (
+                          <div key={msIdx} className="flex items-center gap-2 py-0.5">
+                            <div
+                              className={`h-3.5 w-3.5 rounded-[4px] border flex items-center justify-center flex-shrink-0 ${
+                                ms.achieved
+                                  ? "bg-[var(--brand)] border-[var(--brand)]"
+                                  : "border-zinc-600 bg-transparent"
+                              }`}
+                            >
+                              {ms.achieved && <CheckCircle2 className="h-2.5 w-2.5 text-white" />}
+                            </div>
+                            <span className={`text-[11px] flex-1 ${ms.achieved ? "text-zinc-500 line-through" : "text-zinc-300"}`}>
+                              {ms.title}
+                            </span>
+                            {ms.target_date && (
+                              <span className="font-mono text-[10px] text-zinc-600 tabular-nums">
+                                {formatDate(ms.target_date)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
 
@@ -877,7 +560,7 @@ function _PlanDetailPanel({
         {plan.status !== "archived" && (
           <button
             onClick={onArchive}
-            className="flex items-center justify-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:border-rose-500/20 hover:text-rose-400"
+            className="flex items-center justify-center gap-2 rounded-lg bg-white/[0.04] border border-white/[0.06] px-4 py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:border-rose-500/20 hover:text-rose-400 hover:bg-white/[0.08]"
           >
             Archive
           </button>
@@ -888,128 +571,189 @@ function _PlanDetailPanel({
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
- * Tab: Shift Compliance
- * ═══════════════════════════════════════════════════════════════════════════════ */
+   Care Plans Tab
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-function _ShiftComplianceTab({
-  stats,
+function CarePlansTab({
+  plans,
+  loading,
+  planFilter,
+  setPlanFilter,
+  searchQuery,
+  setSearchQuery,
+  selectedPlanId,
+  setSelectedPlanId,
 }: {
-  stats: { fatigueAtRisk: number; overtimeWorkers: number; underMinimum: number; avgHours: string };
+  plans: CarePlan[];
+  loading: boolean;
+  planFilter: PlanFilter;
+  setPlanFilter: (f: PlanFilter) => void;
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  selectedPlanId: string | null;
+  setSelectedPlanId: (id: string | null) => void;
 }) {
-  const [expandedRule, setExpandedRule] = useState<string | null>(null);
-
   return (
     <div className="p-5">
-      {/* Compliance Summary */}
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={stagger}
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-zinc-300">
-            <Shield className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="text-[13px] font-semibold text-white">SCHADS Award Compliance</h2>
-            <p className="text-[11px] text-[var(--text-muted)]">Real-time workforce monitoring against Social, Community, Home Care and Disability Services Industry Award</p>
-          </div>
-        </div>
-
-        {/* Alert summary cards */}
-        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
-            {
-              label: "Fatigue Risk",
-              value: stats.fatigueAtRisk,
-              sublabel: "workers at risk",
-              icon: <AlertTriangle className="h-4 w-4" />,
-              accent: stats.fatigueAtRisk > 0 ? "text-rose-400" : "text-emerald-400",
-              bg: stats.fatigueAtRisk > 0 ? "bg-rose-500/10" : "bg-emerald-500/10",
-              description: "10-hour break rule violations",
-            },
-            {
-              label: "Overtime",
-              value: stats.overtimeWorkers,
-              sublabel: "on overtime",
-              icon: <Clock className="h-4 w-4" />,
-              accent: stats.overtimeWorkers > 0 ? "text-amber-400" : "text-emerald-400",
-              bg: stats.overtimeWorkers > 0 ? "bg-amber-500/10" : "bg-emerald-500/10",
-              description: ">38hrs this week",
-            },
-            {
-              label: "Minimum Engagement",
-              value: stats.underMinimum,
-              sublabel: "under minimum",
-              icon: <Users className="h-4 w-4" />,
-              accent: stats.underMinimum > 0 ? "text-amber-400" : "text-emerald-400",
-              bg: stats.underMinimum > 0 ? "bg-amber-500/10" : "bg-emerald-500/10",
-              description: "Shifts < 2hr minimum",
-            },
-            {
-              label: "Avg Hours",
-              value: stats.avgHours,
-              sublabel: "per worker/week",
-              icon: <TrendingUp className="h-4 w-4" />,
-              accent: "text-zinc-300",
-              bg: "bg-white/[0.06]",
-              description: "Across active roster",
-            },
-          ].map((card) => (
-            <motion.div
-              key={card.label}
-              variants={fadeIn}
-              className="r-card border border-white/[0.06] bg-white/[0.02] p-4"
-              style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+      {/* ── Filter row: status filter pills ───── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-1.5">
+          {FILTER_OPTIONS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setPlanFilter(f.id)}
+              className={`relative rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                planFilter === f.id
+                  ? "bg-white/[0.06] text-white border border-white/[0.08]"
+                  : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] border border-transparent"
+              }`}
             >
-              <div className="flex items-center gap-2">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${card.bg} ${card.accent}`}>
-                  {card.icon}
-                </div>
-                <div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{card.label}</span>
-                </div>
-              </div>
-              <p className={`mt-2 font-mono text-[28px] font-semibold tracking-tighter ${card.accent}`}>{card.value}</p>
-              <p className="text-[10px] text-zinc-600">{card.sublabel}</p>
-              <p className="mt-1 text-[10px] text-zinc-600">{card.description}</p>
-            </motion.div>
+              {f.label}
+            </button>
           ))}
         </div>
-      </motion.div>
 
-      {/* Worker Compliance Table */}
+        {/* Stealth search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
+          <input
+            type="text"
+            placeholder="Search plans, assessors, domains..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.04] pl-9 pr-4 text-[13px] text-white placeholder-zinc-600 outline-none transition-colors focus:border-white/[0.15] focus:bg-white/[0.06] sm:w-72 font-mono"
+          />
+        </div>
+      </div>
+
+      {/* ── Plan cards grid (2 columns) ───── */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)]/30 border-t-[var(--brand)]" />
+        </div>
+      ) : plans.length === 0 ? (
+        <div className="stealth-empty-state mt-12">
+          <div className="relative mb-6">
+            <div className="animate-zen-ring absolute inset-0 rounded-full border border-zinc-800" />
+            <div className="stealth-empty-state-icon animate-zen-breathe">
+              <FileText className="w-5 h-5 text-zinc-600" />
+            </div>
+          </div>
+          <h3 className="stealth-empty-state-title">No care plans found</h3>
+          <p className="stealth-empty-state-desc">
+            {planFilter !== "all" ? "Try changing the filter or search query" : "Care plans will appear here once created"}
+          </p>
+        </div>
+      ) : (
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+          {plans.map((plan) => (
+            <CarePlanCard
+              key={plan.id}
+              plan={plan}
+              isSelected={selectedPlanId === plan.id}
+              onSelect={() => setSelectedPlanId(selectedPlanId === plan.id ? null : plan.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCHADS Compliance Tab
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+function SCHADSComplianceTab() {
+  const [expandedRule, setExpandedRule] = useState<string | null>(null);
+
+  /* ── Compliance stats from mock data ───── */
+  const complianceStats = useMemo(() => {
+    const fatigueAtRisk = MOCK_WORKERS.filter((w) => w.fatigueRisk === "high").length;
+    const overtimeHours = MOCK_WORKERS.filter((w) => w.overtime).reduce((a, w) => a + Math.max(0, w.hoursThisWeek - 38), 0);
+    const minEngagementViolations = MOCK_WORKERS.filter((w) => w.hoursThisWeek > 0 && w.hoursThisWeek < 2).length;
+    return { fatigueAtRisk, overtimeHours: overtimeHours.toFixed(1), minEngagementViolations };
+  }, []);
+
+  return (
+    <div className="p-5 space-y-6">
+      {/* ── Summary Metrics: 3 cards ───── */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          {
+            label: "Fatigue Risk",
+            value: complianceStats.fatigueAtRisk,
+            subtitle: "workers at risk (10hr break rule)",
+            icon: AlertTriangle,
+            color: complianceStats.fatigueAtRisk > 0 ? "text-rose-400" : "text-emerald-400",
+          },
+          {
+            label: "Overtime Hours",
+            value: `${complianceStats.overtimeHours}h`,
+            subtitle: "total overtime this week (>38hrs)",
+            icon: Clock,
+            color: Number(complianceStats.overtimeHours) > 0 ? "text-amber-400" : "text-emerald-400",
+          },
+          {
+            label: "Min Engagement",
+            value: complianceStats.minEngagementViolations,
+            subtitle: "violations (<2hr shifts)",
+            icon: Users,
+            color: complianceStats.minEngagementViolations > 0 ? "text-amber-400" : "text-emerald-400",
+          },
+        ].map((card, idx) => (
+          <motion.div
+            key={card.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.06, duration: 0.4, ease }}
+            className="r-card border border-white/[0.06] bg-white/[0.02] p-5"
+            style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+                {card.label}
+              </p>
+            </div>
+            <p className={`font-mono text-[28px] font-semibold tabular-nums tracking-tighter ${card.color}`}>
+              {card.value}
+            </p>
+            <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+              {card.subtitle}
+            </p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ── Workforce Compliance Table ───── */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="mt-8"
+        transition={{ delay: 0.2, duration: 0.5, ease }}
+        className="r-card border border-white/[0.06] bg-white/[0.02] overflow-hidden"
+        style={{ boxShadow: "var(--shadow-inset-bevel)" }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <h3 className="text-[13px] font-semibold text-white">Workforce Compliance — This Week</h3>
-            <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-zinc-300">
-              {MOCK_WORKERS.length} workers
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-zinc-600" />
-            <span className="text-[10px] text-zinc-600">All roles</span>
-          </div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05]">
+          <h3 className="text-[13px] font-semibold text-zinc-200">
+            Workforce Compliance — This Week
+          </h3>
+          <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-zinc-300">
+            {MOCK_WORKERS.length} workers
+          </span>
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-xl border border-white/[0.06]">
-          {/* Table header */}
-          <div className="grid grid-cols-12 gap-2 border-b border-white/[0.05] bg-[var(--surface-1)] px-4 py-2.5">
-            <div className="col-span-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Worker</div>
-            <div className="col-span-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Role</div>
-            <div className="col-span-1 text-center font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Hours</div>
-            <div className="col-span-2 text-center font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Fatigue</div>
-            <div className="col-span-1 text-center font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">OT</div>
-            <div className="col-span-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Location</div>
-          </div>
+        {/* Table header */}
+        <div className="grid grid-cols-[1fr_60px_80px_100px_80px] items-center gap-3 px-5 py-2.5 border-b border-white/[0.04] bg-[var(--surface-1)]">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Worker</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Days</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Hours</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Break</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-center">Status</span>
+        </div>
 
-          {/* Table rows */}
+        {/* Table rows */}
+        <div className="divide-y divide-white/[0.03]">
           {MOCK_WORKERS.map((worker, i) => {
             const fatigue = FATIGUE_CONFIG[worker.fatigueRisk];
             return (
@@ -1018,65 +762,65 @@ function _ShiftComplianceTab({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.02 * i }}
-                className={`grid grid-cols-12 gap-2 border-b border-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.02] ${
+                className={`grid grid-cols-[1fr_60px_80px_100px_80px] items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02] ${
                   worker.fatigueRisk === "high" ? "bg-rose-500/[0.02]" : ""
                 }`}
               >
-                {/* Name */}
-                <div className="col-span-3 flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.05] text-[10px] font-semibold text-zinc-400">
+                {/* Worker */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.05] text-[10px] font-semibold text-zinc-400 flex-shrink-0">
                     {worker.name.split(" ").map((n) => n[0]).join("")}
                   </div>
-                  <div>
-                    <p className="text-[12px] font-medium text-white">{worker.name}</p>
-                    <p className="text-[10px] text-zinc-600">{worker.shiftsToday} shifts today</p>
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-medium text-white truncate">{worker.name}</p>
+                    <p className="text-[10px] text-zinc-600 truncate">{worker.role}</p>
                   </div>
                 </div>
 
-                {/* Role */}
-                <div className="col-span-2 flex items-center">
-                  <span className="text-[12px] text-zinc-400">{worker.role}</span>
+                {/* Consecutive Days */}
+                <div className="flex items-center justify-center">
+                  <span className={`font-mono text-[12px] font-medium ${worker.consecutiveDays >= 6 ? "text-rose-400" : worker.consecutiveDays >= 5 ? "text-amber-400" : "text-zinc-300"}`}>
+                    {worker.consecutiveDays}
+                  </span>
                 </div>
 
-                {/* Hours */}
-                <div className="col-span-1 flex items-center justify-center">
+                {/* Hours This Week */}
+                <div className="flex items-center justify-center">
                   <span className={`font-mono text-[12px] font-medium ${worker.hoursThisWeek > 38 ? "text-amber-400" : "text-zinc-300"}`}>
-                    {worker.hoursThisWeek}
+                    {worker.hoursThisWeek}h
                   </span>
                 </div>
 
-                {/* Fatigue status */}
-                <div className="col-span-2 flex items-center justify-center">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${fatigue.bg} ${fatigue.color}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${fatigue.dot}`} />
-                    {fatigue.label}
-                  </span>
-                </div>
-
-                {/* Overtime */}
-                <div className="col-span-1 flex items-center justify-center">
-                  {worker.overtime ? (
-                    <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-                      Yes
+                {/* Break Compliance */}
+                <div className="flex items-center justify-center">
+                  {worker.breakCompliance ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                      Compliant
                     </span>
                   ) : (
-                    <span className="text-[10px] text-zinc-600">—</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-400">
+                      <AlertTriangle className="h-2.5 w-2.5" />
+                      Violation
+                    </span>
                   )}
                 </div>
 
-                {/* Location */}
-                <div className="col-span-3 flex items-center gap-1.5">
-                  <MapPin className="h-3 w-3 shrink-0 text-zinc-600" />
-                  <span className="truncate text-[10px] text-[var(--text-muted)]">{worker.location}</span>
+                {/* Fatigue Status */}
+                <div className="flex items-center justify-center">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium ${fatigue.bg} ${fatigue.color}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${fatigue.dot}`} />
+                    {fatigue.label}
+                  </span>
                 </div>
               </motion.div>
             );
           })}
         </div>
 
-        {/* Compliance legend */}
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          {(Object.entries(FATIGUE_CONFIG) as [keyof typeof FATIGUE_CONFIG, typeof FATIGUE_CONFIG[keyof typeof FATIGUE_CONFIG]][]).map(([key, cfg]) => (
+        {/* Legend */}
+        <div className="px-5 py-2.5 border-t border-white/[0.05] flex flex-wrap items-center gap-4">
+          {(Object.entries(FATIGUE_CONFIG) as [keyof typeof FATIGUE_CONFIG, (typeof FATIGUE_CONFIG)[keyof typeof FATIGUE_CONFIG]][]).map(([key, cfg]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
               <span className="text-[10px] text-[var(--text-muted)]">{cfg.label}</span>
@@ -1089,32 +833,31 @@ function _ShiftComplianceTab({
         </div>
       </motion.div>
 
-      {/* SCHADS Award Rules Reference */}
+      {/* ── SCHADS Award Rules Reference (expandable accordion) ───── */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="mt-8"
+        transition={{ delay: 0.3, duration: 0.5, ease }}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 mb-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
             <Brain className="h-4 w-4" />
           </div>
           <div>
             <h3 className="text-[13px] font-semibold text-white">SCHADS Award Rules Reference</h3>
-            <p className="text-[11px] text-[var(--text-muted)]">Key compliance requirements from the Social, Community, Home Care and Disability Services Industry Award 2010</p>
+            <p className="text-[11px] text-[var(--text-muted)]">Key compliance requirements from the SCHADS Industry Award 2010</p>
           </div>
         </div>
 
-        <div className="mt-4 space-y-2">
+        <div className="space-y-2">
           {SCHADS_RULES.map((rule) => (
-            <motion.div key={rule.id} layout className="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]">
+            <div key={rule.id} className="r-card border border-white/[0.06] bg-white/[0.02] overflow-hidden" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
               <button
                 onClick={() => setExpandedRule(expandedRule === rule.id ? null : rule.id)}
                 className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-white/[0.02]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-zinc-400">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-zinc-400 flex-shrink-0">
                     <Shield className="h-3.5 w-3.5" />
                   </div>
                   <div>
@@ -1135,7 +878,7 @@ function _ShiftComplianceTab({
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.2, ease }}
                     className="overflow-hidden"
                   >
                     <div className="border-t border-white/[0.05] px-4 py-3">
@@ -1148,12 +891,12 @@ function _ShiftComplianceTab({
                   </motion.div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </div>
           ))}
         </div>
 
-        {/* Footer disclaimer */}
-        <div className="mt-6 rounded-xl border border-amber-500/10 bg-amber-500/[0.03] p-4">
+        {/* Compliance Advisory */}
+        <div className="mt-6 r-card border border-amber-500/10 bg-amber-500/[0.03] p-4">
           <div className="flex gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400/60" />
             <div>
@@ -1168,6 +911,197 @@ function _ShiftComplianceTab({
           </div>
         </div>
       </motion.div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Main Page — Archetype B
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+export default function RosterIntelligencePage() {
+  const { orgId } = useOrg();
+  const { plans, plansLoading, fetchPlans } = useCareCommandStore();
+
+  const [tab, setTab] = useState<Tab>("care-plans");
+  const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [showAddGoal, setShowAddGoal] = useState(false);
+  const [newGoalTitle, setNewGoalTitle] = useState("");
+  const [newGoalDescription, setNewGoalDescription] = useState("");
+
+  // ── Load plans ────────────────────────────────────────
+  useEffect(() => {
+    if (orgId) fetchPlans(orgId);
+  }, [orgId, fetchPlans]);
+
+  // ── Derived data ──────────────────────────────────────
+  const filteredPlans = useMemo(() => {
+    let result = plans;
+    if (planFilter !== "all") result = result.filter((p) => p.status === planFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.assessor_name?.toLowerCase().includes(q) ||
+          Object.keys(p.domains || {}).some((d) => domainLabel(d).toLowerCase().includes(q)),
+      );
+    }
+    return result;
+  }, [plans, planFilter, searchQuery]);
+
+  const selectedPlan = useMemo(() => plans.find((p) => p.id === selectedPlanId) ?? null, [plans, selectedPlanId]);
+
+  // ── Handlers ──────────────────────────────────────────
+  const handleActivatePlan = async (plan: CarePlan) => {
+    if (!orgId) return;
+    await updateCarePlanAction(plan.id, { status: "active" });
+    fetchPlans(orgId);
+  };
+
+  const handleArchivePlan = async (plan: CarePlan) => {
+    if (!orgId) return;
+    await updateCarePlanAction(plan.id, { status: "archived" });
+    setSelectedPlanId(null);
+    fetchPlans(orgId);
+  };
+
+  const handleAddGoal = async () => {
+    if (!orgId || !selectedPlan || !newGoalTitle.trim()) return;
+    await createCareGoalAction({
+      care_plan_id: selectedPlan.id,
+      organization_id: orgId,
+      participant_id: selectedPlan.participant_id,
+      title: newGoalTitle.trim(),
+      description: newGoalDescription.trim() || null,
+      priority: 1,
+      milestones: [],
+    });
+    setNewGoalTitle("");
+    setNewGoalDescription("");
+    setShowAddGoal(false);
+    fetchPlans(orgId);
+  };
+
+  const handleUpdateGoalStatus = async (goalId: string, status: string) => {
+    if (!orgId) return;
+    await updateCareGoalAction(goalId, { status });
+    fetchPlans(orgId);
+  };
+
+  return (
+    <div className="flex h-full flex-col bg-[var(--background)]">
+      {/* Noise overlay */}
+      <div className="stealth-noise" />
+
+      {/* Neutral radial glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64"
+        style={{
+          background:
+            "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)",
+        }}
+      />
+
+      {/* ── Sticky Header ───────────────────────────────────── */}
+      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-5 py-2.5">
+          <div>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1.5 text-[12px] mb-0.5">
+              <span className="text-[var(--text-muted)]">Dashboard</span>
+              <ChevronRight size={10} className="text-zinc-700" />
+              <span className="font-medium text-white">Care Plans</span>
+            </div>
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+              CARE PLANS
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tab Bar with pill animation ─────────────────────── */}
+      <div className="flex items-center gap-1 border-b border-white/[0.06] bg-[var(--surface-1)] px-5 py-1">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`relative rounded-md px-3 py-1.5 text-[12px] transition-colors ${
+              tab === t.id
+                ? "font-medium text-white"
+                : "text-[var(--text-muted)] hover:text-zinc-300"
+            }`}
+          >
+            {tab === t.id && (
+              <motion.div
+                layoutId="roster-tab-pill"
+                className="absolute inset-0 rounded-md bg-white/[0.06]"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            <span className="relative">{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Scrollable Content ──────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto scrollbar-none">
+        <AnimatePresence mode="wait">
+          {tab === "care-plans" ? (
+            <motion.div
+              key="care-plans"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.3, ease }}
+              className="relative"
+            >
+              <CarePlansTab
+                plans={filteredPlans}
+                loading={plansLoading}
+                planFilter={planFilter}
+                setPlanFilter={setPlanFilter}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                selectedPlanId={selectedPlanId}
+                setSelectedPlanId={setSelectedPlanId}
+              />
+
+              {/* Detail slide-over */}
+              <AnimatePresence>
+                {selectedPlan && (
+                  <PlanDetailPanel
+                    plan={selectedPlan}
+                    onClose={() => setSelectedPlanId(null)}
+                    onActivate={() => handleActivatePlan(selectedPlan)}
+                    onArchive={() => handleArchivePlan(selectedPlan)}
+                    showAddGoal={showAddGoal}
+                    setShowAddGoal={setShowAddGoal}
+                    newGoalTitle={newGoalTitle}
+                    setNewGoalTitle={setNewGoalTitle}
+                    newGoalDescription={newGoalDescription}
+                    setNewGoalDescription={setNewGoalDescription}
+                    onAddGoal={handleAddGoal}
+                    onUpdateGoalStatus={handleUpdateGoalStatus}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="schads-compliance"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.3, ease }}
+            >
+              <SCHADSComplianceTab />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

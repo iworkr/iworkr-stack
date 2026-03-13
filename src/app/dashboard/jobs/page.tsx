@@ -223,7 +223,7 @@ function FilterPopover({
 /* ── Lottie Empty State ──────────────────────────────── */
 
 function EmptyState({ hasFilter }: { hasFilter: boolean }) {
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -254,7 +254,9 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
         transition={{ delay: 0.3 }}
         className="text-[16px] font-semibold tracking-tight text-zinc-200"
       >
-        {hasFilter ? `No ${t("jobs")} match your filters` : `No ${t("jobs")} yet`}
+        {hasFilter
+          ? t("No jobs match your filters")
+          : t("No jobs yet")}
       </motion.h3>
       <motion.p
         initial={{ opacity: 0 }}
@@ -264,7 +266,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
       >
         {hasFilter
           ? "Try adjusting your filters or search query."
-          : `Create your first ${t("job")} to start tracking work.`}
+          : t("Create your first job to start tracking work.")}
       </motion.p>
       {!hasFilter && (
         <motion.div
@@ -272,7 +274,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <button className="mt-5 flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[12px] font-semibold text-black transition-all duration-200 hover:bg-zinc-200">
+          <button className={`mt-5 flex items-center gap-2 rounded-lg px-4 py-2 text-[12px] font-semibold transition-all duration-200 ${isCare ? "bg-blue-600 text-white hover:bg-blue-500" : "bg-white text-black hover:bg-zinc-200"}`}>
             <Plus size={14} />
             {t("Create Job")}
           </button>
@@ -280,6 +282,26 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
       )}
     </motion.div>
   );
+}
+
+/* ── Care support type helper ────────────────────────────── */
+
+const CARE_SUPPORT_TYPES = [
+  "Personal Care",
+  "Community Access",
+  "Domestic Assistance",
+  "Transport",
+  "Social Support",
+  "Meal Preparation",
+  "Behaviour Support",
+  "Allied Health",
+] as const;
+
+/** Deterministic mock support type based on job id hash */
+function getCareType(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
+  return CARE_SUPPORT_TYPES[Math.abs(hash) % CARE_SUPPORT_TYPES.length];
 }
 
 /* ── Page Component ────────────────────────────────────── */
@@ -678,9 +700,14 @@ export default function JobsPage() {
                   ))}
                 </div>
 
-                {/* Client */}
+                {/* Client / Participant */}
                 <div className="overflow-hidden px-2">
                   {job.client && <span className="block truncate text-[12px] text-zinc-500">{job.client}</span>}
+                  {isCare && (
+                    <span className="mt-0.5 inline-block truncate rounded border border-blue-500/10 bg-blue-500/[0.06] px-1.5 py-px text-[9px] font-medium text-blue-400/80">
+                      {getCareType(job.id)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Location */}

@@ -25,6 +25,7 @@ import { type IntegrationCategory } from "@/lib/integrations-data";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { ConfigPanel } from "@/components/integrations/config-panel";
 import { StripeConnectModal } from "@/components/integrations/stripe-modal";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Tab Config ───────────────────────────────────────── */
 
@@ -39,6 +40,7 @@ const tabs: { id: IntegrationsTab; label: string; icon: typeof Plug }[] = [
 ];
 
 export default function IntegrationsPage() {
+  const { t, isCare } = useIndustryLexicon();
   const {
     integrations,
     activeTab,
@@ -189,9 +191,11 @@ export default function IntegrationsPage() {
             <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
               Integrations
             </p>
-            <h1 className="text-[15px] font-medium tracking-tight text-zinc-200">Connected Tools</h1>
+            <h1 className="text-[15px] font-medium tracking-tight text-zinc-200">{t("Connected Tools")}</h1>
             <p className="mt-0.5 text-[12px] text-zinc-600">
-              Supercharge your workflow with connected tools.
+              {isCare
+                ? "Connect to PRODA, Xero, and NDIS systems."
+                : "Supercharge your workflow with connected tools."}
             </p>
           </div>
 

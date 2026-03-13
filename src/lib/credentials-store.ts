@@ -17,6 +17,7 @@ export type CredentialType =
   | "FIRST_AID"
   | "MANUAL_HANDLING"
   | "MEDICATION_COMPETENCY"
+  | "COVID_VACCINATION"
   | "CPR"
   | "DRIVERS_LICENSE"
   | "POLICE_CHECK"
@@ -55,6 +56,7 @@ const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
   FIRST_AID: "First Aid Certificate",
   MANUAL_HANDLING: "Manual Handling",
   MEDICATION_COMPETENCY: "Medication Competency",
+  COVID_VACCINATION: "COVID-19 Vaccination",
   CPR: "CPR Certificate",
   DRIVERS_LICENSE: "Driver's License",
   POLICE_CHECK: "Police Check",

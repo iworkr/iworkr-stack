@@ -51,12 +51,30 @@ const expiryStatusConfig: Record<string, { label: string; color: string; bg: str
   unknown: { label: "No Expiry", color: "text-zinc-400", bg: "bg-zinc-500/10" },
 };
 
-const credentialTypes: CredentialType[] = [
+/* ── Credential Type Lists ────────────────────────────── */
+
+/** Care-sector: prioritise compliance-critical credentials at the top */
+const careCredentialTypes: CredentialType[] = [
+  "FIRST_AID",
+  "NDIS_SCREENING",
+  "WWCC",
+  "MANUAL_HANDLING",
+  "MEDICATION_COMPETENCY",
+  "COVID_VACCINATION",
+  "POLICE_CHECK",
+  "CPR",
+  "DRIVERS_LICENSE",
+  "OTHER",
+];
+
+/** Trades: original ordering */
+const tradesCredentialTypes: CredentialType[] = [
   "NDIS_SCREENING",
   "WWCC",
   "FIRST_AID",
   "MANUAL_HANDLING",
   "MEDICATION_COMPETENCY",
+  "COVID_VACCINATION",
   "CPR",
   "DRIVERS_LICENSE",
   "POLICE_CHECK",
@@ -111,7 +129,8 @@ function UploadCredentialModal({
   onClose: () => void;
   orgId: string;
 }) {
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
+  const credentialTypes = isCare ? careCredentialTypes : tradesCredentialTypes;
   const members = useTeamStore((s) => s.members);
   const createCredential = useCredentialsStore((s) => s.createCredential);
   const uploadDocument = useCredentialsStore((s) => s.uploadDocument);
@@ -195,13 +214,15 @@ function UploadCredentialModal({
           <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
             {/* Team Member */}
             <div>
-              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">{t("Team")} Member</label>
+              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">
+                {isCare ? "Support Worker" : `${t("Team")} Member`}
+              </label>
               <select
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
                 className="w-full px-3 py-2 bg-[var(--subtle-bg)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
               >
-                <option value="">Select a team member...</option>
+                <option value="">{isCare ? "Select a support worker..." : "Select a team member..."}</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
@@ -396,7 +417,7 @@ function SummaryCards() {
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <div key={card.label} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-4">
+          <div key={card.label} className="bg-[var(--card-bg)] border border-[var(--card-border)] r-card p-4" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
             <div className="flex items-center gap-2 mb-2">
               <Icon className={`w-4 h-4 ${card.color}`} />
               <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">{card.label}</span>
@@ -413,7 +434,8 @@ function SummaryCards() {
 
 export default function CredentialsPage() {
   const { orgId } = useOrg();
-  const { t } = useIndustryLexicon();
+  const { t, isCare } = useIndustryLexicon();
+  const credentialTypes = isCare ? careCredentialTypes : tradesCredentialTypes;
   const loading = useCredentialsStore((s) => s.loading);
   const statusFilter = useCredentialsStore((s) => s.statusFilter);
   const typeFilter = useCredentialsStore((s) => s.typeFilter);
@@ -452,10 +474,14 @@ export default function CredentialsPage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="stealth-overline mb-1">COMPLIANCE</p>
-              <h1 className="text-xl font-semibold text-[var(--text-primary)]">Workforce Credentials</h1>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-500 mb-1">COMPLIANCE</p>
+              <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+                {isCare ? "Worker Credentials" : "Workforce Credentials"}
+              </h1>
               <p className="text-sm text-[var(--text-muted)] mt-1">
-                Track and manage {t("Team").toLowerCase()} member certifications, screenings, and licenses.
+                {isCare
+                  ? "Track support worker certifications, NDIS screenings, and compliance requirements."
+                  : `Track and manage ${t("Team").toLowerCase()} member certifications, screenings, and licenses.`}
               </p>
             </div>
             <button
@@ -523,10 +549,10 @@ export default function CredentialsPage() {
           </div>
 
           {/* Table */}
-          <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl overflow-hidden">
+          <div className="bg-[var(--card-bg)] border border-[var(--card-border)] r-card overflow-hidden" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
             {/* Table Header */}
             <div className="grid grid-cols-[1fr_1fr_140px_140px_120px_110px_40px] gap-4 px-5 py-3 border-b border-[var(--card-border)] text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-              <span>{t("Team")} Member</span>
+              <span>{isCare ? "Support Worker" : `${t("Team")} Member`}</span>
               <span>Credential</span>
               <span>Issued</span>
               <span>Expires</span>
@@ -557,7 +583,9 @@ export default function CredentialsPage() {
                 <p className="text-xs text-[var(--text-muted)] mt-1">
                   {statusFilter !== "all" || typeFilter !== "all" || memberFilter !== "all"
                     ? "Try adjusting your filters."
-                    : "Add team member credentials to track compliance."}
+                    : isCare
+                      ? "Add worker credentials such as NDIS Screening, First Aid, or WWCC to track compliance."
+                      : "Add team member credentials to track compliance."}
                 </p>
               </div>
             )}

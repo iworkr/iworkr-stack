@@ -32,6 +32,10 @@ import {
   Activity,
   TrendingUp,
   AlertCircle,
+  Heart,
+  Shield,
+  Pill,
+  Eye,
 } from "lucide-react";
 import { type Client, type ClientActivity, type ClientActivityLog, type ClientJob, type ClientInvoice } from "@/lib/data";
 import { InlineMap } from "@/components/maps/inline-map";
@@ -100,12 +104,8 @@ function getGradient(initials: string): string {
   return gradients[charCode % gradients.length];
 }
 
-const headerContextItems: ContextMenuItem[] = [
-  { id: "copy_email", label: "Copy Email", icon: <Copy size={13} /> },
-  { id: "copy_phone", label: "Copy Phone", icon: <Copy size={13} /> },
-  { id: "divider", label: "", divider: true },
-  { id: "archive", label: "Archive Client", icon: <Trash2 size={13} />, danger: true },
-];
+// headerContextItems are generated inside the component to access t()
+
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -148,6 +148,14 @@ export default function ClientDossierPage() {
   const params = useParams();
   const router = useRouter();
   const { t, isCare } = useIndustryLexicon();
+
+  const headerContextItems: ContextMenuItem[] = [
+    { id: "copy_email", label: "Copy Email", icon: <Copy size={13} /> },
+    { id: "copy_phone", label: "Copy Phone", icon: <Copy size={13} /> },
+    { id: "divider", label: "", divider: true },
+    { id: "archive", label: `Archive ${t("Client")}`, icon: <Trash2 size={13} />, danger: true },
+  ];
+
   const clientId = params.id as string;
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
@@ -268,14 +276,14 @@ export default function ClientDossierPage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
             <User size={20} className="text-zinc-700" />
           </div>
-          <h2 className="mb-1 text-[15px] font-medium text-zinc-300">Client not found</h2>
-          <p className="mb-4 text-[12px] text-zinc-600">This client may have been archived.</p>
+          <h2 className="mb-1 text-[15px] font-medium text-zinc-300">{t("Client")} not found</h2>
+          <p className="mb-4 text-[12px] text-zinc-600">This {t("client")} may have been archived.</p>
           <button
             onClick={() => router.push("/dashboard/clients")}
             className="flex items-center gap-1.5 rounded-md border border-white/[0.06] px-3 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-300"
           >
             <ArrowLeft size={12} />
-            Back to Clients
+            Back to {t("Clients")}
           </button>
         </div>
       </motion.div>
@@ -324,7 +332,7 @@ export default function ClientDossierPage() {
               className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-zinc-500 transition-colors hover:bg-white/[0.03] hover:text-zinc-300"
             >
               <ArrowLeft size={12} />
-              Clients
+              {t("Clients")}
             </button>
             <ChevronRight size={10} className="text-zinc-700" />
             <span className="font-medium text-zinc-300">{client.name}</span>
@@ -430,10 +438,73 @@ export default function ClientDossierPage() {
             <div className="mb-6 rounded-xl border border-[var(--border-base)] bg-white/[0.02] p-4">
               <div className="mb-1 flex items-center gap-1 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
                 <DollarSign size={9} />
-                Lifetime Value
+                {isCare ? "Total Funding" : "Lifetime Value"}
               </div>
               <AnimatedLTV value={client.lifetimeValueNum || 0} isVIP={isVIP} />
             </div>
+
+            {/* ── Care: NDIS Number ───────────────────────────── */}
+            {isCare && (
+              <div className="mb-6 rounded-xl border border-emerald-500/10 bg-emerald-500/[0.02] p-4">
+                <div className="mb-1 flex items-center gap-1 font-mono text-[9px] font-bold tracking-widest text-emerald-500/60 uppercase">
+                  <Shield size={9} />
+                  NDIS Number
+                </div>
+                <div className="font-mono text-[18px] font-semibold tabular-nums tracking-tight text-zinc-200">
+                  43{clientId.replace(/\D/g, "").slice(0, 7).padEnd(7, "0")}
+                </div>
+              </div>
+            )}
+
+            {/* ── Care: Care Plan Status ─────────────────────── */}
+            {isCare && (
+              <div className="mb-6 rounded-xl border border-[var(--border-base)] bg-white/[0.02] p-4">
+                <h4 className="mb-3 flex items-center gap-1 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+                  <Heart size={9} />
+                  Care Plan
+                </h4>
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    Active
+                  </span>
+                  <button
+                    onClick={() => router.push("/dashboard/care/roster-intelligence")}
+                    className="flex items-center gap-1 text-[10px] text-emerald-500 transition-colors hover:text-emerald-400"
+                  >
+                    View Care Plan <ExternalLink size={8} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Care: Funding Status ───────────────────────── */}
+            {isCare && (
+              <div className="mb-6 rounded-xl border border-[var(--border-base)] bg-white/[0.02] p-4">
+                <h4 className="mb-3 flex items-center gap-1 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+                  <DollarSign size={9} />
+                  Funding
+                </h4>
+                <div className="mb-2 flex items-center justify-between text-[11px]">
+                  <span className="text-zinc-500">Budget Utilization</span>
+                  <span className="font-mono text-[11px] font-medium tabular-nums text-zinc-300">65%</span>
+                </div>
+                <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "65%" }}
+                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                  />
+                </div>
+                <button
+                  onClick={() => router.push("/dashboard/care/funding-engine")}
+                  className="flex items-center gap-1 text-[10px] text-emerald-500 transition-colors hover:text-emerald-400"
+                >
+                  View Funding Details <ExternalLink size={8} />
+                </button>
+              </div>
+            )}
 
             {/* ── Location Intel ──────────────────────────────── */}
             {client.address && (
@@ -748,6 +819,48 @@ export default function ClientDossierPage() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ── Care: Clinical History ────────────────────── */}
+          {isCare && (
+            <div className="border-b border-white/[0.03] px-6 py-5">
+              <h3 className="mb-4 flex items-center gap-1.5 font-mono text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+                <Heart size={10} />
+                Clinical History
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Recent Observations */}
+                <div className="rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.01] p-4">
+                  <h4 className="mb-3 flex items-center gap-1.5 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
+                    <Eye size={10} />
+                    Recent Observations
+                  </h4>
+                  <div className="py-4 text-center">
+                    <Eye size={18} className="mx-auto mb-2 text-zinc-700" />
+                    <p className="text-[11px] text-zinc-600">No observations recorded</p>
+                  </div>
+                </div>
+
+                {/* Medications */}
+                <div className="rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.01] p-4">
+                  <h4 className="mb-3 flex items-center gap-1.5 font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
+                    <Pill size={10} />
+                    Medications
+                  </h4>
+                  <div className="py-4 text-center">
+                    <Pill size={18} className="mx-auto mb-2 text-zinc-700" />
+                    <p className="text-[11px] text-zinc-600">No medications on file</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => router.push("/dashboard/care/clinical-timeline")}
+                className="mt-3 flex items-center gap-1 text-[11px] font-medium text-emerald-500 transition-colors hover:text-emerald-400"
+              >
+                View Clinical Timeline →
+              </button>
             </div>
           )}
 
@@ -1251,6 +1364,7 @@ function NotesEditor({
   onChange: (v: string) => void;
   onSave: (notes: string) => void;
 }) {
+  const { isCare } = useIndustryLexicon();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -1269,7 +1383,7 @@ function NotesEditor({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-[10px] text-zinc-600">Client notes</span>
+        <span className="text-[10px] text-zinc-600">{isCare ? "Participant" : "Client"} notes</span>
         <AnimatePresence>
           {saving && (
             <motion.span
@@ -1292,7 +1406,7 @@ function NotesEditor({
             onSave(value);
           }
         }}
-        placeholder="Add notes about this client..."
+        placeholder={`Add notes about this ${isCare ? "participant" : "client"}...`}
         className="h-64 w-full resize-none rounded-lg border border-white/[0.04] bg-white/[0.01] p-4 text-[13px] leading-relaxed text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500/30"
       />
     </div>

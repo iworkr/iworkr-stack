@@ -66,7 +66,7 @@ interface ClaimLineItem {
 
 const BATCH_STATUS: Record<BatchStatus, { label: string; bg: string; text: string }> = {
   draft: { label: "Draft", bg: "bg-zinc-500/10", text: "text-zinc-400" },
-  submitted: { label: "Submitted", bg: "bg-[#3B82F6]/10", text: "text-[#3B82F6]" },
+  submitted: { label: "Submitted", bg: "bg-emerald-500/10", text: "text-emerald-400" },
   processing: { label: "Processing", bg: "bg-amber-500/10", text: "text-amber-400" },
   reconciled: { label: "Reconciled", bg: "bg-emerald-500/10", text: "text-emerald-400" },
   failed: { label: "Failed", bg: "bg-rose-500/10", text: "text-rose-400" },
@@ -120,7 +120,7 @@ function MetricCard({
   color: string;
 }) {
   return (
-    <div className="bg-[var(--surface-1)] border border-[var(--border-base)] rounded-xl p-5">
+    <div className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-5" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
       <div className="flex items-center gap-2 mb-3">
         <Icon className={`w-4 h-4 ${color}`} />
         <span className="text-[10px] font-mono font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
@@ -184,7 +184,7 @@ function CreateBatchModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
           <div className="flex items-center gap-2">
-            <Send className="w-4 h-4 text-[#3B82F6]" />
+            <Send className="w-4 h-4 text-emerald-400" />
             <h2 className="text-sm font-semibold text-[var(--text-primary)]">Create Claim Batch</h2>
           </div>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-white/5 text-[var(--text-muted)]">
@@ -205,7 +205,7 @@ function CreateBatchModal({
                   type="checkbox"
                   checked={selected.size === approvedLines.length}
                   onChange={toggleAll}
-                  className="accent-[#3B82F6]"
+                  className="accent-emerald-500"
                 />
                 <span className="text-xs font-medium text-[var(--text-muted)]">Select All ({approvedLines.length} items)</span>
               </div>
@@ -215,7 +215,7 @@ function CreateBatchModal({
                   onClick={() => toggleLine(line.id)}
                   className="flex items-center gap-3 px-6 py-3 border-b border-[var(--border-base)] last:border-b-0 hover:bg-white/[0.02] cursor-pointer"
                 >
-                  <input type="checkbox" checked={selected.has(line.id)} readOnly className="accent-[#3B82F6]" />
+                  <input type="checkbox" checked={selected.has(line.id)} readOnly className="accent-emerald-500" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-[var(--text-primary)] truncate">
                       {line.support_item_name || line.support_item_number}
@@ -232,14 +232,14 @@ function CreateBatchModal({
         <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--border-base)]">
           <div>
             <span className="text-xs text-[var(--text-muted)]">Total: </span>
-            <span className="text-sm font-mono font-semibold text-[#3B82F6]">{fmtCurrency(total)}</span>
+            <span className="text-sm font-mono font-semibold text-emerald-400">{fmtCurrency(total)}</span>
             <span className="text-xs text-[var(--text-muted)] ml-2">({selected.size} claims)</span>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="stealth-btn-ghost">Cancel</button>
             <button
               disabled={selected.size === 0}
-              className="stealth-btn-brand bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="stealth-btn-brand disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3.5 h-3.5" />
               Create Batch
@@ -323,7 +323,7 @@ function BatchDetail({
                   <select
                     value={resolutions[line.id] ?? ""}
                     onChange={(e) => setResolutions((p) => ({ ...p, [line.id]: e.target.value }))}
-                    className="px-2.5 py-1.5 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-xs text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+                    className="px-2.5 py-1.5 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-xs text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
                   >
                     <option value="">Select action...</option>
                     <option value="shift_oop">Shift to OOP</option>
@@ -333,7 +333,7 @@ function BatchDetail({
                 </div>
               ))}
               <div className="pt-3">
-                <button className="stealth-btn-brand bg-[#3B82F6] hover:bg-[#2563EB] w-full justify-center">
+                <button className="stealth-btn-brand w-full justify-center">
                   Apply Resolutions
                 </button>
               </div>
@@ -349,13 +349,13 @@ function BatchDetail({
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-4 px-5 py-4 border-b border-[var(--border-base)] animate-pulse">
-      <div className="w-16 h-3 rounded bg-white/5" />
-      <div className="w-20 h-3 rounded bg-white/5" />
-      <div className="w-10 h-3 rounded bg-white/5" />
-      <div className="w-20 h-3 rounded bg-white/5" />
-      <div className="w-16 h-4 rounded bg-white/5" />
-      <div className="w-6 h-6 rounded bg-white/5" />
+    <div className="flex items-center gap-4 px-5 py-4 border-b border-[var(--border-base)]">
+      <div className="w-16 h-3 rounded skeleton-shimmer" />
+      <div className="w-20 h-3 rounded skeleton-shimmer" />
+      <div className="w-10 h-3 rounded skeleton-shimmer" />
+      <div className="w-20 h-3 rounded skeleton-shimmer" />
+      <div className="w-16 h-4 rounded skeleton-shimmer" />
+      <div className="w-6 h-6 rounded skeleton-shimmer" />
     </div>
   );
 }
@@ -445,14 +445,14 @@ export default function NDISClaimsPage() {
       <div className="stealth-noise" />
       <div
         className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(59,130,246,0.03) 0%, transparent 60%)" }}
+        style={{ background: "radial-gradient(ellipse at center top, rgba(16,185,129,0.03) 0%, transparent 60%)" }}
       />
 
       <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[#3B82F6] mb-1">NDIS CLAIMS</p>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400 mb-1">NDIS CLAIMS</p>
             <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
               PRODA Reconciliation Dashboard
             </h1>
@@ -462,7 +462,7 @@ export default function NDISClaimsPage() {
           </div>
           <button
             onClick={() => setCreateOpen(true)}
-            className="stealth-btn-brand bg-[#3B82F6] hover:bg-[#2563EB]"
+            className="stealth-btn-brand"
           >
             <Plus className="w-4 h-4" />
             Create Batch
@@ -475,7 +475,7 @@ export default function NDISClaimsPage() {
             label="Total Submitted"
             value={fmtCurrency(metrics.submitted)}
             icon={Send}
-            color="text-[#3B82F6]"
+            color="text-emerald-400"
           />
           <MetricCard
             label="Awaiting Payment"
@@ -498,12 +498,12 @@ export default function NDISClaimsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search batches..."
-            className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/50"
+            className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
           />
         </div>
 
         {/* Batches Table */}
-        <div className="bg-[var(--surface-1)] border border-[var(--border-base)] rounded-xl overflow-hidden">
+        <div className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] overflow-hidden" style={{ boxShadow: "var(--shadow-inset-bevel)" }}>
           {/* Table Header */}
           <div className="grid grid-cols-[100px_120px_80px_140px_120px_60px] gap-4 px-5 py-3 border-b border-[var(--border-base)]">
             <span className="text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Batch #</span>

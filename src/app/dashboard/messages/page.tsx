@@ -28,6 +28,7 @@ import { NewMessageModal } from "@/components/messenger/new-message-modal";
 import { createClient } from "@/lib/supabase/client";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
@@ -379,6 +380,7 @@ function EmptyStateRadar() {
    ═══════════════════════════════════════════════════════════════ */
 
 export default function MessagesPage() {
+  const { t, isCare } = useIndustryLexicon();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
   const currentOrg = useAuthStore((s) => s.currentOrg);

@@ -3,19 +3,18 @@
 import { motion } from "framer-motion";
 import {
   Shield,
-  Activity,
   Heart,
   Users,
   Wallet,
-  Target,
   AlertTriangle,
   ClipboardList,
-  TrendingUp,
   Clock,
   ChevronRight,
-  Zap,
-  Brain,
   Eye,
+  FileText,
+  Calendar,
+  BadgeCheck,
+  DollarSign,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
@@ -34,12 +33,6 @@ import Link from "next/link";
 
 const EASE_STEALTH: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-const FADE_UP = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5, ease: EASE_STEALTH },
-};
-
 const MOOD_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   happy: { bg: "bg-emerald-500", text: "text-emerald-400", label: "Happy" },
   content: { bg: "bg-sky-500", text: "text-sky-400", label: "Content" },
@@ -49,6 +42,49 @@ const MOOD_COLORS: Record<string, { bg: string; text: string; label: string }> =
   sad: { bg: "bg-violet-500", text: "text-violet-400", label: "Sad" },
   agitated: { bg: "bg-orange-500", text: "text-orange-400", label: "Agitated" },
 };
+
+const NAV_ITEMS = [
+  {
+    icon: <Shield size={16} />,
+    title: "Care Command",
+    description: "Clinical timeline, observations & shift management",
+    href: "/dashboard/care/clinical-timeline",
+    color: "text-[var(--brand)]",
+    bg: "bg-[var(--ghost-emerald)]",
+  },
+  {
+    icon: <DollarSign size={16} />,
+    title: "Funding & Claims",
+    description: "Budget tracking, claims pipeline & NDIS billing",
+    href: "/dashboard/care/funding-engine",
+    color: "text-sky-400",
+    bg: "bg-sky-500/10",
+  },
+  {
+    icon: <BadgeCheck size={16} />,
+    title: "Compliance Hub",
+    description: "Sentinel alerts, credentials & audit trails",
+    href: "/dashboard/care/compliance-hub",
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+  },
+  {
+    icon: <Calendar size={16} />,
+    title: "Roster",
+    description: "SCHADS-aware scheduling & dispatch",
+    href: "/dashboard/care/roster-intelligence",
+    color: "text-violet-400",
+    bg: "bg-violet-500/10",
+  },
+  {
+    icon: <Users size={16} />,
+    title: "Participants",
+    description: "Care plans, goals & participant profiles",
+    href: "/dashboard/care/participants",
+    color: "text-rose-400",
+    bg: "bg-rose-500/10",
+  },
+];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -65,348 +101,255 @@ function _relativeTime(ts: string): string {
   return `${days}d ago`;
 }
 
-function _formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
+function _formatCurrency(cents: number): string {
+  return `$${(cents / 100).toLocaleString("en-AU", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-function _formatCurrency(n: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function _liveTimestamp(): string {
-  return new Date().toLocaleString("en-AU", {
+function _liveDate(): string {
+  return new Date().toLocaleDateString("en-AU", {
     weekday: "long",
     day: "numeric",
     month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
+    year: "numeric",
   });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// _MetricCard
+// Skeleton helpers
 // ═══════════════════════════════════════════════════════════════════════════════
 
-interface MetricCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  subStats?: { label: string; value: number; color?: string }[];
-  progress?: number; // 0-100
-  accent?: "brand" | "emerald" | "rose" | "amber";
-  glow?: boolean;
-  delay?: number;
-}
-
-function _MetricCard({
-  icon,
-  label,
-  value,
-  subStats,
-  progress,
-  accent = "brand",
-  glow = false,
-  delay = 0,
-}: MetricCardProps) {
-  const accentMap = {
-    brand: {
-      text: "text-[var(--brand)]",
-      bg: "bg-[var(--ghost-emerald)]",
-      border: "border-[var(--brand)]/20",
-      bar: "bg-[var(--brand)]",
-      glowShadow: "shadow-[var(--brand-glow)]",
-    },
-    emerald: {
-      text: "text-emerald-400",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
-      bar: "bg-emerald-500",
-      glowShadow: "shadow-[0_0_20px_-4px_rgba(16,185,129,0.15)]",
-    },
-    rose: {
-      text: "text-rose-400",
-      bg: "bg-rose-500/10",
-      border: "border-rose-500/20",
-      bar: "bg-rose-500",
-      glowShadow: "shadow-[0_0_20px_-4px_rgba(244,63,94,0.2)]",
-    },
-    amber: {
-      text: "text-amber-400",
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/20",
-      bar: "bg-amber-500",
-      glowShadow: "shadow-[0_0_20px_-4px_rgba(245,158,11,0.15)]",
-    },
-  };
-  const a = accentMap[accent];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
-      className={`r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--border-active)] ${
-        glow ? a.glowShadow : ""
-      }`}
-      style={{ boxShadow: glow ? undefined : "var(--shadow-inset-bevel)" }}
-    >
-      {/* Icon + label */}
-      <div className="mb-3 flex items-center gap-2.5">
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${a.bg} ${a.text}`}>
-          {icon}
-        </div>
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-          {label}
-        </span>
-      </div>
-
-      {/* Value */}
-      <div className="mb-1 font-mono text-[28px] font-semibold tracking-tighter text-white">
-        {typeof value === "number" ? _formatNumber(value) : value}
-      </div>
-
-      {/* Sub-stats */}
-      {subStats && subStats.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-          {subStats.map((s) => (
-            <span key={s.label} className="font-mono text-[11px] text-[var(--text-muted)]">
-              <span className={`font-medium ${s.color || "text-zinc-300"}`}>{s.value}</span>{" "}
-              {s.label}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Progress bar */}
-      {progress !== undefined && (
-        <div className="mt-3">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-              transition={{ duration: 1, ease: EASE_STEALTH, delay: delay + 0.3 }}
-              className={`h-full rounded-full ${a.bar}`}
-            />
-          </div>
-          <div className="mt-1 flex justify-between">
-            <span className="text-[10px] text-[var(--text-muted)]">0%</span>
-            <span className={`text-[10px] font-medium ${a.text}`}>{progress.toFixed(1)}%</span>
-            <span className="text-[10px] text-[var(--text-muted)]">100%</span>
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
+function _Skeleton({ className }: { className: string }) {
+  return <div className={`skeleton-shimmer rounded ${className}`} />;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// _ClinicalPulseCard
+// Row 1 — KPI Strip Cards
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function _ClinicalPulseCard({
-  clinical,
-  loading,
-  delay = 0,
-}: {
-  clinical: CareSnapshot["clinical"] | null;
-  loading: boolean;
-  delay?: number;
-}) {
-  const compliance = clinical?.mar_compliance_pct ?? 0;
-  const circumference = 2 * Math.PI * 36; // r=36
-  const strokeDashoffset = circumference - (compliance / 100) * circumference;
-
+function _ParticipantsCard({ snapshot, loading, delay }: { snapshot: CareSnapshot | null; loading: boolean; delay: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
-      className="r-card col-span-6 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
+      transition={{ delay, duration: 0.3, ease: EASE_STEALTH }}
+      className="r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--border-active)]"
       style={{ boxShadow: "var(--shadow-inset-bevel)" }}
     >
-      {/* Header */}
-      <div className="mb-4 flex items-center gap-2">
-        <Heart size={14} className="text-rose-400" />
+      <div className="mb-3 flex items-center gap-2.5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--ghost-emerald)] text-[var(--brand)]">
+          <Users size={16} />
+        </div>
         <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-          CLINICAL PULSE
+          Participants
         </span>
       </div>
-
-      {loading || !clinical ? (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="skeleton-shimmer h-24 rounded" />
-          <div className="skeleton-shimmer h-24 rounded" />
-          <div className="skeleton-shimmer col-span-2 h-16 rounded" />
-        </div>
+      {loading ? (
+        <_Skeleton className="h-8 w-16" />
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {/* MAR Compliance Ring */}
-          <div className="flex flex-col items-center justify-center rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-4">
-            <span className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-              MAR Compliance
+        <>
+          <div className="font-mono text-[28px] font-semibold tracking-tighter text-white">
+            {snapshot?.participants.active ?? 0}
+          </div>
+          <div className="mt-1 font-mono text-[11px] text-[var(--text-muted)]">
+            active participants
+          </div>
+        </>
+      )}
+    </motion.div>
+  );
+}
+
+function _ShiftsCard({ snapshot, loading, delay }: { snapshot: CareSnapshot | null; loading: boolean; delay: number }) {
+  const s = snapshot?.shifts;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3, ease: EASE_STEALTH }}
+      className="r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--border-active)]"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+    >
+      <div className="mb-3 flex items-center gap-2.5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+          <Clock size={16} />
+        </div>
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+          Today&apos;s Shifts
+        </span>
+      </div>
+      {loading ? (
+        <_Skeleton className="h-8 w-16" />
+      ) : (
+        <>
+          <div className="font-mono text-[28px] font-semibold tracking-tighter text-white">
+            {s?.today ?? 0}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+            <span className="font-mono text-[11px] text-[var(--text-muted)]">
+              <span className="font-medium text-sky-400">{s?.scheduled ?? 0}</span> scheduled
             </span>
-            <div className="relative flex h-20 w-20 items-center justify-center">
-              <svg className="h-20 w-20 -rotate-90" viewBox="0 0 80 80">
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="36"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.04)"
-                  strokeWidth="5"
-                />
-                <motion.circle
-                  cx="40"
-                  cy="40"
-                  r="36"
-                  fill="none"
-                  stroke={compliance >= 95 ? "#10B981" : compliance >= 80 ? "#F59E0B" : "#F43F5E"}
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  initial={{ strokeDashoffset: circumference }}
-                  animate={{ strokeDashoffset }}
-                  transition={{ duration: 1.2, ease: EASE_STEALTH, delay: delay + 0.2 }}
-                />
-              </svg>
-              <span className="absolute text-lg font-semibold text-white">
-                {compliance.toFixed(0)}%
+            <span className="font-mono text-[11px] text-[var(--text-muted)]">
+              <span className="font-medium text-emerald-400">{s?.in_progress ?? 0}</span> active
+            </span>
+            <span className="font-mono text-[11px] text-[var(--text-muted)]">
+              <span className="font-medium text-zinc-400">{s?.completed ?? 0}</span> done
+            </span>
+          </div>
+        </>
+      )}
+    </motion.div>
+  );
+}
+
+function _ClinicalPulseCard({ snapshot, loading, delay }: { snapshot: CareSnapshot | null; loading: boolean; delay: number }) {
+  const c = snapshot?.clinical;
+  const compliance = c?.mar_compliance_pct ?? 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3, ease: EASE_STEALTH }}
+      className="r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--border-active)]"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+    >
+      <div className="mb-3 flex items-center gap-2.5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
+          <Heart size={16} />
+        </div>
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+          Clinical Pulse
+        </span>
+      </div>
+      {loading ? (
+        <_Skeleton className="h-8 w-16" />
+      ) : (
+        <>
+          <div className="font-mono text-[28px] font-semibold tracking-tighter text-white">
+            {c?.observations_24h ?? 0}
+          </div>
+          <div className="mt-1 font-mono text-[11px] text-[var(--text-muted)]">
+            observations today
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="font-mono text-[11px] text-[var(--text-muted)]">MAR</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.04]">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, compliance)}%` }}
+                transition={{ duration: 1, ease: EASE_STEALTH, delay: delay + 0.3 }}
+                className={`h-full rounded-full ${
+                  compliance >= 95 ? "bg-emerald-500" : compliance >= 80 ? "bg-amber-500" : "bg-rose-500"
+                }`}
+              />
+            </div>
+            <span
+              className={`font-mono text-[11px] font-medium ${
+                compliance >= 95 ? "text-emerald-400" : compliance >= 80 ? "text-amber-400" : "text-rose-400"
+              }`}
+            >
+              {compliance.toFixed(0)}%
+            </span>
+          </div>
+        </>
+      )}
+    </motion.div>
+  );
+}
+
+function _BudgetCard({ snapshot, loading, delay }: { snapshot: CareSnapshot | null; loading: boolean; delay: number }) {
+  const pct = snapshot?.budget.utilization_pct ?? 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3, ease: EASE_STEALTH }}
+      className="r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--border-active)]"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+    >
+      <div className="mb-3 flex items-center gap-2.5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400">
+          <Wallet size={16} />
+        </div>
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+          Budget Utilization
+        </span>
+      </div>
+      {loading ? (
+        <_Skeleton className="h-8 w-16" />
+      ) : (
+        <>
+          <div className="font-mono text-[28px] font-semibold tracking-tighter text-white">
+            {pct.toFixed(1)}%
+          </div>
+          <div className="mt-2">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, pct)}%` }}
+                transition={{ duration: 1, ease: EASE_STEALTH, delay: delay + 0.3 }}
+                className={`h-full rounded-full ${
+                  pct > 90 ? "bg-rose-500" : pct > 75 ? "bg-amber-500" : "bg-[var(--brand)]"
+                }`}
+              />
+            </div>
+            <div className="mt-1 flex justify-between">
+              <span className="font-mono text-[10px] text-[var(--text-muted)]">
+                {_formatCurrency(snapshot?.budget.consumed ?? 0)} used
+              </span>
+              <span className="font-mono text-[10px] text-[var(--text-muted)]">
+                {_formatCurrency(snapshot?.budget.total ?? 0)} total
               </span>
             </div>
-            <span className="mt-1 font-mono text-[10px] text-[var(--text-muted)]">
-              {clinical.mar_entries_24h} entries today
-            </span>
           </div>
-
-          {/* Observations & Notes */}
-          <div className="flex flex-col gap-3">
-            {/* Observations */}
-            <div className="rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                  Observations 24h
-                </span>
-                <Eye size={12} className="text-sky-400" />
-              </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-mono text-xl font-semibold text-white">
-                  {clinical.observations_24h}
-                </span>
-                {clinical.abnormal_observations > 0 && (
-                  <span className="flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-400">
-                    <AlertTriangle size={10} />
-                    {clinical.abnormal_observations} abnormal
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Progress notes */}
-            <div className="rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                  Progress Notes 7d
-                </span>
-                <ClipboardList size={12} className="text-emerald-400" />
-              </div>
-              <div className="mt-1 font-mono text-xl font-semibold text-white">
-                {clinical.progress_notes_7d}
-              </div>
-            </div>
-          </div>
-
-          {/* Mood Distribution */}
-          <div className="col-span-2 rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3">
-            <span className="mb-2.5 block font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-              Mood Distribution
-            </span>
-            {Object.keys(clinical.mood_distribution).length === 0 ? (
-              <span className="font-mono text-[11px] text-[var(--text-muted)]">No mood data recorded yet</span>
-            ) : (
-              <div className="flex items-end gap-2">
-                {Object.entries(clinical.mood_distribution).map(([mood, count]) => {
-                  const total = Object.values(clinical.mood_distribution).reduce(
-                    (a, b) => a + b,
-                    0
-                  );
-                  const pct = total > 0 ? (count / total) * 100 : 0;
-                  const config = MOOD_COLORS[mood] || {
-                    bg: "bg-zinc-500",
-                    text: "text-zinc-400",
-                    label: mood,
-                  };
-                  return (
-                    <div key={mood} className="flex flex-1 flex-col items-center gap-1">
-                      <span className={`text-[10px] font-medium ${config.text}`}>{count}</span>
-                      <motion.div
-                        className={`w-full rounded-sm ${config.bg}`}
-                        initial={{ height: 0 }}
-                        animate={{ height: `${Math.max(4, pct * 0.5)}px` }}
-                        transition={{ duration: 0.8, ease: EASE_STEALTH, delay: delay + 0.3 }}
-                        style={{ minHeight: 4, maxHeight: 32 }}
-                      />
-                      <span className="text-[10px] capitalize text-[var(--text-muted)]">{config.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+        </>
       )}
     </motion.div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// _SentinelFeedCard
+// Row 2 — Sentinel Feed
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function _SentinelFeedCard({
+function _SentinelFeed({
   alerts,
   loading,
-  delay = 0,
+  delay,
 }: {
   alerts: SentinelAlert[];
   loading: boolean;
-  delay?: number;
+  delay: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
-      className="r-card col-span-6 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
+      transition={{ delay, duration: 0.3, ease: EASE_STEALTH }}
+      className="r-card col-span-8 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
       style={{ boxShadow: "var(--shadow-inset-bevel)" }}
     >
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Shield size={14} className="text-amber-400" />
+          <Shield size={12} className="text-amber-400" />
           <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-            LIVE SENTINEL FEED
+            Live Sentinel Feed
           </span>
         </div>
         <Link
           href="/dashboard/care/compliance-hub"
           className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] transition-colors hover:text-[var(--brand)]"
         >
-          View All
-          <ChevronRight size={12} />
+          View All <ChevronRight size={12} />
         </Link>
       </div>
 
       {loading ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="skeleton-shimmer h-12 rounded" />
+            <_Skeleton key={i} className="h-12" />
           ))}
         </div>
       ) : alerts.length === 0 ? (
@@ -430,11 +373,7 @@ function _SentinelFeedCard({
                 key={alert.id}
                 initial={{ opacity: 0, x: -4 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{
-                  delay: Math.min(idx * 0.02, 0.3),
-                  duration: 0.25,
-                  ease: EASE_STEALTH,
-                }}
+                transition={{ delay: delay + idx * 0.04, duration: 0.25, ease: EASE_STEALTH }}
                 className={`group flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
                   isCritical
                     ? "border-rose-500/10 bg-rose-500/[0.03] shadow-[0_0_12px_-2px_rgba(244,63,94,0.08)]"
@@ -444,9 +383,7 @@ function _SentinelFeedCard({
                 {/* Severity dot */}
                 <div className="mt-1.5 flex-shrink-0">
                   <span
-                    className={`block h-2 w-2 rounded-full ${sev.dot} ${
-                      isCritical ? "animate-pulse" : ""
-                    }`}
+                    className={`block h-2 w-2 rounded-full ${sev.dot} ${isCritical ? "animate-pulse" : ""}`}
                   />
                 </div>
 
@@ -462,7 +399,7 @@ function _SentinelFeedCard({
                   </div>
                   <div className="mt-1 flex items-center gap-2">
                     <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${sev.bg} ${sev.color} ${sev.border} border`}
+                      className={`rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${sev.bg} ${sev.color} ${sev.border}`}
                     >
                       {sev.label}
                     </span>
@@ -481,128 +418,140 @@ function _SentinelFeedCard({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// _QuickAccessCard
+// Row 2 — Quick Stats Panel
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function _QuickAccessCard({
-  emoji,
-  title,
-  subtitle,
-  href,
-  delay = 0,
+function _QuickStats({
+  snapshot,
+  loading,
+  delay,
 }: {
-  emoji: string;
-  title: string;
-  subtitle: string;
-  href: string;
-  delay?: number;
+  snapshot: CareSnapshot | null;
+  loading: boolean;
+  delay: number;
 }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
-      className="col-span-3"
-    >
-      <Link href={href} className="group block h-full">
-        <div
-          className="r-card flex h-full flex-col justify-between border border-[var(--border-base)] bg-[var(--surface-1)] p-4 transition-all hover:border-[var(--border-active)] hover:bg-[var(--surface-2)]"
-          style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-        >
-          <div>
-            <span className="mb-2 block text-lg">{emoji}</span>
-            <h3 className="text-[13px] font-medium text-zinc-200 group-hover:text-white">
-              {title}
-            </h3>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--text-muted)]">{subtitle}</p>
-          </div>
-          <div className="mt-3 flex items-center gap-1 text-[10px] text-[var(--text-muted)] transition-colors group-hover:text-[var(--brand)]">
-            Open
-            <ChevronRight size={10} className="transition-transform group-hover:translate-x-0.5" />
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// _StatBar
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface StatBarItem {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  color?: string;
-}
-
-function _StatBar({
-  items,
-  delay = 0,
-}: {
-  items: StatBarItem[];
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: EASE_STEALTH, delay }}
-      className="col-span-12"
-    >
-      <div
-        className="r-card flex flex-wrap items-center gap-2 border border-[var(--border-base)] bg-[var(--surface-1)] px-4 py-3"
-        style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-      >
-        {items.map((item, idx) => (
-          <div key={item.label} className="flex items-center">
-            {idx > 0 && (
-              <div className="mx-3 h-4 w-px bg-white/[0.06]" />
-            )}
-            <div className="flex items-center gap-2">
-              <span className={`${item.color || "text-[var(--text-muted)]"}`}>{item.icon}</span>
-              <span className="font-mono text-[11px] text-[var(--text-muted)]">{item.label}</span>
-              <span className="font-mono text-[12px] font-medium text-zinc-300">
-                {typeof item.value === "number" ? _formatNumber(item.value) : item.value}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// _SeverityDots — inline severity breakdown
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function _SeverityDots({
-  critical,
-  warning,
-  info,
-}: {
-  critical: number;
-  warning: number;
-  info: number;
-}) {
-  const items = [
-    { count: critical, ...SEVERITY_CONFIG.critical },
-    { count: warning, ...SEVERITY_CONFIG.warning },
-    { count: info, ...SEVERITY_CONFIG.info },
+  const stats = [
+    {
+      icon: <AlertTriangle size={13} />,
+      label: "Incidents",
+      items: [
+        { value: snapshot?.incidents.critical ?? 0, sub: "critical", color: "text-rose-400" },
+        { value: snapshot?.incidents.high ?? 0, sub: "high", color: "text-amber-400" },
+        { value: snapshot?.incidents.total ?? 0, sub: "total", color: "text-zinc-300" },
+      ],
+    },
+    {
+      icon: <BadgeCheck size={13} />,
+      label: "Credentials",
+      items: [
+        { value: snapshot?.credentials.expiring_30d ?? 0, sub: "expiring 30d", color: "text-amber-400" },
+        { value: snapshot?.credentials.expired ?? 0, sub: "expired", color: "text-rose-400" },
+      ],
+    },
+    {
+      icon: <ClipboardList size={13} />,
+      label: "Care Plans",
+      items: [
+        { value: snapshot?.care_plans.active ?? 0, sub: "active", color: "text-emerald-400" },
+        { value: snapshot?.care_plans.needs_review ?? 0, sub: "needs review", color: "text-amber-400" },
+      ],
+    },
   ];
 
   return (
-    <div className="mt-2 flex items-center gap-2.5">
-      {items.map((item) => (
-        <span key={item.label} className="flex items-center gap-1 text-[10px]">
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${item.dot}`} />
-          <span className={item.color}>{item.count}</span>
-          <span className="text-[var(--text-muted)]">{item.label.toLowerCase()}</span>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3, ease: EASE_STEALTH }}
+      className="r-card col-span-4 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+    >
+      <div className="mb-4 flex items-center gap-2">
+        <Eye size={12} className="text-[var(--brand)]" />
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+          Quick Stats
         </span>
-      ))}
-    </div>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <_Skeleton key={i} className="h-14" />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {stats.map((group) => (
+            <div
+              key={group.label}
+              className="rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3"
+            >
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-[var(--text-muted)]">{group.icon}</span>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+                  {group.label}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {group.items.map((item) => (
+                  <span key={item.sub} className="font-mono text-[11px] text-[var(--text-muted)]">
+                    <span className={`font-medium ${item.color}`}>{item.value}</span> {item.sub}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Row 3 — Quick Access Navigation Grid
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function _QuickAccessGrid({ delay }: { delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3, ease: EASE_STEALTH }}
+      className="col-span-12"
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <FileText size={12} className="text-[var(--text-muted)]" />
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+          Quick Access
+        </span>
+      </div>
+      <div className="grid grid-cols-5 gap-3">
+        {NAV_ITEMS.map((item, idx) => (
+          <Link key={item.href} href={item.href} className="group block">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: delay + idx * 0.05, duration: 0.3, ease: EASE_STEALTH }}
+              className="r-card flex h-full flex-col border border-[var(--border-base)] bg-[var(--surface-1)] p-4 transition-all hover:border-[var(--border-active)] hover:bg-[var(--surface-2)]"
+              style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+            >
+              <div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-lg ${item.bg} ${item.color}`}>
+                {item.icon}
+              </div>
+              <h3 className="text-[13px] font-medium text-zinc-200 group-hover:text-white">
+                {item.title}
+              </h3>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--text-muted)]">
+                {item.description}
+              </p>
+              <div className="mt-auto flex items-center gap-1 pt-3 text-[10px] text-[var(--text-muted)] transition-colors group-hover:text-[var(--brand)]">
+                Open <ChevronRight size={10} className="transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </motion.div>
+          </Link>
+        ))}
+      </div>
+    </motion.div>
   );
 }
 
@@ -615,23 +564,24 @@ export default function CareCommandCenterPage() {
   const snapshot = useCareCommandStore((s) => s.snapshot);
   const snapshotLoading = useCareCommandStore((s) => s.snapshotLoading);
   const fetchSnapshot = useCareCommandStore((s) => s.fetchSnapshot);
+  const fetchAlerts = useCareCommandStore((s) => s.fetchAlerts);
 
-  const [liveTime, setLiveTime] = useState<string>("");
+  const [liveDate, setLiveDate] = useState<string>("");
 
-  // Fetch snapshot on mount
+  // Fetch snapshot + alerts on mount
   useEffect(() => {
-    if (orgId) fetchSnapshot(orgId);
-  }, [orgId, fetchSnapshot]);
+    if (orgId) {
+      fetchSnapshot(orgId);
+      fetchAlerts(orgId);
+    }
+  }, [orgId, fetchSnapshot, fetchAlerts]);
 
-  // Live clock
+  // Live date
   useEffect(() => {
-    setLiveTime(_liveTimestamp());
-    const interval = setInterval(() => setLiveTime(_liveTimestamp()), 30_000);
-    return () => clearInterval(interval);
+    setLiveDate(_liveDate());
   }, []);
 
   const loading = snapshotLoading && !snapshot;
-  const s = snapshot;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render
@@ -642,12 +592,11 @@ export default function CareCommandCenterPage() {
       {/* Stealth noise overlay */}
       <div className="stealth-noise" />
 
-      {/* Radial glow — subtle white/neutral atmosphere */}
+      {/* Radial glow */}
       <div
         className="pointer-events-none absolute top-0 left-0 right-0 h-64"
         style={{
-          background:
-            "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)",
+          background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)",
         }}
       />
 
@@ -656,386 +605,57 @@ export default function CareCommandCenterPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: EASE_STEALTH }}
-        className="relative mb-8"
+        className="relative mb-6 flex items-center justify-between"
       >
-        {/* Overline */}
-        <div className="mb-1 flex items-center gap-2">
+        <div>
           <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-            CARE COMMAND CENTER
+            COMMAND CENTER
           </span>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+            Care Dashboard
+          </h1>
+          <p
+            className="mt-1 border-l-2 pl-2 text-[12px] text-[var(--text-muted)]"
+            style={{ borderColor: "var(--brand)" }}
+          >
+            {liveDate}
+            {snapshot && (
+              <>
+                {" — "}
+                <span className="text-white">{snapshot.participants.active}</span> active participants
+              </>
+            )}
+          </p>
         </div>
 
-        {/* Title */}
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
-          Care Dashboard
-        </h1>
-
-        {/* Subtitle */}
-        <p className="mt-1.5 border-l-2 border-[var(--brand)]/30 pl-2.5 text-[12px] text-[var(--text-muted)]">
-          {liveTime}
-          {s && (
-            <>
-              {" — "}
-              <span className="text-[var(--text-primary)]">{s.participants.active}</span> active participants
-            </>
-          )}
-        </p>
+        {/* Live indicator */}
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand)] opacity-40" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--brand)]" />
+          </span>
+          <span className="font-mono text-[10px] text-[var(--text-muted)]">Live</span>
+        </div>
       </motion.div>
 
       {/* ──────────────────────────── Bento Grid ───────────────────────────── */}
       <div className="relative grid grid-cols-12 gap-3">
-        {/* ═══════════ Row 1 — Key Metrics ═══════════ */}
-        {loading ? (
-          <>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
-                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-              >
-                <div className="skeleton-shimmer mb-3 h-3 w-20 rounded" />
-                <div className="skeleton-shimmer mb-2 h-8 w-16 rounded" />
-                <div className="skeleton-shimmer h-3 w-32 rounded" />
-              </div>
-            ))}
-          </>
-        ) : (
-          <>
-            {/* Active Participants */}
-            <_MetricCard
-              icon={<Users size={16} />}
-              label="Active Participants"
-              value={s?.participants.active ?? 0}
-              accent="brand"
-              delay={0.1}
-            />
+        {/* ═══════════ Row 1 — KPI Strip (4 × col-span-3) ═══════════ */}
+        <_ParticipantsCard snapshot={snapshot} loading={loading} delay={0.1} />
+        <_ShiftsCard snapshot={snapshot} loading={loading} delay={0.15} />
+        <_ClinicalPulseCard snapshot={snapshot} loading={loading} delay={0.2} />
+        <_BudgetCard snapshot={snapshot} loading={loading} delay={0.25} />
 
-            {/* Today's Shifts */}
-            <_MetricCard
-              icon={<Clock size={16} />}
-              label="Today's Shifts"
-              value={s?.shifts.today ?? 0}
-              subStats={[
-                {
-                  label: "scheduled",
-                  value: s?.shifts.scheduled ?? 0,
-                  color: "text-sky-400",
-                },
-                {
-                  label: "active",
-                  value: s?.shifts.in_progress ?? 0,
-                  color: "text-emerald-400",
-                },
-                {
-                  label: "completed",
-                  value: s?.shifts.completed ?? 0,
-                  color: "text-zinc-400",
-                },
-              ]}
-              accent="emerald"
-              delay={0.16}
-            />
-
-            {/* Sentinel Alerts */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: EASE_STEALTH, delay: 0.22 }}
-              className={`r-card col-span-3 border border-[var(--border-base)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--border-active)] ${
-                (s?.sentinel.critical ?? 0) > 0
-                  ? "shadow-[0_0_20px_-4px_rgba(244,63,94,0.15)]"
-                  : ""
-              }`}
-              style={{ boxShadow: (s?.sentinel.critical ?? 0) > 0 ? undefined : "var(--shadow-inset-bevel)" }}
-            >
-              <div className="mb-3 flex items-center gap-2.5">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                    (s?.sentinel.critical ?? 0) > 0
-                      ? "bg-rose-500/10 text-rose-400"
-                      : "bg-[var(--ghost-emerald)] text-[var(--brand)]"
-                  }`}
-                >
-                  <Shield size={16} />
-                </div>
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                  Sentinel Alerts
-                </span>
-              </div>
-              <div className="mb-1 font-mono text-[28px] font-semibold tracking-tighter text-white">
-                {s?.sentinel.total ?? 0}
-              </div>
-              <_SeverityDots
-                critical={s?.sentinel.critical ?? 0}
-                warning={s?.sentinel.warning ?? 0}
-                info={s?.sentinel.info ?? 0}
-              />
-            </motion.div>
-
-            {/* Budget Utilization */}
-            <_MetricCard
-              icon={<Wallet size={16} />}
-              label="Budget Utilization"
-              value={`${(s?.budget.utilization_pct ?? 0).toFixed(1)}%`}
-              progress={s?.budget.utilization_pct ?? 0}
-              accent={
-                (s?.budget.utilization_pct ?? 0) > 90
-                  ? "rose"
-                  : (s?.budget.utilization_pct ?? 0) > 75
-                    ? "amber"
-                    : "brand"
-              }
-              delay={0.28}
-            />
-          </>
-        )}
-
-        {/* ═══════════ Row 2 — Intelligence Panels ═══════════ */}
-        {loading ? (
-          <>
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div
-                key={i}
-                className="r-card col-span-6 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
-                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-              >
-                <div className="skeleton-shimmer mb-4 h-4 w-32 rounded" />
-                <div className="skeleton-shimmer h-56 rounded" />
-              </div>
-            ))}
-          </>
-        ) : (
-          <>
-            <_ClinicalPulseCard
-              clinical={s?.clinical ?? null}
-              loading={snapshotLoading}
-              delay={0.34}
-            />
-            <_SentinelFeedCard
-              alerts={s?.sentinel.recent ?? []}
-              loading={snapshotLoading}
-              delay={0.4}
-            />
-          </>
-        )}
-
-        {/* ═══════════ Row 3 — Quick Access ═══════════ */}
-        <_QuickAccessCard
-          emoji="📊"
-          title="Clinical Timeline"
-          subtitle="Unified patient history — observations, medications, notes"
-          href="/dashboard/care/clinical-timeline"
-          delay={0.46}
+        {/* ═══════════ Row 2 — Sentinel Feed + Quick Stats ═══════════ */}
+        <_SentinelFeed
+          alerts={snapshot?.sentinel.recent ?? []}
+          loading={loading}
+          delay={0.3}
         />
-        <_QuickAccessCard
-          emoji="🛡️"
-          title="Compliance Hub"
-          subtitle="Sentinel · Credentials · Audit trails"
-          href="/dashboard/care/compliance-hub"
-          delay={0.52}
-        />
-        <_QuickAccessCard
-          emoji="💰"
-          title="Funding Engine"
-          subtitle="Budget tracking · Claims · NDIS billing"
-          href="/dashboard/care/funding-engine"
-          delay={0.58}
-        />
-        <_QuickAccessCard
-          emoji="📋"
-          title="Roster Intelligence"
-          subtitle="SCHADS-aware scheduling & dispatch"
-          href="/dashboard/care/roster-intelligence"
-          delay={0.64}
-        />
+        <_QuickStats snapshot={snapshot} loading={loading} delay={0.35} />
 
-        {/* ═══════════ Row 4 — Quick Stats Bar ═══════════ */}
-        {loading ? (
-          <div
-            className="r-card col-span-12 border border-[var(--border-base)] bg-[var(--surface-1)] p-5"
-            style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-          >
-            <div className="skeleton-shimmer h-8 rounded" />
-          </div>
-        ) : (
-          <_StatBar
-            delay={0.7}
-            items={[
-              {
-                icon: <Target size={13} />,
-                label: "Care Plans Active",
-                value: s?.care_plans.active ?? 0,
-                color: "text-emerald-400",
-              },
-              {
-                icon: <TrendingUp size={13} />,
-                label: "Goals In Progress",
-                value: s?.care_plans.needs_review ?? 0,
-                color: "text-[var(--brand)]",
-              },
-              {
-                icon: <AlertTriangle size={13} />,
-                label: "Credentials Expiring",
-                value: s?.credentials.expiring_30d ?? 0,
-                color:
-                  (s?.credentials.expiring_30d ?? 0) > 0
-                    ? "text-amber-400"
-                    : "text-[var(--text-muted)]",
-              },
-              {
-                icon: <Zap size={13} />,
-                label: "Open Incidents",
-                value: s?.incidents.total ?? 0,
-                color:
-                  (s?.incidents.critical ?? 0) > 0
-                    ? "text-rose-400"
-                    : "text-[var(--text-muted)]",
-              },
-              {
-                icon: <Brain size={13} />,
-                label: "Claims Submitted",
-                value: s?.claims.total_submitted ?? 0,
-                color: "text-sky-400",
-              },
-            ]}
-          />
-        )}
-
-        {/* ═══════════ Row 5 — Financial Summary ═══════════ */}
-        {!loading && s && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: EASE_STEALTH, delay: 0.76 }}
-            className="col-span-12"
-          >
-            <div className="grid grid-cols-4 gap-3">
-              {/* Budget Total */}
-              <div
-                className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
-                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--ghost-emerald)]">
-                    <Wallet size={12} className="text-[var(--brand)]" />
-                  </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                    Total Budget
-                  </span>
-                </div>
-                <div className="mt-2 font-mono text-lg font-semibold text-white">
-                  {_formatCurrency(s.budget.total)}
-                </div>
-              </div>
-
-              {/* Consumed */}
-              <div
-                className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
-                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10">
-                    <Activity size={12} className="text-emerald-400" />
-                  </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                    Consumed
-                  </span>
-                </div>
-                <div className="mt-2 font-mono text-lg font-semibold text-white">
-                  {_formatCurrency(s.budget.consumed)}
-                </div>
-              </div>
-
-              {/* Quarantined */}
-              <div
-                className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
-                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10">
-                    <AlertTriangle size={12} className="text-amber-400" />
-                  </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                    Quarantined
-                  </span>
-                </div>
-                <div className="mt-2 font-mono text-lg font-semibold text-white">
-                  {_formatCurrency(s.budget.quarantined)}
-                </div>
-              </div>
-
-              {/* Available */}
-              <div
-                className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
-                style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10">
-                    <TrendingUp size={12} className="text-sky-400" />
-                  </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                    Available
-                  </span>
-                </div>
-                <div className="mt-2 font-mono text-lg font-semibold text-white">
-                  {_formatCurrency(s.budget.available)}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ═══════════ Row 6 — Claims Summary ═══════════ */}
-        {!loading && s && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: EASE_STEALTH, delay: 0.82 }}
-            className="col-span-12"
-          >
-            <div
-              className="r-card border border-[var(--border-base)] bg-[var(--surface-1)] p-4"
-              style={{ boxShadow: "var(--shadow-inset-bevel)" }}
-            >
-              <div className="mb-3 flex items-center gap-2">
-                <Brain size={14} className="text-violet-400" />
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                  CLAIMS PIPELINE
-                </span>
-              </div>
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <span className="font-mono text-[10px] text-[var(--text-muted)]">Total Claims</span>
-                  <div className="mt-0.5 font-mono text-lg font-semibold text-white">
-                    {_formatNumber(s.claims.total_count)}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-mono text-[10px] text-[var(--text-muted)]">Total Submitted</span>
-                  <div className="mt-0.5 font-mono text-lg font-semibold text-sky-400">
-                    {_formatCurrency(s.claims.total_submitted)}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-mono text-[10px] text-[var(--text-muted)]">Total Paid</span>
-                  <div className="mt-0.5 font-mono text-lg font-semibold text-emerald-400">
-                    {_formatCurrency(s.claims.total_paid)}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-mono text-[10px] text-[var(--text-muted)]">Rejected</span>
-                  <div
-                    className={`mt-0.5 font-mono text-lg font-semibold ${
-                      s.claims.total_rejected > 0 ? "text-rose-400" : "text-zinc-400"
-                    }`}
-                  >
-                    {_formatCurrency(s.claims.total_rejected)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
+        {/* ═══════════ Row 3 — Quick Access Grid ═══════════ */}
+        <_QuickAccessGrid delay={0.4} />
       </div>
     </div>
   );
