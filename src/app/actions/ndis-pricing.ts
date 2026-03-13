@@ -73,7 +73,16 @@ export async function fetchNDISCatalogue(
 
   const { data, count, error } = await query;
   if (error) throw new Error(error.message);
-  return { data: (data || []) as NDISCatalogueItem[], total: count || 0 };
+
+  // Supabase returns `numeric` columns as strings — coerce to numbers
+  const parsed = (data || []).map((row: any) => ({
+    ...row,
+    base_rate_national: parseFloat(row.base_rate_national) || 0,
+    base_rate_remote: row.base_rate_remote != null ? parseFloat(row.base_rate_remote) || null : null,
+    base_rate_very_remote: row.base_rate_very_remote != null ? parseFloat(row.base_rate_very_remote) || null : null,
+  })) as NDISCatalogueItem[];
+
+  return { data: parsed, total: count || 0 };
 }
 
 /* ── Sync Status ──────────────────────────────────────── */

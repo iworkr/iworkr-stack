@@ -361,9 +361,16 @@ export function Sidebar() {
           <div className="h-[30px] w-full shrink-0" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
         )}
 
+        {/* ── Workspace Switcher (top) ── */}
+        <WorkspaceSwitcher
+          companyName={companyName}
+          logoUrl={brandingLogo}
+          collapsed={sidebarCollapsed}
+        />
+
         {/* ── Search Bar ── */}
-        <div className="px-3 pt-3 pb-1">
-          {!sidebarCollapsed ? (
+        {!sidebarCollapsed ? (
+          <div className="px-3 pb-1">
             <button
               onClick={() => useShellStore.getState().setCommandMenuOpen(true)}
               className="flex w-full items-center gap-2 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-[5px] text-[13px] text-zinc-600 transition-colors hover:border-white/[0.1] hover:bg-white/[0.04]"
@@ -374,7 +381,9 @@ export function Sidebar() {
                 ⌘K
               </kbd>
             </button>
-          ) : (
+          </div>
+        ) : (
+          <div className="px-3 pb-1">
             <button
               onClick={() => useShellStore.getState().setCommandMenuOpen(true)}
               title="Search (⌘K)"
@@ -382,8 +391,8 @@ export function Sidebar() {
             >
               <Search size={16} strokeWidth={1.5} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto scrollbar-none px-2">
@@ -437,10 +446,8 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* ── Footer — Workspace Selector ── */}
-        <WorkspaceFooter
-          companyName={companyName}
-          logoUrl={brandingLogo}
+        {/* ── Footer — Profile ── */}
+        <ProfileFooter
           collapsed={sidebarCollapsed}
           toggleSidebar={toggleSidebar}
         />
@@ -449,26 +456,20 @@ export function Sidebar() {
   );
 }
 
-/* ── Workspace Footer ─────────────────────────────────── */
+/* ── Workspace Switcher (Top) ─────────────────────────── */
 
-function WorkspaceFooter({
+function WorkspaceSwitcher({
   companyName,
   logoUrl,
   collapsed,
-  toggleSidebar,
 }: {
   companyName: string;
   logoUrl: string | undefined | null;
   collapsed: boolean;
-  toggleSidebar: () => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { signOut } = useAuthStore();
-  const profile = useAuthStore((s) => s.profile);
-  const displayName = profile?.full_name || "";
-  const displayEmail = profile?.email || "";
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -480,10 +481,10 @@ function WorkspaceFooter({
 
   if (collapsed) {
     return (
-      <div className="border-t border-white/[0.06] px-3 py-2 flex flex-col items-center gap-1.5">
+      <div className="px-3 pt-3 pb-1 flex justify-center">
         <button
           onClick={() => setOpen((p) => !p)}
-          className="flex h-7 w-7 items-center justify-center rounded-md overflow-hidden"
+          className="flex h-7 w-7 items-center justify-center rounded-md overflow-hidden transition-colors hover:bg-white/[0.04]"
           title={companyName}
         >
           <img
@@ -492,55 +493,46 @@ function WorkspaceFooter({
             className={`h-5 w-5 object-contain ${logoUrl ? "" : "brightness-150"}`}
           />
         </button>
-        <button
-          onClick={toggleSidebar}
-          title="Expand sidebar (⌘[)"
-          className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
-        >
-          <PanelLeftOpen size={14} strokeWidth={1.5} />
-        </button>
       </div>
     );
   }
 
   return (
-    <div ref={ref} className="relative border-t border-white/[0.06] px-2 py-1.5">
+    <div ref={ref} className="relative px-3 pt-3 pb-1">
       <button
         onClick={() => setOpen((p) => !p)}
-        className="flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-white/[0.04]"
+        className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 transition-colors hover:bg-white/[0.04]"
       >
         <img
           src={logoUrl || "/logos/logo-dark-streamline.png"}
           alt="Logo"
           className={`h-5 w-5 shrink-0 rounded object-contain ${logoUrl ? "" : "brightness-150"}`}
         />
-        <div className="min-w-0 flex-1 text-left">
-          <p className="truncate text-[12px] font-medium text-zinc-300">{companyName || <Shimmer className="h-3 w-24" />}</p>
-          <p className="truncate text-[10px] text-zinc-600">{displayName || displayEmail}</p>
-        </div>
-        <ChevronsUpDown size={12} className="shrink-0 text-zinc-600" />
+        <span className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
+          {companyName || <Shimmer className="h-3 w-24" />}
+        </span>
+        <ChevronsUpDown size={12} className="ml-auto shrink-0 text-zinc-600" />
       </button>
 
-      {/* Dropdown — opens upward */}
+      {/* Dropdown — opens downward */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 4 }}
+            initial={{ opacity: 0, scale: 0.96, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 4 }}
+            exit={{ opacity: 0, scale: 0.96, y: -4 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute bottom-full left-2 right-2 z-50 mb-1.5 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_-16px_48px_-8px_rgba(0,0,0,0.6)]"
+            className="absolute top-full left-3 right-3 z-50 mt-1 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
           >
-            {/* Workspace info */}
+            {/* Active workspace */}
             <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
               <img
                 src={logoUrl || "/logos/logo-dark-streamline.png"}
                 alt=""
                 className={`h-7 w-7 shrink-0 rounded object-contain ${logoUrl ? "" : "brightness-150"}`}
               />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-[12px] font-medium text-zinc-200">{companyName}</p>
-                <p className="truncate text-[10px] text-zinc-600">{displayEmail}</p>
               </div>
             </div>
 
@@ -559,15 +551,122 @@ function WorkspaceFooter({
                   <span>{item.label}</span>
                 </button>
               ))}
-              <div className="my-1 h-px bg-white/[0.06]" />
-              <button
-                onClick={() => { setOpen(false); toggleSidebar(); }}
-                className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
-              >
-                <PanelLeftClose size={14} strokeWidth={1.5} />
-                <span>Collapse Sidebar</span>
-                <kbd className="ml-auto rounded border border-white/[0.08] bg-white/[0.04] px-1 py-[1px] font-mono text-[9px] text-zinc-600">⌘[</kbd>
-              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ── Profile Footer (Bottom) ─────────────────────────── */
+
+function ProfileFooter({
+  collapsed,
+  toggleSidebar,
+}: {
+  collapsed: boolean;
+  toggleSidebar: () => void;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { signOut } = useAuthStore();
+  const profile = useAuthStore((s) => s.profile);
+  const displayName = profile?.full_name || "";
+  const displayEmail = profile?.email || "";
+  const avatarUrl = profile?.avatar_url;
+  const initials = displayName
+    ? displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : displayEmail?.[0]?.toUpperCase() || "?";
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const avatar = (
+    <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-white/[0.08]">
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+      ) : (
+        initials
+      )}
+    </div>
+  );
+
+  if (collapsed) {
+    return (
+      <div className="border-t border-white/[0.06] px-3 py-2 flex flex-col items-center gap-1.5">
+        <button onClick={() => setOpen((p) => !p)} title={displayName || displayEmail}>
+          {avatar}
+        </button>
+        <button
+          onClick={toggleSidebar}
+          title="Expand sidebar (⌘[)"
+          className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
+        >
+          <PanelLeftOpen size={14} strokeWidth={1.5} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative border-t border-white/[0.06] px-2 py-1.5">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setOpen((p) => !p)}
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-white/[0.04]"
+        >
+          {avatar}
+          <span className="truncate text-[12px] text-zinc-400">{displayName || displayEmail}</span>
+        </button>
+        <button
+          onClick={toggleSidebar}
+          title="Collapse sidebar (⌘[)"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
+        >
+          <PanelLeftClose size={14} strokeWidth={1.5} />
+        </button>
+      </div>
+
+      {/* Dropdown — opens upward */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 4 }}
+            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-full left-2 right-2 z-50 mb-1.5 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_-16px_48px_-8px_rgba(0,0,0,0.6)]"
+          >
+            {/* User info */}
+            <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
+              {avatar}
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-medium text-zinc-200">{displayName}</p>
+                <p className="truncate text-[10px] text-zinc-600">{displayEmail}</p>
+              </div>
+            </div>
+
+            <div className="py-1">
+              {[
+                { label: "Profile", icon: UserCircle, href: "/settings/profile" },
+                { label: "Preferences", icon: Settings, href: "/settings/preferences" },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => { setOpen(false); router.push(item.href); }}
+                  className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
+                >
+                  <item.icon size={14} strokeWidth={1.5} />
+                  <span>{item.label}</span>
+                </button>
+              ))}
               <div className="my-1 h-px bg-white/[0.06]" />
               <button
                 onClick={async () => { setOpen(false); await signOut(); router.push("/"); }}
