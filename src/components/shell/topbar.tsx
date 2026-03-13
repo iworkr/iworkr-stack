@@ -28,6 +28,7 @@ import { useInboxStore } from "@/lib/inbox-store";
 import { Shimmer } from "@/components/ui/shimmer";
 import { DesktopUpdateIndicator } from "@/lib/desktop/desktop-update-indicator";
 import { translateLabel, type IndustryType } from "@/lib/industry-lexicon";
+import { useBrandingStore } from "@/lib/stores/branding-store";
 
 function getBreadcrumbs(pathname: string, companyName: string, industryType: IndustryType = "trades") {
   const segments = pathname.split("/").filter(Boolean);
@@ -79,11 +80,13 @@ function getBreadcrumbs(pathname: string, companyName: string, industryType: Ind
 
 function WorkspaceDropdown({
   companyName,
+  logoUrl,
   open,
   onToggle,
   onClose,
 }: {
   companyName: string;
+  logoUrl: string | null;
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -115,7 +118,7 @@ function WorkspaceDropdown({
         className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-[var(--surface-2)]"
       >
         <img
-          src="/logos/logo-dark-streamline.png"
+          src={logoUrl || "/logos/logo-dark-streamline.png"}
           alt="Logo"
           className="h-[18px] w-[18px] object-contain"
         />
@@ -137,14 +140,14 @@ function WorkspaceDropdown({
             {/* Active workspace */}
             <div className="mx-1 mb-1 flex items-center gap-2 rounded-md bg-[rgba(255,255,255,0.04)] px-2.5 py-2">
               <img
-                src="/logos/logo-dark-streamline.png"
+                src={logoUrl || "/logos/logo-dark-streamline.png"}
                 alt="Logo"
                 className="h-4 w-4 object-contain"
               />
               <span className="flex-1 truncate text-[12px] font-medium text-zinc-200">
                 {companyName || <Shimmer className="h-3 w-24" />}
               </span>
-              <Check size={12} className="text-[#10B981]" />
+              <Check size={12} className="text-[var(--brand)]" />
             </div>
 
             <div className="my-1 h-px bg-[rgba(255,255,255,0.06)]" />
@@ -438,6 +441,7 @@ export function Topbar() {
   const onboardingName = useOnboardingStore((s) => s.companyName);
   const { currentOrg } = useAuthStore();
   const companyName = currentOrg?.name || onboardingName || "";
+  const brandingLogo = useBrandingStore((s) => s.branding?.logo_light_url) || null;
   const industryType = ((currentOrg as Record<string, unknown> | null)?.industry_type === "care" ? "care" : "trades") as IndustryType;
   const breadcrumbs = getBreadcrumbs(pathname, companyName, industryType);
 
@@ -464,6 +468,7 @@ export function Topbar() {
       {/* Workspace Dropdown */}
       <WorkspaceDropdown
         companyName={companyName}
+        logoUrl={brandingLogo}
         open={wsOpen}
         onToggle={() => {
           setNotifOpen(false);

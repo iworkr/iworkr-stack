@@ -50,6 +50,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ProBadge } from "@/components/monetization/pro-badge";
 import { roleDefinitions, type RoleId, type PermissionModule } from "@/lib/team-data";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { useBrandingStore } from "@/lib/stores/branding-store";
 
 /* ── Data ─────────────────────────────────────────────── */
 
@@ -252,6 +253,7 @@ export function Sidebar() {
   const { currentOrg } = useAuthStore();
   const { orgId } = useOrg();
   const companyName = currentOrg?.name || onboardingName || "";
+  const brandingLogo = useBrandingStore((s) => s.branding?.logo_light_url);
   const { subscription, planTier, loadBilling } = useBillingStore();
   const planKey = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || planTier || "free";
   const isFree = planKey === "free";
@@ -414,9 +416,9 @@ export function Sidebar() {
             className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[var(--surface-2)]"
           >
             <img
-              src="/logos/logo-dark-streamline.png"
+              src={brandingLogo || "/logos/logo-dark-streamline.png"}
               alt="Logo"
-              className="h-[22px] w-[22px] shrink-0 object-contain brightness-150"
+              className={`h-[22px] w-[22px] shrink-0 object-contain ${brandingLogo ? "" : "brightness-150"}`}
             />
             <AnimatePresence>
               {!sidebarCollapsed && (

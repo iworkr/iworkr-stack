@@ -8,6 +8,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useTeamStore } from "@/lib/team-store";
 import { Shimmer } from "@/components/ui/shimmer";
 import { useToastStore } from "@/components/app/action-toast";
+import { useBrandingStore } from "@/lib/stores/branding-store";
 import { createClient } from "@/lib/supabase/client";
 
 const timezones = [
@@ -46,6 +47,7 @@ export default function WorkspacePage() {
   } = useSettingsStore();
 
   const { addToast } = useToastStore();
+  const brandingLogo = useBrandingStore((s) => s.branding?.logo_light_url);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Local state for controlled inputs
@@ -133,7 +135,7 @@ export default function WorkspacePage() {
       <div className="mb-8 flex items-center gap-5">
         <div className="relative">
           <img
-            src={orgLogoUrl || "/logos/logo-dark-streamline.png"}
+            src={brandingLogo || orgLogoUrl || "/logos/logo-dark-streamline.png"}
             alt={name || "Workspace"}
             className="h-14 w-14 rounded-xl object-contain"
           />

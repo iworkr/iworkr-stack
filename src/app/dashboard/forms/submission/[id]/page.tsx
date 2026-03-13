@@ -27,6 +27,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useFormsStore } from "@/lib/forms-store";
 import { InlineMap } from "@/components/maps/inline-map";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useBrandingStore } from "@/lib/stores/branding-store";
 import { getOrgSettings } from "@/app/actions/finance";
 import { downloadFormPDF } from "@/lib/pdf/generate-form-pdf";
 
@@ -43,6 +44,7 @@ export default function SubmissionDetailPage() {
   const params = useParams();
   const { submissions } = useFormsStore();
   const { orgId } = useOrg();
+  const brandingLogo = useBrandingStore((s) => s.branding?.logo_light_url);
   const [hashCopied, setHashCopied] = useState(false);
   const [orgSettings, setOrgSettings] = useState<any>(null);
 
@@ -309,8 +311,8 @@ export default function SubmissionDetailPage() {
               <div className="mb-8 flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-6">
                 <div className="flex items-center gap-2">
                   <img
-                    src="/logos/logo-dark-streamline.png"
-                    alt="iWorkr"
+                    src={brandingLogo || "/logos/logo-dark-streamline.png"}
+                    alt={orgSettings?.name || "iWorkr"}
                     className="h-7 w-7 object-contain"
                   />
                   <div>

@@ -27,6 +27,7 @@ import { useToastStore } from "@/components/app/action-toast";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
 import { downloadInvoicePDF } from "@/lib/pdf/generate-invoice";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useBrandingStore } from "@/lib/stores/branding-store";
 import { getOrgSettings } from "@/app/actions/finance";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
@@ -96,6 +97,7 @@ export default function InvoiceDetailPage() {
   const { addToast } = useToastStore();
   const { orgId } = useOrg();
   const { t, isCare } = useIndustryLexicon();
+  const brandingLogo = useBrandingStore((s) => s.branding?.logo_light_url);
 
   const [orgSettings, setOrgSettings] = useState<{ name: string; settings: Record<string, any> } | null>(null);
 
@@ -341,8 +343,8 @@ export default function InvoiceDetailPage() {
                 <div>
                   <div className="mb-1 flex items-center gap-2">
                     <img
-                      src="/logos/logo-dark-streamline.png"
-                      alt="iWorkr"
+                      src={brandingLogo || "/logos/logo-dark-streamline.png"}
+                      alt={orgSettings?.name || "iWorkr"}
                       className="h-8 w-8 object-contain"
                     />
                     <span className="text-[14px] font-semibold text-zinc-200">{orgSettings?.name || "iWorkr"}</span>
