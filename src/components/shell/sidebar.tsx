@@ -122,7 +122,7 @@ function useCareNavSections(): NavSection[] {
     {
       label: null,
       items: [
-        { id: "nav_progress_notes", label: "Progress Notes", icon: ClipboardList, href: "/dashboard/care/progress-notes" },
+        { id: "nav_shift_notes", label: "Shift Notes", icon: ClipboardList, href: "/dashboard/care/progress-notes" },
         { id: "nav_care_plans", label: "Care Plans", icon: BookOpen, href: "/dashboard/care/plans" },
         { id: "nav_medications", label: "Medications", icon: Pill, href: "/dashboard/care/medications" },
         { id: "nav_observations", label: "Observations", icon: Stethoscope, href: "/dashboard/care/observations" },
