@@ -112,6 +112,7 @@ function useCareNavSections(): NavSection[] {
       label: null,
       items: [
         { id: "nav_participants", label: "Participants", icon: Heart, href: "/dashboard/care/participants" },
+        { id: "nav_master_roster", label: "Master Roster", icon: LayoutGrid, href: "/dashboard/roster/master" },
         { id: "nav_care_command", label: "Clinical Timeline", icon: Activity, href: "/dashboard/care/clinical-timeline" },
         { id: "nav_funding", label: "Funding & Claims", icon: DollarSign, href: "/dashboard/care/funding-engine" },
         { id: "nav_compliance", label: "Compliance", icon: ShieldCheck, href: "/dashboard/care/compliance-hub" },
