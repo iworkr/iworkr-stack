@@ -89,12 +89,23 @@ export default function WorkspacesPage() {
 
   const PAGE_SIZE = 30;
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const loadWorkspaces = useCallback(async () => {
     setLoading(true);
-    const result = await listWorkspaces(search || undefined, PAGE_SIZE, page * PAGE_SIZE);
-    if (result.data) {
-      setWorkspaces(result.data.rows as Workspace[]);
-      setTotal(result.data.total || 0);
+    setLoadError(null);
+    try {
+      const result = await listWorkspaces(search || undefined, PAGE_SIZE, page * PAGE_SIZE);
+      if (result.error) {
+        setLoadError(result.error);
+        setWorkspaces([]);
+        setTotal(0);
+      } else if (result.data) {
+        setWorkspaces(result.data.rows as Workspace[]);
+        setTotal(result.data.total || 0);
+      }
+    } catch (e: any) {
+      setLoadError(e.message || "Failed to load workspaces");
     }
     setLoading(false);
   }, [search, page]);
@@ -191,7 +202,14 @@ export default function WorkspacesPage() {
             <span className="flex-1 text-[9px] font-mono font-bold tracking-wider text-zinc-600 uppercase">Created</span>
           </div>
 
-          {loading ? (
+          {loadError ? (
+            <div className="flex flex-col items-center justify-center py-20 px-6">
+              <AlertTriangle size={24} className="text-red-400 mb-2" />
+              <p className="text-[12px] text-red-400 font-medium">Failed to load</p>
+              <p className="mt-1 text-[10px] text-red-400/60 text-center max-w-[300px] font-mono">{loadError}</p>
+              <button onClick={loadWorkspaces} className="mt-3 rounded-md bg-red-500/10 px-3 py-1.5 text-[10px] text-red-400 hover:bg-red-500/15">Retry</button>
+            </div>
+          ) : loading ? (
             <div className="space-y-0.5 p-2">
               {Array.from({ length: 10 }).map((_, i) => (
                 <div key={i} className="h-10 animate-pulse rounded-md bg-white/[0.02]" style={{ animationDelay: `${i * 30}ms` }} />

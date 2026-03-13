@@ -93,16 +93,28 @@ export default function DatabasePage() {
     })();
   }, []);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   // Load rows when table changes
   const loadRows = useCallback(async (table: string, pg: number = 0) => {
     setLoading(true);
-    const result = await readTableRows(table, PAGE_SIZE, pg * PAGE_SIZE);
-    if (result.data) {
-      const r = result.data.rows as any[];
-      setRows(r);
-      setTotalRows(result.data.total || 0);
-      if (r.length > 0) setColumns(Object.keys(r[0]));
-      else setColumns([]);
+    setLoadError(null);
+    try {
+      const result = await readTableRows(table, PAGE_SIZE, pg * PAGE_SIZE);
+      if (result.error) {
+        setLoadError(result.error);
+        setRows([]);
+        setTotalRows(0);
+        setColumns([]);
+      } else if (result.data) {
+        const r = result.data.rows as any[];
+        setRows(r);
+        setTotalRows(result.data.total || 0);
+        if (r.length > 0) setColumns(Object.keys(r[0]));
+        else setColumns([]);
+      }
+    } catch (e: any) {
+      setLoadError(e.message || "Failed to load table data");
     }
     setLoading(false);
   }, []);
@@ -268,6 +280,13 @@ export default function DatabasePage() {
               <div className="flex h-full flex-col items-center justify-center">
                 <Database size={24} className="text-zinc-800 mb-2" />
                 <p className="text-[12px] text-zinc-600">Select a table to browse</p>
+              </div>
+            ) : loadError ? (
+              <div className="flex h-full flex-col items-center justify-center px-6">
+                <AlertTriangle size={24} className="text-red-400 mb-2" />
+                <p className="text-[12px] text-red-400 font-medium">Failed to load table data</p>
+                <p className="mt-1 text-[10px] text-red-400/60 text-center max-w-[300px] font-mono">{loadError}</p>
+                {selectedTable && <button onClick={() => loadRows(selectedTable, page)} className="mt-3 rounded-md bg-red-500/10 px-3 py-1.5 text-[10px] text-red-400 hover:bg-red-500/15">Retry</button>}
               </div>
             ) : loading ? (
               <div className="flex h-full items-center justify-center">

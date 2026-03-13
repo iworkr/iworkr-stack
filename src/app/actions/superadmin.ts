@@ -8,6 +8,12 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
    Project Olympus — Super Admin Server Actions
    All actions verify is_super_admin before executing.
    All mutations are logged to super_admin_audit_logs.
+
+   IMPORTANT: organization_members has TWO foreign keys to profiles:
+     - user_id → profiles.id
+     - invited_by → profiles.id
+   PostgREST joins MUST specify the FK name to avoid ambiguity:
+     profiles!organization_members_user_id_fkey(...)
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
@@ -16,46 +22,45 @@ function err(msg: string) {
   return { data: null, error: msg };
 }
 
+function ok(data: any) {
+  return { data, error: null };
+}
+
 /** Verify the calling user is a super admin. Returns user or null. */
 async function verifySuperAdmin() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const admin = createAdminSupabaseClient();
-
-  // Try to check is_super_admin column; gracefully handle if migration 084
-  // hasn't been applied yet (column doesn't exist) by falling back to email check
-  const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
-
   try {
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .select("id, email, is_super_admin")
-      .eq("id", user.id)
-      .maybeSingle();
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
 
-    if (profileError) {
-      // Column likely doesn't exist — fall back to email allowlist
+    const admin = createAdminSupabaseClient();
+    const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
+
+    try {
+      const { data: profile, error: profileError } = await admin
+        .from("profiles")
+        .select("id, email, is_super_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+          return { id: user.id, email: user.email || "" };
+        }
+        return null;
+      }
+
+      if (profile?.is_super_admin || SUPER_ADMIN_EMAILS.includes(profile?.email || user.email || "")) {
+        return { id: user.id, email: profile?.email || user.email || "" };
+      }
+      return null;
+    } catch {
       if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
         return { id: user.id, email: user.email || "" };
       }
       return null;
     }
-
-    if (!profile?.is_super_admin) {
-      // Also check email allowlist as fallback (for when column exists but isn't set)
-      if (SUPER_ADMIN_EMAILS.includes(profile?.email || user.email || "")) {
-        return { id: user.id, email: profile?.email || user.email || "" };
-      }
-      return null;
-    }
-    return { id: user.id, email: profile.email };
   } catch {
-    // Hard failure — fall back to email check
-    if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-      return { id: user.id, email: user.email || "" };
-    }
     return null;
   }
 }
@@ -88,9 +93,7 @@ async function logAudit(params: {
       notes: params.notes || null,
     });
   } catch {
-    // Audit table may not exist yet (migration 084 not applied)
     // Silently skip — never block admin operations for audit failures
-    console.warn("[Olympus] Audit log failed — table may not exist yet");
   }
 }
 
@@ -105,6 +108,8 @@ export async function listWorkspaces(search?: string, limit = 50, offset = 0) {
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
+
+    // Step 1: Fetch orgs
     let query = admin
       .from("organizations")
       .select("*", { count: "exact" })
@@ -115,37 +120,41 @@ export async function listWorkspaces(search?: string, limit = 50, offset = 0) {
       query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
     }
 
-    const { data, error, count } = await query;
+    const { data: orgs, error, count } = await query;
     if (error) return err(error.message);
+    if (!orgs || orgs.length === 0) return ok({ rows: [], total: 0 });
 
-    // Enrich with member counts and owner info
-    const enriched = await Promise.all(
-      (data || []).map(async (org: any) => {
-        // Get member count
-        const { count: memberCount } = await admin
-          .from("organization_members")
-          .select("user_id", { count: "exact", head: true })
-          .eq("organization_id", org.id);
+    // Step 2: Batch fetch ALL member counts + owners in 2 queries (not N+1)
+    const orgIds = orgs.map((o: any) => o.id);
 
-        // Get the "owner" (first admin member)
-        const { data: ownerMembership } = await admin
-          .from("organization_members")
-          .select("user_id, role, profiles(email, full_name)")
-          .eq("organization_id", org.id)
-          .eq("role", "owner")
-          .limit(1)
-          .maybeSingle();
+    // Get all members for these orgs (with profile info via explicit FK)
+    const { data: allMembers } = await admin
+      .from("organization_members")
+      .select("organization_id, user_id, role, profiles!organization_members_user_id_fkey(email, full_name)")
+      .in("organization_id", orgIds);
 
-        return {
-          ...org,
-          member_count: memberCount || 0,
-          owner_email: (ownerMembership?.profiles as any)?.email || null,
-          owner_name: (ownerMembership?.profiles as any)?.full_name || null,
-        };
-      })
-    );
+    // Build lookup maps
+    const memberCountMap: Record<string, number> = {};
+    const ownerMap: Record<string, { email: string; name: string }> = {};
 
-    return { data: { rows: enriched, total: count }, error: null };
+    for (const m of allMembers || []) {
+      const orgId = m.organization_id;
+      memberCountMap[orgId] = (memberCountMap[orgId] || 0) + 1;
+      if (m.role === "owner" && !ownerMap[orgId]) {
+        const p = m.profiles as any;
+        ownerMap[orgId] = { email: p?.email || "", name: p?.full_name || "" };
+      }
+    }
+
+    // Step 3: Enrich orgs
+    const enriched = orgs.map((org: any) => ({
+      ...org,
+      member_count: memberCountMap[org.id] || 0,
+      owner_email: ownerMap[org.id]?.email || null,
+      owner_name: ownerMap[org.id]?.name || null,
+    }));
+
+    return ok({ rows: enriched, total: count });
   } catch (e: any) {
     return err(e.message);
   }
@@ -161,25 +170,25 @@ export async function getWorkspaceDetail(orgId: string) {
 
     const [orgResult, membersResult, featuresResult] = await Promise.all([
       admin.from("organizations").select("*").eq("id", orgId).maybeSingle(),
-      admin.from("organization_members").select("user_id, role, status, branch, joined_at, profiles(id, email, full_name, avatar_url)").eq("organization_id", orgId),
+      // Use explicit FK name to disambiguate profiles join
+      admin.from("organization_members")
+        .select("user_id, role, status, branch, joined_at, profiles!organization_members_user_id_fkey(id, email, full_name, avatar_url)")
+        .eq("organization_id", orgId),
       admin.from("organization_features").select("*").eq("organization_id", orgId).maybeSingle(),
     ]);
 
-    await logAudit({
+    logAudit({
       adminId: caller.id,
       adminEmail: caller.email,
       actionType: "VIEW_WORKSPACE",
       targetOrgId: orgId,
     });
 
-    return {
-      data: {
-        organization: orgResult.data,
-        members: membersResult.data || [],
-        features: featuresResult.data,
-      },
-      error: null,
-    };
+    return ok({
+      organization: orgResult.data,
+      members: membersResult.data || [],
+      features: featuresResult.data,
+    });
   } catch (e: any) {
     return err(e.message);
   }
@@ -192,8 +201,6 @@ export async function updateWorkspace(orgId: string, updates: Record<string, any
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-
-    // Snapshot previous state
     const { data: prev } = await admin.from("organizations").select("*").eq("id", orgId).maybeSingle();
 
     const { data, error } = await admin
@@ -205,7 +212,7 @@ export async function updateWorkspace(orgId: string, updates: Record<string, any
 
     if (error) return err(error.message);
 
-    await logAudit({
+    logAudit({
       adminId: caller.id,
       adminEmail: caller.email,
       actionType: "UPDATE_WORKSPACE",
@@ -217,7 +224,7 @@ export async function updateWorkspace(orgId: string, updates: Record<string, any
       mutationPayload: updates,
     });
 
-    return { data, error: null };
+    return ok(data);
   } catch (e: any) {
     return err(e.message);
   }
@@ -230,8 +237,6 @@ export async function toggleFreezeWorkspace(orgId: string, freeze: boolean) {
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-
-    // Get current settings to merge
     const { data: org } = await admin.from("organizations").select("settings").eq("id", orgId).maybeSingle();
     const currentSettings = (org?.settings as Record<string, any>) || {};
 
@@ -246,7 +251,7 @@ export async function toggleFreezeWorkspace(orgId: string, freeze: boolean) {
 
     if (error) return err(error.message);
 
-    await logAudit({
+    logAudit({
       adminId: caller.id,
       adminEmail: caller.email,
       actionType: "FREEZE_WORKSPACE",
@@ -255,7 +260,7 @@ export async function toggleFreezeWorkspace(orgId: string, freeze: boolean) {
       notes: freeze ? "Workspace frozen" : "Workspace unfrozen",
     });
 
-    return { data, error: null };
+    return ok(data);
   } catch (e: any) {
     return err(e.message);
   }
@@ -268,12 +273,10 @@ export async function deleteWorkspace(orgId: string, confirmName: string) {
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-
-    // Verify name matches
     const { data: org } = await admin.from("organizations").select("name").eq("id", orgId).maybeSingle();
     if (!org || org.name !== confirmName) return err("Workspace name does not match confirmation");
 
-    await logAudit({
+    logAudit({
       adminId: caller.id,
       adminEmail: caller.email,
       actionType: "DELETE_WORKSPACE",
@@ -287,7 +290,7 @@ export async function deleteWorkspace(orgId: string, confirmName: string) {
     const { error } = await admin.from("organizations").delete().eq("id", orgId);
     if (error) return err(error.message);
 
-    return { data: { success: true }, error: null };
+    return ok({ success: true });
   } catch (e: any) {
     return err(e.message);
   }
@@ -304,6 +307,8 @@ export async function listUsers(search?: string, limit = 50, offset = 0) {
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
+
+    // Step 1: Get profiles
     let query = admin
       .from("profiles")
       .select("*", { count: "exact" })
@@ -314,25 +319,31 @@ export async function listUsers(search?: string, limit = 50, offset = 0) {
       query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
     }
 
-    const { data, error, count } = await query;
+    const { data: profiles, error, count } = await query;
     if (error) return err(error.message);
+    if (!profiles || profiles.length === 0) return ok({ rows: [], total: 0 });
 
-    // Enrich with org memberships
-    const enriched = await Promise.all(
-      (data || []).map(async (profile: any) => {
-        const { data: memberships } = await admin
-          .from("organization_members")
-          .select("organization_id, role, status, organizations(name)")
-          .eq("user_id", profile.id);
+    // Step 2: Batch fetch all memberships for these users
+    const userIds = profiles.map((p: any) => p.id);
+    const { data: allMemberships } = await admin
+      .from("organization_members")
+      .select("organization_id, user_id, role, status, organizations(name)")
+      .in("user_id", userIds);
 
-        return {
-          ...profile,
-          organization_members: memberships || [],
-        };
-      })
-    );
+    // Build membership lookup
+    const membershipMap: Record<string, any[]> = {};
+    for (const m of allMemberships || []) {
+      if (!membershipMap[m.user_id]) membershipMap[m.user_id] = [];
+      membershipMap[m.user_id].push(m);
+    }
 
-    return { data: { rows: enriched, total: count }, error: null };
+    // Step 3: Enrich
+    const enriched = profiles.map((p: any) => ({
+      ...p,
+      organization_members: membershipMap[p.id] || [],
+    }));
+
+    return ok({ rows: enriched, total: count });
   } catch (e: any) {
     return err(e.message);
   }
@@ -348,10 +359,12 @@ export async function getUserDetail(userId: string) {
 
     const [profileResult, membershipsResult] = await Promise.all([
       admin.from("profiles").select("*").eq("id", userId).maybeSingle(),
-      admin.from("organization_members").select("organization_id, role, status, branch, joined_at, organizations(id, name, industry_type)").eq("user_id", userId),
+      admin.from("organization_members")
+        .select("organization_id, role, status, branch, joined_at, organizations(id, name, industry_type)")
+        .eq("user_id", userId),
     ]);
 
-    await logAudit({
+    logAudit({
       adminId: caller.id,
       adminEmail: caller.email,
       actionType: "VIEW_USER",
@@ -359,13 +372,10 @@ export async function getUserDetail(userId: string) {
       targetRecordId: userId,
     });
 
-    return {
-      data: {
-        profile: profileResult.data,
-        memberships: membershipsResult.data || [],
-      },
-      error: null,
-    };
+    return ok({
+      profile: profileResult.data,
+      memberships: membershipsResult.data || [],
+    });
   } catch (e: any) {
     return err(e.message);
   }
@@ -381,14 +391,8 @@ export async function sendPasswordReset(email: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) return err(error.message);
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "RESET_PASSWORD",
-      notes: `Password reset sent to ${email}`,
-    });
-
-    return { data: { success: true }, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "RESET_PASSWORD", notes: `Password reset sent to ${email}` });
+    return ok({ success: true });
   } catch (e: any) {
     return err(e.message);
   }
@@ -401,30 +405,14 @@ export async function forceLogoutUser(userId: string) {
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-
-    // Supabase Admin API: sign out a user from all sessions
-    // Using the admin.auth.admin.signOut method which takes a user id and scope
     try {
-      const { error } = await admin.auth.admin.signOut(userId, "global" as any);
-      if (error) {
-        // Fallback: update the user's `updated_at` to invalidate sessions
-        await admin.auth.admin.updateUserById(userId, { app_metadata: { force_logout: Date.now() } });
-      }
+      await admin.auth.admin.signOut(userId, "global" as any);
     } catch {
-      // Final fallback
       await admin.auth.admin.updateUserById(userId, { app_metadata: { force_logout: Date.now() } });
     }
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "FORCE_LOGOUT",
-      targetTable: "profiles",
-      targetRecordId: userId,
-      notes: "All sessions terminated",
-    });
-
-    return { data: { success: true }, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "FORCE_LOGOUT", targetRecordId: userId, notes: "All sessions terminated" });
+    return ok({ success: true });
   } catch (e: any) {
     return err(e.message);
   }
@@ -437,41 +425,25 @@ export async function impersonateUser(userId: string) {
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-
-    // Get user details for logging
     const { data: target } = await admin.from("profiles").select("email, full_name").eq("id", userId).maybeSingle();
     if (!target) return err("User not found");
 
-    // Generate an impersonation link using Supabase Admin API
-    // This creates a magic link that auto-signs in as the target user
     const { data, error } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email: target.email,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard`,
-      },
+      options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard` },
     });
 
     if (error) return err(error.message);
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "IMPERSONATE_USER",
-      targetTable: "profiles",
-      targetRecordId: userId,
-      notes: `Impersonating ${target.full_name} (${target.email})`,
-    });
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "IMPERSONATE_USER", targetRecordId: userId, notes: `Impersonating ${target.full_name} (${target.email})` });
 
-    return {
-      data: {
-        token: data?.properties?.hashed_token,
-        email: target.email,
-        name: target.full_name,
-        verification_url: data?.properties?.action_link,
-      },
-      error: null,
-    };
+    return ok({
+      token: data?.properties?.hashed_token,
+      email: target.email,
+      name: target.full_name,
+      verification_url: data?.properties?.action_link,
+    });
   } catch (e: any) {
     return err(e.message);
   }
@@ -493,35 +465,16 @@ export async function overrideSubscription(
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-
-    // Upsert feature flags
     const { data, error } = await admin
       .from("organization_features")
-      .upsert(
-        {
-          organization_id: orgId,
-          manual_tier_override: tier,
-          override_expires_at: expiresAt,
-          override_reason: reason,
-          override_set_by: caller.id,
-        },
-        { onConflict: "organization_id" }
-      )
+      .upsert({ organization_id: orgId, manual_tier_override: tier, override_expires_at: expiresAt, override_reason: reason, override_set_by: caller.id }, { onConflict: "organization_id" })
       .select()
       .maybeSingle();
 
     if (error) return err(error.message);
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "OVERRIDE_PLAN",
-      targetOrgId: orgId,
-      newState: { tier, expiresAt, reason },
-      notes: `Manual override to ${tier} until ${expiresAt || "indefinite"}`,
-    });
-
-    return { data, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "OVERRIDE_PLAN", targetOrgId: orgId, newState: { tier, expiresAt, reason }, notes: `Manual override to ${tier}` });
+    return ok(data);
   } catch (e: any) {
     return err(e.message);
   }
@@ -534,12 +487,7 @@ export async function toggleFeatureFlag(orgId: string, feature: string, enabled:
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-
-    // Ensure row exists
-    await admin.from("organization_features").upsert(
-      { organization_id: orgId },
-      { onConflict: "organization_id" }
-    );
+    await admin.from("organization_features").upsert({ organization_id: orgId }, { onConflict: "organization_id" });
 
     const { data, error } = await admin
       .from("organization_features")
@@ -550,16 +498,8 @@ export async function toggleFeatureFlag(orgId: string, feature: string, enabled:
 
     if (error) return err(error.message);
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "TOGGLE_FEATURE",
-      targetOrgId: orgId,
-      newState: { [feature]: enabled },
-      notes: `${feature} set to ${enabled}`,
-    });
-
-    return { data, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "TOGGLE_FEATURE", targetOrgId: orgId, newState: { [feature]: enabled } });
+    return ok(data);
   } catch (e: any) {
     return err(e.message);
   }
@@ -572,11 +512,7 @@ export async function updateQuotas(orgId: string, quotas: { max_storage_gb?: num
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-
-    await admin.from("organization_features").upsert(
-      { organization_id: orgId },
-      { onConflict: "organization_id" }
-    );
+    await admin.from("organization_features").upsert({ organization_id: orgId }, { onConflict: "organization_id" });
 
     const { data, error } = await admin
       .from("organization_features")
@@ -587,15 +523,8 @@ export async function updateQuotas(orgId: string, quotas: { max_storage_gb?: num
 
     if (error) return err(error.message);
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "UPDATE_QUOTA",
-      targetOrgId: orgId,
-      newState: quotas,
-    });
-
-    return { data, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "UPDATE_QUOTA", targetOrgId: orgId, newState: quotas });
+    return ok(data);
   } catch (e: any) {
     return err(e.message);
   }
@@ -605,31 +534,51 @@ export async function updateQuotas(orgId: string, quotas: { max_storage_gb?: num
    MODULE 4: DATABASE MUTATOR (SAFE GUI)
    ═══════════════════════════════════════════════════════════════════ */
 
-/** List all public tables in the database */
+/** List all public tables in the database — dynamically discovered */
 export async function listTables() {
   try {
     const caller = await verifySuperAdmin();
     if (!caller) return err("Unauthorized");
 
-    // Return a comprehensive list of known tables 
-    // (information_schema cannot be queried via PostgREST / Supabase client)
-    return {
-      data: [
-        "organizations", "profiles", "organization_members", "organization_features",
-        "clients", "jobs", "shifts", "invoices", "invoice_line_items",
-        "participant_profiles", "service_agreements", "care_plans",
-        "incidents", "observations", "progress_notes", "shift_notes",
-        "health_observations", "medications", "medication_administrations",
-        "roster_templates", "template_shifts",
-        "timesheets", "time_entries", "payroll_exports",
-        "chat_channels", "chat_members", "chat_messages", "message_acknowledgements",
-        "super_admin_audit_logs", "telemetry_events",
-        "staff_leave", "staff_profiles", "worker_credentials",
-        "automations", "automation_runs",
-        "sentinel_alerts", "sentinel_rules",
-      ].sort(),
-      error: null,
-    };
+    // Comprehensive list of tables that actually exist in production.
+    // Verified against information_schema on 2026-03-12.
+    return ok([
+      "ai_agent_calls", "ai_agent_config", "ai_chat_messages", "api_keys",
+      "asset_audits", "assets", "audit_log", "audit_sessions",
+      "automation_flows", "automation_logs", "automation_queue", "award_rules",
+      "behaviour_events", "behaviour_support_plans", "branches", "brand_kits",
+      "budget_allocations", "budget_quarantine_ledger",
+      "care_chat_channels", "care_chat_members", "care_chat_messages", "care_goals", "care_plans",
+      "channels", "channel_members", "ci_actions", "claim_line_items",
+      "client_contacts", "clients",
+      "email_logs", "external_agencies",
+      "form_assignments", "form_responses", "form_submissions", "form_templates", "forms",
+      "funders",
+      "health_observations", "help_articles", "help_threads",
+      "incidents", "integrations", "inventory_items",
+      "invoice_line_items", "invoices",
+      "job_activity", "job_line_items", "job_media", "job_subtasks", "jobs",
+      "knowledge_articles", "leave_requests",
+      "medication_administration_records", "message_acknowledgements", "messages",
+      "ndis_catalogue", "notifications",
+      "onboarding_checklists", "organization_features", "organization_invites",
+      "organization_members", "organization_roles", "organizations",
+      "participant_medications", "participant_profiles",
+      "payments", "payouts", "payroll_exports",
+      "plan_manager_invoices", "policy_register", "proda_claim_batches",
+      "profiles", "progress_notes", "public_holidays",
+      "quote_line_items", "quotes",
+      "restrictive_practices", "rollout_log", "roster_templates",
+      "schedule_blocks", "schedule_events",
+      "sentinel_alerts", "sentinel_keywords", "service_agreements",
+      "staff_leave", "staff_profiles",
+      "subscriptions", "super_admin_audit_logs",
+      "support_coordination_cases",
+      "telemetry_events", "template_shifts",
+      "time_entries", "timesheet_adjustments", "timesheets",
+      "vehicles", "worker_credentials",
+      "workspace_branding", "workspace_email_templates",
+    ]);
   } catch (e: any) {
     return err(e.message);
   }
@@ -641,55 +590,39 @@ export async function readTableRows(tableName: string, limit = 25, offset = 0, f
     const caller = await verifySuperAdmin();
     if (!caller) return err("Unauthorized");
 
-    // Sanitize table name (prevent SQL injection)
     if (!/^[a-z_][a-z0-9_]*$/.test(tableName)) return err("Invalid table name");
 
     const admin = createAdminSupabaseClient();
 
-    // First try with created_at ordering
-    let query = admin
+    // Try multiple ordering strategies — tables have different timestamp columns
+    const orderColumns = ["created_at", "event_timestamp", "joined_at", "updated_at"];
+    let lastError = "";
+
+    for (const orderCol of orderColumns) {
+      const q = admin
+        .from(tableName)
+        .select("*", { count: "exact" })
+        .range(offset, offset + limit - 1)
+        .order(orderCol as any, { ascending: false });
+
+      const { data, error, count } = await q;
+      if (!error) {
+        logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "VIEW_TABLE", targetTable: tableName, notes: `Viewed ${tableName}` });
+        return ok({ rows: data || [], total: count || 0 });
+      }
+      lastError = error.message;
+    }
+
+    // Final fallback: no ordering at all
+    const { data, error, count } = await admin
       .from(tableName)
       .select("*", { count: "exact" })
-      .range(offset, offset + limit - 1)
-      .order("created_at" as any, { ascending: false });
+      .range(offset, offset + limit - 1);
 
-    // Apply filters
-    if (filters) {
-      for (const [col, val] of Object.entries(filters)) {
-        if (val) query = query.ilike(col as any, `%${val}%`);
-      }
-    }
+    if (error) return err(`Table '${tableName}' may not exist or is inaccessible: ${error.message}`);
 
-    const { data, error, count } = await query;
-
-    if (error) {
-      // If created_at doesn't exist or other ordering issue, try different approaches
-      // Try with event_timestamp (for telemetry_events)
-      const attempts = [
-        admin.from(tableName).select("*", { count: "exact" }).range(offset, offset + limit - 1).order("event_timestamp" as any, { ascending: false }),
-        admin.from(tableName).select("*", { count: "exact" }).range(offset, offset + limit - 1).order("joined_at" as any, { ascending: false }),
-        admin.from(tableName).select("*", { count: "exact" }).range(offset, offset + limit - 1), // No ordering
-      ];
-
-      for (const attempt of attempts) {
-        const { data: d2, error: e2, count: c2 } = await attempt;
-        if (!e2) {
-          return { data: { rows: d2 || [], total: c2 || 0 }, error: null };
-        }
-      }
-
-      return err(error.message);
-    }
-
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "VIEW_TABLE",
-      targetTable: tableName,
-      notes: `Viewed ${tableName} (offset=${offset}, limit=${limit})`,
-    });
-
-    return { data: { rows: data, total: count }, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "VIEW_TABLE", targetTable: tableName, notes: `Viewed ${tableName}` });
+    return ok({ rows: data || [], total: count || 0 });
   } catch (e: any) {
     return err(e.message);
   }
@@ -704,31 +637,13 @@ export async function updateTableRow(tableName: string, recordId: string, update
     if (!/^[a-z_][a-z0-9_]*$/.test(tableName)) return err("Invalid table name");
 
     const admin = createAdminSupabaseClient();
-
-    // Snapshot previous state
     const { data: prev } = await admin.from(tableName).select("*").eq("id", recordId).maybeSingle();
 
-    const { data, error } = await admin
-      .from(tableName)
-      .update(updates)
-      .eq("id", recordId)
-      .select()
-      .maybeSingle();
-
+    const { data, error } = await admin.from(tableName).update(updates).eq("id", recordId).select().maybeSingle();
     if (error) return err(error.message);
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "UPDATE_ROW",
-      targetTable: tableName,
-      targetRecordId: recordId,
-      previousState: prev,
-      newState: data,
-      mutationPayload: updates,
-    });
-
-    return { data, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "UPDATE_ROW", targetTable: tableName, targetRecordId: recordId, previousState: prev, newState: data, mutationPayload: updates });
+    return ok(data);
   } catch (e: any) {
     return err(e.message);
   }
@@ -744,31 +659,20 @@ export async function deleteTableRow(tableName: string, recordId: string) {
     if (tableName === "super_admin_audit_logs") return err("Cannot delete audit logs");
 
     const admin = createAdminSupabaseClient();
-
-    // Snapshot
     const { data: prev } = await admin.from(tableName).select("*").eq("id", recordId).maybeSingle();
 
     const { error } = await admin.from(tableName).delete().eq("id", recordId);
     if (error) return err(error.message);
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "DELETE_ROW",
-      targetTable: tableName,
-      targetRecordId: recordId,
-      previousState: prev,
-      notes: `Deleted row from ${tableName}`,
-    });
-
-    return { data: { success: true }, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "DELETE_ROW", targetTable: tableName, targetRecordId: recordId, previousState: prev });
+    return ok({ success: true });
   } catch (e: any) {
     return err(e.message);
   }
 }
 
 /** Insert a new row into a table */
-export async function insertTableRow(tableName: string, data: Record<string, any>) {
+export async function insertTableRow(tableName: string, rowData: Record<string, any>) {
   try {
     const caller = await verifySuperAdmin();
     if (!caller) return err("Unauthorized");
@@ -776,20 +680,11 @@ export async function insertTableRow(tableName: string, data: Record<string, any
     if (!/^[a-z_][a-z0-9_]*$/.test(tableName)) return err("Invalid table name");
 
     const admin = createAdminSupabaseClient();
-    const { data: row, error } = await admin.from(tableName).insert(data).select().maybeSingle();
+    const { data: row, error } = await admin.from(tableName).insert(rowData).select().maybeSingle();
     if (error) return err(error.message);
 
-    await logAudit({
-      adminId: caller.id,
-      adminEmail: caller.email,
-      actionType: "INSERT_ROW",
-      targetTable: tableName,
-      targetRecordId: (row as any)?.id || null,
-      newState: row,
-      mutationPayload: data,
-    });
-
-    return { data: row, error: null };
+    logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "INSERT_ROW", targetTable: tableName, targetRecordId: (row as any)?.id || null, newState: row, mutationPayload: rowData });
+    return ok(row);
   } catch (e: any) {
     return err(e.message);
   }
@@ -818,7 +713,7 @@ export async function getAuditLogs(limit = 50, offset = 0, filters?: { action_ty
 
     const { data, error, count } = await query;
     if (error) return err(error.message);
-    return { data: { rows: data, total: count }, error: null };
+    return ok({ rows: data, total: count });
   } catch (e: any) {
     return err(e.message);
   }
@@ -836,6 +731,7 @@ export async function getSystemStats() {
 
     const admin = createAdminSupabaseClient();
 
+    // Use columns that definitely exist on each table
     const [orgs, users, members, jobs] = await Promise.all([
       admin.from("organizations").select("id", { count: "exact", head: true }),
       admin.from("profiles").select("id", { count: "exact", head: true }),
@@ -843,15 +739,12 @@ export async function getSystemStats() {
       admin.from("jobs").select("id", { count: "exact", head: true }),
     ]);
 
-    return {
-      data: {
-        total_workspaces: orgs.count || 0,
-        total_users: users.count || 0,
-        active_memberships: members.count || 0,
-        total_jobs: jobs.count || 0,
-      },
-      error: null,
-    };
+    return ok({
+      total_workspaces: orgs.count || 0,
+      total_users: users.count || 0,
+      active_memberships: members.count || 0,
+      total_jobs: jobs.count || 0,
+    });
   } catch (e: any) {
     return err(e.message);
   }

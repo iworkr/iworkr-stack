@@ -54,10 +54,22 @@ export default function BillingPage() {
   const [quotaSms, setQuotaSms] = useState(100);
   const [quotaApi, setQuotaApi] = useState(5000);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const loadWorkspaces = useCallback(async () => {
     setLoading(true);
-    const result = await listWorkspaces(search || undefined, 50);
-    if (result.data) setWorkspaces(result.data.rows || []);
+    setLoadError(null);
+    try {
+      const result = await listWorkspaces(search || undefined, 50);
+      if (result.error) {
+        setLoadError(result.error);
+        setWorkspaces([]);
+      } else if (result.data) {
+        setWorkspaces(result.data.rows || []);
+      }
+    } catch (e: any) {
+      setLoadError(e.message || "Failed to load");
+    }
     setLoading(false);
   }, [search]);
 
@@ -128,7 +140,14 @@ export default function BillingPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+          {loadError ? (
+            <div className="flex flex-col items-center justify-center py-20 px-6">
+              <AlertTriangle size={24} className="text-red-400 mb-2" />
+              <p className="text-[12px] text-red-400 font-medium">Failed to load</p>
+              <p className="mt-1 text-[10px] text-red-400/60 text-center max-w-[300px] font-mono">{loadError}</p>
+              <button onClick={loadWorkspaces} className="mt-3 rounded-md bg-red-500/10 px-3 py-1.5 text-[10px] text-red-400 hover:bg-red-500/15">Retry</button>
+            </div>
+          ) : loading ? (
             <div className="p-4 space-y-1">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="h-10 animate-pulse rounded bg-white/[0.02]" />
@@ -147,7 +166,7 @@ export default function BillingPage() {
                   <span className="text-[11px] font-medium text-zinc-300">{ws.name}</span>
                   <span className="ml-2 text-[9px] text-zinc-700">{ws.industry_type || "trades"}</span>
                 </div>
-                <span className="rounded bg-white/[0.04] px-1.5 py-0.5 text-[8px] font-medium text-zinc-600">{ws.status || "active"}</span>
+                <span className="rounded bg-white/[0.04] px-1.5 py-0.5 text-[8px] font-medium text-zinc-600">{ws.plan_tier || "free"}</span>
               </button>
             ))
           )}

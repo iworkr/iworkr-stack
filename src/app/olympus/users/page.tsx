@@ -72,12 +72,23 @@ export default function UsersPage() {
 
   const PAGE_SIZE = 30;
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const loadUsers = useCallback(async () => {
     setLoading(true);
-    const result = await listUsers(search || undefined, PAGE_SIZE, page * PAGE_SIZE);
-    if (result.data) {
-      setUsers(result.data.rows as UserRow[]);
-      setTotal(result.data.total || 0);
+    setLoadError(null);
+    try {
+      const result = await listUsers(search || undefined, PAGE_SIZE, page * PAGE_SIZE);
+      if (result.error) {
+        setLoadError(result.error);
+        setUsers([]);
+        setTotal(0);
+      } else if (result.data) {
+        setUsers(result.data.rows as UserRow[]);
+        setTotal(result.data.total || 0);
+      }
+    } catch (e: any) {
+      setLoadError(e.message || "Failed to load users");
     }
     setLoading(false);
   }, [search, page]);
@@ -165,7 +176,14 @@ export default function UsersPage() {
             <span className="flex-1 text-[9px] font-mono font-bold tracking-wider text-zinc-600 uppercase">Joined</span>
           </div>
 
-          {loading ? (
+          {loadError ? (
+            <div className="flex flex-col items-center justify-center py-20 px-6">
+              <AlertTriangle size={24} className="text-red-400 mb-2" />
+              <p className="text-[12px] text-red-400 font-medium">Failed to load</p>
+              <p className="mt-1 text-[10px] text-red-400/60 text-center max-w-[300px] font-mono">{loadError}</p>
+              <button onClick={loadUsers} className="mt-3 rounded-md bg-red-500/10 px-3 py-1.5 text-[10px] text-red-400 hover:bg-red-500/15">Retry</button>
+            </div>
+          ) : loading ? (
             <div className="space-y-0.5 p-2">
               {Array.from({ length: 10 }).map((_, i) => (
                 <div key={i} className="h-10 animate-pulse rounded-md bg-white/[0.02]" style={{ animationDelay: `${i * 30}ms` }} />
