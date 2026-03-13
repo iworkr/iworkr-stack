@@ -22,6 +22,7 @@ import {
   Plus,
   MapPin,
   Code2,
+  Palette,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { Shimmer } from "@/components/ui/shimmer";
@@ -63,6 +64,7 @@ const sections: NavSection[] = [
     title: "Administration",
     items: [
       { id: "workspace", label: "Workspace", href: "/settings/workspace", icon: Building2 },
+      { id: "branding", label: "Branding", href: "/settings/branding", icon: Palette },
       { id: "members", label: "Members", href: "/settings/members", icon: Users },
       { id: "billing", label: "Billing", href: "/settings/billing", icon: CreditCard },
       { id: "integrations", label: "Integrations", href: "/settings/integrations", icon: Plug },

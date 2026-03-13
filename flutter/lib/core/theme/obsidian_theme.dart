@@ -367,38 +367,123 @@ class ObsidianTheme {
     );
   }
 
-  // ── Branded Theme Factories ─────────────────────────
+  // ── Branded Theme Factories (Project Chameleon) ─────────────────
 
   /// Apply workspace brand color to the dark (Obsidian) theme.
+  /// Uses Material 3 ColorScheme.fromSeed to generate a full tonal palette
+  /// from the brand color, so every switch, radio, FAB, and active indicator
+  /// matches the tenant's identity without hardcoding individual shades.
   static ThemeData darkThemeWith(Color brandColor) {
     final onBrand = brandColor.computeLuminance() > 0.5
         ? Colors.black
         : Colors.white;
+
+    // Generate M3 tonal palette from the brand seed color
+    final m3Scheme = ColorScheme.fromSeed(
+      seedColor: brandColor,
+      brightness: Brightness.dark,
+    );
+
     return darkTheme.copyWith(
+      useMaterial3: true,
       primaryColor: brandColor,
-      colorScheme: darkTheme.colorScheme.copyWith(
+      colorScheme: m3Scheme.copyWith(
         primary: brandColor,
         onPrimary: onBrand,
+        surface: surface1,
+        error: rose,
       ),
       bottomNavigationBarTheme: darkTheme.bottomNavigationBarTheme.copyWith(
         selectedItemColor: brandColor,
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: brandColor,
+        foregroundColor: onBrand,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return brandColor;
+          return null;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return brandColor.withValues(alpha: 0.5);
+          }
+          return null;
+        }),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return brandColor;
+          return null;
+        }),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return brandColor;
+          return null;
+        }),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: brandColor,
       ),
     );
   }
 
   /// Apply workspace brand color to the light (Alabaster) theme.
+  /// Uses Material 3 ColorScheme.fromSeed for full tonal palette generation.
   static ThemeData lightThemeWith(Color brandColor) {
     final onBrand = brandColor.computeLuminance() > 0.5
         ? Colors.black
         : Colors.white;
+
+    final m3Scheme = ColorScheme.fromSeed(
+      seedColor: brandColor,
+      brightness: Brightness.light,
+    );
+
     return lightTheme.copyWith(
+      useMaterial3: true,
       primaryColor: brandColor,
-      colorScheme: lightTheme.colorScheme.copyWith(
+      colorScheme: m3Scheme.copyWith(
         primary: brandColor,
         onPrimary: onBrand,
+        surface: AlabasterTheme.surface1,
+        error: rose,
       ),
       bottomNavigationBarTheme: lightTheme.bottomNavigationBarTheme.copyWith(
         selectedItemColor: brandColor,
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: brandColor,
+        foregroundColor: onBrand,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return brandColor;
+          return null;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return brandColor.withValues(alpha: 0.5);
+          }
+          return null;
+        }),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return brandColor;
+          return null;
+        }),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return brandColor;
+          return null;
+        }),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: brandColor,
       ),
     );
   }

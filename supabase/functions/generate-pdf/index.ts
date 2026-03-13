@@ -87,8 +87,16 @@ serve(async (req) => {
       .eq("id", invoice.organization_id)
       .single();
 
+    // Project Chameleon: Fetch workspace_branding for whitelabel color/logo
+    const { data: wsb } = await supabase
+      .from("workspace_branding")
+      .select("primary_color_hex, logo_dark_url")
+      .eq("workspace_id", invoice.organization_id)
+      .maybeSingle();
+
     const orgName = org?.name || "Business";
-    const brandColor = hexToRgb(org?.brand_color_hex || "#10B981");
+    // Prefer workspace_branding color, fall back to org.brand_color_hex
+    const brandColor = hexToRgb(wsb?.primary_color_hex || org?.brand_color_hex || "#10B981");
     const settings = org?.settings || {};
     const lineItems = (invoice.invoice_line_items || []).sort(
       (a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order,
@@ -288,7 +296,9 @@ serve(async (req) => {
       margin,
       footerY,
     );
-    doc.text("Powered by iWorkr", pw - margin, footerY, { align: "right" });
+    // Whitelabel: Only show "Powered by iWorkr" if no custom branding
+    const footerBrand = wsb?.primary_color_hex ? orgName : "Powered by iWorkr";
+    doc.text(footerBrand, pw - margin, footerY, { align: "right" });
 
     // Convert to buffer and upload
     const pdfOutput = doc.output("arraybuffer");

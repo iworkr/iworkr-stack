@@ -33,6 +33,9 @@ class Workspace {
   final Map<String, dynamic>? settings;
   final String brandColorHex;
   final String industryType; // 'trades' or 'care' — Project Nightingale
+  final String? brandTextColorHex; // Project Chameleon: WCAG-safe text color
+  final String? logoLightUrl; // For dark backgrounds (dashboard)
+  final String? logoDarkUrl; // For light backgrounds (PDFs, emails)
 
   const Workspace({
     required this.organizationId,
@@ -49,6 +52,9 @@ class Workspace {
     // Default brand color (emerald green); overridden by workspace settings
     this.brandColorHex = '#10B981',
     this.industryType = 'trades',
+    this.brandTextColorHex,
+    this.logoLightUrl,
+    this.logoDarkUrl,
   });
 
   String get initials {
@@ -158,13 +164,47 @@ class ActiveWorkspaceNotifier extends StateNotifier<String?> {
   }
 }
 
-/// The active Workspace object (derived)
+/// The active Workspace object (derived) — enhanced with Project Chameleon branding
 final activeWorkspaceProvider = FutureProvider<Workspace?>((ref) async {
   final activeId = ref.watch(activeWorkspaceIdProvider);
   if (activeId == null) return null;
 
   final workspaces = await ref.watch(allWorkspacesProvider.future);
-  return workspaces.where((w) => w.organizationId == activeId).firstOrNull;
+  final ws = workspaces.where((w) => w.organizationId == activeId).firstOrNull;
+  if (ws == null) return null;
+
+  // Fetch workspace_branding for Project Chameleon colors/logos
+  try {
+    final branding = await SupabaseService.client
+        .from('workspace_branding')
+        .select('primary_color_hex, text_on_primary_hex, logo_light_url, logo_dark_url')
+        .eq('workspace_id', activeId)
+        .maybeSingle();
+
+    if (branding != null) {
+      return Workspace(
+        organizationId: ws.organizationId,
+        name: ws.name,
+        slug: ws.slug,
+        trade: ws.trade,
+        logoUrl: ws.logoUrl,
+        role: ws.role,
+        status: ws.status,
+        branch: ws.branch,
+        joinedAt: ws.joinedAt,
+        settings: ws.settings,
+        brandColorHex: branding['primary_color_hex'] as String? ?? ws.brandColorHex,
+        industryType: ws.industryType,
+        brandTextColorHex: branding['text_on_primary_hex'] as String?,
+        logoLightUrl: branding['logo_light_url'] as String?,
+        logoDarkUrl: branding['logo_dark_url'] as String?,
+      );
+    }
+  } catch (_) {
+    // workspace_branding table may not exist yet — fall back gracefully
+  }
+
+  return ws;
 });
 
 /// Cross-workspace unread notification counts (polled every 5 minutes)

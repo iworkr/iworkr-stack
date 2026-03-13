@@ -70,6 +70,19 @@
   /* Monolith: Search input spine color — single brand, never neon green */
   --search-spine: #10B981;
 
+  /* Project Chameleon: Whitelabel brand variables (overridden at runtime by BrandProvider) */
+  --brand-primary: #10B981;
+  --brand-primary-text: #FFFFFF;
+  --brand-primary-hover: #0D9668;
+  --brand-primary-10: rgba(16, 185, 129, 0.1);
+  --brand-primary-20: rgba(16, 185, 129, 0.2);
+  --brand-primary-glow: 0 0 12px rgba(16, 185, 129, 0.08);
+
+  /* Chameleon: Tailwind-compatible brand color mapping */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-text: var(--brand-primary-text);
+  --color-brand-primary-light: var(--brand-primary-10);
+
   /* Monolith: Shadow scale */
   --shadow-dropdown: 0 16px 48px -8px rgba(0, 0, 0, 0.6);
   --shadow-deep: 0 24px 48px rgba(0, 0, 0, 0.4);

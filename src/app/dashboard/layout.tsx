@@ -11,6 +11,7 @@ import { ActionToastContainer } from "@/components/app/action-toast";
 import { DataProvider } from "@/components/app/data-provider";
 import { HydrationGate } from "@/components/app/hydration-gate";
 import { MapboxProvider } from "@/components/maps/mapbox-provider";
+import { BrandProvider } from "@/components/providers/brand-provider";
 import { useShellStore } from "@/lib/shell-store";
 import { PastDueBanner } from "@/components/app/feature-gate";
 import { useAuthStore } from "@/lib/auth-store";
@@ -197,18 +198,20 @@ export default function DashboardLayout({
           style={{ background: "var(--surface-0)" }}
         >
           <DataProvider>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="h-full"
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
+            <BrandProvider>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={pathname}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full"
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
+            </BrandProvider>
           </DataProvider>
         </motion.main>
       </div>

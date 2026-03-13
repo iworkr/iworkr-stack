@@ -15,6 +15,7 @@ import { useIntegrationsStore } from "@/lib/integrations-store";
 import { useMessengerStore } from "@/lib/stores/messenger-store";
 import { useCredentialsStore } from "@/lib/credentials-store";
 import { useIncidentsStore } from "@/lib/incidents-store";
+import { useBrandingStore } from "@/lib/stores/branding-store";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useFleetTracking } from "@/lib/hooks/use-fleet-tracking";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
@@ -63,6 +64,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     useMessengerStore.getState().loadChannels(orgId);
     useCredentialsStore.getState().loadFromServer(orgId);
     useIncidentsStore.getState().loadFromServer(orgId);
+    useBrandingStore.getState().loadFromServer(orgId);
   }, [orgId]);
 
   // Realtime subscription for notifications (skip when Supabase env invalid to avoid WS errors)

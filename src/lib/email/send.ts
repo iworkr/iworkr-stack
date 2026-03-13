@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Resend } from "resend";
 import type { ReactElement } from "react";
 
@@ -11,7 +12,7 @@ function getResend(): Resend {
   return _resend;
 }
 
-const FROM_ADDRESS = "iWorkr <noreply@iworkrapp.com>";
+const DEFAULT_FROM_ADDRESS = "iWorkr <noreply@iworkrapp.com>";
 const REPLY_TO = process.env.ADMIN_EMAIL || "admin@iworkrapp.com";
 
 export interface SendEmailOptions {
@@ -20,6 +21,27 @@ export interface SendEmailOptions {
   react: ReactElement;
   replyTo?: string;
   tags?: { name: string; value: string }[];
+  /** Custom from address for whitelabel — uses workspace custom domain if verified */
+  from?: string;
+}
+
+/**
+ * Resolve the FROM address for a workspace.
+ * If the workspace has a verified custom domain, sends from dispatch@theirdomain.com.
+ * Otherwise, sends from the default iWorkr address.
+ */
+export function resolveFromAddress(branding?: {
+  dns_status?: string;
+  custom_email_domain?: string;
+} | null, workspaceName?: string): string {
+  if (
+    branding?.dns_status === "verified" &&
+    branding.custom_email_domain
+  ) {
+    const name = workspaceName || "Dispatch";
+    return `${name} <dispatch@${branding.custom_email_domain}>`;
+  }
+  return DEFAULT_FROM_ADDRESS;
 }
 
 export async function sendEmail({
@@ -28,10 +50,11 @@ export async function sendEmail({
   react,
   replyTo = REPLY_TO,
   tags,
+  from,
 }: SendEmailOptions) {
   try {
     const { data, error } = await getResend().emails.send({
-      from: FROM_ADDRESS,
+      from: from || DEFAULT_FROM_ADDRESS,
       to: Array.isArray(to) ? to : [to],
       subject,
       react,

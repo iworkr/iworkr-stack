@@ -328,10 +328,11 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // 5b. Fetch workspace brand data
+        // 5b. Fetch workspace brand data + custom domain
         let workspaceName = "iWorkr";
         let brandColor = "#10B981";
         let logoUrl: string | null = null;
+        let customFromAddress: string | null = null;
 
         if (orgId) {
           const { data: org } = await supabase
@@ -345,6 +346,24 @@ Deno.serve(async (req: Request) => {
             logoUrl = org.logo_url || null;
           }
 
+          // Project Chameleon: Fetch workspace_branding for custom domain + brand color
+          const { data: wsb } = await supabase
+            .from("workspace_branding")
+            .select("primary_color_hex, logo_light_url, logo_dark_url, dns_status, custom_email_domain")
+            .eq("workspace_id", orgId)
+            .maybeSingle();
+
+          if (wsb) {
+            if (wsb.primary_color_hex) brandColor = wsb.primary_color_hex;
+            // For emails (dark bg), use logo_light_url (light logo on dark)
+            if (wsb.logo_light_url) logoUrl = wsb.logo_light_url;
+            // Custom domain override for FROM address
+            if (wsb.dns_status === "verified" && wsb.custom_email_domain) {
+              customFromAddress = `${workspaceName} <dispatch@${wsb.custom_email_domain}>`;
+            }
+          }
+
+          // Legacy brand_kits fallback
           const { data: brandKit } = await supabase
             .from("brand_kits")
             .select("primary_color, accent_color, logo_url")
@@ -353,8 +372,8 @@ Deno.serve(async (req: Request) => {
             .maybeSingle();
 
           if (brandKit) {
-            brandColor = brandKit.primary_color || brandColor;
-            if (brandKit.logo_url) logoUrl = brandKit.logo_url;
+            if (!wsb?.primary_color_hex) brandColor = brandKit.primary_color || brandColor;
+            if (!wsb?.logo_light_url && brandKit.logo_url) logoUrl = brandKit.logo_url;
           }
         }
 
@@ -420,7 +439,7 @@ Deno.serve(async (req: Request) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: FROM_ADDRESS,
+            from: customFromAddress || FROM_ADDRESS,
             to: [recipientEmail],
             subject,
             html,
