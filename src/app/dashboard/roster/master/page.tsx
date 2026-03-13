@@ -17,7 +17,7 @@ import {
   Check,
   X,
   Loader2,
-  LayoutGrid,
+  CalendarClock,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useRouter } from "next/navigation";
@@ -41,7 +41,7 @@ import { getOrgTechnicians } from "@/app/actions/schedule";
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 const INPUT_CLASS =
-  "w-full bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors";
+  "w-full bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors";
 
 const CYCLE_OPTIONS = [
   { days: 7, label: "1 Week" },
@@ -313,12 +313,12 @@ export default function MasterRosterBlueprintPage() {
         day_of_cycle: shiftForm.day_of_cycle,
         start_time: shiftForm.start_time,
         end_time: shiftForm.end_time,
-        support_purpose: shiftForm.support_purpose || null,
-        ndis_line_item: shiftForm.ndis_line_item || null,
-        primary_worker_id: shiftForm.primary_worker_id || null,
-        backup_worker_id: shiftForm.backup_worker_id || null,
+        support_purpose: shiftForm.support_purpose || undefined,
+        ndis_line_item: shiftForm.ndis_line_item || undefined,
+        primary_worker_id: shiftForm.primary_worker_id || undefined,
+        backup_worker_id: shiftForm.backup_worker_id || undefined,
         public_holiday_behavior: shiftForm.public_holiday_behavior,
-        notes: shiftForm.notes || null,
+        notes: shiftForm.notes || undefined,
       });
     } else {
       await createTemplateShift({
@@ -335,27 +335,33 @@ export default function MasterRosterBlueprintPage() {
         notes: shiftForm.notes || undefined,
       });
     }
-    const refreshed = await fetchTemplateShifts(selectedTemplate.id);
-    setShifts(refreshed);
-    // Also refresh template list to update shift counts
-    const tpls = await fetchRosterTemplates(orgId);
-    setTemplates(tpls);
+    const refreshedShifts = await fetchTemplateShifts(selectedTemplate.id);
+    setShifts(refreshedShifts);
     setShowShiftModal(false);
     setEditingShift(null);
     setSaving(false);
+
+    // Refresh template list for shift counts
+    const refreshedTemplates = await fetchRosterTemplates(orgId);
+    setTemplates(refreshedTemplates);
+    const upd = refreshedTemplates.find((t) => t.id === selectedTemplate.id) || null;
+    setSelectedTemplate(upd);
   }, [selectedTemplate, orgId, editingShift, shiftForm]);
 
   const handleDeleteShift = useCallback(async () => {
     if (!editingShift || !selectedTemplate || !orgId) return;
     setSaving(true);
     await deleteTemplateShift(editingShift.id);
-    const refreshed = await fetchTemplateShifts(selectedTemplate.id);
-    setShifts(refreshed);
-    const tpls = await fetchRosterTemplates(orgId);
-    setTemplates(tpls);
+    const refreshedShifts = await fetchTemplateShifts(selectedTemplate.id);
+    setShifts(refreshedShifts);
     setShowShiftModal(false);
     setEditingShift(null);
     setSaving(false);
+
+    const refreshedTemplates = await fetchRosterTemplates(orgId);
+    setTemplates(refreshedTemplates);
+    const upd = refreshedTemplates.find((t) => t.id === selectedTemplate.id) || null;
+    setSelectedTemplate(upd);
   }, [editingShift, selectedTemplate, orgId]);
 
   /* ═══════════════════════════════════════════════════════════════════════════
@@ -364,7 +370,7 @@ export default function MasterRosterBlueprintPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-[#050505]">
+      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-[var(--background)]">
         <div className="flex items-center gap-3 text-zinc-500">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Loading Master Roster…</span>
@@ -374,236 +380,258 @@ export default function MasterRosterBlueprintPage() {
   }
 
   return (
-    <div
-      className="min-h-[calc(100vh-64px)] bg-[#050505] text-white"
-      style={{
-        backgroundImage:
-          "linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-      }}
-    >
-      {/* ── Header ── */}
-      <div className="border-b border-zinc-800/50 bg-[#0A0A0A]/80 backdrop-blur-sm">
-        <div className="max-w-[1600px] mx-auto px-6 py-5 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                <LayoutGrid className="w-4 h-4 text-blue-400" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold tracking-tight text-white">Master Roster</h1>
-                <p className="text-xs text-zinc-500 font-mono tracking-wide uppercase mt-0.5">
-                  Blueprint Templates
-                </p>
-              </div>
+    <div className="relative flex h-full flex-col bg-[var(--background)] text-white">
+      {/* Noise texture */}
+      <div className="stealth-noise" />
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
+        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
+      />
+
+      {/* ── Command Bar Header ── */}
+      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-5 py-2.5">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+              MASTER ROSTER
+            </span>
+            <div className="ml-4 flex items-center gap-3">
+              <span className="text-[11px] text-zinc-500">
+                {templates.length} template{templates.length !== 1 ? "s" : ""}
+              </span>
+              {selectedTemplate && (
+                <>
+                  <span className="text-zinc-800">·</span>
+                  <span className="text-[11px] text-zinc-300 font-medium">
+                    {selectedTemplate.participant_name}
+                  </span>
+                  {saving && <Loader2 className="w-3 h-3 text-emerald-400 animate-spin" />}
+                </>
+              )}
             </div>
           </div>
-          <button
-            onClick={() => setShowNewTemplateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Template
-          </button>
+          <div className="flex items-center gap-2">
+            {selectedTemplate && (
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => router.push(`/dashboard/roster/rollout?template=${selectedTemplate.id}`)}
+                disabled={shifts.length === 0}
+                className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Play className="w-3 h-3" />
+                Preview Rollout
+              </motion.button>
+            )}
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowNewTemplateModal(true)}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-all duration-200"
+            >
+              <Plus size={12} />
+              New Template
+            </motion.button>
+          </div>
         </div>
       </div>
 
       {/* ── Main Layout ── */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6 flex gap-6">
+      <div className="relative z-10 flex-1 flex min-h-0">
         {/* ── Template Selector Panel (Left) ── */}
-        <div className="w-[280px] shrink-0">
-          <div className="border border-zinc-800/50 rounded-xl bg-[#0A0A0A] overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-800/50">
-              <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                Templates
-              </h2>
+        <div className="w-[260px] shrink-0 border-r border-white/[0.04] overflow-y-auto scrollbar-none">
+          <div className="px-4 py-3 border-b border-white/[0.03]">
+            <h2 className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+              Templates
+            </h2>
+          </div>
+
+          {templates.length === 0 ? (
+            <div className="px-4 py-12 text-center">
+              <CalendarClock className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+              <p className="text-sm text-zinc-500">No templates yet</p>
+              <p className="text-xs text-zinc-600 mt-1">
+                Create a blueprint to define recurring shift patterns
+              </p>
             </div>
-            <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
-              {templates.length === 0 ? (
-                <div className="px-4 py-10 text-center">
-                  <Calendar className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
-                  <p className="text-sm text-zinc-500">No templates yet</p>
-                  <p className="text-xs text-zinc-600 mt-1">
-                    Create a blueprint to define recurring shift patterns
-                  </p>
-                </div>
-              ) : (
-                <div className="p-2 space-y-1">
-                  {templates.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => handleSelectTemplate(t)}
-                      className={`w-full text-left px-3 py-3 rounded-lg transition-all group ${
-                        selectedTemplate?.id === t.id
-                          ? "bg-blue-500/10 border border-blue-500/20"
-                          : "hover:bg-zinc-800/50 border border-transparent"
+          ) : (
+            <div className="py-1">
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleSelectTemplate(t)}
+                  className={`w-full text-left px-4 py-3 transition-all group border-b border-white/[0.02] ${
+                    selectedTemplate?.id === t.id
+                      ? "bg-white/[0.03]"
+                      : "hover:bg-white/[0.02]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-zinc-200 truncate max-w-[170px] group-hover:text-white transition-colors">
+                      {t.participant_name}
+                    </span>
+                    <ChevronRight
+                      className={`w-3.5 h-3.5 text-zinc-700 transition-transform ${
+                        selectedTemplate?.id === t.id ? "rotate-90 text-emerald-500" : "group-hover:text-zinc-500"
                       }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-white truncate max-w-[180px]">
-                          {t.participant_name}
-                        </span>
-                        <ChevronRight
-                          className={`w-3.5 h-3.5 text-zinc-600 transition-transform ${
-                            selectedTemplate?.id === t.id ? "rotate-90 text-blue-400" : ""
-                          }`}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-                          {t.cycle_length_days}-day
-                        </span>
-                        <span className="text-[10px] text-zinc-500">
-                          {t.shift_count || 0} shift{(t.shift_count || 0) !== 1 ? "s" : ""}
-                        </span>
-                        <span
-                          className={`ml-auto w-1.5 h-1.5 rounded-full ${
-                            t.is_active ? "bg-blue-500" : "bg-zinc-600"
-                          }`}
-                        />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-zinc-500 border border-white/[0.04]">
+                      {t.cycle_length_days}d
+                    </span>
+                    <span className="text-[10px] text-zinc-600">
+                      {t.shift_count || 0} shift{(t.shift_count || 0) !== 1 ? "s" : ""}
+                    </span>
+                    <span
+                      className={`ml-auto w-1.5 h-1.5 rounded-full ${
+                        t.is_active ? "bg-emerald-500" : "bg-zinc-600"
+                      }`}
+                    />
+                  </div>
+                </button>
+              ))}
             </div>
-            <div className="p-3 border-t border-zinc-800/50">
-              <button
-                onClick={() => setShowNewTemplateModal(true)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-zinc-700 text-zinc-500 text-xs hover:border-blue-500/40 hover:text-blue-400 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                New Template
-              </button>
-            </div>
+          )}
+
+          <div className="p-3 border-t border-white/[0.03]">
+            <button
+              onClick={() => setShowNewTemplateModal(true)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-zinc-800 text-zinc-500 text-xs hover:border-emerald-500/30 hover:text-emerald-400 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              New Template
+            </button>
           </div>
         </div>
 
         {/* ── Main Area ── */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-y-auto scrollbar-none">
           {!selectedTemplate ? (
             /* ── Empty State ── */
-            <div className="flex flex-col items-center justify-center h-[500px] border border-zinc-800/50 rounded-xl bg-[#0A0A0A]">
-              <div className="w-16 h-16 rounded-2xl bg-blue-500/5 border-2 border-dashed border-blue-500/20 flex items-center justify-center mb-4">
-                <LayoutGrid className="w-7 h-7 text-blue-500/40" />
+            <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
+              <div className="pointer-events-none absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.01] blur-[60px]" />
+              <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mb-4">
+                <CalendarClock className="w-7 h-7 text-zinc-600" />
               </div>
-              <h3 className="text-sm font-medium text-zinc-400 mb-1">Select a template</h3>
-              <p className="text-xs text-zinc-600 max-w-[280px] text-center">
-                Choose a roster blueprint from the sidebar or create a new one to define recurring
-                shift patterns for a participant.
+              <h3 className="text-[15px] font-medium text-zinc-300 mb-1">Select a template</h3>
+              <p className="text-[12px] text-zinc-600 max-w-[280px] text-center leading-relaxed">
+                Choose a roster blueprint from the sidebar or create a new one to define recurring shift patterns.
               </p>
             </div>
           ) : (
             /* ── Template Builder ── */
             <motion.div
               key={selectedTemplate.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="space-y-5"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
             >
               {/* Template Info Bar */}
-              <div className="border border-zinc-800/50 rounded-xl bg-[#0A0A0A] px-5 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-base font-semibold text-white">{selectedTemplate.name}</h2>
-                        {saving && <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                          <Users className="w-3 h-3" />
-                          {selectedTemplate.participant_name}
-                        </span>
-                        <span className="text-zinc-700">·</span>
-                        <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                          <Calendar className="w-3 h-3" />
-                          {shifts.length} shift{shifts.length !== 1 ? "s" : ""} defined
-                        </span>
-                      </div>
+              <div className="border-b border-white/[0.03] bg-white/[0.01] px-5 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h2 className="text-sm font-semibold text-zinc-200">{selectedTemplate.name}</h2>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+                        <Users className="w-3 h-3" />
+                        {selectedTemplate.participant_name}
+                      </span>
+                      <span className="text-zinc-800">·</span>
+                      <span className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+                        <Calendar className="w-3 h-3" />
+                        {shifts.length} shift{shifts.length !== 1 ? "s" : ""}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {/* Cycle Length Selector */}
-                    <div className="flex items-center gap-1 bg-zinc-900/50 rounded-lg border border-zinc-800 p-0.5">
-                      {CYCLE_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.days}
-                          onClick={() => handleUpdateCycleLength(opt.days)}
-                          className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
-                            selectedTemplate.cycle_length_days === opt.days
-                              ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                              : "text-zinc-500 hover:text-zinc-300 border border-transparent"
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Active Toggle */}
-                    <button
-                      onClick={handleToggleActive}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                        selectedTemplate.is_active
-                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/15"
-                          : "bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:text-zinc-300"
-                      }`}
-                    >
-                      {selectedTemplate.is_active ? (
-                        <>
-                          <Check className="w-3 h-3" /> Active
-                        </>
-                      ) : (
-                        <>
-                          <X className="w-3 h-3" /> Inactive
-                        </>
-                      )}
-                    </button>
-
-                    {/* Delete */}
-                    {confirmDelete === selectedTemplate.id ? (
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={handleDeleteTemplate}
-                          className="px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium border border-red-500/20 hover:bg-red-500/20 transition-colors"
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setConfirmDelete(null)}
-                          className="px-2.5 py-1.5 rounded-lg bg-zinc-800/50 text-zinc-400 text-xs border border-zinc-700/50 hover:text-zinc-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Cycle Length Selector */}
+                  <div className="flex items-center gap-0.5 bg-white/[0.02] rounded-md border border-white/[0.04] p-0.5">
+                    {CYCLE_OPTIONS.map((opt) => (
                       <button
-                        onClick={() => setConfirmDelete(selectedTemplate.id)}
-                        className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Delete template"
+                        key={opt.days}
+                        onClick={() => handleUpdateCycleLength(opt.days)}
+                        className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+                          selectedTemplate.cycle_length_days === opt.days
+                            ? "bg-emerald-500/15 text-emerald-400"
+                            : "text-zinc-500 hover:text-zinc-300"
+                        }`}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {opt.label}
                       </button>
-                    )}
+                    ))}
                   </div>
+
+                  {/* Active Toggle */}
+                  <button
+                    onClick={handleToggleActive}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                      selectedTemplate.is_active
+                        ? "bg-emerald-500/[0.06] text-emerald-400"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    {selectedTemplate.is_active ? (
+                      <><Check className="w-3 h-3" /> Active</>
+                    ) : (
+                      <><X className="w-3 h-3" /> Inactive</>
+                    )}
+                  </button>
+
+                  {/* Delete */}
+                  {confirmDelete === selectedTemplate.id ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={handleDeleteTemplate}
+                        className="px-2 py-1 rounded-md bg-red-500/10 text-red-400 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(null)}
+                        className="px-2 py-1 rounded-md text-zinc-500 text-[11px] hover:text-zinc-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDelete(selectedTemplate.id)}
+                      className="p-1 rounded-md text-zinc-700 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      title="Delete template"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 
               {/* ── Cycle Grid ── */}
-              <div className="border border-zinc-800/50 rounded-xl bg-[#0A0A0A] overflow-hidden">
-                <div className="px-5 py-3 border-b border-zinc-800/50 flex items-center justify-between">
-                  <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    Cycle Blueprint
-                  </h3>
-                  <button
-                    onClick={() => openNewShiftModal(1)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-blue-400 hover:bg-blue-500/10 transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Add Shift
-                  </button>
+              <div>
+                {/* Column headers */}
+                <div className="flex border-b border-white/[0.03] bg-[var(--surface-1)]">
+                  <div className="w-[90px] shrink-0 px-3 py-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+                    Day
+                  </div>
+                  <div className="flex-1 flex">
+                    {HOUR_COLUMNS.map((hour) => (
+                      <div
+                        key={hour}
+                        className="flex-1 px-1 py-2 text-center font-mono text-[9px] font-bold tracking-widest text-zinc-700 border-l border-white/[0.02]"
+                      >
+                        {hour > 12 ? hour - 12 : hour === 0 ? 12 : hour}
+                        {hour >= 12 ? "p" : "a"}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="w-[60px] shrink-0 px-2 py-2 text-right">
+                    <button
+                      onClick={() => openNewShiftModal(1)}
+                      className="flex items-center gap-1 text-[10px] text-zinc-600 hover:text-emerald-400 transition-colors ml-auto"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
 
                 {loadingShifts ? (
@@ -613,45 +641,27 @@ export default function MasterRosterBlueprintPage() {
                 ) : (
                   <div className="overflow-x-auto">
                     <div className="min-w-[900px]">
-                      {/* Hour Headers */}
-                      <div className="flex border-b border-zinc-800/30 bg-zinc-900/20">
-                        <div className="w-[90px] shrink-0 px-3 py-2 text-[10px] font-mono text-zinc-600 uppercase">
-                          Day
-                        </div>
-                        <div className="flex-1 flex">
-                          {HOUR_COLUMNS.map((hour) => (
-                            <div
-                              key={hour}
-                              className="flex-1 px-1 py-2 text-center text-[10px] font-mono text-zinc-600 border-l border-zinc-800/20"
-                            >
-                              {hour > 12 ? hour - 12 : hour === 0 ? 12 : hour}
-                              {hour >= 12 ? "p" : "a"}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
                       {/* Day Rows */}
                       {cycleDayArray.map((day) => {
                         const dayShifts = shifts.filter((s) => s.day_of_cycle === day);
-                        const isWeekend = (day - 1) % 7 >= 5; // Sat=5, Sun=6
+                        const isWeekend = (day - 1) % 7 >= 5;
                         const isWeekBoundary = day > 1 && (day - 1) % 7 === 0;
 
                         return (
                           <div key={day}>
                             {isWeekBoundary && (
-                              <div className="h-px bg-blue-500/10" />
+                              <div className="h-px bg-emerald-500/10" />
                             )}
                             <div
-                              className={`flex border-b border-zinc-800/20 group/row hover:bg-zinc-800/10 transition-colors ${
-                                isWeekend ? "bg-zinc-900/30" : ""
+                              className={`flex border-b border-white/[0.02] group/row hover:bg-white/[0.015] transition-colors ${
+                                isWeekend ? "bg-white/[0.01]" : ""
                               }`}
                             >
                               {/* Day Label */}
                               <div className="w-[90px] shrink-0 px-3 py-2 flex items-center">
                                 <span
                                   className={`text-[11px] font-mono ${
-                                    isWeekend ? "text-zinc-600" : "text-zinc-400"
+                                    isWeekend ? "text-zinc-700" : "text-zinc-500"
                                   }`}
                                 >
                                   {DAY_LABELS[day]}
@@ -662,7 +672,6 @@ export default function MasterRosterBlueprintPage() {
                               <div
                                 className="flex-1 relative min-h-[42px] cursor-pointer"
                                 onClick={(e) => {
-                                  // Only trigger on the background, not on shift blocks
                                   if ((e.target as HTMLElement).closest("[data-shift-block]")) return;
                                   openNewShiftModal(day);
                                 }}
@@ -672,7 +681,7 @@ export default function MasterRosterBlueprintPage() {
                                   {HOUR_COLUMNS.map((h) => (
                                     <div
                                       key={h}
-                                      className="flex-1 border-l border-zinc-800/15"
+                                      className="flex-1 border-l border-white/[0.02]"
                                     />
                                   ))}
                                 </div>
@@ -681,18 +690,12 @@ export default function MasterRosterBlueprintPage() {
                                 {dayShifts.map((shift) => {
                                   const startFrac = timeToFraction(shift.start_time);
                                   const endFrac = timeToFraction(shift.end_time);
-                                  const gridStart = 6; // 6AM
-                                  const gridEnd = 21; // 9PM (after 8PM col)
+                                  const gridStart = 6;
+                                  const gridEnd = 21;
                                   const gridSpan = gridEnd - gridStart;
 
-                                  const leftPct = Math.max(
-                                    0,
-                                    ((startFrac - gridStart) / gridSpan) * 100
-                                  );
-                                  const widthPct = Math.max(
-                                    3,
-                                    ((endFrac - startFrac) / gridSpan) * 100
-                                  );
+                                  const leftPct = Math.max(0, ((startFrac - gridStart) / gridSpan) * 100);
+                                  const widthPct = Math.max(3, ((endFrac - startFrac) / gridSpan) * 100);
 
                                   return (
                                     <div
@@ -708,12 +711,12 @@ export default function MasterRosterBlueprintPage() {
                                         width: `${Math.min(widthPct, 100 - leftPct)}%`,
                                       }}
                                     >
-                                      <div className="relative h-full border-2 border-dashed border-blue-500/40 bg-blue-500/5 rounded-lg px-2 flex items-center gap-1 cursor-pointer hover:bg-blue-500/10 transition-colors group">
-                                        <span className="text-[10px] font-mono text-blue-400">
+                                      <div className="relative h-full border border-dashed border-emerald-500/30 bg-emerald-500/[0.04] rounded-md px-2 flex items-center gap-1 cursor-pointer hover:bg-emerald-500/[0.08] hover:border-emerald-500/50 transition-colors group">
+                                        <span className="text-[10px] font-mono text-emerald-400/80">
                                           {formatTime(shift.start_time)}
                                         </span>
-                                        <span className="text-[10px] text-zinc-600">→</span>
-                                        <span className="text-[10px] font-mono text-blue-400">
+                                        <span className="text-[10px] text-zinc-700">→</span>
+                                        <span className="text-[10px] font-mono text-emerald-400/80">
                                           {formatTime(shift.end_time)}
                                         </span>
                                         {shift.primary_worker_name && (
@@ -730,10 +733,19 @@ export default function MasterRosterBlueprintPage() {
                                 {/* Click hint on hover */}
                                 {dayShifts.length === 0 && (
                                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity pointer-events-none">
-                                    <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+                                    <span className="text-[10px] text-zinc-700 flex items-center gap-1">
                                       <Plus className="w-2.5 h-2.5" /> Click to add shift
                                     </span>
                                   </div>
+                                )}
+                              </div>
+
+                              {/* Day action */}
+                              <div className="w-[60px] shrink-0 flex items-center justify-end pr-3">
+                                {dayShifts.length > 0 && (
+                                  <span className="text-[9px] font-mono text-zinc-700">
+                                    {dayShifts.length}
+                                  </span>
                                 )}
                               </div>
                             </div>
@@ -750,37 +762,29 @@ export default function MasterRosterBlueprintPage() {
       </div>
 
       {/* ── Bottom Rollout Bar ── */}
-      {selectedTemplate && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800/50 bg-[#0A0A0A]/90 backdrop-blur-md"
-        >
-          <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="w-4 h-4 text-blue-400/60" />
-              <span className="text-xs text-zinc-500">
-                Blueprint for{" "}
-                <span className="text-zinc-300 font-medium">{selectedTemplate.participant_name}</span>
-                {" — "}
-                <span className="font-mono text-zinc-400">{shifts.length}</span> template shift
-                {shifts.length !== 1 ? "s" : ""} across{" "}
-                <span className="font-mono text-zinc-400">{selectedTemplate.cycle_length_days}</span>{" "}
-                days
-              </span>
-            </div>
-            <button
-              onClick={() =>
-                router.push(`/dashboard/roster/rollout?template=${selectedTemplate.id}`)
-              }
-              disabled={shifts.length === 0}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-blue-600 hover:bg-blue-500 text-white"
-            >
-              <Play className="w-3.5 h-3.5" />
-              Preview Rollout
-            </button>
+      {selectedTemplate && shifts.length > 0 && (
+        <div className="border-t border-white/[0.03] px-5 py-2 flex items-center justify-between bg-[var(--surface-1)]">
+          <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+            <Shield className="w-3.5 h-3.5 text-emerald-500/50" />
+            <span>
+              Blueprint for{" "}
+              <span className="text-zinc-300 font-medium">{selectedTemplate.participant_name}</span>
+              {" — "}
+              <span className="font-mono text-zinc-400">{shifts.length}</span> template shift{shifts.length !== 1 ? "s" : ""} across{" "}
+              <span className="font-mono text-zinc-400">{selectedTemplate.cycle_length_days}</span> days
+            </span>
           </div>
-        </motion.div>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() =>
+              router.push(`/dashboard/roster/rollout?template=${selectedTemplate.id}`)
+            }
+            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+          >
+            <Play className="w-3.5 h-3.5" />
+            Preview Rollout
+          </motion.button>
+        </div>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -796,22 +800,19 @@ export default function MasterRosterBlueprintPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center"
           >
-            {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setShowNewTemplateModal(false)}
             />
-
-            {/* Panel */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="relative w-full max-w-md mx-4 bg-[#0A0A0A]/95 backdrop-blur-xl border border-zinc-800/60 rounded-2xl shadow-2xl shadow-black/50"
+              className="relative w-full max-w-md mx-4 bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/[0.06] rounded-2xl shadow-2xl shadow-black/50"
             >
-              <div className="px-6 py-5 border-b border-zinc-800/50">
-                <h3 className="text-base font-semibold text-white">New Roster Blueprint</h3>
+              <div className="px-6 py-5 border-b border-white/[0.04]">
+                <h3 className="text-base font-semibold text-white">New Roster Template</h3>
                 <p className="text-xs text-zinc-500 mt-1">
                   Create a recurring shift template for a participant
                 </p>
@@ -820,9 +821,7 @@ export default function MasterRosterBlueprintPage() {
               <div className="px-6 py-5 space-y-4">
                 {/* Participant selector */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                    Participant
-                  </label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Participant</label>
                   <input
                     type="text"
                     placeholder="Search participants…"
@@ -833,9 +832,7 @@ export default function MasterRosterBlueprintPage() {
                   {(participantSearch || !newTemplateParticipant) && (
                     <div className="mt-1.5 max-h-[140px] overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-900/50">
                       {filteredParticipants.length === 0 ? (
-                        <div className="px-3 py-3 text-xs text-zinc-600 text-center">
-                          No participants found
-                        </div>
+                        <div className="px-3 py-3 text-xs text-zinc-600 text-center">No participants found</div>
                       ) : (
                         filteredParticipants.slice(0, 20).map((p) => (
                           <button
@@ -844,17 +841,13 @@ export default function MasterRosterBlueprintPage() {
                               setNewTemplateParticipant(p.id);
                               setParticipantSearch(p.client_name || "");
                             }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-zinc-800/50 transition-colors flex items-center justify-between ${
-                              newTemplateParticipant === p.id
-                                ? "bg-blue-500/10 text-blue-400"
-                                : "text-zinc-300"
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-white/[0.03] transition-colors flex items-center justify-between ${
+                              newTemplateParticipant === p.id ? "bg-emerald-500/[0.06] text-emerald-400" : "text-zinc-300"
                             }`}
                           >
                             <span>{p.client_name}</span>
                             {p.ndis_number && (
-                              <span className="text-[10px] font-mono text-zinc-600">
-                                {p.ndis_number}
-                              </span>
+                              <span className="text-[10px] font-mono text-zinc-600">{p.ndis_number}</span>
                             )}
                           </button>
                         ))
@@ -865,9 +858,7 @@ export default function MasterRosterBlueprintPage() {
 
                 {/* Template name */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                    Template Name
-                  </label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Template Name</label>
                   <input
                     type="text"
                     placeholder="Auto-generated from participant & cycle"
@@ -879,9 +870,7 @@ export default function MasterRosterBlueprintPage() {
 
                 {/* Cycle length */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-2">
-                    Cycle Length
-                  </label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-2">Cycle Length</label>
                   <div className="grid grid-cols-4 gap-2">
                     {CYCLE_OPTIONS.map((opt) => (
                       <button
@@ -889,7 +878,7 @@ export default function MasterRosterBlueprintPage() {
                         onClick={() => setNewTemplateCycle(opt.days)}
                         className={`px-3 py-2.5 rounded-lg text-xs font-medium text-center transition-all border ${
                           newTemplateCycle === opt.days
-                            ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                             : "bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700"
                         }`}
                       >
@@ -900,7 +889,7 @@ export default function MasterRosterBlueprintPage() {
                 </div>
               </div>
 
-              <div className="px-6 py-4 border-t border-zinc-800/50 flex items-center justify-end gap-2">
+              <div className="px-6 py-4 border-t border-white/[0.04] flex items-center justify-end gap-2">
                 <button
                   onClick={() => {
                     setShowNewTemplateModal(false);
@@ -915,14 +904,14 @@ export default function MasterRosterBlueprintPage() {
                 <button
                   onClick={handleCreateTemplate}
                   disabled={!newTemplateParticipant || !newTemplateName || saving}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Plus className="w-3.5 h-3.5" />
                   )}
-                  Create Blueprint
+                  Create Template
                 </button>
               </div>
             </motion.div>
@@ -939,7 +928,6 @@ export default function MasterRosterBlueprintPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center"
           >
-            {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => {
@@ -947,16 +935,14 @@ export default function MasterRosterBlueprintPage() {
                 setEditingShift(null);
               }}
             />
-
-            {/* Panel */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="relative w-full max-w-lg mx-4 bg-[#0A0A0A]/95 backdrop-blur-xl border border-zinc-800/60 rounded-2xl shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto"
+              className="relative w-full max-w-lg mx-4 bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/[0.06] rounded-2xl shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto"
             >
-              <div className="px-6 py-5 border-b border-zinc-800/50 flex items-center justify-between sticky top-0 bg-[#0A0A0A]/95 backdrop-blur-xl z-10 rounded-t-2xl">
+              <div className="px-6 py-5 border-b border-white/[0.04] flex items-center justify-between sticky top-0 bg-[#0A0A0A]/95 backdrop-blur-xl z-10 rounded-t-2xl">
                 <div>
                   <h3 className="text-base font-semibold text-white">
                     {editingShift ? "Edit Template Shift" : "Add Template Shift"}
@@ -970,7 +956,7 @@ export default function MasterRosterBlueprintPage() {
                     setShowShiftModal(false);
                     setEditingShift(null);
                   }}
-                  className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors"
+                  className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -979,20 +965,14 @@ export default function MasterRosterBlueprintPage() {
               <div className="px-6 py-5 space-y-4">
                 {/* Day of Cycle */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                    Day of Cycle
-                  </label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Day of Cycle</label>
                   <select
                     value={shiftForm.day_of_cycle}
-                    onChange={(e) =>
-                      setShiftForm((f) => ({ ...f, day_of_cycle: parseInt(e.target.value) }))
-                    }
+                    onChange={(e) => setShiftForm((f) => ({ ...f, day_of_cycle: parseInt(e.target.value) }))}
                     className={INPUT_CLASS}
                   >
                     {cycleDayArray.map((d) => (
-                      <option key={d} value={d}>
-                        Day {d} — {DAY_LABELS[d]}
-                      </option>
+                      <option key={d} value={d}>Day {d} — {DAY_LABELS[d]}</option>
                     ))}
                   </select>
                 </div>
@@ -1000,28 +980,20 @@ export default function MasterRosterBlueprintPage() {
                 {/* Start / End time */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                      Start Time
-                    </label>
+                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">Start Time</label>
                     <input
                       type="time"
                       value={shiftForm.start_time}
-                      onChange={(e) =>
-                        setShiftForm((f) => ({ ...f, start_time: e.target.value }))
-                      }
+                      onChange={(e) => setShiftForm((f) => ({ ...f, start_time: e.target.value }))}
                       className={`${INPUT_CLASS} font-mono`}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                      End Time
-                    </label>
+                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">End Time</label>
                     <input
                       type="time"
                       value={shiftForm.end_time}
-                      onChange={(e) =>
-                        setShiftForm((f) => ({ ...f, end_time: e.target.value }))
-                      }
+                      onChange={(e) => setShiftForm((f) => ({ ...f, end_time: e.target.value }))}
                       className={`${INPUT_CLASS} font-mono`}
                     />
                   </div>
@@ -1029,9 +1001,9 @@ export default function MasterRosterBlueprintPage() {
 
                 {/* Time display */}
                 {shiftForm.start_time && shiftForm.end_time && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed border-blue-500/20 bg-blue-500/5">
-                    <Clock className="w-3.5 h-3.5 text-blue-400/60" />
-                    <span className="text-xs font-mono text-blue-400">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-emerald-500/20 bg-emerald-500/[0.03]">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400/60" />
+                    <span className="text-xs font-mono text-emerald-400">
                       {formatTime(shiftForm.start_time)} → {formatTime(shiftForm.end_time)}
                     </span>
                     <span className="text-[10px] text-zinc-600 ml-auto">
@@ -1050,32 +1022,24 @@ export default function MasterRosterBlueprintPage() {
 
                 {/* Support Purpose */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                    Support Purpose
-                  </label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Support Purpose</label>
                   <input
                     type="text"
                     placeholder="e.g. Community access, personal care, meal prep"
                     value={shiftForm.support_purpose}
-                    onChange={(e) =>
-                      setShiftForm((f) => ({ ...f, support_purpose: e.target.value }))
-                    }
+                    onChange={(e) => setShiftForm((f) => ({ ...f, support_purpose: e.target.value }))}
                     className={INPUT_CLASS}
                   />
                 </div>
 
                 {/* NDIS Line Item */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                    NDIS Line Item
-                  </label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">NDIS Line Item</label>
                   <input
                     type="text"
                     placeholder="e.g. 01_011_0107_1_1"
                     value={shiftForm.ndis_line_item}
-                    onChange={(e) =>
-                      setShiftForm((f) => ({ ...f, ndis_line_item: e.target.value }))
-                    }
+                    onChange={(e) => setShiftForm((f) => ({ ...f, ndis_line_item: e.target.value }))}
                     className={`${INPUT_CLASS} font-mono`}
                   />
                 </div>
@@ -1083,42 +1047,30 @@ export default function MasterRosterBlueprintPage() {
                 {/* Workers */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                      Primary Worker
-                    </label>
+                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">Primary Worker</label>
                     <select
                       value={shiftForm.primary_worker_id}
-                      onChange={(e) =>
-                        setShiftForm((f) => ({ ...f, primary_worker_id: e.target.value }))
-                      }
+                      onChange={(e) => setShiftForm((f) => ({ ...f, primary_worker_id: e.target.value }))}
                       className={INPUT_CLASS}
                     >
                       <option value="">Unassigned</option>
                       {workers.map((w) => (
-                        <option key={w.id} value={w.id}>
-                          {w.full_name}
-                        </option>
+                        <option key={w.id} value={w.id}>{w.full_name}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                      Backup Worker
-                    </label>
+                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">Backup Worker</label>
                     <select
                       value={shiftForm.backup_worker_id}
-                      onChange={(e) =>
-                        setShiftForm((f) => ({ ...f, backup_worker_id: e.target.value }))
-                      }
+                      onChange={(e) => setShiftForm((f) => ({ ...f, backup_worker_id: e.target.value }))}
                       className={INPUT_CLASS}
                     >
                       <option value="">None</option>
                       {workers
                         .filter((w) => w.id !== shiftForm.primary_worker_id)
                         .map((w) => (
-                          <option key={w.id} value={w.id}>
-                            {w.full_name}
-                          </option>
+                          <option key={w.id} value={w.id}>{w.full_name}</option>
                         ))}
                     </select>
                   </div>
@@ -1126,39 +1078,19 @@ export default function MasterRosterBlueprintPage() {
 
                 {/* Public Holiday Behavior */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-2">
-                    Public Holiday Behavior
-                  </label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-2">Public Holiday Behavior</label>
                   <div className="space-y-2">
                     {[
-                      {
-                        value: "proceed" as const,
-                        label: "Proceed as Normal",
-                        note: "250% penalty rate applies",
-                        icon: Check,
-                        color: "text-blue-400",
-                      },
-                      {
-                        value: "cancel" as const,
-                        label: "Cancel Automatically",
-                        note: null,
-                        icon: X,
-                        color: "text-zinc-400",
-                      },
-                      {
-                        value: "flag" as const,
-                        label: "Flag for Review",
-                        note: "Recommended",
-                        icon: AlertTriangle,
-                        color: "text-amber-400",
-                      },
+                      { value: "proceed" as const, label: "Proceed as Normal", note: "250% penalty rate applies", icon: Check, color: "text-emerald-400" },
+                      { value: "cancel" as const, label: "Cancel Automatically", note: null, icon: X, color: "text-zinc-400" },
+                      { value: "flag" as const, label: "Flag for Review", note: "Recommended", icon: AlertTriangle, color: "text-amber-400" },
                     ].map((opt) => (
                       <label
                         key={opt.value}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-all ${
                           shiftForm.public_holiday_behavior === opt.value
-                            ? "border-blue-500/30 bg-blue-500/5"
-                            : "border-zinc-800 hover:border-zinc-700 bg-zinc-900/30"
+                            ? "border-emerald-500/20 bg-emerald-500/[0.04]"
+                            : "border-white/[0.04] hover:border-white/[0.08] bg-white/[0.01]"
                         }`}
                       >
                         <input
@@ -1177,7 +1109,7 @@ export default function MasterRosterBlueprintPage() {
                         <div
                           className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
                             shiftForm.public_holiday_behavior === opt.value
-                              ? "border-blue-500 bg-blue-500"
+                              ? "border-emerald-500 bg-emerald-500"
                               : "border-zinc-600"
                           }`}
                         >
@@ -1211,7 +1143,7 @@ export default function MasterRosterBlueprintPage() {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-zinc-800/50 flex items-center justify-between sticky bottom-0 bg-[#0A0A0A]/95 backdrop-blur-xl z-10 rounded-b-2xl">
+              <div className="px-6 py-4 border-t border-white/[0.04] flex items-center justify-between sticky bottom-0 bg-[#0A0A0A]/95 backdrop-blur-xl z-10 rounded-b-2xl">
                 <div>
                   {editingShift && (
                     <button
@@ -1237,7 +1169,7 @@ export default function MasterRosterBlueprintPage() {
                   <button
                     onClick={handleSaveShift}
                     disabled={saving || !shiftForm.start_time || !shiftForm.end_time}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {saving ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />

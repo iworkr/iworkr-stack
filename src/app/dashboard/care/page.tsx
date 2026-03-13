@@ -15,6 +15,9 @@ import {
   Calendar,
   BadgeCheck,
   DollarSign,
+  Brain,
+  Lightbulb,
+  Pill,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
@@ -83,6 +86,38 @@ const NAV_ITEMS = [
     href: "/dashboard/care/participants",
     color: "text-rose-400",
     bg: "bg-rose-500/10",
+  },
+  {
+    icon: <ClipboardList size={16} />,
+    title: "Progress Notes",
+    description: "Structured shift notes, goal tracking & follow-ups",
+    href: "/dashboard/care/progress-notes",
+    color: "text-teal-400",
+    bg: "bg-teal-500/10",
+  },
+  {
+    icon: <Pill size={16} />,
+    title: "Medications",
+    description: "Digital MAR, PRN tracking & missed dose alerts",
+    href: "/dashboard/care/medications",
+    color: "text-purple-400",
+    bg: "bg-purple-500/10",
+  },
+  {
+    icon: <Brain size={16} />,
+    title: "Behaviour & Safety",
+    description: "BSPs, behaviour events & restrictive practices register",
+    href: "/dashboard/care/behaviour",
+    color: "text-orange-400",
+    bg: "bg-orange-500/10",
+  },
+  {
+    icon: <Lightbulb size={16} />,
+    title: "Quality & CI",
+    description: "Continuous improvement, policy governance & audit",
+    href: "/dashboard/care/quality",
+    color: "text-cyan-400",
+    bg: "bg-cyan-500/10",
   },
 ];
 

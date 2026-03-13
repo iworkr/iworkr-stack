@@ -653,3 +653,572 @@ export async function rejectPlanManagerInvoiceAction(id: string, reason: string)
   revalidatePath("/dashboard/finance/plan-manager");
   return data;
 }
+
+// ── Behaviour Support Plans ──────────────────────────────────────────────────
+
+const CreateBSPSchema = z.object({
+  organization_id: z.string().uuid(),
+  participant_id: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  author_name: z.string().max(200).optional().nullable(),
+  author_role: z.string().max(100).optional().nullable(),
+  start_date: z.string().optional().nullable(),
+  review_date: z.string().optional().nullable(),
+  next_review_date: z.string().optional().nullable(),
+  target_behaviours: z.array(z.unknown()).default([]),
+  triggers: z.array(z.unknown()).default([]),
+  prevention_strategies: z.array(z.unknown()).default([]),
+  response_strategies: z.array(z.unknown()).default([]),
+  reinforcement_strategies: z.array(z.unknown()).default([]),
+  consent_obtained: z.boolean().default(false),
+  consent_date: z.string().optional().nullable(),
+  notes: z.string().max(5000).optional().nullable(),
+});
+
+export async function createBSPAction(input: z.infer<typeof CreateBSPSchema>) {
+  const parsed = CreateBSPSchema.parse(input);
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await (supabase as any)
+    .from("behaviour_support_plans")
+    .insert(parsed)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/behaviour");
+  return data;
+}
+
+export async function updateBSPAction(id: string, updates: any) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await (supabase as any)
+    .from("behaviour_support_plans")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/behaviour");
+  return data;
+}
+
+export async function fetchBSPsAction(organizationId: string, participantId?: string) {
+  const supabase = await createServerSupabaseClient();
+  let query = (supabase as any)
+    .from("behaviour_support_plans")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+
+  if (participantId) query = query.eq("participant_id", participantId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ── Behaviour Events ─────────────────────────────────────────────────────────
+
+export async function createBehaviourEventAction(input: {
+  organization_id: string;
+  participant_id: string;
+  bsp_id?: string;
+  behaviour_type: string;
+  intensity: "low" | "moderate" | "high" | "extreme";
+  behaviour_description: string;
+  occurred_at: string;
+  duration_minutes?: number;
+  triggers_identified?: string[];
+  antecedent?: string;
+  consequence?: string;
+  strategies_used?: string[];
+  outcome?: string;
+  restrictive_practice_used?: boolean;
+  notes?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await (supabase as any)
+    .from("behaviour_events")
+    .insert({ ...input, worker_id: user.id })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  // Trigger sentinel scan
+  try {
+    await supabase.functions.invoke("sentinel-scan", {
+      body: { trigger_type: "behaviour_event", record_id: data.id, organization_id: input.organization_id },
+    });
+  } catch { /* non-blocking */ }
+
+  revalidatePath("/dashboard/care/behaviour");
+  return data;
+}
+
+export async function fetchBehaviourEventsAction(organizationId: string, participantId?: string) {
+  const supabase = await createServerSupabaseClient();
+  let query = (supabase as any)
+    .from("behaviour_events")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("occurred_at", { ascending: false })
+    .limit(200);
+
+  if (participantId) query = query.eq("participant_id", participantId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ── Restrictive Practices ────────────────────────────────────────────────────
+
+export async function createRestrictivePracticeAction(input: {
+  organization_id: string;
+  participant_id: string;
+  behaviour_event_id?: string;
+  practice_type: string;
+  authorised_in_bsp: boolean;
+  duration_minutes?: number;
+  reason: string;
+  description: string;
+  outcome?: string;
+  reportable?: boolean;
+  notes?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await (supabase as any)
+    .from("restrictive_practices")
+    .insert({ ...input, worker_id: user.id })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  // Auto-create CI action for governance review
+  try {
+    await (supabase as any)
+      .from("ci_actions")
+      .insert({
+        organization_id: input.organization_id,
+        title: `Restrictive Practice Review: ${input.practice_type.replace(/_/g, " ")}`,
+        source_type: "restrictive_practice",
+        source_id: data.id,
+        status: "open",
+        priority: input.reportable ? "critical" : "high",
+        description: `Automatic CI action generated from restrictive practice use. ${input.reason}`,
+      });
+  } catch { /* non-blocking */ }
+
+  revalidatePath("/dashboard/care/behaviour");
+  return data;
+}
+
+export async function fetchRestrictivePracticesAction(organizationId: string, participantId?: string) {
+  const supabase = await createServerSupabaseClient();
+  let query = (supabase as any)
+    .from("restrictive_practices")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("occurred_at", { ascending: false })
+    .limit(200);
+
+  if (participantId) query = query.eq("participant_id", participantId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ── CI Actions ───────────────────────────────────────────────────────────────
+
+export async function createCIActionAction(input: {
+  organization_id: string;
+  title: string;
+  description?: string;
+  source_type: string;
+  source_id?: string;
+  source_reference?: string;
+  priority?: string;
+  owner_name?: string;
+  due_date?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await (supabase as any)
+    .from("ci_actions")
+    .insert(input)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/quality");
+  return data;
+}
+
+export async function updateCIActionAction(id: string, updates: any) {
+  const supabase = await createServerSupabaseClient();
+
+  const payload: any = { ...updates, updated_at: new Date().toISOString() };
+  if (updates.status === "completed") {
+    payload.completed_at = new Date().toISOString();
+  }
+
+  const { data, error } = await (supabase as any)
+    .from("ci_actions")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/quality");
+  return data;
+}
+
+export async function fetchCIActionsAction(organizationId: string, status?: string) {
+  const supabase = await createServerSupabaseClient();
+  let query = (supabase as any)
+    .from("ci_actions")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+
+  if (status) query = query.eq("status", status);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ── Policy Register ──────────────────────────────────────────────────────────
+
+export async function createPolicyAction(input: {
+  organization_id: string;
+  title: string;
+  category: string;
+  version?: string;
+  content?: string;
+  document_url?: string;
+  effective_date?: string;
+  review_date?: string;
+  requires_acknowledgement?: boolean;
+  acknowledgement_deadline?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await (supabase as any)
+    .from("policy_register")
+    .insert({ ...input, created_by: user.id })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/quality");
+  return data;
+}
+
+export async function fetchPoliciesAction(organizationId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await (supabase as any)
+    .from("policy_register")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function acknowledgePolicyAction(policyId: string, organizationId: string, version: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await (supabase as any)
+    .from("policy_acknowledgements")
+    .upsert({
+      organization_id: organizationId,
+      policy_id: policyId,
+      user_id: user.id,
+      policy_version: version,
+    }, { onConflict: "policy_id,user_id,policy_version" })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/quality");
+  return data;
+}
+
+// ── Governance Meetings ──────────────────────────────────────────────────────
+
+export async function createGovernanceMeetingAction(input: {
+  organization_id: string;
+  title: string;
+  meeting_type?: string;
+  meeting_date: string;
+  agenda?: string;
+  attendees?: unknown[];
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await (supabase as any)
+    .from("governance_meetings")
+    .insert({ ...input, created_by: user.id })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/quality");
+  return data;
+}
+
+export async function fetchGovernanceMeetingsAction(organizationId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await (supabase as any)
+    .from("governance_meetings")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("meeting_date", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ── Support Coordination Cases ───────────────────────────────────────────────
+
+export async function createSCCaseAction(input: {
+  organization_id: string;
+  participant_id: string;
+  title: string;
+  case_type?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await (supabase as any)
+    .from("support_coordination_cases")
+    .insert({ ...input, coordinator_id: user.id })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/plans");
+  return data;
+}
+
+export async function updateSCCaseAction(id: string, updates: any) {
+  const supabase = await createServerSupabaseClient();
+
+  const payload: any = { ...updates, updated_at: new Date().toISOString() };
+  if (updates.status === "closed") {
+    payload.closed_at = new Date().toISOString();
+  }
+
+  const { data, error } = await (supabase as any)
+    .from("support_coordination_cases")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/care/plans");
+  return data;
+}
+
+export async function fetchSCCasesAction(organizationId: string, participantId?: string) {
+  const supabase = await createServerSupabaseClient();
+  let query = (supabase as any)
+    .from("support_coordination_cases")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+
+  if (participantId) query = query.eq("participant_id", participantId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ── Onboarding Checklists ────────────────────────────────────────────────────
+
+export async function createOnboardingChecklistAction(input: {
+  organization_id: string;
+  user_id: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+
+  const defaultItems = [
+    { key: "contract_signed", label: "Employment Contract Signed", required: true, completed: false },
+    { key: "worker_screening", label: "Worker Screening Check (NDIS)", required: true, completed: false },
+    { key: "wwcc", label: "Working With Children Check", required: true, completed: false },
+    { key: "police_check", label: "National Police Check", required: true, completed: false },
+    { key: "first_aid", label: "First Aid Certificate", required: true, completed: false },
+    { key: "manual_handling", label: "Manual Handling Training", required: false, completed: false },
+    { key: "medication_competency", label: "Medication Competency", required: false, completed: false },
+    { key: "orientation_completed", label: "Orientation Completed", required: true, completed: false },
+    { key: "code_of_conduct", label: "Code of Conduct Acknowledged", required: true, completed: false },
+    { key: "privacy_policy", label: "Privacy Policy Acknowledged", required: true, completed: false },
+    { key: "emergency_contact", label: "Emergency Contact Provided", required: true, completed: false },
+    { key: "superannuation", label: "Superannuation Details", required: true, completed: false },
+    { key: "tax_file", label: "Tax File Number Declaration", required: true, completed: false },
+    { key: "bank_details", label: "Bank Details Provided", required: true, completed: false },
+  ];
+
+  const { data, error } = await (supabase as any)
+    .from("onboarding_checklists")
+    .insert({
+      organization_id: input.organization_id,
+      user_id: input.user_id,
+      checklist_items: defaultItems,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/team");
+  return data;
+}
+
+export async function updateOnboardingChecklistAction(id: string, updates: any) {
+  const supabase = await createServerSupabaseClient();
+
+  const payload: any = { ...updates, updated_at: new Date().toISOString() };
+
+  // Check if all required items completed → auto-advance status
+  if (updates.checklist_items) {
+    const allRequiredDone = updates.checklist_items
+      .filter((item: any) => item.required)
+      .every((item: any) => item.completed);
+    if (allRequiredDone && updates.status !== "authorised") {
+      payload.status = "completed";
+    }
+  }
+
+  const { data, error } = await (supabase as any)
+    .from("onboarding_checklists")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/team");
+  return data;
+}
+
+export async function authoriseWorkerAction(checklistId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await (supabase as any)
+    .from("onboarding_checklists")
+    .update({
+      status: "authorised",
+      authorised_to_work: true,
+      authorised_at: new Date().toISOString(),
+      signed_off_by: user.id,
+      signed_off_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", checklistId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/team");
+  return data;
+}
+
+export async function fetchOnboardingChecklistAction(organizationId: string, userId?: string) {
+  const supabase = await createServerSupabaseClient();
+  let query = (supabase as any)
+    .from("onboarding_checklists")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+
+  if (userId) query = query.eq("user_id", userId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ── Progress Notes (standalone page actions) ─────────────────────────────────
+
+export async function createProgressNoteAction(input: {
+  organization_id: string;
+  participant_id: string;
+  job_id?: string;
+  note_type: string;
+  content: string;
+  goals_addressed?: string[];
+  risks_identified?: string[];
+  follow_up_required?: boolean;
+  follow_up_notes?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await (supabase as any)
+    .from("progress_notes")
+    .insert({ ...input, worker_id: user.id })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  // Trigger sentinel scan for keyword detection
+  try {
+    await supabase.functions.invoke("sentinel-scan", {
+      body: { trigger_type: "progress_note", record_id: data.id, organization_id: input.organization_id },
+    });
+  } catch { /* non-blocking */ }
+
+  revalidatePath("/dashboard/care/progress-notes");
+  return data;
+}
+
+export async function fetchProgressNotesAction(organizationId: string, filters?: {
+  participant_id?: string;
+  note_type?: string;
+  follow_up_required?: boolean;
+}) {
+  const supabase = await createServerSupabaseClient();
+  let query = (supabase as any)
+    .from("progress_notes")
+    .select("*, profiles!progress_notes_worker_id_fkey(full_name)")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (filters?.participant_id) query = query.eq("participant_id", filters.participant_id);
+  if (filters?.note_type) query = query.eq("note_type", filters.note_type);
+  if (filters?.follow_up_required) query = query.eq("follow_up_required", true);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+}

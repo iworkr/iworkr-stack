@@ -33,6 +33,14 @@ import {
   LogOut,
   ChevronsUpDown,
   Heart,
+  CalendarClock,
+  Pill,
+  Stethoscope,
+  AlertOctagon,
+  ClipboardList,
+  ShieldAlert,
+  BookOpen,
+  Lightbulb,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -102,20 +110,32 @@ function useCareNavSections(): NavSection[] {
       label: null,
       items: [
         { id: "nav_dashboard", label: "Overview", icon: LayoutGrid, href: "/dashboard/care", shortcut: "G D" },
-        { id: "nav_jobs", label: "Shifts", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
+        { id: "nav_clients", label: "Participants", icon: Heart, href: "/dashboard/care/participants", shortcut: "G C" },
         { id: "nav_schedule", label: "Roster", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
-        { id: "nav_clients", label: "Participants", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
+        { id: "nav_jobs", label: "Shifts", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
         { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
       ],
     },
     {
       label: null,
       items: [
-        { id: "nav_participants", label: "Participants", icon: Heart, href: "/dashboard/care/participants" },
-        { id: "nav_master_roster", label: "Master Roster", icon: LayoutGrid, href: "/dashboard/roster/master" },
+        { id: "nav_progress_notes", label: "Progress Notes", icon: ClipboardList, href: "/dashboard/care/progress-notes" },
+        { id: "nav_medications", label: "Medications", icon: Pill, href: "/dashboard/care/medications" },
+        { id: "nav_observations", label: "Observations", icon: Stethoscope, href: "/dashboard/care/observations" },
+        { id: "nav_incidents", label: "Incidents", icon: AlertOctagon, href: "/dashboard/care/incidents" },
+        { id: "nav_care_plans", label: "Care Plans", icon: BookOpen, href: "/dashboard/care/plans" },
+        { id: "nav_behaviour", label: "Behaviour & Safety", icon: ShieldAlert, href: "/dashboard/care/behaviour" },
+      ],
+    },
+    {
+      label: null,
+      items: [
+        { id: "nav_master_roster", label: "Master Roster", icon: CalendarClock, href: "/dashboard/roster/master" },
         { id: "nav_care_command", label: "Clinical Timeline", icon: Activity, href: "/dashboard/care/clinical-timeline" },
         { id: "nav_funding", label: "Funding & Claims", icon: DollarSign, href: "/dashboard/care/funding-engine" },
         { id: "nav_compliance", label: "Compliance", icon: ShieldCheck, href: "/dashboard/care/compliance-hub" },
+        { id: "nav_sentinel", label: "Sentinel", icon: ShieldAlert, href: "/dashboard/care/sentinel" },
+        { id: "nav_quality", label: "Quality & CI", icon: Lightbulb, href: "/dashboard/care/quality" },
         { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
       ],
     },
@@ -123,7 +143,6 @@ function useCareNavSections(): NavSection[] {
       label: null,
       items: [
         { id: "nav_team", label: "Support Team", icon: UserCircle, href: "/dashboard/team", shortcut: "G T" },
-        { id: "nav_assets", label: "Assets", icon: Package, href: "/dashboard/assets", shortcut: "G A" },
         { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
         { id: "nav_automations", label: "Automations", icon: Zap, href: "/dashboard/automations", badge: "PRO" },
         { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations", badge: "PRO" },
