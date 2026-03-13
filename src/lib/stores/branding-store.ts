@@ -32,13 +32,14 @@ interface BrandingState {
   _lastFetchedAt: number | null;
 
   loadFromServer: (orgId: string) => Promise<void>;
+  forceRefresh: (orgId: string) => Promise<void>;
   updateBranding: (orgId: string, updates: Partial<WorkspaceBranding>) => Promise<{ error?: string }>;
   updateColor: (orgId: string, hex: string) => Promise<{ error?: string }>;
   uploadLogo: (orgId: string, file: File, variant: "light" | "dark") => Promise<{ url?: string; error?: string }>;
   reset: () => void;
 }
 
-const FRESHNESS_MS = 30_000; // 30s SWR
+const FRESHNESS_MS = 60_000; // 60s SWR — but invalidated on writes
 
 export const useBrandingStore = create<BrandingState>()(
   persist(
@@ -76,6 +77,12 @@ export const useBrandingStore = create<BrandingState>()(
         } catch (err: any) {
           set({ loading: false, error: err.message || "Failed to load branding" });
         }
+      },
+
+      forceRefresh: async (orgId: string) => {
+        // Bypass SWR — always fetch fresh from server
+        set({ _lastFetchedAt: null });
+        return get().loadFromServer(orgId);
       },
 
       updateBranding: async (orgId: string, updates: Partial<WorkspaceBranding>) => {

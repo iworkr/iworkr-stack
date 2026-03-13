@@ -69,7 +69,7 @@ export default function BrandingPage() {
   const { currentOrg } = useAuthStore();
   const orgId = currentOrg?.id;
   const branding = useBrandingStore((s) => s.branding);
-  const loadFromServer = useBrandingStore((s) => s.loadFromServer);
+  const forceRefresh = useBrandingStore((s) => s.forceRefresh);
   const updateColor = useBrandingStore((s) => s.updateColor);
   const uploadLogo = useBrandingStore((s) => s.uploadLogo);
   const { addToast } = useToastStore();
@@ -88,10 +88,10 @@ export default function BrandingPage() {
   const darkLogoRef = useRef<HTMLInputElement>(null);
   const colorDebounce = useRef<NodeJS.Timeout | null>(null);
 
-  // Load branding on mount
+  // Force-load fresh branding on mount (bypass SWR — user is here to edit)
   useEffect(() => {
-    if (orgId) loadFromServer(orgId);
-  }, [orgId, loadFromServer]);
+    if (orgId) forceRefresh(orgId);
+  }, [orgId, forceRefresh]);
 
   // Sync color input from store
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function BrandingPage() {
       addToast(result.error);
     } else {
       addToast("Domain created — add the DNS records below");
-      loadFromServer(orgId);
+      forceRefresh(orgId);
     }
   };
 
@@ -159,7 +159,7 @@ export default function BrandingPage() {
     } else {
       addToast("DNS records still propagating. Try again in a few minutes.");
     }
-    loadFromServer(orgId);
+    forceRefresh(orgId);
   };
 
   const handleRemoveDomain = async () => {
@@ -173,7 +173,7 @@ export default function BrandingPage() {
       addToast("Custom domain removed");
       setDomainInput("");
     }
-    loadFromServer(orgId);
+    forceRefresh(orgId);
   };
 
   const copyToClipboard = (text: string) => {

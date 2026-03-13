@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
 import { SettingsSaveIndicator } from "@/components/settings/save-toast";
 import { HydrationGate } from "@/components/app/hydration-gate";
+import { BrandProvider } from "@/components/providers/brand-provider";
 import { useAuthStore } from "@/lib/auth-store";
 import { useSettingsStore } from "@/lib/stores/settings-store";
 
@@ -41,6 +42,7 @@ export default function SettingsLayout({
 
   return (
     <HydrationGate>
+      <BrandProvider>
       <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--text-primary)]">
         {/* Noise grain — uses standardized stealth-noise token */}
         <div className="stealth-noise fixed inset-0 z-[9999]" />
@@ -70,6 +72,7 @@ export default function SettingsLayout({
         {/* Auto-save indicator */}
         <SettingsSaveIndicator />
       </div>
+      </BrandProvider>
     </HydrationGate>
   );
 }

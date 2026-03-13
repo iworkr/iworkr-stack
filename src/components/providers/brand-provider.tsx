@@ -8,8 +8,8 @@ import { useBrandingStore } from "@/lib/stores/branding-store";
  * BrandProvider — Project Chameleon
  *
  * Fetches workspace branding from Supabase and injects CSS custom properties
- * into the <html> element's style attribute. Every component consuming
- * `var(--brand-primary)` or Tailwind's `bg-brand` will reactively update.
+ * into the <html> element's style attribute. Overrides the ACTUAL variables
+ * used throughout the app: --brand, --brand-hover, --brand-glow, etc.
  *
  * Also handles favicon override when a custom logo is available.
  */
@@ -24,11 +24,14 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     loadFromServer(orgId);
   }, [orgId, loadFromServer]);
 
-  // Compute derived CSS values
+  // Compute derived CSS values — override the REAL vars used by the app
   const cssVars = useMemo(() => {
     if (!branding?.primary_color_hex) return null;
 
     const hex = branding.primary_color_hex;
+    // If default emerald, skip injection (CSS already has it)
+    if (hex.toUpperCase() === "#10B981") return null;
+
     const textColor = branding.text_on_primary_hex || "#FFFFFF";
 
     // Parse RGB for opacity variants
@@ -44,12 +47,28 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     const hoverHex = `#${[hoverR, hoverG, hoverB].map(c => c.toString(16).padStart(2, "0")).join("")}`;
 
     return {
+      // ── Override the ACTUAL app-wide variables ──
+      "--brand": hex,
+      "--brand-hover": hoverHex,
+      "--brand-glow": `0 0 12px rgba(${r},${g},${b},0.08)`,
+      "--brand-glow-subtle": `0 0 8px -5px rgba(${r},${g},${b},0.05)`,
+      "--selection-bg": `rgba(${r},${g},${b},0.15)`,
+      "--search-spine": hex,
+      // Ghost-emerald tokens (used for brand-colored badges/tags)
+      "--ghost-emerald": `rgba(${r},${g},${b},0.05)`,
+      "--ghost-emerald-text": hex,
+      "--ghost-emerald-strong": `rgba(${r},${g},${b},0.10)`,
+      // ── Also set the Chameleon-specific vars for new components ──
       "--brand-primary": hex,
       "--brand-primary-text": textColor,
       "--brand-primary-hover": hoverHex,
       "--brand-primary-10": `rgba(${r},${g},${b},0.1)`,
       "--brand-primary-20": `rgba(${r},${g},${b},0.2)`,
       "--brand-primary-glow": `0 0 12px rgba(${r},${g},${b},0.08)`,
+      // ── Tailwind @theme inline tokens ──
+      "--color-brand": hex,
+      "--color-brand-dark": hoverHex,
+      "--color-brand-glow": `rgba(${r},${g},${b},0.2)`,
     };
   }, [branding]);
 

@@ -22,10 +22,10 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-muted);
 
-  /* Brand: Signal Green (refined Emerald, not neon) */
-  --color-brand: #10B981;
-  --color-brand-dark: #059669;
-  --color-brand-glow: rgba(16, 185, 129, 0.2);
+  /* Brand: Dynamic via BrandProvider (defaults to Emerald #10B981) */
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-hover);
+  --color-brand-glow: var(--selection-bg);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 

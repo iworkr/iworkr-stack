@@ -19,11 +19,16 @@ Color _darkenForLight(Color color, [double amount = 0.25]) {
 }
 
 /// Reactive brand color derived from the active workspace.
-/// Falls back to Emerald (#10B981) if no workspace is active.
+/// Falls back to Emerald (#10B981) if no workspace is active or hex is invalid.
 final brandColorProvider = Provider<Color>((ref) {
   final workspace = ref.watch(activeWorkspaceProvider).valueOrNull;
   if (workspace == null) return const Color(0xFF10B981);
-  return _hexToColor(workspace.brandColorHex);
+  try {
+    return _hexToColor(workspace.brandColorHex);
+  } catch (_) {
+    // Invalid hex code — fall back to iWorkr Emerald to prevent UI crash
+    return const Color(0xFF10B981);
+  }
 });
 
 /// Brand color tinted darker for text/icon use on light backgrounds.
