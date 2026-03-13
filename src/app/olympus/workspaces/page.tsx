@@ -43,11 +43,12 @@ interface Workspace {
   name: string;
   slug: string;
   industry_type: string;
-  status: string;
-  owner_id: string;
+  plan_tier: string;
+  settings: any;
   created_at: string;
-  profiles?: { email: string; full_name: string } | null;
-  organization_members?: { count: number }[];
+  member_count: number;
+  owner_email: string | null;
+  owner_name: string | null;
 }
 
 interface WorkspaceDetail {
@@ -186,7 +187,7 @@ export default function WorkspacesPage() {
             <span className="w-[80px] text-[9px] font-mono font-bold tracking-wider text-zinc-600 uppercase">Type</span>
             <span className="w-[160px] text-[9px] font-mono font-bold tracking-wider text-zinc-600 uppercase">Owner</span>
             <span className="w-[60px] text-[9px] font-mono font-bold tracking-wider text-zinc-600 uppercase">Users</span>
-            <span className="w-[80px] text-[9px] font-mono font-bold tracking-wider text-zinc-600 uppercase">Status</span>
+            <span className="w-[80px] text-[9px] font-mono font-bold tracking-wider text-zinc-600 uppercase">Plan</span>
             <span className="flex-1 text-[9px] font-mono font-bold tracking-wider text-zinc-600 uppercase">Created</span>
           </div>
 
@@ -202,49 +203,52 @@ export default function WorkspacesPage() {
               <p className="text-[12px] text-zinc-600">No workspaces found</p>
             </div>
           ) : (
-            workspaces.map((ws) => (
-              <button
-                key={ws.id}
-                onClick={() => loadDetail(ws.id)}
-                className={`flex w-full items-center gap-3 border-b px-6 py-2.5 text-left transition-colors ${
-                  selectedId === ws.id
-                    ? "border-red-500/10 bg-red-500/[0.04]"
-                    : "border-white/[0.02] hover:bg-white/[0.02]"
-                }`}
-              >
-                <span className="w-[200px] text-[11px] font-medium text-zinc-300 truncate">{ws.name}</span>
-                <span className="w-[80px]">
-                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${
-                    ws.industry_type === "care"
-                      ? "bg-blue-500/10 text-blue-400"
-                      : "bg-emerald-500/10 text-emerald-400"
-                  }`}>
-                    {ws.industry_type || "trades"}
+            workspaces.map((ws) => {
+              const isFrozen = (ws.settings as any)?.frozen === true;
+              return (
+                <button
+                  key={ws.id}
+                  onClick={() => loadDetail(ws.id)}
+                  className={`flex w-full items-center gap-3 border-b px-6 py-2.5 text-left transition-colors ${
+                    selectedId === ws.id
+                      ? "border-red-500/10 bg-red-500/[0.04]"
+                      : "border-white/[0.02] hover:bg-white/[0.02]"
+                  }`}
+                >
+                  <span className="w-[200px] text-[11px] font-medium text-zinc-300 truncate">{ws.name}</span>
+                  <span className="w-[80px]">
+                    <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${
+                      ws.industry_type === "care"
+                        ? "bg-blue-500/10 text-blue-400"
+                        : "bg-emerald-500/10 text-emerald-400"
+                    }`}>
+                      {ws.industry_type || "trades"}
+                    </span>
                   </span>
-                </span>
-                <span className="w-[160px] text-[10px] text-zinc-600 truncate">
-                  {(ws.profiles as any)?.email || "—"}
-                </span>
-                <span className="w-[60px] text-[10px] text-zinc-500 font-mono">
-                  {ws.organization_members?.[0]?.count || 0}
-                </span>
-                <span className="w-[80px]">
-                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${
-                    ws.status === "frozen"
-                      ? "bg-cyan-500/10 text-cyan-400"
-                      : ws.status === "churned"
-                      ? "bg-zinc-500/10 text-zinc-500"
-                      : "bg-emerald-500/10 text-emerald-400"
-                  }`}>
-                    {ws.status || "active"}
+                  <span className="w-[160px] text-[10px] text-zinc-600 truncate">
+                    {ws.owner_email || "—"}
                   </span>
-                </span>
-                <span className="flex-1 text-[10px] text-zinc-700">
-                  {ws.created_at ? new Date(ws.created_at).toLocaleDateString() : "—"}
-                </span>
-                <ChevronRight size={12} className="text-zinc-700" />
-              </button>
-            ))
+                  <span className="w-[60px] text-[10px] text-zinc-500 font-mono">
+                    {ws.member_count || 0}
+                  </span>
+                  <span className="w-[80px]">
+                    <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${
+                      isFrozen
+                        ? "bg-cyan-500/10 text-cyan-400"
+                        : ws.plan_tier === "free"
+                        ? "bg-zinc-500/10 text-zinc-500"
+                        : "bg-emerald-500/10 text-emerald-400"
+                    }`}>
+                      {isFrozen ? "frozen" : ws.plan_tier || "free"}
+                    </span>
+                  </span>
+                  <span className="flex-1 text-[10px] text-zinc-700">
+                    {ws.created_at ? new Date(ws.created_at).toLocaleDateString() : "—"}
+                  </span>
+                  <ChevronRight size={12} className="text-zinc-700" />
+                </button>
+              );
+            })
           )}
 
           {/* Pagination */}
@@ -314,7 +318,7 @@ export default function WorkspacesPage() {
                     { key: "name", label: "Name", value: detail.organization?.name },
                     { key: "slug", label: "Slug", value: detail.organization?.slug },
                     { key: "industry_type", label: "Industry", value: detail.organization?.industry_type },
-                    { key: "status", label: "Status", value: detail.organization?.status || "active" },
+                    { key: "plan_tier", label: "Plan", value: detail.organization?.plan_tier || "free" },
                   ].map((prop) => (
                     <div key={prop.key} className="flex items-center justify-between">
                       <span className="text-[10px] text-zinc-600">{prop.label}</span>
@@ -357,11 +361,11 @@ export default function WorkspacesPage() {
                   <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Actions</span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleFreeze(selectedId!, detail.organization?.status === "frozen" ? false : true)}
+                      onClick={() => handleFreeze(selectedId!, !(detail.organization?.settings as any)?.frozen)}
                       className="flex items-center gap-1.5 rounded-md bg-cyan-500/10 px-3 py-1.5 text-[10px] font-medium text-cyan-400 transition-colors hover:bg-cyan-500/15"
                     >
                       <Snowflake size={11} />
-                      {detail.organization?.status === "frozen" ? "Unfreeze" : "Freeze"}
+                      {(detail.organization?.settings as any)?.frozen ? "Unfreeze" : "Freeze"}
                     </button>
                   </div>
                 </div>
@@ -372,11 +376,11 @@ export default function WorkspacesPage() {
                     Members ({detail.members.length})
                   </span>
                   <div className="mt-2 space-y-1">
-                    {detail.members.slice(0, 10).map((m: any) => (
-                      <div key={m.user_id || m.id} className="flex items-center justify-between rounded px-2 py-1 hover:bg-white/[0.02]">
+                    {detail.members.slice(0, 10).map((m: any, idx: number) => (
+                      <div key={m.user_id || idx} className="flex items-center justify-between rounded px-2 py-1 hover:bg-white/[0.02]">
                         <div className="flex items-center gap-2">
                           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-[7px] font-bold text-zinc-500">
-                            {(m.profiles?.full_name || "?").charAt(0).toUpperCase()}
+                            {(m.profiles?.full_name || m.profiles?.email || "?").charAt(0).toUpperCase()}
                           </div>
                           <span className="text-[10px] text-zinc-400">{m.profiles?.full_name || m.profiles?.email || "Unknown"}</span>
                         </div>

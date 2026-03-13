@@ -6,7 +6,6 @@
    Completely isolated from the standard dashboard layout.
    ═══════════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,12 +15,8 @@ import {
   CreditCard,
   Database,
   Activity,
-  Shield,
-  ChevronRight,
-  Search,
   LogOut,
   AlertTriangle,
-  Zap,
   Radar,
 } from "lucide-react";
 
@@ -42,16 +37,22 @@ function OlympusSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full w-[220px] min-w-[220px] flex-col border-r border-red-500/[0.08] bg-black">
-      {/* ── Logo / Brand ── */}
-      <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/15 ring-1 ring-red-500/20">
-          <Shield size={15} className="text-red-400" />
-        </div>
-        <div>
-          <h1 className="text-[13px] font-bold text-white tracking-tight">Olympus</h1>
-          <span className="text-[9px] font-mono font-bold tracking-widest text-red-500/60 uppercase">GOD MODE</span>
-        </div>
+    <div className="flex h-full w-[220px] min-w-[220px] flex-col border-r border-white/[0.06] bg-black">
+      {/* ── iWorkr Logo (Full) ── */}
+      <div className="flex items-center gap-2.5 px-4 pt-5 pb-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/logo-dark-full.png"
+          alt="iWorkr"
+          className="h-7 object-contain brightness-150"
+        />
+      </div>
+
+      {/* ── Super Admin Label ── */}
+      <div className="mx-3 mb-1 px-1">
+        <span className="font-mono text-[9px] font-bold tracking-widest text-red-500/60 uppercase">
+          SUPER ADMIN
+        </span>
       </div>
 
       {/* ── Warning Banner ── */}
@@ -89,7 +90,7 @@ function OlympusSidebar() {
       </nav>
 
       {/* ── Footer ── */}
-      <div className="border-t border-red-500/[0.06] px-3 py-3">
+      <div className="border-t border-white/[0.06] px-3 py-3">
         <Link
           href="/dashboard"
           className="flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-medium text-zinc-600 transition-colors hover:text-zinc-300 hover:bg-white/[0.02]"
@@ -104,23 +105,30 @@ function OlympusSidebar() {
 
 /* ── Layout ───────────────────────────────────────────────────── */
 
+function OlympusContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={pathname}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.15 }}
+        className="min-h-full"
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export default function OlympusLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-black text-white">
       <OlympusSidebar />
       <main className="flex-1 overflow-y-auto">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={usePathname()}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15 }}
-            className="min-h-full"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        <OlympusContent>{children}</OlympusContent>
       </main>
     </div>
   );

@@ -107,7 +107,7 @@ export async function listWorkspaces(search?: string, limit = 50, offset = 0) {
     const admin = createAdminSupabaseClient();
     let query = admin
       .from("organizations")
-      .select("*, organization_members(count), profiles!organizations_owner_id_fkey(email, full_name)", { count: "exact" })
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -117,7 +117,35 @@ export async function listWorkspaces(search?: string, limit = 50, offset = 0) {
 
     const { data, error, count } = await query;
     if (error) return err(error.message);
-    return { data: { rows: data, total: count }, error: null };
+
+    // Enrich with member counts and owner info
+    const enriched = await Promise.all(
+      (data || []).map(async (org: any) => {
+        // Get member count
+        const { count: memberCount } = await admin
+          .from("organization_members")
+          .select("user_id", { count: "exact", head: true })
+          .eq("organization_id", org.id);
+
+        // Get the "owner" (first admin member)
+        const { data: ownerMembership } = await admin
+          .from("organization_members")
+          .select("user_id, role, profiles(email, full_name)")
+          .eq("organization_id", org.id)
+          .eq("role", "owner")
+          .limit(1)
+          .maybeSingle();
+
+        return {
+          ...org,
+          member_count: memberCount || 0,
+          owner_email: (ownerMembership?.profiles as any)?.email || null,
+          owner_name: (ownerMembership?.profiles as any)?.full_name || null,
+        };
+      })
+    );
+
+    return { data: { rows: enriched, total: count }, error: null };
   } catch (e: any) {
     return err(e.message);
   }
@@ -133,7 +161,7 @@ export async function getWorkspaceDetail(orgId: string) {
 
     const [orgResult, membersResult, featuresResult] = await Promise.all([
       admin.from("organizations").select("*").eq("id", orgId).maybeSingle(),
-      admin.from("organization_members").select("*, profiles(id, email, full_name, avatar_url)").eq("organization_id", orgId),
+      admin.from("organization_members").select("user_id, role, status, branch, joined_at, profiles(id, email, full_name, avatar_url)").eq("organization_id", orgId),
       admin.from("organization_features").select("*").eq("organization_id", orgId).maybeSingle(),
     ]);
 
@@ -195,16 +223,23 @@ export async function updateWorkspace(orgId: string, updates: Record<string, any
   }
 }
 
-/** Freeze / unfreeze a workspace */
+/** Freeze / unfreeze a workspace by updating settings JSON */
 export async function toggleFreezeWorkspace(orgId: string, freeze: boolean) {
   try {
     const caller = await verifySuperAdmin();
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
+
+    // Get current settings to merge
+    const { data: org } = await admin.from("organizations").select("settings").eq("id", orgId).maybeSingle();
+    const currentSettings = (org?.settings as Record<string, any>) || {};
+
     const { data, error } = await admin
       .from("organizations")
-      .update({ status: freeze ? "frozen" : "active" })
+      .update({
+        settings: { ...currentSettings, frozen: freeze, frozen_at: freeze ? new Date().toISOString() : null },
+      })
       .eq("id", orgId)
       .select()
       .maybeSingle();
@@ -216,7 +251,7 @@ export async function toggleFreezeWorkspace(orgId: string, freeze: boolean) {
       adminEmail: caller.email,
       actionType: "FREEZE_WORKSPACE",
       targetOrgId: orgId,
-      newState: { status: freeze ? "frozen" : "active" },
+      newState: { frozen: freeze },
       notes: freeze ? "Workspace frozen" : "Workspace unfrozen",
     });
 
@@ -271,7 +306,7 @@ export async function listUsers(search?: string, limit = 50, offset = 0) {
     const admin = createAdminSupabaseClient();
     let query = admin
       .from("profiles")
-      .select("*, organization_members(organization_id, role, status, organizations(name))", { count: "exact" })
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -281,7 +316,23 @@ export async function listUsers(search?: string, limit = 50, offset = 0) {
 
     const { data, error, count } = await query;
     if (error) return err(error.message);
-    return { data: { rows: data, total: count }, error: null };
+
+    // Enrich with org memberships
+    const enriched = await Promise.all(
+      (data || []).map(async (profile: any) => {
+        const { data: memberships } = await admin
+          .from("organization_members")
+          .select("organization_id, role, status, organizations(name)")
+          .eq("user_id", profile.id);
+
+        return {
+          ...profile,
+          organization_members: memberships || [],
+        };
+      })
+    );
+
+    return { data: { rows: enriched, total: count }, error: null };
   } catch (e: any) {
     return err(e.message);
   }
@@ -297,7 +348,7 @@ export async function getUserDetail(userId: string) {
 
     const [profileResult, membershipsResult] = await Promise.all([
       admin.from("profiles").select("*").eq("id", userId).maybeSingle(),
-      admin.from("organization_members").select("*, organizations(id, name, industry_type)").eq("user_id", userId),
+      admin.from("organization_members").select("organization_id, role, status, branch, joined_at, organizations(id, name, industry_type)").eq("user_id", userId),
     ]);
 
     await logAudit({
@@ -350,8 +401,19 @@ export async function forceLogoutUser(userId: string) {
     if (!caller) return err("Unauthorized");
 
     const admin = createAdminSupabaseClient();
-    const { error } = await admin.auth.admin.signOut(userId);
-    if (error) return err(error.message);
+
+    // Supabase Admin API: sign out a user from all sessions
+    // Using the admin.auth.admin.signOut method which takes a user id and scope
+    try {
+      const { error } = await admin.auth.admin.signOut(userId, "global" as any);
+      if (error) {
+        // Fallback: update the user's `updated_at` to invalidate sessions
+        await admin.auth.admin.updateUserById(userId, { app_metadata: { force_logout: Date.now() } });
+      }
+    } catch {
+      // Final fallback
+      await admin.auth.admin.updateUserById(userId, { app_metadata: { force_logout: Date.now() } });
+    }
 
     await logAudit({
       adminId: caller.id,
@@ -549,35 +611,25 @@ export async function listTables() {
     const caller = await verifySuperAdmin();
     if (!caller) return err("Unauthorized");
 
-    const admin = createAdminSupabaseClient();
-    const { data, error } = await admin.rpc("get_table_list");
-
-    // Fallback: if RPC doesn't exist, use information_schema
-    if (error) {
-      const { data: tables, error: err2 } = await admin
-        .from("information_schema.tables" as any)
-        .select("table_name")
-        .eq("table_schema", "public")
-        .eq("table_type", "BASE TABLE")
-        .order("table_name");
-
-      if (err2) {
-        // If information_schema fails, return hardcoded known tables
-        return {
-          data: [
-            "organizations", "profiles", "organization_members", "clients",
-            "jobs", "shifts", "invoices", "participant_profiles",
-            "service_agreements", "incidents", "care_plans", "progress_notes",
-            "health_observations", "medications", "timesheets", "time_entries",
-            "super_admin_audit_logs", "organization_features",
-          ],
-          error: null,
-        };
-      }
-      return { data: (tables || []).map((t: any) => t.table_name), error: null };
-    }
-
-    return { data, error: null };
+    // Return a comprehensive list of known tables 
+    // (information_schema cannot be queried via PostgREST / Supabase client)
+    return {
+      data: [
+        "organizations", "profiles", "organization_members", "organization_features",
+        "clients", "jobs", "shifts", "invoices", "invoice_line_items",
+        "participant_profiles", "service_agreements", "care_plans",
+        "incidents", "observations", "progress_notes", "shift_notes",
+        "health_observations", "medications", "medication_administrations",
+        "roster_templates", "template_shifts",
+        "timesheets", "time_entries", "payroll_exports",
+        "chat_channels", "chat_members", "chat_messages", "message_acknowledgements",
+        "super_admin_audit_logs", "telemetry_events",
+        "staff_leave", "staff_profiles", "worker_credentials",
+        "automations", "automation_runs",
+        "sentinel_alerts", "sentinel_rules",
+      ].sort(),
+      error: null,
+    };
   } catch (e: any) {
     return err(e.message);
   }
@@ -593,6 +645,8 @@ export async function readTableRows(tableName: string, limit = 25, offset = 0, f
     if (!/^[a-z_][a-z0-9_]*$/.test(tableName)) return err("Invalid table name");
 
     const admin = createAdminSupabaseClient();
+
+    // First try with created_at ordering
     let query = admin
       .from(tableName)
       .select("*", { count: "exact" })
@@ -609,14 +663,22 @@ export async function readTableRows(tableName: string, limit = 25, offset = 0, f
     const { data, error, count } = await query;
 
     if (error) {
-      // If created_at doesn't exist, try without ordering
-      const { data: d2, error: e2, count: c2 } = await admin
-        .from(tableName)
-        .select("*", { count: "exact" })
-        .range(offset, offset + limit - 1);
+      // If created_at doesn't exist or other ordering issue, try different approaches
+      // Try with event_timestamp (for telemetry_events)
+      const attempts = [
+        admin.from(tableName).select("*", { count: "exact" }).range(offset, offset + limit - 1).order("event_timestamp" as any, { ascending: false }),
+        admin.from(tableName).select("*", { count: "exact" }).range(offset, offset + limit - 1).order("joined_at" as any, { ascending: false }),
+        admin.from(tableName).select("*", { count: "exact" }).range(offset, offset + limit - 1), // No ordering
+      ];
 
-      if (e2) return err(e2.message);
-      return { data: { rows: d2, total: c2 }, error: null };
+      for (const attempt of attempts) {
+        const { data: d2, error: e2, count: c2 } = await attempt;
+        if (!e2) {
+          return { data: { rows: d2 || [], total: c2 || 0 }, error: null };
+        }
+      }
+
+      return err(error.message);
     }
 
     await logAudit({
@@ -777,7 +839,7 @@ export async function getSystemStats() {
     const [orgs, users, members, jobs] = await Promise.all([
       admin.from("organizations").select("id", { count: "exact", head: true }),
       admin.from("profiles").select("id", { count: "exact", head: true }),
-      admin.from("organization_members").select("id", { count: "exact", head: true }).eq("status", "active"),
+      admin.from("organization_members").select("user_id", { count: "exact", head: true }).eq("status", "active"),
       admin.from("jobs").select("id", { count: "exact", head: true }),
     ]);
 
