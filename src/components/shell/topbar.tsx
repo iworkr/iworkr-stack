@@ -2,13 +2,10 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search,
   Bell,
   ChevronRight,
   Menu,
   Settings,
-  Users,
-  Download,
   LogOut,
   Check,
   ChevronDown,
@@ -17,24 +14,27 @@ import {
   Shield,
   CreditCard,
   Keyboard,
+  Building2,
+  Plus,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useShellStore } from "@/lib/shell-store";
-import { useOnboardingStore } from "@/lib/onboarding-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { Shimmer } from "@/components/ui/shimmer";
 import { DesktopUpdateIndicator } from "@/lib/desktop/desktop-update-indicator";
 import { translateLabel, type IndustryType } from "@/lib/industry-lexicon";
-import { useBrandingStore } from "@/lib/stores/branding-store";
+import { getBranches, type Branch } from "@/app/actions/branches";
+import { useOrg } from "@/lib/hooks/use-org";
 
-function getBreadcrumbs(pathname: string, companyName: string, industryType: IndustryType = "trades") {
+/* ── Breadcrumbs ─────────────────────────────────────── */
+
+function getBreadcrumbs(pathname: string, branchName: string, industryType: IndustryType = "trades") {
   const segments = pathname.split("/").filter(Boolean);
-  const crumbs = companyName
-    ? [{ label: companyName, href: "/dashboard" }]
-    : [];
+  const crumbs: { label: string; href: string }[] = [];
 
   const t = (key: string) => translateLabel(key, industryType);
 
@@ -64,7 +64,7 @@ function getBreadcrumbs(pathname: string, companyName: string, industryType: Ind
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
     if (seg === "dashboard" && i === 0) {
-      crumbs.push({ label: "Dashboard", href: "/dashboard" });
+      // Skip "dashboard" — the branch name already anchors it
     } else if (labelMap[seg]) {
       crumbs.push({
         label: labelMap[seg],
@@ -76,25 +76,40 @@ function getBreadcrumbs(pathname: string, companyName: string, industryType: Ind
   return crumbs;
 }
 
-/* ── Workspace Dropdown (Linear-style) ─────────────────── */
+/* ── Branch Selector ─────────────────────────────────── */
 
-function WorkspaceDropdown({
-  companyName,
-  logoUrl,
+function BranchSelector({
   open,
   onToggle,
   onClose,
 }: {
-  companyName: string;
-  logoUrl: string | null;
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
 }) {
-  const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
-  const { signOut: authSignOut } = useAuthStore();
+  const router = useRouter();
+  const { orgId } = useOrg();
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
+  // Load branches
+  useEffect(() => {
+    if (!orgId) return;
+    getBranches(orgId).then(({ data }) => {
+      setBranches(data || []);
+      setLoaded(true);
+      // Default to HQ or first branch
+      if (data && data.length > 0) {
+        const stored = localStorage.getItem("iworkr-active-branch");
+        const match = data.find((b) => b.id === stored);
+        setActiveBranchId(match?.id || data.find((b) => b.is_headquarters)?.id || data[0].id);
+      }
+    });
+  }, [orgId]);
+
+  // Outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
@@ -103,29 +118,28 @@ function WorkspaceDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, onClose]);
 
-  const menuItems = [
-    { label: "Settings", icon: Settings, href: "/settings" },
-    { label: "Members", icon: Users, href: "/dashboard/team" },
-    { label: "Download App", icon: Download, href: "/#download" },
-    { divider: true },
-    { label: "Log out", icon: LogOut, href: "/" },
-  ] as const;
+  const activeBranch = branches.find((b) => b.id === activeBranchId);
+  const activeName = activeBranch?.name || (branches.length === 0 && loaded ? "No branches" : "");
+
+  function selectBranch(id: string) {
+    setActiveBranchId(id);
+    localStorage.setItem("iworkr-active-branch", id);
+    onClose();
+  }
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={onToggle}
-        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-[var(--surface-2)]"
+        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-white/[0.04]"
       >
-        <img
-          src={logoUrl || "/logos/logo-dark-streamline.png"}
-          alt="Logo"
-          className="h-[18px] w-[18px] object-contain"
-        />
+        <div className="flex h-5 w-5 items-center justify-center rounded bg-white/[0.06]">
+          <Building2 size={12} strokeWidth={1.5} className="text-zinc-400" />
+        </div>
         <span className="hidden text-[13px] font-medium text-[var(--text-primary)] sm:inline">
-          {companyName || <Shimmer className="h-3 w-20" />}
+          {activeName || <Shimmer className="h-3 w-20" />}
         </span>
-        <ChevronDown size={11} className="text-[var(--text-muted)]" />
+        <ChevronDown size={11} className="text-zinc-600" />
       </button>
 
       <AnimatePresence>
@@ -135,57 +149,93 @@ function WorkspaceDropdown({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -4 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#161616] py-1 shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
+            className="absolute left-0 top-full z-50 mt-1.5 w-64 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
           >
-            {/* Active workspace */}
-            <div className="mx-1 mb-1 flex items-center gap-2 rounded-md bg-[rgba(255,255,255,0.04)] px-2.5 py-2">
-              <img
-                src={logoUrl || "/logos/logo-dark-streamline.png"}
-                alt="Logo"
-                className="h-4 w-4 object-contain"
-              />
-              <span className="flex-1 truncate text-[12px] font-medium text-zinc-200">
-                {companyName || <Shimmer className="h-3 w-24" />}
-              </span>
-              <Check size={12} className="text-[var(--brand)]" />
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-2">
+              <span className="text-[11px] font-medium text-zinc-500">Branches</span>
+              <button
+                onClick={() => {
+                  onClose();
+                  router.push("/settings/branches");
+                }}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
+              >
+                Manage
+              </button>
             </div>
 
-            <div className="my-1 h-px bg-[rgba(255,255,255,0.06)]" />
-
-            {menuItems.map((item, i) => {
-              if ("divider" in item) {
+            {/* Branch list */}
+            <div className="max-h-[240px] overflow-y-auto py-1">
+              {branches.length === 0 && loaded && (
+                <div className="flex flex-col items-center py-6">
+                  <Building2 size={16} className="mb-1.5 text-zinc-700" />
+                  <p className="text-[11px] text-zinc-600">No branches configured</p>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      router.push("/settings/branches");
+                    }}
+                    className="mt-2 text-[11px] text-[var(--brand)] hover:underline"
+                  >
+                    Add your first branch
+                  </button>
+                </div>
+              )}
+              {branches.map((b) => {
+                const isActive = b.id === activeBranchId;
+                const location = [b.city, b.state].filter(Boolean).join(", ");
                 return (
-                  <div
-                    key={`div-${i}`}
-                    className="my-1 h-px bg-[rgba(255,255,255,0.06)]"
-                  />
+                  <button
+                    key={b.id}
+                    onClick={() => selectBranch(b.id)}
+                    className={`mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-2 transition-colors ${
+                      isActive ? "bg-white/[0.04]" : "hover:bg-white/[0.03]"
+                    }`}
+                  >
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
+                      b.is_headquarters ? "bg-[var(--brand)]/10" : "bg-white/[0.04]"
+                    }`}>
+                      <Building2 size={13} className={b.is_headquarters ? "text-[var(--brand)]" : "text-zinc-500"} />
+                    </div>
+                    <div className="min-w-0 flex-1 text-left">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-[12px] font-medium text-zinc-200">{b.name}</span>
+                        {b.is_headquarters && (
+                          <span className="shrink-0 rounded bg-[var(--brand)]/10 px-1 py-[1px] text-[8px] font-bold text-[var(--brand)]">HQ</span>
+                        )}
+                      </div>
+                      {location && (
+                        <span className="flex items-center gap-1 text-[10px] text-zinc-600">
+                          <MapPin size={8} />
+                          {location}
+                        </span>
+                      )}
+                    </div>
+                    {isActive && <Check size={12} className="shrink-0 text-[var(--brand)]" />}
+                  </button>
                 );
-              }
-              const Icon = item.icon;
-              const isDanger = item.label === "Log out";
-              return (
-                <button
-                  key={item.label}
-                  onClick={async () => {
-                    onClose();
-                    if (isDanger) {
-                      await authSignOut();
-                      router.push("/");
-                    } else {
-                      router.push(item.href);
-                    }
-                  }}
-                  className={`mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] transition-colors ${
-                    isDanger
-                      ? "text-red-400 hover:bg-red-500/10"
-                      : "text-zinc-400 hover:bg-[rgba(255,255,255,0.05)] hover:text-zinc-200"
-                  }`}
-                >
-                  <Icon size={14} strokeWidth={1.5} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+              })}
+            </div>
+
+            {/* Add branch */}
+            {branches.length > 0 && (
+              <>
+                <div className="h-px bg-white/[0.06]" />
+                <div className="p-1">
+                  <button
+                    onClick={() => {
+                      onClose();
+                      router.push("/settings/branches");
+                    }}
+                    className="mx-0 flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
+                  >
+                    <Plus size={12} />
+                    Add branch
+                  </button>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -223,11 +273,11 @@ function NotificationsPopover({
       <motion.button
         whileTap={{ scale: 0.96 }}
         onClick={onToggle}
-        className="relative flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-300"
+        className="relative flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
       >
         <Bell size={14} strokeWidth={1.5} />
         {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[#10B981] ring-1 ring-black" />
+          <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[var(--brand)] ring-1 ring-black" />
         )}
       </motion.button>
 
@@ -238,14 +288,12 @@ function NotificationsPopover({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -4 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 top-full z-50 mt-1.5 w-80 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
+            className="absolute right-0 top-full z-50 mt-1.5 w-80 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
           >
-            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-2.5">
-              <span className="text-[12px] font-medium text-zinc-300">
-                Notifications
-              </span>
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
+              <span className="text-[12px] font-medium text-zinc-300">Notifications</span>
               {unreadCount > 0 && (
-                <span className="rounded-full bg-[rgba(16,185,129,0.12)] px-1.5 py-0.5 text-[9px] font-medium text-[#10B981]">
+                <span className="rounded-full bg-[var(--brand)]/12 px-1.5 py-0.5 text-[9px] font-medium text-[var(--brand)]">
                   {unreadCount} new
                 </span>
               )}
@@ -265,22 +313,17 @@ function NotificationsPopover({
                 <p className="mt-0.5 text-[10px] text-zinc-700">You&apos;re all caught up.</p>
               </div>
             ) : (
-              <div className="max-h-[300px] divide-y divide-[rgba(255,255,255,0.04)] overflow-y-auto">
+              <div className="max-h-[300px] divide-y divide-white/[0.04] overflow-y-auto">
                 {unreadItems.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => {
-                      onClose();
-                      router.push("/dashboard/inbox");
-                    }}
-                    className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+                    onClick={() => { onClose(); router.push("/dashboard/inbox"); }}
+                    className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.03]"
                   >
-                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#10B981]" />
+                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand)]" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="truncate text-[11px] font-medium text-zinc-300">
-                          {item.sender}
-                        </span>
+                        <span className="truncate text-[11px] font-medium text-zinc-300">{item.sender}</span>
                         <span className="shrink-0 text-[9px] text-zinc-700">{item.time}</span>
                       </div>
                       <p className="truncate text-[10px] text-zinc-600">{item.body}</p>
@@ -290,13 +333,10 @@ function NotificationsPopover({
               </div>
             )}
 
-            <div className="border-t border-[rgba(255,255,255,0.06)] p-2">
+            <div className="border-t border-white/[0.06] p-2">
               <button
-                onClick={() => {
-                  onClose();
-                  router.push("/dashboard/inbox");
-                }}
-                className="w-full rounded-md py-1.5 text-center text-[11px] text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-zinc-300"
+                onClick={() => { onClose(); router.push("/dashboard/inbox"); }}
+                className="w-full rounded-md py-1.5 text-center text-[11px] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
               >
                 View all notifications
               </button>
@@ -351,7 +391,7 @@ function ProfileMenu({
     <div ref={ref} className="relative">
       <button
         onClick={onToggle}
-        className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-[rgba(255,255,255,0.08)] transition-all duration-150 hover:ring-[rgba(255,255,255,0.2)]"
+        className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-white/[0.08] transition-all duration-150 hover:ring-white/[0.2]"
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
@@ -369,10 +409,10 @@ function ProfileMenu({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -4 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
+            className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
           >
             {/* User info */}
-            <div className="flex items-center gap-2.5 border-b border-[rgba(255,255,255,0.06)] px-3 py-2.5">
+            <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/[0.08]" referrerPolicy="no-referrer" />
               ) : initials ? (
@@ -393,12 +433,7 @@ function ProfileMenu({
             <div className="py-1">
               {items.map((item, i) => {
                 if ("divider" in item) {
-                  return (
-                    <div
-                      key={`div-${i}`}
-                      className="my-1 h-px bg-[rgba(255,255,255,0.06)]"
-                    />
-                  );
+                  return <div key={`div-${i}`} className="my-1 h-px bg-white/[0.06]" />;
                 }
                 const Icon = item.icon;
                 const isDanger = item.label === "Log out";
@@ -407,17 +442,13 @@ function ProfileMenu({
                     key={item.label}
                     onClick={async () => {
                       onClose();
-                      if (isDanger) {
-                        await signOut();
-                        router.push("/");
-                      } else {
-                        router.push(item.href);
-                      }
+                      if (isDanger) { await signOut(); router.push("/"); }
+                      else { router.push(item.href); }
                     }}
                     className={`mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] transition-colors ${
                       isDanger
                         ? "text-red-400 hover:bg-red-500/10"
-                        : "text-zinc-400 hover:bg-[rgba(255,255,255,0.05)] hover:text-zinc-200"
+                        : "text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200"
                     }`}
                   >
                     <Icon size={14} strokeWidth={1.5} />
@@ -437,52 +468,41 @@ function ProfileMenu({
 
 export function Topbar() {
   const pathname = usePathname();
-  const { setCommandMenuOpen, setMobileSidebarOpen } = useShellStore();
-  const onboardingName = useOnboardingStore((s) => s.companyName);
+  const { setMobileSidebarOpen } = useShellStore();
   const { currentOrg } = useAuthStore();
-  const companyName = currentOrg?.name || onboardingName || "";
-  const brandingLogo = useBrandingStore((s) => s.branding?.logo_light_url) || null;
   const industryType = ((currentOrg as Record<string, unknown> | null)?.industry_type === "care" ? "care" : "trades") as IndustryType;
-  const breadcrumbs = getBreadcrumbs(pathname, companyName, industryType);
+  const breadcrumbs = getBreadcrumbs(pathname, "", industryType);
 
-  const [wsOpen, setWsOpen] = useState(false);
+  const [branchOpen, setBranchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const closeAll = useCallback(() => {
-    setWsOpen(false);
-    setNotifOpen(false);
-    setProfileOpen(false);
-  }, []);
-
   return (
-    <header className="relative z-30 flex h-12 shrink-0 items-center border-b px-3 backdrop-blur-xl md:px-4" style={{ borderColor: "var(--border-base)", background: "color-mix(in srgb, var(--surface-0) 80%, transparent)" }}>
+    <header className="relative z-30 flex h-11 shrink-0 items-center border-b px-3 md:px-4" style={{ borderColor: "var(--border-base)", background: "var(--surface-0)" }}>
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileSidebarOpen(true)}
-        className="mr-2 flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-zinc-300 md:hidden"
+        className="mr-2 flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300 md:hidden"
       >
-        <Menu size={18} strokeWidth={1.5} />
+        <Menu size={16} strokeWidth={1.5} />
       </button>
 
-      {/* Workspace Dropdown */}
-      <WorkspaceDropdown
-        companyName={companyName}
-        logoUrl={brandingLogo}
-        open={wsOpen}
+      {/* Branch Selector */}
+      <BranchSelector
+        open={branchOpen}
         onToggle={() => {
           setNotifOpen(false);
           setProfileOpen(false);
-          setWsOpen((p) => !p);
+          setBranchOpen((p) => !p);
         }}
-        onClose={() => setWsOpen(false)}
+        onClose={() => setBranchOpen(false)}
       />
 
       {/* Breadcrumbs */}
       <nav className="ml-1 flex min-w-0 items-center gap-1 text-[13px]">
         {breadcrumbs.map((crumb, i) => (
           <span key={crumb.href + i} className="flex items-center gap-1">
-            {i > 0 && <ChevronRight size={11} className="text-zinc-700" />}
+            <ChevronRight size={11} className="text-zinc-700" />
             <Link
               href={crumb.href}
               className={`transition-colors duration-150 ${
@@ -506,24 +526,12 @@ export function Topbar() {
       <div className="flex-1" />
 
       {/* Right side */}
-      <div className="flex items-center gap-1.5">
-        {/* Command Search Trigger — minimal, borderless */}
-        <button
-          onClick={() => setCommandMenuOpen(true)}
-          className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] text-zinc-600 transition-all duration-200 hover:bg-white/[0.03] hover:text-zinc-400"
-        >
-          <Search size={14} strokeWidth={1.5} />
-          <span className="hidden text-zinc-700 sm:inline">Search...</span>
-          <kbd className="hidden font-mono text-[9px] text-zinc-700 sm:inline-block">
-            ⌘K
-          </kbd>
-        </button>
-
+      <div className="flex items-center gap-1">
         {/* Notification Bell */}
         <NotificationsPopover
           open={notifOpen}
           onToggle={() => {
-            setWsOpen(false);
+            setBranchOpen(false);
             setProfileOpen(false);
             setNotifOpen((p) => !p);
           }}
@@ -534,7 +542,7 @@ export function Topbar() {
         <ProfileMenu
           open={profileOpen}
           onToggle={() => {
-            setWsOpen(false);
+            setBranchOpen(false);
             setNotifOpen(false);
             setProfileOpen((p) => !p);
           }}

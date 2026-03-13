@@ -29,12 +29,13 @@ import {
   Zap,
   Package,
   ChevronRight,
-  ChevronUp,
   Search,
+  LogOut,
+  ChevronsUpDown,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useShellStore } from "@/lib/shell-store";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { useAuthStore } from "@/lib/auth-store";
@@ -259,7 +260,6 @@ function SystemLink({
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useShellStore();
   const { setInviteModalOpen } = useTeamStore();
   const onboardingName = useOnboardingStore((s) => s.companyName);
@@ -327,9 +327,6 @@ export function Sidebar() {
     setMobileSidebarOpen(false);
   }, [pathname, setMobileSidebarOpen]);
 
-  // Plan label
-  const planLabel = planKey === "free" ? null : planKey.charAt(0).toUpperCase() + planKey.slice(1);
-
   return (
     <>
       {/* Mobile backdrop */}
@@ -364,44 +361,9 @@ export function Sidebar() {
           <div className="h-[30px] w-full shrink-0" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
         )}
 
-        {/* ── Project Switcher (Vercel-style) ── */}
-        <div className="flex items-center px-3 pt-3 pb-2">
-          <button
-            onClick={() => useShellStore.getState().setCommandMenuOpen(true)}
-            className="flex w-full items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-white/[0.04]"
-          >
-            <img
-              src={brandingLogo || "/logos/logo-dark-streamline.png"}
-              alt="Logo"
-              className={`h-5 w-5 shrink-0 rounded object-contain ${brandingLogo ? "" : "brightness-150"}`}
-            />
-            <AnimatePresence>
-              {!sidebarCollapsed && (
-                <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: "auto" }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.12 }}
-                  className="flex flex-1 items-center gap-1.5 overflow-hidden"
-                >
-                  <span className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
-                    {companyName || <Shimmer className="h-3 w-24" />}
-                  </span>
-                  {planLabel && (
-                    <span className="shrink-0 rounded bg-white/[0.08] px-1.5 py-[1px] text-[10px] font-medium text-zinc-400">
-                      {planLabel}
-                    </span>
-                  )}
-                  <ChevronUp size={12} className="ml-auto shrink-0 text-zinc-600 rotate-180" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </button>
-        </div>
-
-        {/* ── Search Bar (Vercel-style) ── */}
-        {!sidebarCollapsed && (
-          <div className="px-3 pb-2">
+        {/* ── Search Bar ── */}
+        <div className="px-3 pt-3 pb-1">
+          {!sidebarCollapsed ? (
             <button
               onClick={() => useShellStore.getState().setCommandMenuOpen(true)}
               className="flex w-full items-center gap-2 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-[5px] text-[13px] text-zinc-600 transition-colors hover:border-white/[0.1] hover:bg-white/[0.04]"
@@ -412,8 +374,16 @@ export function Sidebar() {
                 ⌘K
               </kbd>
             </button>
-          </div>
-        )}
+          ) : (
+            <button
+              onClick={() => useShellStore.getState().setCommandMenuOpen(true)}
+              title="Search (⌘K)"
+              className="flex w-full items-center justify-center rounded-md py-1 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400"
+            >
+              <Search size={16} strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
 
         {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto scrollbar-none px-2">
@@ -467,53 +437,149 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* ── Footer — User / Workspace (Vercel-style) ── */}
-        <div className="border-t border-white/[0.06] px-3 py-2">
-          {!sidebarCollapsed ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <UserAvatar />
-                <span className="truncate text-[12px] text-zinc-500">{companyName}</span>
-              </div>
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={toggleSidebar}
-                  title="Collapse sidebar (⌘[)"
-                  className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
-                >
-                  <PanelLeftClose size={14} strokeWidth={1.5} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-1.5">
-              <UserAvatar />
-              <button
-                onClick={toggleSidebar}
-                title="Expand sidebar (⌘[)"
-                className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
-              >
-                <PanelLeftOpen size={14} strokeWidth={1.5} />
-              </button>
-            </div>
-          )}
-        </div>
+        {/* ── Footer — Workspace Selector ── */}
+        <WorkspaceFooter
+          companyName={companyName}
+          logoUrl={brandingLogo}
+          collapsed={sidebarCollapsed}
+          toggleSidebar={toggleSidebar}
+        />
       </motion.aside>
     </>
   );
 }
 
-/* ── User Avatar ─────────────────────────────────────── */
+/* ── Workspace Footer ─────────────────────────────────── */
 
-function UserAvatar() {
+function WorkspaceFooter({
+  companyName,
+  logoUrl,
+  collapsed,
+  toggleSidebar,
+}: {
+  companyName: string;
+  logoUrl: string | undefined | null;
+  collapsed: boolean;
+  toggleSidebar: () => void;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { signOut } = useAuthStore();
   const profile = useAuthStore((s) => s.profile);
-  const initials = profile?.full_name
-    ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-    : profile?.email?.[0]?.toUpperCase() || "?";
+  const displayName = profile?.full_name || "";
+  const displayEmail = profile?.email || "";
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  if (collapsed) {
+    return (
+      <div className="border-t border-white/[0.06] px-3 py-2 flex flex-col items-center gap-1.5">
+        <button
+          onClick={() => setOpen((p) => !p)}
+          className="flex h-7 w-7 items-center justify-center rounded-md overflow-hidden"
+          title={companyName}
+        >
+          <img
+            src={logoUrl || "/logos/logo-dark-streamline.png"}
+            alt="Logo"
+            className={`h-5 w-5 object-contain ${logoUrl ? "" : "brightness-150"}`}
+          />
+        </button>
+        <button
+          onClick={toggleSidebar}
+          title="Expand sidebar (⌘[)"
+          className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
+        >
+          <PanelLeftOpen size={14} strokeWidth={1.5} />
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/15 text-[9px] font-bold text-[var(--brand)]">
-      {initials}
+    <div ref={ref} className="relative border-t border-white/[0.06] px-2 py-1.5">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-white/[0.04]"
+      >
+        <img
+          src={logoUrl || "/logos/logo-dark-streamline.png"}
+          alt="Logo"
+          className={`h-5 w-5 shrink-0 rounded object-contain ${logoUrl ? "" : "brightness-150"}`}
+        />
+        <div className="min-w-0 flex-1 text-left">
+          <p className="truncate text-[12px] font-medium text-zinc-300">{companyName || <Shimmer className="h-3 w-24" />}</p>
+          <p className="truncate text-[10px] text-zinc-600">{displayName || displayEmail}</p>
+        </div>
+        <ChevronsUpDown size={12} className="shrink-0 text-zinc-600" />
+      </button>
+
+      {/* Dropdown — opens upward */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 4 }}
+            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-full left-2 right-2 z-50 mb-1.5 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_-16px_48px_-8px_rgba(0,0,0,0.6)]"
+          >
+            {/* Workspace info */}
+            <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
+              <img
+                src={logoUrl || "/logos/logo-dark-streamline.png"}
+                alt=""
+                className={`h-7 w-7 shrink-0 rounded object-contain ${logoUrl ? "" : "brightness-150"}`}
+              />
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-medium text-zinc-200">{companyName}</p>
+                <p className="truncate text-[10px] text-zinc-600">{displayEmail}</p>
+              </div>
+            </div>
+
+            <div className="py-1">
+              {[
+                { label: "Workspace Settings", icon: Settings, href: "/settings/workspace" },
+                { label: "Branding", icon: Settings, href: "/settings/branding" },
+                { label: "Members", icon: Users, href: "/dashboard/team" },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => { setOpen(false); router.push(item.href); }}
+                  className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
+                >
+                  <item.icon size={14} strokeWidth={1.5} />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+              <div className="my-1 h-px bg-white/[0.06]" />
+              <button
+                onClick={() => { setOpen(false); toggleSidebar(); }}
+                className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
+              >
+                <PanelLeftClose size={14} strokeWidth={1.5} />
+                <span>Collapse Sidebar</span>
+                <kbd className="ml-auto rounded border border-white/[0.08] bg-white/[0.04] px-1 py-[1px] font-mono text-[9px] text-zinc-600">⌘[</kbd>
+              </button>
+              <div className="my-1 h-px bg-white/[0.06]" />
+              <button
+                onClick={async () => { setOpen(false); await signOut(); router.push("/"); }}
+                className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-red-400 transition-colors hover:bg-red-500/10"
+              >
+                <LogOut size={14} strokeWidth={1.5} />
+                <span>Log out</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
