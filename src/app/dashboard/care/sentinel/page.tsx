@@ -182,7 +182,7 @@ export default function SentinelAlertsPage() {
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
               SENTINEL INTELLIGENCE
             </span>
             <div className="ml-4 flex items-center gap-0.5">
@@ -266,19 +266,19 @@ export default function SentinelAlertsPage() {
         {/* Empty state */}
         {!loading && filtered.length === 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="relative flex flex-col items-center justify-center py-24 text-center"
           >
             <div className="pointer-events-none absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[60px]" />
-            <div className="relative mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-white/[0.04] bg-white/[0.02]">
-              <Shield size={32} className="text-zinc-600" />
+            <div className="relative mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.04] bg-white/[0.02]">
+              <Shield size={28} className="text-zinc-600" />
             </div>
             <h3 className="text-[15px] font-medium text-zinc-200">
               {debouncedSearch || activeTab !== "active" ? "No alerts match your filters" : "All clear"}
             </h3>
-            <p className="mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-zinc-600">
+            <p className="mt-1.5 max-w-[320px] text-[12px] leading-relaxed text-zinc-600">
               {debouncedSearch || activeTab !== "active"
                 ? "Try adjusting your search or tab filter."
                 : "No active alerts. Sentinel is monitoring your organization."}

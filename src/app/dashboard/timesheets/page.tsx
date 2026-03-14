@@ -402,7 +402,7 @@ export default function TimesheetsPage() {
           {/* Title row */}
           <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="mb-1 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+              <p className="mb-1 font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
                 Timesheets &amp; Payroll
               </p>
               <h1 className="text-[15px] font-medium tracking-tight text-zinc-200">Payroll Engine</h1>

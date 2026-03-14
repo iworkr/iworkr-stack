@@ -227,7 +227,7 @@ export default function TeamPage() {
         <div className="relative flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             {/* Mono overline — PRD: "PERSONNEL" */}
-            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
               {isCare ? "SUPPORT TEAM" : "PERSONNEL"}
             </span>
 

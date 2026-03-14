@@ -1234,6 +1234,19 @@ export default function ComplianceHubPage() {
         </div>
       </div>
 
+      {/* ── Status Bar ── */}
+      <div className="flex items-center justify-between border-t border-white/[0.03] px-5 py-2 text-[11px] text-zinc-600">
+        <div className="flex items-center gap-4">
+          <span>{sentinelStats.total} alert{sentinelStats.total !== 1 ? "s" : ""}</span>
+          <span>{credentialAlerts.length} credential{credentialAlerts.length !== 1 ? "s" : ""}</span>
+          <span>{auditSessions.length} audit session{auditSessions.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div className="flex items-center gap-4 text-zinc-700">
+          <span>Tab to switch</span>
+          <span>⌘K to search</span>
+        </div>
+      </div>
+
       {/* ── Create Audit Modal ──────────────────────────────── */}
       <CreateAuditModal
         open={showCreateAudit}

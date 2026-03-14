@@ -1018,6 +1018,18 @@ img, video, svg, canvas {
   background-size: 200px 200px;
 }
 
+/* ── Stealth Overline ────────────────────────────────── */
+/* Standardized section label for page headers across all modules.
+   Canonical pattern: mono, 10px, bold, uppercase, widest tracking. */
+.stealth-overline {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
 /* ── Stealth Noise Overlay ───────────────────────────── */
 /* Standardized noise for all pages — use via JS or @apply */
 .stealth-noise {

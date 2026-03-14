@@ -92,7 +92,7 @@ export default function MedicationsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="stealth-overline mb-1">CLINICAL</p>
+            <p className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase mb-1">CLINICAL</p>
             <h1 className="text-xl font-semibold text-[var(--text-primary)]">Medication Management</h1>
             <p className="text-sm text-[var(--text-muted)] mt-1">
               eMAR — Electronic Medication Administration Record

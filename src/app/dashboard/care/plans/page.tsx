@@ -659,7 +659,7 @@ export default function CarePlansPage() {
   }, [plans, tab, search]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative min-h-screen bg-[var(--background)]">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative flex h-full flex-col bg-[var(--background)]">
       <div className="stealth-noise" />
       {/* Atmospheric glow */}
       <div
@@ -667,14 +667,14 @@ export default function CarePlansPage() {
         style={{ background: "radial-gradient(ellipse at center top, rgba(59,130,246,0.03) 0%, transparent 60%)" }}
       />
 
-      <div className="relative z-10 flex h-screen">
+      <div className="relative z-10 flex flex-1 overflow-hidden">
         {/* Main List */}
         <div className={`flex-1 flex flex-col min-w-0 transition-all ${selectedPlan ? "max-w-[60%]" : ""}`}>
           {/* Header */}
           <div className="px-6 pt-8 pb-0 space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--brand)] mb-1">CARE PLANS</p>
+                <p className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase mb-1">CARE PLANS</p>
                 <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
                   {t("Participant")} Plans
                 </h1>
@@ -684,7 +684,7 @@ export default function CarePlansPage() {
               </div>
               <button
                 onClick={() => setCreateOpen(true)}
-                className="stealth-btn-brand bg-[var(--brand)] hover:brightness-110"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white hover:bg-emerald-500 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 New Care Plan
@@ -757,7 +757,7 @@ export default function CarePlansPage() {
                 {!search && tab === "all" && (
                   <button
                     onClick={() => setCreateOpen(true)}
-                    className="stealth-btn-brand bg-[var(--brand)] hover:brightness-110 mt-2"
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white hover:bg-emerald-500 transition-colors mt-2"
                   >
                     <Plus className="w-4 h-4" />
                     Create First Plan

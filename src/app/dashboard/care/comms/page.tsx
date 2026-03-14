@@ -226,7 +226,7 @@ function RoutingLedger({
     <div className="flex h-full w-[320px] min-w-[320px] flex-col border-r border-white/[0.04] bg-[#070707]">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+        <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
           CARE COMMS
         </span>
         <button className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-400">

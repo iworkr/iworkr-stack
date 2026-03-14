@@ -587,6 +587,18 @@ export default function ClinicalTimelinePage() {
           </div>
         )}
       </div>
+
+      {/* ── Status Bar ── */}
+      <div className="flex items-center justify-between border-t border-white/[0.03] px-5 py-2 text-[11px] text-zinc-600">
+        <div className="flex items-center gap-4">
+          <span>{filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}</span>
+          <span>{groupedEvents.length} day{groupedEvents.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div className="flex items-center gap-4 text-zinc-700">
+          <span>⌘F to search</span>
+          <span>Esc to clear</span>
+        </div>
+      </div>
     </div>
   );
 }

@@ -282,7 +282,7 @@ export default function BehaviourPage() {
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
               Behaviour &amp; Safety
             </span>
 
@@ -791,16 +791,16 @@ function FormField({ label, value, onChange, placeholder, type }: { label: strin
 function EmptyState({ icon: Icon, message, sub }: { icon: React.ElementType; message: string; sub: string }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       className="flex flex-col items-center justify-center py-24 text-center"
     >
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.04]">
-        <Icon size={20} className="text-zinc-600" />
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.04] bg-white/[0.02]">
+        <Icon size={28} className="text-zinc-600" />
       </div>
       <h3 className="text-[15px] font-medium text-zinc-200">{message}</h3>
-      <p className="mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-zinc-600">{sub}</p>
+      <p className="mt-1.5 max-w-[320px] text-[12px] leading-relaxed text-zinc-600">{sub}</p>
     </motion.div>
   );
 }

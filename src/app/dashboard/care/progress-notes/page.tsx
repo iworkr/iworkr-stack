@@ -207,7 +207,7 @@ export default function ShiftNotesPage() {
       <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">SHIFT NOTES</span>
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">SHIFT NOTES</span>
             <div className="ml-4 flex items-center gap-0.5">
               {TABS.map((tab) => {
                 const isActive = selectedTab === tab.key;

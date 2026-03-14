@@ -355,7 +355,7 @@ export default function FinancePage() {
         <div className="relative flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             {/* Mono overline — PRD: "FINANCE" */}
-            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
               {t("FINANCE")}
             </span>
             <div className="ml-1 h-6 w-px bg-white/[0.06]" />

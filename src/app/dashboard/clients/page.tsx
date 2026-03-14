@@ -267,7 +267,7 @@ export default function ClientsPage() {
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             {/* Overline */}
-            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{isCare ? "PARTICIPANT RECORDS" : "CLIENT INTELLIGENCE"}</span>
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">{isCare ? "PARTICIPANT RECORDS" : "CLIENT INTELLIGENCE"}</span>
 
             {/* Tabs with Emerald dot indicator */}
             <div className="ml-4 flex items-center gap-0.5">

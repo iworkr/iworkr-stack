@@ -250,7 +250,7 @@ export default function FormsPage() {
         {/* Title row */}
         <div className="flex h-14 shrink-0 items-center justify-between px-5">
           <div className="flex flex-col gap-0.5">
-            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">COMPLIANCE</span>
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">COMPLIANCE</span>
             <div className="flex items-center gap-3">
               <h1 className="text-[15px] font-medium text-white">Forms & Compliance</h1>
               <span className="rounded-full bg-white/[0.03] px-2 py-0.5 font-mono text-[10px] text-zinc-500">

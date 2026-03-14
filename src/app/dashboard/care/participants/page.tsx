@@ -245,7 +245,7 @@ export default function ParticipantsPage() {
         <div className="flex items-center justify-between px-5 py-2.5">
           <div className="flex items-center gap-3">
             {/* Overline */}
-            <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
               PARTICIPANT RECORDS
             </span>
 

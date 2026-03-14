@@ -796,7 +796,7 @@ export default function AutomationsPage() {
               className={`flex h-8 items-center gap-1.5 rounded-[var(--radius-button)] border px-3 text-[11px] font-medium transition-all ${
                 masterPaused
                   ? "border-[var(--brand)]/30 bg-[var(--brand)]/[0.08] text-[var(--brand)] hover:bg-[var(--brand)]/[0.12]"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/15"
+                  : "border-red-500/20 bg-red-500/[0.06] text-red-400 hover:bg-red-500/10"
               } ${masterPauseLoading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {masterPaused ? <Play size={12} /> : <Pause size={12} />}

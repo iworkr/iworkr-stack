@@ -437,6 +437,7 @@ export default function CredentialsPage() {
   const { t, isCare } = useIndustryLexicon();
   const credentialTypes = isCare ? careCredentialTypes : tradesCredentialTypes;
   const loading = useCredentialsStore((s) => s.loading);
+  const loadFromServer = useCredentialsStore((s) => s.loadFromServer);
   const statusFilter = useCredentialsStore((s) => s.statusFilter);
   const typeFilter = useCredentialsStore((s) => s.typeFilter);
   const memberFilter = useCredentialsStore((s) => s.memberFilter);
@@ -449,6 +450,11 @@ export default function CredentialsPage() {
 
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
+
+  // ── Load credentials on mount ──
+  useEffect(() => {
+    if (orgId) loadFromServer(orgId);
+  }, [orgId, loadFromServer]);
 
   const searched = useMemo(() => {
     if (!search) return credentials;
@@ -469,12 +475,12 @@ export default function CredentialsPage() {
 
   return (
     <>
-      <div className="stealth-noise min-h-screen">
-        <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
+      <div className="relative flex h-full flex-col bg-[var(--background)]">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-500 mb-1">COMPLIANCE</p>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">COMPLIANCE</p>
               <h1 className="text-xl font-semibold text-[var(--text-primary)]">
                 {isCare ? "Worker Credentials" : "Workforce Credentials"}
               </h1>
@@ -486,7 +492,7 @@ export default function CredentialsPage() {
             </div>
             <button
               onClick={() => setUploadOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[var(--text-primary)] text-[var(--background)] rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add Credential
@@ -577,17 +583,32 @@ export default function CredentialsPage() {
 
             {/* Empty State */}
             {!loading && searched.length === 0 && (
-              <div className="px-5 py-16 text-center">
-                <Shield className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-3 opacity-40" />
-                <p className="text-sm font-medium text-[var(--text-secondary)]">No credentials found</p>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative flex flex-col items-center justify-center py-24 text-center"
+              >
+                <div className="pointer-events-none absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[60px]" />
+                <div className="relative mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.04] bg-white/[0.02]">
+                  <Shield size={28} className="text-zinc-600" />
+                </div>
+                <h3 className="text-[15px] font-medium text-zinc-200">No credentials found</h3>
+                <p className="mt-1.5 max-w-[320px] text-[12px] leading-relaxed text-zinc-600">
                   {statusFilter !== "all" || typeFilter !== "all" || memberFilter !== "all"
                     ? "Try adjusting your filters."
                     : isCare
                       ? "Add worker credentials such as NDIS Screening, First Aid, or WWCC to track compliance."
                       : "Add team member credentials to track compliance."}
                 </p>
-              </div>
+                {statusFilter === "all" && typeFilter === "all" && memberFilter === "all" && (
+                  <button
+                    onClick={() => setUploadOpen(true)}
+                    className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white hover:bg-emerald-500 transition-colors"
+                  >
+                    <Plus size={14} /> Add First Credential
+                  </button>
+                )}
+              </motion.div>
             )}
 
             {/* Rows */}
