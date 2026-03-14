@@ -39,28 +39,15 @@ final myCareShiftsProvider = StreamProvider<List<CareShift>>((ref) {
 
   Future<void> fetchShifts() async {
     try {
-      // Try shifts table first (care mode), fall back to schedule_blocks
-      List<dynamic> data;
-      try {
-        data = await client
-            .from('shifts')
-            .select('*, participant_profiles(preferred_name, avatar_url, critical_alerts), clients(name)')
-            .eq('organization_id', orgId)
-            .or('worker_id.eq.$userId,assignee_id.eq.$userId')
-            .gte('scheduled_start', rangeStart)
-            .lte('scheduled_start', rangeEnd)
-            .order('scheduled_start');
-      } catch (_) {
-        // Fallback to schedule_blocks for trades-mode orgs
-        data = await client
-            .from('schedule_blocks')
-            .select()
-            .eq('organization_id', orgId)
-            .eq('technician_id', userId)
-            .gte('start_time', rangeStart)
-            .lte('start_time', rangeEnd)
-            .order('start_time');
-      }
+      // Query schedule_blocks with participant profile joins
+      final List<dynamic> data = await client
+          .from('schedule_blocks')
+          .select('*, participant_profiles(preferred_name, avatar_url, critical_alerts)')
+          .eq('organization_id', orgId)
+          .eq('technician_id', userId)
+          .gte('start_time', rangeStart)
+          .lte('start_time', rangeEnd)
+          .order('start_time');
 
       if (!controller.isClosed) {
         controller.add(
@@ -76,13 +63,13 @@ final myCareShiftsProvider = StreamProvider<List<CareShift>>((ref) {
 
   fetchShifts();
 
-  // Listen for realtime changes
+  // Listen for realtime changes on schedule_blocks
   final sub = client
       .channel('my-care-shifts-$userId')
       .onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
-        table: 'shifts',
+        table: 'schedule_blocks',
         filter: PostgresChangeFilter(
           type: PostgresChangeFilterType.eq,
           column: 'organization_id',
@@ -150,19 +137,34 @@ final actionRequiredShiftsProvider = Provider<List<CareShift>>((ref) {
   );
 });
 
-/// Accept a shift
+/// Accept a shift (updates metadata JSON on schedule_blocks)
 Future<void> acceptShift(String shiftId) async {
-  await SupabaseService.client.from('shifts').update({
-    'acceptance_status': 'accepted',
+  // Read current metadata, merge acceptance_status
+  final response = await SupabaseService.client
+      .from('schedule_blocks')
+      .select('metadata')
+      .eq('id', shiftId)
+      .maybeSingle();
+  final currentMeta = (response?['metadata'] as Map<String, dynamic>?) ?? {};
+  currentMeta['acceptance_status'] = 'accepted';
+  await SupabaseService.client.from('schedule_blocks').update({
+    'metadata': currentMeta,
     'updated_at': DateTime.now().toUtc().toIso8601String(),
   }).eq('id', shiftId);
 }
 
 /// Decline a shift with a reason
 Future<void> declineShift(String shiftId, String reason) async {
-  await SupabaseService.client.from('shifts').update({
-    'acceptance_status': 'declined',
-    'decline_reason': reason,
+  final response = await SupabaseService.client
+      .from('schedule_blocks')
+      .select('metadata')
+      .eq('id', shiftId)
+      .maybeSingle();
+  final currentMeta = (response?['metadata'] as Map<String, dynamic>?) ?? {};
+  currentMeta['acceptance_status'] = 'declined';
+  currentMeta['decline_reason'] = reason;
+  await SupabaseService.client.from('schedule_blocks').update({
+    'metadata': currentMeta,
     'updated_at': DateTime.now().toUtc().toIso8601String(),
   }).eq('id', shiftId);
 }
@@ -181,10 +183,9 @@ Future<void> clockInToShift({
 
   final now = DateTime.now().toUtc().toIso8601String();
 
-  // Update the shift status
-  await SupabaseService.client.from('shifts').update({
+  // Update the schedule_block status to in_progress
+  await SupabaseService.client.from('schedule_blocks').update({
     'status': 'in_progress',
-    'actual_start': now,
     'updated_at': now,
   }).eq('id', shiftId);
 
@@ -192,12 +193,13 @@ Future<void> clockInToShift({
   await SupabaseService.client.from('time_entries').insert({
     'organization_id': organizationId,
     'user_id': userId,
+    'worker_id': userId,
+    'shift_id': shiftId,
     'type': 'shift',
     'status': 'active',
     'clock_in': now,
     'clock_in_lat': lat,
     'clock_in_lng': lng,
-    'job_id': shiftId,
     'is_geofence_override': isGeofenceOverride,
     'geofence_override_reason': overrideReason,
   });
@@ -216,10 +218,9 @@ Future<void> clockOutOfShift({
   final now = DateTime.now();
   final totalMinutes = now.difference(clockInTime).inMinutes - breakMinutes;
 
-  // Update shift status
-  await SupabaseService.client.from('shifts').update({
-    'status': 'completed',
-    'actual_end': now.toUtc().toIso8601String(),
+  // Update schedule_block status to complete
+  await SupabaseService.client.from('schedule_blocks').update({
+    'status': 'complete',
     'updated_at': now.toUtc().toIso8601String(),
   }).eq('id', shiftId);
 
@@ -231,7 +232,7 @@ Future<void> clockOutOfShift({
     'clock_out_lng': lng,
     'total_minutes': totalMinutes,
     'break_duration_minutes': breakMinutes,
-    if (kilometersTravelled != null) 'kilometers_travelled': kilometersTravelled,
+    'travel_km': kilometersTravelled,
     'updated_at': now.toUtc().toIso8601String(),
   }).eq('id', timeEntryId);
 }

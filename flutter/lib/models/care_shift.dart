@@ -64,6 +64,16 @@ class CareShift {
     final participant = json['participant_profiles'] as Map<String, dynamic>?;
     final client = json['clients'] as Map<String, dynamic>?;
 
+    // Extract care-specific fields from metadata JSONB (schedule_blocks stores
+    // handover_notes, requires_acceptance, service_type, ndis_line_item, etc.)
+    final metadata = json['metadata'] as Map<String, dynamic>? ?? {};
+
+    // Critical alerts: prefer participant_profiles join, then metadata, then top-level
+    final criticalAlerts = (participant?['critical_alerts'] as List<dynamic>?)?.cast<String>() ??
+        (metadata['critical_alerts'] as List<dynamic>?)?.cast<String>() ??
+        (json['critical_alerts'] as List<dynamic>?)?.cast<String>() ??
+        [];
+
     return CareShift(
       id: json['id'] as String,
       organizationId: json['organization_id'] as String,
@@ -73,8 +83,8 @@ class CareShift {
       scheduledEnd: DateTime.parse(json['scheduled_end'] as String? ?? json['end_time'] as String),
       actualStart: json['actual_start'] != null ? DateTime.tryParse(json['actual_start'] as String) : null,
       actualEnd: json['actual_end'] != null ? DateTime.tryParse(json['actual_end'] as String) : null,
-      ndisLineItem: json['ndis_line_item'] as String?,
-      serviceType: json['service_type'] as String? ?? json['title'] as String?,
+      ndisLineItem: json['ndis_line_item'] as String? ?? metadata['ndis_line_item'] as String?,
+      serviceType: json['service_type'] as String? ?? metadata['service_type'] as String? ?? json['title'] as String?,
       status: CareShiftStatus.fromString(json['status'] as String? ?? 'published'),
       participantName: participant?['preferred_name'] as String? ??
           client?['name'] as String? ??
@@ -83,11 +93,11 @@ class CareShift {
       location: json['location'] as String?,
       locationLat: (json['location_lat'] as num?)?.toDouble(),
       locationLng: (json['location_lng'] as num?)?.toDouble(),
-      requiresAcceptance: json['requires_acceptance'] as bool? ?? false,
-      acceptanceStatus: json['acceptance_status'] as String?,
-      declineReason: json['decline_reason'] as String?,
-      criticalAlerts: (json['critical_alerts'] as List<dynamic>?)?.cast<String>() ?? [],
-      handoverNotes: json['handover_notes'] as String?,
+      requiresAcceptance: json['requires_acceptance'] as bool? ?? metadata['requires_acceptance'] as bool? ?? false,
+      acceptanceStatus: json['acceptance_status'] as String? ?? metadata['acceptance_status'] as String?,
+      declineReason: json['decline_reason'] as String? ?? metadata['decline_reason'] as String?,
+      criticalAlerts: criticalAlerts,
+      handoverNotes: json['handover_notes'] as String? ?? metadata['handover_notes'] as String?,
       backupWorkerId: json['backup_worker_id'] as String?,
       generatedFromTemplateId: json['generated_from_template_id'] as String?,
       isShortNoticeCancellation: json['is_short_notice_cancellation'] as bool? ?? false,
