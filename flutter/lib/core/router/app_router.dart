@@ -53,6 +53,13 @@ import 'package:iworkr_mobile/features/care/screens/incidents_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/observations_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/progress_notes_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/sentinel_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/my_shifts_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/shift_detail_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/shift_debrief_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/create_incident_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/record_observation_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/worker_timesheets_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/worker_credentials_screen.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/widgets/shell_scaffold.dart';
 
@@ -568,6 +575,69 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const BudgetDashboardScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      // ── Field Operative Routes (Support Worker Mobile) ─────
+      GoRoute(
+        path: '/care/my-shifts',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const MyShiftsScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/shift/:shiftId',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final shiftId = state.pathParameters['shiftId']!;
+          return CustomTransitionPage(
+            child: ShiftDetailScreen(shiftId: shiftId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/care/shift/:shiftId/debrief',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final shiftId = state.pathParameters['shiftId']!;
+          return CustomTransitionPage(
+            child: ShiftDebriefScreen(shiftId: shiftId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/care/incidents/new',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const CreateIncidentScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/observations/record',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const RecordObservationScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/timesheets',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const WorkerTimesheetsScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/my-credentials',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const WorkerCredentialsScreen(),
           transitionsBuilder: _slideUpTransition,
         ),
       ),
