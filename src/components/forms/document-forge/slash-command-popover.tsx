@@ -32,6 +32,7 @@ export function SlashCommandPopover({
   const listRef = useRef<HTMLDivElement>(null);
   const [highlightIndex, setHighlightIndex] = useState(0);
   const { openUpgrade } = useUpgradeModal();
+  const { plan } = useBillingStore();
 
   const filtered = useMemo(() => filterTools(query), [query]);
   const selected = filtered[highlightIndex];
@@ -98,7 +99,6 @@ export function SlashCommandPopover({
               const Icon = item.icon;
               const isHighlight = i === highlightIndex;
               const requiredTier = GATED_BLOCKS[item.type];
-              const { plan } = useBillingStore();
               const isLocked = requiredTier && PLAN_ORDER.indexOf(plan.key) < PLAN_ORDER.indexOf(requiredTier);
 
               return (

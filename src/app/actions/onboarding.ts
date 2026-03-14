@@ -29,230 +29,250 @@ export async function createOrganization(data: {
   trade: string | null;
   industryType?: string | null;
 }) {
-  // Validate input
-  const parsed = CreateOrganizationSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
-  }
-
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  let slug = slugify(data.name);
-  if (!slug) slug = "workspace";
-
-  // Append suffix to avoid slug collisions
-  slug = `${slug}-${Date.now().toString(36)}`;
-
-  // Use the SECURITY DEFINER function to atomically create org + owner membership
-  const { data: result, error } = await supabase.rpc(
-    "create_organization_with_owner",
-    {
-      org_name: data.name,
-      org_slug: slug,
-      org_trade: (data.trade || null) as string | undefined,
+  try {
+    // Validate input
+    const parsed = CreateOrganizationSchema.safeParse(data);
+    if (!parsed.success) {
+      return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
     }
-  );
 
-  if (error) {
-    return { error: error.message };
-  }
+    const supabase = await createServerSupabaseClient();
 
-  // Set the industry type on the new org if specified
-  if (data.industryType && result) {
-    const orgId = typeof result === "string" ? result : (result as any)?.id;
-    if (orgId) {
-      await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-        .from("organizations")
-        .update({ industry_type: data.industryType })
-        .eq("id", orgId);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { error: "Not authenticated" };
     }
-  }
 
-  return { organization: result };
+    let slug = slugify(data.name);
+    if (!slug) slug = "workspace";
+
+    // Append suffix to avoid slug collisions
+    slug = `${slug}-${Date.now().toString(36)}`;
+
+    // Use the SECURITY DEFINER function to atomically create org + owner membership
+    const { data: result, error } = await supabase.rpc(
+      "create_organization_with_owner",
+      {
+        org_name: data.name,
+        org_slug: slug,
+        org_trade: (data.trade || null) as string | undefined,
+      }
+    );
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Set the industry type on the new org if specified
+    if (data.industryType && result) {
+      const orgId = typeof result === "string" ? result : (result as any)?.id;
+      if (orgId) {
+        await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+          .from("organizations")
+          .update({ industry_type: data.industryType })
+          .eq("id", orgId);
+      }
+    }
+
+    return { organization: result };
+  } catch (err) {
+    console.error("[onboarding] createOrganization error:", err);
+    return { error: (err as Error).message || "An unexpected error occurred" };
+  }
 }
 
 export async function updateOrganizationTrade(orgId: string, trade: string) {
-  // Validate input
-  const parsed = UpdateTradeSchema.safeParse(trade);
-  if (!parsed.success) {
-    return { error: parsed.error.issues.map(e => e.message).join("; ") };
+  try {
+    // Validate input
+    const parsed = UpdateTradeSchema.safeParse(trade);
+    if (!parsed.success) {
+      return { error: parsed.error.issues.map(e => e.message).join("; ") };
+    }
+
+    const supabase = await createServerSupabaseClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { error: "Not authenticated" };
+    }
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) {
+      return { error: "Unauthorized" };
+    }
+
+    const { error } = await supabase
+      .from("organizations")
+      .update({ trade })
+      .eq("id", orgId);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("[onboarding] updateOrganizationTrade error:", err);
+    return { error: (err as Error).message || "An unexpected error occurred" };
   }
-
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", orgId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) {
-    return { error: "Unauthorized" };
-  }
-
-  const { error } = await supabase
-    .from("organizations")
-    .update({ trade })
-    .eq("id", orgId);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  return { success: true };
 }
 
 export async function sendTeamInvites(
   orgId: string,
   emails: string[]
 ) {
-  // Limit batch size to prevent abuse
-  if (emails.length > 20) return { error: "Maximum 20 invites at a time" };
+  try {
+    // Limit batch size to prevent abuse
+    if (emails.length > 20) return { error: "Maximum 20 invites at a time" };
 
-  const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  // Verify org membership
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", orgId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { error: "Unauthorized" };
-
-  // Get org name + branding and inviter profile for the email (Project Genesis)
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("name, logo_url, brand_color_hex")
-    .eq("id", orgId)
-    .maybeSingle();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const inviterName = profile?.full_name || user.email || "A team member";
-  const companyName = org?.name || "your team";
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iworkrapp.com";
-
-  const results: { email: string; success: boolean; emailSent?: boolean; error?: string }[] = [];
-
-  for (const email of emails) {
-    const { data: invite, error } = await supabase
-      .from("organization_invites")
-      .upsert(
-        {
-          organization_id: orgId,
-          email,
-          role: "technician",
-          status: "pending",
-          invited_by: user.id,
-        },
-        { onConflict: "organization_id,email" }
-      )
-      .select()
-      .single();
-
-    let emailSent = true;
-    if (!error && invite) {
-      // Genesis: use /join route with token-based SSR validation
-      const inviteToken = invite.token || invite.id;
-      const inviteUrl = `${baseUrl}/join?token=${inviteToken}`;
-      try {
-        await sendInviteEmail({
-          to: email,
-          inviterName,
-          companyName,
-          role: "Technician",
-          inviteUrl,
-          brandColorHex: org?.brand_color_hex || undefined,
-          logoUrl: org?.logo_url || undefined,
-        });
-      } catch (emailErr) {
-        console.error("[Email] Invite send failed:", emailErr);
-        emailSent = false;
-      }
+    if (!user) {
+      return { error: "Not authenticated" };
     }
 
-    results.push({
-      email,
-      success: !error,
-      emailSent,
-      error: error?.message || (!emailSent ? "Invite created but email delivery failed" : undefined),
-    });
-  }
+    // Verify org membership
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
 
-  return { results };
+    // Get org name + branding and inviter profile for the email (Project Genesis)
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name, logo_url, brand_color_hex")
+      .eq("id", orgId)
+      .maybeSingle();
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const inviterName = profile?.full_name || user.email || "A team member";
+    const companyName = org?.name || "your team";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://iworkrapp.com";
+
+    const results: { email: string; success: boolean; emailSent?: boolean; error?: string }[] = [];
+
+    for (const email of emails) {
+      const { data: invite, error } = await supabase
+        .from("organization_invites")
+        .upsert(
+          {
+            organization_id: orgId,
+            email,
+            role: "technician",
+            status: "pending",
+            invited_by: user.id,
+          },
+          { onConflict: "organization_id,email" }
+        )
+        .select()
+        .single();
+
+      let emailSent = true;
+      if (!error && invite) {
+        // Genesis: use /join route with token-based SSR validation
+        const inviteToken = invite.token || invite.id;
+        const inviteUrl = `${baseUrl}/join?token=${inviteToken}`;
+        try {
+          await sendInviteEmail({
+            to: email,
+            inviterName,
+            companyName,
+            role: "Technician",
+            inviteUrl,
+            brandColorHex: org?.brand_color_hex || undefined,
+            logoUrl: org?.logo_url || undefined,
+          });
+        } catch (emailErr) {
+          console.error("[Email] Invite send failed:", emailErr);
+          emailSent = false;
+        }
+      }
+
+      results.push({
+        email,
+        success: !error,
+        emailSent,
+        error: error?.message || (!emailSent ? "Invite created but email delivery failed" : undefined),
+      });
+    }
+
+    return { results };
+  } catch (err) {
+    console.error("[onboarding] sendTeamInvites error:", err);
+    return { error: (err as Error).message || "An unexpected error occurred" };
+  }
 }
 
 export async function completeOnboarding() {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { error: "Not authenticated" };
+    if (!user) {
+      return { error: "Not authenticated" };
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ onboarding_completed: true })
+      .eq("id", user.id);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Send welcome email
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    // Get the user's first org
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("organization_id, organizations(name)")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    const orgName = membership?.organizations?.name;
+
+    await sendWelcomeEmail({
+      to: user.email!,
+      name: profile?.full_name || user.email?.split("@")[0] || "there",
+      companyName: orgName,
+    }).catch((err) => console.error("[Email] Welcome send failed:", err));
+
+    return { success: true };
+  } catch (err) {
+    console.error("[onboarding] completeOnboarding error:", err);
+    return { error: (err as Error).message || "An unexpected error occurred" };
   }
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ onboarding_completed: true })
-    .eq("id", user.id);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  // Send welcome email
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  // Get the user's first org
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id, organizations(name)")
-    .eq("user_id", user.id)
-    .limit(1)
-    .maybeSingle();
-
-  const orgName = membership?.organizations?.name;
-
-  await sendWelcomeEmail({
-    to: user.email!,
-    name: profile?.full_name || user.email?.split("@")[0] || "there",
-    companyName: orgName,
-  }).catch((err) => console.error("[Email] Welcome send failed:", err));
-
-  return { success: true };
 }

@@ -1,9 +1,9 @@
 # Assets Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-10T00:47:16.724Z
+> **Generated**: 2026-03-14T00:54:03.286Z
 > **Module**: Assets (`/dashboard/assets` & `/dashboard/assets/[id]`)
 > **Test Framework**: Playwright (21 test suites)
-> **Total Findings**: 0
+> **Total Findings**: 11
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
+| 🔴 Critical Failures | 2 |
 | 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 0 |
-| 🟢 Flow Passes | 0 |
+| 🟠 Warnings | 4 |
+| 🟢 Flow Passes | 5 |
 
 ---
 
@@ -33,7 +33,14 @@
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
+### Console error
+- **Area**: Console
+- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected respons
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
+
 ---
 
 ## 🟡 Visual Defects
@@ -48,11 +55,31 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
-_No warnings._
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/worker_credentials?select=*%2Cprofiles%3Auser_id%28full_name%2Cemail%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=expiry_date.asc.nullsl
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/incidents?select=*%2Cprofiles%21worker_id%28full_name%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=occurred_at.desc&limit=500
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0
+
 ---
 
 ## 🟢 Flow Verification (Passes)
 
+- ✅ **[Stats]** Total Value is dynamic: Value is "$0" — calculated from DB, not mock helper.
+- ✅ **[MockData]** No mock data detected: Page shows empty state or real DB data — no mock fallbacks.
+- ✅ **[Style]** All buttons have pointer: Checked 15.
+- ✅ **[Style]** Inter font applied: Font: inter, "inter Fallback"
+- ✅ **[Network]** No 406 errors: useOrg fix confirmed — no 406 responses.
 
 ---
 

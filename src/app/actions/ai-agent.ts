@@ -55,74 +55,84 @@ export interface AIAgentCall {
 /* ── Config CRUD ──────────────────────────────────── */
 
 export async function getAgentConfig(orgId: string): Promise<{ data: AIAgentConfig | null; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", orgId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { data: null, error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
-  const { data, error } = await supabase
-    .from("ai_agent_config")
-    .select("*")
-    .eq("organization_id", orgId)
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from("ai_agent_config")
+      .select("*")
+      .eq("organization_id", orgId)
+      .maybeSingle();
 
-  if (error) return { data: null, error: error.message };
-  return { data: data as AIAgentConfig | null };
+    if (error) return { data: null, error: error.message };
+    return { data: data as AIAgentConfig | null };
+  } catch (e: any) {
+    console.error("[ai-agent] getAgentConfig failed:", e);
+    return { data: null, error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function upsertAgentConfig(
   orgId: string,
   config: Partial<Omit<AIAgentConfig, "id" | "organization_id">>
 ): Promise<{ error?: string }> {
-  // Validate input
-  const parsed = UpsertAgentConfigSchema.safeParse(config);
-  if (!parsed.success) {
-    return { error: JSON.stringify(parsed.error.flatten().fieldErrors) };
-  }
+  try {
+    // Validate input
+    const parsed = UpsertAgentConfigSchema.safeParse(config);
+    if (!parsed.success) {
+      return { error: JSON.stringify(parsed.error.flatten().fieldErrors) };
+    }
 
-  const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", orgId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
 
-  // Check if config exists
-  const { data: existing } = await supabase
-    .from("ai_agent_config")
-    .select("id")
-    .eq("organization_id", orgId)
-    .maybeSingle();
-
-  if (existing) {
-    const { error } = await supabase
+    // Check if config exists
+    const { data: existing } = await supabase
       .from("ai_agent_config")
-      .update({ ...config, updated_at: new Date().toISOString() })
-      .eq("organization_id", orgId);
-    if (error) return { error: error.message };
-  } else {
-    const { error } = await supabase
-      .from("ai_agent_config")
-      .insert({ organization_id: orgId, ...config });
-    if (error) return { error: error.message };
-  }
+      .select("id")
+      .eq("organization_id", orgId)
+      .maybeSingle();
 
-  revalidatePath("/dashboard/ai-agent");
-  return {};
+    if (existing) {
+      const { error } = await supabase
+        .from("ai_agent_config")
+        .update({ ...config, updated_at: new Date().toISOString() })
+        .eq("organization_id", orgId);
+      if (error) return { error: error.message };
+    } else {
+      const { error } = await supabase
+        .from("ai_agent_config")
+        .insert({ organization_id: orgId, ...config });
+      if (error) return { error: error.message };
+    }
+
+    revalidatePath("/dashboard/ai-agent");
+    return {};
+  } catch (e: any) {
+    console.error("[ai-agent] upsertAgentConfig failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 /* ── Call Logs ────────────────────────────────────── */
@@ -131,57 +141,67 @@ export async function getAgentCalls(
   orgId: string,
   limit = 50
 ): Promise<{ data: AIAgentCall[]; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Unauthorized" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", orgId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { data: [], error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: [], error: "Unauthorized" };
 
-  const { data, error } = await supabase
-    .from("ai_agent_calls")
-    .select("*")
-    .eq("organization_id", orgId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    const { data, error } = await supabase
+      .from("ai_agent_calls")
+      .select("*")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
-  if (error) return { data: [], error: error.message };
-  return { data: (data || []) as AIAgentCall[] };
+    if (error) return { data: [], error: error.message };
+    return { data: (data || []) as AIAgentCall[] };
+  } catch (e: any) {
+    console.error("[ai-agent] getAgentCalls failed:", e);
+    return { data: [], error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function getCallTranscript(callId: string): Promise<{ transcript: string | null; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { transcript: null, error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { transcript: null, error: "Unauthorized" };
 
-  const { data: call } = await supabase
-    .from("ai_agent_calls")
-    .select("organization_id")
-    .eq("id", callId)
-    .maybeSingle();
-  if (!call) return { transcript: null, error: "Call not found" };
+    const { data: call } = await supabase
+      .from("ai_agent_calls")
+      .select("organization_id")
+      .eq("id", callId)
+      .maybeSingle();
+    if (!call) return { transcript: null, error: "Call not found" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", call.organization_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { transcript: null, error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", call.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { transcript: null, error: "Unauthorized" };
 
-  const { data, error } = await supabase
-    .from("ai_agent_calls")
-    .select("transcript")
-    .eq("id", callId)
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from("ai_agent_calls")
+      .select("transcript")
+      .eq("id", callId)
+      .maybeSingle();
 
-  if (error) return { transcript: null, error: error.message };
-  return { transcript: data?.transcript ?? null };
+    if (error) return { transcript: null, error: error.message };
+    return { transcript: data?.transcript ?? null };
+  } catch (e: any) {
+    console.error("[ai-agent] getCallTranscript failed:", e);
+    return { transcript: null, error: e?.message || "An unexpected error occurred" };
+  }
 }

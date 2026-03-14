@@ -1,9 +1,9 @@
 # Finance Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-10T00:45:53.625Z
+> **Generated**: 2026-03-14T00:52:26.693Z
 > **Module**: Finance (`/dashboard/finance` & `/dashboard/finance/invoices/[id]`)
 > **Test Framework**: Playwright (20 test suites)
-> **Total Findings**: 0
+> **Total Findings**: 16
 
 ---
 
@@ -11,17 +11,28 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
+| 🔴 Critical Failures | 3 |
 | 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 0 |
-| 🟢 Flow Passes | 0 |
+| 🟠 Warnings | 9 |
+| 🟢 Flow Passes | 4 |
 
 ---
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
+### Missing empty state
+- **Area**: EmptyState
+- **Detail**: No rows and no 'No invoices found' heading.
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+### Console error
+- **Area**: Console
+- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected respons
+
 ---
 
 ## 🟡 Visual Defects
@@ -36,11 +47,50 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
-_No warnings._
+### No invoices to test
+- **Area**: Detail
+- **Detail**: Skipping detail test.
+
+### No invoices
+- **Area**: ABN
+- **Detail**: Skipping ABN test.
+
+### No invoices
+- **Area**: PDF
+- **Detail**: Skipping PDF test.
+
+### No rows
+- **Area**: Void
+- **Detail**: Skipping.
+
+### Not enough rows
+- **Area**: Keyboard
+- **Detail**: Need 2+.
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/worker_credentials?select=*%2Cprofiles%3Auser_id%28full_name%2Cemail%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=expiry_date.asc.nullsl
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/incidents?select=*%2Cprofiles%21worker_id%28full_name%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=occurred_at.desc&limit=500
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0
+
 ---
 
 ## 🟢 Flow Verification (Passes)
 
+- ✅ **[NewInvoice]** 'New Invoice' opens modal: Create invoice modal appeared.
+- ✅ **[EmptyState]** Empty state CTA: 'New Invoice' CTA in empty state.
+- ✅ **[Style]** All buttons have pointer: Checked 12.
+- ✅ **[Network]** No 406 errors: useOrg fix confirmed.
 
 ---
 

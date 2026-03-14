@@ -1,9 +1,9 @@
 # Team & RBAC Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-10T00:49:16.300Z
+> **Generated**: 2026-03-14T00:55:13.608Z
 > **Module**: Team & RBAC (`/dashboard/team`, `/dashboard/team/roles`)
 > **Test Framework**: Playwright (16 test suites)
-> **Total Findings**: 12
+> **Total Findings**: 21
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 1 |
+| 🔴 Critical Failures | 3 |
 | 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 7 |
-| 🟢 Flow Passes | 4 |
+| 🟠 Warnings | 10 |
+| 🟢 Flow Passes | 8 |
 
 ---
 
@@ -26,7 +26,7 @@
 | Network Green (no 406) | PASS |
 | Real Data (no mock fallback) | PASS |
 | Persistence (role change) | PENDING |
-| Security (permission toggle) | PENDING |
+| Security (permission toggle) | PASS |
 | Invites (real server call) | PENDING |
 
 ---
@@ -36,6 +36,14 @@
 ### Heading missing
 - **Area**: Header
 - **Detail**: h1 not found.
+
+### Console error
+- **Area**: Console
+- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected respons
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
 
 ---
 
@@ -75,18 +83,34 @@ _No dummy data leaks found._
 - **Area**: Context
 - **Detail**: DB empty.
 
-### No roles listed
-- **Area**: Roles
-- **Detail**: DB may be empty.
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/incidents?select=*%2Cprofiles%21worker_id%28full_name%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=occurred_at.desc&limit=500
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/worker_credentials?select=*%2Cprofiles%3Auser_id%28full_name%2Cemail%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=expiry_date.asc.nullsl
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0
 
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Style]** All buttons have pointer: Checked 2.
+- ✅ **[Header]** 'Roles' link renders: Navigates to /dashboard/team/roles.
+- ✅ **[Filters]** Filter button visible: Filter functionality present.
+- ✅ **[Roles]** Roles sidebar loads: Role list with counts.
+- ✅ **[Roles]** 1 roles listed: Roles from DB.
+- ✅ **[Permissions]** Permission toggles present: Uses saveRolePermissionsServer() with optimistic rollback.
+- ✅ **[MockData]** No mock data detected: Empty state — no mock fallback.
+- ✅ **[Style]** All buttons have pointer: Checked 13.
 - ✅ **[Network]** No 406 errors: useOrg fix confirmed.
-- ✅ **[Console]** No console errors: Team pages loaded without errors.
-- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
 
 ---
 

@@ -59,10 +59,52 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-    );
+    // ── Authentication ──────────────────────────────────────
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const authHeader = req.headers.get("Authorization");
+    const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
+
+    let callerOrgIds: string[] = [];
+
+    if (!isServiceRole) {
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: "Missing authorization header" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || "", {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+
+      if (!user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Fetch the caller's active organization memberships
+      const { data: memberships } = await userClient
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      callerOrgIds = (memberships || []).map((m: { organization_id: string }) => m.organization_id);
+
+      if (callerOrgIds.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "No active organization membership" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Fetch invoice with line items and org branding
     const { data: invoice, error: fetchError } = await supabase
@@ -78,6 +120,14 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Invoice not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Verify the caller belongs to the organization that owns this invoice
+    if (!isServiceRole && !callerOrgIds.includes(invoice.organization_id)) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: you do not belong to this invoice's organization" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -339,7 +389,7 @@ serve(async (req) => {
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message || "Internal server error" }),
+      JSON.stringify({ error: (err as Error).message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

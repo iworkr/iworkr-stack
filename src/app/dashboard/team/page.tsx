@@ -50,38 +50,6 @@ import { useBillingStore } from "@/lib/billing-store";
 import { getPlanByKey } from "@/lib/plans";
 import { useUpgradeModal } from "@/lib/upgrade-modal-store";
 
-/* ── Care credential status helper ────────────────────── */
-
-type CredentialStatus = "valid" | "expiring_soon" | "expired";
-
-function getMemberCredentialStatus(memberId: string): CredentialStatus {
-  // Deterministic mock based on member id hash
-  let hash = 0;
-  for (let i = 0; i < memberId.length; i++) {
-    hash = (hash * 31 + memberId.charCodeAt(i)) | 0;
-  }
-  const bucket = Math.abs(hash) % 10;
-  if (bucket < 2) return "expired"; // ~20%
-  if (bucket < 4) return "expiring_soon"; // ~20%
-  return "valid"; // ~60%
-}
-
-function getMemberCareSkills(memberId: string): string[] {
-  // Deterministic mock: pick 2-3 care skills per member based on id hash
-  let hash = 0;
-  for (let i = 0; i < memberId.length; i++) {
-    hash = (hash * 37 + memberId.charCodeAt(i)) | 0;
-  }
-  const count = (Math.abs(hash) % 2) + 2; // 2 or 3
-  const skills: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const idx = Math.abs((hash + i * 7) % careSkillDefinitions.length);
-    const skill = careSkillDefinitions[idx];
-    if (skill && !skills.includes(skill.id)) skills.push(skill.id);
-  }
-  return skills;
-}
-
 /* ── Skill icon map ─────────────────────────────────────── */
 
 const skillIconMap: Record<string, typeof Wrench> = {
@@ -177,6 +145,7 @@ export default function TeamPage() {
   } = useTeamStore();
   const { addToast } = useToastStore();
   const { t, isCare } = useIndustryLexicon();
+  const { plan, memberCount } = useBillingStore();
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -376,32 +345,25 @@ export default function TeamPage() {
             </Link>
 
             {/* Invite — PRD 57.0 Stark White primary CTA + Seat Limit Gate */}
-            {(() => {
-              const { plan, memberCount } = useBillingStore();
-              const atLimit = memberCount >= plan.limits.maxUsers;
-              if (atLimit) {
-                return (
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => useUpgradeModal.getState().openUpgrade({ feature: `${t("Team")} Seats`, description: `Upgrade your plan to add more ${isCare ? "support team" : "team"} members.` })}
-                    className="flex h-7 items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 text-[11px] font-medium text-amber-400 transition-all duration-200 hover:bg-amber-500/20"
-                  >
-                    <UserPlus size={13} strokeWidth={2} />
-                    Upgrade to Add Seats
-                  </motion.button>
-                );
-              }
-              return (
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setInviteModalOpen(true)}
-                  className="flex h-7 items-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
-                >
-                  <UserPlus size={13} strokeWidth={2} className="text-black" />
-                  {t("Invite")}
-                </motion.button>
-              );
-            })()}
+            {memberCount >= plan.limits.maxUsers ? (
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => useUpgradeModal.getState().openUpgrade({ feature: `${t("Team")} Seats`, description: `Upgrade your plan to add more ${isCare ? "support team" : "team"} members.` })}
+                className="flex h-7 items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 text-[11px] font-medium text-amber-400 transition-all duration-200 hover:bg-amber-500/20"
+              >
+                <UserPlus size={13} strokeWidth={2} />
+                Upgrade to Add Seats
+              </motion.button>
+            ) : (
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setInviteModalOpen(true)}
+                className="flex h-7 items-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-medium text-black transition-all duration-200 hover:bg-zinc-200"
+              >
+                <UserPlus size={13} strokeWidth={2} className="text-black" />
+                {t("Invite")}
+              </motion.button>
+            )}
           </div>
         </div>
 
@@ -556,26 +518,11 @@ export default function TeamPage() {
                       </div>
 
                       {/* Credentials — care mode only */}
-                      {isCare && (() => {
-                        const credStatus = getMemberCredentialStatus(member.id);
-                        return (
-                          <div className="w-28 px-2 flex items-center gap-1.5">
-                            {credStatus === "expired" && (
-                              <span className="inline-flex items-center rounded-md border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[9px] font-semibold text-rose-400">
-                                Expired
-                              </span>
-                            )}
-                            {credStatus === "expiring_soon" && (
-                              <span className="inline-flex items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-semibold text-amber-400">
-                                Expiring Soon
-                              </span>
-                            )}
-                            {credStatus === "valid" && (
-                              <span className="text-[9px] text-zinc-600">Valid</span>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      {isCare && (
+                        <div className="w-28 px-2 flex items-center gap-1.5">
+                          <span className="text-[9px] text-zinc-600">—</span>
+                        </div>
+                      )}
 
                       {/* Branch */}
                       <div className="w-24 px-2">
@@ -586,7 +533,7 @@ export default function TeamPage() {
                       <div className="w-36 px-2 flex items-center gap-1">
                         {(() => {
                           const activeSkills = isCare ? careSkillDefinitions : skillDefinitions;
-                          const memberSkillIds = isCare ? getMemberCareSkills(member.id) : member.skills;
+                          const memberSkillIds = member.skills;
                           const visibleCount = isCare ? 2 : 3;
                           const visible = memberSkillIds.slice(0, visibleCount);
                           const overflowCount = memberSkillIds.length - visibleCount;

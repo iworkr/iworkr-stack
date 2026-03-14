@@ -55,88 +55,104 @@ export async function fetchNDISCatalogue(
   limit = 200,
   offset = 0,
 ): Promise<{ data: NDISCatalogueItem[]; total: number }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  let query = (supabase as any)
-    .from("ndis_catalogue")
-    .select("*", { count: "exact" })
-    .is("effective_to", null)
-    .order("support_item_number")
-    .range(offset, offset + limit - 1);
+    let query = (supabase as any)
+      .from("ndis_catalogue")
+      .select("*", { count: "exact" })
+      .is("effective_to", null)
+      .order("support_item_number")
+      .range(offset, offset + limit - 1);
 
-  if (category && category !== "all") query = query.eq("support_category", category);
-  if (search) {
-    query = query.or(
-      `support_item_number.ilike.%${search}%,support_item_name.ilike.%${search}%`
-    );
+    if (category && category !== "all") query = query.eq("support_category", category);
+    if (search) {
+      query = query.or(
+        `support_item_number.ilike.%${search}%,support_item_name.ilike.%${search}%`
+      );
+    }
+
+    const { data, count, error } = await query;
+    if (error) throw new Error(error.message);
+
+    // Supabase returns `numeric` columns as strings — coerce to numbers
+    const parsed = (data || []).map((row: any) => ({
+      ...row,
+      base_rate_national: parseFloat(row.base_rate_national) || 0,
+      base_rate_remote: row.base_rate_remote != null ? parseFloat(row.base_rate_remote) || null : null,
+      base_rate_very_remote: row.base_rate_very_remote != null ? parseFloat(row.base_rate_very_remote) || null : null,
+    })) as NDISCatalogueItem[];
+
+    return { data: parsed, total: count || 0 };
+  } catch (err) {
+    console.error("[ndis-pricing] fetchNDISCatalogue error:", err);
+    return { data: [], total: 0 };
   }
-
-  const { data, count, error } = await query;
-  if (error) throw new Error(error.message);
-
-  // Supabase returns `numeric` columns as strings — coerce to numbers
-  const parsed = (data || []).map((row: any) => ({
-    ...row,
-    base_rate_national: parseFloat(row.base_rate_national) || 0,
-    base_rate_remote: row.base_rate_remote != null ? parseFloat(row.base_rate_remote) || null : null,
-    base_rate_very_remote: row.base_rate_very_remote != null ? parseFloat(row.base_rate_very_remote) || null : null,
-  })) as NDISCatalogueItem[];
-
-  return { data: parsed, total: count || 0 };
 }
 
 /* ── Sync Status ──────────────────────────────────────── */
 
 export async function fetchNDISSyncStatus(): Promise<NDISSyncStatus> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  // Active item count
-  const { count: activeCount } = await (supabase as any)
-    .from("ndis_catalogue")
-    .select("*", { count: "exact", head: true })
-    .is("effective_to", null);
-
-  // Latest effective_from
-  const { data: latest } = await (supabase as any)
-    .from("ndis_catalogue")
-    .select("effective_from")
-    .is("effective_to", null)
-    .order("effective_from", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  // Category counts — use direct queries (most reliable)
-  const categoryCounts = { core: 0, capacity_building: 0, capital: 0 };
-  for (const cat of ["core", "capacity_building", "capital"] as const) {
-    const { count } = await (supabase as any)
+    // Active item count
+    const { count: activeCount } = await (supabase as any)
       .from("ndis_catalogue")
       .select("*", { count: "exact", head: true })
-      .is("effective_to", null)
-      .eq("support_category", cat);
-    categoryCounts[cat] = count || 0;
-  }
+      .is("effective_to", null);
 
-  // Last sync log (may return null if no logs yet — that's fine)
-  let lastSync = null;
-  try {
-    const { data } = await (supabase as any)
-      .from("ndis_sync_log")
-      .select("*")
-      .order("created_at", { ascending: false })
+    // Latest effective_from
+    const { data: latest } = await (supabase as any)
+      .from("ndis_catalogue")
+      .select("effective_from")
+      .is("effective_to", null)
+      .order("effective_from", { ascending: false })
       .limit(1)
       .maybeSingle();
-    lastSync = data;
-  } catch {
-    // sync_log table might not be visible — ignore
-  }
 
-  return {
-    active_items: activeCount || 0,
-    latest_effective_from: latest?.effective_from || null,
-    synced: (activeCount || 0) > 0,
-    category_counts: categoryCounts,
-    last_sync: lastSync || null,
-  };
+    // Category counts — use direct queries (most reliable)
+    const categoryCounts = { core: 0, capacity_building: 0, capital: 0 };
+    for (const cat of ["core", "capacity_building", "capital"] as const) {
+      const { count } = await (supabase as any)
+        .from("ndis_catalogue")
+        .select("*", { count: "exact", head: true })
+        .is("effective_to", null)
+        .eq("support_category", cat);
+      categoryCounts[cat] = count || 0;
+    }
+
+    // Last sync log (may return null if no logs yet — that's fine)
+    let lastSync = null;
+    try {
+      const { data } = await (supabase as any)
+        .from("ndis_sync_log")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      lastSync = data;
+    } catch {
+      // sync_log table might not be visible — ignore
+    }
+
+    return {
+      active_items: activeCount || 0,
+      latest_effective_from: latest?.effective_from || null,
+      synced: (activeCount || 0) > 0,
+      category_counts: categoryCounts,
+      last_sync: lastSync || null,
+    };
+  } catch (err) {
+    console.error("[ndis-pricing] fetchNDISSyncStatus error:", err);
+    return {
+      active_items: 0,
+      latest_effective_from: null,
+      synced: false,
+      category_counts: { core: 0, capacity_building: 0, capital: 0 },
+      last_sync: null,
+    };
+  }
 }
 
 /* ── Upload CSV and Sync ──────────────────────────────── */
@@ -450,15 +466,20 @@ export async function deleteNDISCatalogueVersion(effectiveFrom: string): Promise
 /* ── Fetch Sync History ───────────────────────────────── */
 
 export async function fetchNDISSyncHistory(): Promise<NDISSyncLogEntry[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
-    .from("ndis_sync_log")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(20);
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("ndis_sync_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
 
-  if (error) return [];
-  return (data || []) as NDISSyncLogEntry[];
+    if (error) return [];
+    return (data || []) as NDISSyncLogEntry[];
+  } catch (err) {
+    console.error("[ndis-pricing] fetchNDISSyncHistory error:", err);
+    return [];
+  }
 }
 
 /* ── Helpers ──────────────────────────────────────────── */

@@ -147,7 +147,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'care_chat_channels' AND policyname = 'Org admins manage channels') THEN
     EXECUTE 'CREATE POLICY "Org admins manage channels" ON public.care_chat_channels FOR ALL USING (
       EXISTS (
-        SELECT 1 FROM public.members
+        SELECT 1 FROM public.organization_members
         WHERE members.organization_id = care_chat_channels.organization_id
         AND members.user_id = auth.uid()
         AND members.role IN (''owner'', ''admin'')
@@ -167,7 +167,7 @@ BEGIN
     EXECUTE 'CREATE POLICY "Admins manage memberships" ON public.care_chat_members FOR ALL USING (
       EXISTS (
         SELECT 1 FROM public.care_chat_channels cc
-        JOIN public.members m ON m.organization_id = cc.organization_id
+        JOIN public.organization_members m ON m.organization_id = cc.organization_id
         WHERE cc.id = care_chat_members.channel_id
         AND m.user_id = auth.uid()
         AND m.role IN (''owner'', ''admin'')

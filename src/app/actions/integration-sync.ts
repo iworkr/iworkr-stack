@@ -168,64 +168,69 @@ async function syncGoHighLevel(int: any): Promise<number> {
 /* ── Push Single Invoice (Real-time trigger) ──────────── */
 
 export async function pushInvoiceToProvider(invoiceId: string, orgId: string): Promise<{ error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", orgId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
 
-  // Find connected financial integrations
-  const { data: integrations } = await supabase
-    .from("integrations")
-    .select("*")
-    .eq("organization_id", orgId)
-    .eq("status", "connected")
-    .eq("category", "financial")
-    .in("provider", ["xero", "quickbooks"]);
+    // Find connected financial integrations
+    const { data: integrations } = await supabase
+      .from("integrations")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("status", "connected")
+      .eq("category", "financial")
+      .in("provider", ["xero", "quickbooks"]);
 
-  if (!integrations?.length) return { error: "No financial integrations connected" };
+    if (!integrations?.length) return { error: "No financial integrations connected" };
 
-  for (const int of integrations) {
-    if (int.provider === "xero" && process.env.XERO_CLIENT_ID) {
-      const { data: invoice } = await supabase
-        .from("invoices")
-        .select("*, line_items:invoice_line_items(*)")
-        .eq("id", invoiceId)
-        .maybeSingle();
-      if (!invoice) return { error: "Invoice not found" };
+    for (const int of integrations) {
+      if (int.provider === "xero" && process.env.XERO_CLIENT_ID) {
+        const { data: invoice } = await supabase
+          .from("invoices")
+          .select("*, line_items:invoice_line_items(*)")
+          .eq("id", invoiceId)
+          .maybeSingle();
+        if (!invoice) return { error: "Invoice not found" };
 
-      const res = await fetch("https://api.xero.com/api.xro/2.0/Invoices", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${int.access_token}`,
-          "Xero-Tenant-Id": (int.settings as any)?.tenant_id || "",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          Invoices: [{
-            Type: "ACCREC",
-            Contact: { Name: invoice.client_name },
-            LineItems: (invoice.line_items || []).map((li: any) => ({
-              Description: li.description,
-              Quantity: li.quantity,
-              UnitAmount: li.unit_price,
-            })),
-            Date: invoice.issue_date,
-            DueDate: invoice.due_date,
-            Reference: invoice.display_id,
-          }],
-        }),
-      });
-      if (!res.ok) return { error: `Xero push failed: ${res.status}` };
+        const res = await fetch("https://api.xero.com/api.xro/2.0/Invoices", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${int.access_token}`,
+            "Xero-Tenant-Id": (int.settings as any)?.tenant_id || "",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            Invoices: [{
+              Type: "ACCREC",
+              Contact: { Name: invoice.client_name },
+              LineItems: (invoice.line_items || []).map((li: any) => ({
+                Description: li.description,
+                Quantity: li.quantity,
+                UnitAmount: li.unit_price,
+              })),
+              Date: invoice.issue_date,
+              DueDate: invoice.due_date,
+              Reference: invoice.display_id,
+            }],
+          }),
+        });
+        if (!res.ok) return { error: `Xero push failed: ${res.status}` };
+      }
     }
-  }
 
-  return {};
+    return {};
+  } catch (err) {
+    console.error("[integration-sync] pushInvoiceToProvider error:", err);
+    return { error: (err as Error).message || "An unexpected error occurred" };
+  }
 }

@@ -281,26 +281,6 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
   );
 }
 
-/* ── Care support type helper ────────────────────────────── */
-
-const CARE_SUPPORT_TYPES = [
-  "Personal Care",
-  "Community Access",
-  "Domestic Assistance",
-  "Transport",
-  "Social Support",
-  "Meal Preparation",
-  "Behaviour Support",
-  "Allied Health",
-] as const;
-
-/** Deterministic mock support type based on job id hash */
-function getCareType(id: string): string {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
-  return CARE_SUPPORT_TYPES[Math.abs(hash) % CARE_SUPPORT_TYPES.length];
-}
-
 /* ── Page Component ────────────────────────────────────── */
 
 export default function JobsPage() {
@@ -693,9 +673,9 @@ export default function JobsPage() {
                 {/* Client / Participant */}
                 <div className="overflow-hidden px-2">
                   {job.client && <span className="block truncate text-[12px] text-zinc-500">{job.client}</span>}
-                  {isCare && (
+                  {isCare && job.labels.length > 0 && (
                     <span className="mt-0.5 inline-block truncate rounded border border-emerald-500/10 bg-emerald-500/[0.06] px-1.5 py-px text-[9px] font-medium text-emerald-400/80">
-                      {getCareType(job.id)}
+                      {job.labels[0]}
                     </span>
                   )}
                 </div>

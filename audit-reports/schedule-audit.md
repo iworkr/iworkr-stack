@@ -1,9 +1,9 @@
 # Schedule Module — Comprehensive Audit Report (Post-PRD)
 
-> **Generated**: 2026-03-10T00:41:19.302Z
+> **Generated**: 2026-03-14T00:50:21.221Z
 > **Module**: Schedule (`/dashboard/schedule`)
 > **Test Framework**: Playwright (18 test suites)
-> **Total Findings**: 9
+> **Total Findings**: 3
 > **PRD**: Schedule Module Live Activation (P0)
 
 ---
@@ -12,28 +12,22 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 1 |
-| 🟡 Visual Defects | 1 |
+| 🔴 Critical Failures | 0 |
+| 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 3 |
-| 🟢 Flow Passes | 4 |
+| 🟠 Warnings | 0 |
+| 🟢 Flow Passes | 3 |
 
 ---
 
 ## 🔴 Critical Failures
 
-### No empty state shown
-- **Area**: EmptyState
-- **Detail**: Schedule has 0 technicians but no empty state message.
-
+_No critical failures found._
 ---
 
 ## 🟡 Visual Defects
 
-### No travel time ghosts
-- **Area**: Travel
-- **Detail**: No dashed travel-time indicators found — may be scrolled out of view.
-
+_No visual defects found._
 ---
 
 ## 🟣 Dummy Data Leaks
@@ -43,26 +37,14 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
-### No blocks to drag
-- **Area**: DragDrop
-- **Detail**: Skipping.
-
-### No blocks
-- **Area**: PeekNav
-- **Detail**: Skipping.
-
-### No blocks for action test
-- **Area**: PeekActions
-- **Detail**: Skipping — no blocks on schedule.
-
+_No warnings._
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Style]** All checked buttons have pointer cursor: Checked 2 buttons.
-- ✅ **[Style]** Inter font applied: Font: inter, "inter Fallback"
-- ✅ **[Console]** No console errors: Schedule page loaded without console errors.
-- ✅ **[Network]** No network failures: All requests returned 2xx/3xx.
+- ✅ **[Keyboard]** V key cycles view scale: Changed from "Day" to ""
+- ✅ **[Keyboard]** U key opens backlog drawer: Backlog sidebar drawer appeared.
+- ✅ **[Keyboard]** Escape closes drawer: Pressed Escape to close backlog drawer.
 
 ---
 

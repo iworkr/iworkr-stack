@@ -478,6 +478,7 @@ serve(async (req) => {
     let totalProcessed = 0;
     let totalSucceeded = 0;
     let totalFailed = 0;
+    let totalRetried = 0;
     let totalSkipped = 0;
 
     for (let batch = 0; batch < batchSize; batch++) {
@@ -676,7 +677,7 @@ serve(async (req) => {
           p_error: lastError,
         });
         if (retryResult === "dead_letter") totalFailed++;
-        else totalFailed++;
+        else totalRetried++;
       }
 
       // 7. Update idempotency record with trace
@@ -714,7 +715,7 @@ serve(async (req) => {
     }
 
     console.log(
-      `[Automata] Batch: processed=${totalProcessed} ok=${totalSucceeded} fail=${totalFailed} skip=${totalSkipped}`
+      `[Automata] Batch: processed=${totalProcessed} ok=${totalSucceeded} fail=${totalFailed} retried=${totalRetried} skip=${totalSkipped}`
     );
 
     return new Response(
@@ -723,6 +724,7 @@ serve(async (req) => {
         processed: totalProcessed,
         succeeded: totalSucceeded,
         failed: totalFailed,
+        retried: totalRetried,
         skipped: totalSkipped,
         duration_ms: Date.now() - startTime,
       }),

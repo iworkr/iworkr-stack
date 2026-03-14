@@ -102,60 +102,70 @@ export interface DocumentEvent {
 /* ── Quotes CRUD ──────────────────────────────────────── */
 
 export async function getQuotes(orgId: string): Promise<{ data: Quote[]; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Unauthorized" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", orgId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { data: [], error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: [], error: "Unauthorized" };
 
-  const { data, error } = await supabase
-    .from("quotes")
-    .select("*")
-    .eq("organization_id", orgId)
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("quotes")
+      .select("*")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false });
 
-  if (error) return { data: [], error: error.message };
-  return { data: (data || []) as Quote[] };
+    if (error) return { data: [], error: error.message };
+    return { data: (data || []) as Quote[] };
+  } catch (e: any) {
+    console.error("[quotes] getQuotes failed:", e);
+    return { data: [], error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function getQuote(quoteId: string): Promise<{ data: Quote | null; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
-  const { data: quote, error } = await supabase
-    .from("quotes")
-    .select("*")
-    .eq("id", quoteId)
-    .maybeSingle();
+    const { data: quote, error } = await supabase
+      .from("quotes")
+      .select("*")
+      .eq("id", quoteId)
+      .maybeSingle();
 
-  if (error) return { data: null, error: error.message };
-  if (!quote) return { data: null };
+    if (error) return { data: null, error: error.message };
+    if (!quote) return { data: null };
 
-  // Verify org membership
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", quote.organization_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { data: null, error: "Unauthorized" };
+    // Verify org membership
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", quote.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
-  const { data: items } = await supabase
-    .from("quote_line_items")
-    .select("*")
-    .eq("quote_id", quoteId)
-    .order("sort_order", { ascending: true });
+    const { data: items } = await supabase
+      .from("quote_line_items")
+      .select("*")
+      .eq("quote_id", quoteId)
+      .order("sort_order", { ascending: true });
 
-  return { data: { ...quote, line_items: (items || []) as QuoteLineItem[] } as Quote };
+    return { data: { ...quote, line_items: (items || []) as QuoteLineItem[] } as Quote };
+  } catch (e: any) {
+    console.error("[quotes] getQuote failed:", e);
+    return { data: null, error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function createQuote(params: {
@@ -172,126 +182,146 @@ export async function createQuote(params: {
   notes?: string | null;
   line_items: Array<{ description: string; quantity: number; unit_price: number }>;
 }): Promise<{ data: Quote | null; error?: string }> {
-  // Validate input
-  const validated = validate(CreateQuoteSchema, params);
-  if (validated.error) return { data: null, error: validated.error };
+  try {
+    // Validate input
+    const validated = validate(CreateQuoteSchema, params);
+    if (validated.error) return { data: null, error: validated.error };
 
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  const { line_items, ...quoteData } = params;
-  const subtotal = line_items.reduce((sum, li) => sum + li.quantity * li.unit_price, 0);
-  const taxRate = params.tax_rate ?? 10;
-  const tax = subtotal * (taxRate / 100);
-  const total = subtotal + tax;
+    const { line_items, ...quoteData } = params;
+    const subtotal = line_items.reduce((sum, li) => sum + li.quantity * li.unit_price, 0);
+    const taxRate = params.tax_rate ?? 10;
+    const tax = subtotal * (taxRate / 100);
+    const total = subtotal + tax;
 
-  const { data: quote, error } = await supabase
-    .from("quotes")
-    .insert({
-      ...quoteData,
-      display_id: "",
-      subtotal,
-      tax_rate: taxRate,
-      tax,
-      total,
-      created_by: user?.id,
-    })
-    .select()
-    .single();
+    const { data: quote, error } = await supabase
+      .from("quotes")
+      .insert({
+        ...quoteData,
+        display_id: "",
+        subtotal,
+        tax_rate: taxRate,
+        tax,
+        total,
+        created_by: user?.id,
+      })
+      .select()
+      .single();
 
-  if (error) return { data: null, error: error.message };
+    if (error) return { data: null, error: error.message };
 
-  if (line_items.length > 0) {
-    await supabase.from("quote_line_items").insert(
-      line_items.map((li, i) => ({
-        quote_id: quote.id,
-        description: li.description,
-        quantity: li.quantity,
-        unit_price: li.unit_price,
-        sort_order: i,
-      }))
-    );
+    if (line_items.length > 0) {
+      await supabase.from("quote_line_items").insert(
+        line_items.map((li, i) => ({
+          quote_id: quote.id,
+          description: li.description,
+          quantity: li.quantity,
+          unit_price: li.unit_price,
+          sort_order: i,
+        }))
+      );
+    }
+
+    await logDocumentEvent(quote.organization_id, "quote", quote.id, "created", "Quote created", user?.email);
+
+    revalidatePath("/dashboard/finance");
+    return { data: quote as Quote };
+  } catch (e: any) {
+    console.error("[quotes] createQuote failed:", e);
+    return { data: null, error: e?.message || "An unexpected error occurred" };
   }
-
-  await logDocumentEvent(quote.organization_id, "quote", quote.id, "created", "Quote created", user?.email);
-
-  revalidatePath("/dashboard/finance");
-  return { data: quote as Quote };
 }
 
 export async function updateQuote(
   quoteId: string,
   updates: Partial<Omit<Quote, "id" | "display_id" | "secure_token" | "created_at" | "updated_at">>
 ): Promise<{ error?: string }> {
-  // Validate input
-  const validated = validate(UpdateQuoteSchema, updates);
-  if (validated.error) return { error: validated.error };
+  try {
+    // Validate input
+    const validated = validate(UpdateQuoteSchema, updates);
+    if (validated.error) return { error: validated.error };
 
-  const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  // Fetch quote to verify org membership
-  const { data: quote } = await supabase
-    .from("quotes")
-    .select("organization_id")
-    .eq("id", quoteId)
-    .maybeSingle();
-  if (!quote) return { error: "Quote not found" };
+    // Fetch quote to verify org membership
+    const { data: quote } = await supabase
+      .from("quotes")
+      .select("organization_id")
+      .eq("id", quoteId)
+      .maybeSingle();
+    if (!quote) return { error: "Quote not found" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", quote.organization_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", quote.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
 
-  const { error } = await supabase
-    .from("quotes")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", quoteId);
+    const { error } = await supabase
+      .from("quotes")
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq("id", quoteId);
 
-  if (error) return { error: error.message };
-  revalidatePath("/dashboard/finance");
-  return {};
+    if (error) return { error: error.message };
+    revalidatePath("/dashboard/finance");
+    return {};
+  } catch (e: any) {
+    console.error("[quotes] updateQuote failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function addQuoteLineItem(
   quoteId: string,
   item: { description: string; quantity: number; unit_price: number }
 ): Promise<{ data: QuoteLineItem | null; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
-  const { data, error } = await supabase
-    .from("quote_line_items")
-    .insert({ quote_id: quoteId, ...item })
-    .select()
-    .single();
+    const { data, error } = await supabase
+      .from("quote_line_items")
+      .insert({ quote_id: quoteId, ...item })
+      .select()
+      .single();
 
-  if (error) return { data: null, error: error.message };
-  await recalcQuoteTotals(quoteId);
-  return { data: data as QuoteLineItem };
+    if (error) return { data: null, error: error.message };
+    await recalcQuoteTotals(quoteId);
+    return { data: data as QuoteLineItem };
+  } catch (e: any) {
+    console.error("[quotes] addQuoteLineItem failed:", e);
+    return { data: null, error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function removeQuoteLineItem(lineItemId: string, quoteId: string): Promise<{ error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  const { error } = await supabase
-    .from("quote_line_items")
-    .delete()
-    .eq("id", lineItemId);
+    const { error } = await supabase
+      .from("quote_line_items")
+      .delete()
+      .eq("id", lineItemId);
 
-  if (error) return { error: error.message };
-  await recalcQuoteTotals(quoteId);
-  return {};
+    if (error) return { error: error.message };
+    await recalcQuoteTotals(quoteId);
+    return {};
+  } catch (e: any) {
+    console.error("[quotes] removeQuoteLineItem failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 async function recalcQuoteTotals(quoteId: string) {
@@ -320,65 +350,70 @@ async function recalcQuoteTotals(quoteId: string) {
 /* ── Send Quote ───────────────────────────────────────── */
 
 export async function sendQuote(quoteId: string): Promise<{ error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  const { data: quote } = await supabase
-    .from("quotes")
-    .select("*, organization:organizations(name, logo_url)")
-    .eq("id", quoteId)
-    .maybeSingle();
+    const { data: quote } = await supabase
+      .from("quotes")
+      .select("*, organization:organizations(name, logo_url)")
+      .eq("id", quoteId)
+      .maybeSingle();
 
-  if (!quote) return { error: "Quote not found" };
+    if (!quote) return { error: "Quote not found" };
 
-  // Verify org membership
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", quote.organization_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { error: "Unauthorized" };
+    // Verify org membership
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", quote.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
 
-  if (!quote.client_email) return { error: "No client email set" };
+    if (!quote.client_email) return { error: "No client email set" };
 
-  const portalUrl = `${getAppUrl()}/portal/view/${quote.secure_token}`;
+    const portalUrl = `${getAppUrl()}/portal/view/${quote.secure_token}`;
 
-  await sendEmail({
-    to: quote.client_email,
-    subject: `Quote ${quote.display_id} from ${quote.organization?.name || "iWorkr"}`,
-    react: createElement("div", {
-      style: { fontFamily: "Inter, sans-serif", backgroundColor: "#000", color: "#fff", padding: "40px" },
-    },
-      createElement("h1", { style: { fontSize: "24px", fontWeight: 500 } }, `Quote ${quote.display_id}`),
-      createElement("p", { style: { color: "#A1A1AA", marginTop: "12px" } },
-        `Hi ${quote.client_name || "there"}, please review the following estimate${quote.title ? ` for "${quote.title}"` : ""}.`),
-      createElement("p", { style: { fontSize: "28px", fontWeight: 600, color: "#10B981", margin: "24px 0" } },
-        `$${Number(quote.total).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`),
-      createElement("a", {
-        href: portalUrl,
-        style: {
-          display: "inline-block", padding: "14px 32px", backgroundColor: "#10B981",
-          color: "#000", borderRadius: "12px", fontWeight: 600, textDecoration: "none", fontSize: "14px",
-        },
-      }, "Review & Approve"),
-      createElement("p", { style: { color: "#52525B", fontSize: "12px", marginTop: "24px" } },
-        "This link is unique to you. Do not share it.")
-    ),
-    tags: [{ name: "type", value: "quote" }, { name: "quote_id", value: quoteId }],
-  });
+    await sendEmail({
+      to: quote.client_email,
+      subject: `Quote ${quote.display_id} from ${quote.organization?.name || "iWorkr"}`,
+      react: createElement("div", {
+        style: { fontFamily: "Inter, sans-serif", backgroundColor: "#000", color: "#fff", padding: "40px" },
+      },
+        createElement("h1", { style: { fontSize: "24px", fontWeight: 500 } }, `Quote ${quote.display_id}`),
+        createElement("p", { style: { color: "#A1A1AA", marginTop: "12px" } },
+          `Hi ${quote.client_name || "there"}, please review the following estimate${quote.title ? ` for "${quote.title}"` : ""}.`),
+        createElement("p", { style: { fontSize: "28px", fontWeight: 600, color: "#10B981", margin: "24px 0" } },
+          `$${Number(quote.total).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`),
+        createElement("a", {
+          href: portalUrl,
+          style: {
+            display: "inline-block", padding: "14px 32px", backgroundColor: "#10B981",
+            color: "#000", borderRadius: "12px", fontWeight: 600, textDecoration: "none", fontSize: "14px",
+          },
+        }, "Review & Approve"),
+        createElement("p", { style: { color: "#52525B", fontSize: "12px", marginTop: "24px" } },
+          "This link is unique to you. Do not share it.")
+      ),
+      tags: [{ name: "type", value: "quote" }, { name: "quote_id", value: quoteId }],
+    });
 
-  await supabase
-    .from("quotes")
-    .update({ status: "sent", updated_at: new Date().toISOString() })
-    .eq("id", quoteId);
+    await supabase
+      .from("quotes")
+      .update({ status: "sent", updated_at: new Date().toISOString() })
+      .eq("id", quoteId);
 
-  await logDocumentEvent(quote.organization_id, "quote", quoteId, "sent", `Sent to ${quote.client_email}`, null, quote.client_email);
+    await logDocumentEvent(quote.organization_id, "quote", quoteId, "sent", `Sent to ${quote.client_email}`, null, quote.client_email);
 
-  revalidatePath("/dashboard/finance");
-  return {};
+    revalidatePath("/dashboard/finance");
+    return {};
+  } catch (e: any) {
+    console.error("[quotes] sendQuote failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 /* ── Public Portal Actions (no auth required) ─────────── */
@@ -391,157 +426,177 @@ export async function getDocumentByToken(token: string): Promise<{
   orgLogo: string | null;
   error?: string;
 }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  // Try quotes first
-  const { data: quote } = await supabase
-    .from("quotes")
-    .select("*, organization:organizations(name, logo_url)")
-    .eq("secure_token", token)
-    .maybeSingle();
+    // Try quotes first
+    const { data: quote } = await supabase
+      .from("quotes")
+      .select("*, organization:organizations(name, logo_url)")
+      .eq("secure_token", token)
+      .maybeSingle();
 
-  if (quote) {
-    const { data: items } = await supabase
-      .from("quote_line_items")
-      .select("*")
-      .eq("quote_id", quote.id)
-      .order("sort_order", { ascending: true });
+    if (quote) {
+      const { data: items } = await supabase
+        .from("quote_line_items")
+        .select("*")
+        .eq("quote_id", quote.id)
+        .order("sort_order", { ascending: true });
 
-    // Log view event
-    if (quote.status === "sent") {
-      await supabase.from("quotes").update({ status: "viewed" }).eq("id", quote.id);
+      // Log view event
+      if (quote.status === "sent") {
+        await supabase.from("quotes").update({ status: "viewed" }).eq("id", quote.id);
+      }
+      await logDocumentEvent(quote.organization_id, "quote", quote.id, "viewed", "Client viewed quote");
+
+      return {
+        type: "quote",
+        data: quote,
+        lineItems: items || [],
+        orgName: quote.organization?.name || "iWorkr",
+        orgLogo: quote.organization?.logo_url,
+      };
     }
-    await logDocumentEvent(quote.organization_id, "quote", quote.id, "viewed", "Client viewed quote");
 
-    return {
-      type: "quote",
-      data: quote,
-      lineItems: items || [],
-      orgName: quote.organization?.name || "iWorkr",
-      orgLogo: quote.organization?.logo_url,
-    };
+    // Try invoices
+    const { data: invoice } = await supabase
+      .from("invoices")
+      .select("*, organization:organizations(name, logo_url)")
+      .eq("secure_token", token)
+      .maybeSingle();
+
+    if (invoice) {
+      const { data: items } = await supabase
+        .from("invoice_line_items")
+        .select("*")
+        .eq("invoice_id", invoice.id)
+        .order("sort_order", { ascending: true });
+
+      await logDocumentEvent(invoice.organization_id, "invoice", invoice.id, "viewed", "Client viewed invoice");
+
+      return {
+        type: "invoice",
+        data: invoice,
+        lineItems: items || [],
+        orgName: invoice.organization?.name || "iWorkr",
+        orgLogo: invoice.organization?.logo_url,
+      };
+    }
+
+    return { type: null, data: null, lineItems: [], orgName: "", orgLogo: null, error: "Document not found" };
+  } catch (e: any) {
+    console.error("[quotes] getDocumentByToken failed:", e);
+    return { type: null, data: null, lineItems: [], orgName: "", orgLogo: null, error: e?.message || "An unexpected error occurred" };
   }
-
-  // Try invoices
-  const { data: invoice } = await supabase
-    .from("invoices")
-    .select("*, organization:organizations(name, logo_url)")
-    .eq("secure_token", token)
-    .maybeSingle();
-
-  if (invoice) {
-    const { data: items } = await supabase
-      .from("invoice_line_items")
-      .select("*")
-      .eq("invoice_id", invoice.id)
-      .order("sort_order", { ascending: true });
-
-    await logDocumentEvent(invoice.organization_id, "invoice", invoice.id, "viewed", "Client viewed invoice");
-
-    return {
-      type: "invoice",
-      data: invoice,
-      lineItems: items || [],
-      orgName: invoice.organization?.name || "iWorkr",
-      orgLogo: invoice.organization?.logo_url,
-    };
-  }
-
-  return { type: null, data: null, lineItems: [], orgName: "", orgLogo: null, error: "Document not found" };
 }
 
 export async function approveQuote(token: string, signatureDataUrl: string, signerName: string): Promise<{ invoiceToken?: string; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: quote } = await supabase
-    .from("quotes")
-    .select("*")
-    .eq("secure_token", token)
-    .maybeSingle();
-
-  if (!quote) return { error: "Quote not found" };
-  if (quote.status === "accepted") return { error: "Already approved" };
-
-  // Update quote to accepted — the DB trigger (trg_convert_accepted_quote)
-  // automatically creates both a job AND a draft invoice with copied line items,
-  // and sets job_id / invoice_id on the quote row.
-  const { data: updated, error: updateErr } = await supabase.from("quotes").update({
-    status: "accepted",
-    signature_url: signatureDataUrl,
-    signed_at: new Date().toISOString(),
-    signed_by: signerName,
-    updated_at: new Date().toISOString(),
-  }).eq("id", quote.id).select("id, job_id, invoice_id").single();
-
-  if (updateErr) return { error: updateErr.message };
-
-  await logDocumentEvent(quote.organization_id, "quote", quote.id, "signed", `Signed by ${signerName}`);
-  await logDocumentEvent(quote.organization_id, "quote", quote.id, "approved", "Quote approved — job and invoice auto-generated");
-
-  // Read back the invoice to get its secure_token for the portal redirect
-  if (updated?.invoice_id) {
-    const { data: invoice } = await supabase
-      .from("invoices")
-      .select("secure_token")
-      .eq("id", updated.invoice_id)
+    const { data: quote } = await supabase
+      .from("quotes")
+      .select("*")
+      .eq("secure_token", token)
       .maybeSingle();
 
-    await logDocumentEvent(quote.organization_id, "invoice", updated.invoice_id, "created", "Auto-created from approved quote");
-    return { invoiceToken: invoice?.secure_token ?? undefined };
-  }
+    if (!quote) return { error: "Quote not found" };
+    if (quote.status === "accepted") return { error: "Already approved" };
 
-  return {};
+    // Update quote to accepted — the DB trigger (trg_convert_accepted_quote)
+    // automatically creates both a job AND a draft invoice with copied line items,
+    // and sets job_id / invoice_id on the quote row.
+    const { data: updated, error: updateErr } = await supabase.from("quotes").update({
+      status: "accepted",
+      signature_url: signatureDataUrl,
+      signed_at: new Date().toISOString(),
+      signed_by: signerName,
+      updated_at: new Date().toISOString(),
+    }).eq("id", quote.id).select("id, job_id, invoice_id").single();
+
+    if (updateErr) return { error: updateErr.message };
+
+    await logDocumentEvent(quote.organization_id, "quote", quote.id, "signed", `Signed by ${signerName}`);
+    await logDocumentEvent(quote.organization_id, "quote", quote.id, "approved", "Quote approved — job and invoice auto-generated");
+
+    // Read back the invoice to get its secure_token for the portal redirect
+    if (updated?.invoice_id) {
+      const { data: invoice } = await supabase
+        .from("invoices")
+        .select("secure_token")
+        .eq("id", updated.invoice_id)
+        .maybeSingle();
+
+      await logDocumentEvent(quote.organization_id, "invoice", updated.invoice_id, "created", "Auto-created from approved quote");
+      return { invoiceToken: invoice?.secure_token ?? undefined };
+    }
+
+    return {};
+  } catch (e: any) {
+    console.error("[quotes] approveQuote failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function rejectQuote(token: string, reason: string): Promise<{ error?: string }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: quote } = await supabase
-    .from("quotes")
-    .select("id, organization_id")
-    .eq("secure_token", token)
-    .maybeSingle();
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: quote } = await supabase
+      .from("quotes")
+      .select("id, organization_id")
+      .eq("secure_token", token)
+      .maybeSingle();
 
-  if (!quote) return { error: "Quote not found" };
+    if (!quote) return { error: "Quote not found" };
 
-  await supabase.from("quotes").update({ status: "rejected", updated_at: new Date().toISOString() }).eq("id", quote.id);
-  await logDocumentEvent(quote.organization_id, "quote", quote.id, "rejected", `Declined: ${reason}`);
-  return {};
+    await supabase.from("quotes").update({ status: "rejected", updated_at: new Date().toISOString() }).eq("id", quote.id);
+    await logDocumentEvent(quote.organization_id, "quote", quote.id, "rejected", `Declined: ${reason}`);
+    return {};
+  } catch (e: any) {
+    console.error("[quotes] rejectQuote failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 /* ── Forensic Events ──────────────────────────────────── */
 
 export async function getDocumentEvents(docType: "quote" | "invoice", docId: string): Promise<{ data: DocumentEvent[]; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Unauthorized" };
 
-  // Fetch the document to get org_id and verify membership
-  const table = docType === "quote" ? "quotes" : "invoices";
-  const { data: doc } = await supabase
-    .from(table)
-    .select("organization_id")
-    .eq("id", docId)
-    .maybeSingle();
-  if (!doc) return { data: [], error: "Document not found" };
+    // Fetch the document to get org_id and verify membership
+    const table = docType === "quote" ? "quotes" : "invoices";
+    const { data: doc } = await supabase
+      .from(table)
+      .select("organization_id")
+      .eq("id", docId)
+      .maybeSingle();
+    if (!doc) return { data: [], error: "Document not found" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", doc.organization_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { data: [], error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", doc.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: [], error: "Unauthorized" };
 
-  const { data, error } = await supabase
-    .from("document_events")
-    .select("*")
-    .eq("document_type", docType)
-    .eq("document_id", docId)
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("document_events")
+      .select("*")
+      .eq("document_type", docType)
+      .eq("document_id", docId)
+      .order("created_at", { ascending: false });
 
-  if (error) return { data: [], error: error.message };
-  return { data: (data || []) as DocumentEvent[] };
+    if (error) return { data: [], error: error.message };
+    return { data: (data || []) as DocumentEvent[] };
+  } catch (e: any) {
+    console.error("[quotes] getDocumentEvents failed:", e);
+    return { data: [], error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 async function logDocumentEvent(

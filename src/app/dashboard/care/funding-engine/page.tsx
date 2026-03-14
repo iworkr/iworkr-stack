@@ -930,10 +930,15 @@ function NDISPricingTab({ orgId }: { orgId: string }) {
 
   const handleSync = async () => {
     setSyncing(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setSyncing(false);
-    setLastSynced(new Date().toISOString());
-    fetchCatalogue();
+    try {
+      // Re-fetch the full NDIS catalogue from the database
+      await fetchCatalogue();
+      setLastSynced(new Date().toISOString());
+    } catch (err) {
+      console.error("[funding-engine] sync failed:", err);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const categoryColor = (cat: string): string => {

@@ -1,8 +1,8 @@
 # Integrations Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-10T00:51:43.790Z
+> **Generated**: 2026-03-14T00:57:50.043Z
 > **Module**: Integrations (`/dashboard/integrations`)
-> **Total Findings**: 4
+> **Total Findings**: 18
 > **Test Suites**: 16
 
 ---
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical | 0 |
+| 🔴 Critical | 2 |
 | 🟡 Visual | 0 |
 | 🟣 Dummy Data | 0 |
-| 🟠 Warnings | 0 |
-| 🟢 Passes | 4 |
+| 🟠 Warnings | 4 |
+| 🟢 Passes | 12 |
 
 ---
 
@@ -53,7 +53,13 @@
 
 ## 🔴 Critical Failures
 
-_None._
+### Console error
+- **Area**: Console
+- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected respons
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
 
 ---
 
@@ -71,19 +77,45 @@ _None._
 
 ## 🟠 Warnings
 
-_None._
+### HTTP 404
+- http://127.0.0.1:54321/rest/v1/worker_credentials?select=*%2Cprofiles%3Auser_id%28full_name%2Cemail%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=expiry_date.asc.nullsl
+
+### HTTP 404
+- http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
+
+### HTTP 404
+- http://127.0.0.1:54321/rest/v1/incidents?select=*%2Cprofiles%21worker_id%28full_name%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=occurred_at.desc&limit=500
+
+### HTTP 404
+- http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0
 
 ---
 
 ## 🟢 Passes
 
-- ✅ [Connect] No cards (DB empty)
+- ✅ [ConfigPanel] No integrations with sync settings
 
-- ✅ [ConfigPanel] No connected integrations to test
+- ✅ [ConfigPanel] Account mapping wired to server
 
-- ✅ [ConfigPanel] No connected integrations for sync test
+- ✅ [ConfigPanel] No error integrations for reauth test
 
-- ✅ [ConfigPanel] No connected integrations for disconnect test
+- ✅ [StripeModal] Stripe modal wired to connectServer
+
+- ✅ [MockData] No mock data leaks detected
+
+- ✅ [Store] integrations-store.ts: No mock imports
+
+- ✅ [Store] Store initializes with empty []
+
+- ✅ [Store] loadFromServer: No mock merge
+
+- ✅ [Store] updateSyncSettingsServer added
+
+- ✅ [Store] updateAccountMappingServer added
+
+- ✅ [Style] All buttons have cursor:pointer
+
+- ✅ [Network] No 406 errors
 
 
 ---

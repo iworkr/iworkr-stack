@@ -575,7 +575,7 @@ export default function BrandingPage() {
                 </button>
               </div>
               <p className="mt-2 text-[10px] text-zinc-600">
-                You'll need access to your domain's DNS settings (GoDaddy, Cloudflare, Route53, etc.)
+                You&apos;ll need access to your domain&apos;s DNS settings (GoDaddy, Cloudflare, Route53, etc.)
               </p>
             </div>
           ) : (

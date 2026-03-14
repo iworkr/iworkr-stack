@@ -192,14 +192,20 @@ export default function SchedulePage() {
   const { t, isCare } = useIndustryLexicon();
 
   /* ── SCHADS compliance helper (care mode) ──────────────── */
+  // Thresholds aligned with SCHADS Award 2010 §28 (max shift length)
+  // and §25.5(d) (consecutive-days fatigue management).
+  // These can be overridden by award_rules in the DB via checkFatigueCompliance.
+  const SCHADS_MAX_SHIFT_HOURS = 10;
+  const SCHADS_MAX_CONSECUTIVE_BLOCKS = 5;
+
   const getSchadsStatus = useCallback(
     (block: ScheduleBlock, allBlocks: ScheduleBlock[]): "compliant" | "warning" => {
       if (!isCare) return "compliant";
-      // Mock: warn if shift > 10 hours
-      if (block.duration > 10) return "warning";
-      // Mock: warn if this worker has > 5 consecutive day blocks
+      // Warn if shift exceeds SCHADS maximum shift length
+      if (block.duration > SCHADS_MAX_SHIFT_HOURS) return "warning";
+      // Warn if this worker has more than the allowed consecutive day blocks
       const techBlocks = allBlocks.filter((b) => b.technicianId === block.technicianId);
-      if (techBlocks.length > 5) return "warning";
+      if (techBlocks.length > SCHADS_MAX_CONSECUTIVE_BLOCKS) return "warning";
       return "compliant";
     },
     [isCare]

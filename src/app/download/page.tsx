@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Monitor,
   Apple,
@@ -103,12 +104,12 @@ export default function DownloadPage() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-base)] bg-[var(--header-bg)] backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <a href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand)] to-[var(--brand-hover)]">
               <span className="text-sm font-bold text-black">W</span>
             </div>
             <span className="text-[15px] font-semibold text-[var(--text-primary)]">Workspace</span>
-          </a>
+          </Link>
           <a
             href="/auth"
             className="rounded-[var(--radius-button)] bg-[var(--subtle-bg)] px-4 py-2 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--subtle-bg-hover)]"

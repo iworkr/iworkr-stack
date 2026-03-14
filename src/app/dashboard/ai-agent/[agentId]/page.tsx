@@ -8,19 +8,28 @@ import Link from "next/link";
 
 const KNOWN_AGENTS = ["phone", "ads", "social", "reputation", "dispatch"] as const;
 
+const AGENT_REDIRECTS: Record<string, string> = {
+  phone: "/dashboard/ai-agent/phone",
+  ads: "/dashboard/ai-agent/ads",
+  social: "/dashboard/ai-agent/social",
+  reputation: "/dashboard/ai-agent/reputation",
+  dispatch: "/dashboard/ai-agent/dispatch",
+};
+
 export default function AgentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const agentId = params.agentId as string;
 
   useEffect(() => {
-    if (agentId === "phone") {
-      router.replace("/dashboard/ai-agent/phone");
+    const redirectPath = AGENT_REDIRECTS[agentId];
+    if (redirectPath) {
+      router.replace(redirectPath);
       return;
     }
   }, [agentId, router]);
 
-  if (agentId === "phone") {
+  if (agentId in AGENT_REDIRECTS) {
     return null;
   }
 

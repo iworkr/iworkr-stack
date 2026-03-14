@@ -2,7 +2,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -17,6 +17,10 @@ import {
   AlertOctagon,
   Loader2,
 } from "lucide-react";
+import { useOrg } from "@/lib/hooks/use-org";
+import { fetchBSPsAction, createBSPAction } from "@/app/actions/care-clinical";
+import { fetchBehaviourEventsAction } from "@/app/actions/care-clinical";
+import { fetchRestrictivePracticesAction } from "@/app/actions/care-compliance";
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -92,41 +96,6 @@ const practiceTypeLabels: Record<PracticeType, string> = {
   environmental_restraint: "Environmental Restraint",
 };
 
-/* ── Mock Data ─────────────────────────────────────────── */
-
-const b = (id: string, title: string, p: string, status: BSPStatus, author: string, sd: string, rd: string, tc: number, consent: boolean): BSP =>
-  ({ id, title, participant_name: p, status, author_name: author, start_date: sd, review_date: rd, target_behaviours_count: tc, consent_obtained: consent });
-const MOCK_BSPS: BSP[] = [
-  b("bsp-001", "Self-Injurious Behaviour Reduction Plan", "Liam Nguyen", "active", "Dr. Sarah Chen", "2026-01-15", "2026-07-15", 3, true),
-  b("bsp-002", "Property Damage De-escalation Plan", "Emily Watson", "under_review", "James Park", "2025-09-01", "2026-03-01", 2, true),
-  b("bsp-003", "Verbal Aggression Support Plan", "Michael Torres", "active", "Dr. Sarah Chen", "2026-02-10", "2026-08-10", 4, true),
-  b("bsp-004", "Elopement Risk Management Plan", "Sophie Ramirez", "draft", "Maria Lopez", "2026-03-12", "2026-09-12", 1, false),
-  b("bsp-005", "Social Withdrawal Engagement Plan", "Aiden Patel", "expired", "Tom Wright", "2025-03-01", "2025-09-01", 2, true),
-];
-
-const e = (id: string, p: string, bt: string, i: Intensity, at: string, w: string, s: string, rp: boolean, li: string | null): BehaviourEvent =>
-  ({ id, participant_name: p, behaviour_type: bt, intensity: i, occurred_at: at, worker_name: w, strategies_used: s, restrictive_practice_used: rp, linked_incident: li });
-const MOCK_EVENTS: BehaviourEvent[] = [
-  e("be-001", "Liam Nguyen", "Self-harm (head hitting)", "high", "2026-03-12T14:30:00", "Karen Mitchell", "Protective interruption, redirection to sensory room", true, "INC-048"),
-  e("be-002", "Emily Watson", "Property damage", "moderate", "2026-03-11T09:15:00", "David Reyes", "Verbal de-escalation, offered alternative activity", false, null),
-  e("be-003", "Michael Torres", "Verbal aggression", "low", "2026-03-11T16:45:00", "Priya Sharma", "Active listening, calm tone, gave space", false, null),
-  e("be-004", "Liam Nguyen", "Self-harm (biting)", "extreme", "2026-03-10T11:00:00", "Karen Mitchell", "Protective equipment, sensory diet, medical review", true, "INC-046"),
-  e("be-005", "Sophie Ramirez", "Elopement attempt", "high", "2026-03-09T15:20:00", "Tom Wright", "Verbal prompt, visual boundary reminder, 1:1 support", true, "INC-044"),
-  e("be-006", "Michael Torres", "Physical aggression", "moderate", "2026-03-08T10:30:00", "David Reyes", "Low arousal approach, change of environment", false, null),
-  e("be-007", "Emily Watson", "Property damage", "high", "2026-03-07T13:00:00", "Priya Sharma", "Safe removal of objects, calm presence, post-event debrief", false, "INC-041"),
-  e("be-008", "Aiden Patel", "Social withdrawal", "low", "2026-03-06T09:45:00", "Karen Mitchell", "Gentle encouragement, preferred activity offered", false, null),
-];
-
-const r = (id: string, p: string, pt: PracticeType, at: string, dur: number, w: string, auth: boolean, rev: boolean, rep: boolean, deb: boolean): RestrictivePractice =>
-  ({ id, participant_name: p, practice_type: pt, occurred_at: at, duration_minutes: dur, worker_name: w, authorised_in_bsp: auth, review_required: true, reviewed: rev, reportable: rep, debrief_completed: deb });
-const MOCK_RESTRICTIVE: RestrictivePractice[] = [
-  r("rp-001", "Liam Nguyen", "physical_restraint", "2026-03-12T14:35:00", 4, "Karen Mitchell", true, false, true, false),
-  r("rp-002", "Sophie Ramirez", "environmental_restraint", "2026-03-09T15:25:00", 15, "Tom Wright", false, false, true, true),
-  r("rp-003", "Liam Nguyen", "physical_restraint", "2026-03-10T11:05:00", 6, "Karen Mitchell", true, true, true, true),
-  r("rp-004", "Michael Torres", "chemical_restraint", "2026-03-05T08:00:00", 0, "Priya Sharma", true, true, true, true),
-  r("rp-005", "Emily Watson", "seclusion", "2026-03-02T14:10:00", 20, "David Reyes", false, true, true, false),
-];
-
 /* ── Helpers ────────────────────────────────────────────── */
 
 function formatDate(d: string) { return new Date(d).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }); }
@@ -136,13 +105,68 @@ function formatDateTime(d: string) {
 }
 function isOverdue(d: string) { return new Date(d) < new Date(); }
 
+/** Map raw DB row to BSP UI shape */
+function mapBSP(row: any): BSP {
+  return {
+    id: row.id,
+    title: row.title ?? "Untitled BSP",
+    participant_name: row.participant_profiles?.full_name ?? row.participant_name ?? "Unknown",
+    status: (row.status as BSPStatus) ?? "draft",
+    author_name: row.author_name ?? "—",
+    start_date: row.start_date ?? row.created_at,
+    review_date: row.review_date ?? row.next_review_date ?? row.start_date ?? row.created_at,
+    target_behaviours_count: Array.isArray(row.target_behaviours) ? row.target_behaviours.length : 0,
+    consent_obtained: row.consent_obtained ?? false,
+  };
+}
+
+/** Map raw DB row to BehaviourEvent UI shape */
+function mapEvent(row: any): BehaviourEvent {
+  return {
+    id: row.id,
+    participant_name: row.participant_profiles?.full_name ?? row.participant_name ?? "Unknown",
+    behaviour_type: row.behaviour_type ?? "Unknown",
+    intensity: (row.intensity as Intensity) ?? "low",
+    occurred_at: row.occurred_at ?? row.created_at,
+    worker_name: row.profiles?.full_name ?? row.worker_name ?? "—",
+    strategies_used: Array.isArray(row.strategies_used) ? row.strategies_used.join(", ") : row.strategies_used ?? "",
+    restrictive_practice_used: row.restrictive_practice_used ?? false,
+    linked_incident: row.linked_incident_id ?? row.linked_incident ?? null,
+  };
+}
+
+/** Map raw DB row to RestrictivePractice UI shape */
+function mapRP(row: any): RestrictivePractice {
+  return {
+    id: row.id,
+    participant_name: row.participant_profiles?.full_name ?? row.participant_name ?? "Unknown",
+    practice_type: (row.practice_type as PracticeType) ?? "physical_restraint",
+    occurred_at: row.occurred_at ?? row.created_at,
+    duration_minutes: row.duration_minutes ?? 0,
+    worker_name: row.profiles?.full_name ?? row.worker_name ?? "—",
+    authorised_in_bsp: row.authorised_in_bsp ?? false,
+    review_required: row.review_required ?? true,
+    reviewed: row.reviewed ?? false,
+    reportable: row.reportable ?? false,
+    debrief_completed: row.debrief_completed ?? false,
+  };
+}
+
 /* ── Main Page ─────────────────────────────────────────── */
 
 export default function BehaviourPage() {
+  const { orgId } = useOrg();
   const [activeTab, setActiveTab] = useState<TabKey>("bsp");
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+
+  /* ── Data State ───────────────────────────────────────── */
+  const [bsps, setBsps] = useState<BSP[]>([]);
+  const [events, setEvents] = useState<BehaviourEvent[]>([]);
+  const [restrictive, setRestrictive] = useState<RestrictivePractice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   /* ── BSP Create Form State ──────────────────────────── */
   const [form, setForm] = useState({
@@ -150,48 +174,100 @@ export default function BehaviourPage() {
     start_date: "", review_date: "", notes: "", consent: false,
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  /* ── Data Loading ─────────────────────────────────────── */
+  const loadData = useCallback(async () => {
+    if (!orgId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [bspData, eventData, rpData] = await Promise.all([
+        fetchBSPsAction(orgId),
+        fetchBehaviourEventsAction(orgId),
+        fetchRestrictivePracticesAction(orgId),
+      ]);
+
+      setBsps((bspData || []).map(mapBSP));
+      setEvents((eventData || []).map(mapEvent));
+      setRestrictive((rpData || []).map(mapRP));
+    } catch (e: any) {
+      console.error("[behaviour] Failed to load data:", e);
+      setError("Failed to load data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [orgId]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   /* ── Filtered Data ──────────────────────────────────── */
   const filteredBSPs = useMemo(() => {
-    if (!search) return MOCK_BSPS;
+    if (!search) return bsps;
     const q = search.toLowerCase();
-    return MOCK_BSPS.filter(
+    return bsps.filter(
       (b) => b.title.toLowerCase().includes(q) || b.participant_name.toLowerCase().includes(q) || b.author_name.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, bsps]);
 
   const filteredEvents = useMemo(() => {
-    if (!search) return MOCK_EVENTS;
+    if (!search) return events;
     const q = search.toLowerCase();
-    return MOCK_EVENTS.filter(
+    return events.filter(
       (e) => e.participant_name.toLowerCase().includes(q) || e.behaviour_type.toLowerCase().includes(q) || e.worker_name.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, events]);
 
   const filteredRP = useMemo(() => {
-    if (!search) return MOCK_RESTRICTIVE;
+    if (!search) return restrictive;
     const q = search.toLowerCase();
-    return MOCK_RESTRICTIVE.filter(
-      (r) => r.participant_name.toLowerCase().includes(q) || practiceTypeLabels[r.practice_type].toLowerCase().includes(q)
+    return restrictive.filter(
+      (r) => r.participant_name.toLowerCase().includes(q) || practiceTypeLabels[r.practice_type]?.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, restrictive]);
 
   /* ── Tab stats ──────────────────────────────────────── */
   const stats = useMemo(() => ({
-    activeBSPs: MOCK_BSPS.filter((b) => b.status === "active").length,
-    rpEvents: MOCK_EVENTS.filter((e) => e.restrictive_practice_used).length,
-    unreviewedRP: MOCK_RESTRICTIVE.filter((r) => !r.reviewed).length,
-    undebriefedRP: MOCK_RESTRICTIVE.filter((r) => !r.debrief_completed).length,
-  }), []);
+    activeBSPs: bsps.filter((b) => b.status === "active").length,
+    rpEvents: events.filter((e) => e.restrictive_practice_used).length,
+    unreviewedRP: restrictive.filter((r) => !r.reviewed).length,
+    undebriefedRP: restrictive.filter((r) => !r.debrief_completed).length,
+  }), [bsps, events, restrictive]);
 
-  const handleCreate = useCallback(() => {
+  const handleCreate = useCallback(async () => {
+    if (!orgId) return;
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    setSaveError(null);
+
+    try {
+      await createBSPAction({
+        organization_id: orgId,
+        participant_id: form.participant, // NOTE: In production this should be a UUID from a participant picker
+        title: form.title,
+        author_name: form.author_name || null,
+        author_role: form.author_role || null,
+        start_date: form.start_date || null,
+        review_date: form.review_date || null,
+        target_behaviours: [],
+        triggers: [],
+        prevention_strategies: [],
+        response_strategies: [],
+        reinforcement_strategies: [],
+        consent_obtained: form.consent,
+        notes: form.notes || null,
+      });
       setCreateOpen(false);
       setForm({ title: "", participant: "", author_name: "", author_role: "", start_date: "", review_date: "", notes: "", consent: false });
-    }, 800);
-  }, []);
+      // Reload data to pick up the new BSP
+      loadData();
+    } catch (e: any) {
+      console.error("[behaviour] createBSP failed:", e);
+      setSaveError(e.message || "Failed to create BSP. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }, [orgId, form, loadData]);
 
   /* ── Render ──────────────────────────────────────────── */
   return (
@@ -275,260 +351,287 @@ export default function BehaviourPage() {
         </div>
       </div>
 
+      {/* ── Loading State ────────────────────────────────── */}
+      {loading && (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 size={24} className="animate-spin text-zinc-600" />
+            <span className="text-[12px] text-zinc-600">Loading behaviour data…</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Error State ──────────────────────────────────── */}
+      {!loading && error && (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/10 border border-rose-500/20">
+              <AlertTriangle size={20} className="text-rose-400" />
+            </div>
+            <h3 className="text-[15px] font-medium text-zinc-200">{error}</h3>
+            <button onClick={loadData} className="mt-2 rounded-lg px-4 py-1.5 text-[12px] font-medium text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors">
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Tab Content ────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto scrollbar-none">
-        <AnimatePresence mode="wait">
-          {/* ── TAB 1: Behaviour Support Plans ────────── */}
-          {activeTab === "bsp" && (
-            <motion.div key="bsp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
-                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Plan Title</div>
-                <div className="w-36 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Participant</div>
-                <div className="w-32 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Author</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Behaviours</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Review Date</div>
-                <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Consent</div>
-                <div className="w-8" />
-              </div>
+      {!loading && !error && (
+        <div className="flex-1 overflow-y-auto scrollbar-none">
+          <AnimatePresence mode="wait">
+            {/* ── TAB 1: Behaviour Support Plans ────────── */}
+            {activeTab === "bsp" && (
+              <motion.div key="bsp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
+                  <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Plan Title</div>
+                  <div className="w-36 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Participant</div>
+                  <div className="w-32 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Author</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Behaviours</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Review Date</div>
+                  <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Consent</div>
+                  <div className="w-8" />
+                </div>
 
-              {filteredBSPs.length === 0 ? (
-                <EmptyState icon={Brain} message="No behaviour support plans found" sub="Try adjusting your search criteria." />
-              ) : (
-                filteredBSPs.map((bsp, idx) => {
-                  const sc = bspStatusConfig[bsp.status];
-                  const overdue = bsp.status !== "expired" && isOverdue(bsp.review_date);
-                  return (
-                    <motion.div
-                      key={bsp.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
-                      className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
-                    >
-                      <div className="min-w-0 flex-1 px-2 flex items-center gap-2">
-                        <Brain size={12} className="shrink-0 text-zinc-600" />
-                        <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
-                          {bsp.title}
-                        </span>
-                      </div>
-                      <div className="w-36 px-2">
-                        <span className="text-xs text-zinc-400 truncate block">{bsp.participant_name}</span>
-                      </div>
-                      <div className="w-32 px-2">
-                        <span className="text-xs text-zinc-500 truncate block">{bsp.author_name}</span>
-                      </div>
-                      <div className="w-28 px-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${sc.bg} ${sc.text}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                          {sc.label}
-                        </span>
-                      </div>
-                      <div className="w-24 px-2 text-center">
-                        <span className="text-[11px] font-mono text-zinc-400">{bsp.target_behaviours_count}</span>
-                      </div>
-                      <div className="w-28 px-2">
-                        <span className={`text-xs font-mono ${overdue ? "text-rose-400" : "text-zinc-500"}`}>
-                          {overdue && <Clock size={9} className="inline mr-1 -mt-px" />}
-                          {formatDate(bsp.review_date)}
-                        </span>
-                      </div>
-                      <div className="w-20 px-2 text-center">
-                        {bsp.consent_obtained ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><Check size={10} /> Yes</span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-400"><AlertTriangle size={9} /> No</span>
-                        )}
-                      </div>
-                      <div className="w-8 flex justify-end">
-                        <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
-            </motion.div>
-          )}
-
-          {/* ── TAB 2: Behaviour Events ───────────────── */}
-          {activeTab === "events" && (
-            <motion.div key="events" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
-                <div className="w-36 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Participant</div>
-                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Behaviour</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Intensity</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Worker</div>
-                <div className="w-56 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Strategies</div>
-                <div className="w-16 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">RP</div>
-                <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Incident</div>
-                <div className="w-8" />
-              </div>
-
-              {filteredEvents.length === 0 ? (
-                <EmptyState icon={AlertTriangle} message="No behaviour events found" sub="Try adjusting your search criteria." />
-              ) : (
-                filteredEvents.map((evt, idx) => {
-                  const ic = intensityConfig[evt.intensity];
-                  const dt = formatDateTime(evt.occurred_at);
-                  return (
-                    <motion.div
-                      key={evt.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
-                      className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
-                    >
-                      <div className="w-28 px-2">
-                        <div className="flex items-center gap-1.5">
-                          <Clock size={10} className="text-zinc-700 shrink-0" />
-                          <span className="text-xs text-zinc-400 font-mono">{dt.date}</span>
+                {filteredBSPs.length === 0 ? (
+                  <EmptyState icon={Brain} message="No behaviour support plans found" sub={search ? "Try adjusting your search criteria." : "Create your first BSP to get started."} />
+                ) : (
+                  filteredBSPs.map((bsp, idx) => {
+                    const sc = bspStatusConfig[bsp.status] ?? bspStatusConfig.draft;
+                    const overdue = bsp.status !== "expired" && isOverdue(bsp.review_date);
+                    return (
+                      <motion.div
+                        key={bsp.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
+                        className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
+                      >
+                        <div className="min-w-0 flex-1 px-2 flex items-center gap-2">
+                          <Brain size={12} className="shrink-0 text-zinc-600" />
+                          <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
+                            {bsp.title}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-zinc-700 font-mono pl-4">{dt.time}</span>
-                      </div>
-                      <div className="w-36 px-2">
-                        <span className="text-sm text-zinc-200 truncate block group-hover:text-white transition-colors">{evt.participant_name}</span>
-                      </div>
-                      <div className="min-w-0 flex-1 px-2">
-                        <span className="text-xs text-zinc-400 truncate block">{evt.behaviour_type}</span>
-                      </div>
-                      <div className="w-24 px-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${ic.bg} ${ic.text}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${ic.dot}`} />
-                          {ic.label}
-                        </span>
-                      </div>
-                      <div className="w-28 px-2">
-                        <span className="text-xs text-zinc-500 truncate block">{evt.worker_name}</span>
-                      </div>
-                      <div className="w-56 px-2">
-                        <span className="text-[11px] text-zinc-500 truncate block">
-                          {evt.strategies_used.length > 50 ? evt.strategies_used.slice(0, 50) + "…" : evt.strategies_used}
-                        </span>
-                      </div>
-                      <div className="w-16 px-2 text-center">
-                        {evt.restrictive_practice_used ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-rose-500/15 text-rose-400 rounded">
-                            <ShieldAlert size={8} /> Yes
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-zinc-700">—</span>
-                        )}
-                      </div>
-                      <div className="w-20 px-2">
-                        {evt.linked_incident ? (
-                          <span className="text-[10px] font-mono text-amber-400">{evt.linked_incident}</span>
-                        ) : (
-                          <span className="text-[11px] text-zinc-700">—</span>
-                        )}
-                      </div>
-                      <div className="w-8 flex justify-end">
-                        <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
-            </motion.div>
-          )}
-
-          {/* ── TAB 3: Restrictive Practices ──────────── */}
-          {activeTab === "restrictive" && (
-            <motion.div key="restrictive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
-                <div className="w-36 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Participant</div>
-                <div className="w-44 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Practice Type</div>
-                <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Duration</div>
-                <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">BSP Auth</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Review</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Reportable</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Debrief</div>
-                <div className="w-8" />
-              </div>
-
-              {filteredRP.length === 0 ? (
-                <EmptyState icon={ShieldAlert} message="No restrictive practices recorded" sub="Try adjusting your search criteria." />
-              ) : (
-                filteredRP.map((rp, idx) => {
-                  const dt = formatDateTime(rp.occurred_at);
-                  const needsAttention = !rp.reviewed || !rp.debrief_completed;
-                  return (
-                    <motion.div
-                      key={rp.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
-                      className={`group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer transition-colors duration-100 ${
-                        needsAttention ? "hover:bg-amber-500/[0.03] bg-amber-500/[0.01]" : "hover:bg-white/[0.02]"
-                      }`}
-                    >
-                      <div className="w-28 px-2">
-                        <div className="flex items-center gap-1.5">
-                          <Clock size={10} className="text-zinc-700 shrink-0" />
-                          <span className="text-xs text-zinc-400 font-mono">{dt.date}</span>
+                        <div className="w-36 px-2">
+                          <span className="text-xs text-zinc-400 truncate block">{bsp.participant_name}</span>
                         </div>
-                        <span className="text-[10px] text-zinc-700 font-mono pl-4">{dt.time}</span>
-                      </div>
-                      <div className="w-36 px-2">
-                        <span className="text-sm text-zinc-200 truncate block group-hover:text-white transition-colors">{rp.participant_name}</span>
-                      </div>
-                      <div className="w-44 px-2 flex items-center gap-2">
-                        <ShieldAlert size={11} className="shrink-0 text-rose-500/60" />
-                        <span className="text-xs text-zinc-300 truncate">{practiceTypeLabels[rp.practice_type]}</span>
-                      </div>
-                      <div className="w-20 px-2 text-center">
-                        <span className="text-[11px] font-mono text-zinc-400">
-                          {rp.duration_minutes > 0 ? `${rp.duration_minutes} min` : "N/A"}
-                        </span>
-                      </div>
-                      <div className="w-20 px-2 text-center">
-                        {rp.authorised_in_bsp ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><Shield size={9} /> Yes</span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-rose-500/15 text-rose-400 rounded">
-                            <AlertOctagon size={8} /> No
+                        <div className="w-32 px-2">
+                          <span className="text-xs text-zinc-500 truncate block">{bsp.author_name}</span>
+                        </div>
+                        <div className="w-28 px-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${sc.bg} ${sc.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                            {sc.label}
                           </span>
-                        )}
-                      </div>
-                      <div className="w-24 px-2 text-center">
-                        {rp.reviewed ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><Check size={10} /> Done</span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-amber-500/15 text-amber-400 rounded animate-pulse">
-                            <AlertTriangle size={8} /> Pending
+                        </div>
+                        <div className="w-24 px-2 text-center">
+                          <span className="text-[11px] font-mono text-zinc-400">{bsp.target_behaviours_count}</span>
+                        </div>
+                        <div className="w-28 px-2">
+                          <span className={`text-xs font-mono ${overdue ? "text-rose-400" : "text-zinc-500"}`}>
+                            {overdue && <Clock size={9} className="inline mr-1 -mt-px" />}
+                            {formatDate(bsp.review_date)}
                           </span>
-                        )}
-                      </div>
-                      <div className="w-24 px-2 text-center">
-                        {rp.reportable ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-rose-500/10 text-rose-400 rounded">
-                            <AlertOctagon size={8} /> Yes
+                        </div>
+                        <div className="w-20 px-2 text-center">
+                          {bsp.consent_obtained ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><Check size={10} /> Yes</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-amber-400"><AlertTriangle size={9} /> No</span>
+                          )}
+                        </div>
+                        <div className="w-8 flex justify-end">
+                          <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </motion.div>
+            )}
+
+            {/* ── TAB 2: Behaviour Events ───────────────── */}
+            {activeTab === "events" && (
+              <motion.div key="events" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
+                  <div className="w-36 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Participant</div>
+                  <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Behaviour</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Intensity</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Worker</div>
+                  <div className="w-56 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Strategies</div>
+                  <div className="w-16 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">RP</div>
+                  <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Incident</div>
+                  <div className="w-8" />
+                </div>
+
+                {filteredEvents.length === 0 ? (
+                  <EmptyState icon={AlertTriangle} message="No behaviour events found" sub={search ? "Try adjusting your search criteria." : "No behaviour events have been recorded yet."} />
+                ) : (
+                  filteredEvents.map((evt, idx) => {
+                    const ic = intensityConfig[evt.intensity] ?? intensityConfig.low;
+                    const dt = formatDateTime(evt.occurred_at);
+                    return (
+                      <motion.div
+                        key={evt.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
+                        className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
+                      >
+                        <div className="w-28 px-2">
+                          <div className="flex items-center gap-1.5">
+                            <Clock size={10} className="text-zinc-700 shrink-0" />
+                            <span className="text-xs text-zinc-400 font-mono">{dt.date}</span>
+                          </div>
+                          <span className="text-[10px] text-zinc-700 font-mono pl-4">{dt.time}</span>
+                        </div>
+                        <div className="w-36 px-2">
+                          <span className="text-sm text-zinc-200 truncate block group-hover:text-white transition-colors">{evt.participant_name}</span>
+                        </div>
+                        <div className="min-w-0 flex-1 px-2">
+                          <span className="text-xs text-zinc-400 truncate block">{evt.behaviour_type}</span>
+                        </div>
+                        <div className="w-24 px-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${ic.bg} ${ic.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${ic.dot}`} />
+                            {ic.label}
                           </span>
-                        ) : (
-                          <span className="text-[11px] text-zinc-700">No</span>
-                        )}
-                      </div>
-                      <div className="w-24 px-2 text-center">
-                        {rp.debrief_completed ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><Check size={10} /> Done</span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-rose-500/15 text-rose-400 rounded animate-pulse">
-                            <X size={8} /> Missing
+                        </div>
+                        <div className="w-28 px-2">
+                          <span className="text-xs text-zinc-500 truncate block">{evt.worker_name}</span>
+                        </div>
+                        <div className="w-56 px-2">
+                          <span className="text-[11px] text-zinc-500 truncate block">
+                            {evt.strategies_used.length > 50 ? evt.strategies_used.slice(0, 50) + "…" : evt.strategies_used}
                           </span>
-                        )}
-                      </div>
-                      <div className="w-8 flex justify-end">
-                        <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                        </div>
+                        <div className="w-16 px-2 text-center">
+                          {evt.restrictive_practice_used ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-rose-500/15 text-rose-400 rounded">
+                              <ShieldAlert size={8} /> Yes
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-zinc-700">—</span>
+                          )}
+                        </div>
+                        <div className="w-20 px-2">
+                          {evt.linked_incident ? (
+                            <span className="text-[10px] font-mono text-amber-400">{evt.linked_incident}</span>
+                          ) : (
+                            <span className="text-[11px] text-zinc-700">—</span>
+                          )}
+                        </div>
+                        <div className="w-8 flex justify-end">
+                          <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </motion.div>
+            )}
+
+            {/* ── TAB 3: Restrictive Practices ──────────── */}
+            {activeTab === "restrictive" && (
+              <motion.div key="restrictive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
+                  <div className="w-36 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Participant</div>
+                  <div className="w-44 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Practice Type</div>
+                  <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Duration</div>
+                  <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">BSP Auth</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Review</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Reportable</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Debrief</div>
+                  <div className="w-8" />
+                </div>
+
+                {filteredRP.length === 0 ? (
+                  <EmptyState icon={ShieldAlert} message="No restrictive practices recorded" sub={search ? "Try adjusting your search criteria." : "No restrictive practices have been logged."} />
+                ) : (
+                  filteredRP.map((rp, idx) => {
+                    const dt = formatDateTime(rp.occurred_at);
+                    const needsAttention = !rp.reviewed || !rp.debrief_completed;
+                    return (
+                      <motion.div
+                        key={rp.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
+                        className={`group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer transition-colors duration-100 ${
+                          needsAttention ? "hover:bg-amber-500/[0.03] bg-amber-500/[0.01]" : "hover:bg-white/[0.02]"
+                        }`}
+                      >
+                        <div className="w-28 px-2">
+                          <div className="flex items-center gap-1.5">
+                            <Clock size={10} className="text-zinc-700 shrink-0" />
+                            <span className="text-xs text-zinc-400 font-mono">{dt.date}</span>
+                          </div>
+                          <span className="text-[10px] text-zinc-700 font-mono pl-4">{dt.time}</span>
+                        </div>
+                        <div className="w-36 px-2">
+                          <span className="text-sm text-zinc-200 truncate block group-hover:text-white transition-colors">{rp.participant_name}</span>
+                        </div>
+                        <div className="w-44 px-2 flex items-center gap-2">
+                          <ShieldAlert size={11} className="shrink-0 text-rose-500/60" />
+                          <span className="text-xs text-zinc-300 truncate">{practiceTypeLabels[rp.practice_type] ?? rp.practice_type}</span>
+                        </div>
+                        <div className="w-20 px-2 text-center">
+                          <span className="text-[11px] font-mono text-zinc-400">
+                            {rp.duration_minutes > 0 ? `${rp.duration_minutes} min` : "N/A"}
+                          </span>
+                        </div>
+                        <div className="w-20 px-2 text-center">
+                          {rp.authorised_in_bsp ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><Shield size={9} /> Yes</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-rose-500/15 text-rose-400 rounded">
+                              <AlertOctagon size={8} /> No
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-24 px-2 text-center">
+                          {rp.reviewed ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><Check size={10} /> Done</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-amber-500/15 text-amber-400 rounded animate-pulse">
+                              <AlertTriangle size={8} /> Pending
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-24 px-2 text-center">
+                          {rp.reportable ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-rose-500/10 text-rose-400 rounded">
+                              <AlertOctagon size={8} /> Yes
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-zinc-700">No</span>
+                          )}
+                        </div>
+                        <div className="w-24 px-2 text-center">
+                          {rp.debrief_completed ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><Check size={10} /> Done</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium bg-rose-500/15 text-rose-400 rounded animate-pulse">
+                              <X size={8} /> Missing
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-8 flex justify-end">
+                          <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* ── Footer ─────────────────────────────────────── */}
       <div className="border-t border-white/[0.03] px-5 py-2 flex items-center justify-between">
@@ -617,9 +720,15 @@ export default function BehaviourPage() {
                 </button>
               </div>
 
+              {saveError && (
+                <div className="mb-4 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-400">
+                  {saveError}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <FormField label="Title" value={form.title} onChange={(v) => setForm((s) => ({ ...s, title: v }))} placeholder="e.g. Self-Injurious Behaviour Reduction Plan" />
-                <FormField label="Participant" value={form.participant} onChange={(v) => setForm((s) => ({ ...s, participant: v }))} placeholder="Participant name" />
+                <FormField label="Participant ID" value={form.participant} onChange={(v) => setForm((s) => ({ ...s, participant: v }))} placeholder="Participant UUID" />
                 <div className="grid grid-cols-2 gap-3">
                   <FormField label="Author Name" value={form.author_name} onChange={(v) => setForm((s) => ({ ...s, author_name: v }))} placeholder="Dr. Sarah Chen" />
                   <FormField label="Author Role" value={form.author_role} onChange={(v) => setForm((s) => ({ ...s, author_role: v }))} placeholder="Behaviour Practitioner" />

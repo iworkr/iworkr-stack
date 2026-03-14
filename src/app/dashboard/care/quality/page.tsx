@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -19,6 +20,15 @@ import {
   Loader2,
   Target,
 } from "lucide-react";
+import { useOrg } from "@/lib/hooks/use-org";
+import {
+  fetchCIActionsAction,
+  createCIActionAction,
+  fetchPoliciesAction,
+  createPolicyAction,
+  fetchGovernanceMeetingsAction,
+  createGovernanceMeetingAction,
+} from "@/app/actions/care-governance";
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -99,33 +109,6 @@ const categoryColors: Record<Policy["category"], string> = {
   operational: "text-zinc-400 bg-zinc-500/10",
 };
 
-/* ── Mock Data ─────────────────────────────────────────── */
-
-const MOCK_CI_ACTIONS: CIAction[] = [
-  { id: "ci-001", title: "Update manual handling procedures", source_type: "incident", source_id: "INC-042", status: "open", owner_name: "Sarah Chen", due_date: "2026-03-28", created_at: "2026-03-10", description: "Following participant fall incident, review and update all manual handling SOPs.", evidence_count: 2 },
-  { id: "ci-002", title: "Staff medication competency re-assessment", source_type: "audit", source_id: "AUD-018", status: "in_progress", owner_name: "James Park", due_date: "2026-04-05", created_at: "2026-03-05", description: "Annual audit found gaps in PRN medication documentation. Schedule re-assessment.", evidence_count: 4 },
-  { id: "ci-003", title: "Implement restrictive practices register", source_type: "risk_review", source_id: "RR-007", status: "in_progress", owner_name: "Maria Lopez", due_date: "2026-03-20", created_at: "2026-02-28", description: "Create centralised register for all authorised restrictive practices.", evidence_count: 1 },
-  { id: "ci-004", title: "Review participant feedback process", source_type: "complaint", source_id: "CMP-015", status: "completed", owner_name: "Tom Wright", due_date: "2026-03-15", created_at: "2026-02-20", description: "Participant raised concerns about feedback not being actioned. Redesign process.", evidence_count: 5 },
-  { id: "ci-005", title: "Emergency evacuation drill gaps", source_type: "audit", source_id: "AUD-019", status: "open", owner_name: "Aisha Patel", due_date: "2026-04-10", created_at: "2026-03-08", description: "Two sites missed quarterly evacuation drills. Schedule and document completion.", evidence_count: 0 },
-  { id: "ci-006", title: "Mealtime management plan review", source_type: "incident", source_id: "INC-045", status: "verified", owner_name: "Sarah Chen", due_date: "2026-03-01", created_at: "2026-02-15", description: "Near-miss choking event led to comprehensive review of all mealtime plans.", evidence_count: 7 },
-];
-
-const MOCK_POLICIES: Policy[] = [
-  { id: "pol-001", title: "Incident Management & Reporting", version: "3.2", category: "governance", status: "current", last_updated: "2026-02-15", acknowledgement_stats: { total: 24, acknowledged: 22 } },
-  { id: "pol-002", title: "Medication Management", version: "4.0", category: "clinical", status: "under_review", last_updated: "2026-03-01", acknowledgement_stats: { total: 24, acknowledged: 8 } },
-  { id: "pol-003", title: "Work Health & Safety", version: "2.1", category: "safety", status: "current", last_updated: "2026-01-20", acknowledgement_stats: { total: 24, acknowledged: 24 } },
-  { id: "pol-004", title: "Staff Code of Conduct", version: "1.5", category: "hr", status: "current", last_updated: "2025-11-10", acknowledgement_stats: { total: 24, acknowledged: 20 } },
-  { id: "pol-005", title: "Vehicle & Transport Operations", version: "2.0", category: "operational", status: "current", last_updated: "2026-01-05", acknowledgement_stats: { total: 18, acknowledged: 18 } },
-];
-
-const MOCK_GOVERNANCE: GovernanceEntry[] = [
-  { id: "gov-001", title: "Q1 2026 Clinical Governance Review", meeting_date: "2026-03-10", attendees_count: 8, decisions_count: 5, actions_generated: 3, status: "final" },
-  { id: "gov-002", title: "Monthly WHS Committee Meeting", meeting_date: "2026-03-03", attendees_count: 6, decisions_count: 3, actions_generated: 2, status: "final" },
-  { id: "gov-003", title: "Participant Advisory Group", meeting_date: "2026-02-25", attendees_count: 12, decisions_count: 4, actions_generated: 4, status: "final" },
-  { id: "gov-004", title: "Board Quality & Safety Sub-Committee", meeting_date: "2026-02-18", attendees_count: 5, decisions_count: 7, actions_generated: 5, status: "final" },
-  { id: "gov-005", title: "Monthly Ops & Quality Standup", meeting_date: "2026-03-12", attendees_count: 9, decisions_count: 2, actions_generated: 1, status: "draft" },
-];
-
 /* ── Helpers ────────────────────────────────────────────── */
 
 function formatDate(d: string): string {
@@ -136,13 +119,66 @@ function isDueOverdue(d: string): boolean {
   return new Date(d) < new Date();
 }
 
+/** Map raw DB row to CIAction UI shape */
+function mapCIAction(row: any): CIAction {
+  return {
+    id: row.id,
+    title: row.title ?? "Untitled Action",
+    source_type: row.source_type ?? "incident",
+    source_id: row.source_id ?? row.source_reference ?? "—",
+    status: row.status ?? "open",
+    owner_name: row.owner_name ?? row.profiles?.full_name ?? "—",
+    due_date: row.due_date ?? row.created_at,
+    created_at: row.created_at,
+    description: row.description ?? "",
+    evidence_count: row.evidence_count ?? 0,
+  };
+}
+
+/** Map raw DB row to Policy UI shape */
+function mapPolicy(row: any): Policy {
+  return {
+    id: row.id,
+    title: row.title ?? "Untitled Policy",
+    version: row.version ?? "1.0",
+    category: row.category ?? "operational",
+    status: row.status ?? "current",
+    last_updated: row.updated_at ?? row.created_at,
+    acknowledgement_stats: {
+      total: row.acknowledgement_total ?? 0,
+      acknowledged: row.acknowledgement_count ?? 0,
+    },
+  };
+}
+
+/** Map raw DB row to GovernanceEntry UI shape */
+function mapGovernance(row: any): GovernanceEntry {
+  return {
+    id: row.id,
+    title: row.title ?? "Untitled Meeting",
+    meeting_date: row.meeting_date ?? row.created_at,
+    attendees_count: Array.isArray(row.attendees) ? row.attendees.length : row.attendees_count ?? 0,
+    decisions_count: row.decisions_count ?? 0,
+    actions_generated: row.actions_generated ?? 0,
+    status: row.status ?? "draft",
+  };
+}
+
 /* ── Main Page ─────────────────────────────────────────── */
 
 export default function QualityPage() {
+  const { orgId } = useOrg();
   const [activeTab, setActiveTab] = useState<TabKey>("ci_actions");
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+
+  /* ── Data State ───────────────────────────────────────── */
+  const [ciActions, setCIActions] = useState<CIAction[]>([]);
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [governance, setGovernance] = useState<GovernanceEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   /* ── CI Action Create Form State ─────────────────────── */
   const [newAction, setNewAction] = useState({
@@ -153,38 +189,81 @@ export default function QualityPage() {
     due_date: "",
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  /* ── Data Loading ─────────────────────────────────────── */
+  const loadData = useCallback(async () => {
+    if (!orgId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [ciData, policyData, govData] = await Promise.all([
+        fetchCIActionsAction(orgId),
+        fetchPoliciesAction(orgId),
+        fetchGovernanceMeetingsAction(orgId),
+      ]);
+
+      setCIActions((ciData || []).map(mapCIAction));
+      setPolicies((policyData || []).map(mapPolicy));
+      setGovernance((govData || []).map(mapGovernance));
+    } catch (e: any) {
+      console.error("[quality] Failed to load data:", e);
+      setError("Failed to load data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [orgId]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   /* ── Filtered Data ───────────────────────────────────── */
   const filteredCI = useMemo(() => {
-    if (!search) return MOCK_CI_ACTIONS;
+    if (!search) return ciActions;
     const q = search.toLowerCase();
-    return MOCK_CI_ACTIONS.filter(
+    return ciActions.filter(
       (a) => a.title.toLowerCase().includes(q) || a.owner_name.toLowerCase().includes(q) || a.source_id.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, ciActions]);
 
   const filteredPolicies = useMemo(() => {
-    if (!search) return MOCK_POLICIES;
+    if (!search) return policies;
     const q = search.toLowerCase();
-    return MOCK_POLICIES.filter(
+    return policies.filter(
       (p) => p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, policies]);
 
   const filteredGovernance = useMemo(() => {
-    if (!search) return MOCK_GOVERNANCE;
+    if (!search) return governance;
     const q = search.toLowerCase();
-    return MOCK_GOVERNANCE.filter((g) => g.title.toLowerCase().includes(q));
-  }, [search]);
+    return governance.filter((g) => g.title.toLowerCase().includes(q));
+  }, [search, governance]);
 
-  const handleCreateAction = useCallback(() => {
+  const handleCreateAction = useCallback(async () => {
+    if (!orgId) return;
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    setSaveError(null);
+
+    try {
+      await createCIActionAction({
+        organization_id: orgId,
+        title: newAction.title,
+        source_type: newAction.source_type,
+        description: newAction.description || undefined,
+        owner_name: newAction.owner || undefined,
+        due_date: newAction.due_date || undefined,
+      });
       setCreateOpen(false);
       setNewAction({ title: "", source_type: "incident", description: "", owner: "", due_date: "" });
-    }, 800);
-  }, []);
+      loadData();
+    } catch (e: any) {
+      console.error("[quality] createCIAction failed:", e);
+      setSaveError(e.message || "Failed to create CI action. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }, [orgId, newAction, loadData]);
 
   /* ── Render ──────────────────────────────────────────── */
   return (
@@ -268,290 +347,324 @@ export default function QualityPage() {
         </div>
       </div>
 
+      {/* ── Loading State ────────────────────────────────── */}
+      {loading && (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 size={24} className="animate-spin text-zinc-600" />
+            <span className="text-[12px] text-zinc-600">Loading quality data…</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Error State ──────────────────────────────────── */}
+      {!loading && error && (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/10 border border-rose-500/20">
+              <AlertTriangle size={20} className="text-rose-400" />
+            </div>
+            <h3 className="text-[15px] font-medium text-zinc-200">{error}</h3>
+            <button onClick={loadData} className="mt-2 rounded-lg px-4 py-1.5 text-[12px] font-medium text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors">
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Tab Content ────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto scrollbar-none">
-        <AnimatePresence mode="wait">
-          {activeTab === "ci_actions" && (
-            <motion.div
-              key="ci_actions"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              {/* Column Headers */}
-              <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
-                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Title</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Source</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Owner</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Due Date</div>
-                <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-right">Evidence</div>
-                <div className="w-8" />
-              </div>
+      {!loading && !error && (
+        <div className="flex-1 overflow-y-auto scrollbar-none">
+          <AnimatePresence mode="wait">
+            {activeTab === "ci_actions" && (
+              <motion.div
+                key="ci_actions"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                {/* Column Headers */}
+                <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
+                  <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Title</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Source</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Owner</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Due Date</div>
+                  <div className="w-20 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-right">Evidence</div>
+                  <div className="w-8" />
+                </div>
 
-              {filteredCI.length === 0 ? (
-                <EmptyState icon={Target} message="No CI actions found" sub="Try adjusting your search criteria." />
-              ) : (
-                filteredCI.map((action, idx) => {
-                  const sc = ciStatusConfig[action.status];
-                  const src = sourceConfig[action.source_type];
-                  const SrcIcon = src.icon;
-                  const overdue = (action.status === "open" || action.status === "in_progress") && isDueOverdue(action.due_date);
+                {filteredCI.length === 0 ? (
+                  <EmptyState icon={Target} message="No CI actions found" sub={search ? "Try adjusting your search criteria." : "Create your first CI action to get started."} />
+                ) : (
+                  filteredCI.map((action, idx) => {
+                    const sc = ciStatusConfig[action.status] ?? ciStatusConfig.open;
+                    const src = sourceConfig[action.source_type] ?? sourceConfig.incident;
+                    const SrcIcon = src.icon;
+                    const overdue = (action.status === "open" || action.status === "in_progress") && isDueOverdue(action.due_date);
 
-                  return (
-                    <motion.div
-                      key={action.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
-                      className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
-                    >
-                      <div className="min-w-0 flex-1 px-2 flex items-center gap-2">
-                        <Lightbulb size={12} className="shrink-0 text-zinc-600" />
-                        <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
-                          {action.title}
-                        </span>
-                      </div>
-                      <div className="w-28 px-2 flex items-center gap-1.5">
-                        <SrcIcon size={10} className={src.color} />
-                        <span className="text-[11px] text-zinc-500">{action.source_id}</span>
-                      </div>
-                      <div className="w-28 px-2">
-                        <span className="text-xs text-zinc-400 truncate block">{action.owner_name}</span>
-                      </div>
-                      <div className="w-24 px-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${sc.bg} ${sc.text}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                          {sc.label}
-                        </span>
-                      </div>
-                      <div className="w-28 px-2">
-                        <span className={`text-xs font-mono ${overdue ? "text-rose-400" : "text-zinc-500"}`}>
-                          {overdue && <Clock size={9} className="inline mr-1 -mt-px" />}
-                          {formatDate(action.due_date)}
-                        </span>
-                      </div>
-                      <div className="w-20 px-2 text-right">
-                        {action.evidence_count > 0 ? (
-                          <span className="text-[11px] font-mono text-zinc-500">
-                            {action.evidence_count} file{action.evidence_count !== 1 ? "s" : ""}
+                    return (
+                      <motion.div
+                        key={action.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
+                        className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
+                      >
+                        <div className="min-w-0 flex-1 px-2 flex items-center gap-2">
+                          <Lightbulb size={12} className="shrink-0 text-zinc-600" />
+                          <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
+                            {action.title}
                           </span>
-                        ) : (
-                          <span className="text-[11px] text-zinc-700">—</span>
-                        )}
-                      </div>
-                      <div className="w-8 flex justify-end">
-                        <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
-
-              {/* Summary bar */}
-              {filteredCI.length > 0 && (
-                <div className="flex items-center gap-6 border-t border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
-                  <StatBadge label="Total" value={filteredCI.length} />
-                  <div className="h-3 w-px bg-white/[0.04]" />
-                  <StatBadge label="Open" value={filteredCI.filter((a) => a.status === "open").length} color="text-amber-500" />
-                  <div className="h-3 w-px bg-white/[0.04]" />
-                  <StatBadge label="In Progress" value={filteredCI.filter((a) => a.status === "in_progress").length} color="text-sky-500" />
-                  <div className="h-3 w-px bg-white/[0.04]" />
-                  <StatBadge label="Completed" value={filteredCI.filter((a) => a.status === "completed" || a.status === "verified").length} color="text-emerald-500" />
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === "policy_register" && (
-            <motion.div
-              key="policy_register"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
-                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Policy</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Category</div>
-                <div className="w-16 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Version</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
-                <div className="w-40 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Acknowledged</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-right">Last Updated</div>
-                <div className="w-8" />
-              </div>
-
-              {filteredPolicies.length === 0 ? (
-                <EmptyState icon={BookOpen} message="No policies found" sub="Try adjusting your search criteria." />
-              ) : (
-                filteredPolicies.map((policy, idx) => {
-                  const sc = policyStatusConfig[policy.status];
-                  const ackPct = Math.round((policy.acknowledgement_stats.acknowledged / policy.acknowledgement_stats.total) * 100);
-                  const catClass = categoryColors[policy.category];
-
-                  return (
-                    <motion.div
-                      key={policy.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
-                      className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
-                    >
-                      <div className="min-w-0 flex-1 px-2 flex items-center gap-2">
-                        <FileText size={12} className="shrink-0 text-zinc-600" />
-                        <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
-                          {policy.title}
-                        </span>
-                      </div>
-                      <div className="w-24 px-2">
-                        <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-md capitalize ${catClass}`}>
-                          {policy.category}
-                        </span>
-                      </div>
-                      <div className="w-16 px-2">
-                        <span className="text-xs font-mono text-zinc-500">v{policy.version}</span>
-                      </div>
-                      <div className="w-28 px-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${sc.bg} ${sc.text}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                          {sc.label}
-                        </span>
-                      </div>
-                      <div className="w-40 px-2 flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              ackPct === 100 ? "bg-emerald-500" : ackPct > 60 ? "bg-amber-500" : "bg-rose-500"
-                            }`}
-                            style={{ width: `${ackPct}%` }}
-                          />
                         </div>
-                        <span className="text-[10px] font-mono text-zinc-500 w-14 text-right shrink-0">
-                          {policy.acknowledgement_stats.acknowledged}/{policy.acknowledgement_stats.total}
-                        </span>
-                      </div>
-                      <div className="w-28 px-2 text-right">
-                        <span className="text-xs font-mono text-zinc-500">{formatDate(policy.last_updated)}</span>
-                      </div>
-                      <div className="w-8 flex justify-end">
-                        <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
+                        <div className="w-28 px-2 flex items-center gap-1.5">
+                          <SrcIcon size={10} className={src.color} />
+                          <span className="text-[11px] text-zinc-500">{action.source_id}</span>
+                        </div>
+                        <div className="w-28 px-2">
+                          <span className="text-xs text-zinc-400 truncate block">{action.owner_name}</span>
+                        </div>
+                        <div className="w-24 px-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${sc.bg} ${sc.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                            {sc.label}
+                          </span>
+                        </div>
+                        <div className="w-28 px-2">
+                          <span className={`text-xs font-mono ${overdue ? "text-rose-400" : "text-zinc-500"}`}>
+                            {overdue && <Clock size={9} className="inline mr-1 -mt-px" />}
+                            {formatDate(action.due_date)}
+                          </span>
+                        </div>
+                        <div className="w-20 px-2 text-right">
+                          {action.evidence_count > 0 ? (
+                            <span className="text-[11px] font-mono text-zinc-500">
+                              {action.evidence_count} file{action.evidence_count !== 1 ? "s" : ""}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-zinc-700">—</span>
+                          )}
+                        </div>
+                        <div className="w-8 flex justify-end">
+                          <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
 
-              {filteredPolicies.length > 0 && (
-                <div className="flex items-center gap-6 border-t border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
-                  <StatBadge label="Policies" value={filteredPolicies.length} />
-                  <div className="h-3 w-px bg-white/[0.04]" />
-                  <StatBadge label="Current" value={filteredPolicies.filter((p) => p.status === "current").length} color="text-emerald-500" />
-                  <div className="h-3 w-px bg-white/[0.04]" />
-                  <StatBadge label="Under Review" value={filteredPolicies.filter((p) => p.status === "under_review").length} color="text-amber-500" />
+                {/* Summary bar */}
+                {filteredCI.length > 0 && (
+                  <div className="flex items-center gap-6 border-t border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
+                    <StatBadge label="Total" value={filteredCI.length} />
+                    <div className="h-3 w-px bg-white/[0.04]" />
+                    <StatBadge label="Open" value={filteredCI.filter((a) => a.status === "open").length} color="text-amber-500" />
+                    <div className="h-3 w-px bg-white/[0.04]" />
+                    <StatBadge label="In Progress" value={filteredCI.filter((a) => a.status === "in_progress").length} color="text-sky-500" />
+                    <div className="h-3 w-px bg-white/[0.04]" />
+                    <StatBadge label="Completed" value={filteredCI.filter((a) => a.status === "completed" || a.status === "verified").length} color="text-emerald-500" />
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {activeTab === "policy_register" && (
+              <motion.div
+                key="policy_register"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
+                  <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Policy</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Category</div>
+                  <div className="w-16 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Version</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
+                  <div className="w-40 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Acknowledged</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-right">Last Updated</div>
+                  <div className="w-8" />
                 </div>
-              )}
-            </motion.div>
-          )}
 
-          {activeTab === "governance_log" && (
-            <motion.div
-              key="governance_log"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
-                <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Meeting</div>
-                <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Attendees</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Decisions</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Actions</div>
-                <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
-                <div className="w-8" />
-              </div>
+                {filteredPolicies.length === 0 ? (
+                  <EmptyState icon={BookOpen} message="No policies found" sub={search ? "Try adjusting your search criteria." : "Add your first policy to get started."} />
+                ) : (
+                  filteredPolicies.map((policy, idx) => {
+                    const sc = policyStatusConfig[policy.status] ?? policyStatusConfig.current;
+                    const hasAck = policy.acknowledgement_stats.total > 0;
+                    const ackPct = hasAck ? Math.round((policy.acknowledgement_stats.acknowledged / policy.acknowledgement_stats.total) * 100) : 0;
+                    const catClass = categoryColors[policy.category] ?? categoryColors.operational;
 
-              {filteredGovernance.length === 0 ? (
-                <EmptyState icon={Users} message="No governance records found" sub="Try adjusting your search criteria." />
-              ) : (
-                filteredGovernance.map((entry, idx) => {
-                  const isDraft = entry.status === "draft";
-                  return (
-                    <motion.div
-                      key={entry.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
-                      className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
-                    >
-                      <div className="min-w-0 flex-1 px-2 flex items-center gap-2">
-                        <Calendar size={12} className="shrink-0 text-zinc-600" />
-                        <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
-                          {entry.title}
-                        </span>
-                      </div>
-                      <div className="w-28 px-2">
-                        <span className="text-xs font-mono text-zinc-500">{formatDate(entry.meeting_date)}</span>
-                      </div>
-                      <div className="w-24 px-2 text-center">
-                        <span className="inline-flex items-center gap-1 text-[11px] text-zinc-400">
-                          <Users size={10} className="text-zinc-600" />
-                          {entry.attendees_count}
-                        </span>
-                      </div>
-                      <div className="w-24 px-2 text-center">
-                        <span className="text-[11px] font-mono text-zinc-400">{entry.decisions_count}</span>
-                      </div>
-                      <div className="w-24 px-2 text-center">
-                        <span className="text-[11px] font-mono text-emerald-500/80">{entry.actions_generated}</span>
-                      </div>
-                      <div className="w-24 px-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${
-                          isDraft ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${isDraft ? "bg-amber-400" : "bg-emerald-400"}`} />
-                          {isDraft ? "Draft" : "Final"}
-                        </span>
-                      </div>
-                      <div className="w-8 flex justify-end">
-                        <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
+                    return (
+                      <motion.div
+                        key={policy.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
+                        className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
+                      >
+                        <div className="min-w-0 flex-1 px-2 flex items-center gap-2">
+                          <FileText size={12} className="shrink-0 text-zinc-600" />
+                          <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
+                            {policy.title}
+                          </span>
+                        </div>
+                        <div className="w-24 px-2">
+                          <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-md capitalize ${catClass}`}>
+                            {policy.category}
+                          </span>
+                        </div>
+                        <div className="w-16 px-2">
+                          <span className="text-xs font-mono text-zinc-500">v{policy.version}</span>
+                        </div>
+                        <div className="w-28 px-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${sc.bg} ${sc.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                            {sc.label}
+                          </span>
+                        </div>
+                        <div className="w-40 px-2 flex items-center gap-2">
+                          {hasAck ? (
+                            <>
+                              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    ackPct === 100 ? "bg-emerald-500" : ackPct > 60 ? "bg-amber-500" : "bg-rose-500"
+                                  }`}
+                                  style={{ width: `${ackPct}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-mono text-zinc-500 w-14 text-right shrink-0">
+                                {policy.acknowledgement_stats.acknowledged}/{policy.acknowledgement_stats.total}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-zinc-700">—</span>
+                          )}
+                        </div>
+                        <div className="w-28 px-2 text-right">
+                          <span className="text-xs font-mono text-zinc-500">{formatDate(policy.last_updated)}</span>
+                        </div>
+                        <div className="w-8 flex justify-end">
+                          <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
 
-              {filteredGovernance.length > 0 && (
-                <div className="flex items-center gap-6 border-t border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
-                  <StatBadge label="Meetings" value={filteredGovernance.length} />
-                  <div className="h-3 w-px bg-white/[0.04]" />
-                  <StatBadge label="Total Decisions" value={filteredGovernance.reduce((s, g) => s + g.decisions_count, 0)} color="text-zinc-400" />
-                  <div className="h-3 w-px bg-white/[0.04]" />
-                  <StatBadge label="Actions Generated" value={filteredGovernance.reduce((s, g) => s + g.actions_generated, 0)} color="text-emerald-500" />
+                {filteredPolicies.length > 0 && (
+                  <div className="flex items-center gap-6 border-t border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
+                    <StatBadge label="Policies" value={filteredPolicies.length} />
+                    <div className="h-3 w-px bg-white/[0.04]" />
+                    <StatBadge label="Current" value={filteredPolicies.filter((p) => p.status === "current").length} color="text-emerald-500" />
+                    <div className="h-3 w-px bg-white/[0.04]" />
+                    <StatBadge label="Under Review" value={filteredPolicies.filter((p) => p.status === "under_review").length} color="text-amber-500" />
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {activeTab === "governance_log" && (
+              <motion.div
+                key="governance_log"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <div className="flex items-center border-b border-white/[0.03] bg-[var(--surface-1)] px-5 py-2">
+                  <div className="min-w-0 flex-1 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Meeting</div>
+                  <div className="w-28 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Date</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Attendees</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Decisions</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase text-center">Actions</div>
+                  <div className="w-24 px-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Status</div>
+                  <div className="w-8" />
                 </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+
+                {filteredGovernance.length === 0 ? (
+                  <EmptyState icon={Users} message="No governance records found" sub={search ? "Try adjusting your search criteria." : "Schedule your first governance meeting."} />
+                ) : (
+                  filteredGovernance.map((entry, idx) => {
+                    const isDraft = entry.status === "draft";
+                    return (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: Math.min(idx * 0.02, 0.15), duration: 0.2 }}
+                        className="group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer hover:bg-white/[0.02] transition-colors duration-100"
+                      >
+                        <div className="min-w-0 flex-1 px-2 flex items-center gap-2">
+                          <Calendar size={12} className="shrink-0 text-zinc-600" />
+                          <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
+                            {entry.title}
+                          </span>
+                        </div>
+                        <div className="w-28 px-2">
+                          <span className="text-xs font-mono text-zinc-500">{formatDate(entry.meeting_date)}</span>
+                        </div>
+                        <div className="w-24 px-2 text-center">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-zinc-400">
+                            <Users size={10} className="text-zinc-600" />
+                            {entry.attendees_count}
+                          </span>
+                        </div>
+                        <div className="w-24 px-2 text-center">
+                          <span className="text-[11px] font-mono text-zinc-400">{entry.decisions_count}</span>
+                        </div>
+                        <div className="w-24 px-2 text-center">
+                          <span className="text-[11px] font-mono text-emerald-500/80">{entry.actions_generated}</span>
+                        </div>
+                        <div className="w-24 px-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                            isDraft ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isDraft ? "bg-amber-400" : "bg-emerald-400"}`} />
+                            {isDraft ? "Draft" : "Final"}
+                          </span>
+                        </div>
+                        <div className="w-8 flex justify-end">
+                          <ChevronRight size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+
+                {filteredGovernance.length > 0 && (
+                  <div className="flex items-center gap-6 border-t border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
+                    <StatBadge label="Meetings" value={filteredGovernance.length} />
+                    <div className="h-3 w-px bg-white/[0.04]" />
+                    <StatBadge label="Total Decisions" value={filteredGovernance.reduce((s, g) => s + g.decisions_count, 0)} color="text-zinc-400" />
+                    <div className="h-3 w-px bg-white/[0.04]" />
+                    <StatBadge label="Actions Generated" value={filteredGovernance.reduce((s, g) => s + g.actions_generated, 0)} color="text-emerald-500" />
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* ── Footer ─────────────────────────────────────── */}
       <div className="border-t border-white/[0.03] px-5 py-2 flex items-center justify-between">
         <div className="flex items-center gap-4 text-[10px] font-mono text-zinc-600">
           <div className="flex items-center gap-1.5">
             <Target size={10} className="text-emerald-500/50" />
-            <span>{MOCK_CI_ACTIONS.length} CI actions</span>
+            <span>{ciActions.length} CI actions</span>
           </div>
           <div className="w-px h-3 bg-zinc-800" />
           <div className="flex items-center gap-1.5">
             <BookOpen size={10} className="text-sky-500/50" />
-            <span>{MOCK_POLICIES.length} policies</span>
+            <span>{policies.length} policies</span>
           </div>
           <div className="w-px h-3 bg-zinc-800" />
           <div className="flex items-center gap-1.5">
             <Shield size={10} className="text-amber-500/50" />
-            <span>{MOCK_GOVERNANCE.length} governance records</span>
+            <span>{governance.length} governance records</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-700">
@@ -592,6 +705,12 @@ export default function QualityPage() {
                   <X size={16} />
                 </button>
               </div>
+
+              {saveError && (
+                <div className="mb-4 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-400">
+                  {saveError}
+                </div>
+              )}
 
               <div className="space-y-4">
                 {/* Title */}

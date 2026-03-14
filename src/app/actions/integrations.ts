@@ -4,6 +4,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { triggerSync } from "./integration-sync";
 import { z } from "zod";
 
 /* ── Schemas ──────────────────────────────────────── */
@@ -306,26 +307,17 @@ export async function syncIntegration(integrationId: string) {
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
-    // Mark as syncing
-    await supabase
-      .from("integrations")
-      .update({ status: "syncing" })
-      .eq("id", integrationId);
+    // Delegate to the real sync orchestrator in integration-sync.ts
+    const result = await triggerSync(integrationId);
 
-    // In a real implementation, this would trigger an Edge Function
-    // For now, mark as connected with updated sync time
-    const { error } = await supabase
-      .from("integrations")
-      .update({
-        status: "connected",
-        last_sync: new Date().toISOString(),
-      })
-      .eq("id", integrationId);
+    if (result.error) {
+      return { data: null, error: result.error };
+    }
 
-    if (error) return { data: null, error: error.message };
     revalidatePath("/dashboard/integrations");
-    return { data: { success: true }, error: null };
+    return { data: { success: true, synced: result.synced }, error: null };
   } catch (err: any) {
+    logger.error("syncIntegration exception", err.message);
     return { data: null, error: err.message };
   }
 }

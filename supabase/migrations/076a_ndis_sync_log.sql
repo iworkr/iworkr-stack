@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 076: NDIS Sync Log & Category Counts RPC
+-- Migration 076a: NDIS Sync Log & Category Counts RPC
 -- Tracks sync history and provides fast category counts.
 -- SAFE: All statements use IF NOT EXISTS.
 -- ============================================================================

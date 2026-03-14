@@ -94,32 +94,37 @@ export async function fetchTimesheetsAction(
   organizationId: string,
   filters?: { status?: string; period_start?: string; worker_id?: string }
 ) {
-  const supabase = await createServerSupabaseClient();
-  let query = (supabase as any)
-    .from("timesheets")
-    .select("*, profiles!timesheets_worker_id_fkey(full_name, email, avatar_url)")
-    .eq("organization_id", organizationId)
-    .order("period_start", { ascending: false })
-    .limit(200);
+  try {
+    const supabase = await createServerSupabaseClient();
+    let query = (supabase as any)
+      .from("timesheets")
+      .select("*, profiles!timesheets_worker_id_fkey(full_name, email, avatar_url)")
+      .eq("organization_id", organizationId)
+      .order("period_start", { ascending: false })
+      .limit(200);
 
-  if (filters?.status) query = query.eq("status", filters.status);
-  if (filters?.period_start) query = query.eq("period_start", filters.period_start);
-  if (filters?.worker_id) query = query.eq("worker_id", filters.worker_id);
+    if (filters?.status) query = query.eq("status", filters.status);
+    if (filters?.period_start) query = query.eq("period_start", filters.period_start);
+    if (filters?.worker_id) query = query.eq("worker_id", filters.worker_id);
 
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
 
-  return (data || []).map((ts: any) => ({
-    ...ts,
-    total_hours: parseFloat(ts.total_hours) || 0,
-    total_ordinary: parseFloat(ts.total_ordinary) || 0,
-    total_overtime: parseFloat(ts.total_overtime) || 0,
-    total_leave: parseFloat(ts.total_leave) || 0,
-    total_allowances: parseFloat(ts.total_allowances) || 0,
-    worker_name: ts.profiles?.full_name || "Unknown",
-    worker_email: ts.profiles?.email || "",
-    worker_avatar: ts.profiles?.avatar_url,
-  }));
+    return (data || []).map((ts: any) => ({
+      ...ts,
+      total_hours: parseFloat(ts.total_hours) || 0,
+      total_ordinary: parseFloat(ts.total_ordinary) || 0,
+      total_overtime: parseFloat(ts.total_overtime) || 0,
+      total_leave: parseFloat(ts.total_leave) || 0,
+      total_allowances: parseFloat(ts.total_allowances) || 0,
+      worker_name: ts.profiles?.full_name || "Unknown",
+      worker_email: ts.profiles?.email || "",
+      worker_avatar: ts.profiles?.avatar_url,
+    }));
+  } catch (e: any) {
+    console.error("[timesheets] fetchTimesheetsAction failed:", e);
+    return [];
+  }
 }
 
 export async function createTimesheetAction(input: {
@@ -128,17 +133,22 @@ export async function createTimesheetAction(input: {
   period_start: string;
   period_end: string;
 }) {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data, error } = await (supabase as any)
-    .from("timesheets")
-    .insert(input)
-    .select()
-    .single();
+    const { data, error } = await (supabase as any)
+      .from("timesheets")
+      .insert(input)
+      .select()
+      .single();
 
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/timesheets");
-  return data;
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] createTimesheetAction failed:", e);
+    throw e;
+  }
 }
 
 export async function updateTimesheetStatusAction(
@@ -146,55 +156,65 @@ export async function updateTimesheetStatusAction(
   status: string,
   lock?: boolean
 ) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
 
-  const updates: any = { status, updated_at: new Date().toISOString() };
-  if (status === "approved") {
-    updates.approved_by = user.id;
-    updates.approved_at = new Date().toISOString();
-  }
-  if (status === "exported") {
-    updates.exported_at = new Date().toISOString();
-    updates.is_locked = true;
-  }
-  if (lock !== undefined) {
-    updates.is_locked = lock;
-  }
+    const updates: any = { status, updated_at: new Date().toISOString() };
+    if (status === "approved") {
+      updates.approved_by = user.id;
+      updates.approved_at = new Date().toISOString();
+    }
+    if (status === "exported") {
+      updates.exported_at = new Date().toISOString();
+      updates.is_locked = true;
+    }
+    if (lock !== undefined) {
+      updates.is_locked = lock;
+    }
 
-  const { data, error } = await (supabase as any)
-    .from("timesheets")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+    const { data, error } = await (supabase as any)
+      .from("timesheets")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
 
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/timesheets");
-  return data;
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] updateTimesheetStatusAction failed:", e);
+    throw e;
+  }
 }
 
 export async function bulkApproveTimesheetsAction(ids: string[]) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
 
-  const { data, error } = await (supabase as any)
-    .from("timesheets")
-    .update({
-      status: "approved",
-      approved_by: user.id,
-      approved_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .in("id", ids)
-    .eq("is_locked", false)
-    .select();
+    const { data, error } = await (supabase as any)
+      .from("timesheets")
+      .update({
+        status: "approved",
+        approved_by: user.id,
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", ids)
+      .eq("is_locked", false)
+      .select();
 
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/timesheets");
-  return data;
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] bulkApproveTimesheetsAction failed:", e);
+    throw e;
+  }
 }
 
 // ── Time Entries CRUD ────────────────────────────────────────────────────────
@@ -210,30 +230,35 @@ export async function fetchTimeEntriesAction(
     date_to?: string;
   }
 ) {
-  const supabase = await createServerSupabaseClient();
-  let query = (supabase as any)
-    .from("time_entries")
-    .select("*, profiles!time_entries_worker_id_fkey(full_name)")
-    .eq("organization_id", organizationId)
-    .order("clock_in", { ascending: false })
-    .limit(500);
+  try {
+    const supabase = await createServerSupabaseClient();
+    let query = (supabase as any)
+      .from("time_entries")
+      .select("*, profiles!time_entries_worker_id_fkey(full_name)")
+      .eq("organization_id", organizationId)
+      .order("clock_in", { ascending: false })
+      .limit(500);
 
-  if (filters?.timesheet_id) query = query.eq("timesheet_id", filters.timesheet_id);
-  if (filters?.worker_id) query = query.eq("worker_id", filters.worker_id);
-  if (filters?.status) query = query.eq("status", filters.status);
-  if (filters?.has_exception) query = query.not("exception_type", "is", null);
-  if (filters?.date_from) query = query.gte("clock_in", filters.date_from);
-  if (filters?.date_to) query = query.lte("clock_in", filters.date_to);
+    if (filters?.timesheet_id) query = query.eq("timesheet_id", filters.timesheet_id);
+    if (filters?.worker_id) query = query.eq("worker_id", filters.worker_id);
+    if (filters?.status) query = query.eq("status", filters.status);
+    if (filters?.has_exception) query = query.not("exception_type", "is", null);
+    if (filters?.date_from) query = query.gte("clock_in", filters.date_from);
+    if (filters?.date_to) query = query.lte("clock_in", filters.date_to);
 
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
 
-  return (data || []).map((e: any) => ({
-    ...e,
-    total_hours: e.total_hours != null ? parseFloat(e.total_hours) : null,
-    travel_km: parseFloat(e.travel_km) || 0,
-    worker_name: e.profiles?.full_name || "Unknown",
-  }));
+    return (data || []).map((e: any) => ({
+      ...e,
+      total_hours: e.total_hours != null ? parseFloat(e.total_hours) : null,
+      travel_km: parseFloat(e.travel_km) || 0,
+      worker_name: e.profiles?.full_name || "Unknown",
+    }));
+  } catch (e: any) {
+    console.error("[timesheets] fetchTimeEntriesAction failed:", e);
+    return [];
+  }
 }
 
 export async function createTimeEntryAction(input: {
@@ -252,53 +277,58 @@ export async function createTimeEntryAction(input: {
   leave_type?: string;
   notes?: string;
 }) {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  // Calculate total hours if clock_out provided
-  let total_hours = null;
-  let variance_minutes = 0;
-  let exception_type = null;
+    // Calculate total hours if clock_out provided
+    let total_hours = null;
+    let variance_minutes = 0;
+    let exception_type = null;
 
-  if (input.clock_out) {
-    const diffMs = new Date(input.clock_out).getTime() - new Date(input.clock_in).getTime();
-    total_hours = Math.round((diffMs / 3600000) * 100) / 100;
-  }
-
-  // Calculate variance from schedule
-  if (input.scheduled_start && input.scheduled_end && input.clock_in) {
-    const scheduledStart = new Date(input.scheduled_start).getTime();
-    const actualStart = new Date(input.clock_in).getTime();
-    const startVariance = Math.round((actualStart - scheduledStart) / 60000);
-
-    if (input.clock_out && input.scheduled_end) {
-      const scheduledEnd = new Date(input.scheduled_end).getTime();
-      const actualEnd = new Date(input.clock_out).getTime();
-      const endVariance = Math.round((actualEnd - scheduledEnd) / 60000);
-      variance_minutes = Math.max(Math.abs(startVariance), Math.abs(endVariance));
-
-      if (startVariance > 15) exception_type = "late_start";
-      else if (endVariance < -15) exception_type = "early_finish";
-      else if (endVariance > 15) exception_type = "overtime";
+    if (input.clock_out) {
+      const diffMs = new Date(input.clock_out).getTime() - new Date(input.clock_in).getTime();
+      total_hours = Math.round((diffMs / 3600000) * 100) / 100;
     }
+
+    // Calculate variance from schedule
+    if (input.scheduled_start && input.scheduled_end && input.clock_in) {
+      const scheduledStart = new Date(input.scheduled_start).getTime();
+      const actualStart = new Date(input.clock_in).getTime();
+      const startVariance = Math.round((actualStart - scheduledStart) / 60000);
+
+      if (input.clock_out && input.scheduled_end) {
+        const scheduledEnd = new Date(input.scheduled_end).getTime();
+        const actualEnd = new Date(input.clock_out).getTime();
+        const endVariance = Math.round((actualEnd - scheduledEnd) / 60000);
+        variance_minutes = Math.max(Math.abs(startVariance), Math.abs(endVariance));
+
+        if (startVariance > 15) exception_type = "late_start";
+        else if (endVariance < -15) exception_type = "early_finish";
+        else if (endVariance > 15) exception_type = "overtime";
+      }
+    }
+
+    const status = input.clock_out ? "completed" : "active";
+
+    const { data, error } = await (supabase as any)
+      .from("time_entries")
+      .insert({
+        ...input,
+        total_hours,
+        variance_minutes,
+        exception_type,
+        status,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] createTimeEntryAction failed:", e);
+    throw e;
   }
-
-  const status = input.clock_out ? "completed" : "active";
-
-  const { data, error } = await (supabase as any)
-    .from("time_entries")
-    .insert({
-      ...input,
-      total_hours,
-      variance_minutes,
-      exception_type,
-      status,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/timesheets");
-  return data;
 }
 
 export async function clockOutAction(
@@ -307,62 +337,67 @@ export async function clockOutAction(
   location?: any,
   allowances?: any[]
 ) {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  // Get the entry to calculate hours
-  const { data: entry } = await (supabase as any)
-    .from("time_entries")
-    .select("clock_in, scheduled_end")
-    .eq("id", entryId)
-    .single();
+    // Get the entry to calculate hours
+    const { data: entry } = await (supabase as any)
+      .from("time_entries")
+      .select("clock_in, scheduled_end")
+      .eq("id", entryId)
+      .single();
 
-  if (!entry) throw new Error("Time entry not found");
+    if (!entry) throw new Error("Time entry not found");
 
-  const diffMs = new Date(clockOut).getTime() - new Date(entry.clock_in).getTime();
-  const total_hours = Math.round((diffMs / 3600000) * 100) / 100;
+    const diffMs = new Date(clockOut).getTime() - new Date(entry.clock_in).getTime();
+    const total_hours = Math.round((diffMs / 3600000) * 100) / 100;
 
-  // Check for variance
-  let variance_minutes = 0;
-  let exception_type = null;
-  if (entry.scheduled_end) {
-    const scheduledEnd = new Date(entry.scheduled_end).getTime();
-    const actualEnd = new Date(clockOut).getTime();
-    const endVariance = Math.round((actualEnd - scheduledEnd) / 60000);
-    variance_minutes = Math.abs(endVariance);
-    if (endVariance > 15) exception_type = "overtime";
-    else if (endVariance < -15) exception_type = "early_finish";
+    // Check for variance
+    let variance_minutes = 0;
+    let exception_type = null;
+    if (entry.scheduled_end) {
+      const scheduledEnd = new Date(entry.scheduled_end).getTime();
+      const actualEnd = new Date(clockOut).getTime();
+      const endVariance = Math.round((actualEnd - scheduledEnd) / 60000);
+      variance_minutes = Math.abs(endVariance);
+      if (endVariance > 15) exception_type = "overtime";
+      else if (endVariance < -15) exception_type = "early_finish";
+    }
+
+    // Auto-clock-out detection (>4h past scheduled end)
+    const is_auto_clock_out = entry.scheduled_end
+      ? (new Date(clockOut).getTime() - new Date(entry.scheduled_end).getTime()) > 4 * 3600000
+      : false;
+
+    const updates: any = {
+      clock_out: clockOut,
+      clock_out_location: location || null,
+      total_hours,
+      variance_minutes,
+      exception_type,
+      status: "completed",
+      is_auto_clock_out,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (allowances && allowances.length > 0) {
+      updates.allowances_captured = allowances;
+    }
+
+    const { data, error } = await (supabase as any)
+      .from("time_entries")
+      .update(updates)
+      .eq("id", entryId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] clockOutAction failed:", e);
+    throw e;
   }
-
-  // Auto-clock-out detection (>4h past scheduled end)
-  const is_auto_clock_out = entry.scheduled_end
-    ? (new Date(clockOut).getTime() - new Date(entry.scheduled_end).getTime()) > 4 * 3600000
-    : false;
-
-  const updates: any = {
-    clock_out: clockOut,
-    clock_out_location: location || null,
-    total_hours,
-    variance_minutes,
-    exception_type,
-    status: "completed",
-    is_auto_clock_out,
-    updated_at: new Date().toISOString(),
-  };
-
-  if (allowances && allowances.length > 0) {
-    updates.allowances_captured = allowances;
-  }
-
-  const { data, error } = await (supabase as any)
-    .from("time_entries")
-    .update(updates)
-    .eq("id", entryId)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/timesheets");
-  return data;
 }
 
 export async function resolveExceptionAction(
@@ -370,49 +405,54 @@ export async function resolveExceptionAction(
   resolution: "approve" | "truncate" | "dispute",
   notes?: string
 ) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
 
-  const updates: any = {
-    exception_resolved: true,
-    exception_resolved_by: user.id,
-    exception_notes: notes || null,
-    updated_at: new Date().toISOString(),
-  };
+    const updates: any = {
+      exception_resolved: true,
+      exception_resolved_by: user.id,
+      exception_notes: notes || null,
+      updated_at: new Date().toISOString(),
+    };
 
-  if (resolution === "approve") {
-    updates.status = "approved";
-  } else if (resolution === "truncate") {
-    // Get original entry for scheduled_end
-    const { data: entry } = await (supabase as any)
+    if (resolution === "approve") {
+      updates.status = "approved";
+    } else if (resolution === "truncate") {
+      // Get original entry for scheduled_end
+      const { data: entry } = await (supabase as any)
+        .from("time_entries")
+        .select("clock_in, scheduled_end, break_minutes")
+        .eq("id", entryId)
+        .single();
+
+      if (entry?.scheduled_end) {
+        const diffMs = new Date(entry.scheduled_end).getTime() - new Date(entry.clock_in).getTime();
+        updates.clock_out = entry.scheduled_end;
+        updates.total_hours = Math.round(((diffMs / 3600000) - (entry.break_minutes || 0) / 60) * 100) / 100;
+        updates.variance_minutes = 0;
+        updates.exception_type = null;
+      }
+      updates.status = "approved";
+    } else {
+      updates.status = "disputed";
+    }
+
+    const { data, error } = await (supabase as any)
       .from("time_entries")
-      .select("clock_in, scheduled_end, break_minutes")
+      .update(updates)
       .eq("id", entryId)
+      .select()
       .single();
 
-    if (entry?.scheduled_end) {
-      const diffMs = new Date(entry.scheduled_end).getTime() - new Date(entry.clock_in).getTime();
-      updates.clock_out = entry.scheduled_end;
-      updates.total_hours = Math.round(((diffMs / 3600000) - (entry.break_minutes || 0) / 60) * 100) / 100;
-      updates.variance_minutes = 0;
-      updates.exception_type = null;
-    }
-    updates.status = "approved";
-  } else {
-    updates.status = "disputed";
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] resolveExceptionAction failed:", e);
+    throw e;
   }
-
-  const { data, error } = await (supabase as any)
-    .from("time_entries")
-    .update(updates)
-    .eq("id", entryId)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/timesheets");
-  return data;
 }
 
 export async function createManualTimeEntryAction(input: {
@@ -423,44 +463,54 @@ export async function createManualTimeEntryAction(input: {
   clock_out: string;
   notes?: string;
 }) {
-  const diffMs = new Date(input.clock_out).getTime() - new Date(input.clock_in).getTime();
-  const total_hours = Math.round((diffMs / 3600000) * 100) / 100;
+  try {
+    const diffMs = new Date(input.clock_out).getTime() - new Date(input.clock_in).getTime();
+    const total_hours = Math.round((diffMs / 3600000) * 100) / 100;
 
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
-    .from("time_entries")
-    .insert({
-      ...input,
-      total_hours,
-      status: "completed",
-      is_manual_entry: true,
-      exception_notes: input.notes,
-    })
-    .select()
-    .single();
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("time_entries")
+      .insert({
+        ...input,
+        total_hours,
+        status: "completed",
+        is_manual_entry: true,
+        exception_notes: input.notes,
+      })
+      .select()
+      .single();
 
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/timesheets");
-  return data;
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] createManualTimeEntryAction failed:", e);
+    throw e;
+  }
 }
 
 // ── Payroll Exports ──────────────────────────────────────────────────────────
 
 export async function fetchPayrollExportsAction(organizationId: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase as any)
-    .from("payroll_exports")
-    .select("*")
-    .eq("organization_id", organizationId)
-    .order("created_at", { ascending: false })
-    .limit(50);
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("payroll_exports")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-  if (error) throw new Error(error.message);
-  return (data || []).map((e: any) => ({
-    ...e,
-    total_hours: parseFloat(e.total_hours) || 0,
-    total_cost: parseFloat(e.total_cost) || 0,
-  }));
+    if (error) throw new Error(error.message);
+    return (data || []).map((e: any) => ({
+      ...e,
+      total_hours: parseFloat(e.total_hours) || 0,
+      total_cost: parseFloat(e.total_cost) || 0,
+    }));
+  } catch (e: any) {
+    console.error("[timesheets] fetchPayrollExportsAction failed:", e);
+    return [];
+  }
 }
 
 export async function createPayrollExportAction(input: {
@@ -470,44 +520,49 @@ export async function createPayrollExportAction(input: {
   period_start: string;
   period_end: string;
 }) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
 
-  // Calculate summary stats from timesheets
-  const { data: timesheets } = await (supabase as any)
-    .from("timesheets")
-    .select("total_hours, worker_id")
-    .in("id", input.timesheet_ids);
+    // Calculate summary stats from timesheets
+    const { data: timesheets } = await (supabase as any)
+      .from("timesheets")
+      .select("total_hours, worker_id")
+      .in("id", input.timesheet_ids);
 
-  const worker_count = new Set((timesheets || []).map((t: any) => t.worker_id)).size;
-  const total_hours = (timesheets || []).reduce((sum: number, t: any) => sum + (parseFloat(t.total_hours) || 0), 0);
+    const worker_count = new Set((timesheets || []).map((t: any) => t.worker_id)).size;
+    const total_hours = (timesheets || []).reduce((sum: number, t: any) => sum + (parseFloat(t.total_hours) || 0), 0);
 
-  const { data, error } = await (supabase as any)
-    .from("payroll_exports")
-    .insert({
-      ...input,
-      worker_count,
-      total_hours,
-      exported_by: user.id,
-    })
-    .select()
-    .single();
+    const { data, error } = await (supabase as any)
+      .from("payroll_exports")
+      .insert({
+        ...input,
+        worker_count,
+        total_hours,
+        exported_by: user.id,
+      })
+      .select()
+      .single();
 
-  if (error) throw new Error(error.message);
+    if (error) throw new Error(error.message);
 
-  // Lock the exported timesheets
-  await (supabase as any)
-    .from("timesheets")
-    .update({
-      status: "exported",
-      is_locked: true,
-      exported_at: new Date().toISOString(),
-    })
-    .in("id", input.timesheet_ids);
+    // Lock the exported timesheets
+    await (supabase as any)
+      .from("timesheets")
+      .update({
+        status: "exported",
+        is_locked: true,
+        exported_at: new Date().toISOString(),
+      })
+      .in("id", input.timesheet_ids);
 
-  revalidatePath("/dashboard/timesheets");
-  return data;
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] createPayrollExportAction failed:", e);
+    throw e;
+  }
 }
 
 // ── Timesheet Adjustments ────────────────────────────────────────────────────
@@ -520,77 +575,99 @@ export async function createTimesheetAdjustmentAction(input: {
   old_values: any;
   new_values: any;
 }) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
 
-  const { data, error } = await (supabase as any)
-    .from("timesheet_adjustments")
-    .insert({ ...input, created_by: user.id })
-    .select()
-    .single();
+    const { data, error } = await (supabase as any)
+      .from("timesheet_adjustments")
+      .insert({ ...input, created_by: user.id })
+      .select()
+      .single();
 
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/timesheets");
-  return data;
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] createTimesheetAdjustmentAction failed:", e);
+    throw e;
+  }
 }
 
 export async function fetchTimesheetAdjustmentsAction(organizationId: string, entryId?: string) {
-  const supabase = await createServerSupabaseClient();
-  let query = (supabase as any)
-    .from("timesheet_adjustments")
-    .select("*")
-    .eq("organization_id", organizationId)
-    .order("created_at", { ascending: false });
+  try {
+    const supabase = await createServerSupabaseClient();
+    let query = (supabase as any)
+      .from("timesheet_adjustments")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false });
 
-  if (entryId) query = query.eq("original_entry_id", entryId);
+    if (entryId) query = query.eq("original_entry_id", entryId);
 
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data;
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] fetchTimesheetAdjustmentsAction failed:", e);
+    return [];
+  }
 }
 
 // ── Summary Stats ────────────────────────────────────────────────────────────
 
 export async function fetchTimesheetSummaryAction(organizationId: string, periodStart?: string) {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  // Get timesheet counts by status
-  const { data: timesheets } = await (supabase as any)
-    .from("timesheets")
-    .select("id, status, total_hours, total_overtime")
-    .eq("organization_id", organizationId)
-    .order("period_start", { ascending: false })
-    .limit(500);
+    // Get timesheet counts by status
+    const { data: timesheets } = await (supabase as any)
+      .from("timesheets")
+      .select("id, status, total_hours, total_overtime")
+      .eq("organization_id", organizationId)
+      .order("period_start", { ascending: false })
+      .limit(500);
 
-  // Get unresolved exceptions
-  const { data: exceptions } = await (supabase as any)
-    .from("time_entries")
-    .select("id, exception_type")
-    .eq("organization_id", organizationId)
-    .eq("exception_resolved", false)
-    .not("exception_type", "is", null)
-    .limit(200);
+    // Get unresolved exceptions
+    const { data: exceptions } = await (supabase as any)
+      .from("time_entries")
+      .select("id, exception_type")
+      .eq("organization_id", organizationId)
+      .eq("exception_resolved", false)
+      .not("exception_type", "is", null)
+      .limit(200);
 
-  const statusCounts: Record<string, number> = {};
-  let totalHours = 0;
-  let totalOvertime = 0;
+    const statusCounts: Record<string, number> = {};
+    let totalHours = 0;
+    let totalOvertime = 0;
 
-  (timesheets || []).forEach((ts: any) => {
-    statusCounts[ts.status] = (statusCounts[ts.status] || 0) + 1;
-    totalHours += parseFloat(ts.total_hours) || 0;
-    totalOvertime += parseFloat(ts.total_overtime) || 0;
-  });
+    (timesheets || []).forEach((ts: any) => {
+      statusCounts[ts.status] = (statusCounts[ts.status] || 0) + 1;
+      totalHours += parseFloat(ts.total_hours) || 0;
+      totalOvertime += parseFloat(ts.total_overtime) || 0;
+    });
 
-  return {
-    statusCounts,
-    totalHours: Math.round(totalHours * 100) / 100,
-    totalOvertime: Math.round(totalOvertime * 100) / 100,
-    totalTimesheets: (timesheets || []).length,
-    unresolvedExceptions: (exceptions || []).length,
-    exceptionsByType: (exceptions || []).reduce((acc: Record<string, number>, e: any) => {
-      acc[e.exception_type] = (acc[e.exception_type] || 0) + 1;
-      return acc;
-    }, {}),
-  };
+    return {
+      statusCounts,
+      totalHours: Math.round(totalHours * 100) / 100,
+      totalOvertime: Math.round(totalOvertime * 100) / 100,
+      totalTimesheets: (timesheets || []).length,
+      unresolvedExceptions: (exceptions || []).length,
+      exceptionsByType: (exceptions || []).reduce((acc: Record<string, number>, e: any) => {
+        acc[e.exception_type] = (acc[e.exception_type] || 0) + 1;
+        return acc;
+      }, {}),
+    };
+  } catch (e: any) {
+    console.error("[timesheets] fetchTimesheetSummaryAction failed:", e);
+    return {
+      statusCounts: {},
+      totalHours: 0,
+      totalOvertime: 0,
+      totalTimesheets: 0,
+      unresolvedExceptions: 0,
+      exceptionsByType: {},
+    };
+  }
 }

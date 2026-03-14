@@ -3,12 +3,12 @@
  *
  * Edge Function: Dynamic Roster-Based Channel Membership Sync
  *
- * Runs automatically when shifts are created, updated, or deleted.
+ * Runs automatically when schedule_blocks are created, updated, or deleted.
  * Enforces the "Rule of Proximity" — workers only see House Threads
  * for participants they are actively scheduled to support.
  *
  * Triggers:
- *   - On INSERT/UPDATE/DELETE on shifts table (via database webhook)
+ *   - On INSERT/UPDATE/DELETE on schedule_blocks table (via database webhook)
  *   - Manual invocation: POST { participant_id, organization_id }
  *   - Batch: POST { batch: true, organization_id }
  *
@@ -134,22 +134,22 @@ async function syncParticipantMemberships(
 
   if (!internalChannel) return null;
 
-  // 2. Query shifts for next LOOKAHEAD_DAYS days
+  // 2. Query schedule_blocks for next LOOKAHEAD_DAYS days
   const now = new Date();
   const futureDate = new Date(now.getTime() + LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
 
   const { data: shifts } = await supabase
-    .from("shifts")
-    .select("worker_id")
+    .from("schedule_blocks")
+    .select("technician_id")
     .eq("organization_id", orgId)
     .eq("participant_id", participantId)
-    .gte("scheduled_start", now.toISOString())
-    .lte("scheduled_start", futureDate.toISOString())
-    .not("worker_id", "is", null)
+    .gte("start_time", now.toISOString())
+    .lte("start_time", futureDate.toISOString())
+    .not("technician_id", "is", null)
     .neq("status", "cancelled");
 
   const scheduledWorkerIds = [
-    ...new Set((shifts || []).map((s: { worker_id: string }) => s.worker_id).filter(Boolean)),
+    ...new Set((shifts || []).map((s: { technician_id: string }) => s.technician_id).filter(Boolean)),
   ] as string[];
 
   // 3. Get permanent members (coordinators, key workers)

@@ -61,28 +61,33 @@ const UpdateBranchSchema = z.object({
 /* ── CRUD ─────────────────────────────────────────── */
 
 export async function getBranches(orgId: string): Promise<{ data: Branch[]; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Unauthorized" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", orgId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { data: [], error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: [], error: "Unauthorized" };
 
-  const { data, error } = await supabase
-    .from("branches")
-    .select("*")
-    .eq("organization_id", orgId)
-    .order("is_headquarters", { ascending: false })
-    .order("name");
+    const { data, error } = await supabase
+      .from("branches")
+      .select("*")
+      .eq("organization_id", orgId)
+      .order("is_headquarters", { ascending: false })
+      .order("name");
 
-  if (error) return { data: [], error: error.message };
-  return { data: (data || []) as Branch[] };
+    if (error) return { data: [], error: error.message };
+    return { data: (data || []) as Branch[] };
+  } catch (e: any) {
+    console.error("[branches] getBranches failed:", e);
+    return { data: [], error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function createBranch(params: {
@@ -97,104 +102,119 @@ export async function createBranch(params: {
   email?: string;
   tax_rate?: number;
 }): Promise<{ data: Branch | null; error?: string }> {
-  // Validate input
-  const validated = validate(CreateBranchSchema, params);
-  if (validated.error) return { data: null, error: validated.error };
+  try {
+    // Validate input
+    const validated = validate(CreateBranchSchema, params);
+    if (validated.error) return { data: null, error: validated.error };
 
-  const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", params.organization_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { data: null, error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
 
-  const { data, error } = await supabase
-    .from("branches")
-    .insert(params)
-    .select()
-    .single();
+    const { data, error } = await supabase
+      .from("branches")
+      .insert(params)
+      .select()
+      .single();
 
-  if (error) return { data: null, error: error.message };
-  revalidatePath("/settings/branches");
-  return { data: data as Branch };
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/settings/branches");
+    return { data: data as Branch };
+  } catch (e: any) {
+    console.error("[branches] createBranch failed:", e);
+    return { data: null, error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function updateBranch(
   branchId: string,
   updates: Partial<Omit<Branch, "id" | "organization_id" | "created_at">>
 ): Promise<{ error?: string }> {
-  // Validate input
-  const validated = validate(UpdateBranchSchema, updates);
-  if (validated.error) return { error: validated.error };
+  try {
+    // Validate input
+    const validated = validate(UpdateBranchSchema, updates);
+    if (validated.error) return { error: validated.error };
 
-  const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  // Look up the branch to get its org, then verify membership
-  const { data: branch } = await supabase
-    .from("branches")
-    .select("organization_id")
-    .eq("id", branchId)
-    .maybeSingle();
-  if (!branch) return { error: "Branch not found" };
+    // Look up the branch to get its org, then verify membership
+    const { data: branch } = await supabase
+      .from("branches")
+      .select("organization_id")
+      .eq("id", branchId)
+      .maybeSingle();
+    if (!branch) return { error: "Branch not found" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", branch.organization_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", branch.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
 
-  const { error } = await supabase
-    .from("branches")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", branchId);
+    const { error } = await supabase
+      .from("branches")
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq("id", branchId);
 
-  if (error) return { error: error.message };
-  revalidatePath("/settings/branches");
-  return {};
+    if (error) return { error: error.message };
+    revalidatePath("/settings/branches");
+    return {};
+  } catch (e: any) {
+    console.error("[branches] updateBranch failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function deleteBranch(branchId: string): Promise<{ error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  // Prevent deleting HQ
-  const { data: branch } = await supabase
-    .from("branches")
-    .select("is_headquarters, organization_id")
-    .eq("id", branchId)
-    .maybeSingle();
+    // Prevent deleting HQ
+    const { data: branch } = await supabase
+      .from("branches")
+      .select("is_headquarters, organization_id")
+      .eq("id", branchId)
+      .maybeSingle();
 
-  if (!branch) return { error: "Branch not found" };
+    if (!branch) return { error: "Branch not found" };
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", branch.organization_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!membership) return { error: "Unauthorized" };
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", branch.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
 
-  if (branch?.is_headquarters) return { error: "Cannot delete headquarters branch" };
+    if (branch?.is_headquarters) return { error: "Cannot delete headquarters branch" };
 
-  const { error } = await supabase
-    .from("branches")
-    .delete()
-    .eq("id", branchId);
+    const { error } = await supabase
+      .from("branches")
+      .delete()
+      .eq("id", branchId);
 
-  if (error) return { error: error.message };
-  revalidatePath("/settings/branches");
-  return {};
+    if (error) return { error: error.message };
+    revalidatePath("/settings/branches");
+    return {};
+  } catch (e: any) {
+    console.error("[branches] deleteBranch failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
+  }
 }

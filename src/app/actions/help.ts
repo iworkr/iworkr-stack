@@ -57,110 +57,140 @@ export interface HelpTicket {
 /* ── Articles ─────────────────────────────────────────── */
 
 export async function getHelpArticles(): Promise<{ data: HelpArticle[]; error?: string }> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from("help_articles")
-    .select("id, title, slug, content, summary, category, icon, sort_order")
-    .eq("published", true)
-    .order("sort_order", { ascending: true });
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("help_articles")
+      .select("id, title, slug, content, summary, category, icon, sort_order")
+      .eq("published", true)
+      .order("sort_order", { ascending: true });
 
-  if (error) return { data: [], error: error.message };
-  return { data: (data || []) as HelpArticle[] };
+    if (error) return { data: [], error: error.message };
+    return { data: (data || []) as HelpArticle[] };
+  } catch (e: any) {
+    console.error("[help] getHelpArticles failed:", e);
+    return { data: [], error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function getArticleBySlug(slug: string): Promise<{ data: HelpArticle | null; error?: string }> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from("help_articles")
-    .select("id, title, slug, content, summary, category, icon, sort_order")
-    .eq("slug", slug)
-    .eq("published", true)
-    .maybeSingle();
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("help_articles")
+      .select("id, title, slug, content, summary, category, icon, sort_order")
+      .eq("slug", slug)
+      .eq("published", true)
+      .maybeSingle();
 
-  if (error) return { data: null, error: error.message };
-  return { data: data as HelpArticle | null };
+    if (error) return { data: null, error: error.message };
+    return { data: data as HelpArticle | null };
+  } catch (e: any) {
+    console.error("[help] getArticleBySlug failed:", e);
+    return { data: null, error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function searchArticles(query: string): Promise<{ data: HelpArticle[]; error?: string }> {
-  const supabase = await createServerSupabaseClient();
-  const escaped = query.replace(/[%_\\]/g, '\\$&');
-  const q = `%${escaped}%`;
-  const { data, error } = await supabase
-    .from("help_articles")
-    .select("id, title, slug, content, summary, category, icon, sort_order")
-    .eq("published", true)
-    .or(`title.ilike.${q},content.ilike.${q},summary.ilike.${q}`)
-    .order("sort_order", { ascending: true })
-    .limit(10);
+  try {
+    const supabase = await createServerSupabaseClient();
+    const escaped = query.replace(/[%_\\]/g, '\\$&');
+    const q = `%${escaped}%`;
+    const { data, error } = await supabase
+      .from("help_articles")
+      .select("id, title, slug, content, summary, category, icon, sort_order")
+      .eq("published", true)
+      .or(`title.ilike.${q},content.ilike.${q},summary.ilike.${q}`)
+      .order("sort_order", { ascending: true })
+      .limit(10);
 
-  if (error) return { data: [], error: error.message };
-  return { data: (data || []) as HelpArticle[] };
+    if (error) return { data: [], error: error.message };
+    return { data: (data || []) as HelpArticle[] };
+  } catch (e: any) {
+    console.error("[help] searchArticles failed:", e);
+    return { data: [], error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 /* ── Threads ──────────────────────────────────────────── */
 
 export async function getHelpThreads(): Promise<{ data: HelpThread[]; error?: string }> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from("help_threads")
-    .select("id, author_id, title, content, category, is_solved, upvotes, reply_count, created_at")
-    .order("created_at", { ascending: false })
-    .limit(20);
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("help_threads")
+      .select("id, author_id, title, content, category, is_solved, upvotes, reply_count, created_at")
+      .order("created_at", { ascending: false })
+      .limit(20);
 
-  if (error) return { data: [], error: error.message };
-  return { data: (data || []) as HelpThread[] };
+    if (error) return { data: [], error: error.message };
+    return { data: (data || []) as HelpThread[] };
+  } catch (e: any) {
+    console.error("[help] getHelpThreads failed:", e);
+    return { data: [], error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 export async function createThread(title: string, content: string, category: string): Promise<{ data: HelpThread | null; error?: string }> {
-  // Validate input
-  const parsed = CreateThreadSchema.safeParse({ title, content, category });
-  if (!parsed.success) {
-    return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  try {
+    // Validate input
+    const parsed = CreateThreadSchema.safeParse({ title, content, category });
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await supabase
+      .from("help_threads")
+      .insert({ title, content, category, author_id: user.id })
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/dashboard/help");
+    return { data: data as HelpThread };
+  } catch (e: any) {
+    console.error("[help] createThread failed:", e);
+    return { data: null, error: e?.message || "An unexpected error occurred" };
   }
-
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const { data, error } = await supabase
-    .from("help_threads")
-    .insert({ title, content, category, author_id: user.id })
-    .select()
-    .single();
-
-  if (error) return { data: null, error: error.message };
-  revalidatePath("/dashboard/help");
-  return { data: data as HelpThread };
 }
 
 export async function upvoteThread(threadId: string): Promise<{ error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  const { error } = await supabase.rpc("increment_field", {
-    table_name: "help_threads",
-    field_name: "upvotes",
-    row_id: threadId,
-  });
+    const { error } = await supabase.rpc("increment_field", {
+      table_name: "help_threads",
+      field_name: "upvotes",
+      row_id: threadId,
+    });
 
-  if (error) {
-    // Fallback: manually read current value and increment
-    const { data: thread, error: fetchError } = await supabase
-      .from("help_threads")
-      .select("upvotes")
-      .eq("id", threadId)
-      .maybeSingle();
-    if (fetchError) return { error: fetchError.message };
-    const currentUpvotes = thread?.upvotes ?? 0;
-    const { error: updateError } = await supabase
-      .from("help_threads")
-      .update({ upvotes: currentUpvotes + 1 })
-      .eq("id", threadId);
-    if (updateError) return { error: updateError.message };
+    if (error) {
+      // Fallback: manually read current value and increment
+      const { data: thread, error: fetchError } = await supabase
+        .from("help_threads")
+        .select("upvotes")
+        .eq("id", threadId)
+        .maybeSingle();
+      if (fetchError) return { error: fetchError.message };
+      const currentUpvotes = thread?.upvotes ?? 0;
+      const { error: updateError } = await supabase
+        .from("help_threads")
+        .update({ upvotes: currentUpvotes + 1 })
+        .eq("id", threadId);
+      if (updateError) return { error: updateError.message };
+    }
+    return {};
+  } catch (e: any) {
+    console.error("[help] upvoteThread failed:", e);
+    return { error: e?.message || "An unexpected error occurred" };
   }
-  return {};
 }
 
 /* ── Tickets ──────────────────────────────────────────── */
@@ -171,45 +201,55 @@ export async function createTicket(params: {
   message: string;
   orgId?: string;
 }): Promise<{ data: HelpTicket | null; error?: string }> {
-  // Validate input
-  const parsed = CreateTicketSchema.safeParse(params);
-  if (!parsed.success) {
-    return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+  try {
+    // Validate input
+    const parsed = CreateTicketSchema.safeParse(params);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await supabase
+      .from("help_tickets")
+      .insert({
+        user_id: user.id,
+        organization_id: params.orgId || null,
+        subject: params.subject,
+        severity: params.severity,
+        message: params.message,
+      })
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    return { data: data as HelpTicket };
+  } catch (e: any) {
+    console.error("[help] createTicket failed:", e);
+    return { data: null, error: e?.message || "An unexpected error occurred" };
   }
-
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const { data, error } = await supabase
-    .from("help_tickets")
-    .insert({
-      user_id: user.id,
-      organization_id: params.orgId || null,
-      subject: params.subject,
-      severity: params.severity,
-      message: params.message,
-    })
-    .select()
-    .single();
-
-  if (error) return { data: null, error: error.message };
-  return { data: data as HelpTicket };
 }
 
 export async function getMyTickets(): Promise<{ data: HelpTicket[]; error?: string }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Not authenticated" };
 
-  const { data, error } = await supabase
-    .from("help_tickets")
-    .select("id, subject, severity, message, status, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("help_tickets")
+      .select("id, subject, severity, message, status, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
 
-  if (error) return { data: [], error: error.message };
-  return { data: (data || []) as HelpTicket[] };
+    if (error) return { data: [], error: error.message };
+    return { data: (data || []) as HelpTicket[] };
+  } catch (e: any) {
+    console.error("[help] getMyTickets failed:", e);
+    return { data: [], error: e?.message || "An unexpected error occurred" };
+  }
 }
 
 /* ── AI Search (Text-based with smart matching) ───────── */
@@ -220,24 +260,28 @@ export async function aiSearch(query: string): Promise<{
   sources: { title: string; slug: string }[];
   error?: string;
 }> {
-  if (!query.trim()) return { answer: "", sources: [] };
+  try {
+    if (!query.trim()) return { answer: "", sources: [] };
 
-  const { data: articles } = await searchArticles(query);
+    const { data: articles } = await searchArticles(query);
 
-  if (!articles || articles.length === 0) {
-    return {
-      answer: "I couldn't find any articles matching your query. Try rephrasing your question, or browse the Knowledge Base categories below.",
-      sources: [],
-    };
+    if (!articles || articles.length === 0) {
+      return {
+        answer: "I couldn't find any articles matching your query. Try rephrasing your question, or browse the Knowledge Base categories below.",
+        sources: [],
+      };
+    }
+
+    const topArticles = articles.slice(0, 3);
+
+    const answer = generateAnswer(query, topArticles);
+    const sources = topArticles.map((a) => ({ title: a.title, slug: a.slug }));
+
+    return { answer, sources };
+  } catch (e: any) {
+    console.error("[help] aiSearch failed:", e);
+    return { answer: "", sources: [], error: e?.message || "An unexpected error occurred" };
   }
-
-  const topArticles = articles.slice(0, 3);
-  const contextParts = topArticles.map((a) => `**${a.title}**\n${a.content}`);
-
-  const answer = generateAnswer(query, topArticles);
-  const sources = topArticles.map((a) => ({ title: a.title, slug: a.slug }));
-
-  return { answer, sources };
 }
 
 function generateAnswer(query: string, articles: HelpArticle[]): string {

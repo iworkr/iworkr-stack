@@ -422,6 +422,11 @@ export async function getFootprintTrails(orgId: string) {
       .eq("organization_id", orgId);
 
     if (error) {
+      // Gracefully handle table not existing (42P01 = undefined_table)
+      if (error.code === "42P01" || error.message?.includes("relation") || error.message?.includes("does not exist")) {
+        logger.warn("footprint_trails table not found — returning empty trails", "dashboard");
+        return { data: [], error: null };
+      }
       logger.error("Failed to fetch footprint trails", "dashboard", undefined, { error: error.message });
       return { data: [], error: error.message };
     }

@@ -201,27 +201,6 @@ const COLUMNS = TRADES_COLUMNS;
 
 const COLUMN_MAP = Object.fromEntries(COLUMNS.map((c) => [c.id, c]));
 
-/* ── NDIS mock helpers (care mode) ────────────────────────── */
-
-const FUNDING_TYPES = ["Self-Managed", "Plan-Managed", "NDIA-Managed"] as const;
-
-function getMockNdisNumber(clientId: string): string {
-  let hash = 0;
-  for (let i = 0; i < clientId.length; i++) {
-    hash = (hash * 31 + clientId.charCodeAt(i)) | 0;
-  }
-  const num = Math.abs(hash) % 1_000_000_000;
-  return `4${String(num).padStart(9, "0")}`;
-}
-
-function getMockFundingType(clientId: string): string {
-  let hash = 0;
-  for (let i = 0; i < clientId.length; i++) {
-    hash = (hash * 37 + clientId.charCodeAt(i)) | 0;
-  }
-  return FUNDING_TYPES[Math.abs(hash) % FUNDING_TYPES.length];
-}
-
 /* ── Helpers ─────────────────────────────────────────────── */
 
 function formatCurrency(cents: number | null): string {
@@ -777,11 +756,11 @@ function PipelineCard({
         <div className="mb-2 space-y-0.5 rounded-md border border-white/[0.04] bg-white/[0.01] px-2 py-1.5">
           <div className="flex items-center gap-1.5 text-[10px]">
             <span className="text-zinc-600">NDIS #</span>
-            <span className="font-mono text-zinc-400">{getMockNdisNumber(client.id)}</span>
+            <span className="font-mono text-zinc-600">—</span>
           </div>
           <div className="flex items-center gap-1.5 text-[10px]">
             <span className="text-zinc-600">Funding</span>
-            <span className="text-zinc-400">{getMockFundingType(client.id)}</span>
+            <span className="text-zinc-600">—</span>
           </div>
         </div>
       )}

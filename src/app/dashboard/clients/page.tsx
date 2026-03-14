@@ -58,42 +58,6 @@ const contextItemDefs = [
   { id: "archive", labelKey: "Archive", icon: <Trash2 size={13} />, danger: true },
 ] as const;
 
-/* ── Care-specific helpers ────────────────────────────────── */
-
-/** Simple deterministic hash for consistent mock data per client id */
-function stableHash(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
-  return Math.abs(hash);
-}
-
-type FundingStatus = "funded" | "review_due" | "expired";
-const FUNDING_STATUSES: { value: FundingStatus; label: string; dot: string; text: string; bg: string }[] = [
-  { value: "funded", label: "Funded", dot: "bg-emerald-400", text: "text-emerald-400", bg: "bg-emerald-500/15" },
-  { value: "review_due", label: "Review Due", dot: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-500/15" },
-  { value: "expired", label: "Expired", dot: "bg-rose-400", text: "text-rose-400", bg: "bg-rose-500/15" },
-];
-
-/** Deterministic funding status per client — weighted: funded ~60%, review ~25%, expired ~15% */
-function getFundingStatus(id: string): (typeof FUNDING_STATUSES)[number] {
-  const h = stableHash(id) % 100;
-  if (h < 60) return FUNDING_STATUSES[0]; // Funded
-  if (h < 85) return FUNDING_STATUSES[1]; // Review Due
-  return FUNDING_STATUSES[2]; // Expired
-}
-
-/** Deterministic care plan status — ~70% active, ~30% pending */
-function hasActiveCareplan(id: string): boolean {
-  return stableHash(id + "_cp") % 100 < 70;
-}
-
-/** Generate a mock NDIS number based on client id (format: 43XXXXXXX) */
-function getMockNdisNumber(id: string): string {
-  const h = stableHash(id);
-  const num = 430000000 + (h % 10000000);
-  return num.toString();
-}
-
 /* ── Avatar gradient ──────────────────────────────────────── */
 
 const gradients = [
@@ -682,7 +646,7 @@ export default function ClientsPage() {
                 {/* NDIS # (care only) */}
                 {isCare && (
                   <div className="w-24 px-2">
-                    <span className="font-mono text-[11px] text-zinc-500">{getMockNdisNumber(client.id)}</span>
+                    <span className="font-mono text-[11px] text-zinc-600">—</span>
                   </div>
                 )}
 
@@ -695,30 +659,16 @@ export default function ClientsPage() {
                 </div>
 
                 {/* Funding status (care only) */}
-                {isCare && (() => {
-                  const fs = getFundingStatus(client.id);
-                  return (
-                    <div className="w-20 px-2">
-                      <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-medium ${fs.bg} ${fs.text}`}>
-                        <span className={`h-1 w-1 rounded-full ${fs.dot}`} />
-                        {fs.label}
-                      </span>
-                    </div>
-                  );
-                })()}
+                {isCare && (
+                  <div className="w-20 px-2">
+                    <span className="text-[9px] font-medium text-zinc-600">—</span>
+                  </div>
+                )}
 
                 {/* Care plan badge (care only) */}
                 {isCare && (
                   <div className="w-20 px-2">
-                    {hasActiveCareplan(client.id) ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-medium text-emerald-400">
-                        <Check size={8} />Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-zinc-500/10 px-1.5 py-0.5 text-[9px] font-medium text-zinc-500">
-                        Pending
-                      </span>
-                    )}
+                    <span className="text-[9px] font-medium text-zinc-600">—</span>
                   </div>
                 )}
 

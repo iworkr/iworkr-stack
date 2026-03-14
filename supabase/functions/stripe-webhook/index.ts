@@ -164,28 +164,27 @@ Deno.serve(async (req: Request) => {
         const chargesEnabled = obj.charges_enabled as boolean;
         const payoutsEnabled = obj.payouts_enabled as boolean;
 
-        const { data: orgs } = await supabase
+        // Use JSONB contains filter for indexed lookup instead of full table scan
+        const { data: matchedOrgs } = await supabase
           .from("organizations")
-          .select("id, settings");
+          .select("id, settings")
+          .contains("settings", { stripe_account_id: accountId })
+          .limit(1);
 
-        if (orgs) {
-          for (const org of orgs) {
-            const settings = (org.settings as Record<string, unknown>) ?? {};
-            if (settings.stripe_account_id === accountId) {
-              await supabase
-                .from("organizations")
-                .update({
-                  settings: {
-                    ...settings,
-                    charges_enabled: chargesEnabled,
-                    payouts_enabled: payoutsEnabled,
-                    ...(chargesEnabled ? { connect_onboarded_at: new Date().toISOString() } : {}),
-                  },
-                })
-                .eq("id", org.id);
-              break;
-            }
-          }
+        if (matchedOrgs && matchedOrgs.length > 0) {
+          const org = matchedOrgs[0];
+          const settings = (org.settings as Record<string, unknown>) ?? {};
+          await supabase
+            .from("organizations")
+            .update({
+              settings: {
+                ...settings,
+                charges_enabled: chargesEnabled,
+                payouts_enabled: payoutsEnabled,
+                ...(chargesEnabled ? { connect_onboarded_at: new Date().toISOString() } : {}),
+              },
+            })
+            .eq("id", org.id);
         }
         break;
       }

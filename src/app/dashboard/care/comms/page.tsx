@@ -7,6 +7,9 @@
    Pane 1: Global sidebar (handled by shell)
    Pane 2: Routing Ledger (320px) — TRIAGE / HOUSE THREADS / DMs / CHANNELS
    Pane 3: Active Signal — Chat interface
+   
+   All data sourced from care_chat_* tables via useCareCommsStore (Zustand)
+   and server actions in care-comms.ts. Zero mock data.
    ═══════════════════════════════════════════════════════════════════ */
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
@@ -25,409 +28,27 @@ import {
   Send,
   Paperclip,
   Pin,
-  Trash2,
-  ChevronDown,
   ChevronRight,
-  Radio,
   Megaphone,
   Check,
   CheckCheck,
-  Clock,
   X,
+  Loader2,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
+import {
+  useCareCommsStore,
+  type CareChannel,
+  type CareChatMessage,
+  type ParticipantHub,
+} from "@/lib/stores/care-comms-store";
+import type { CareChannelType, CareMessageType } from "@/app/actions/care-comms";
 
 /* ═══════════════════════════════════════════════════════════════════
-   TYPES & MOCK DATA
+   HELPERS
    ═══════════════════════════════════════════════════════════════════ */
-
-type ChannelType = "house_internal" | "house_external" | "direct_message" | "team_channel";
-type MessageType = "standard" | "system_handover" | "manager_alert" | "system_roster_sync" | "system_message_removed";
-
-interface MockChannel {
-  id: string;
-  channel_type: ChannelType;
-  participant_id: string | null;
-  name: string;
-  parent_group_name: string | null;
-  is_archived: boolean;
-  is_read_only: boolean;
-  unread_count: number;
-  last_message?: string;
-  last_message_at?: string;
-}
-
-interface MockMessage {
-  id: string;
-  channel_id: string;
-  sender_id: string | null;
-  sender_name: string;
-  sender_avatar: string | null;
-  content: string;
-  message_type: MessageType;
-  metadata: Record<string, unknown>;
-  is_pinned: boolean;
-  is_deleted: boolean;
-  created_at: string;
-}
-
-interface ParticipantHub {
-  participantId: string;
-  participantName: string;
-  groupName: string;
-  internalChannel: MockChannel;
-  externalChannel: MockChannel;
-}
-
-/* ── Mock data generation ─────────────────────────────────────── */
-
-const MOCK_PARTICIPANTS: ParticipantHub[] = [
-  {
-    participantId: "p1",
-    participantName: "John Smith",
-    groupName: "The Smith House",
-    internalChannel: {
-      id: "ch-p1-int",
-      channel_type: "house_internal",
-      participant_id: "p1",
-      name: "John Smith — Internal Care",
-      parent_group_name: "The Smith House",
-      is_archived: false,
-      is_read_only: false,
-      unread_count: 3,
-      last_message: "Handover: morning meds administered, John in good spirits.",
-      last_message_at: "2026-03-12T14:30:00Z",
-    },
-    externalChannel: {
-      id: "ch-p1-ext",
-      channel_type: "house_external",
-      participant_id: "p1",
-      name: "John Smith — Family",
-      parent_group_name: "The Smith House",
-      is_archived: false,
-      is_read_only: false,
-      unread_count: 1,
-      last_message: "Hi team, John's wheelchair is at repair today.",
-      last_message_at: "2026-03-12T09:15:00Z",
-    },
-  },
-  {
-    participantId: "p2",
-    participantName: "Sarah Williams",
-    groupName: "Williams Residence",
-    internalChannel: {
-      id: "ch-p2-int",
-      channel_type: "house_internal",
-      participant_id: "p2",
-      name: "Sarah Williams — Internal Care",
-      parent_group_name: "Williams Residence",
-      is_archived: false,
-      is_read_only: false,
-      unread_count: 0,
-      last_message: "Night shift completed. Sarah slept well.",
-      last_message_at: "2026-03-12T07:00:00Z",
-    },
-    externalChannel: {
-      id: "ch-p2-ext",
-      channel_type: "house_external",
-      participant_id: "p2",
-      name: "Sarah Williams — Family",
-      parent_group_name: "Williams Residence",
-      is_archived: false,
-      is_read_only: false,
-      unread_count: 0,
-      last_message: "Thank you for the update!",
-      last_message_at: "2026-03-11T16:45:00Z",
-    },
-  },
-  {
-    participantId: "p3",
-    participantName: "Michael Chen",
-    groupName: "Chen SIL House",
-    internalChannel: {
-      id: "ch-p3-int",
-      channel_type: "house_internal",
-      participant_id: "p3",
-      name: "Michael Chen — Internal Care",
-      parent_group_name: "Chen SIL House",
-      is_archived: false,
-      is_read_only: false,
-      unread_count: 5,
-      last_message: "⚠️ ALERT: New choking risk — all food must be pureed.",
-      last_message_at: "2026-03-12T16:00:00Z",
-    },
-    externalChannel: {
-      id: "ch-p3-ext",
-      channel_type: "house_external",
-      participant_id: "p3",
-      name: "Michael Chen — Family",
-      parent_group_name: "Chen SIL House",
-      is_archived: false,
-      is_read_only: false,
-      unread_count: 2,
-      last_message: "Michael enjoyed the park outing today.",
-      last_message_at: "2026-03-12T15:30:00Z",
-    },
-  },
-  {
-    participantId: "p4",
-    participantName: "Emma Davies",
-    groupName: "Davies Supported Living",
-    internalChannel: {
-      id: "ch-p4-int",
-      channel_type: "house_internal",
-      participant_id: "p4",
-      name: "Emma Davies — Internal Care",
-      parent_group_name: "Davies Supported Living",
-      is_archived: false,
-      is_read_only: false,
-      unread_count: 1,
-      last_message: "Emma completed her physio exercises.",
-      last_message_at: "2026-03-12T11:20:00Z",
-    },
-    externalChannel: {
-      id: "ch-p4-ext",
-      channel_type: "house_external",
-      participant_id: "p4",
-      name: "Emma Davies — Family",
-      parent_group_name: "Davies Supported Living",
-      is_archived: false,
-      is_read_only: false,
-      unread_count: 0,
-      last_message: "Will pick up Emma at 3pm Saturday.",
-      last_message_at: "2026-03-11T20:00:00Z",
-    },
-  },
-];
-
-const MOCK_DMS: MockChannel[] = [
-  {
-    id: "dm-1", channel_type: "direct_message", participant_id: null,
-    name: "Jane Smith", parent_group_name: null,
-    is_archived: false, is_read_only: false, unread_count: 2,
-    last_message: "Can you cover my Thursday shift?",
-    last_message_at: "2026-03-12T13:40:00Z",
-  },
-  {
-    id: "dm-2", channel_type: "direct_message", participant_id: null,
-    name: "Dr. Rebecca Lane", parent_group_name: null,
-    is_archived: false, is_read_only: false, unread_count: 0,
-    last_message: "Blood test results came back normal.",
-    last_message_at: "2026-03-11T10:00:00Z",
-  },
-];
-
-const MOCK_TEAM_CHANNELS: MockChannel[] = [
-  {
-    id: "tc-1", channel_type: "team_channel", participant_id: null,
-    name: "general-announcements", parent_group_name: null,
-    is_archived: false, is_read_only: false, unread_count: 1,
-    last_message: "Staff meeting this Friday at 2pm.",
-    last_message_at: "2026-03-12T08:00:00Z",
-  },
-  {
-    id: "tc-2", channel_type: "team_channel", participant_id: null,
-    name: "weekend-staff", parent_group_name: null,
-    is_archived: false, is_read_only: false, unread_count: 0,
-    last_message: "Roster for this weekend is finalised.",
-    last_message_at: "2026-03-10T17:00:00Z",
-  },
-  {
-    id: "tc-3", channel_type: "team_channel", participant_id: null,
-    name: "maintenance-requests", parent_group_name: null,
-    is_archived: false, is_read_only: false, unread_count: 4,
-    last_message: "Hot water system in Unit 3 is leaking again.",
-    last_message_at: "2026-03-12T12:00:00Z",
-  },
-];
-
-function generateMockMessages(channelId: string, channelType: ChannelType): MockMessage[] {
-  const isInternal = channelType === "house_internal";
-  const base: MockMessage[] = [];
-  const now = Date.now();
-
-  // System welcome
-  base.push({
-    id: `${channelId}-sys-welcome`,
-    channel_id: channelId,
-    sender_id: null,
-    sender_name: "System",
-    sender_avatar: null,
-    content: isInternal
-      ? "🔒 Internal care thread created. Only authorised care staff can see this thread."
-      : "👋 Welcome to this care communication hub. Family members and the care team can communicate here.",
-    message_type: "system_roster_sync",
-    metadata: {},
-    is_pinned: false,
-    is_deleted: false,
-    created_at: new Date(now - 7 * 86400000).toISOString(),
-  });
-
-  if (isInternal) {
-    // Handover
-    base.push({
-      id: `${channelId}-handover-1`,
-      channel_id: channelId,
-      sender_id: null,
-      sender_name: "System",
-      sender_avatar: null,
-      content: '🤖 Handover Logged by Jane Smith (07:00-15:00): "Great shift. Administered morning meds on schedule. Note: We are running low on size 4 gloves."',
-      message_type: "system_handover",
-      metadata: { worker_name: "Jane Smith", shift_time: "07:00-15:00" },
-      is_pinned: false,
-      is_deleted: false,
-      created_at: new Date(now - 6 * 3600000).toISOString(),
-    });
-
-    // Roster sync
-    base.push({
-      id: `${channelId}-roster-1`,
-      channel_id: channelId,
-      sender_id: null,
-      sender_name: "System",
-      sender_avatar: null,
-      content: "📋 Bob Wilson, Maria Garcia automatically added to thread via roster sync.",
-      message_type: "system_roster_sync",
-      metadata: {},
-      is_pinned: false,
-      is_deleted: false,
-      created_at: new Date(now - 5 * 3600000).toISOString(),
-    });
-
-    // Regular messages
-    base.push({
-      id: `${channelId}-msg-1`,
-      channel_id: channelId,
-      sender_id: "u1",
-      sender_name: "Bob Wilson",
-      sender_avatar: null,
-      content: "Just reviewed the handover — noted on the gloves. I'll grab some from the supply room before my shift ends.",
-      message_type: "standard",
-      metadata: {},
-      is_pinned: false,
-      is_deleted: false,
-      created_at: new Date(now - 4 * 3600000).toISOString(),
-    });
-
-    base.push({
-      id: `${channelId}-msg-2`,
-      channel_id: channelId,
-      sender_id: "u2",
-      sender_name: "Maria Garcia",
-      sender_avatar: null,
-      content: "Thanks Bob. Also heads up — physio session tomorrow at 10am. Make sure the transfer sling is set up.",
-      message_type: "standard",
-      metadata: {},
-      is_pinned: false,
-      is_deleted: false,
-      created_at: new Date(now - 3.5 * 3600000).toISOString(),
-    });
-
-    // Manager alert
-    if (channelId.includes("p3")) {
-      base.push({
-        id: `${channelId}-alert-1`,
-        channel_id: channelId,
-        sender_id: "u-mgr",
-        sender_name: "Karen Mitchell (Manager)",
-        sender_avatar: null,
-        content: "⚠️ CRITICAL UPDATE: Speech pathologist has updated Michael's swallowing assessment. ALL food must now be pureed consistency. Please acknowledge below.",
-        message_type: "manager_alert",
-        metadata: { severity: "critical", requires_ack: true, ack_count: 2, total_required: 5 },
-        is_pinned: true,
-        is_deleted: false,
-        created_at: new Date(now - 2 * 3600000).toISOString(),
-      });
-    }
-  } else {
-    // External thread messages
-    base.push({
-      id: `${channelId}-ext-1`,
-      channel_id: channelId,
-      sender_id: "u-family",
-      sender_name: "Linda (Mother)",
-      sender_avatar: null,
-      content: "Hi team, just wanted to let you know we'll be visiting this Saturday afternoon. Is there anything we should bring?",
-      message_type: "standard",
-      metadata: {},
-      is_pinned: false,
-      is_deleted: false,
-      created_at: new Date(now - 24 * 3600000).toISOString(),
-    });
-
-    base.push({
-      id: `${channelId}-ext-2`,
-      channel_id: channelId,
-      sender_id: "u2",
-      sender_name: "Maria Garcia",
-      sender_avatar: null,
-      content: "Hi Linda! That would be lovely. If you could bring some of his favourite music CDs, that would be great. He's been enjoying listening to them during afternoon activities.",
-      message_type: "standard",
-      metadata: {},
-      is_pinned: false,
-      is_deleted: false,
-      created_at: new Date(now - 20 * 3600000).toISOString(),
-    });
-
-    base.push({
-      id: `${channelId}-ext-3`,
-      channel_id: channelId,
-      sender_id: "u-family",
-      sender_name: "Linda (Mother)",
-      sender_avatar: null,
-      content: "Perfect, will do! Thank you for taking such great care of him. 💙",
-      message_type: "standard",
-      metadata: {},
-      is_pinned: false,
-      is_deleted: false,
-      created_at: new Date(now - 18 * 3600000).toISOString(),
-    });
-  }
-
-  // DM messages
-  if (channelType === "direct_message") {
-    return [
-      {
-        id: `${channelId}-dm-1`, channel_id: channelId,
-        sender_id: "u-other", sender_name: channelId === "dm-1" ? "Jane Smith" : "Dr. Rebecca Lane",
-        sender_avatar: null,
-        content: channelId === "dm-1" ? "Hey, are you available to cover my Thursday afternoon shift?" : "Blood test results came back normal. No further action needed.",
-        message_type: "standard", metadata: {}, is_pinned: false, is_deleted: false,
-        created_at: new Date(now - 5 * 3600000).toISOString(),
-      },
-      {
-        id: `${channelId}-dm-2`, channel_id: channelId,
-        sender_id: "u-self", sender_name: "You",
-        sender_avatar: null,
-        content: channelId === "dm-1" ? "Let me check my roster and get back to you." : "Great news, thanks for letting me know!",
-        message_type: "standard", metadata: {}, is_pinned: false, is_deleted: false,
-        created_at: new Date(now - 4.5 * 3600000).toISOString(),
-      },
-    ];
-  }
-
-  // Team channel messages
-  if (channelType === "team_channel") {
-    return [
-      {
-        id: `${channelId}-tc-1`, channel_id: channelId,
-        sender_id: "u-mgr", sender_name: "Karen Mitchell",
-        sender_avatar: null,
-        content: channelId === "tc-1" ? "Staff meeting this Friday at 2pm in the training room. Attendance is mandatory." :
-          channelId === "tc-2" ? "Weekend roster is finalised. Please check your shifts." :
-          "Hot water system in Unit 3 is leaking again. Plumber booked for Thursday.",
-        message_type: "standard", metadata: {}, is_pinned: false, is_deleted: false,
-        created_at: new Date(now - 8 * 3600000).toISOString(),
-      },
-    ];
-  }
-
-  return base;
-}
-
-/* ── Helpers ───────────────────────────────────────────────────── */
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -463,11 +84,68 @@ function getGradient(name: string): string {
   return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
 }
 
+/** Derive a display name for a channel */
+function channelDisplayName(ch: CareChannel): string {
+  if (ch.name) return ch.name;
+  if (ch.channel_type === "team_channel") return "team-channel";
+  if (ch.channel_type === "direct_message") return "Direct Message";
+  return "Channel";
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    COMPONENTS
    ═══════════════════════════════════════════════════════════════════ */
 
 type ViewMode = "triage" | "participants" | "direct" | "channels";
+
+/* ── Loading Skeleton ─────────────────────────────────────────── */
+
+function ChannelSkeleton() {
+  return (
+    <div className="space-y-1 px-1">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="flex items-center gap-2.5 rounded-lg px-3 py-2 animate-pulse">
+          <div className="h-6 w-6 rounded-full bg-white/[0.04]" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-2.5 w-24 rounded bg-white/[0.04]" />
+            <div className="h-2 w-40 rounded bg-white/[0.03]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MessageSkeleton() {
+  return (
+    <div className="space-y-4 px-5 py-4 animate-pulse">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="flex items-start gap-2">
+          <div className="h-7 w-7 rounded-full bg-white/[0.04]" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-2.5 w-20 rounded bg-white/[0.04]" />
+            <div className="h-2 w-3/4 rounded bg-white/[0.03]" />
+            <div className="h-2 w-1/2 rounded bg-white/[0.03]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Empty List State ─────────────────────────────────────────── */
+
+function EmptyListState({ message, sub }: { message: string; sub: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.03] mb-3">
+        <MessageCircle size={16} className="text-zinc-700" />
+      </div>
+      <p className="text-[12px] font-medium text-zinc-500">{message}</p>
+      <p className="mt-1 text-[11px] text-zinc-700">{sub}</p>
+    </div>
+  );
+}
 
 /* ── Routing Ledger (Pane 2) ──────────────────────────────────── */
 
@@ -475,20 +153,26 @@ function RoutingLedger({
   activeView,
   setActiveView,
   activeChannelId,
-  setActiveChannel,
+  onSelectChannel,
   expandedHub,
   setExpandedHub,
   search,
   setSearch,
+  channels,
+  participantHubs,
+  channelsLoaded,
 }: {
   activeView: ViewMode;
   setActiveView: (v: ViewMode) => void;
   activeChannelId: string | null;
-  setActiveChannel: (id: string, type: ChannelType) => void;
+  onSelectChannel: (ch: CareChannel) => void;
   expandedHub: string | null;
   setExpandedHub: (id: string | null) => void;
   search: string;
   setSearch: (s: string) => void;
+  channels: CareChannel[];
+  participantHubs: ParticipantHub[];
+  channelsLoaded: boolean;
 }) {
   const views: { id: ViewMode; label: string; icon: typeof Bell }[] = [
     { id: "triage", label: "Triage", icon: Bell },
@@ -497,38 +181,46 @@ function RoutingLedger({
     { id: "channels", label: "Channels", icon: Hash },
   ];
 
+  // Derive channel sublists
+  const dmChannels = useMemo(
+    () => channels.filter((c) => c.channel_type === "direct_message"),
+    [channels]
+  );
+  const teamChannels = useMemo(
+    () => channels.filter((c) => c.channel_type === "team_channel"),
+    [channels]
+  );
+
+  // Search-filtered
   const filteredHubs = useMemo(() => {
-    if (!search) return MOCK_PARTICIPANTS;
+    if (!search) return participantHubs;
     const q = search.toLowerCase();
-    return MOCK_PARTICIPANTS.filter(
+    return participantHubs.filter(
       (h) =>
-        h.participantName.toLowerCase().includes(q) ||
-        h.groupName.toLowerCase().includes(q)
+        h.groupName.toLowerCase().includes(q) ||
+        h.internalChannel?.name?.toLowerCase().includes(q) ||
+        h.externalChannel?.name?.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, participantHubs]);
 
   const filteredDMs = useMemo(() => {
-    if (!search) return MOCK_DMS;
+    if (!search) return dmChannels;
     const q = search.toLowerCase();
-    return MOCK_DMS.filter((d) => d.name.toLowerCase().includes(q));
-  }, [search]);
+    return dmChannels.filter((d) => channelDisplayName(d).toLowerCase().includes(q));
+  }, [search, dmChannels]);
 
-  const filteredChannels = useMemo(() => {
-    if (!search) return MOCK_TEAM_CHANNELS;
+  const filteredTeamChannels = useMemo(() => {
+    if (!search) return teamChannels;
     const q = search.toLowerCase();
-    return MOCK_TEAM_CHANNELS.filter((c) => c.name.toLowerCase().includes(q));
-  }, [search]);
+    return teamChannels.filter((c) => channelDisplayName(c).toLowerCase().includes(q));
+  }, [search, teamChannels]);
 
-  // Count unread for triage
+  // Triage count — channels with recent updates (proxy for unread)
   const triageCount = useMemo(() => {
-    let count = 0;
-    MOCK_PARTICIPANTS.forEach((h) => {
-      count += h.internalChannel.unread_count + h.externalChannel.unread_count;
-    });
-    MOCK_DMS.forEach((d) => (count += d.unread_count));
-    MOCK_TEAM_CHANNELS.forEach((c) => (count += c.unread_count));
-    return count;
-  }, []);
+    // Count channels updated within the last 24 hours as "active"
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    return channels.filter((c) => new Date(c.updated_at).getTime() > cutoff).length;
+  }, [channels]);
 
   return (
     <div className="flex h-full w-[320px] min-w-[320px] flex-col border-r border-white/[0.04] bg-[#070707]">
@@ -590,86 +282,113 @@ function RoutingLedger({
 
       {/* ── Content ── */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
-        <AnimatePresence mode="wait">
-          {activeView === "triage" && (
-            <motion.div
-              key="triage"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-1"
-            >
-              <TriageList
-                activeChannelId={activeChannelId}
-                setActiveChannel={setActiveChannel}
-              />
-            </motion.div>
-          )}
-
-          {activeView === "participants" && (
-            <motion.div
-              key="participants"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-1"
-            >
-              {filteredHubs.map((hub) => (
-                <ParticipantHubItem
-                  key={hub.participantId}
-                  hub={hub}
-                  isExpanded={expandedHub === hub.participantId}
-                  onToggle={() =>
-                    setExpandedHub(
-                      expandedHub === hub.participantId ? null : hub.participantId
-                    )
-                  }
+        {!channelsLoaded ? (
+          <ChannelSkeleton />
+        ) : (
+          <AnimatePresence mode="wait">
+            {activeView === "triage" && (
+              <motion.div
+                key="triage"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-1"
+              >
+                <TriageList
+                  channels={channels}
+                  participantHubs={participantHubs}
                   activeChannelId={activeChannelId}
-                  setActiveChannel={setActiveChannel}
+                  onSelectChannel={onSelectChannel}
                 />
-              ))}
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          {activeView === "direct" && (
-            <motion.div
-              key="direct"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-1"
-            >
-              {filteredDMs.map((dm) => (
-                <ChannelRow
-                  key={dm.id}
-                  channel={dm}
-                  active={activeChannelId === dm.id}
-                  onClick={() => setActiveChannel(dm.id, dm.channel_type)}
-                />
-              ))}
-            </motion.div>
-          )}
+            {activeView === "participants" && (
+              <motion.div
+                key="participants"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-1"
+              >
+                {filteredHubs.length === 0 ? (
+                  <EmptyListState
+                    message="No participant threads"
+                    sub="Participant house threads will appear once provisioned."
+                  />
+                ) : (
+                  filteredHubs.map((hub) => (
+                    <ParticipantHubItem
+                      key={hub.participantId}
+                      hub={hub}
+                      isExpanded={expandedHub === hub.participantId}
+                      onToggle={() =>
+                        setExpandedHub(
+                          expandedHub === hub.participantId ? null : hub.participantId
+                        )
+                      }
+                      activeChannelId={activeChannelId}
+                      onSelectChannel={onSelectChannel}
+                    />
+                  ))
+                )}
+              </motion.div>
+            )}
 
-          {activeView === "channels" && (
-            <motion.div
-              key="channels"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-1"
-            >
-              {filteredChannels.map((ch) => (
-                <ChannelRow
-                  key={ch.id}
-                  channel={ch}
-                  active={activeChannelId === ch.id}
-                  onClick={() => setActiveChannel(ch.id, ch.channel_type)}
-                  showHash
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {activeView === "direct" && (
+              <motion.div
+                key="direct"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-1"
+              >
+                {filteredDMs.length === 0 ? (
+                  <EmptyListState
+                    message="No direct messages"
+                    sub="Start a conversation with a team member."
+                  />
+                ) : (
+                  filteredDMs.map((dm) => (
+                    <ChannelRow
+                      key={dm.id}
+                      channel={dm}
+                      active={activeChannelId === dm.id}
+                      onClick={() => onSelectChannel(dm)}
+                    />
+                  ))
+                )}
+              </motion.div>
+            )}
+
+            {activeView === "channels" && (
+              <motion.div
+                key="channels"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-1"
+              >
+                {filteredTeamChannels.length === 0 ? (
+                  <EmptyListState
+                    message="No team channels"
+                    sub="Create a channel to start collaborating."
+                  />
+                ) : (
+                  filteredTeamChannels.map((ch) => (
+                    <ChannelRow
+                      key={ch.id}
+                      channel={ch}
+                      active={activeChannelId === ch.id}
+                      onClick={() => onSelectChannel(ch)}
+                      showHash
+                    />
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );
@@ -678,54 +397,38 @@ function RoutingLedger({
 /* ── Triage List ───────────────────────────────────────────────── */
 
 function TriageList({
+  channels,
+  participantHubs,
   activeChannelId,
-  setActiveChannel,
+  onSelectChannel,
 }: {
+  channels: CareChannel[];
+  participantHubs: ParticipantHub[];
   activeChannelId: string | null;
-  setActiveChannel: (id: string, type: ChannelType) => void;
+  onSelectChannel: (ch: CareChannel) => void;
 }) {
-  // Collect all unread items
+  // Show most recently updated channels first (proxy for activity/unread)
   const triageItems = useMemo(() => {
-    const items: { channel: MockChannel; hubName?: string; isAlert?: boolean }[] = [];
+    const cutoff = Date.now() - 72 * 60 * 60 * 1000; // last 72 hours
+    const recent = channels
+      .filter((c) => new Date(c.updated_at).getTime() > cutoff)
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
-    MOCK_PARTICIPANTS.forEach((hub) => {
-      if (hub.internalChannel.unread_count > 0) {
-        items.push({
-          channel: hub.internalChannel,
-          hubName: hub.participantName,
-          isAlert: hub.internalChannel.last_message?.includes("ALERT"),
-        });
-      }
-      if (hub.externalChannel.unread_count > 0) {
-        items.push({ channel: hub.externalChannel, hubName: hub.participantName });
-      }
-    });
-    MOCK_DMS.forEach((dm) => {
-      if (dm.unread_count > 0) items.push({ channel: dm });
-    });
-    MOCK_TEAM_CHANNELS.forEach((tc) => {
-      if (tc.unread_count > 0) items.push({ channel: tc });
-    });
-
-    // Sort: alerts first, then by time
-    items.sort((a, b) => {
-      if (a.isAlert && !b.isAlert) return -1;
-      if (!a.isAlert && b.isAlert) return 1;
-      return (
-        new Date(b.channel.last_message_at || "").getTime() -
-        new Date(a.channel.last_message_at || "").getTime()
+    return recent.map((ch) => {
+      // Try to resolve a participant name
+      const hub = participantHubs.find(
+        (h) => h.internalChannel?.id === ch.id || h.externalChannel?.id === ch.id
       );
+      return { channel: ch, hubName: hub?.groupName };
     });
-
-    return items;
-  }, []);
+  }, [channels, participantHubs]);
 
   if (triageItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Check size={20} className="mb-2 text-emerald-500" />
         <p className="text-[12px] font-medium text-zinc-400">All caught up</p>
-        <p className="mt-1 text-[11px] text-zinc-600">No unread messages or alerts</p>
+        <p className="mt-1 text-[11px] text-zinc-600">No recent activity</p>
       </div>
     );
   }
@@ -735,7 +438,7 @@ function TriageList({
       {triageItems.map((item) => (
         <button
           key={item.channel.id}
-          onClick={() => setActiveChannel(item.channel.id, item.channel.channel_type)}
+          onClick={() => onSelectChannel(item.channel)}
           className={`group flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors ${
             activeChannelId === item.channel.id
               ? "bg-white/[0.06]"
@@ -744,17 +447,17 @@ function TriageList({
         >
           {/* Indicator */}
           <div className="mt-1 flex-shrink-0">
-            {item.isAlert ? (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-500/20">
-                <AlertTriangle size={13} className="text-rose-400" />
-              </div>
-            ) : item.channel.channel_type === "house_internal" ? (
+            {item.channel.channel_type === "house_internal" ? (
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/15">
                 <Lock size={12} className="text-blue-400" />
               </div>
             ) : item.channel.channel_type === "house_external" ? (
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15">
                 <Globe size={12} className="text-emerald-400" />
+              </div>
+            ) : item.channel.channel_type === "team_channel" ? (
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.04]">
+                <Hash size={12} className="text-zinc-500" />
               </div>
             ) : (
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800">
@@ -766,14 +469,14 @@ function TriageList({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-zinc-300 truncate">
-                {item.hubName || item.channel.name}
+                {item.hubName || channelDisplayName(item.channel)}
               </span>
               <span className="ml-2 flex-shrink-0 text-[9px] text-zinc-600">
-                {item.channel.last_message_at && formatRelTime(item.channel.last_message_at)}
+                {formatRelTime(item.channel.updated_at)}
               </span>
             </div>
             <p className="mt-0.5 text-[10px] leading-relaxed text-zinc-600 truncate">
-              {item.channel.last_message}
+              {channelDisplayName(item.channel)}
             </p>
             <div className="mt-1 flex items-center gap-1.5">
               {item.channel.channel_type === "house_internal" && (
@@ -781,11 +484,6 @@ function TriageList({
               )}
               {item.channel.channel_type === "house_external" && (
                 <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-medium text-emerald-400">Family</span>
-              )}
-              {item.channel.unread_count > 0 && (
-                <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500/20 px-1 text-[8px] font-bold text-emerald-400">
-                  {item.channel.unread_count}
-                </span>
               )}
             </div>
           </div>
@@ -802,16 +500,14 @@ function ParticipantHubItem({
   isExpanded,
   onToggle,
   activeChannelId,
-  setActiveChannel,
+  onSelectChannel,
 }: {
   hub: ParticipantHub;
   isExpanded: boolean;
   onToggle: () => void;
   activeChannelId: string | null;
-  setActiveChannel: (id: string, type: ChannelType) => void;
+  onSelectChannel: (ch: CareChannel) => void;
 }) {
-  const totalUnread = hub.internalChannel.unread_count + hub.externalChannel.unread_count;
-
   return (
     <div className="mb-0.5">
       <button
@@ -827,23 +523,17 @@ function ParticipantHubItem({
           <ChevronRight size={12} className="text-zinc-600" />
         </motion.div>
 
-        <div className={`flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(hub.participantName)}`}>
+        <div className={`flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(hub.groupName)}`}>
           <span className="text-[8px] font-bold text-white">
-            {getInitials(hub.participantName)}
+            {getInitials(hub.groupName)}
           </span>
         </div>
 
         <div className="min-w-0 flex-1">
           <span className="text-[11px] font-medium text-zinc-300 truncate block">
-            {hub.participantName}
+            {hub.groupName}
           </span>
         </div>
-
-        {totalUnread > 0 && (
-          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500/20 px-1 text-[8px] font-bold text-emerald-400">
-            {totalUnread}
-          </span>
-        )}
       </button>
 
       <AnimatePresence>
@@ -857,40 +547,34 @@ function ParticipantHubItem({
           >
             <div className="ml-6 pl-2 border-l border-white/[0.04]">
               {/* Internal */}
-              <button
-                onClick={() => setActiveChannel(hub.internalChannel.id, "house_internal")}
-                className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors ${
-                  activeChannelId === hub.internalChannel.id
-                    ? "bg-blue-500/10 text-blue-300"
-                    : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
-                }`}
-              >
-                <Lock size={11} className={activeChannelId === hub.internalChannel.id ? "text-blue-400" : "text-blue-500/60"} />
-                <span className="text-[11px]">internal-care</span>
-                {hub.internalChannel.unread_count > 0 && (
-                  <span className="ml-auto flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-blue-500/20 px-1 text-[7px] font-bold text-blue-400">
-                    {hub.internalChannel.unread_count}
-                  </span>
-                )}
-              </button>
+              {hub.internalChannel && (
+                <button
+                  onClick={() => onSelectChannel(hub.internalChannel!)}
+                  className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors ${
+                    activeChannelId === hub.internalChannel.id
+                      ? "bg-blue-500/10 text-blue-300"
+                      : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
+                  }`}
+                >
+                  <Lock size={11} className={activeChannelId === hub.internalChannel.id ? "text-blue-400" : "text-blue-500/60"} />
+                  <span className="text-[11px]">internal-care</span>
+                </button>
+              )}
 
               {/* External */}
-              <button
-                onClick={() => setActiveChannel(hub.externalChannel.id, "house_external")}
-                className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors ${
-                  activeChannelId === hub.externalChannel.id
-                    ? "bg-emerald-500/10 text-emerald-300"
-                    : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
-                }`}
-              >
-                <Globe size={11} className={activeChannelId === hub.externalChannel.id ? "text-emerald-400" : "text-emerald-500/60"} />
-                <span className="text-[11px]">external-family</span>
-                {hub.externalChannel.unread_count > 0 && (
-                  <span className="ml-auto flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-emerald-500/20 px-1 text-[7px] font-bold text-emerald-400">
-                    {hub.externalChannel.unread_count}
-                  </span>
-                )}
-              </button>
+              {hub.externalChannel && (
+                <button
+                  onClick={() => onSelectChannel(hub.externalChannel!)}
+                  className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors ${
+                    activeChannelId === hub.externalChannel.id
+                      ? "bg-emerald-500/10 text-emerald-300"
+                      : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
+                  }`}
+                >
+                  <Globe size={11} className={activeChannelId === hub.externalChannel.id ? "text-emerald-400" : "text-emerald-500/60"} />
+                  <span className="text-[11px]">external-family</span>
+                </button>
+              )}
             </div>
           </motion.div>
         )}
@@ -907,11 +591,13 @@ function ChannelRow({
   onClick,
   showHash,
 }: {
-  channel: MockChannel;
+  channel: CareChannel;
   active: boolean;
   onClick: () => void;
   showHash?: boolean;
 }) {
+  const name = channelDisplayName(channel);
+
   return (
     <button
       onClick={onClick}
@@ -924,9 +610,9 @@ function ChannelRow({
           <Hash size={12} className="text-zinc-500" />
         </div>
       ) : (
-        <div className={`flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(channel.name)}`}>
+        <div className={`flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(name)}`}>
           <span className="text-[8px] font-bold text-white">
-            {getInitials(channel.name)}
+            {getInitials(name)}
           </span>
         </div>
       )}
@@ -934,22 +620,18 @@ function ChannelRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between">
           <span className={`text-[11px] font-medium truncate ${active ? "text-white" : "text-zinc-400"}`}>
-            {showHash ? `#${channel.name}` : channel.name}
+            {showHash ? `#${name}` : name}
           </span>
           <span className="ml-2 flex-shrink-0 text-[9px] text-zinc-700">
-            {channel.last_message_at && formatRelTime(channel.last_message_at)}
+            {formatRelTime(channel.updated_at)}
           </span>
         </div>
-        <p className="mt-0.5 text-[10px] text-zinc-700 truncate">
-          {channel.last_message}
-        </p>
+        {channel.description && (
+          <p className="mt-0.5 text-[10px] text-zinc-700 truncate">
+            {channel.description}
+          </p>
+        )}
       </div>
-
-      {channel.unread_count > 0 && (
-        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500/20 px-1 text-[8px] font-bold text-emerald-400">
-          {channel.unread_count}
-        </span>
-      )}
     </button>
   );
 }
@@ -957,33 +639,59 @@ function ChannelRow({
 /* ── Active Signal (Pane 3) — Chat Interface ─────────────────── */
 
 function ActiveSignal({
-  channelId,
-  channelType,
-  channelName,
+  channel,
 }: {
-  channelId: string;
-  channelType: ChannelType;
-  channelName: string;
+  channel: CareChannel;
 }) {
+  const { user, profile } = useAuthStore();
+  const {
+    messages: allMessages,
+    messagesLoading,
+    sendingMessage,
+    sendMessage,
+    acknowledgeAlert,
+    loadMessages,
+  } = useCareCommsStore();
+
   const [inputValue, setInputValue] = useState("");
   const [showBroadcastMode, setShowBroadcastMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const messages = useMemo(() => generateMockMessages(channelId, channelType), [channelId, channelType]);
-  const isInternal = channelType === "house_internal";
-  const isExternal = channelType === "house_external";
-  const isArchived = false; // Mock
+  const messages = allMessages[channel.id] || [];
+  const isInternal = channel.channel_type === "house_internal";
+  const isExternal = channel.channel_type === "house_external";
+  const isArchived = channel.is_archived || channel.is_read_only;
 
+  // Load messages on channel change
+  useEffect(() => {
+    loadMessages(channel.id);
+  }, [channel.id, loadMessages]);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages.length]);
 
-  const handleSend = useCallback(() => {
-    if (!inputValue.trim()) return;
-    // In production, this would call the store's sendMessage
+  const handleSend = useCallback(async () => {
+    if (!inputValue.trim() || !user || !profile) return;
+
+    const messageType: CareMessageType = showBroadcastMode ? "manager_alert" : "standard";
+    const metadata = showBroadcastMode
+      ? { severity: "high", requires_ack: true }
+      : undefined;
+
+    await sendMessage(
+      channel.id,
+      inputValue.trim(),
+      user.id,
+      { id: profile.id, full_name: profile.full_name, avatar_url: profile.avatar_url },
+      messageType,
+      metadata,
+    );
+
     setInputValue("");
     setShowBroadcastMode(false);
-  }, [inputValue]);
+  }, [inputValue, user, profile, showBroadcastMode, sendMessage, channel.id]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -994,6 +702,8 @@ function ActiveSignal({
     },
     [handleSend]
   );
+
+  const channelName = channelDisplayName(channel);
 
   return (
     <div className="flex h-full flex-1 flex-col bg-[#050505]">
@@ -1010,12 +720,12 @@ function ActiveSignal({
               <Globe size={13} className="text-emerald-400" />
             </div>
           )}
-          {channelType === "direct_message" && (
+          {channel.channel_type === "direct_message" && (
             <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(channelName)}`}>
               <span className="text-[9px] font-bold text-white">{getInitials(channelName)}</span>
             </div>
           )}
-          {channelType === "team_channel" && (
+          {channel.channel_type === "team_channel" && (
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.04]">
               <Hash size={13} className="text-zinc-400" />
             </div>
@@ -1026,8 +736,8 @@ function ActiveSignal({
             <span className="text-[10px] text-zinc-600">
               {isInternal && "Internal care team only"}
               {isExternal && "Family & participant"}
-              {channelType === "direct_message" && "Direct message"}
-              {channelType === "team_channel" && "Team channel"}
+              {channel.channel_type === "direct_message" && "Direct message"}
+              {channel.channel_type === "team_channel" && "Team channel"}
             </span>
           </div>
         </div>
@@ -1052,68 +762,115 @@ function ActiveSignal({
         </div>
       )}
 
+      {/* ── Archived Banner ── */}
+      {isArchived && (
+        <div className="flex items-center gap-2 border-b border-amber-500/10 bg-amber-500/[0.04] px-5 py-2">
+          <Lock size={13} className="flex-shrink-0 text-amber-500" />
+          <span className="text-[10px] font-medium text-amber-400/80">
+            This thread is archived and read-only.
+          </span>
+        </div>
+      )}
+
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
-        <div className="space-y-0.5">
-          {messages.map((msg, i) => {
-            const isSystem = !msg.sender_id || msg.message_type !== "standard";
-            const isAlert = msg.message_type === "manager_alert";
-            const isHandover = msg.message_type === "system_handover";
-            const isRosterSync = msg.message_type === "system_roster_sync";
-            const prevMsg = i > 0 ? messages[i - 1] : null;
-            const sameAuthor = prevMsg?.sender_id === msg.sender_id && prevMsg?.message_type === "standard" && msg.message_type === "standard";
-            const timeDiff = prevMsg ? new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() : Infinity;
-            const showHeader = !sameAuthor || timeDiff > 300000; // 5 min gap
+        {messagesLoading && messages.length === 0 ? (
+          <MessageSkeleton />
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <MessageCircle size={24} className="mb-3 text-zinc-800" />
+            <p className="text-[12px] font-medium text-zinc-500">No messages yet</p>
+            <p className="mt-1 text-[11px] text-zinc-700">
+              Send the first message to start the conversation.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {messages.map((msg, i) => {
+              const isSystem = !msg.sender_id || msg.message_type !== "standard";
+              const isAlert = msg.message_type === "manager_alert";
+              const isHandover = msg.message_type === "system_handover";
+              const isRosterSync = msg.message_type === "system_roster_sync";
+              const isSystemArchived = msg.message_type === "system_archived";
+              const prevMsg = i > 0 ? messages[i - 1] : null;
+              const sameAuthor = prevMsg?.sender_id === msg.sender_id && prevMsg?.message_type === "standard" && msg.message_type === "standard";
+              const timeDiff = prevMsg ? new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() : Infinity;
+              const showHeader = !sameAuthor || timeDiff > 300000; // 5 min gap
 
-            if (isAlert) {
-              return (
-                <ManagerAlertMessage key={msg.id} message={msg} />
-              );
-            }
+              const senderName = msg.profiles?.full_name || "System";
 
-            if (isHandover) {
-              return (
-                <div key={msg.id} className="my-3 rounded-lg border border-blue-500/10 bg-blue-500/[0.03] px-4 py-3">
-                  <p className="text-[11px] leading-relaxed text-blue-300/80">{msg.content}</p>
-                  <span className="mt-1.5 block text-[9px] text-blue-500/40">{formatTime(msg.created_at)}</span>
-                </div>
-              );
-            }
+              if (isAlert) {
+                return (
+                  <ManagerAlertMessage
+                    key={msg.id}
+                    message={msg}
+                    onAcknowledge={() => acknowledgeAlert(msg.id)}
+                  />
+                );
+              }
 
-            if (isRosterSync) {
-              return (
-                <div key={msg.id} className="my-2 flex items-center justify-center gap-2">
-                  <div className="h-px flex-1 bg-white/[0.03]" />
-                  <span className="text-[9px] text-zinc-700">{msg.content}</span>
-                  <div className="h-px flex-1 bg-white/[0.03]" />
-                </div>
-              );
-            }
-
-            return (
-              <div key={msg.id} className={`group ${showHeader ? "mt-4" : "mt-0.5"}`}>
-                {showHeader && (
-                  <div className="mb-1 flex items-center gap-2">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(msg.sender_name)}`}>
-                      <span className="text-[8px] font-bold text-white">
-                        {getInitials(msg.sender_name)}
-                      </span>
-                    </div>
-                    <span className="text-[11px] font-semibold text-zinc-300">
-                      {msg.sender_name}
-                    </span>
-                    <span className="text-[9px] text-zinc-700">{formatTime(msg.created_at)}</span>
-                    {msg.is_pinned && <Pin size={9} className="text-amber-500/60" />}
+              if (isHandover) {
+                return (
+                  <div key={msg.id} className="my-3 rounded-lg border border-blue-500/10 bg-blue-500/[0.03] px-4 py-3">
+                    <p className="text-[11px] leading-relaxed text-blue-300/80">{msg.content}</p>
+                    <span className="mt-1.5 block text-[9px] text-blue-500/40">{formatTime(msg.created_at)}</span>
                   </div>
-                )}
-                <div className={`${showHeader ? "ml-9" : "ml-9"} rounded px-0 py-0.5 text-[12px] leading-relaxed text-zinc-400 transition-colors group-hover:text-zinc-300`}>
-                  {msg.content}
+                );
+              }
+
+              if (isRosterSync || isSystemArchived) {
+                return (
+                  <div key={msg.id} className="my-2 flex items-center justify-center gap-2">
+                    <div className="h-px flex-1 bg-white/[0.03]" />
+                    <span className="text-[9px] text-zinc-700">{msg.content}</span>
+                    <div className="h-px flex-1 bg-white/[0.03]" />
+                  </div>
+                );
+              }
+
+              if (isSystem) {
+                return (
+                  <div key={msg.id} className="my-2 flex items-center justify-center gap-2">
+                    <div className="h-px flex-1 bg-white/[0.03]" />
+                    <span className="text-[9px] text-zinc-700">{msg.content}</span>
+                    <div className="h-px flex-1 bg-white/[0.03]" />
+                  </div>
+                );
+              }
+
+              return (
+                <div key={msg.id} className={`group ${showHeader ? "mt-4" : "mt-0.5"}`}>
+                  {showHeader && (
+                    <div className="mb-1 flex items-center gap-2">
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(senderName)}`}>
+                        <span className="text-[8px] font-bold text-white">
+                          {getInitials(senderName)}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-zinc-300">
+                        {senderName}
+                      </span>
+                      <span className="text-[9px] text-zinc-700">{formatTime(msg.created_at)}</span>
+                      {msg.is_pinned && <Pin size={9} className="text-amber-500/60" />}
+                      {msg.is_edited && <span className="text-[8px] text-zinc-700">(edited)</span>}
+                    </div>
+                  )}
+                  <div
+                    className={`${showHeader ? "ml-9" : "ml-9"} rounded px-0 py-0.5 text-[12px] leading-relaxed transition-colors group-hover:text-zinc-300 ${
+                      (msg.metadata as any)?._sendError ? "text-rose-500/60" : "text-zinc-400"
+                    }`}
+                  >
+                    {msg.content}
+                    {(msg.metadata as any)?._sendError && (
+                      <span className="ml-2 text-[9px] text-rose-500/50">Failed to send</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
 
       {/* ── Input Bar ── */}
@@ -1171,10 +928,10 @@ function ActiveSignal({
               )}
               <button
                 onClick={handleSend}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || sendingMessage}
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white transition-all hover:bg-emerald-500 disabled:opacity-30 disabled:hover:bg-emerald-600"
               >
-                <Send size={13} />
+                {sendingMessage ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
               </button>
             </div>
           </div>
@@ -1198,12 +955,25 @@ function ActiveSignal({
 
 /* ── Manager Alert Message ────────────────────────────────────── */
 
-function ManagerAlertMessage({ message }: { message: MockMessage }) {
+function ManagerAlertMessage({
+  message,
+  onAcknowledge,
+}: {
+  message: CareChatMessage;
+  onAcknowledge: () => void;
+}) {
   const meta = message.metadata as { severity?: string; requires_ack?: boolean; ack_count?: number; total_required?: number };
   const isCritical = meta.severity === "critical";
   const ackCount = meta.ack_count || 0;
   const totalRequired = meta.total_required || 0;
   const [acknowledged, setAcknowledged] = useState(false);
+
+  const handleAck = useCallback(() => {
+    setAcknowledged(true);
+    onAcknowledge();
+  }, [onAcknowledge]);
+
+  const senderName = message.profiles?.full_name || "Manager";
 
   return (
     <div className={`my-4 rounded-xl border ${isCritical ? "border-rose-500/30 bg-rose-500/[0.04]" : "border-amber-500/20 bg-amber-500/[0.03]"} px-4 py-3.5`}>
@@ -1217,6 +987,7 @@ function ManagerAlertMessage({ message }: { message: MockMessage }) {
               {isCritical ? "CRITICAL ALERT" : "MANAGER ALERT"}
             </span>
             <span className="text-[9px] text-zinc-700">{formatTime(message.created_at)}</span>
+            <span className="text-[9px] text-zinc-700">— {senderName}</span>
           </div>
           <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-300">{message.content}</p>
 
@@ -1225,7 +996,7 @@ function ManagerAlertMessage({ message }: { message: MockMessage }) {
             <div className="mt-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
-                  <CheckCheck size={12} className={ackCount === totalRequired ? "text-emerald-400" : "text-zinc-600"} />
+                  <CheckCheck size={12} className={ackCount === totalRequired && totalRequired > 0 ? "text-emerald-400" : "text-zinc-600"} />
                   <span className="text-[10px] text-zinc-500">
                     {ackCount}/{totalRequired} acknowledged
                   </span>
@@ -1241,7 +1012,7 @@ function ManagerAlertMessage({ message }: { message: MockMessage }) {
 
               {!acknowledged ? (
                 <button
-                  onClick={() => setAcknowledged(true)}
+                  onClick={handleAck}
                   className="flex items-center gap-1.5 rounded-md bg-white/[0.06] px-3 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-white/[0.1]"
                 >
                   <Check size={11} />
@@ -1261,9 +1032,9 @@ function ManagerAlertMessage({ message }: { message: MockMessage }) {
   );
 }
 
-/* ── Empty State ──────────────────────────────────────────────── */
+/* ── Empty State (no channel selected) ───────────────────────── */
 
-function EmptyState() {
+function NoChannelSelected() {
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center text-center bg-[#050505]">
       <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.015]" />
@@ -1333,45 +1104,46 @@ function EmptyState() {
    ═══════════════════════════════════════════════════════════════════ */
 
 export default function CareCommsPage() {
-  const [activeView, setActiveView] = useState<ViewMode>("participants");
-  const [activeChannelId, setActiveChannelIdState] = useState<string | null>(null);
-  const [activeChannelType, setActiveChannelType] = useState<ChannelType | null>(null);
-  const [activeChannelName, setActiveChannelName] = useState<string>("");
-  const [expandedHub, setExpandedHub] = useState<string | null>(null);
+  const { currentOrg } = useAuthStore();
+  const {
+    channels,
+    participantHubs,
+    channelsLoaded,
+    activeChannelId,
+    activeView,
+    expandedHubId,
+    loadChannels,
+    setActiveChannel,
+    setActiveView,
+    setExpandedHub,
+  } = useCareCommsStore();
+
   const [search, setSearch] = useState("");
 
-  const setActiveChannel = useCallback(
-    (id: string, type: ChannelType) => {
-      setActiveChannelIdState(id);
-      setActiveChannelType(type);
+  // Load channels on mount
+  useEffect(() => {
+    if (currentOrg?.id) {
+      loadChannels(currentOrg.id);
+    }
+  }, [currentOrg?.id, loadChannels]);
 
-      // Resolve name
-      for (const hub of MOCK_PARTICIPANTS) {
-        if (hub.internalChannel.id === id) {
-          setActiveChannelName(hub.internalChannel.name);
-          setExpandedHub(hub.participantId);
-          return;
-        }
-        if (hub.externalChannel.id === id) {
-          setActiveChannelName(hub.externalChannel.name);
-          setExpandedHub(hub.participantId);
-          return;
-        }
-      }
-      for (const dm of MOCK_DMS) {
-        if (dm.id === id) {
-          setActiveChannelName(dm.name);
-          return;
-        }
-      }
-      for (const tc of MOCK_TEAM_CHANNELS) {
-        if (tc.id === id) {
-          setActiveChannelName(`#${tc.name}`);
-          return;
-        }
+  // Find the active channel object
+  const activeChannel = useMemo(
+    () => channels.find((c) => c.id === activeChannelId) || null,
+    [channels, activeChannelId]
+  );
+
+  // When selecting a channel, expand the parent hub if it's a participant channel
+  const handleSelectChannel = useCallback(
+    (ch: CareChannel) => {
+      setActiveChannel(ch.id);
+
+      // Auto-expand the participant hub for this channel
+      if (ch.participant_id) {
+        setExpandedHub(ch.participant_id);
       }
     },
-    []
+    [setActiveChannel, setExpandedHub]
   );
 
   return (
@@ -1384,22 +1156,21 @@ export default function CareCommsPage() {
         activeView={activeView}
         setActiveView={setActiveView}
         activeChannelId={activeChannelId}
-        setActiveChannel={setActiveChannel}
-        expandedHub={expandedHub}
+        onSelectChannel={handleSelectChannel}
+        expandedHub={expandedHubId}
         setExpandedHub={setExpandedHub}
         search={search}
         setSearch={setSearch}
+        channels={channels}
+        participantHubs={participantHubs}
+        channelsLoaded={channelsLoaded}
       />
 
       {/* ── Pane 3: Active Signal ── */}
-      {activeChannelId && activeChannelType ? (
-        <ActiveSignal
-          channelId={activeChannelId}
-          channelType={activeChannelType}
-          channelName={activeChannelName}
-        />
+      {activeChannel ? (
+        <ActiveSignal channel={activeChannel} />
       ) : (
-        <EmptyState />
+        <NoChannelSelected />
       )}
     </div>
   );
