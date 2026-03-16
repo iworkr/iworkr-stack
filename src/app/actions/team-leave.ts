@@ -236,6 +236,113 @@ export async function triggerLeaveShadowInjectionAction(input: {
   return { inserted: Number(data || 0) };
 }
 
+// ── Telemetry & Triage (Project Aegis-Leave) ────────────────────────────────
+
+export async function getLeaveTriageDataAction(organizationId: string) {
+  try {
+    const { supabase } = await requireAuthedUser();
+    const { data, error } = await (supabase as any)
+      .from("leave_requests")
+      .select(`
+        *,
+        worker:profiles!leave_requests_worker_id_fkey(id, full_name, email, avatar_url)
+      `)
+      .eq("organization_id", organizationId)
+      .order("emergency_reported", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(300);
+
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  } catch (error) {
+    console.error("[aegis-leave] getLeaveTriageDataAction", error);
+    return [];
+  }
+}
+
+export async function getLeaveTelemetryAction(organizationId: string) {
+  try {
+    const { supabase } = await requireAuthedUser();
+
+    // Get pending requests
+    const { data: pending } = await (supabase as any)
+      .from("leave_requests")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("status", "pending");
+
+    // Calculate impact for all pending leave requests
+    const { data: impactData } = await (supabase as any)
+      .from("leave_requests")
+      .select("id, worker_id, start_at, end_at")
+      .eq("organization_id", organizationId)
+      .eq("status", "pending");
+
+    let totalImpactedShifts = 0;
+    let totalParticipants = 0;
+    let totalRevenue = 0;
+
+    if (impactData && impactData.length > 0) {
+      for (const req of impactData) {
+        try {
+          const { data: impact } = await (supabase as any).rpc("calculate_leave_impact", {
+            p_worker_id: req.worker_id,
+            p_start_date: req.start_at || `${req.start_date}T00:00:00.000Z`,
+            p_end_date: req.end_at || `${req.end_date}T23:59:59.999Z`,
+          });
+          if (impact) {
+            totalImpactedShifts += impact.impacted_shift_count || 0;
+            totalParticipants += impact.unique_participants_affected || 0;
+            totalRevenue += parseFloat(impact.revenue_at_risk) || 0;
+          }
+        } catch {
+          // Skip individual impact calc failures
+        }
+      }
+    }
+
+    return {
+      pending_requests: (pending || []).length,
+      impacted_shifts_7d: totalImpactedShifts,
+      participants_affected: totalParticipants,
+      revenue_at_risk: Math.round(totalRevenue * 100) / 100,
+    };
+  } catch (error) {
+    console.error("[aegis-leave] getLeaveTelemetryAction", error);
+    return {
+      pending_requests: 0,
+      impacted_shifts_7d: 0,
+      participants_affected: 0,
+      revenue_at_risk: 0,
+    };
+  }
+}
+
+export async function getOrphanedShiftsForLeaveAction(
+  workerId: string,
+  startAt: string,
+  endAt: string,
+) {
+  try {
+    const { supabase } = await requireAuthedUser();
+    const { data, error } = await (supabase as any)
+      .from("schedule_blocks")
+      .select("id, title, start_time, end_time, participant_id, participant_profiles(preferred_name, full_name)")
+      .eq("assigned_to", workerId)
+      .gte("start_time", startAt)
+      .lte("end_time", endAt)
+      .neq("status", "cancelled")
+      .order("start_time", { ascending: true })
+      .limit(50);
+
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  } catch (error) {
+    console.error("[aegis-leave] getOrphanedShiftsForLeaveAction", error);
+    return [];
+  }
+}
+
 export async function syncLeaveBalanceCacheAction(input: {
   organization_id: string;
   worker_id: string;
