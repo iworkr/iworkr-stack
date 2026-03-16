@@ -506,10 +506,6 @@ export async function inviteMember(params: {
   branch?: string;
 }) {
   try {
-    // Validate input
-    const validated = validate(InviteMemberSchema, params);
-    if (validated.error) return { data: null, error: validated.error };
-
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -517,16 +513,38 @@ export async function inviteMember(params: {
     } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
-    const hasPermission = await checkPermission(params.organization_id, "team", "manage");
+    // Resolve organization_id server-side: if the client-provided one is invalid,
+    // look up the user's active organization from the database (single source of truth)
+    let orgId = params.organization_id;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!orgId || !UUID_RE.test(orgId)) {
+      const { data: membership } = await (supabase as any)
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+      if (!membership?.organization_id) {
+        return { data: null, error: "No active organization found for your account" };
+      }
+      orgId = membership.organization_id;
+    }
+
+    // Validate the rest of the input (email, role, branch)
+    const validated = validate(InviteMemberSchema, { ...params, organization_id: orgId });
+    if (validated.error) return { data: null, error: validated.error };
+
+    const hasPermission = await checkPermission(orgId, "team", "manage");
     if (!hasPermission) return { data: null, error: "Unauthorized" };
 
     const { data, error } = await supabase.rpc("invite_member", {
-      p_org_id: params.organization_id,
+      p_org_id: orgId,
       p_email: params.email,
       p_role: params.role,
       p_role_id: params.role_id || null,
       p_branch: params.branch || "HQ",
-      p_actor_id: user?.id || null,
+      p_actor_id: user.id,
     } as any);
 
     if (error) {
