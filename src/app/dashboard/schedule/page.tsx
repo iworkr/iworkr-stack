@@ -303,40 +303,29 @@ export default function SchedulePage() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleKey]);
 
-  /* ── Realtime subscription ───────────────────────────────── */
+  /* ── Realtime subscription ────────────────────────────────────
+   * NOTE: The global data-provider already subscribes to schedule_blocks
+   * changes and calls handleRealtimeUpdate(). We only subscribe to job
+   * status/assignee changes here (data-provider doesn't watch those).
+   * ─────────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!orgId) return;
 
     const supabase = createClient();
     const channel = supabase
-      .channel("schedule-dispatch")
+      .channel("schedule-jobs-sync")
       .on(
         "postgres_changes",
         {
-          event: "*",
-          schema: "public",
-          table: "schedule_blocks",
-          filter: `organization_id=eq.${orgId}`,
-        },
-        () => {
-          handleRealtimeUpdate();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
+          event: "UPDATE",
           schema: "public",
           table: "jobs",
           filter: `organization_id=eq.${orgId}`,
         },
         (payload) => {
-          // Job status changes should also refresh the schedule
-          if (payload.new && payload.old && (payload.new as { status?: string }).status !== (payload.old as { status?: string }).status) {
-            handleRealtimeUpdate();
-          }
-          // Job assignment changes (assignee_id in DB)
-          if (payload.new && payload.old && (payload.new as Record<string, unknown>).assignee_id !== (payload.old as Record<string, unknown>).assignee_id) {
+          const newRow = payload.new as Record<string, unknown>;
+          const oldRow = payload.old as Record<string, unknown>;
+          if (newRow.status !== oldRow.status || newRow.assignee_id !== oldRow.assignee_id) {
             handleRealtimeUpdate();
           }
         }

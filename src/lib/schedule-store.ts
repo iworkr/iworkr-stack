@@ -30,6 +30,11 @@ function showToast(message: string, type: "success" | "error" | "info" = "error"
   useToastStore.getState().addToast(message, undoAction, type);
 }
 
+/* ── Mutation guard: prevents realtime refresh from overwriting in-flight optimistic updates ── */
+let _mutationInFlight = 0;
+let _pendingRefresh = false;
+let _realtimeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 /* ── Helper function to generate initials ─────────────── */
 function getInitials(name: string): string {
   if (!name) return "??";
@@ -229,6 +234,14 @@ export const useScheduleStore = create<ScheduleState>()(
   refresh: async () => {
     const { orgId, selectedDate } = get();
     if (!orgId) return;
+
+    // If a mutation (move/resize/assign) is in-flight, defer the refresh
+    // so we don't overwrite the optimistic state with stale server data.
+    if (_mutationInFlight > 0) {
+      _pendingRefresh = true;
+      return;
+    }
+
     try {
       const { data } = await getScheduleView(orgId, selectedDate);
       if (data) {
@@ -301,8 +314,12 @@ export const useScheduleStore = create<ScheduleState>()(
     const endISO = decimalHourToISO(date, snappedHour + block.duration);
     const techId = newTechId || block.technicianId;
 
+    // Lock: prevent realtime refresh from overwriting our optimistic state
+    _mutationInFlight++;
+
     moveScheduleBlockServer(blockId, techId, startISO, endISO)
       .then((result) => {
+        _mutationInFlight--;
         if (result.error) {
           /* ── onError — Rollback to cloned state ──────── */
           set({ blocks: previousBlocks });
@@ -314,12 +331,13 @@ export const useScheduleStore = create<ScheduleState>()(
             "error",
             undefined
           );
-          return;
         }
         /* ── onSettled — Reconcile with server truth ──── */
-        get().refresh();
+        // Slight delay so the DB write is fully committed before we read
+        setTimeout(() => get().refresh(), 300);
       })
       .catch((err) => {
+        _mutationInFlight--;
         /* ── Network error — Rollback ──────────────────── */
         set({ blocks: previousBlocks });
         showToast("Network error — move was not saved. Please try again.", "error");
@@ -382,16 +400,19 @@ export const useScheduleStore = create<ScheduleState>()(
     // Persist to server (UTC-normalized)
     const date = get().selectedDate;
     const endISO = decimalHourToISO(date, block.startHour + snapped);
+    _mutationInFlight++;
     resizeScheduleBlockServer(blockId, endISO)
       .then((result) => {
+        _mutationInFlight--;
         if (result.error) {
           set({ blocks: previousBlocks });
           showToast(`Failed to resize block: ${result.error}`, "error");
           return;
         }
-        get().refresh();
+        setTimeout(() => get().refresh(), 300);
       })
       .catch((err) => {
+        _mutationInFlight--;
         set({ blocks: previousBlocks });
         showToast("Network error — resize was not saved.", "error");
         console.error("Failed to persist block resize:", err);
@@ -658,7 +679,13 @@ export const useScheduleStore = create<ScheduleState>()(
   },
 
   handleRealtimeUpdate: () => {
-    get().refresh();
+    // Debounce realtime updates to avoid hammering the server
+    // and to let in-flight mutations settle first
+    if (_realtimeDebounceTimer) clearTimeout(_realtimeDebounceTimer);
+    _realtimeDebounceTimer = setTimeout(() => {
+      _realtimeDebounceTimer = null;
+      get().refresh();
+    }, 500);
   },
     }),
     {

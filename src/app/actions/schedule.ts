@@ -663,6 +663,23 @@ export async function moveScheduleBlockServer(
         .eq("id", blockId);
 
       if (updateError) return { data: null, error: updateError.message };
+
+      // Also sync job assignee if tech changed
+      try {
+        const { data: blockData } = await supabase
+          .from("schedule_blocks")
+          .select("job_id")
+          .eq("id", blockId)
+          .maybeSingle();
+        if (blockData?.job_id) {
+          await supabase
+            .from("jobs")
+            .update({ assignee_id: technicianId })
+            .eq("id", blockData.job_id);
+        }
+      } catch { /* non-fatal */ }
+
+      revalidatePath("/dashboard/schedule");
       return { data: { success: true, conflict: false, block_id: blockId }, error: null };
     }
 
