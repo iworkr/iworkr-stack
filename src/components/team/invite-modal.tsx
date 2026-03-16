@@ -20,9 +20,10 @@ import {
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTeamStore } from "@/lib/team-store";
-import { roleDefinitions, branches, type RoleId } from "@/lib/team-data";
+import { branches, type RoleId } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { useOrg } from "@/lib/hooks/use-org";
 
 /* ── Role Card Config ────────────────────────────────────── */
 
@@ -64,6 +65,7 @@ export function InviteModal() {
   const { inviteModalOpen, setInviteModalOpen, inviteMemberServer } = useTeamStore();
   const { addToast } = useToastStore();
   const { isCare } = useIndustryLexicon();
+  const { orgId } = useOrg();
 
   const roleCards = isCare ? careRoleCards : tradesRoleCards;
   const defaultRole: RoleId = isCare ? "technician" : "technician";
@@ -125,6 +127,17 @@ export function InviteModal() {
 
   const handleSend = async () => {
     if (emails.length === 0) return;
+    if (!orgId) {
+      addToast("No organization found. Please reload the page.");
+      return;
+    }
+
+    // Ensure team store has the fresh orgId from auth before sending
+    const store = useTeamStore.getState();
+    if (store.orgId !== orgId) {
+      await store.loadFromServer(orgId);
+    }
+
     setSending(true);
 
     let successCount = 0;
