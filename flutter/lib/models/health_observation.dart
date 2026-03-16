@@ -40,14 +40,14 @@ class HealthObservation {
     this.participantName,
   });
 
-  // FIXME: MEDIUM — organizationId, participantId, workerId use hard 'as String' cast. Will crash on null JSON. Use '?.toString() ?? ""'.
+  // Null-safe: organizationId, participantId, workerId use toString() ?? '' fallback
   factory HealthObservation.fromJson(Map<String, dynamic> json) {
     final profile = (json['worker'] ?? json['profiles']) as Map<String, dynamic>?;
     return HealthObservation(
       id: json['id'] as String,
-      organizationId: json['organization_id'] as String,
-      participantId: json['participant_id'] as String,
-      workerId: json['worker_id'] as String,
+      organizationId: json['organization_id']?.toString() ?? '',
+      participantId: json['participant_id']?.toString() ?? '',
+      workerId: json['worker_id']?.toString() ?? '',
       shiftId: json['shift_id'] as String?,
       observationType: ObservationType.fromString(json['observation_type'] as String? ?? 'general'),
       valueNumeric: (json['value_numeric'] as num?)?.toDouble(),

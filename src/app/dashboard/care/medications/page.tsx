@@ -20,7 +20,9 @@ import {
   OUTCOME_COLORS,
   type ParticipantMedication,
   type MAREntry,
+  type MAROutcome,
   type MedicationRoute,
+  type MedicationFrequency,
 } from "@/lib/medications-store";
 import { useOrg } from "@/lib/hooks/use-org";
 
@@ -188,10 +190,12 @@ function MedicationSlideOver({
   med,
   marEntries,
   onClose,
+  onLogAdmin,
 }: {
   med: ParticipantMedication | null;
   marEntries: MAREntry[];
   onClose: () => void;
+  onLogAdmin: (med: ParticipantMedication) => void;
 }) {
   if (!med) return null;
 
@@ -330,13 +334,334 @@ function MedicationSlideOver({
 
             {/* Footer */}
             <div className="p-6 border-t border-white/5 bg-zinc-950 shrink-0">
-              <button onClick={() => { /* TODO: Wire to recordAdministration when eMAR logging form is built */ }} className="w-full h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98]">
+              <button onClick={() => { onLogAdmin(med); onClose(); }} className="w-full h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98]">
                 Log Administration
               </button>
             </div>
           </motion.div>
         </>
       )}
+    </AnimatePresence>
+  );
+}
+
+/* ── Log Administration Slide-Over ────────────────────── */
+
+function LogAdministrationSlideOver({
+  med,
+  orgId,
+  onClose,
+  onSaved,
+}: {
+  med: ParticipantMedication | null;
+  orgId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const recordAdministration = useMedicationsStore((s) => s.recordAdministration);
+  const [outcome, setOutcome] = useState<MAROutcome>("given");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const outcomes: MAROutcome[] = ["given", "refused", "absent", "withheld", "self_administered", "prn_given", "not_available", "other"];
+
+  const handleSubmit = async () => {
+    if (!med || !orgId) return;
+    setSaving(true);
+    setError("");
+    try {
+      const result = await recordAdministration({
+        organization_id: orgId,
+        medication_id: med.id,
+        participant_id: med.participant_id,
+        worker_id: "",
+        shift_id: null,
+        outcome,
+        administered_at: new Date().toISOString(),
+        notes: notes.trim() || null,
+        prn_effectiveness: null,
+        prn_followup_at: null,
+        prn_followup_done: false,
+        witness_id: null,
+      });
+      if (!result) throw new Error("Failed to record administration");
+      onSaved();
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || "Failed to log administration. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {med && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed right-0 top-0 h-full w-[480px] bg-zinc-950 border-l border-white/5 z-50 flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 shrink-0">
+              <div>
+                <h2 className="text-sm font-semibold text-white">Log Administration</h2>
+                <p className="text-xs text-zinc-500 mt-0.5 font-mono">{med.medication_name} · {med.dosage}</p>
+              </div>
+              <button onClick={onClose} className="w-8 h-8 rounded-md border border-white/5 bg-white/[0.03] flex items-center justify-center hover:bg-white/[0.06] transition-colors">
+                <X className="w-4 h-4 text-zinc-400" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div>
+                <label className="block text-[11px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Outcome</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {outcomes.map((o) => (
+                    <button
+                      key={o}
+                      onClick={() => setOutcome(o)}
+                      className={`h-10 rounded-md border text-xs font-medium transition-colors ${
+                        outcome === o
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                          : "border-white/5 bg-zinc-900 text-zinc-400 hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      {OUTCOME_LABELS[o]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Notes (optional)</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Observations, participant reaction, refusal reason…"
+                  rows={4}
+                  className="w-full bg-zinc-900 border border-white/5 rounded-md px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700 transition-colors resize-none"
+                />
+              </div>
+
+              <div className="rounded-lg border border-amber-500/10 bg-amber-500/5 p-3">
+                <p className="text-xs text-amber-400/80 font-medium">Administration time: {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Record will be timestamped to now. Ensure you are logging at the time of administration.</p>
+              </div>
+
+              {error && <p className="text-xs text-rose-400">{error}</p>}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-white/5 bg-zinc-950 shrink-0">
+              <button
+                onClick={handleSubmit}
+                disabled={saving}
+                className="w-full h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? "Logging…" : "Confirm Administration"}
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ── Add Medication Slide-Over ─────────────────────────── */
+
+function AddMedicationSlideOver({
+  orgId,
+  onClose,
+  onSaved,
+}: {
+  orgId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const createMedication = useMedicationsStore((s) => s.createMedication);
+  const [form, setForm] = useState({
+    medication_name: "",
+    generic_name: "",
+    dosage: "",
+    route: "oral" as MedicationRoute,
+    frequency: "once_daily" as MedicationFrequency,
+    prescribing_doctor: "",
+    participant_id: "",
+    is_prn: false,
+    prn_reason: "",
+    special_instructions: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const f = (key: string, val: string | boolean) => setForm((p) => ({ ...p, [key]: val }));
+
+  const handleSubmit = async () => {
+    if (!form.medication_name.trim() || !form.dosage.trim() || !form.participant_id.trim()) {
+      setError("Medication name, dosage, and participant ID are required.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const result = await createMedication({
+        organization_id: orgId,
+        participant_id: form.participant_id,
+        medication_name: form.medication_name.trim(),
+        generic_name: form.generic_name.trim() || null,
+        dosage: form.dosage.trim(),
+        route: form.route,
+        frequency: form.frequency,
+        time_slots: [],
+        prescribing_doctor: form.prescribing_doctor.trim() || null,
+        pharmacy: null,
+        start_date: new Date().toISOString().split("T")[0],
+        end_date: null,
+        is_prn: form.is_prn,
+        prn_reason: form.is_prn ? form.prn_reason.trim() || null : null,
+        special_instructions: form.special_instructions.trim() || null,
+        is_active: true,
+      });
+      if (!result) throw new Error("Failed to create medication record");
+      onSaved();
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || "Failed to add medication. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="fixed right-0 top-0 h-full w-[500px] bg-zinc-950 border-l border-white/5 z-50 flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 shrink-0">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Add Medication</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">Create a new prescription record</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-md border border-white/5 bg-white/[0.03] flex items-center justify-center hover:bg-white/[0.06] transition-colors">
+            <X className="w-4 h-4 text-zinc-400" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {[
+            { label: "Participant ID", key: "participant_id", placeholder: "Participant UUID" },
+            { label: "Medication Name", key: "medication_name", placeholder: "e.g. Paracetamol" },
+            { label: "Generic Name (optional)", key: "generic_name", placeholder: "e.g. Acetaminophen" },
+            { label: "Dosage", key: "dosage", placeholder: "e.g. 500mg twice daily" },
+            { label: "Prescribing Doctor (optional)", key: "prescribing_doctor", placeholder: "Dr. Name" },
+          ].map(({ label, key, placeholder }) => (
+            <div key={key}>
+              <label className="block text-[11px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5">{label}</label>
+              <input
+                value={(form as any)[key]}
+                onChange={(e) => f(key, e.target.value)}
+                placeholder={placeholder}
+                className="w-full h-9 bg-zinc-900 border border-white/5 rounded-md px-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700 transition-colors"
+              />
+            </div>
+          ))}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5">Route</label>
+              <select value={form.route} onChange={(e) => f("route", e.target.value)} className="w-full h-9 bg-zinc-900 border border-white/5 rounded-md px-3 text-sm text-white outline-none focus:border-zinc-700">
+                {(Object.keys(ROUTE_LABELS) as MedicationRoute[]).map((r) => (
+                  <option key={r} value={r}>{ROUTE_LABELS[r]}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5">Frequency</label>
+              <select value={form.frequency} onChange={(e) => f("frequency", e.target.value)} className="w-full h-9 bg-zinc-900 border border-white/5 rounded-md px-3 text-sm text-white outline-none focus:border-zinc-700">
+                {(Object.keys(FREQUENCY_LABELS) as MedicationFrequency[]).map((fr) => (
+                  <option key={fr} value={fr}>{FREQUENCY_LABELS[fr]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => f("is_prn", !form.is_prn)}
+              className={`w-9 h-5 rounded-full transition-colors relative ${form.is_prn ? "bg-emerald-500" : "bg-zinc-700"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${form.is_prn ? "translate-x-4" : ""}`} />
+            </button>
+            <label className="text-sm text-zinc-300 cursor-pointer" onClick={() => f("is_prn", !form.is_prn)}>PRN (As Needed)</label>
+          </div>
+
+          {form.is_prn && (
+            <div>
+              <label className="block text-[11px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5">PRN Reason</label>
+              <input
+                value={form.prn_reason}
+                onChange={(e) => f("prn_reason", e.target.value)}
+                placeholder="e.g. Breakthrough pain"
+                className="w-full h-9 bg-zinc-900 border border-white/5 rounded-md px-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700 transition-colors"
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-[11px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5">Special Instructions (optional)</label>
+            <textarea
+              value={form.special_instructions}
+              onChange={(e) => f("special_instructions", e.target.value)}
+              placeholder="e.g. Take with food. Do not crush."
+              rows={2}
+              className="w-full bg-zinc-900 border border-white/5 rounded-md px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700 transition-colors resize-none"
+            />
+          </div>
+
+          {error && <p className="text-xs text-rose-400">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-white/5 bg-zinc-950 shrink-0 flex gap-3">
+          <button onClick={onClose} className="flex-1 h-10 rounded-md border border-white/5 text-sm text-zinc-400 hover:text-white transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="flex-1 h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? "Adding…" : "Add Medication"}
+          </button>
+        </div>
+      </motion.div>
     </AnimatePresence>
   );
 }
@@ -353,6 +678,8 @@ export default function MedicationsPage() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<TabFilter>("chart");
   const [selectedMed, setSelectedMed] = useState<ParticipantMedication | null>(null);
+  const [logAdmin, setLogAdmin] = useState<ParticipantMedication | null>(null);
+  const [showAddMed, setShowAddMed] = useState(false);
 
   useEffect(() => {
     if (orgId) loadMedications(orgId);
@@ -436,7 +763,7 @@ export default function MedicationsPage() {
             <SlidersHorizontal className="w-3 h-3" />
             Filters
           </button>
-          <button onClick={() => { /* TODO: Wire to Add Medication slide-over when med creation form is built */ }} className="h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-95">
+          <button onClick={() => setShowAddMed(true)} className="h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-95">
             <Plus className="w-3 h-3 inline-block mr-1.5 -mt-px" />
             Add Medication
           </button>
@@ -520,7 +847,7 @@ export default function MedicationsPage() {
 
               {/* Empty State */}
               {!loading && filtered.length === 0 && (
-                <EmptyState onAddClick={() => {}} />
+                <EmptyState onAddClick={() => setShowAddMed(true)} />
               )}
 
               {/* Data Rows */}
@@ -618,7 +945,27 @@ export default function MedicationsPage() {
         med={selectedMed}
         marEntries={marEntries}
         onClose={() => setSelectedMed(null)}
+        onLogAdmin={(med) => setLogAdmin(med)}
       />
+
+      {/* ─── Log Administration Slide-Over ────────────────── */}
+      <LogAdministrationSlideOver
+        med={logAdmin}
+        orgId={orgId || ""}
+        onClose={() => setLogAdmin(null)}
+        onSaved={() => { if (orgId) loadMedications(orgId); }}
+      />
+
+      {/* ─── Add Medication Slide-Over ─────────────────────── */}
+      <AnimatePresence>
+        {showAddMed && (
+          <AddMedicationSlideOver
+            orgId={orgId || ""}
+            onClose={() => setShowAddMed(false)}
+            onSaved={() => { if (orgId) loadMedications(orgId); setShowAddMed(false); }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

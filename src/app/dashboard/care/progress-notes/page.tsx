@@ -181,13 +181,20 @@ export default function ShiftNotesPage() {
   const handleSave = async () => {
     if (!orgId || !formParticipant || !formContent.trim()) return;
     setSaving(true);
-    const supabase = createClient();
-    await (supabase as any).from("progress_notes").insert({
-      organization_id: orgId, participant_id: formParticipant, worker_id: userId, note_type: formType,
-      content: formContent.trim(), goals_addressed: formGoals, risks_identified: formRisks,
-      follow_up_required: formFollowUp, follow_up_notes: formFollowUp ? formFollowUpNotes.trim() || null : null,
-    });
-    setSaving(false); resetForm(); setModalOpen(false); loadNotes();
+    try {
+      const supabase = createClient();
+      const { error } = await (supabase as any).from("progress_notes").insert({
+        organization_id: orgId, participant_id: formParticipant, worker_id: userId, note_type: formType,
+        content: formContent.trim(), goals_addressed: formGoals, risks_identified: formRisks,
+        follow_up_required: formFollowUp, follow_up_notes: formFollowUp ? formFollowUpNotes.trim() || null : null,
+      });
+      if (error) throw new Error(error.message);
+      resetForm(); setModalOpen(false); loadNotes();
+    } catch (err: any) {
+      console.error("[progress-notes] save error:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const filteredParticipants = useMemo(() => {

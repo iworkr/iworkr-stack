@@ -48,7 +48,7 @@ class SentinelAlert {
     this.workerName,
   });
 
-  // FIXME: MEDIUM — 'title' and 'description' use hard 'as String' cast. Will crash if null in JSON. Use null-safe '?.toString() ?? ""'.
+  // Null-safe: title/description use toString() ?? '' fallback
   factory SentinelAlert.fromJson(Map<String, dynamic> json) {
     final participant = json['participant_profiles'] as Map<String, dynamic>?;
     final worker = json['worker_profile'] as Map<String, dynamic>? ??
@@ -60,8 +60,8 @@ class SentinelAlert {
       alertType: json['alert_type'] as String,
       severity: SentinelSeverity.fromString(json['severity'] as String? ?? 'warning'),
       status: SentinelStatus.fromString(json['status'] as String? ?? 'active'),
-      title: json['title'] as String,
-      description: json['description'] as String,
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
       participantId: json['participant_id'] as String?,
       workerId: json['worker_id'] as String?,
       shiftId: json['shift_id'] as String?,

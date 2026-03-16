@@ -63,7 +63,7 @@ class CareShift {
     required this.updatedAt,
   });
 
-  // FIXME: MEDIUM — scheduledStart/scheduledEnd fallback chain is fragile. If both 'scheduled_start' AND 'start_time' are null, 'as String' throws.
+  // scheduledStart/scheduledEnd null-safe: falls back to DateTime.now() if both are absent
   factory CareShift.fromJson(Map<String, dynamic> json) {
     // Handle joined participant data
     final participant = json['participant_profiles'] as Map<String, dynamic>?;
@@ -84,8 +84,8 @@ class CareShift {
       organizationId: json['organization_id'] as String,
       participantId: json['participant_id'] as String?,
       workerId: json['worker_id'] as String? ?? json['assignee_id'] as String? ?? json['technician_id'] as String?,
-      scheduledStart: DateTime.parse(json['scheduled_start'] as String? ?? json['start_time'] as String),
-      scheduledEnd: DateTime.parse(json['scheduled_end'] as String? ?? json['end_time'] as String),
+      scheduledStart: DateTime.parse(json['scheduled_start']?.toString() ?? json['start_time']?.toString() ?? DateTime.now().toIso8601String()),
+      scheduledEnd: DateTime.parse(json['scheduled_end']?.toString() ?? json['end_time']?.toString() ?? DateTime.now().toIso8601String()),
       actualStart: json['actual_start'] != null ? DateTime.tryParse(json['actual_start'] as String) : null,
       actualEnd: json['actual_end'] != null ? DateTime.tryParse(json['actual_end'] as String) : null,
       ndisLineItem: json['ndis_line_item'] as String? ?? metadata['ndis_line_item'] as String?,

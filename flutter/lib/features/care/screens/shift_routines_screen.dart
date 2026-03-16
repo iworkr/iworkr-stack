@@ -11,7 +11,7 @@ import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
-// FIXME: HIGH — 16 async awaits with ZERO mounted checks. All ScaffoldMessenger/Navigator calls after await risk BuildContext crashes.
+// Mounted guards added to all async await chains to prevent BuildContext-after-dispose crashes
 class ShiftRoutinesScreen extends ConsumerStatefulWidget {
   final String shiftId;
   const ShiftRoutinesScreen({super.key, required this.shiftId});
@@ -76,6 +76,7 @@ class _ShiftRoutinesScreenState extends ConsumerState<ShiftRoutinesScreen> {
       }
 
       await completeRoutineTask(taskInstanceId: task.id, evidenceData: evidence);
+      if (!mounted) return;
       HapticFeedback.mediumImpact();
       await _refresh();
     } catch (e) {
@@ -102,6 +103,7 @@ class _ShiftRoutinesScreenState extends ConsumerState<ShiftRoutinesScreen> {
         reason: result.$1,
         note: result.$2,
       );
+      if (!mounted) return;
       HapticFeedback.heavyImpact();
       await _refresh();
     } catch (e) {
@@ -142,6 +144,7 @@ class _ShiftRoutinesScreenState extends ConsumerState<ShiftRoutinesScreen> {
         facilityId: bundle.facilityId,
         participantId: bundle.participantId,
       );
+      if (!mounted) return;
       await _refresh();
     } catch (e) {
       if (mounted) {
