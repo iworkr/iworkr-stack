@@ -2,226 +2,367 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useTransition } from "react";
 import {
-  Search, Clock, AlertTriangle, Check, ChevronRight, MapPin,
-  ArrowUpRight, ArrowDownRight, Timer, Users, Calendar, Download,
-  CheckCircle2, XCircle, Loader2, BarChart3, FileSpreadsheet,
+  Search, ChevronRight, Filter, Plus, Clock, MapPin,
+  Loader2, AlertTriangle, CheckCircle2, X,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
-  fetchTimeEntriesAction,
-  fetchPayrollExportsAction,
-  fetchTimesheetSummaryAction,
+  fetchTimesheetTriageAction,
+  getTimesheetTelemetryAction,
   resolveExceptionAction,
-  type TimeEntry as ServerTimeEntry,
-  type PayrollExport,
+  bulkResolveTimeEntriesAction,
+  type TriageRow,
 } from "@/app/actions/timesheets";
 
 /* ═══════════════════════════════════════════════════════════════════
-   Types
+   Types & Constants
    ═══════════════════════════════════════════════════════════════════ */
 
-type ExceptionType = "overtime" | "late_start" | "early_finish" | "missed_clock_out" | "geofence_breach";
-type AnomalyStatus = "pending" | "approved" | "truncated" | "dismissed";
-type ExportStatus = "success" | "processing" | "failed" | "partial_fail";
-type TSTab = "triage" | "grid" | "export";
+type PillTab = "triage" | "all" | "export_ready";
 
-interface TriageEntry {
-  id: string;
-  worker_name: string;
-  date: string;
-  scheduled_start: string;
-  scheduled_end: string;
-  actual_start: string;
-  actual_end: string;
-  variance_minutes: number;
-  exception_type: ExceptionType;
-  status: AnomalyStatus;
-  total_hours: number;
-  clock_in_location: string;
-  notes: string;
-}
-
-interface GridCell {
-  hours: number | null;
-  status: "approved" | "review" | "missing" | "none";
-}
-
-interface ExportRecord {
-  id: string;
-  export_date: string;
-  period: string;
-  platform: string;
-  workers: number;
-  hours: number;
-  status: ExportStatus;
-}
-
-const TABS: { id: TSTab; label: string }[] = [
+const PILL_TABS: { id: PillTab; label: string }[] = [
   { id: "triage", label: "Triage" },
-  { id: "grid", label: "Grid View" },
-  { id: "export", label: "Export" },
+  { id: "all", label: "All Timesheets" },
+  { id: "export_ready", label: "Export Ready" },
 ];
 
-const EXCEPTION_CONFIG: Record<ExceptionType, { label: string; color: string; icon: typeof ArrowUpRight }> = {
-  overtime:          { label: "Overtime",          color: "text-emerald-400", icon: ArrowUpRight },
-  late_start:        { label: "Late Start",        color: "text-amber-400",   icon: Clock },
-  early_finish:      { label: "Early Finish",      color: "text-amber-400",   icon: ArrowDownRight },
-  missed_clock_out:  { label: "Missed Clock-Out",  color: "text-rose-400",    icon: XCircle },
-  geofence_breach:   { label: "Geofence Breach",   color: "text-rose-400",    icon: MapPin },
-};
-
-const EXPORT_STATUS_CONFIG: Record<ExportStatus, { label: string; bg: string; text: string }> = {
-  success:      { label: "Complete",      bg: "bg-emerald-500/10", text: "text-emerald-400" },
-  processing:   { label: "Processing",    bg: "bg-amber-500/10",   text: "text-amber-400" },
-  failed:       { label: "Failed",        bg: "bg-rose-500/10",    text: "text-rose-400" },
-  partial_fail: { label: "Partial Fail",  bg: "bg-amber-500/10",   text: "text-amber-400" },
-};
+interface Telemetry {
+  pending_review: number;
+  auto_approved: number;
+  total_exceptions: number;
+  hours_this_period: number;
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    Helpers
    ═══════════════════════════════════════════════════════════════════ */
 
-/** Map a server TimeEntry to the TriageEntry shape the UI expects */
-function toTriageEntry(e: ServerTimeEntry): TriageEntry {
-  const exType = (e.exception_type ?? "overtime") as ExceptionType;
-  const clockIn = e.clock_in ?? "";
-  const clockOut = e.clock_out ?? "—";
-  const scheduledStart = e.scheduled_start ?? "";
-  const scheduledEnd = e.scheduled_end ?? "";
-
-  // Derive status — if exception_resolved, it's approved; otherwise pending
-  let status: AnomalyStatus = "pending";
-  if (e.exception_resolved) status = "approved";
-  if (e.status === "approved") status = "approved";
-  if (e.status === "disputed") status = "dismissed";
-
-  // Format location string
-  let locationStr = "";
-  if (e.clock_in_location && typeof e.clock_in_location === "object") {
-    locationStr = `${(e.clock_in_location as any).lat}, ${(e.clock_in_location as any).lng}`;
-  }
-
-  return {
-    id: e.id,
-    worker_name: e.worker_name ?? "Unknown",
-    date: clockIn.slice(0, 10),
-    scheduled_start: scheduledStart.length >= 16 ? scheduledStart.slice(11, 16) : scheduledStart,
-    scheduled_end: scheduledEnd.length >= 16 ? scheduledEnd.slice(11, 16) : scheduledEnd,
-    actual_start: clockIn.length >= 16 ? clockIn.slice(11, 16) : clockIn,
-    actual_end: clockOut === "—" ? "—" : (clockOut.length >= 16 ? clockOut.slice(11, 16) : clockOut),
-    variance_minutes: e.variance_minutes ?? 0,
-    exception_type: exType,
-    status,
-    total_hours: e.total_hours ?? 0,
-    clock_in_location: locationStr,
-    notes: e.exception_notes ?? e.geofence_override_reason ?? "",
-  };
-}
-
-/** Map a PayrollExport to the ExportRecord shape the UI expects */
-function toExportRecord(exp: PayrollExport): ExportRecord {
-  const start = exp.period_start?.slice(0, 10) ?? "";
-  const end = exp.period_end?.slice(0, 10) ?? "";
-
-  // Format period as "Mar 2–8, 2026"
-  let period = `${start} – ${end}`;
-  try {
-    const s = new Date(start);
-    const e = new Date(end);
-    const month = s.toLocaleDateString("en-AU", { month: "short" });
-    period = `${month} ${s.getDate()}–${e.getDate()}, ${s.getFullYear()}`;
-  } catch { /* fallback to raw dates */ }
-
-  return {
-    id: exp.id,
-    export_date: exp.created_at?.slice(0, 10) ?? "",
-    period,
-    platform: exp.target_platform?.toUpperCase() ?? "CSV",
-    workers: exp.worker_count ?? 0,
-    hours: exp.total_hours ?? 0,
-    status: exp.batch_status === "partial_fail" ? "partial_fail" : exp.batch_status as ExportStatus,
-  };
-}
-
-/** Build the grid data from raw time entries for a given week */
-function buildGridData(
-  allEntries: ServerTimeEntry[],
-  weekStart: Date
-): { workers: string[]; days: string[]; grid: Record<string, GridCell[]> } {
-  // Build day labels for the week
-  const days: string[] = [];
-  const dayDates: string[] = [];
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    days.push(`${dayNames[d.getDay()]} ${d.getDate()}`);
-    dayDates.push(d.toISOString().slice(0, 10));
-  }
-
-  // Group entries by worker name
-  const workerMap = new Map<string, ServerTimeEntry[]>();
-  for (const e of allEntries) {
-    const name = e.worker_name ?? "Unknown";
-    if (!workerMap.has(name)) workerMap.set(name, []);
-    workerMap.get(name)!.push(e);
-  }
-
-  const workers = Array.from(workerMap.keys()).sort();
-  const grid: Record<string, GridCell[]> = {};
-
-  for (const worker of workers) {
-    const workerEntries = workerMap.get(worker) ?? [];
-    const cells: GridCell[] = dayDates.map((dateStr) => {
-      // Find entry(ies) for this worker on this day
-      const dayEntries = workerEntries.filter((e) => e.clock_in?.slice(0, 10) === dateStr);
-      if (dayEntries.length === 0) return { hours: null, status: "none" as const };
-
-      const totalHours = dayEntries.reduce((s, e) => s + (e.total_hours ?? 0), 0);
-      const hasUnresolved = dayEntries.some(
-        (e) => e.exception_type && !e.exception_resolved
-      );
-      const allApproved = dayEntries.every(
-        (e) => e.status === "approved" || e.status === "auto_resolved"
-      );
-      const hasMissing = dayEntries.some(
-        (e) => e.status === "active" && !e.clock_out
-      );
-
-      if (hasMissing) return { hours: null, status: "missing" as const };
-      if (hasUnresolved) return { hours: Math.round(totalHours * 10) / 10, status: "review" as const };
-      if (allApproved) return { hours: Math.round(totalHours * 10) / 10, status: "approved" as const };
-      return { hours: Math.round(totalHours * 10) / 10, status: "review" as const };
-    });
-    grid[worker] = cells;
-  }
-
-  return { workers, days, grid };
-}
-
-function formatVariance(v: number, type: ExceptionType): string {
-  if (type === "missed_clock_out") return "Missing clock-out";
-  if (type === "geofence_breach") return "GPS mismatch";
-  const h = Math.abs(v) / 60;
-  const sign = v >= 0 ? "+" : "−";
-  return `${sign}${h.toFixed(1)}h ${type === "overtime" ? "overtime" : type.replace("_", " ")}`;
-}
-
 function getInitials(name: string) {
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase();
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
-/** Get the Monday of the current week */
-function getWeekStart(): Date {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // Monday
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
-  monday.setHours(0, 0, 0, 0);
-  return monday;
+function formatShiftDate(iso: string) {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return iso.slice(0, 10);
+  }
+}
+
+function formatTime(iso: string | null) {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false });
+  } catch {
+    return iso.slice(11, 16);
+  }
+}
+
+function formatVarianceHours(minutes: number): string {
+  const h = Math.abs(minutes) / 60;
+  const sign = minutes >= 0 ? "+" : "−";
+  return `${sign}${h.toFixed(1)}h`;
+}
+
+function isException(varianceMinutes: number): boolean {
+  return Math.abs(varianceMinutes) > 15;
+}
+
+function deriveDisplayStatus(row: TriageRow): "auto_approved" | "exception" | "manually_approved" | "draft" {
+  if (row.exception_type && !row.exception_resolved) return "exception";
+  if (row.exception_resolved && row.status === "manually_approved") return "manually_approved";
+  if (row.status === "auto_approved" || row.status === "manually_approved") return "auto_approved";
+  if (row.status === "exception") return "exception";
+  return "draft";
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Sub-Components
+   ═══════════════════════════════════════════════════════════════════ */
+
+function GhostBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    auto_approved: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    exception: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    manually_approved: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    draft: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+    export_ready: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  };
+  const labels: Record<string, string> = {
+    auto_approved: "AUTO-APPROVED",
+    exception: "EXCEPTION",
+    manually_approved: "MANUALLY APPROVED",
+    draft: "DRAFT",
+    export_ready: "EXPORT READY",
+  };
+  const cls = map[status] || map.draft;
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${cls}`}>
+      {labels[status] || status.toUpperCase()}
+    </span>
+  );
+}
+
+function MetricNode({
+  label,
+  value,
+  alert,
+}: {
+  label: string;
+  value: string | number;
+  alert?: boolean;
+}) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-1">{label}</span>
+      <div className="flex items-center gap-1.5">
+        {alert && (
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+          </span>
+        )}
+        <span
+          className={`font-mono text-[20px] leading-none ${alert ? "text-amber-500 font-bold" : "text-white"}`}
+        >
+          {value}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <tr className="border-b border-white/5 h-16 animate-pulse">
+      <td className="px-8 py-3"><div className="h-4 w-4 rounded bg-white/5" /></td>
+      <td className="py-3"><div className="flex items-center gap-3"><div className="h-8 w-8 rounded-full bg-white/5" /><div className="space-y-1.5"><div className="h-3 w-28 rounded bg-white/5" /><div className="h-2 w-20 rounded bg-white/5" /></div></div></td>
+      <td className="py-3"><div className="space-y-1.5"><div className="h-3 w-24 rounded bg-white/5" /><div className="h-2 w-20 rounded bg-white/5" /></div></td>
+      <td className="py-3"><div className="space-y-1.5"><div className="h-3 w-20 rounded bg-white/5" /><div className="h-2 w-16 rounded bg-white/5" /></div></td>
+      <td className="py-3"><div className="h-3 w-12 rounded bg-white/5" /></td>
+      <td className="py-3"><div className="h-5 w-24 rounded-full bg-white/5" /></td>
+      <td className="py-3 pr-8"><div className="h-4 w-4 rounded bg-white/5" /></td>
+    </tr>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-dashed border-white/10">
+        <Clock size={28} strokeWidth={0.8} className="text-zinc-700" />
+      </div>
+      <p className="text-[13px] font-medium text-zinc-400">No timesheet entries found</p>
+      <p className="mt-1 max-w-xs text-[11px] text-zinc-600">
+        Time entries will appear here when workers clock in to their shifts.
+      </p>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Slide-Over: Exception Review
+   ═══════════════════════════════════════════════════════════════════ */
+
+function ExceptionReviewSlideOver({
+  entry,
+  onClose,
+  onApprove,
+  onReject,
+  loading,
+}: {
+  entry: TriageRow;
+  onClose: () => void;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+  loading: boolean;
+}) {
+  const schedStart = formatTime(entry.scheduled_start);
+  const schedEnd = formatTime(entry.scheduled_end);
+  const actualStart = formatTime(entry.clock_in);
+  const actualEnd = formatTime(entry.clock_out);
+  const variance = entry.variance_minutes;
+  const isExc = isException(variance);
+
+  // GPS data
+  const hasGps = entry.clock_in_location && typeof entry.clock_in_location === "object";
+  const gpsLat = hasGps ? (entry.clock_in_location as any).lat : null;
+  const gpsLng = hasGps ? (entry.clock_in_location as any).lng : null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <motion.div
+        initial={{ x: 500 }}
+        animate={{ x: 0 }}
+        exit={{ x: 500 }}
+        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        className="fixed inset-y-0 right-0 z-50 flex w-[500px] flex-col border-l border-white/5 bg-zinc-950 shadow-2xl"
+      >
+        {/* Header */}
+        <div className="flex h-16 items-center justify-between border-b border-white/5 px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-zinc-300">
+              {getInitials(entry.worker_name)}
+            </div>
+            <div>
+              <h3 className="text-[14px] font-medium text-zinc-200">{entry.worker_name}</h3>
+              <p className="text-[11px] text-zinc-500">{formatShiftDate(entry.shift_date)}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-300"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* GPS Map placeholder */}
+          {hasGps && (
+            <div className="rounded-lg border border-white/5 bg-zinc-900/50 p-4">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Clock-In Location</p>
+              <div className="flex items-center gap-2 rounded-md bg-zinc-800/50 px-3 py-2">
+                <MapPin size={14} className={entry.is_geofence_override ? "text-rose-400" : "text-emerald-400"} />
+                <span className="font-mono text-[12px] text-zinc-300">
+                  {gpsLat?.toFixed(5)}, {gpsLng?.toFixed(5)}
+                </span>
+                {entry.is_geofence_override && (
+                  <span className="ml-auto rounded-full bg-rose-500/10 px-2 py-0.5 text-[9px] font-semibold text-rose-400 border border-rose-500/20">
+                    GEOFENCE OVERRIDE
+                  </span>
+                )}
+              </div>
+              {entry.geofence_override_reason && (
+                <p className="mt-2 text-[11px] italic text-zinc-500">{entry.geofence_override_reason}</p>
+              )}
+            </div>
+          )}
+
+          {/* Variance Breakdown */}
+          <div className="rounded-lg border border-white/5 bg-zinc-900/50 p-4">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Variance Breakdown</p>
+            <div className="space-y-3">
+              {/* Timeline visual */}
+              <div className="relative h-12 rounded-md bg-zinc-800/50 overflow-hidden">
+                {/* Scheduled block */}
+                <div className="absolute inset-y-0 left-[10%] right-[10%] flex items-center">
+                  <div className="h-6 w-full rounded bg-zinc-700/50 border border-white/5" />
+                </div>
+                {/* Actual overrun */}
+                {isExc && variance > 0 && (
+                  <div className="absolute inset-y-0 right-[2%] flex items-center" style={{ width: `${Math.min(variance / 5, 8)}%` }}>
+                    <div className="h-6 w-full rounded-r bg-amber-500/20 border border-amber-500/30" />
+                  </div>
+                )}
+                {/* Labels */}
+                <div className="absolute inset-0 flex items-center justify-between px-3">
+                  <span className="font-mono text-[10px] text-zinc-500">Scheduled</span>
+                  {isExc && (
+                    <span className="font-mono text-[10px] text-amber-400">
+                      {formatVarianceHours(variance)} variance
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Data rows */}
+              <div className="space-y-2 text-[12px]">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Scheduled</span>
+                  <span className="font-mono text-[12px] text-zinc-300">{schedStart} — {schedEnd}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Actual</span>
+                  <span className="font-mono text-[12px] text-white font-medium">{actualStart} — {actualEnd}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Total Logged</span>
+                  <span className="font-mono text-[12px] text-white font-medium">
+                    {entry.total_hours != null ? `${entry.total_hours.toFixed(1)}h` : "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Scheduled Duration</span>
+                  <span className="font-mono text-[12px] text-zinc-400">
+                    {entry.scheduled_hours != null ? `${entry.scheduled_hours.toFixed(1)}h` : "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-white/5 pt-2">
+                  <span className="text-zinc-500 font-medium">Variance</span>
+                  <span className={`font-mono text-[14px] font-bold ${isExc ? "text-amber-500" : "text-zinc-600"}`}>
+                    {formatVarianceHours(entry.variance_minutes)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Exception Type */}
+          {entry.exception_type && (
+            <div className="rounded-lg border border-white/5 bg-zinc-900/50 p-4">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Exception Type</p>
+              <GhostBadge status="exception" />
+              <span className="ml-2 text-[12px] text-zinc-300">
+                {entry.exception_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+              </span>
+            </div>
+          )}
+
+          {/* Worker Notes */}
+          {entry.notes && (
+            <div className="border-l-2 border-zinc-700 pl-4">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Worker Note</p>
+              <p className="text-[14px] italic leading-relaxed text-zinc-300">
+                &ldquo;{entry.notes}&rdquo;
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-white/5 bg-[#050505] p-6 flex gap-3">
+          <button
+            onClick={() => onReject(entry.id)}
+            disabled={loading}
+            className="flex w-1/2 items-center justify-center gap-2 rounded-md border border-rose-500/20 bg-transparent px-4 py-2.5 text-[13px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10 disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+            Reject Overtime
+          </button>
+          <button
+            onClick={() => onApprove(entry.id)}
+            disabled={loading}
+            className="flex w-1/2 items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-[13px] font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+            Approve Override
+          </button>
+        </div>
+      </motion.div>
+    </>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -231,808 +372,446 @@ function getWeekStart(): Date {
 export default function TimesheetsPage() {
   const { orgId, loading: orgLoading } = useOrg();
 
-  const [activeTab, setActiveTab] = useState<TSTab>("triage");
+  const [activeTab, setActiveTab] = useState<PillTab>("triage");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [gridSelectAll, setGridSelectAll] = useState(false);
-  const [exportPlatform, setExportPlatform] = useState("xero");
-
-  // ── Data state ─────────────────────────────────────────
-  const [entries, setEntries] = useState<TriageEntry[]>([]);
-  const [allTimeEntries, setAllTimeEntries] = useState<ServerTimeEntry[]>([]);
-  const [exports, setExports] = useState<ExportRecord[]>([]);
-  const [summary, setSummary] = useState<{
-    statusCounts: Record<string, number>;
-    totalHours: number;
-    totalOvertime: number;
-    totalTimesheets: number;
-    unresolvedExceptions: number;
-  } | null>(null);
-
-  // ── Loading / error state ──────────────────────────────
+  const [rows, setRows] = useState<TriageRow[]>([]);
+  const [telemetry, setTelemetry] = useState<Telemetry>({
+    pending_review: 0,
+    auto_approved: 0,
+    total_exceptions: 0,
+    hours_this_period: 0,
+  });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [slideOverEntry, setSlideOverEntry] = useState<TriageRow | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [, startTransition] = useTransition();
 
-  // ── Grid state (derived) ───────────────────────────────
-  const weekStart = useMemo(() => getWeekStart(), []);
-  const gridData = useMemo(
-    () => buildGridData(allTimeEntries, weekStart),
-    [allTimeEntries, weekStart]
-  );
-
-  // ── Fetch data ─────────────────────────────────────────
+  // ── Load data ─────────────────────────────────────
   const loadData = useCallback(async () => {
     if (!orgId) return;
     setLoading(true);
-    setError(null);
-
     try {
-      const [timeEntries, payrollExports, summaryData] = await Promise.all([
-        fetchTimeEntriesAction(orgId, { has_exception: true }),
-        fetchPayrollExportsAction(orgId),
-        fetchTimesheetSummaryAction(orgId),
+      const [triageData, telemetryData] = await Promise.all([
+        fetchTimesheetTriageAction(orgId, { tab: activeTab }),
+        getTimesheetTelemetryAction(orgId),
       ]);
-
-      // Also fetch all time entries for the grid view (current week)
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 7);
-      const allEntries = await fetchTimeEntriesAction(orgId, {
-        date_from: weekStart.toISOString(),
-        date_to: weekEnd.toISOString(),
-      });
-
-      // Map to UI shapes
-      const triageEntries = (timeEntries || []).map(toTriageEntry);
-      const exportRecords = (payrollExports || []).map(toExportRecord);
-
-      setEntries(triageEntries);
-      setAllTimeEntries(allEntries || []);
-      setExports(exportRecords);
-      setSummary(summaryData);
-
-      // Auto-select first pending entry
-      const firstPending = triageEntries.find((e: TriageEntry) => e.status === "pending");
-      if (firstPending) setSelectedId(firstPending.id);
+      setRows(triageData);
+      setTelemetry(telemetryData);
     } catch (e: any) {
-      console.error("[timesheets] Failed to load data:", e);
-      setError(e.message || "Failed to load timesheet data");
+      console.error("[timesheets] load failed:", e);
     } finally {
       setLoading(false);
     }
-  }, [orgId, weekStart]);
+  }, [orgId, activeTab]);
 
   useEffect(() => {
     if (orgId) loadData();
   }, [orgId, loadData]);
 
-  /* ── Triage stats ─────────────────────────────────── */
-  const stats = useMemo(() => {
-    const pending = entries.filter((e) => e.status === "pending").length;
-    const approved = entries.filter((e) => e.status === "approved").length;
-    const total = entries.length;
-    const hours = summary?.totalHours ?? entries.reduce((s, e) => s + e.total_hours, 0);
-    return { pending, approved, total, hours };
-  }, [entries, summary]);
-
-  /* ── Filtered entries ─────────────────────────────── */
-  const filtered = useMemo(() => {
-    if (!search) return entries.filter((e) => e.status === "pending");
+  // ── Filtered rows ─────────────────────────────────
+  const filteredRows = useMemo(() => {
+    if (!search) return rows;
     const q = search.toLowerCase();
-    return entries.filter(
-      (e) => e.status === "pending" && (e.worker_name.toLowerCase().includes(q) || e.exception_type.includes(q))
+    return rows.filter(
+      (r) =>
+        r.worker_name.toLowerCase().includes(q) ||
+        r.worker_id.toLowerCase().includes(q) ||
+        (r.exception_type && r.exception_type.toLowerCase().includes(q))
     );
-  }, [entries, search]);
+  }, [rows, search]);
 
-  const selected = useMemo(() => entries.find((e) => e.id === selectedId) ?? null, [entries, selectedId]);
-
-  /* ── Actions ──────────────────────────────────────── */
-  const handleApprove = useCallback(async (id: string) => {
-    setActionLoading(id);
-    try {
-      await resolveExceptionAction(id, "approve", "Approved via triage");
-      setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, status: "approved" as AnomalyStatus } : e)));
-      setSelectedId(null);
-    } catch (e: any) {
-      console.error("[timesheets] Approve failed:", e);
-    } finally {
-      setActionLoading(null);
-    }
+  // ── Selection ─────────────────────────────────────
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }, []);
 
-  const handleTruncate = useCallback(async (id: string) => {
-    setActionLoading(id);
-    try {
-      await resolveExceptionAction(id, "truncate", "Truncated to scheduled end time");
-      setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, status: "truncated" as AnomalyStatus } : e)));
-      setSelectedId(null);
-    } catch (e: any) {
-      console.error("[timesheets] Truncate failed:", e);
-    } finally {
-      setActionLoading(null);
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === filteredRows.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredRows.map((r) => r.id)));
     }
-  }, []);
+  }, [selectedIds.size, filteredRows]);
 
-  // ── Global loading state ───────────────────────────
-  if (orgLoading || (loading && entries.length === 0)) {
-    return (
-      <div className="flex h-full items-center justify-center bg-[var(--background)]">
-        <div className="stealth-noise" />
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 size={24} className="animate-spin text-emerald-500" />
-          <p className="text-[12px] text-zinc-600">Loading timesheets…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && entries.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center bg-[var(--background)]">
-        <div className="stealth-noise" />
-        <div className="flex flex-col items-center gap-3">
-          <AlertTriangle size={24} className="text-rose-400" />
-          <p className="text-[13px] font-medium text-zinc-400">Failed to load timesheets</p>
-          <p className="text-[11px] text-zinc-600">{error}</p>
-          <button
-            onClick={loadData}
-            className="mt-2 rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative flex h-full flex-col bg-[var(--background)]">
-      {/* Noise */}
-      <div className="stealth-noise" />
-
-      {/* Atmospheric glow */}
-      <div
-        className="pointer-events-none absolute top-0 left-0 right-0 z-0 h-64"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(255,255,255,0.015) 0%, transparent 60%)" }}
-      />
-
-      {/* ═══ Sticky Header ═══ */}
-      <div className="sticky top-0 z-20 border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-xl">
-        <div className="px-4 pt-4 pb-0 md:px-6 md:pt-5">
-          {/* Title row */}
-          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="mb-1 font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-                Timesheets &amp; Payroll
-              </p>
-              <h1 className="text-[15px] font-medium tracking-tight text-zinc-200">Payroll Engine</h1>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Search */}
-              <div className="relative">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search entries..."
-                  className="h-8 w-48 rounded-lg border border-white/[0.06] bg-white/[0.03] pl-8 pr-3 text-[12px] text-zinc-300 placeholder-zinc-600 outline-none transition-colors focus:border-emerald-500/30"
-                />
-                {/* Emerald focus bar */}
-                <motion.div
-                  className="absolute bottom-0 left-2 right-2 h-px bg-emerald-500"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: search ? 1 : 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-              </div>
-
-              {/* CTA */}
-              <button className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500">
-                <div className="flex items-center gap-1.5">
-                  <Clock size={12} />
-                  Log Time
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-0">
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative px-4 pb-2.5 pt-1 text-[12px] font-medium transition-colors ${
-                    isActive ? "text-zinc-200" : "text-zinc-600 hover:text-zinc-400"
-                  }`}
-                >
-                  {tab.label}
-                  {isActive && (
-                    <motion.div
-                      layoutId="ts-tab-dot"
-                      className="absolute inset-x-0 -bottom-px mx-auto h-[3px] w-3 rounded-full bg-emerald-500"
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ Tab Content ═══ */}
-      <div className="relative z-10 flex-1 overflow-y-auto">
-        <AnimatePresence mode="wait">
-          {activeTab === "triage" && (
-            <motion.div key="triage" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <TriageTab
-                entries={filtered}
-                selected={selected}
-                stats={stats}
-                onSelect={setSelectedId}
-                onApprove={handleApprove}
-                onTruncate={handleTruncate}
-                actionLoading={actionLoading}
-              />
-            </motion.div>
-          )}
-          {activeTab === "grid" && (
-            <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <GridViewTab
-                workers={gridData.workers}
-                days={gridData.days}
-                grid={gridData.grid}
-                weekStart={weekStart}
-                selectAll={gridSelectAll}
-                onToggleSelectAll={() => setGridSelectAll((p) => !p)}
-                loading={loading}
-              />
-            </motion.div>
-          )}
-          {activeTab === "export" && (
-            <motion.div key="export" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <ExportTab
-                exports={exports}
-                platform={exportPlatform}
-                onPlatformChange={setExportPlatform}
-                loading={loading}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* ═══ Footer ═══ */}
-      <div className="border-t border-white/[0.03] bg-zinc-950/60 px-6 py-2">
-        <div className="flex items-center gap-4 text-[10px] text-zinc-600">
-          <span><kbd className="rounded border border-white/[0.08] px-1 py-0.5 font-mono text-[9px]">↑↓</kbd> Navigate</span>
-          <span><kbd className="rounded border border-white/[0.08] px-1 py-0.5 font-mono text-[9px]">↵</kbd> Select</span>
-          <span><kbd className="rounded border border-white/[0.08] px-1 py-0.5 font-mono text-[9px]">A</kbd> Approve</span>
-          <span><kbd className="rounded border border-white/[0.08] px-1 py-0.5 font-mono text-[9px]">T</kbd> Truncate</span>
-        </div>
-      </div>
-    </div>
+  // ── Actions ───────────────────────────────────────
+  const handleApprove = useCallback(
+    async (id: string) => {
+      setActionLoading(true);
+      try {
+        await resolveExceptionAction(id, "approve", "Approved via triage");
+        startTransition(() => {
+          setRows((prev) =>
+            prev.map((r) =>
+              r.id === id ? { ...r, status: "manually_approved", exception_resolved: true } : r
+            )
+          );
+          setSlideOverEntry(null);
+          setTelemetry((t) => ({
+            ...t,
+            pending_review: Math.max(0, t.pending_review - 1),
+            total_exceptions: Math.max(0, t.total_exceptions - 1),
+          }));
+        });
+      } catch (e: any) {
+        console.error("[timesheets] approve failed:", e);
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [startTransition]
   );
-}
 
-/* ═══════════════════════════════════════════════════════════════════
-   TAB 1 — TRIAGE
-   ═══════════════════════════════════════════════════════════════════ */
+  const handleReject = useCallback(
+    async (id: string) => {
+      setActionLoading(true);
+      try {
+        await resolveExceptionAction(id, "dispute", "Rejected via triage");
+        startTransition(() => {
+          setRows((prev) => prev.filter((r) => r.id !== id));
+          setSlideOverEntry(null);
+          setTelemetry((t) => ({
+            ...t,
+            pending_review: Math.max(0, t.pending_review - 1),
+            total_exceptions: Math.max(0, t.total_exceptions - 1),
+          }));
+        });
+      } catch (e: any) {
+        console.error("[timesheets] reject failed:", e);
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [startTransition]
+  );
 
-function TriageTab({
-  entries, selected, stats, onSelect, onApprove, onTruncate, actionLoading,
-}: {
-  entries: TriageEntry[];
-  selected: TriageEntry | null;
-  stats: { pending: number; approved: number; total: number; hours: number };
-  onSelect: (id: string) => void;
-  onApprove: (id: string) => void;
-  onTruncate: (id: string) => void;
-  actionLoading: string | null;
-}) {
-  return (
-    <div className="flex flex-col">
-      {/* Stats bar */}
-      <div className="grid grid-cols-4 gap-3 border-b border-white/[0.03] px-6 py-4">
-        {[
-          { label: "Pending Review", value: stats.pending, color: "text-amber-400", icon: AlertTriangle },
-          { label: "Auto-Approved",  value: stats.approved, color: "text-emerald-400", icon: CheckCircle2 },
-          { label: "Total Exceptions", value: stats.total, color: "text-rose-400", icon: BarChart3 },
-          { label: "Hours This Period", value: `${stats.hours.toFixed(1)}h`, color: "text-zinc-300", icon: Timer },
-        ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] px-4 py-3">
-            <div className="mb-1 flex items-center gap-1.5">
-              <s.icon size={11} className={s.color} />
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{s.label}</span>
-            </div>
-            <p className={`text-[20px] font-semibold tracking-tight ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
+  const handleBulkApprove = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setActionLoading(true);
+    try {
+      await bulkResolveTimeEntriesAction(Array.from(selectedIds), "approve");
+      startTransition(() => {
+        setRows((prev) =>
+          prev.map((r) =>
+            selectedIds.has(r.id) ? { ...r, status: "manually_approved", exception_resolved: true } : r
+          )
+        );
+        setTelemetry((t) => ({
+          ...t,
+          pending_review: Math.max(0, t.pending_review - selectedIds.size),
+          total_exceptions: Math.max(0, t.total_exceptions - selectedIds.size),
+        }));
+        setSelectedIds(new Set());
+      });
+    } catch (e: any) {
+      console.error("[timesheets] bulk approve failed:", e);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [selectedIds, startTransition]);
+
+  const handleBulkReject = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setActionLoading(true);
+    try {
+      await bulkResolveTimeEntriesAction(Array.from(selectedIds), "reject");
+      startTransition(() => {
+        setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+        setTelemetry((t) => ({
+          ...t,
+          pending_review: Math.max(0, t.pending_review - selectedIds.size),
+          total_exceptions: Math.max(0, t.total_exceptions - selectedIds.size),
+        }));
+        setSelectedIds(new Set());
+      });
+    } catch (e: any) {
+      console.error("[timesheets] bulk reject failed:", e);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [selectedIds, startTransition]);
+
+  // ── Loading ───────────────────────────────────────
+  if (orgLoading) {
+    return (
+      <div className="flex h-full items-center justify-center bg-[#050505]">
+        <Loader2 size={20} className="animate-spin text-zinc-600" />
       </div>
+    );
+  }
 
-      {/* Split panel */}
-      <div className="flex flex-1">
-        {/* LEFT — Anomaly Feed */}
-        <div className="w-[60%] border-r border-white/[0.03]">
-          {/* Column header */}
-          <div className="grid grid-cols-[1fr_100px_120px_80px] gap-2 border-b border-white/[0.03] bg-[var(--surface-1)] px-6 py-2">
-            {["Worker", "Date", "Variance", "Status"].map((h) => (
-              <span key={h} className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{h}</span>
+  return (
+    <div className="relative flex h-full flex-col bg-[#050505]">
+      {/* ═══ COMMAND HEADER (h-14) ═══ */}
+      <div className="flex h-14 items-center justify-between border-b border-white/5 bg-[#050505] px-8">
+        {/* Left Cluster */}
+        <div className="flex items-center">
+          {/* Breadcrumb */}
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            WORKFORCE
+          </span>
+
+          {/* Divider */}
+          <div className="mx-4 h-4 w-px bg-white/10" />
+
+          {/* Pill Tabs */}
+          <div className="flex items-center gap-1 rounded-lg border border-white/5 bg-zinc-900/50 p-1">
+            {PILL_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setSelectedIds(new Set());
+                }}
+                className={`rounded-md px-3 py-1.5 text-xs transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-white/10 text-white font-medium shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
-
-          {entries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <CheckCircle2 size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
-              <p className="text-[13px] font-medium text-zinc-500">No exceptions to review</p>
-              <p className="mt-1 text-[11px] text-zinc-700">All time entries are clean for this period.</p>
-            </div>
-          ) : (
-            <div>
-              {entries.map((entry, i) => {
-                const exc = EXCEPTION_CONFIG[entry.exception_type] ?? EXCEPTION_CONFIG.overtime;
-                const Icon = exc.icon;
-                const isSelected = selected?.id === entry.id;
-                return (
-                  <motion.div
-                    key={entry.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03, duration: 0.3 }}
-                    onClick={() => onSelect(entry.id)}
-                    className={`grid cursor-pointer grid-cols-[1fr_100px_120px_80px] items-center gap-2 border-b border-white/[0.02] px-6 py-3 transition-colors ${
-                      isSelected ? "bg-emerald-500/[0.04] border-l-2 border-l-emerald-500" : "hover:bg-white/[0.02]"
-                    }`}
-                  >
-                    {/* Worker */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-[10px] font-medium text-zinc-400">
-                        {getInitials(entry.worker_name)}
-                      </div>
-                      <div>
-                        <p className="text-[12px] font-medium text-zinc-200">{entry.worker_name}</p>
-                        <p className="text-[10px] text-zinc-600">{entry.scheduled_start} – {entry.scheduled_end}</p>
-                      </div>
-                    </div>
-
-                    {/* Date */}
-                    <span className="text-[11px] text-zinc-500">{entry.date.slice(5)}</span>
-
-                    {/* Variance */}
-                    <div className="flex items-center gap-1.5">
-                      <Icon size={11} className={exc.color} />
-                      <span className={`text-[11px] font-medium ${exc.color}`}>
-                        {formatVariance(entry.variance_minutes, entry.exception_type)}
-                      </span>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex items-center gap-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                      <span className="text-[10px] text-amber-400">Pending</span>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
         </div>
 
-        {/* RIGHT — Resolution Pane */}
-        <div className="w-[40%]">
-          <AnimatePresence mode="wait">
-            {selected ? (
-              <motion.div
-                key={selected.id}
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 12 }}
-                transition={{ duration: 0.2 }}
-                className="flex h-full flex-col"
-              >
-                {/* Header */}
-                <div className="border-b border-white/[0.03] px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-zinc-300">
-                      {getInitials(selected.worker_name)}
-                    </div>
-                    <div>
-                      <h3 className="text-[14px] font-medium text-zinc-200">{selected.worker_name}</h3>
-                      <p className="text-[11px] text-zinc-600">
-                        {selected.date} · {selected.actual_start} – {selected.actual_end}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="flex-1 space-y-4 px-6 py-4">
-                  {/* Exception type badge */}
-                  <div className="flex items-center gap-2">
-                    {(() => { const cfg = EXCEPTION_CONFIG[selected.exception_type] ?? EXCEPTION_CONFIG.overtime; const EIcon = cfg.icon; return <EIcon size={13} className={cfg.color} />; })()}
-                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                      selected.exception_type === "overtime" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" :
-                      selected.exception_type === "geofence_breach" || selected.exception_type === "missed_clock_out"
-                        ? "border-rose-500/20 bg-rose-500/10 text-rose-400"
-                        : "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                    }`}>
-                      {(EXCEPTION_CONFIG[selected.exception_type] ?? EXCEPTION_CONFIG.overtime).label}
-                    </span>
-                  </div>
-
-                  {/* Time breakdown */}
-                  <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
-                    <p className="mb-2 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Shift Details</p>
-                    <div className="space-y-1.5 text-[11px]">
-                      <div className="flex justify-between">
-                        <span className="text-zinc-600">Scheduled</span>
-                        <span className="text-zinc-400">{selected.scheduled_start} – {selected.scheduled_end}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-600">Actual</span>
-                        <span className="text-zinc-300 font-medium">{selected.actual_start} – {selected.actual_end}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-600">Total</span>
-                        <span className="font-medium text-emerald-400">{selected.total_hours}h</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* GPS indicator */}
-                  <div className="flex items-center gap-2 rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2">
-                    <MapPin size={12} className={selected.exception_type === "geofence_breach" ? "text-rose-400" : "text-emerald-400"} />
-                    <span className="text-[10px] text-zinc-500">
-                      {selected.exception_type === "geofence_breach"
-                        ? "Geofence Override — clocked in outside geofence"
-                        : selected.clock_in_location
-                          ? `GPS Verified: ${selected.clock_in_location}`
-                          : "No GPS data available"}
-                    </span>
-                  </div>
-
-                  {/* Notes */}
-                  {selected.notes && (
-                    <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
-                      <p className="mb-1.5 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Shift Notes</p>
-                      <p className="text-[11px] leading-relaxed text-zinc-400">{selected.notes}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action buttons */}
-                <div className="border-t border-white/[0.03] px-6 py-4">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onApprove(selected.id)}
-                      disabled={actionLoading === selected.id}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
-                    >
-                      {actionLoading === selected.id ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Check size={12} />
-                      )}
-                      Approve Overtime
-                    </button>
-                    <button
-                      onClick={() => onTruncate(selected.id)}
-                      disabled={actionLoading === selected.id}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] font-medium text-amber-400 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
-                    >
-                      {actionLoading === selected.id ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Clock size={12} />
-                      )}
-                      Truncate to Schedule
-                    </button>
-                    <button className="flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.06]">
-                      <ChevronRight size={12} /> Message
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex h-full flex-col items-center justify-center text-center"
-              >
-                <Clock size={28} strokeWidth={0.8} className="mb-3 text-zinc-800" />
-                <p className="text-[12px] text-zinc-600">Select an entry to review</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   TAB 2 — GRID VIEW
-   ═══════════════════════════════════════════════════════════════════ */
-
-function GridViewTab({
-  workers, days, grid, weekStart, selectAll, onToggleSelectAll, loading,
-}: {
-  workers: string[];
-  days: string[];
-  grid: Record<string, GridCell[]>;
-  weekStart: Date;
-  selectAll: boolean;
-  onToggleSelectAll: () => void;
-  loading: boolean;
-}) {
-  const totals = useMemo(() => {
-    const result: Record<string, number> = {};
-    workers.forEach((w) => {
-      const cells = grid[w] ?? [];
-      result[w] = cells.reduce((s, c) => s + (c.hours ?? 0), 0);
-    });
-    return result;
-  }, [workers, grid]);
-
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 6);
-  const weekLabel = `Week of ${weekStart.toLocaleDateString("en-AU", { month: "long", day: "numeric" })} – ${weekEnd.toLocaleDateString("en-AU", { day: "numeric" })}, ${weekStart.getFullYear()}`;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 size={20} className="animate-spin text-emerald-500" />
-        <span className="ml-2 text-[12px] text-zinc-600">Loading grid…</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col">
-      {/* Period label */}
-      <div className="flex items-center justify-between border-b border-white/[0.03] px-6 py-3">
-        <div className="flex items-center gap-2">
-          <Calendar size={13} className="text-zinc-600" />
-          <span className="text-[12px] font-medium text-zinc-300">{weekLabel}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Users size={12} className="text-zinc-600" />
-          <span className="text-[11px] text-zinc-500">{workers.length} workers</span>
-        </div>
-      </div>
-
-      {workers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Users size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
-          <p className="text-[13px] font-medium text-zinc-500">No time entries this week</p>
-          <p className="mt-1 text-[11px] text-zinc-700">Time entries will appear here when workers clock in.</p>
-        </div>
-      ) : (
-        <>
-          {/* Grid */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px]">
-              {/* Header */}
-              <thead>
-                <tr className="border-b border-white/[0.03] bg-[var(--surface-1)]">
-                  <th className="w-48 px-6 py-2 text-left font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Worker</th>
-                  {days.map((d) => (
-                    <th key={d} className="px-3 py-2 text-center font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{d}</th>
-                  ))}
-                  <th className="px-4 py-2 text-right font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Total</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {workers.map((worker, wi) => (
-                  <motion.tr
-                    key={worker}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: wi * 0.04, duration: 0.3 }}
-                    className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors"
-                  >
-                    {/* Worker name */}
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-[9px] font-medium text-zinc-400">
-                          {getInitials(worker)}
-                        </div>
-                        <span className="text-[12px] font-medium text-zinc-300">{worker}</span>
-                      </div>
-                    </td>
-
-                    {/* Day cells */}
-                    {(grid[worker] ?? []).map((cell, di) => (
-                      <td key={di} className="px-3 py-3 text-center">
-                        {cell.status === "none" ? (
-                          <span className="text-[11px] text-zinc-700">—</span>
-                        ) : cell.status === "missing" ? (
-                          <span className="inline-flex items-center rounded-md border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-400">
-                            Missing
-                          </span>
-                        ) : (
-                          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium ${
-                            cell.status === "approved"
-                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                              : "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                          }`}>
-                            {cell.hours?.toFixed(1)}h
-                          </span>
-                        )}
-                      </td>
-                    ))}
-
-                    {/* Total */}
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-[12px] font-semibold text-zinc-200">{totals[worker]?.toFixed(1)}h</span>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-white/[0.03] px-6 py-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectAll}
-                onChange={onToggleSelectAll}
-                className="h-3.5 w-3.5 rounded border-white/[0.1] bg-white/[0.03] accent-emerald-500"
-              />
-              <span className="text-[11px] text-zinc-500">Select All Workers</span>
-            </label>
-            <button className="rounded-lg bg-emerald-600 px-4 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-emerald-500">
-              Bulk Approve
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   TAB 3 — EXPORT
-   ═══════════════════════════════════════════════════════════════════ */
-
-function ExportTab({
-  exports: exportRecords, platform, onPlatformChange, loading,
-}: {
-  exports: ExportRecord[];
-  platform: string;
-  onPlatformChange: (p: string) => void;
-  loading: boolean;
-}) {
-  const [exporting, setExporting] = useState(false);
-
-  const handleExport = useCallback(() => {
-    setExporting(true);
-    setTimeout(() => setExporting(false), 2000);
-  }, []);
-
-  return (
-    <div className="space-y-6 px-6 py-5">
-      {/* Run Payroll Export */}
-      <div className="rounded-2xl border border-white/[0.06] bg-[#0A0A0A]/95 p-6 backdrop-blur-xl">
-        <div className="mb-4 flex items-center gap-2">
-          <FileSpreadsheet size={15} className="text-emerald-400" />
-          <h2 className="text-[14px] font-medium text-zinc-200">Run Payroll Export</h2>
-        </div>
-
-        <div className="flex flex-wrap items-end gap-4">
-          {/* Period */}
-          <div>
-            <label className="mb-1.5 block font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
-              Period Ending
-            </label>
+        {/* Right Cluster */}
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="flex h-8 w-64 items-center rounded-md border border-white/5 bg-zinc-900 px-3">
+            <Search className="h-3 w-3 text-zinc-500" />
             <input
-              type="date"
-              defaultValue={new Date().toISOString().slice(0, 10)}
-              className="h-9 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 text-[12px] text-zinc-300 outline-none transition-colors focus:border-emerald-500/30"
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search worker name, ID..."
+              className="ml-2 w-full bg-transparent text-xs text-white placeholder:text-zinc-600 outline-none"
             />
           </div>
 
-          {/* Platform */}
-          <div>
-            <label className="mb-1.5 block font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">
-              Target Platform
-            </label>
-            <select
-              value={platform}
-              onChange={(e) => onPlatformChange(e.target.value)}
-              className="h-9 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 pr-8 text-[12px] text-zinc-300 outline-none transition-colors focus:border-emerald-500/30"
-            >
-              <option value="xero">Xero</option>
-              <option value="myob">MYOB</option>
-              <option value="keypay">KeyPay</option>
-              <option value="csv">CSV Download</option>
-            </select>
-          </div>
+          {/* Filter */}
+          <button className="flex h-8 items-center gap-1.5 rounded-md border border-white/5 bg-transparent px-3 text-xs text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200">
+            <Filter className="h-3 w-3" />
+            Filters
+          </button>
 
-          {/* Export button */}
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="flex h-9 items-center gap-2 rounded-lg bg-emerald-600 px-5 text-[12px] font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
-          >
-            {exporting ? (
-              <>
-                <Loader2 size={13} className="animate-spin" />
-                Exporting…
-              </>
-            ) : (
-              <>
-                <Download size={13} />
-                Export Payroll
-              </>
-            )}
+          {/* Log Time CTA */}
+          <button className="ml-3 flex h-8 items-center gap-1.5 rounded-md bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-zinc-200">
+            <Plus className="h-3 w-3" />
+            Log Time
           </button>
         </div>
       </div>
 
-      {/* Export History */}
-      <div>
-        <h2 className="mb-3 font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">Export History</h2>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={20} className="animate-spin text-emerald-500" />
-            <span className="ml-2 text-[12px] text-zinc-600">Loading exports…</span>
-          </div>
-        ) : exportRecords.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <FileSpreadsheet size={32} strokeWidth={0.8} className="mb-3 text-zinc-800" />
-            <p className="text-[13px] font-medium text-zinc-500">No exports yet</p>
-            <p className="mt-1 text-[11px] text-zinc-700">Run your first payroll export above.</p>
-          </div>
-        ) : (
-          <>
-            {/* Table header */}
-            <div className="grid grid-cols-[120px_160px_80px_60px_80px_90px_80px] gap-2 border-b border-white/[0.03] bg-[var(--surface-1)] px-6 py-2">
-              {["Export Date", "Period", "Platform", "Workers", "Hours", "Status", "Actions"].map((h) => (
-                <span key={h} className="font-mono text-[9px] font-bold tracking-widest text-zinc-600 uppercase">{h}</span>
-              ))}
-            </div>
-
-            {/* Rows */}
-            {exportRecords.map((exp, i) => {
-              const sc = EXPORT_STATUS_CONFIG[exp.status] ?? EXPORT_STATUS_CONFIG.processing;
-              return (
-                <motion.div
-                  key={exp.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04, duration: 0.3 }}
-                  className="grid grid-cols-[120px_160px_80px_60px_80px_90px_80px] items-center gap-2 border-b border-white/[0.02] px-6 py-3 hover:bg-white/[0.02] transition-colors"
-                >
-                  <span className="text-[11px] text-zinc-400">{exp.export_date}</span>
-                  <span className="text-[11px] text-zinc-300">{exp.period}</span>
-                  <span className="text-[11px] text-zinc-400">{exp.platform}</span>
-                  <span className="text-[11px] text-zinc-400">{exp.workers}</span>
-                  <span className="text-[11px] font-medium text-zinc-300">{exp.hours}h</span>
-                  <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${sc.bg} ${sc.text} ${
-                    exp.status === "success" ? "border-emerald-500/20" : exp.status === "failed" ? "border-rose-500/20" : "border-amber-500/20"
-                  }`}>
-                    {sc.label}
-                  </span>
-                  <button className="text-[10px] text-zinc-600 transition-colors hover:text-zinc-300">
-                    <Download size={12} />
-                  </button>
-                </motion.div>
-              );
-            })}
-          </>
-        )}
+      {/* ═══ TELEMETRY RIBBON (h-16) ═══ */}
+      <div className="flex h-16 w-full items-center overflow-x-auto border-b border-white/5 bg-zinc-950/30 px-8">
+        <MetricNode label="PENDING REVIEW" value={telemetry.pending_review} />
+        <div className="mx-6 h-8 w-px bg-white/5" />
+        <MetricNode label="AUTO-APPROVED" value={telemetry.auto_approved} />
+        <div className="mx-6 h-8 w-px bg-white/5" />
+        <MetricNode
+          label="TOTAL EXCEPTIONS"
+          value={telemetry.total_exceptions}
+          alert={telemetry.total_exceptions > 0}
+        />
+        <div className="mx-6 h-8 w-px bg-white/5" />
+        <MetricNode
+          label="HOURS THIS PERIOD"
+          value={`${telemetry.hours_this_period.toLocaleString()}h`}
+        />
       </div>
+
+      {/* ═══ FLOATING ACTION BAR (Bulk) ═══ */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 400 }}
+            className="sticky top-0 z-40 mx-8 mt-3 flex h-14 items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-6 shadow-2xl"
+          >
+            <span className="text-[13px] font-medium text-emerald-400">
+              {selectedIds.size} timesheet{selectedIds.size > 1 ? "s" : ""} selected
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBulkReject}
+                disabled={actionLoading}
+                className="rounded-md px-4 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-white/5 disabled:opacity-50"
+              >
+                Reject Selected
+              </button>
+              <button
+                onClick={handleBulkApprove}
+                disabled={actionLoading}
+                className="rounded-md bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-400 disabled:opacity-50"
+              >
+                {actionLoading ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  "Approve Selected"
+                )}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ DATA GRID ═══ */}
+      <div className="flex-1 overflow-y-auto px-8 mt-4">
+        <table className="w-full text-left border-collapse">
+          {/* Header */}
+          <thead>
+            <tr className="h-10 border-b border-white/5">
+              <th className="w-[5%] pl-0 pr-2">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === filteredRows.length && filteredRows.length > 0}
+                  onChange={toggleSelectAll}
+                  className="h-3.5 w-3.5 rounded border-white/10 bg-white/[0.03] accent-emerald-500 cursor-pointer"
+                />
+              </th>
+              <th className="w-[20%] text-[10px] font-semibold uppercase tracking-widest text-zinc-500">WORKER</th>
+              <th className="w-[20%] text-[10px] font-semibold uppercase tracking-widest text-zinc-500">SHIFT CLOCK</th>
+              <th className="w-[20%] text-[10px] font-semibold uppercase tracking-widest text-zinc-500">SCHED vs ACTUAL</th>
+              <th className="w-[15%] text-[10px] font-semibold uppercase tracking-widest text-zinc-500">VARIANCE</th>
+              <th className="w-[15%] text-[10px] font-semibold uppercase tracking-widest text-zinc-500">STATUS</th>
+              <th className="w-[5%] text-[10px] font-semibold uppercase tracking-widest text-zinc-500">ACTION</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <>
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+              </>
+            ) : filteredRows.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState />
+                </td>
+              </tr>
+            ) : (
+              filteredRows.map((row, i) => {
+                const displayStatus = deriveDisplayStatus(row);
+                const varianceExc = isException(row.variance_minutes);
+                const isChecked = selectedIds.has(row.id);
+
+                return (
+                  <motion.tr
+                    key={row.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.02, duration: 0.25 }}
+                    onClick={() => setSlideOverEntry(row)}
+                    className={`group cursor-pointer border-b border-white/5 transition-colors h-16 ${
+                      isChecked ? "bg-emerald-500/[0.04]" : "hover:bg-white/[0.02]"
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <td className="pl-0 pr-2" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleSelect(row.id)}
+                        className="h-3.5 w-3.5 rounded border-white/10 bg-white/[0.03] accent-emerald-500 cursor-pointer"
+                      />
+                    </td>
+
+                    {/* WORKER */}
+                    <td className="py-3">
+                      <div className="flex items-center gap-3">
+                        {row.worker_avatar ? (
+                          <img
+                            src={row.worker_avatar}
+                            alt=""
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-medium text-zinc-400">
+                            {getInitials(row.worker_name)}
+                          </div>
+                        )}
+                        <span className="text-[14px] font-medium text-zinc-100">
+                          {row.worker_name}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* SHIFT CLOCK */}
+                    <td className="py-3">
+                      <div>
+                        <p className="font-mono text-[12px] text-white">
+                          {formatShiftDate(row.shift_date)}
+                        </p>
+                        <p className="font-mono text-[10px] text-zinc-500">
+                          {formatTime(row.clock_in)} — {formatTime(row.clock_out)}
+                        </p>
+                      </div>
+                    </td>
+
+                    {/* SCHED vs ACTUAL */}
+                    <td className="py-3">
+                      <div>
+                        <p className="text-[12px] text-white">
+                          {row.total_hours != null ? `${row.total_hours.toFixed(1)}h logged` : "—"}
+                        </p>
+                        <p className="text-[11px] text-zinc-500">
+                          {row.scheduled_hours != null ? `${row.scheduled_hours.toFixed(1)}h sched` : "No schedule"}
+                        </p>
+                      </div>
+                    </td>
+
+                    {/* VARIANCE */}
+                    <td className="py-3">
+                      <span
+                        className={`font-mono text-[14px] ${
+                          varianceExc ? "text-amber-500" : "text-zinc-600"
+                        }`}
+                      >
+                        {formatVarianceHours(row.variance_minutes)}
+                      </span>
+                    </td>
+
+                    {/* STATUS */}
+                    <td className="py-3">
+                      <GhostBadge status={displayStatus} />
+                    </td>
+
+                    {/* ACTION */}
+                    <td className="py-3 pr-0">
+                      <ChevronRight className="h-4 w-4 text-zinc-700 transition-all duration-200 group-hover:text-zinc-300 group-hover:translate-x-1" />
+                    </td>
+                  </motion.tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ═══ EXCEPTION REVIEW SLIDE-OVER ═══ */}
+      <AnimatePresence>
+        {slideOverEntry && (
+          <ExceptionReviewSlideOver
+            entry={slideOverEntry}
+            onClose={() => setSlideOverEntry(null)}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            loading={actionLoading}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

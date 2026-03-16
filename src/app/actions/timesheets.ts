@@ -625,6 +625,182 @@ export async function fetchTimesheetAdjustmentsAction(organizationId: string, en
   }
 }
 
+// ── Triage Data (Project Tempus) ─────────────────────────────────────────────
+
+export interface TriageRow {
+  id: string;
+  worker_id: string;
+  worker_name: string;
+  worker_avatar: string | null;
+  shift_date: string;
+  clock_in: string;
+  clock_out: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  total_hours: number | null;
+  scheduled_hours: number | null;
+  variance_minutes: number;
+  exception_type: string | null;
+  exception_resolved: boolean;
+  exception_notes: string | null;
+  status: string;
+  clock_in_location: any;
+  clock_out_location: any;
+  is_manual_entry: boolean;
+  is_geofence_override: boolean;
+  geofence_override_reason: string | null;
+  notes: string | null;
+}
+
+export async function fetchTimesheetTriageAction(
+  organizationId: string,
+  filters?: { tab?: "triage" | "all" | "export_ready"; search?: string }
+) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    let query = (supabase as any)
+      .from("time_entries")
+      .select("*, profiles!time_entries_worker_id_fkey(full_name, avatar_url)")
+      .eq("organization_id", organizationId)
+      .order("clock_in", { ascending: false })
+      .limit(500);
+
+    if (filters?.tab === "triage") {
+      query = query.not("exception_type", "is", null).eq("exception_resolved", false);
+    } else if (filters?.tab === "export_ready") {
+      query = query.in("status", ["approved", "auto_resolved"]);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    return (data || []).map((e: any) => {
+      const clockIn = e.clock_in ?? "";
+      const clockOut = e.clock_out ?? null;
+      const schedStart = e.scheduled_start ?? null;
+      const schedEnd = e.scheduled_end ?? null;
+
+      // Calculate scheduled hours
+      let scheduled_hours: number | null = null;
+      if (schedStart && schedEnd) {
+        const diffMs = new Date(schedEnd).getTime() - new Date(schedStart).getTime();
+        scheduled_hours = Math.round((diffMs / 3600000) * 100) / 100;
+      }
+
+      // Derive triage status
+      let triageStatus = "draft";
+      if (e.exception_type && !e.exception_resolved) triageStatus = "exception";
+      else if (e.status === "approved" || e.status === "auto_resolved") triageStatus = "auto_approved";
+      else if (e.exception_resolved && e.status === "approved") triageStatus = "manually_approved";
+      else if (e.status === "completed") triageStatus = "auto_approved";
+
+      return {
+        id: e.id,
+        worker_id: e.worker_id ?? "",
+        worker_name: e.profiles?.full_name || "Unknown",
+        worker_avatar: e.profiles?.avatar_url || null,
+        shift_date: clockIn.slice(0, 10),
+        clock_in: clockIn,
+        clock_out: clockOut,
+        scheduled_start: schedStart,
+        scheduled_end: schedEnd,
+        total_hours: e.total_hours != null ? parseFloat(e.total_hours) : null,
+        scheduled_hours,
+        variance_minutes: e.variance_minutes ?? 0,
+        exception_type: e.exception_type,
+        exception_resolved: e.exception_resolved ?? false,
+        exception_notes: e.exception_notes,
+        status: triageStatus,
+        clock_in_location: e.clock_in_location,
+        clock_out_location: e.clock_out_location,
+        is_manual_entry: e.is_manual_entry ?? false,
+        is_geofence_override: e.is_geofence_override ?? false,
+        geofence_override_reason: e.geofence_override_reason,
+        notes: e.notes ?? e.exception_notes ?? null,
+      } as TriageRow;
+    });
+  } catch (e: any) {
+    console.error("[timesheets] fetchTimesheetTriageAction failed:", e);
+    return [];
+  }
+}
+
+export async function getTimesheetTelemetryAction(organizationId: string) {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    // Get all time entries for this period
+    const [{ data: allEntries }, { data: exceptions }] = await Promise.all([
+      (supabase as any)
+        .from("time_entries")
+        .select("id, status, total_hours, exception_type, exception_resolved")
+        .eq("organization_id", organizationId)
+        .limit(1000),
+      (supabase as any)
+        .from("time_entries")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .not("exception_type", "is", null)
+        .eq("exception_resolved", false),
+    ]);
+
+    const rows = allEntries || [];
+    const pendingReview = (exceptions || []).length;
+    const autoApproved = rows.filter(
+      (e: any) => (e.status === "approved" || e.status === "auto_resolved" || e.status === "completed") && !e.exception_type
+    ).length;
+    const totalHours = rows.reduce((s: number, e: any) => s + (parseFloat(e.total_hours) || 0), 0);
+
+    return {
+      pending_review: pendingReview,
+      auto_approved: autoApproved,
+      total_exceptions: pendingReview,
+      hours_this_period: Math.round(totalHours * 10) / 10,
+    };
+  } catch (e: any) {
+    console.error("[timesheets] getTimesheetTelemetryAction failed:", e);
+    return { pending_review: 0, auto_approved: 0, total_exceptions: 0, hours_this_period: 0 };
+  }
+}
+
+export async function bulkResolveTimeEntriesAction(
+  ids: string[],
+  resolution: "approve" | "reject"
+) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    const updates: any = {
+      exception_resolved: true,
+      exception_resolved_by: user.id,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (resolution === "approve") {
+      updates.status = "approved";
+      updates.exception_notes = "Bulk approved via triage";
+    } else {
+      updates.status = "disputed";
+      updates.exception_notes = "Rejected via triage";
+    }
+
+    const { data, error } = await (supabase as any)
+      .from("time_entries")
+      .update(updates)
+      .in("id", ids)
+      .select();
+
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/timesheets");
+    return data;
+  } catch (e: any) {
+    console.error("[timesheets] bulkResolveTimeEntriesAction failed:", e);
+    throw e;
+  }
+}
+
 // ── Summary Stats ────────────────────────────────────────────────────────────
 
 export async function fetchTimesheetSummaryAction(organizationId: string, periodStart?: string) {
