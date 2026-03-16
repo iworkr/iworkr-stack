@@ -170,7 +170,8 @@ export async function listShiftNoteSubmissionsAction(organizationId: string) {
           *,
           shift_note_templates(name, version),
           profiles!shift_note_submissions_worker_id_fkey(full_name),
-          schedule_blocks!shift_note_submissions_shift_id_fkey(start_time, end_time, title)
+          schedule_blocks!shift_note_submissions_shift_id_fkey(start_time, end_time, title),
+          participant_profiles!shift_note_submissions_participant_id_fkey(preferred_name, full_name)
         `,
       )
       .eq("organization_id", organizationId)
@@ -186,15 +187,19 @@ export async function listShiftNoteSubmissionsAction(organizationId: string) {
 
 export async function acknowledgeShiftNoteSubmissionAction(
   submissionId: string,
-  nextStatus: "reviewed" | "archived",
+  nextStatus: "reviewed" | "archived" | "flagged",
 ) {
   const { supabase } = await requireAuthedUser();
+  const updatePayload: Record<string, unknown> = {
+    status: nextStatus,
+    updated_at: new Date().toISOString(),
+  };
+  if (nextStatus === "flagged") {
+    updatePayload.flags = { requires_review: true };
+  }
   const { data, error } = await (supabase as any)
     .from("shift_note_submissions")
-    .update({
-      status: nextStatus,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", submissionId)
     .select()
     .single();
