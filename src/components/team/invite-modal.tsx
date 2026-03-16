@@ -24,6 +24,7 @@ import { branches, type RoleId } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useAuthStore } from "@/lib/auth-store";
 import { inviteMember as inviteMemberAction } from "@/app/actions/team";
 
 /* ── Role Card Config ────────────────────────────────────── */
@@ -128,8 +129,27 @@ export function InviteModal() {
 
   const handleSend = async () => {
     if (emails.length === 0) return;
-    if (!orgId) {
+
+    // Resolve orgId: useOrg() hook → auth store → team store (fallback chain)
+    let resolvedOrgId = orgId;
+    if (!resolvedOrgId) {
+      const authOrg = useAuthStore.getState().currentOrg;
+      resolvedOrgId = authOrg?.id ?? null;
+    }
+    if (!resolvedOrgId) {
+      resolvedOrgId = useTeamStore.getState().orgId;
+    }
+
+    if (!resolvedOrgId) {
       addToast("No organization found. Please reload the page.");
+      return;
+    }
+
+    // Validate UUID format client-side before sending
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(resolvedOrgId)) {
+      console.error("[InviteModal] Invalid orgId format:", resolvedOrgId);
+      addToast("Organization ID is invalid. Please reload the page and try again.");
       return;
     }
 
@@ -138,11 +158,9 @@ export function InviteModal() {
     let successCount = 0;
     let lastError: string | null = null;
 
-    // Call the server action directly with the fresh orgId from useOrg()
-    // This bypasses the team store's potentially stale orgId
     for (const email of emails) {
       const res = await inviteMemberAction({
-        organization_id: orgId,
+        organization_id: resolvedOrgId,
         email,
         role: selectedRole,
         branch: selectedBranches[0] || "HQ",
@@ -156,7 +174,7 @@ export function InviteModal() {
     if (successCount > 0) {
       setSent(true);
       addToast(`${successCount} invite${successCount > 1 ? "s" : ""} sent successfully`);
-      refreshTeamStore(); // Refresh the team store to show the new pending invite
+      refreshTeamStore();
       setTimeout(() => setInviteModalOpen(false), 1500);
     } else {
       addToast(`Failed to send invites: ${lastError}`);
