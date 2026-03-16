@@ -89,13 +89,37 @@ const nextConfig: NextConfig = {
   },
 
   // ── Redirects ─────────────────────────────────────────
+  // Project Yggdrasil: Old flat URLs → new nested IA routes (301)
   async redirects() {
     return [
-      {
-        source: "/app",
-        destination: "/dashboard",
-        permanent: true,
-      },
+      { source: "/app", destination: "/dashboard", permanent: true },
+
+      // ── Care: Old flat routes → Yggdrasil pillars ──
+      // Participants pillar
+      { source: "/dashboard/care/clinical-timeline", destination: "/dashboard/care/plans", permanent: true },
+
+      // Rostering & Ops pillar
+      { source: "/dashboard/roster/master", destination: "/dashboard/schedule", permanent: true },
+      { source: "/dashboard/care/routines", destination: "/dashboard/schedule", permanent: true },
+
+      // Clinical & Safety pillar — consolidated routes
+      { source: "/dashboard/care/progress-notes", destination: "/dashboard/care/notes", permanent: true },
+      { source: "/dashboard/care/comms", destination: "/dashboard/care/notes", permanent: true },
+      { source: "/dashboard/care/note-review", destination: "/dashboard/care/notes", permanent: true },
+      { source: "/dashboard/care/medications/asclepius", destination: "/dashboard/care/medications", permanent: true },
+      { source: "/dashboard/care/behaviour", destination: "/dashboard/care/incidents", permanent: true },
+      { source: "/dashboard/care/observations", destination: "/dashboard/care/incidents", permanent: true },
+
+      // Financials & PRODA pillar — legacy aliases
+      { source: "/dashboard/care/funding-engine", destination: "/dashboard/care/proda-claims", permanent: true },
+      { source: "/dashboard/care/sil-quoting/variance", destination: "/dashboard/care/sil-quoting", permanent: true },
+
+      // Fleet consolidation
+      { source: "/dashboard/fleet/vehicles", destination: "/dashboard/fleet/overview", permanent: true },
+
+      // Governance pillar
+      { source: "/dashboard/governance/policies", destination: "/dashboard/compliance/readiness", permanent: true },
+      { source: "/dashboard/compliance/policies", destination: "/dashboard/compliance/readiness", permanent: true },
     ];
   },
 };

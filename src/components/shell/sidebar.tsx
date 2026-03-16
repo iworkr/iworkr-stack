@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Settings,
-  HelpCircle,
   UserPlus,
   PanelLeftClose,
   PanelLeftOpen,
@@ -28,7 +27,6 @@ import {
   ShieldCheck,
   Shield,
   Zap,
-  Package,
   ChevronRight,
   Search,
   LogOut,
@@ -47,13 +45,13 @@ import {
   Building2,
   Truck,
   Grid3X3,
-  TrendingUp,
   Eye,
   Send,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useShellStore } from "@/lib/shell-store";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { useAuthStore } from "@/lib/auth-store";
@@ -68,147 +66,436 @@ import { roleDefinitions, type RoleId, type PermissionModule } from "@/lib/team-
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useBrandingStore } from "@/lib/stores/branding-store";
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Project Yggdrasil — Nested Accordion Sidebar (Information Architecture v2)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /* ── Types ─────────────────────────────────────────────── */
 
-interface NavItem {
+interface NavChild {
   id: string;
   label: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   href: string;
   shortcut?: string;
   badge?: "PRO";
-  hasSubmenu?: boolean;
+  /** Permission module required to see this item */
+  module?: PermissionModule;
 }
 
-interface NavSection {
-  label: string | null;
-  items: NavItem[];
+interface NavGroup {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  /** If set, this is a top-level link (no children) */
+  href?: string;
+  shortcut?: string;
+  children?: NavChild[];
+  /** Permission module required to see entire group */
+  module?: PermissionModule;
+  /** Minimum clearance to see group (1-5). If not set, visible to all. */
+  minClearance?: number;
 }
 
-/* ── Navigation Data ──────────────────────────────────── */
+/* ── Care IA (Yggdrasil Pillars) ────────────────────────── */
 
-const tradesNavItems: NavItem[] = [
-  { id: "nav_dashboard", label: "Overview", icon: LayoutDashboard, href: "/dashboard", shortcut: "G D" },
-  { id: "nav_jobs", label: "Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
-  { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
-  { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch", shortcut: "G P" },
-  { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
-  { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets", shortcut: "G Y" },
-  { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
-  { id: "nav_coordination", label: "Coordination Ledger", icon: Timer, href: "/dashboard/coordination/ledger" },
-  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
-  { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm", shortcut: "G R" },
-  { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A" },
-  { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
-  { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "G T" },
-  { id: "nav_team_leave", label: "Leave Engine", icon: CalendarClock, href: "/dashboard/team/leave" },
-  { id: "nav_automations", label: "Automations", icon: Workflow, href: "/dashboard/automations", shortcut: "G W" },
-  { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations" },
-  { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent" },
+const CARE_NAV: NavGroup[] = [
+  // ── Overview (top-level link) ──
+  {
+    id: "grp_overview",
+    label: "Overview",
+    icon: LayoutGrid,
+    href: "/dashboard/care",
+    shortcut: "G D",
+  },
+
+  // ── Pillar 1: Participants ──
+  {
+    id: "grp_participants",
+    label: "Participants",
+    icon: Heart,
+    children: [
+      { id: "nav_participants_dir", label: "Directory", icon: Users, href: "/dashboard/care/participants", shortcut: "G C" },
+      { id: "nav_care_plans", label: "Care Plans", icon: BookOpen, href: "/dashboard/care/plans" },
+      { id: "nav_plan_reviews", label: "Funding & Plan Reviews", icon: FileText, href: "/dashboard/care/plan-reviews/build" },
+    ],
+  },
+
+  // ── Pillar 2: Rostering & Ops ──
+  {
+    id: "grp_rostering",
+    label: "Rostering & Ops",
+    icon: Calendar,
+    children: [
+      { id: "nav_master_roster", label: "Master Roster", icon: CalendarClock, href: "/dashboard/schedule", shortcut: "G S" },
+      { id: "nav_daily_ops", label: "Daily Ops", icon: Activity, href: "/dashboard/care/daily-ops" },
+      { id: "nav_facilities", label: "Facilities / SIL", icon: Building2, href: "/dashboard/care/facilities" },
+      { id: "nav_fleet", label: "Fleet Management", icon: Truck, href: "/dashboard/fleet/overview" },
+    ],
+  },
+
+  // ── Pillar 3: Clinical & Safety ──
+  {
+    id: "grp_clinical",
+    label: "Clinical & Safety",
+    icon: ShieldCheck,
+    children: [
+      { id: "nav_shift_notes", label: "Shift Notes & Comms", icon: ClipboardList, href: "/dashboard/care/notes" },
+      { id: "nav_medications", label: "eMAR / Medications", icon: Pill, href: "/dashboard/care/medications" },
+      { id: "nav_incidents", label: "Incidents & Observations", icon: AlertOctagon, href: "/dashboard/care/incidents" },
+    ],
+  },
+
+  // ── Pillar 4: Financials & PRODA ──
+  {
+    id: "grp_financials",
+    label: "Financials & PRODA",
+    icon: DollarSign,
+    module: "finance",
+    children: [
+      { id: "nav_proda", label: "PRODA Claims", icon: Send, href: "/dashboard/care/proda-claims", module: "finance" },
+      { id: "nav_sil_fin", label: "SIL Quoting & Variance", icon: Grid3X3, href: "/dashboard/care/sil-quoting", module: "finance" },
+      { id: "nav_petty_cash", label: "Petty Cash", icon: Banknote, href: "/dashboard/finance/petty-cash", module: "finance" },
+      { id: "nav_coordination", label: "Coordination Ledger", icon: Timer, href: "/dashboard/coordination/ledger", module: "finance" },
+    ],
+  },
+
+  // ── Pillar 5: Workforce ──
+  {
+    id: "grp_workforce",
+    label: "Workforce",
+    icon: UsersRound,
+    children: [
+      { id: "nav_team", label: "Team Directory", icon: UserCircle, href: "/dashboard/team", shortcut: "G T", module: "team" },
+      { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets" },
+      { id: "nav_leave", label: "Leave Engine", icon: CalendarClock, href: "/dashboard/team/leave", module: "team" },
+    ],
+  },
+
+  // ── Pillar 6: Governance ──
+  {
+    id: "grp_governance",
+    label: "Governance",
+    icon: Shield,
+    minClearance: 3,
+    children: [
+      { id: "nav_compliance", label: "Policies & Readiness", icon: ShieldCheck, href: "/dashboard/compliance/readiness" },
+      { id: "nav_quality", label: "Quality & CI", icon: Lightbulb, href: "/dashboard/care/quality" },
+      { id: "nav_auditor", label: "Auditor Portals", icon: ShieldAlert, href: "/dashboard/compliance/audits" },
+    ],
+  },
+
+  // ── Pillar 7: Workspace Settings ──
+  {
+    id: "grp_workspace",
+    label: "Workspace",
+    icon: Settings,
+    minClearance: 2,
+    children: [
+      { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
+      { id: "nav_automations", label: "Automations", icon: Zap, href: "/dashboard/automations", badge: "PRO", module: "integrations" },
+      { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations", badge: "PRO", module: "integrations" },
+      { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent", module: "integrations" },
+    ],
+  },
 ];
 
-function useCareNavSections(): NavSection[] {
-  const { t, isCare } = useIndustryLexicon();
+/* ── Trades IA ──────────────────────────────────────────── */
 
-  if (!isCare) {
-    return [{
-      label: null,
-      items: tradesNavItems.map((item) => ({ ...item, label: t(item.label) })),
-    }];
+const TRADES_NAV: NavGroup[] = [
+  { id: "grp_overview", label: "Overview", icon: LayoutDashboard, href: "/dashboard", shortcut: "G D" },
+  {
+    id: "grp_work",
+    label: "Work",
+    icon: Briefcase,
+    children: [
+      { id: "nav_jobs", label: "Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
+      { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
+      { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch" },
+    ],
+  },
+  {
+    id: "grp_clients",
+    label: "Clients & Sales",
+    icon: Users,
+    children: [
+      { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
+      { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm" },
+    ],
+  },
+  {
+    id: "grp_finance",
+    label: "Finance",
+    icon: Banknote,
+    module: "finance",
+    children: [
+      { id: "nav_invoices", label: "Invoices", icon: Banknote, href: "/dashboard/finance", shortcut: "G F", module: "finance" },
+      { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets" },
+    ],
+  },
+  { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
+  {
+    id: "grp_ops",
+    label: "Operations",
+    icon: Warehouse,
+    children: [
+      { id: "nav_assets", label: "Assets", icon: Warehouse, href: "/dashboard/assets", shortcut: "G A" },
+      { id: "nav_team", label: "Team", icon: UsersRound, href: "/dashboard/team", shortcut: "G T", module: "team" },
+      { id: "nav_leave", label: "Leave Engine", icon: CalendarClock, href: "/dashboard/team/leave", module: "team" },
+    ],
+  },
+  {
+    id: "grp_settings",
+    label: "Workspace",
+    icon: Settings,
+    minClearance: 2,
+    children: [
+      { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
+      { id: "nav_automations", label: "Automations", icon: Zap, href: "/dashboard/automations", badge: "PRO", module: "integrations" },
+      { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations", badge: "PRO", module: "integrations" },
+      { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent", module: "integrations" },
+    ],
+  },
+];
+
+/* ── Clearance map (mirrors role-gate.tsx) ──────────────── */
+
+const CLEARANCE: Record<string, number> = {
+  owner: 5, admin: 5, manager: 3, office_admin: 3,
+  senior_tech: 2, technician: 1, apprentice: 1, subcontractor: 1,
+};
+
+/* ── RBAC filter ─────────────────────────────────────────── */
+
+function useFilteredNav(groups: NavGroup[]) {
+  const membership = useAuthStore((s) => s.currentMembership);
+  const userRole = (membership?.role ?? "technician") as RoleId;
+  const roleDef = roleDefinitions.find((r) => r.id === userRole);
+  const clearance = CLEARANCE[userRole] ?? 1;
+  const { subscription, planTier } = useBillingStore();
+  const planKey = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || planTier || "free";
+  const isFree = planKey === "free";
+
+  return useMemo(() => {
+    const canView = (mod?: PermissionModule) => {
+      if (!mod) return true;
+      return roleDef?.permissions[mod]?.includes("view") ?? false;
+    };
+
+    return groups
+      .filter((g) => {
+        if (g.minClearance && clearance < g.minClearance) return false;
+        if (g.module && !canView(g.module)) return false;
+        return true;
+      })
+      .map((g) => {
+        if (!g.children) return g;
+        const filtered = g.children.filter((c) => canView(c.module));
+        if (filtered.length === 0) return null;
+        return { ...g, children: filtered };
+      })
+      .filter(Boolean) as NavGroup[];
+  }, [groups, roleDef, clearance]);
+}
+
+/* ── Accordion state: auto-expand based on route ─────────── */
+
+function useAccordionState(groups: NavGroup[], pathname: string) {
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
+  // Auto-expand the group that contains the active route
+  useEffect(() => {
+    for (const g of groups) {
+      if (!g.children) continue;
+      const isChildActive = g.children.some((c) =>
+        pathname === c.href || pathname.startsWith(c.href + "/")
+      );
+      if (isChildActive) {
+        setOpenGroups((prev) => {
+          const next = new Set(prev);
+          next.add(g.id);
+          return next;
+        });
+      }
+    }
+  }, [pathname, groups]);
+
+  const toggle = useCallback((id: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  return { openGroups, toggle };
+}
+
+/* ── Bubble-up badge counts ──────────────────────────────── */
+
+function useBadgeCounts(): Record<string, number> {
+  const unread = useInboxStore((s) => s.items.filter((i) => !i.read && !i.archived).length);
+  // Map child nav IDs to their badge counts
+  // In the future, this can pull from multiple stores (incidents, notes, etc.)
+  return useMemo(
+    () => ({
+      nav_inbox: unread,         // Trades: Messages
+      nav_incidents: 0,          // Placeholder — wire to real incident store
+      nav_shift_notes: 0,        // Placeholder
+    } as Record<string, number>),
+    [unread],
+  );
+}
+
+/* ── Collapsible Group ──────────────────────────────────── */
+
+function CollapsibleGroup({
+  group,
+  isOpen,
+  onToggle,
+  pathname,
+  collapsed,
+  badgeCounts,
+  isFree,
+}: {
+  group: NavGroup;
+  isOpen: boolean;
+  onToggle: () => void;
+  pathname: string;
+  collapsed: boolean;
+  badgeCounts: Record<string, number>;
+  isFree: boolean;
+}) {
+  const Icon = group.icon;
+  const children = group.children!;
+
+  // Bubble-up: sum all children's badges
+  const groupBadge = children.reduce(
+    (sum, c) => sum + (badgeCounts[c.id] || 0),
+    0,
+  );
+
+  const hasActiveChild = children.some(
+    (c) => pathname === c.href || pathname.startsWith(c.href + "/"),
+  );
+
+  if (collapsed) {
+    // In collapsed mode, show the first child's route on click
+    return (
+      <Link
+        href={children[0]?.href || "#"}
+        title={group.label}
+        className={`flex items-center justify-center rounded-md px-2 py-[6px] transition-all duration-100 ${
+          hasActiveChild
+            ? "bg-white/[0.06] text-[var(--text-primary)]"
+            : "text-[var(--text-muted)] hover:bg-white/[0.04] hover:text-[var(--text-primary)]"
+        }`}
+      >
+        <div className="relative">
+          <Icon size={16} strokeWidth={1.5} />
+          {groupBadge > 0 && (
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+          )}
+        </div>
+      </Link>
+    );
   }
 
-  return [
-    {
-      label: null,
-      items: [
-        { id: "nav_dashboard", label: "Overview", icon: LayoutGrid, href: "/dashboard/care", shortcut: "G D" },
-        { id: "nav_clients", label: "Participants", icon: Heart, href: "/dashboard/care/participants", shortcut: "G C" },
-        { id: "nav_schedule", label: "Roster", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
-        { id: "nav_master_roster", label: "Master Roster", icon: CalendarClock, href: "/dashboard/roster/master" },
-        { id: "nav_jobs", label: "Shifts", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
-        { id: "nav_routines", label: "Routines", icon: ClipboardList, href: "/dashboard/care/routines" },
-        { id: "nav_facilities", label: "Facilities", icon: Building2, href: "/dashboard/care/facilities" },
-        { id: "nav_daily_ops", label: "Daily Ops", icon: Activity, href: "/dashboard/care/daily-ops" },
-        { id: "nav_fleet_overview", label: "Fleet Overview", icon: Truck, href: "/dashboard/fleet/overview" },
-        { id: "nav_fleet_vehicles", label: "Fleet Vehicles", icon: Truck, href: "/dashboard/fleet/vehicles" },
-        { id: "nav_care_comms", label: "Care Comms", icon: MessageSquare, href: "/dashboard/care/comms", shortcut: "G I" },
-      ],
-    },
-    {
-      label: null,
-      items: [
-        { id: "nav_shift_notes", label: "Shift Notes", icon: ClipboardList, href: "/dashboard/care/progress-notes" },
-        { id: "nav_care_plans", label: "Care Plans", icon: BookOpen, href: "/dashboard/care/plans" },
-        { id: "nav_medications", label: "Medications", icon: Pill, href: "/dashboard/care/medications" },
-        { id: "nav_asclepius", label: "Pharmacology Engine", icon: ShieldCheck, href: "/dashboard/care/medications/asclepius" },
-        { id: "nav_observations", label: "Observations", icon: Stethoscope, href: "/dashboard/care/observations" },
-        { id: "nav_incidents", label: "Incidents", icon: AlertOctagon, href: "/dashboard/care/incidents" },
-        { id: "nav_behaviour", label: "Behaviour & Safety", icon: ShieldAlert, href: "/dashboard/care/behaviour" },
-        { id: "nav_note_review", label: "Family Note Review", icon: Eye, href: "/dashboard/care/note-review" },
-        { id: "nav_care_command", label: "Clinical Timeline", icon: Activity, href: "/dashboard/care/clinical-timeline" },
-      ],
-    },
-    {
-      label: null,
-      items: [
-        { id: "nav_funding", label: "Funding & Claims", icon: DollarSign, href: "/dashboard/care/funding-engine" },
-        { id: "nav_proda_claims", label: "PRODA Claims", icon: Send, href: "/dashboard/care/proda-claims" },
-        { id: "nav_sil_quoting", label: "SIL Quoting", icon: Grid3X3, href: "/dashboard/care/sil-quoting" },
-        { id: "nav_sil_variance", label: "SIL Variance", icon: TrendingUp, href: "/dashboard/care/sil-quoting/variance" },
-        { id: "nav_plan_reviews", label: "Plan Reviews", icon: FileText, href: "/dashboard/care/plan-reviews/build" },
-        { id: "nav_coordination", label: "Coordination Ledger", icon: Timer, href: "/dashboard/coordination/ledger" },
-        { id: "nav_petty_cash", label: "Petty Cash", icon: Banknote, href: "/dashboard/finance/petty-cash" },
-        { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets", shortcut: "G Y" },
-        { id: "nav_invoices", label: "Finance", icon: Banknote, href: "/dashboard/finance", shortcut: "G F" },
-        { id: "nav_compliance", label: "Compliance Readiness", icon: ShieldCheck, href: "/dashboard/compliance/readiness" },
-        { id: "nav_compliance_policies", label: "Compliance Matrix", icon: Shield, href: "/dashboard/compliance/policies" },
-        { id: "nav_governance_policies", label: "Governance Policies", icon: BookOpen, href: "/dashboard/governance/policies" },
-        { id: "nav_auditor_portals", label: "Auditor Portals", icon: ShieldAlert, href: "/dashboard/compliance/audits" },
-        { id: "nav_quality", label: "Quality & CI", icon: Lightbulb, href: "/dashboard/care/quality" },
-        { id: "nav_team", label: "Support Team", icon: UserCircle, href: "/dashboard/team", shortcut: "G T" },
-        { id: "nav_team_leave", label: "Leave Engine", icon: CalendarClock, href: "/dashboard/team/leave" },
-      ],
-    },
-    {
-      label: null,
-      items: [
-        { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
-        { id: "nav_automations", label: "Automations", icon: Zap, href: "/dashboard/automations", badge: "PRO" },
-        { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations", badge: "PRO" },
-        { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent" },
-      ],
-    },
-  ];
+  return (
+    <div>
+      {/* Parent trigger */}
+      <button
+        onClick={onToggle}
+        className={`group flex w-full items-center gap-2.5 rounded-md px-2 py-[6px] text-[13px] transition-all duration-100 ${
+          hasActiveChild || isOpen
+            ? "text-[var(--text-primary)]"
+            : "text-[var(--text-muted)] hover:bg-white/[0.04] hover:text-[var(--text-primary)]"
+        }`}
+      >
+        <Icon size={16} strokeWidth={1.5} className="shrink-0" />
+        <span className="flex-1 text-left font-normal">{group.label}</span>
+
+        {/* Bubble-up badge (pulsing dot when collapsed) */}
+        {groupBadge > 0 && !isOpen && (
+          <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+        )}
+
+        {/* Chevron */}
+        <ChevronRight
+          size={12}
+          className={`shrink-0 text-zinc-600 transition-transform duration-200 ${
+            isOpen ? "rotate-90" : ""
+          }`}
+        />
+      </button>
+
+      {/* Accordion content — CSS Grid 0fr→1fr for smooth animation */}
+      <div
+        className="transition-[grid-template-rows] duration-250 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+        style={{
+          display: "grid",
+          gridTemplateRows: isOpen ? "1fr" : "0fr",
+        }}
+      >
+        <div className="overflow-hidden">
+          <div className="pl-[18px] pr-1 pt-0.5 pb-0.5">
+            {children.map((child) => {
+              const CIcon = child.icon;
+              const active =
+                pathname === child.href ||
+                pathname.startsWith(child.href + "/");
+              const count = badgeCounts[child.id] || 0;
+
+              return (
+                <Link
+                  key={child.id}
+                  href={child.href}
+                  data-testid={child.id}
+                  className={`group relative flex items-center gap-2.5 rounded-md px-2 py-[5px] text-[12.5px] transition-all duration-100 ${
+                    active
+                      ? "border-l-2 border-emerald-500 bg-white/[0.05] pl-[7px] text-white font-medium"
+                      : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
+                  }`}
+                >
+                  <CIcon size={14} strokeWidth={1.5} className="shrink-0" />
+                  <span className="flex-1 truncate">{child.label}</span>
+                  {isFree && child.badge === "PRO" && <ProBadge size="xs" />}
+                  {count > 0 && (
+                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500/15 px-1 font-mono text-[9px] font-medium text-rose-400">
+                      {count}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function useTranslatedNavItems() {
-  const sections = useCareNavSections();
-  return sections.flatMap((s) => s.items);
-}
+/* ── Top-level nav link (no children) ────────────────────── */
 
-/* ── Nav Link ─────────────────────────────────────────── */
-
-function NavLink({
-  item,
+function TopLevelLink({
+  group,
   active,
   collapsed,
-  badge,
-  proBadge,
+  badgeCount,
 }: {
-  item: NavItem;
+  group: NavGroup;
   active: boolean;
   collapsed: boolean;
-  badge?: number;
-  proBadge?: boolean;
+  badgeCount?: number;
 }) {
-  const Icon = item.icon;
+  const Icon = group.icon;
 
   return (
     <Link
-      href={item.href}
-      title={collapsed ? item.label : undefined}
-      data-testid={item.id}
-      data-nav-label={item.label}
+      href={group.href!}
+      title={collapsed ? group.label : undefined}
+      data-testid={group.id}
       className={`group relative flex items-center gap-2.5 rounded-md px-2 py-[6px] transition-all duration-100 ${
         collapsed ? "justify-center" : ""
       } ${
@@ -217,41 +504,28 @@ function NavLink({
           : "text-[var(--text-muted)] hover:bg-white/[0.04] hover:text-[var(--text-primary)]"
       }`}
     >
-      <Icon
-        size={16}
-        strokeWidth={1.5}
-        className={`shrink-0 ${active ? "text-[var(--text-primary)]" : ""}`}
-      />
-
-      <AnimatePresence>
-        {!collapsed && (
-          <motion.span
-            initial={{ opacity: 0, width: 0 }}
-            animate={{ opacity: 1, width: "auto" }}
-            exit={{ opacity: 0, width: 0 }}
-            transition={{ duration: 0.12 }}
-            className="flex flex-1 items-center justify-between overflow-hidden text-[13px]"
-          >
-            <span className={active ? "font-medium" : "font-normal"}>{item.label}</span>
-            <span className="flex items-center gap-1.5">
-              {proBadge && <ProBadge size="xs" />}
-              {badge !== undefined && badge > 0 && (
-                <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[var(--brand)]/15 px-1 font-mono text-[9px] font-medium text-[var(--brand)]">
-                  {badge}
-                </span>
-              )}
-              {item.hasSubmenu && (
-                <ChevronRight size={12} className="text-zinc-600" />
-              )}
-            </span>
-          </motion.span>
+      <div className="relative">
+        <Icon size={16} strokeWidth={1.5} className={`shrink-0 ${active ? "text-[var(--text-primary)]" : ""}`} />
+        {collapsed && badgeCount !== undefined && badgeCount > 0 && (
+          <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
         )}
-      </AnimatePresence>
+      </div>
+
+      {!collapsed && (
+        <span className="flex flex-1 items-center justify-between text-[13px]">
+          <span className={active ? "font-medium" : "font-normal"}>{group.label}</span>
+          {badgeCount !== undefined && badgeCount > 0 && (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--brand)]/15 px-1 font-mono text-[9px] font-medium text-[var(--brand)]">
+              {badgeCount}
+            </span>
+          )}
+        </span>
+      )}
     </Link>
   );
 }
 
-/* ── System Tray Link ─────────────────────────────────── */
+/* ── System Tray Link ────────────────────────────────────── */
 
 function SystemLink({
   label,
@@ -279,35 +553,16 @@ function SystemLink({
   const content = (
     <>
       <Icon size={16} strokeWidth={1.5} className="shrink-0" />
-      <AnimatePresence>
-        {!collapsed && (
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.1 }}
-            className="flex flex-1 items-center justify-between"
-          >
-            <span>{label}</span>
-            {(label === "Settings" || label === "Help") && (
-              <ChevronRight size={12} className="text-zinc-600" />
-            )}
-          </motion.span>
-        )}
-      </AnimatePresence>
+      {!collapsed && <span>{label}</span>}
     </>
   );
 
-  if (onClick) {
-    return <button title={collapsed ? label : undefined} className={cls} onClick={onClick}>{content}</button>;
-  }
-  if (href) {
-    return <Link title={collapsed ? label : undefined} href={href} className={cls}>{content}</Link>;
-  }
+  if (onClick) return <button title={collapsed ? label : undefined} className={cls} onClick={onClick}>{content}</button>;
+  if (href) return <Link title={collapsed ? label : undefined} href={href} className={cls}>{content}</Link>;
   return null;
 }
 
-/* ── Main Sidebar ─────────────────────────────────────── */
+/* ── Main Sidebar ─────────────────────────────────────────── */
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -321,62 +576,41 @@ export function Sidebar() {
   const { subscription, planTier, loadBilling } = useBillingStore();
   const planKey = subscription?.plan_key?.replace(/_monthly$/, "").replace(/_annual$/, "").replace(/_yearly$/, "") || planTier || "free";
   const isFree = planKey === "free";
+  const membership = useAuthStore((s) => s.currentMembership);
+  const userRole = (membership?.role ?? "technician") as RoleId;
+  const roleDef = roleDefinitions.find((r) => r.id === userRole);
 
-  useEffect(() => {
-    if (orgId) loadBilling(orgId);
-  }, [orgId, loadBilling]);
+  useEffect(() => { if (orgId) loadBilling(orgId); }, [orgId, loadBilling]);
 
   // Realtime billing sync
   useEffect(() => {
     if (!orgId) return;
     const supabase = createClient();
-
     const channel = supabase
       .channel(`billing-sync-${orgId}`)
       .on("postgres_changes" as any, { event: "*", schema: "public", table: "subscriptions", filter: `organization_id=eq.${orgId}` }, () => loadBilling(orgId))
       .on("postgres_changes" as any, { event: "UPDATE", schema: "public", table: "organizations", filter: `id=eq.${orgId}` }, () => loadBilling(orgId))
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [orgId, loadBilling]);
 
-  const membership = useAuthStore((s) => s.currentMembership);
-  const userRole = (membership?.role ?? "technician") as RoleId;
-  const roleDef = roleDefinitions.find((r) => r.id === userRole);
-  const navModuleMap: Record<string, PermissionModule> = {
-    nav_invoices: "finance",
-    nav_funding: "finance",
-    nav_team: "team",
-    nav_automations: "integrations",
-    nav_integrations: "integrations",
-    nav_ai_agent: "integrations",
-  };
+  // Select nav tree based on industry
+  const { isCare } = useIndustryLexicon();
+  const rawNav = isCare ? CARE_NAV : TRADES_NAV;
+  const filteredNav = useFilteredNav(rawNav);
+  const { openGroups, toggle } = useAccordionState(filteredNav, pathname);
+  const badgeCounts = useBadgeCounts();
 
-  const { t: sidebarT } = useIndustryLexicon();
-  const navSections = useCareNavSections();
-  const translatedNavItems = useTranslatedNavItems();
-  const visibleNavItems = translatedNavItems.filter((item) => {
-    const module = navModuleMap[item.id];
-    if (!module) return true;
-    return roleDef?.permissions[module]?.includes("view") ?? false;
-  });
-  const visibleIds = new Set(visibleNavItems.map((i) => i.id));
-  const filteredSections = navSections.map((section) => ({
-    ...section,
-    items: section.items.filter((i) => visibleIds.has(i.id)),
-  })).filter((s) => s.items.length > 0);
+  const isActive = useCallback(
+    (href: string) => {
+      if (href === "/dashboard") return pathname === "/dashboard";
+      if (href === "/dashboard/care") return pathname === "/dashboard/care";
+      return pathname === href || pathname.startsWith(href + "/");
+    },
+    [pathname],
+  );
 
-  const unreadCount = useInboxStore((s) => s.items.filter(i => !i.read && !i.archived).length);
-
-  const isActive = useCallback((href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    if (href === "/dashboard/care") return pathname === "/dashboard/care";
-    return pathname.startsWith(href);
-  }, [pathname]);
-
-  useEffect(() => {
-    setMobileSidebarOpen(false);
-  }, [pathname, setMobileSidebarOpen]);
+  useEffect(() => { setMobileSidebarOpen(false); }, [pathname, setMobileSidebarOpen]);
 
   return (
     <>
@@ -412,14 +646,10 @@ export function Sidebar() {
           <div className="h-[30px] w-full shrink-0" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
         )}
 
-        {/* ── Workspace Switcher (top) ── */}
-        <WorkspaceSwitcher
-          companyName={companyName}
-          logoUrl={brandingLogo}
-          collapsed={sidebarCollapsed}
-        />
+        {/* ── Workspace Switcher ── */}
+        <WorkspaceSwitcher companyName={companyName} logoUrl={brandingLogo} collapsed={sidebarCollapsed} />
 
-        {/* ── Search Bar ── */}
+        {/* ── Search Bar (Cmd+K) ── */}
         {!sidebarCollapsed ? (
           <div className="px-3 pb-1">
             <button
@@ -428,9 +658,7 @@ export function Sidebar() {
             >
               <Search size={14} strokeWidth={1.5} className="shrink-0" />
               <span className="flex-1 text-left">Find...</span>
-              <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-[1px] font-mono text-[10px] text-zinc-600">
-                ⌘K
-              </kbd>
+              <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-[1px] font-mono text-[10px] text-zinc-600">⌘K</kbd>
             </button>
           </div>
         ) : (
@@ -445,79 +673,65 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* ── Navigation ── */}
+        {/* ── Navigation Tree ── */}
         <nav className="flex-1 overflow-y-auto scrollbar-none px-2">
-          {filteredSections.map((section, sIdx) => (
-            <div key={sIdx}>
-              {/* Separator between sections — thin line, no labels */}
-              {sIdx > 0 && (
-                <div className="mx-1 my-1.5 h-px bg-white/[0.06]" />
-              )}
-              <div className="space-y-[1px]">
-                {section.items.map((item) => (
-                  <NavLink
-                    key={item.id}
-                    item={item}
-                    active={isActive(item.href)}
+          <div className="space-y-[1px] py-0.5">
+            {filteredNav.map((group) => {
+              // Top-level link (no children)
+              if (group.href && !group.children) {
+                return (
+                  <TopLevelLink
+                    key={group.id}
+                    group={group}
+                    active={isActive(group.href)}
                     collapsed={sidebarCollapsed}
-                    badge={item.id === "nav_inbox" ? unreadCount : undefined}
-                    proBadge={(isFree && item.badge === "PRO") || false}
+                    badgeCount={badgeCounts[group.id]}
                   />
-                ))}
-              </div>
-            </div>
-          ))}
+                );
+              }
+
+              // Collapsible group
+              if (group.children) {
+                return (
+                  <CollapsibleGroup
+                    key={group.id}
+                    group={group}
+                    isOpen={openGroups.has(group.id)}
+                    onToggle={() => toggle(group.id)}
+                    pathname={pathname}
+                    collapsed={sidebarCollapsed}
+                    badgeCounts={badgeCounts}
+                    isFree={isFree}
+                  />
+                );
+              }
+
+              return null;
+            })}
+          </div>
         </nav>
 
         {/* ── System Tray ── */}
         <div className="border-t border-white/[0.06] px-2 py-1.5">
           <div className="space-y-[1px]">
-            <SystemLink
-              label="Get App"
-              icon={Smartphone}
-              collapsed={sidebarCollapsed}
-              href="/dashboard/get-app"
-              active={pathname.startsWith("/dashboard/get-app")}
-            />
+            <SystemLink label="Get App" icon={Smartphone} collapsed={sidebarCollapsed} href="/dashboard/get-app" active={pathname.startsWith("/dashboard/get-app")} />
             {roleDef?.scopes.canManageTeam && (
-              <SystemLink
-                label="Invite Team"
-                icon={UserPlus}
-                collapsed={sidebarCollapsed}
-                onClick={() => setInviteModalOpen(true)}
-              />
+              <SystemLink label="Invite Team" icon={UserPlus} collapsed={sidebarCollapsed} onClick={() => setInviteModalOpen(true)} />
             )}
-            <SystemLink
-              label="Settings"
-              icon={Settings}
-              collapsed={sidebarCollapsed}
-              href="/settings"
-              active={pathname.startsWith("/settings")}
-            />
+            <SystemLink label="Settings" icon={Settings} collapsed={sidebarCollapsed} href="/settings" active={pathname.startsWith("/settings")} />
           </div>
         </div>
 
         {/* ── Footer — Profile ── */}
-        <ProfileFooter
-          collapsed={sidebarCollapsed}
-          toggleSidebar={toggleSidebar}
-        />
+        <ProfileFooter collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
       </motion.aside>
     </>
   );
 }
 
-/* ── Workspace Switcher (Top) ─────────────────────────── */
+/* ── Workspace Switcher (Top) ────────────────────────────── */
 
-function WorkspaceSwitcher({
-  companyName,
-  logoUrl,
-  collapsed,
-}: {
-  companyName: string;
-  logoUrl: string | undefined | null;
-  collapsed: boolean;
-}) {
+function WorkspaceSwitcher({ companyName, logoUrl, collapsed }: { companyName: string; logoUrl: string | undefined | null; collapsed: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -533,16 +747,8 @@ function WorkspaceSwitcher({
   if (collapsed) {
     return (
       <div className="px-3 pt-3 pb-1 flex justify-center">
-        <button
-          onClick={() => setOpen((p) => !p)}
-          className="flex h-7 w-7 items-center justify-center rounded-md overflow-hidden transition-colors hover:bg-white/[0.04]"
-          title={companyName}
-        >
-          <img
-            src={logoUrl || "/logos/logo-dark-streamline.png"}
-            alt="Logo"
-            className={`h-5 w-5 object-contain ${logoUrl ? "" : "brightness-150"}`}
-          />
+        <button onClick={() => setOpen((p) => !p)} className="flex h-7 w-7 items-center justify-center rounded-md overflow-hidden transition-colors hover:bg-white/[0.04]" title={companyName}>
+          <img src={logoUrl || "/logos/logo-dark-streamline.png"} alt="Logo" className={`h-5 w-5 object-contain ${logoUrl ? "" : "brightness-150"}`} />
         </button>
       </div>
     );
@@ -550,22 +756,12 @@ function WorkspaceSwitcher({
 
   return (
     <div ref={ref} className="relative px-3 pt-3 pb-1">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 transition-colors hover:bg-white/[0.04]"
-      >
-        <img
-          src={logoUrl || "/logos/logo-dark-streamline.png"}
-          alt="Logo"
-          className={`h-5 w-5 shrink-0 rounded object-contain ${logoUrl ? "" : "brightness-150"}`}
-        />
-        <span className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
-          {companyName || <Shimmer className="h-3 w-24" />}
-        </span>
+      <button onClick={() => setOpen((p) => !p)} className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 transition-colors hover:bg-white/[0.04]">
+        <img src={logoUrl || "/logos/logo-dark-streamline.png"} alt="Logo" className={`h-5 w-5 shrink-0 rounded object-contain ${logoUrl ? "" : "brightness-150"}`} />
+        <span className="truncate text-[13px] font-semibold text-[var(--text-primary)]">{companyName || <Shimmer className="h-3 w-24" />}</span>
         <ChevronsUpDown size={12} className="ml-auto shrink-0 text-zinc-600" />
       </button>
 
-      {/* Dropdown — opens downward */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -575,31 +771,18 @@ function WorkspaceSwitcher({
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             className="absolute top-full left-3 right-3 z-50 mt-1 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
           >
-            {/* Active workspace */}
             <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
-              <img
-                src={logoUrl || "/logos/logo-dark-streamline.png"}
-                alt=""
-                className={`h-7 w-7 shrink-0 rounded object-contain ${logoUrl ? "" : "brightness-150"}`}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[12px] font-medium text-zinc-200">{companyName}</p>
-              </div>
+              <img src={logoUrl || "/logos/logo-dark-streamline.png"} alt="" className={`h-7 w-7 shrink-0 rounded object-contain ${logoUrl ? "" : "brightness-150"}`} />
+              <div className="min-w-0 flex-1"><p className="truncate text-[12px] font-medium text-zinc-200">{companyName}</p></div>
             </div>
-
             <div className="py-1">
               {[
                 { label: "Workspace Settings", icon: Settings, href: "/settings/workspace" },
                 { label: "Branding", icon: Settings, href: "/settings/branding" },
                 { label: "Members", icon: Users, href: "/dashboard/team" },
               ].map((item) => (
-                <button
-                  key={item.label}
-                  onClick={() => { setOpen(false); router.push(item.href); }}
-                  className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
-                >
-                  <item.icon size={14} strokeWidth={1.5} />
-                  <span>{item.label}</span>
+                <button key={item.label} onClick={() => { setOpen(false); router.push(item.href); }} className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200">
+                  <item.icon size={14} strokeWidth={1.5} /><span>{item.label}</span>
                 </button>
               ))}
             </div>
@@ -610,15 +793,9 @@ function WorkspaceSwitcher({
   );
 }
 
-/* ── Profile Footer (Bottom) ─────────────────────────── */
+/* ── Profile Footer (Bottom) ─────────────────────────────── */
 
-function ProfileFooter({
-  collapsed,
-  toggleSidebar,
-}: {
-  collapsed: boolean;
-  toggleSidebar: () => void;
-}) {
+function ProfileFooter({ collapsed, toggleSidebar }: { collapsed: boolean; toggleSidebar: () => void }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -632,34 +809,22 @@ function ProfileFooter({
     : displayEmail?.[0]?.toUpperCase() || "?";
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
+    function handleClickOutside(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
     if (open) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
   const avatar = (
     <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-white/[0.08]">
-      {avatarUrl ? (
-        <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-      ) : (
-        initials
-      )}
+      {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : initials}
     </div>
   );
 
   if (collapsed) {
     return (
       <div className="border-t border-white/[0.06] px-3 py-2 flex flex-col items-center gap-1.5">
-        <button onClick={() => setOpen((p) => !p)} title={displayName || displayEmail}>
-          {avatar}
-        </button>
-        <button
-          onClick={toggleSidebar}
-          title="Expand sidebar (⌘[)"
-          className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
-        >
+        <button onClick={() => setOpen((p) => !p)} title={displayName || displayEmail}>{avatar}</button>
+        <button onClick={toggleSidebar} title="Expand sidebar (⌘[)" className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400">
           <PanelLeftOpen size={14} strokeWidth={1.5} />
         </button>
       </div>
@@ -669,23 +834,15 @@ function ProfileFooter({
   return (
     <div ref={ref} className="relative border-t border-white/[0.06] px-2 py-1.5">
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => setOpen((p) => !p)}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-white/[0.04]"
-        >
+        <button onClick={() => setOpen((p) => !p)} className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-white/[0.04]">
           {avatar}
           <span className="truncate text-[12px] text-zinc-400">{displayName || displayEmail}</span>
         </button>
-        <button
-          onClick={toggleSidebar}
-          title="Collapse sidebar (⌘[)"
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400"
-        >
+        <button onClick={toggleSidebar} title="Collapse sidebar (⌘[)" className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-white/[0.06] hover:text-zinc-400">
           <PanelLeftClose size={14} strokeWidth={1.5} />
         </button>
       </div>
 
-      {/* Dropdown — opens upward */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -695,7 +852,6 @@ function ProfileFooter({
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             className="absolute bottom-full left-2 right-2 z-50 mb-1.5 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_-16px_48px_-8px_rgba(0,0,0,0.6)]"
           >
-            {/* User info */}
             <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
               {avatar}
               <div className="min-w-0">
@@ -703,28 +859,18 @@ function ProfileFooter({
                 <p className="truncate text-[10px] text-zinc-600">{displayEmail}</p>
               </div>
             </div>
-
             <div className="py-1">
               {[
                 { label: "Profile", icon: UserCircle, href: "/settings/profile" },
                 { label: "Preferences", icon: Settings, href: "/settings/preferences" },
               ].map((item) => (
-                <button
-                  key={item.label}
-                  onClick={() => { setOpen(false); router.push(item.href); }}
-                  className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
-                >
-                  <item.icon size={14} strokeWidth={1.5} />
-                  <span>{item.label}</span>
+                <button key={item.label} onClick={() => { setOpen(false); router.push(item.href); }} className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200">
+                  <item.icon size={14} strokeWidth={1.5} /><span>{item.label}</span>
                 </button>
               ))}
               <div className="my-1 h-px bg-white/[0.06]" />
-              <button
-                onClick={async () => { setOpen(false); await signOut(); router.push("/"); }}
-                className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-red-400 transition-colors hover:bg-red-500/10"
-              >
-                <LogOut size={14} strokeWidth={1.5} />
-                <span>Log out</span>
+              <button onClick={async () => { setOpen(false); await signOut(); router.push("/"); }} className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-red-400 transition-colors hover:bg-red-500/10">
+                <LogOut size={14} strokeWidth={1.5} /><span>Log out</span>
               </button>
             </div>
           </motion.div>

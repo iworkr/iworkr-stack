@@ -32,28 +32,59 @@ import { useIndustryLexicon } from "@/lib/industry-lexicon";
 /* ── Commands ─────────────────────────────────────────── */
 
 const commands = [
+  // ── Actions ──
   { id: "create-job", label: "Create Job", icon: FileText, shortcut: "C", group: "Actions" },
   { id: "create-invoice", label: "New Invoice", icon: Receipt, shortcut: "N", group: "Actions" },
   { id: "create-client", label: "Add Client", icon: Users, shortcut: "⌘⇧C", group: "Actions" },
+
+  // ── Navigation: Core ──
   { id: "nav-dashboard", label: "Go to Dashboard", icon: LayoutDashboard, shortcut: "G D", group: "Navigation", href: "/dashboard" },
   { id: "nav-inbox", label: "Go to Messages", icon: Inbox, shortcut: "G I", group: "Navigation", href: "/dashboard/inbox" },
+  { id: "nav-settings", label: "Go to Settings", icon: Settings, shortcut: "⌘,", group: "Navigation", href: "/settings" },
+
+  // ── Navigation: Trades ──
   { id: "nav-jobs", label: "Go to Jobs", icon: Briefcase, shortcut: "G J", group: "Navigation", href: "/dashboard/jobs" },
   { id: "nav-schedule", label: "Go to Schedule", icon: CalendarDays, shortcut: "G S", group: "Navigation", href: "/dashboard/schedule" },
   { id: "nav-clients", label: "Go to Clients", icon: Users, shortcut: "G C", group: "Navigation", href: "/dashboard/clients" },
   { id: "nav-finance", label: "Go to Finance", icon: Banknote, shortcut: "G F", group: "Navigation", href: "/dashboard/finance" },
-  { id: "nav-sil-quoting", label: "Go to SIL Quoting", icon: Grid3X3, group: "Navigation", href: "/dashboard/care/sil-quoting" },
-  { id: "nav-plan-reviews", label: "Go to Plan Reviews", icon: FileText, group: "Navigation", href: "/dashboard/care/plan-reviews/build" },
-  { id: "nav-coordination", label: "Go to Coordination Ledger", icon: Clock3, shortcut: "G L", group: "Navigation", href: "/dashboard/coordination/ledger" },
-  { id: "nav-governance-policies", label: "Go to Governance Policies", icon: BookOpen, group: "Navigation", href: "/dashboard/governance/policies" },
-  { id: "nav-compliance-policies", label: "Go to Compliance Matrix", icon: Shield, group: "Navigation", href: "/dashboard/compliance/policies" },
-  { id: "nav-fleet-overview", label: "Go to Fleet Overview", icon: Grid3X3, group: "Navigation", href: "/dashboard/fleet/overview" },
-  { id: "nav-fleet-vehicles", label: "Go to Fleet Vehicles", icon: Grid3X3, group: "Navigation", href: "/dashboard/fleet/vehicles" },
   { id: "nav-assets", label: "Go to Assets", icon: Warehouse, shortcut: "G A", group: "Navigation", href: "/dashboard/assets" },
-  { id: "nav-team", label: "Go to Team", icon: UsersRound, shortcut: "G T", group: "Navigation", href: "/dashboard/team" },
+
+  // ── Navigation: Care — Participants ──
+  { id: "nav-participants", label: "Go to Participants", icon: Users, shortcut: "G C", group: "Participants", href: "/dashboard/care/participants" },
+  { id: "nav-care-plans", label: "Go to Care Plans", icon: BookOpen, group: "Participants", href: "/dashboard/care/plans" },
+  { id: "nav-plan-reviews", label: "Go to Funding & Plan Reviews", icon: FileText, group: "Participants", href: "/dashboard/care/plan-reviews/build" },
+
+  // ── Navigation: Care — Rostering & Ops ──
+  { id: "nav-roster", label: "Go to Master Roster", icon: CalendarDays, group: "Rostering & Ops", href: "/dashboard/schedule" },
+  { id: "nav-daily-ops", label: "Go to Daily Ops", icon: LayoutDashboard, group: "Rostering & Ops", href: "/dashboard/care/daily-ops" },
+  { id: "nav-facilities", label: "Go to Facilities / SIL", icon: LayoutDashboard, group: "Rostering & Ops", href: "/dashboard/care/facilities" },
+  { id: "nav-fleet", label: "Go to Fleet Management", icon: Grid3X3, group: "Rostering & Ops", href: "/dashboard/fleet/overview" },
+
+  // ── Navigation: Care — Clinical & Safety ──
+  { id: "nav-shift-notes", label: "Go to Shift Notes & Comms", icon: FileText, group: "Clinical & Safety", href: "/dashboard/care/notes" },
+  { id: "nav-emar", label: "Go to eMAR / Medications", icon: Shield, group: "Clinical & Safety", href: "/dashboard/care/medications" },
+  { id: "nav-incidents", label: "Go to Incidents & Observations", icon: Shield, group: "Clinical & Safety", href: "/dashboard/care/incidents" },
+
+  // ── Navigation: Care — Financials & PRODA ──
+  { id: "nav-proda", label: "Go to PRODA Claims", icon: Banknote, group: "Financials & PRODA", href: "/dashboard/care/proda-claims" },
+  { id: "nav-sil-quoting", label: "Go to SIL Quoting & Variance", icon: Grid3X3, group: "Financials & PRODA", href: "/dashboard/care/sil-quoting" },
+  { id: "nav-petty-cash", label: "Go to Petty Cash", icon: Banknote, group: "Financials & PRODA", href: "/dashboard/finance/petty-cash" },
+  { id: "nav-coordination", label: "Go to Coordination Ledger", icon: Clock3, group: "Financials & PRODA", href: "/dashboard/coordination/ledger" },
+
+  // ── Navigation: Workforce ──
+  { id: "nav-team", label: "Go to Team Directory", icon: UsersRound, shortcut: "G T", group: "Navigation", href: "/dashboard/team" },
+  { id: "nav-timesheets", label: "Go to Timesheets", icon: Clock3, group: "Navigation", href: "/dashboard/timesheets" },
+  { id: "nav-leave", label: "Go to Leave Engine", icon: CalendarDays, group: "Navigation", href: "/dashboard/team/leave" },
+
+  // ── Navigation: Governance ──
+  { id: "nav-compliance", label: "Go to Policies & Readiness", icon: Shield, group: "Governance", href: "/dashboard/compliance/readiness" },
+  { id: "nav-quality", label: "Go to Quality & CI", icon: BookOpen, group: "Governance", href: "/dashboard/care/quality" },
+  { id: "nav-auditor", label: "Go to Auditor Portals", icon: Shield, group: "Governance", href: "/dashboard/compliance/audits" },
+
+  // ── Navigation: Workspace ──
   { id: "nav-automations", label: "Go to Automations", icon: Workflow, shortcut: "G W", group: "Navigation", href: "/dashboard/automations" },
   { id: "nav-integrations", label: "Go to Integrations", icon: Plug, group: "Navigation", href: "/dashboard/integrations" },
   { id: "nav-ai-agent", label: "Go to AI Agent", icon: Bot, group: "Navigation", href: "/dashboard/ai-agent" },
-  { id: "nav-settings", label: "Go to Settings", icon: Settings, shortcut: "⌘,", group: "Navigation", href: "/settings" },
 ];
 
 /** Returns commands with labels translated through the industry lexicon. */
