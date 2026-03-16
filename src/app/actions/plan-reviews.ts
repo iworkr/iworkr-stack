@@ -105,6 +105,78 @@ export async function listPlanReviewParticipantsAction(organizationId: string) {
   }));
 }
 
+/**
+ * Directory-level query: participants with their active NDIS plan and latest review status.
+ * Powers the Master View Data Grid in Project Equinox.
+ */
+export async function listPlanReviewDirectoryAction(organizationId: string) {
+  const { supabase } = await requireUser();
+
+  // Fetch participants with their service agreements and latest review report
+  const { data: participants, error: pErr } = await (supabase as any)
+    .from("participant_profiles")
+    .select("id, preferred_name, full_name, ndis_number, clients(name)")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  if (pErr) throw new Error(pErr.message);
+
+  const participantIds = (participants || []).map((p: any) => p.id);
+  if (participantIds.length === 0) return [];
+
+  // Fetch service agreements for these participants
+  const { data: agreements } = await (supabase as any)
+    .from("service_agreements")
+    .select("id, participant_id, total_budget, consumed_budget, start_date, end_date, status")
+    .eq("organization_id", organizationId)
+    .in("participant_id", participantIds)
+    .in("status", ["active", "pending_signature", "expired"])
+    .order("created_at", { ascending: false });
+
+  // Fetch latest plan review reports
+  const { data: reports } = await (supabase as any)
+    .from("plan_review_reports")
+    .select("id, participant_id, title, status, data_scope_start, data_scope_end, updated_at")
+    .eq("organization_id", organizationId)
+    .in("participant_id", participantIds)
+    .order("created_at", { ascending: false });
+
+  // Build a map: participant_id -> latest agreement
+  const agreementMap: Record<string, any> = {};
+  for (const a of (agreements || [])) {
+    if (!agreementMap[a.participant_id]) agreementMap[a.participant_id] = a;
+  }
+
+  // Build a map: participant_id -> latest report
+  const reportMap: Record<string, any> = {};
+  for (const r of (reports || [])) {
+    if (!reportMap[r.participant_id]) reportMap[r.participant_id] = r;
+  }
+
+  return (participants || []).map((p: any) => {
+    const agreement = agreementMap[p.id] || null;
+    const report = reportMap[p.id] || null;
+    const totalBudget = Number(agreement?.total_budget || 0);
+    const consumedBudget = Number(agreement?.consumed_budget || 0);
+    const utilizationPercent = totalBudget > 0 ? Math.round((consumedBudget / totalBudget) * 100) : 0;
+
+    return {
+      participant_id: p.id as string,
+      name: (p.preferred_name as string | null) || (p.full_name as string | null) || (p.clients?.name as string) || "Unknown",
+      ndis_number: (p.ndis_number as string | null) || null,
+      plan_start: (agreement?.start_date as string | null) || null,
+      plan_end: (agreement?.end_date as string | null) || null,
+      total_budget: totalBudget,
+      consumed_budget: consumedBudget,
+      utilization_percent: utilizationPercent,
+      agreement_status: (agreement?.status as string | null) || null,
+      latest_report_id: (report?.id as string | null) || null,
+      latest_report_status: (report?.status as string | null) || null,
+      latest_report_title: (report?.title as string | null) || null,
+    };
+  });
+}
+
 export async function listPlanReviewReportsAction(organizationId: string) {
   const { supabase } = await requireUser();
   const { data, error } = await (supabase as any)

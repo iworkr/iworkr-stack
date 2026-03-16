@@ -322,7 +322,7 @@ export async function fetchCarePlansAction(organizationId: string, participantId
     const supabase = await createServerSupabaseClient();
     let query = (supabase as any)
       .from("care_plans")
-      .select("*, care_goals(id, title, status, priority)")
+      .select("*, care_goals(id, title, status, priority), participant_profiles(preferred_name, full_name, clients(name))")
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: false });
 

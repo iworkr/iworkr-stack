@@ -11,15 +11,15 @@ import {
   X,
   ChevronRight,
   Edit3,
-  CheckCircle2,
   Clock,
-  AlertCircle,
+  AlertTriangle,
   Archive,
   FileText,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
-import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { useRouter } from "next/navigation";
 import {
   fetchCarePlansAction,
   createCarePlanAction,
@@ -61,86 +61,149 @@ interface CarePlan {
   notes?: string | null;
   created_at: string;
   care_goals?: CareGoal[];
+  participant_profiles?: {
+    preferred_name?: string | null;
+    full_name?: string | null;
+    clients?: { name?: string | null } | null;
+  } | null;
 }
 
 /* ── Status Config ────────────────────────────────────── */
 
-const STATUS_PILLS: Record<PlanStatus, { label: string; bg: string; text: string }> = {
-  draft: { label: "Draft", bg: "bg-zinc-500/10", text: "text-zinc-400" },
-  active: { label: "Active", bg: "bg-emerald-500/10", text: "text-emerald-400" },
-  under_review: { label: "Under Review", bg: "bg-amber-500/10", text: "text-amber-400" },
-  archived: { label: "Archived", bg: "bg-zinc-500/10", text: "text-zinc-500" },
-};
-
-const GOAL_STATUS: Record<GoalStatus, { label: string; bg: string; text: string }> = {
-  not_started: { label: "Not Started", bg: "bg-zinc-500/10", text: "text-zinc-400" },
-  in_progress: { label: "In Progress", bg: "bg-[var(--brand)]/10", text: "text-[var(--brand)]" },
-  achieved: { label: "Achieved", bg: "bg-emerald-500/10", text: "text-emerald-400" },
-  on_hold: { label: "On Hold", bg: "bg-amber-500/10", text: "text-amber-400" },
-  discontinued: { label: "Discontinued", bg: "bg-rose-500/10", text: "text-rose-400" },
+const STATUS_CONFIG: Record<PlanStatus, { label: string; bg: string; text: string; border: string }> = {
+  active:       { label: "Active",       bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
+  draft:        { label: "Draft",        bg: "bg-zinc-500/10",    text: "text-zinc-400",    border: "border-zinc-500/20" },
+  under_review: { label: "Under Review", bg: "bg-amber-500/10",   text: "text-amber-400",   border: "border-amber-500/20" },
+  archived:     { label: "Archived",     bg: "bg-rose-500/10",    text: "text-rose-400",    border: "border-rose-500/20" },
 };
 
 const TABS: { key: "all" | PlanStatus; label: string }[] = [
   { key: "all", label: "All" },
   { key: "active", label: "Active" },
   { key: "draft", label: "Draft" },
-  { key: "under_review", label: "Under Review" },
+  { key: "under_review", label: "Review" },
   { key: "archived", label: "Archived" },
 ];
 
-/* ── Status Pill ──────────────────────────────────────── */
+/* ── Helpers ──────────────────────────────────────────── */
 
-function StatusPill({ status }: { status: PlanStatus }) {
-  const c = STATUS_PILLS[status] ?? STATUS_PILLS.draft;
+function resolveParticipantName(plan: CarePlan): string {
+  const p = plan.participant_profiles;
+  if (!p) return "Unknown";
+  return p.preferred_name || p.full_name || p.clients?.name || "Unknown";
+}
+
+function getInitials(name: string): string {
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (parts[0]?.[0] || "?").toUpperCase();
+}
+
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function daysUntil(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function padGoalCount(n: number): string {
+  return n < 10 ? `0${n}` : `${n}`;
+}
+
+/* ── Ghost Badge ──────────────────────────────────────── */
+
+function GhostBadge({ status }: { status: PlanStatus }) {
+  const c = STATUS_CONFIG[status] ?? STATUS_CONFIG.draft;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${c.bg} ${c.text}`}>
+    <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${c.bg} ${c.text} ${c.border}`}>
       {c.label}
     </span>
   );
 }
 
-function GoalStatusPill({ status }: { status: GoalStatus }) {
-  const c = GOAL_STATUS[status] ?? GOAL_STATUS.not_started;
+/* ── Shimmer Skeleton ─────────────────────────────────── */
+
+const SKELETON_WIDTHS = [
+  { name: "w-20", title: "w-48", goals: "w-6", date: "w-20" },
+  { name: "w-28", title: "w-56", goals: "w-5", date: "w-16" },
+  { name: "w-24", title: "w-40", goals: "w-6", date: "w-20" },
+  { name: "w-16", title: "w-52", goals: "w-5", date: "w-18" },
+  { name: "w-32", title: "w-44", goals: "w-6", date: "w-16" },
+];
+
+function SkeletonRow({ idx }: { idx: number }) {
+  const w = SKELETON_WIDTHS[idx % SKELETON_WIDTHS.length];
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${c.bg} ${c.text}`}>
-      {c.label}
-    </span>
+    <tr className="border-b border-white/5 h-16">
+      <td className="px-8 py-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-zinc-900 animate-pulse shrink-0" />
+          <div className="space-y-1.5">
+            <div className={`h-3 ${w.name} bg-zinc-900 rounded-sm animate-pulse`} />
+            <div className="h-2 w-14 bg-zinc-900/60 rounded-sm animate-pulse" />
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3"><div className={`h-3 ${w.title} bg-zinc-900 rounded-sm animate-pulse`} /></td>
+      <td className="px-4 py-3"><div className="h-5 w-16 bg-zinc-900 rounded-md animate-pulse" /></td>
+      <td className="px-4 py-3 text-center"><div className={`h-3 ${w.goals} bg-zinc-900 rounded-sm animate-pulse mx-auto`} /></td>
+      <td className="px-4 py-3"><div className={`h-3 ${w.date} bg-zinc-900 rounded-sm animate-pulse`} /></td>
+      <td className="px-4 py-3"><div className="h-3 w-3 bg-zinc-900 rounded-sm animate-pulse" /></td>
+    </tr>
   );
 }
 
-/* ── Milestone Progress ───────────────────────────────── */
+/* ── Empty State ──────────────────────────────────────── */
 
-function MilestoneProgress({ milestones }: { milestones?: { title: string; achieved: boolean }[] }) {
-  if (!milestones || milestones.length === 0) return null;
-  const achieved = milestones.filter((m) => m.achieved).length;
-  const pct = Math.round((achieved / milestones.length) * 100);
+function EmptyState({ hasFilters, onClearFilters, onCreate }: {
+  hasFilters: boolean;
+  onClearFilters: () => void;
+  onCreate: () => void;
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-[var(--brand)] transition-all duration-500"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="text-[10px] font-mono text-[var(--text-muted)]">
-        {achieved}/{milestones.length}
-      </span>
-    </div>
+    <tr>
+      <td colSpan={6}>
+        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-white/5 rounded-xl bg-zinc-950/50 mx-8 my-6">
+          <ClipboardList className="w-8 h-8 text-zinc-800 mb-4" />
+          <p className="text-sm text-zinc-500">
+            {hasFilters ? "No plans match your filters." : "No care plans yet."}
+          </p>
+          <div className="mt-3">
+            {hasFilters ? (
+              <button
+                onClick={onClearFilters}
+                className="text-xs text-zinc-400 hover:text-white transition-colors underline underline-offset-2"
+              >
+                Clear filters
+              </button>
+            ) : (
+              <button
+                onClick={onCreate}
+                className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+                Create new plan
+              </button>
+            )}
+          </div>
+        </div>
+      </td>
+    </tr>
   );
 }
 
-/* ── Create / Edit Slide-Over ─────────────────────────── */
+/* ── Create Slide-Over (preserved from original) ──────── */
 
 function PlanSlideOver({
-  open,
-  onClose,
-  orgId,
-  onCreated,
+  open, onClose, orgId, onCreated,
 }: {
-  open: boolean;
-  onClose: () => void;
-  orgId: string;
-  onCreated: () => void;
+  open: boolean; onClose: () => void; orgId: string; onCreated: () => void;
 }) {
   const [title, setTitle] = useState("");
   const [participantId, setParticipantId] = useState("");
@@ -167,7 +230,8 @@ function PlanSlideOver({
         notes: notes || null,
       });
       onCreated();
-      resetForm();
+      setTitle(""); setParticipantId(""); setAssessorName(""); setAssessorRole("");
+      setStartDate(""); setReviewDate(""); setNotes("");
       onClose();
     } catch (err) {
       console.error("Failed to create care plan:", err);
@@ -176,126 +240,73 @@ function PlanSlideOver({
     }
   };
 
-  const resetForm = () => {
-    setTitle("");
-    setParticipantId("");
-    setAssessorName("");
-    setAssessorRole("");
-    setStartDate("");
-    setReviewDate("");
-    setNotes("");
-  };
-
   return (
     <AnimatePresence>
       {open && (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-[#0A0A0A] border-l border-[var(--border-base)] shadow-2xl overflow-y-auto"
+            className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-[#0A0A0A] border-l border-white/[0.06] shadow-2xl overflow-y-auto"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <div className="flex items-center gap-2">
-                <ClipboardList className="w-4 h-4 text-[var(--brand)]" />
-                <h2 className="text-sm font-semibold text-[var(--text-primary)]">New Care Plan</h2>
+                <ClipboardList className="w-4 h-4 text-emerald-400" />
+                <h2 className="text-sm font-semibold text-white">New Care Plan</h2>
               </div>
-              <button onClick={onClose} className="p-1 rounded-md hover:bg-white/5 text-[var(--text-muted)]">
-                <X className="w-4 h-4" />
-              </button>
+              <button onClick={onClose} className="p-1 rounded-md hover:bg-white/5 text-zinc-500"><X className="w-4 h-4" /></button>
             </div>
-
-            {/* Form */}
             <div className="px-6 py-5 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Participant ID</label>
-                <input
-                  value={participantId}
-                  onChange={(e) => setParticipantId(e.target.value)}
-                  placeholder="Enter participant UUID"
-                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Plan Title</label>
-                <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g., Individual Support Plan — 2026"
-                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-                />
-              </div>
+              {[
+                { label: "Participant ID", value: participantId, set: setParticipantId, ph: "Enter participant UUID" },
+                { label: "Plan Title", value: title, set: setTitle, ph: "e.g., Individual Support Plan — 2026" },
+              ].map((f) => (
+                <div key={f.label}>
+                  <label className="block text-xs font-medium text-zinc-500 mb-1.5">{f.label}</label>
+                  <input value={f.value} onChange={(e) => f.set(e.target.value)} placeholder={f.ph}
+                    className="w-full px-3 py-2 bg-zinc-900/50 border border-white/[0.06] rounded-lg text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" />
+                </div>
+              ))}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Assessor Name</label>
-                  <input
-                    value={assessorName}
-                    onChange={(e) => setAssessorName(e.target.value)}
-                    placeholder="Dr. Smith"
-                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-                  />
+                  <label className="block text-xs font-medium text-zinc-500 mb-1.5">Assessor Name</label>
+                  <input value={assessorName} onChange={(e) => setAssessorName(e.target.value)} placeholder="Dr. Smith"
+                    className="w-full px-3 py-2 bg-zinc-900/50 border border-white/[0.06] rounded-lg text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Assessor Role</label>
-                  <input
-                    value={assessorRole}
-                    onChange={(e) => setAssessorRole(e.target.value)}
-                    placeholder="Support Coordinator"
-                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-                  />
+                  <label className="block text-xs font-medium text-zinc-500 mb-1.5">Assessor Role</label>
+                  <input value={assessorRole} onChange={(e) => setAssessorRole(e.target.value)} placeholder="Support Coordinator"
+                    className="w-full px-3 py-2 bg-zinc-900/50 border border-white/[0.06] rounded-lg text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Start Date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-                  />
+                  <label className="block text-xs font-medium text-zinc-500 mb-1.5">Start Date</label>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-900/50 border border-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/30 [color-scheme:dark]" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Next Review</label>
-                  <input
-                    type="date"
-                    value={reviewDate}
-                    onChange={(e) => setReviewDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-                  />
+                  <label className="block text-xs font-medium text-zinc-500 mb-1.5">Next Review</label>
+                  <input type="date" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-900/50 border border-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/30 [color-scheme:dark]" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Additional context or notes..."
-                  className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50 resize-none"
-                />
+                <label className="block text-xs font-medium text-zinc-500 mb-1.5">Notes</label>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Additional context..."
+                  className="w-full px-3 py-2 bg-zinc-900/50 border border-white/[0.06] rounded-lg text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-none" />
               </div>
             </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[var(--border-base)]">
-              <button onClick={onClose} className="stealth-btn-ghost">Cancel</button>
-              <button
-                onClick={handleSubmit}
-                disabled={!title || !participantId || saving}
-                className="stealth-btn-brand bg-[var(--brand)] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {saving ? "Creating..." : "Create Plan"}
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-white/[0.06]">
+              <button onClick={onClose} className="h-8 px-3 rounded-md text-xs text-zinc-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
+              <button onClick={handleSubmit} disabled={!title || !participantId || saving}
+                className="h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                {saving ? "Creating…" : "Create Plan"}
               </button>
             </div>
           </motion.div>
@@ -305,325 +316,16 @@ function PlanSlideOver({
   );
 }
 
-/* ── Add Goal Modal ───────────────────────────────────── */
-
-function AddGoalModal({
-  open,
-  onClose,
-  plan,
-  orgId,
-  onCreated,
-}: {
-  open: boolean;
-  onClose: () => void;
-  plan: CarePlan | null;
-  orgId: string;
-  onCreated: () => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [targetOutcome, setTargetOutcome] = useState("");
-  const [category, setCategory] = useState<"core" | "capacity_building" | "capital">("core");
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!title || !plan) return;
-    setSaving(true);
-    try {
-      await createCareGoalAction({
-        care_plan_id: plan.id,
-        organization_id: orgId,
-        participant_id: plan.participant_id,
-        title,
-        description: description || null,
-        target_outcome: targetOutcome || null,
-        support_category: category,
-        priority: 0,
-        milestones: [],
-      });
-      onCreated();
-      setTitle("");
-      setDescription("");
-      setTargetOutcome("");
-      onClose();
-    } catch (err) {
-      console.error("Failed to create goal:", err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!open || !plan) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="w-full max-w-md bg-[#0A0A0A] border border-[var(--border-base)] rounded-xl shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
-          <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-[var(--brand)]" />
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Add Goal</h2>
-          </div>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-white/5 text-[var(--text-muted)]">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Goal Title</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Improve social participation"
-              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              placeholder="Describe the goal in detail..."
-              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50 resize-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Target Outcome</label>
-            <input
-              value={targetOutcome}
-              onChange={(e) => setTargetOutcome(e.target.value)}
-              placeholder="e.g., Attend community events 2x per week"
-              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Support Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as typeof category)}
-              className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-            >
-              <option value="core">Core Supports</option>
-              <option value="capacity_building">Capacity Building</option>
-              <option value="capital">Capital Supports</option>
-            </select>
-          </div>
-        </div>
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[var(--border-base)]">
-          <button onClick={onClose} className="stealth-btn-ghost">Cancel</button>
-          <button
-            onClick={handleSubmit}
-            disabled={!title || saving}
-            className="stealth-btn-brand bg-[var(--brand)] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {saving ? "Adding..." : "Add Goal"}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/* ── Detail View ──────────────────────────────────────── */
-
-function PlanDetail({
-  plan,
-  onClose,
-  orgId,
-  onRefresh,
-}: {
-  plan: CarePlan;
-  onClose: () => void;
-  orgId: string;
-  onRefresh: () => void;
-}) {
-  const [addGoalOpen, setAddGoalOpen] = useState(false);
-  const goals = plan.care_goals ?? [];
-  const domainEntries = Object.entries(plan.domains ?? {});
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      className="flex flex-col h-full"
-    >
-      {/* Detail Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-base)]">
-        <div className="flex items-center gap-3 min-w-0">
-          <button onClick={onClose} className="p-1 rounded hover:bg-white/5 text-[var(--text-muted)]">
-            <X className="w-4 h-4" />
-          </button>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-[var(--text-primary)] truncate">{plan.title}</h2>
-              <StatusPill status={plan.status as PlanStatus} />
-            </div>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5 font-mono">{plan.participant_id.slice(0, 8)}…</p>
-          </div>
-        </div>
-        <button className="stealth-btn-ghost text-xs">
-          <Edit3 className="w-3.5 h-3.5 mr-1" />
-          Edit Plan
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-6">
-        {/* Meta Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {plan.assessor_name && (
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">Assessor</span>
-              <p className="text-sm text-[var(--text-primary)] mt-0.5">{plan.assessor_name}</p>
-              {plan.assessor_role && <p className="text-xs text-[var(--text-muted)]">{plan.assessor_role}</p>}
-            </div>
-          )}
-          {plan.start_date && (
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">Start Date</span>
-              <p className="text-sm text-[var(--text-primary)] mt-0.5">{new Date(plan.start_date).toLocaleDateString("en-AU")}</p>
-            </div>
-          )}
-          {plan.next_review_date && (
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">Next Review</span>
-              <p className="text-sm text-[var(--text-primary)] mt-0.5">{new Date(plan.next_review_date).toLocaleDateString("en-AU")}</p>
-            </div>
-          )}
-          <div>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">Created</span>
-            <p className="text-sm text-[var(--text-primary)] mt-0.5">{new Date(plan.created_at).toLocaleDateString("en-AU")}</p>
-          </div>
-        </div>
-
-        {/* Domains */}
-        {domainEntries.length > 0 && (
-          <div>
-            <h3 className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] mb-2">Domains</h3>
-            <div className="space-y-1.5">
-              {domainEntries.map(([key, val]) => (
-                <div key={key} className="flex items-start gap-2 text-xs">
-                  <span className="text-[var(--brand)] font-medium min-w-[100px]">{key}</span>
-                  <span className="text-[var(--text-primary)]">{val}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Goals */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">
-              Goals ({goals.length})
-            </h3>
-            <button
-              onClick={() => setAddGoalOpen(true)}
-              className="flex items-center gap-1 text-xs font-medium text-[var(--brand)] hover:brightness-125 transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-              Add Goal
-            </button>
-          </div>
-          {goals.length === 0 ? (
-            <div className="py-8 text-center">
-              <Target className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-2 opacity-30" />
-              <p className="text-xs text-[var(--text-muted)]">No goals added yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {goals.map((goal) => (
-                <div
-                  key={goal.id}
-                  className="bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg p-4"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-medium text-[var(--text-primary)]">{goal.title}</h4>
-                        <GoalStatusPill status={goal.status} />
-                      </div>
-                      {goal.target_outcome && (
-                        <p className="text-xs text-[var(--text-muted)] mt-1">{goal.target_outcome}</p>
-                      )}
-                    </div>
-                    {goal.support_category && (
-                      <span className="text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)] bg-white/5 px-1.5 py-0.5 rounded ml-2 whitespace-nowrap">
-                        {goal.support_category.replace("_", " ")}
-                      </span>
-                    )}
-                  </div>
-                  {goal.milestones && goal.milestones.length > 0 && (
-                    <div className="mt-3">
-                      <MilestoneProgress milestones={goal.milestones} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Notes */}
-        {plan.notes && (
-          <div>
-            <h3 className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] mb-2">Notes</h3>
-            <p className="text-sm text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap">{plan.notes}</p>
-          </div>
-        )}
-      </div>
-
-      <AddGoalModal
-        open={addGoalOpen}
-        onClose={() => setAddGoalOpen(false)}
-        plan={plan}
-        orgId={orgId}
-        onCreated={onRefresh}
-      />
-    </motion.div>
-  );
-}
-
-/* ── Skeleton Row ─────────────────────────────────────── */
-
-function SkeletonRow() {
-  return (
-    <div className="stealth-table-row animate-pulse">
-      <div className="flex-1 flex items-center gap-3">
-        <div className="w-24 h-3 rounded bg-white/5" />
-        <div className="w-40 h-3 rounded bg-white/5" />
-      </div>
-      <div className="w-16 h-4 rounded bg-white/5" />
-      <div className="w-8 h-3 rounded bg-white/5 ml-4" />
-      <div className="w-20 h-3 rounded bg-white/5 ml-4" />
-    </div>
-  );
-}
-
 /* ── Main Page ────────────────────────────────────────── */
 
 export default function CarePlansPage() {
   const { orgId } = useOrg();
-  const { t } = useIndustryLexicon();
+  const router = useRouter();
 
   const [plans, setPlans] = useState<CarePlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"all" | PlanStatus>("all");
   const [search, setSearch] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<CarePlan | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
   const loadPlans = useCallback(async () => {
@@ -639,10 +341,18 @@ export default function CarePlansPage() {
     }
   }, [orgId]);
 
-  useEffect(() => {
-    loadPlans();
-  }, [loadPlans]);
+  useEffect(() => { loadPlans(); }, [loadPlans]);
 
+  /* ── Tab counts ──────────────────────────────────────── */
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: plans.length };
+    for (const t of TABS) {
+      if (t.key !== "all") counts[t.key] = plans.filter((p) => p.status === t.key).length;
+    }
+    return counts;
+  }, [plans]);
+
+  /* ── Filtered list ───────────────────────────────────── */
   const filtered = useMemo(() => {
     let list = plans;
     if (tab !== "all") list = list.filter((p) => p.status === tab);
@@ -651,6 +361,7 @@ export default function CarePlansPage() {
       list = list.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
+          resolveParticipantName(p).toLowerCase().includes(q) ||
           p.participant_id.toLowerCase().includes(q) ||
           (p.assessor_name?.toLowerCase().includes(q))
       );
@@ -658,180 +369,179 @@ export default function CarePlansPage() {
     return list;
   }, [plans, tab, search]);
 
+  const hasFilters = search.length > 0 || tab !== "all";
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative flex h-full flex-col bg-[var(--background)]">
-      <div className="stealth-noise" />
-      {/* Atmospheric glow */}
-      <div
-        className="pointer-events-none absolute top-0 left-0 right-0 h-64 z-0"
-        style={{ background: "radial-gradient(ellipse at center top, rgba(59,130,246,0.03) 0%, transparent 60%)" }}
-      />
-
-      <div className="relative z-10 flex flex-1 overflow-hidden">
-        {/* Main List */}
-        <div className={`flex-1 flex flex-col min-w-0 transition-all ${selectedPlan ? "max-w-[60%]" : ""}`}>
-          {/* Header */}
-          <div className="px-6 pt-8 pb-0 space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-mono text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase mb-1">CARE PLANS</p>
-                <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
-                  {t("Participant")} Plans
-                </h1>
-                <p className="text-sm text-[var(--text-muted)] mt-1">
-                  Track goals, milestones, and review schedules for every participant.
-                </p>
-              </div>
-              <button
-                onClick={() => setCreateOpen(true)}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white hover:bg-emerald-500 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                New Care Plan
-              </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="stealth-tabs">
-              {TABS.map((t) => (
+    <div className="flex h-full flex-col bg-[#050505]">
+      {/* ─── Command Header ──────────────────────────────── */}
+      <div className="flex items-center justify-between h-14 px-8 border-b border-white/5 shrink-0">
+        {/* Left: Breadcrumb + Pill Tabs */}
+        <div className="flex items-center gap-0">
+          <span className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 font-semibold select-none">
+            Care Plans
+          </span>
+          <div className="w-px h-4 bg-white/10 mx-4" />
+          <div className="flex items-center gap-1 bg-zinc-900/50 p-1 rounded-lg border border-white/5">
+            {TABS.map((t) => {
+              const isActive = tab === t.key;
+              return (
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  data-active={tab === t.key}
-                  className="stealth-tab"
+                  className={`px-3 py-1.5 text-xs rounded-md transition-colors cursor-pointer ${
+                    isActive
+                      ? "text-white bg-white/10 shadow-sm font-medium"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
                 >
                   {t.label}
                   {t.key !== "all" && (
-                    <span className="ml-1.5 text-[10px] font-mono text-[var(--text-muted)]">
-                      {plans.filter((p) => p.status === t.key).length}
-                    </span>
+                    <span className="ml-1.5 font-mono text-[10px] text-zinc-500">{tabCounts[t.key] ?? 0}</span>
                   )}
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="px-6 py-3">
-            <div className="relative max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search plans..."
-                className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/50"
-              />
-            </div>
-          </div>
-
-          {/* Table Header */}
-          <div className="stealth-table-header px-6">
-            <span className="flex-[2]">{t("Participant")}</span>
-            <span className="flex-[3]">Title</span>
-            <span className="flex-1">Status</span>
-            <span className="flex-1 text-center">Goals</span>
-            <span className="flex-[1.5]">Next Review</span>
-          </div>
-
-          {/* Table Body */}
-          <div className="flex-1 overflow-y-auto px-2">
-            {loading && plans.length === 0 && (
-              <div className="px-4">
-                {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
-              </div>
-            )}
-
-            {!loading && filtered.length === 0 && (
-              <div className="stealth-empty-state">
-                <div className="stealth-empty-state-icon">
-                  <ClipboardList className="w-5 h-5 text-[var(--text-muted)]" />
-                </div>
-                <p className="stealth-empty-state-title">
-                  {search || tab !== "all" ? "No plans match" : "No care plans yet"}
-                </p>
-                <p className="stealth-empty-state-desc">
-                  {search || tab !== "all"
-                    ? "Try adjusting your search or filters."
-                    : "No care plans yet. Create one to begin tracking participant goals."}
-                </p>
-                {!search && tab === "all" && (
-                  <button
-                    onClick={() => setCreateOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-medium text-white hover:bg-emerald-500 transition-colors mt-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create First Plan
-                  </button>
-                )}
-              </div>
-            )}
-
-            <AnimatePresence mode="popLayout">
-              {filtered.map((plan, idx) => {
-                const goalCount = plan.care_goals?.length ?? 0;
-                const isSelected = selectedPlan?.id === plan.id;
-                return (
-                  <motion.div
-                    key={plan.id}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ delay: idx * 0.015 }}
-                    data-selected={isSelected}
-                    onClick={() => setSelectedPlan(plan)}
-                    className={`stealth-table-row mx-4 cursor-pointer rounded-lg ${isSelected ? "bg-[var(--brand)]/5 border-[var(--brand)]/10" : ""}`}
-                  >
-                    <span className="flex-[2] text-sm text-[var(--text-muted)] font-mono truncate">
-                      {plan.participant_id.slice(0, 8)}…
-                    </span>
-                    <span className="flex-[3] text-sm text-[var(--text-primary)] font-medium truncate">
-                      {plan.title}
-                    </span>
-                    <span className="flex-1">
-                      <StatusPill status={plan.status as PlanStatus} />
-                    </span>
-                    <span className="flex-1 text-center text-xs font-mono text-[var(--text-muted)]">
-                      {goalCount}
-                    </span>
-                    <span className="flex-[1.5] text-xs text-[var(--text-muted)]">
-                      {plan.next_review_date
-                        ? new Date(plan.next_review_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
-                        : "—"}
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 ml-2" />
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+              );
+            })}
           </div>
         </div>
 
-        {/* Detail Panel */}
-        <AnimatePresence>
-          {selectedPlan && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: "40%", opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              className="border-l border-[var(--border-base)] bg-[var(--surface-1)] overflow-hidden"
-            >
-              <PlanDetail
-                plan={selectedPlan}
-                onClose={() => setSelectedPlan(null)}
-                orgId={orgId ?? ""}
-                onRefresh={loadPlans}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Right: Search + Filter + CTA */}
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative w-64 h-8 flex items-center">
+            <Search className="absolute left-3 w-3 h-3 text-zinc-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search plans…"
+              className="w-full h-full bg-zinc-900 border border-white/5 rounded-md pl-8 pr-3 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700 transition-colors"
+            />
+          </div>
+
+          {/* Filter */}
+          <button className="h-8 px-3 flex items-center gap-2 rounded-md border border-white/5 bg-transparent hover:bg-white/5 text-xs text-zinc-300 transition-colors">
+            <SlidersHorizontal className="w-3 h-3" />
+            Filters
+          </button>
+
+          {/* Primary CTA — White Solid (Obsidian Standard) */}
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-95"
+          >
+            <Plus className="w-3 h-3 inline-block mr-1.5 -mt-px" />
+            New Care Plan
+          </button>
+        </div>
       </div>
 
+      {/* ─── Data Grid ───────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto">
+        <table className="w-full text-left border-collapse">
+          {/* Column Headers */}
+          <thead>
+            <tr className="h-10 border-b border-white/5">
+              <th className="px-8 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[25%]">Participant</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[35%]">Plan Title</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[12%]">Status</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[8%] text-center">Goals</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[15%]">Next Review</th>
+              <th className="px-4 w-8" />
+            </tr>
+          </thead>
+
+          <tbody>
+            {/* Loading Skeletons */}
+            {loading && plans.length === 0 && (
+              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} idx={i} />)
+            )}
+
+            {/* Empty State */}
+            {!loading && filtered.length === 0 && (
+              <EmptyState
+                hasFilters={hasFilters}
+                onClearFilters={() => { setSearch(""); setTab("all"); }}
+                onCreate={() => setCreateOpen(true)}
+              />
+            )}
+
+            {/* Data Rows */}
+            {!loading && filtered.map((plan) => {
+              const name = resolveParticipantName(plan);
+              const initials = getInitials(name);
+              const goalCount = plan.care_goals?.length ?? 0;
+              const reviewDays = daysUntil(plan.next_review_date);
+              const isOverdue = reviewDays !== null && reviewDays < 0;
+              const isUrgent = reviewDays !== null && reviewDays >= 0 && reviewDays < 30;
+
+              return (
+                <tr
+                  key={plan.id}
+                  onClick={() => router.push(`/dashboard/care/plans/${plan.id}`)}
+                  className="group border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer h-16"
+                >
+                  {/* Col 1: Participant */}
+                  <td className="px-8 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+                        <span className="text-xs text-zinc-400 font-medium select-none">{initials}</span>
+                      </div>
+                      <div className="flex flex-col justify-center min-w-0">
+                        <span className="text-sm text-zinc-100 font-medium truncate">{name}</span>
+                        <span className="text-[10px] font-mono text-zinc-600 truncate">
+                          ID: {plan.participant_id.slice(0, 8)}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Col 2: Title */}
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-zinc-300 truncate block max-w-sm">{plan.title}</span>
+                  </td>
+
+                  {/* Col 3: Status */}
+                  <td className="px-4 py-3">
+                    <GhostBadge status={plan.status as PlanStatus} />
+                  </td>
+
+                  {/* Col 4: Goals */}
+                  <td className="px-4 py-3 text-center">
+                    <span className="font-mono text-xs text-zinc-400">{padGoalCount(goalCount)}</span>
+                  </td>
+
+                  {/* Col 5: Next Review */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`font-mono text-xs ${isOverdue ? "text-rose-500" : "text-zinc-300"}`}>
+                        {formatDate(plan.next_review_date)}
+                      </span>
+                      {isUrgent && !isOverdue && (
+                        <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                      )}
+                      {isOverdue && (
+                        <span className="text-[9px] font-mono text-rose-500 uppercase">Overdue</span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Col 6: Chevron */}
+                  <td className="px-4 py-3">
+                    <ChevronRight className="w-4 h-4 text-zinc-700 transition-all duration-200 group-hover:text-zinc-300 group-hover:translate-x-1" />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ─── Create Slide-Over ────────────────────────────── */}
       <PlanSlideOver
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         orgId={orgId ?? ""}
         onCreated={loadPlans}
       />
-    </motion.div>
+    </div>
   );
 }

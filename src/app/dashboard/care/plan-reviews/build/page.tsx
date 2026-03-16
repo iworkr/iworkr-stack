@@ -140,7 +140,7 @@ export default function PlanReviewsBuildPage() {
             <button
               onClick={handleCreate}
               disabled={!selectedParticipant || creating}
-              className="rounded-md bg-emerald-600 px-3 py-1 text-[12px] font-medium text-white disabled:opacity-50"
+              className="rounded-md bg-white px-3 py-1 text-[12px] font-semibold text-black hover:bg-zinc-200 transition-colors active:scale-95 disabled:opacity-50"
             >
               {creating ? "Creating..." : "+ New Plan Review"}
             </button>
@@ -185,7 +185,7 @@ export default function PlanReviewsBuildPage() {
                 await finalizePlanReviewAction(reportId);
                 await loadReport(reportId);
               })}
-              className="rounded-md bg-[var(--brand)] px-3 py-1 text-[12px] font-medium text-black disabled:opacity-50"
+              className="rounded-md bg-emerald-500/10 px-3 py-1 text-[12px] font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
             >
               Finalize & Generate PDF
             </button>
@@ -344,7 +344,7 @@ class PlanReviewErrorBoundary extends React.Component<
                 this.setState({ hasError: false, errorMessage: "" });
                 this.props.onRetry();
               }}
-              className="mt-4 rounded-md bg-[var(--brand)] px-4 py-2 text-[12px] font-medium text-black"
+              className="mt-4 h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors"
             >
               Retry
             </button>
