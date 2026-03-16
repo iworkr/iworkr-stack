@@ -18,7 +18,6 @@ import {
   suspendMember as suspendMemberAction,
   reactivateMember as reactivateMemberAction,
   removeMember as removeMemberServer,
-  inviteMember as inviteMemberServer,
   resendInvite as resendInviteServer,
   cancelInvite as cancelInviteServer,
   updateRolePermissions as updateRolePermissionsServer,
@@ -423,22 +422,28 @@ export const useTeamStore = create<TeamState>()(
   /* ── Server-backed actions ─────────────────── */
 
   inviteMemberServer: async (params) => {
-    const orgId = get().orgId;
-    if (!orgId) return { error: "No organization" };
-
-    const res = await inviteMemberServer({
-      organization_id: orgId,
-      email: params.email,
-      role: params.role,
-      branch: params.branch,
-    });
-
-    if (!res.error) {
+    // Use fetch API route — bypasses server action caching entirely.
+    // The API route resolves orgId server-side from authenticated user.
+    try {
+      const res = await fetch("/api/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: params.email,
+          role: params.role,
+          branch: params.branch,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        return { error: data.error || `HTTP ${res.status}` };
+      }
       get().addPendingMember(params.email.split("@")[0], params.email, params.role as RoleId, params.branch || "HQ");
       get().refresh();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message || "Network error" };
     }
-
-    return { error: res.error };
   },
 
   updateMemberRoleServer: async (userId, role, roleId) => {
