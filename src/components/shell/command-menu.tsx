@@ -41,6 +41,7 @@ const commands = [
   { id: "nav-dashboard", label: "Go to Dashboard", icon: LayoutDashboard, shortcut: "G D", group: "Navigation", href: "/dashboard" },
   { id: "nav-inbox", label: "Go to Messages", icon: Inbox, shortcut: "G I", group: "Navigation", href: "/dashboard/inbox" },
   { id: "nav-settings", label: "Go to Settings", icon: Settings, shortcut: "⌘,", group: "Navigation", href: "/settings" },
+  { id: "nav-communications", label: "Communications Settings", icon: Settings, group: "Navigation", href: "/dashboard/settings/communications" },
 
   // ── Navigation: Trades ──
   { id: "nav-jobs", label: "Go to Jobs", icon: Briefcase, shortcut: "G J", group: "Navigation", href: "/dashboard/jobs" },

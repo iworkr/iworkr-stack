@@ -779,6 +779,7 @@ function WorkspaceSwitcher({ companyName, logoUrl, collapsed }: { companyName: s
               {[
                 { label: "Workspace Settings", icon: Settings, href: "/settings/workspace" },
                 { label: "Branding", icon: Settings, href: "/settings/branding" },
+                { label: "Communications", icon: Settings, href: "/dashboard/settings/communications" },
                 { label: "Members", icon: Users, href: "/dashboard/team" },
               ].map((item) => (
                 <button key={item.label} onClick={() => { setOpen(false); router.push(item.href); }} className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200">
