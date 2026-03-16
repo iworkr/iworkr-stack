@@ -129,7 +129,7 @@ export async function getWalletHealthSummaryAction(organizationId: string) {
   const [{ data: wallets }, { data: staleSessions }, { data: openDiscrepancies }] = await Promise.all([
     (supabase as any)
       .from("participant_wallets")
-      .select("id, name, current_balance, updated_at, participant_id, wallet_type")
+      .select("id, name, current_balance, updated_at, participant_id, facility_id, wallet_type, card_last_four, participant_profiles(preferred_name, full_name), care_facilities(name)")
       .eq("organization_id", organizationId)
       .eq("is_active", true)
       .order("updated_at", { ascending: true }),
@@ -147,6 +147,7 @@ export async function getWalletHealthSummaryAction(organizationId: string) {
 
   const staleWalletIds = new Set((staleSessions || []).map((s: any) => s.wallet_id as string));
   const discrepancyWalletIds = new Set((openDiscrepancies || []).map((d: any) => d.wallet_id as string));
+  const totalFundsHeld = (wallets || []).reduce((sum: number, w: any) => sum + Number(w.current_balance || 0), 0);
 
   return {
     wallets: (wallets || []).map((w: any) => ({
@@ -156,6 +157,7 @@ export async function getWalletHealthSummaryAction(organizationId: string) {
     })),
     totals: {
       active_wallets: (wallets || []).length,
+      total_funds_held: totalFundsHeld,
       stale_wallets: staleWalletIds.size,
       discrepant_wallets: discrepancyWalletIds.size,
     },
