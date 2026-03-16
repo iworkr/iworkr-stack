@@ -1,95 +1,383 @@
 "use client";
 
-import React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Search,
+  Plus,
+  SlidersHorizontal,
+  ChevronRight,
+  X,
+  FileText,
+  Calendar,
+} from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
-  addIrregularSilSupportAction,
   createSilQuoteAction,
-  generateSilRocExcelAction,
-  getSilQuoteWorkspaceAction,
   listSilQuotesAction,
-  paintParticipantAbsenceAction,
-  publishSilFamilyPdfAction,
-  setBlockParticipantShareOverrideAction,
-  setSilQuoteStatusAction,
-  syncSilQuoteToMasterRosterAction,
-  updateSilQuoteBlockAction,
 } from "@/app/actions/sil-quoting";
-import { listCareFacilitiesAction, listFacilityParticipantsAction } from "@/app/actions/care-routines";
-import { AlertTriangle, FileSpreadsheet, RefreshCcw, Save, Send } from "lucide-react";
+import {
+  listCareFacilitiesAction,
+  listFacilityParticipantsAction,
+} from "@/app/actions/care-routines";
+import { useRouter } from "next/navigation";
+
+/* ── Types ────────────────────────────────────────────── */
 
 type QuoteSummary = {
   id: string;
   name: string;
   status: string;
+  facility_id: string;
   total_annual_cost: number;
   projected_gross_margin_percent: number;
   care_facilities?: { name?: string };
+  created_at: string;
 };
 
-type Block = {
-  id: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  active_workers: number;
-  active_participants: number;
-  is_sleepover: boolean;
-  is_active_night: boolean;
-  ndis_line_item_code: string | null;
-};
+type TabFilter = "all" | "draft" | "pending_approval" | "approved";
 
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/* ── Helpers ──────────────────────────────────────────── */
 
-function keyFor(day: number, time: string) {
-  return `${day}-${String(time).slice(0, 5)}`;
+function formatCurrency(val: number): string {
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(val);
 }
 
-function slotLabel(slot: number) {
-  const h = Math.floor((slot * 30) / 60);
-  const m = (slot * 30) % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+function marginColor(pct: number): string {
+  if (pct >= 15) return "text-emerald-500";
+  if (pct >= 5) return "text-amber-500";
+  return "text-rose-500 font-bold";
 }
 
-function ratioClass(workers: number, participants: number) {
-  if (participants <= 0 && workers <= 0) return "bg-zinc-950 border-zinc-900";
-  if (participants > 0 && workers <= 0) return "bg-rose-700/70 border-rose-400";
-  const ratio = workers / Math.max(participants, 1);
-  if (ratio >= 2) return "bg-amber-500/50 border-amber-300";
-  if (ratio >= 1) return "bg-blue-500/50 border-blue-300";
-  if (ratio >= 0.5) return "bg-blue-800/55 border-blue-500";
-  return "bg-zinc-800/80 border-zinc-700";
+function statusLabel(s: string): string {
+  const map: Record<string, string> = {
+    draft: "Draft",
+    pending_approval: "Pending",
+    approved: "Approved",
+    rejected: "Rejected",
+    archived: "Archived",
+  };
+  return map[s] || s;
 }
 
-export default function SilQuotingPage() {
-  const { orgId } = useOrg();
-  const [pending, startTransition] = useTransition();
-  const [quotes, setQuotes] = useState<QuoteSummary[]>([]);
-  const [selectedQuoteId, setSelectedQuoteId] = useState<string>("");
-  const [workspace, setWorkspace] = useState<any>(null);
-  const [facilities, setFacilities] = useState<any[]>([]);
-  const [participants, setParticipants] = useState<any[]>([]);
-  const [msg, setMsg] = useState<string>("");
+function statusStyle(s: string): string {
+  const map: Record<string, string> = {
+    draft: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+    pending_approval: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    approved: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    rejected: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+    archived: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  };
+  return map[s] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+}
 
-  const [newQuote, setNewQuote] = useState({
+function getInitials(name: string): string {
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (parts[0]?.[0] || "?").toUpperCase();
+}
+
+/* ── Metric Node ──────────────────────────────────────── */
+
+function MetricNode({
+  label,
+  value,
+  danger,
+  pulse,
+}: {
+  label: string;
+  value: string;
+  danger?: boolean;
+  pulse?: boolean;
+}) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex items-center gap-1.5">
+        {pulse && (
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+          </span>
+        )}
+        <span
+          className={`font-mono text-xl leading-none ${danger ? "text-amber-500 font-bold" : "text-white"}`}
+        >
+          {value}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Skeleton Row ─────────────────────────────────────── */
+
+const SKEL = [
+  { a: "w-36", b: "w-24", c: "w-20" },
+  { a: "w-28", b: "w-32", c: "w-16" },
+  { a: "w-40", b: "w-20", c: "w-24" },
+  { a: "w-32", b: "w-28", c: "w-20" },
+  { a: "w-36", b: "w-24", c: "w-16" },
+  { a: "w-28", b: "w-32", c: "w-24" },
+];
+
+function SkeletonRow({ idx }: { idx: number }) {
+  const s = SKEL[idx % SKEL.length];
+  return (
+    <tr className="border-b border-white/5 h-16">
+      <td className="px-8 py-3"><div className={`h-3 ${s.a} bg-zinc-900 rounded-sm animate-pulse`} /></td>
+      <td className="px-4 py-3"><div className={`h-3 ${s.b} bg-zinc-900 rounded-sm animate-pulse`} /></td>
+      <td className="px-4 py-3">
+        <div className="flex -space-x-2">
+          {[0, 1, 2].map((i) => <div key={i} className="w-7 h-7 rounded-full bg-zinc-900 animate-pulse border-2 border-[#050505]" />)}
+        </div>
+      </td>
+      <td className="px-4 py-3"><div className={`h-3 ${s.c} bg-zinc-900 rounded-sm animate-pulse`} /></td>
+      <td className="px-4 py-3"><div className="h-3 w-12 bg-zinc-900 rounded-sm animate-pulse" /></td>
+      <td className="px-4 py-3"><div className="h-5 w-16 bg-zinc-900 rounded-md animate-pulse" /></td>
+      <td className="px-4 py-3"><div className="h-3 w-3 bg-zinc-900 rounded-sm animate-pulse" /></td>
+    </tr>
+  );
+}
+
+/* ── Empty State ──────────────────────────────────────── */
+
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <tr>
+      <td colSpan={7}>
+        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-white/5 rounded-xl bg-zinc-950/50 mx-8 mt-8">
+          <FileText className="w-8 h-8 text-zinc-800 mb-4" />
+          <p className="text-[15px] text-white font-medium">No SIL quotes found.</p>
+          <p className="text-[13px] text-zinc-500 mt-1 max-w-sm text-center">
+            Create your first SIL quote to begin generating Rosters of Care and financial projections.
+          </p>
+          <button
+            onClick={onAdd}
+            className="mt-4 h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-95"
+          >
+            + New SIL Quote
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/* ── Creation Slide-Over ──────────────────────────────── */
+
+function CreateQuoteSlideOver({
+  open,
+  onClose,
+  orgId,
+  facilities,
+  participants,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  orgId: string;
+  facilities: { id: string; name: string }[];
+  participants: { id: string; preferred_name?: string; full_name?: string }[];
+  onCreated: (id: string) => void;
+}) {
+  const [form, setForm] = useState({
     facility_id: "",
     name: "",
     base_week_start: "",
     source_mode: "master_roster" as "master_roster" | "blank",
     participant_ids: [] as string[],
   });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const [absence, setAbsence] = useState({
-    participant_id: "",
-    day_of_week: 1,
-    start_time: "09:00",
-    end_time: "15:00",
-  });
+  const handleCreate = async () => {
+    if (!form.facility_id || !form.name || form.participant_ids.length === 0) {
+      setError("All fields are required. Select at least one participant.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const quote = await createSilQuoteAction({
+        organization_id: orgId,
+        facility_id: form.facility_id,
+        name: form.name,
+        base_week_start: form.base_week_start || new Date().toISOString().slice(0, 10),
+        participant_ids: form.participant_ids,
+        source_mode: form.source_mode,
+      });
+      onCreated(quote.id);
+      onClose();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+    setSaving(false);
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed right-0 top-0 bottom-0 z-50 w-[400px] bg-zinc-950 border-l border-white/5 shadow-2xl flex flex-col"
+          >
+            {/* Header */}
+            <div className="h-14 px-6 border-b border-white/5 flex items-center justify-between shrink-0">
+              <h2 className="text-sm font-medium text-white">New SIL Quote</h2>
+              <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white/5 text-zinc-500"><X className="w-4 h-4" /></button>
+            </div>
+
+            {/* Form */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* Facility */}
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Facility</label>
+                <select
+                  value={form.facility_id}
+                  onChange={(e) => setForm((s) => ({ ...s, facility_id: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700"
+                >
+                  <option value="">Select facility…</option>
+                  {facilities.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Quote Name */}
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Quote Name</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                  placeholder="e.g. Oceanview SIL 2026"
+                  className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700"
+                />
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Base Week Start</label>
+                <input
+                  type="date"
+                  value={form.base_week_start}
+                  onChange={(e) => setForm((s) => ({ ...s, base_week_start: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700"
+                />
+              </div>
+
+              {/* Source Mode */}
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Import Mode</label>
+                <div className="flex gap-2">
+                  {(["master_roster", "blank"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setForm((s) => ({ ...s, source_mode: mode }))}
+                      className={`flex-1 h-9 rounded-md text-xs font-medium transition-colors border ${
+                        form.source_mode === mode
+                          ? "bg-white/10 text-white border-white/10"
+                          : "bg-transparent text-zinc-400 border-white/5 hover:border-white/10"
+                      }`}
+                    >
+                      {mode === "master_roster" ? "From Master Roster" : "Blank Slate"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Participants */}
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">
+                  Participants ({form.participant_ids.length} selected)
+                </label>
+                <div className="max-h-44 overflow-y-auto rounded-md border border-white/5 bg-zinc-900 p-2 space-y-1">
+                  {participants.length === 0 && (
+                    <p className="text-xs text-zinc-600 text-center py-2">No participants available.</p>
+                  )}
+                  {participants.map((p) => {
+                    const checked = form.participant_ids.includes(p.id);
+                    const name = p.preferred_name || p.full_name || p.id.slice(0, 8);
+                    return (
+                      <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) =>
+                            setForm((s) => ({
+                              ...s,
+                              participant_ids: e.target.checked
+                                ? [...s.participant_ids, p.id]
+                                : s.participant_ids.filter((id) => id !== p.id),
+                            }))
+                          }
+                          className="h-3.5 w-3.5 rounded border-zinc-700 accent-white"
+                        />
+                        <span className="text-xs text-zinc-300">{name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {error && (
+                <p className="text-xs text-rose-400">{error}</p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-white/5 bg-zinc-950 shrink-0">
+              <button
+                onClick={handleCreate}
+                disabled={saving}
+                className="w-full h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98] disabled:opacity-50"
+              >
+                {saving ? "Initializing…" : "Initialize Quote Engine"}
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ── Main Page ────────────────────────────────────────── */
+
+export default function SilQuotingPage() {
+  const { orgId } = useOrg();
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [quotes, setQuotes] = useState<QuoteSummary[]>([]);
+  const [facilities, setFacilities] = useState<{ id: string; name: string }[]>([]);
+  const [participants, setParticipants] = useState<{ id: string; preferred_name?: string; full_name?: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<TabFilter>("all");
+  const [slideOpen, setSlideOpen] = useState(false);
 
   useEffect(() => {
     if (!orgId) return;
+    setLoading(true);
     startTransition(async () => {
       const [q, f, p] = await Promise.all([
         listSilQuotesAction(orgId),
@@ -97,374 +385,232 @@ export default function SilQuotingPage() {
         listFacilityParticipantsAction(orgId),
       ]);
       setQuotes((q || []) as QuoteSummary[]);
-      setFacilities(f || []);
-      setParticipants(p || []);
-      if ((q || []).length > 0) setSelectedQuoteId((q as QuoteSummary[])[0].id);
+      setFacilities(
+        (f || []).map((x: any) => ({ id: x.id, name: x.name || "Unnamed" }))
+      );
+      setParticipants(
+        (p || []).map((x: any) => ({
+          id: x.id,
+          preferred_name: x.preferred_name,
+          full_name: x.full_name,
+        }))
+      );
+      setLoading(false);
     });
   }, [orgId]);
 
-  useEffect(() => {
-    if (!selectedQuoteId) return;
-    startTransition(async () => {
-      const data = await getSilQuoteWorkspaceAction(selectedQuoteId);
-      setWorkspace(data);
-    });
-  }, [selectedQuoteId]);
+  /* ── Computed Metrics ────────────────────────────────── */
+  const metrics = useMemo(() => {
+    const active = quotes.filter((q) => ["approved", "pending_approval"].includes(q.status));
+    const pipelineValue = active.reduce((s, q) => s + Number(q.total_annual_cost || 0), 0);
+    const margins = quotes.filter((q) => q.total_annual_cost > 0).map((q) => Number(q.projected_gross_margin_percent || 0));
+    const avgMargin = margins.length > 0 ? margins.reduce((a, b) => a + b, 0) / margins.length : 0;
+    const pendingCount = quotes.filter((q) => q.status === "pending_approval").length;
+    return { pipelineValue, avgMargin, pendingCount };
+  }, [quotes]);
 
-  const blockMap = useMemo(() => {
-    const map = new Map<string, Block>();
-    for (const b of workspace?.blocks || []) {
-      map.set(keyFor(b.day_of_week, b.start_time), b as Block);
+  /* ── Filtered List ───────────────────────────────────── */
+  const filtered = useMemo(() => {
+    let list = quotes;
+    if (tab !== "all") list = list.filter((q) => q.status === tab);
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (item) =>
+          item.name.toLowerCase().includes(q) ||
+          (item.care_facilities?.name?.toLowerCase().includes(q))
+      );
     }
-    return map;
-  }, [workspace]);
+    return list;
+  }, [quotes, tab, search]);
 
-  const phantomBlocks = useMemo(
-    () => (workspace?.blocks || []).filter((b: Block) => b.active_participants > 0 && b.active_workers <= 0),
-    [workspace],
+  const tabs: { key: TabFilter; label: string }[] = [
+    { key: "all", label: "All Quotes" },
+    { key: "draft", label: "Drafts" },
+    { key: "pending_approval", label: "Pending Approval" },
+    { key: "approved", label: "Active" },
+  ];
+
+  const handleCreated = useCallback(
+    (id: string) => {
+      router.push(`/dashboard/care/sil-quoting/${id}`);
+    },
+    [router],
   );
 
-  async function refreshSelected() {
-    if (!selectedQuoteId) return;
-    const data = await getSilQuoteWorkspaceAction(selectedQuoteId);
-    setWorkspace(data);
-  }
-
-  async function createQuote() {
-    if (!orgId || !newQuote.facility_id || !newQuote.name || newQuote.participant_ids.length === 0) return;
-    setMsg("");
-    startTransition(async () => {
-      try {
-        const quote = await createSilQuoteAction({
-          organization_id: orgId,
-          facility_id: newQuote.facility_id,
-          name: newQuote.name,
-          base_week_start: newQuote.base_week_start || new Date().toISOString().slice(0, 10),
-          participant_ids: newQuote.participant_ids,
-          source_mode: newQuote.source_mode,
-        });
-        setSelectedQuoteId(quote.id);
-        const all = await listSilQuotesAction(orgId);
-        setQuotes((all || []) as QuoteSummary[]);
-        setMsg("Quote created.");
-      } catch (e) {
-        setMsg((e as Error).message);
-      }
-    });
-  }
-
-  async function patchBlock(block: Block, patch: Partial<Block>) {
-    await updateSilQuoteBlockAction({
-      quote_id: selectedQuoteId,
-      block_id: block.id,
-      active_workers: patch.active_workers,
-      is_sleepover: patch.is_sleepover,
-      is_active_night: patch.is_active_night,
-      ndis_line_item_code: patch.ndis_line_item_code ?? undefined,
-    });
-    await refreshSelected();
-  }
-
   return (
-    <main className="min-h-screen bg-[#050505] p-6 text-zinc-100">
-      <div className="mx-auto grid max-w-[1500px] grid-cols-12 gap-4">
-        <section className="col-span-3 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-          <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-zinc-500">Project Architect</h2>
-          <p className="mb-3 text-sm">SIL Quoting & RoC Generator</p>
-
-          <div className="space-y-2">
-            <select className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs" value={newQuote.facility_id} onChange={(e) => setNewQuote((s) => ({ ...s, facility_id: e.target.value }))}>
-              <option value="">Select facility</option>
-              {facilities.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
-            </select>
-            <input className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs" placeholder="Quote name" value={newQuote.name} onChange={(e) => setNewQuote((s) => ({ ...s, name: e.target.value }))} />
-            <input type="date" className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs" value={newQuote.base_week_start} onChange={(e) => setNewQuote((s) => ({ ...s, base_week_start: e.target.value }))} />
-            <select className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs" value={newQuote.source_mode} onChange={(e) => setNewQuote((s) => ({ ...s, source_mode: e.target.value as "master_roster" | "blank" }))}>
-              <option value="master_roster">Import from Master Roster</option>
-              <option value="blank">Blank Slate</option>
-            </select>
-            <div className="max-h-36 overflow-auto rounded border border-zinc-800 bg-zinc-900 p-2">
-              {participants.map((p: any) => {
-                const checked = newQuote.participant_ids.includes(p.id);
-                return (
-                  <label key={p.id} className="mb-1 flex items-center gap-2 text-xs text-zinc-300">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => setNewQuote((s) => ({
-                        ...s,
-                        participant_ids: e.target.checked
-                          ? [...s.participant_ids, p.id]
-                          : s.participant_ids.filter((id) => id !== p.id),
-                      }))}
-                    />
-                    {p.preferred_name || p.id}
-                  </label>
-                );
-              })}
-            </div>
-            <button onClick={() => void createQuote()} className="w-full rounded bg-emerald-600 px-2 py-1.5 text-xs text-white">+ New SIL Quote</button>
+    <div className="flex h-full flex-col bg-[#050505]">
+      {/* ─── Command Header ──────────────────────────────── */}
+      <div className="flex items-center justify-between h-14 px-8 border-b border-white/5 shrink-0">
+        {/* Left: Breadcrumbs + Tabs */}
+        <div className="flex items-center">
+          <span className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 font-semibold select-none">
+            Financials & PRODA
+          </span>
+          <span className="mx-2 text-zinc-700">→</span>
+          <span className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 font-semibold select-none">
+            SIL Quoting
+          </span>
+          <div className="w-px h-4 bg-white/10 mx-4" />
+          <div className="flex items-center gap-1 bg-zinc-900/50 p-1 rounded-lg border border-white/5">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+                  tab === t.key
+                    ? "bg-white/10 text-white shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className="mt-4 space-y-2">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-600">Existing Quotes</p>
-            <div className="max-h-56 space-y-1 overflow-auto">
-              {quotes.map((q) => (
-                <button key={q.id} onClick={() => setSelectedQuoteId(q.id)} className={`w-full rounded border px-2 py-1.5 text-left text-xs ${selectedQuoteId === q.id ? "border-cyan-400 bg-cyan-500/10" : "border-zinc-800 bg-zinc-900"}`}>
-                  <div className="flex items-center justify-between">
-                    <span>{q.name}</span>
-                    <span className="font-mono text-[10px]">{q.status}</span>
-                  </div>
-                  <p className="font-mono text-[10px] text-zinc-500">${Number(q.total_annual_cost || 0).toFixed(0)}</p>
-                </button>
-              ))}
-            </div>
+        {/* Right: Search + Actions */}
+        <div className="flex items-center gap-3">
+          <div className="relative w-64 h-8 flex items-center">
+            <Search className="absolute left-3 w-3 h-3 text-zinc-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search quotes, facilities…"
+              className="w-full h-full bg-zinc-900 border border-white/5 rounded-md pl-8 pr-3 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700 transition-colors"
+            />
           </div>
-        </section>
-
-        <section className="col-span-7 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm">{workspace?.quote?.name || "Select a quote"}</h3>
-            <button onClick={() => void refreshSelected()} className="rounded border border-zinc-700 px-2 py-1 text-xs text-zinc-300"><RefreshCcw className="mr-1 inline h-3 w-3" />Refresh</button>
-          </div>
-
-          {workspace && (
-            <VirtualizedRoCGrid blockMap={blockMap} patchBlock={patchBlock} />
-          )}
-
-          {workspace && (
-            <div className="mt-3 rounded border border-zinc-800 bg-zinc-900 p-2">
-              <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-zinc-500">Absence Painter</p>
-              <div className="grid grid-cols-5 gap-2">
-                <select className="rounded border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs" value={absence.participant_id} onChange={(e) => setAbsence((s) => ({ ...s, participant_id: e.target.value }))}>
-                  <option value="">Participant</option>
-                  {workspace.participants.map((p: any) => (
-                    <option key={p.participant_id} value={p.participant_id}>
-                      {p.participant_profiles?.preferred_name || p.participant_profiles?.clients?.name || p.participant_id}
-                    </option>
-                  ))}
-                </select>
-                <select className="rounded border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs" value={absence.day_of_week} onChange={(e) => setAbsence((s) => ({ ...s, day_of_week: Number(e.target.value) }))}>
-                  {days.map((d, i) => <option key={d} value={i + 1}>{d}</option>)}
-                </select>
-                <input className="rounded border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs" value={absence.start_time} onChange={(e) => setAbsence((s) => ({ ...s, start_time: e.target.value }))} />
-                <input className="rounded border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs" value={absence.end_time} onChange={(e) => setAbsence((s) => ({ ...s, end_time: e.target.value }))} />
-                <button
-                  className="rounded bg-blue-600 px-2 py-1 text-xs text-white"
-                  onClick={() => startTransition(async () => {
-                    await paintParticipantAbsenceAction({
-                      quote_id: selectedQuoteId,
-                      participant_id: absence.participant_id,
-                      day_of_week: absence.day_of_week,
-                      start_time: absence.start_time,
-                      end_time: absence.end_time,
-                      is_present: false,
-                    });
-                    await refreshSelected();
-                  })}
-                >
-                  Paint Absence
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="col-span-2 space-y-3 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-          <h4 className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">Margin Telemetry</h4>
-          <p className="text-xs text-zinc-400">Annual Cost</p>
-          <p className="font-mono text-lg">${Number(workspace?.quote?.total_annual_cost || 0).toFixed(2)}</p>
-          <p className="text-xs text-zinc-400">Gross Margin</p>
-          <p className={`font-mono text-lg ${Number(workspace?.quote?.projected_gross_margin_percent || 0) < 0 ? "text-rose-300" : "text-emerald-300"}`}>
-            {Number(workspace?.quote?.projected_gross_margin_percent || 0).toFixed(2)}%
-          </p>
-
-          {phantomBlocks.length > 0 && (
-            <div className="rounded border border-rose-500/40 bg-rose-500/10 p-2 text-xs text-rose-200">
-              <AlertTriangle className="mr-1 inline h-3 w-3" />
-              Cannot export: unsupervised participants detected ({phantomBlocks.length} blocks).
-            </div>
-          )}
-
-          <div className="space-y-1">
-            <button
-              disabled={!selectedQuoteId}
-              onClick={() => startTransition(async () => {
-                await setSilQuoteStatusAction({ quote_id: selectedQuoteId, status: "pending_approval" });
-                await refreshSelected();
-              })}
-              className="w-full rounded border border-zinc-700 px-2 py-1 text-xs"
-            >
-              <Send className="mr-1 inline h-3 w-3" /> Mark Pending
-            </button>
-            <button
-              disabled={!selectedQuoteId}
-              onClick={() => startTransition(async () => {
-                await setSilQuoteStatusAction({ quote_id: selectedQuoteId, status: "approved" });
-                await refreshSelected();
-              })}
-              className="w-full rounded border border-emerald-500/40 bg-emerald-600/20 px-2 py-1 text-xs"
-            >
-              <Save className="mr-1 inline h-3 w-3" /> Approve
-            </button>
-            <button
-              disabled={!selectedQuoteId || phantomBlocks.length > 0 || pending}
-              onClick={() => startTransition(async () => {
-                const out = await generateSilRocExcelAction({ quote_id: selectedQuoteId, organization_id: orgId! });
-                if (out?.download_url) window.open(out.download_url, "_blank");
-              })}
-              className="w-full rounded border border-cyan-500/40 bg-cyan-600/20 px-2 py-1 text-xs"
-            >
-              <FileSpreadsheet className="mr-1 inline h-3 w-3" /> Generate NDIS RoC
-            </button>
-            <button
-              disabled={!selectedQuoteId || workspace?.participants?.length === 0}
-              onClick={() => startTransition(async () => {
-                const participant = workspace.participants[0];
-                await publishSilFamilyPdfAction({
-                  quote_id: selectedQuoteId,
-                  organization_id: orgId!,
-                  participant_id: participant.participant_id,
-                });
-                setMsg("Family PDF generated and published for signature.");
-              })}
-              className="w-full rounded border border-zinc-700 px-2 py-1 text-xs"
-            >
-              Publish Family PDF
-            </button>
-            <button
-              disabled={!selectedQuoteId}
-              onClick={() => startTransition(async () => {
-                const desc = window.prompt("Irregular support description", "Unplanned hospital escorts");
-                const annual = window.prompt("Annual amount", "2000");
-                if (!desc || !annual) return;
-                await addIrregularSilSupportAction({
-                  quote_id: selectedQuoteId,
-                  description: desc,
-                  annual_cost: Number(annual),
-                });
-                await refreshSelected();
-              })}
-              className="w-full rounded border border-zinc-700 px-2 py-1 text-xs"
-            >
-              Add Irregular Support
-            </button>
-            <button
-              disabled={!selectedQuoteId}
-              onClick={() => startTransition(async () => {
-                const participant = workspace?.participants?.[0];
-                const block = workspace?.blocks?.[0];
-                if (!participant || !block) return;
-                await setBlockParticipantShareOverrideAction({
-                  quote_id: selectedQuoteId,
-                  participant_id: participant.participant_id,
-                  block_id: block.id,
-                  share_override: 0.5,
-                });
-                await refreshSelected();
-              })}
-              className="w-full rounded border border-zinc-700 px-2 py-1 text-xs"
-            >
-              Demo Split Override
-            </button>
-            <button
-              disabled={!selectedQuoteId}
-              onClick={() => startTransition(async () => {
-                await syncSilQuoteToMasterRosterAction({ quote_id: selectedQuoteId });
-                setMsg("Synced to master roster templates.");
-              })}
-              className="w-full rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs"
-            >
-              Sync to Master Roster
-            </button>
-          </div>
-
-          {msg && <p className="text-xs text-zinc-400">{msg}</p>}
-        </section>
-      </div>
-    </main>
-  );
-}
-
-const MemoizedGridRow = React.memo(function GridRow({
-  slot,
-  blockMap,
-  patchBlock,
-}: {
-  slot: number;
-  blockMap: Map<string, Block>;
-  patchBlock: (block: Block, patch: Partial<Block>) => void;
-}) {
-  const label = slotLabel(slot);
-  return (
-    <div className="flex">
-      <div className="sticky left-0 z-10 flex h-6 w-16 shrink-0 items-center border border-zinc-800 bg-zinc-950 px-2 font-mono text-[10px] text-zinc-500">
-        {label}
-      </div>
-      {Array.from({ length: 7 }).map((_, i) => {
-        const block = blockMap.get(keyFor(i + 1, label));
-        if (!block) return <div key={i} className="h-6 w-20 shrink-0 border border-zinc-900" />;
-        return (
-          <div
-            key={i}
-            className={`flex h-6 w-20 shrink-0 cursor-pointer items-center justify-center border text-center text-[10px] ${ratioClass(block.active_workers, block.active_participants)}`}
-            onClick={() => void patchBlock(block, { active_workers: (block.active_workers + 1) % 4 })}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              void patchBlock(block, { is_sleepover: !block.is_sleepover, is_active_night: false });
-            }}
-            title={`Workers ${block.active_workers}, Participants ${block.active_participants}`}
+          <button className="h-8 px-3 flex items-center gap-2 rounded-md border border-white/5 bg-transparent hover:bg-white/5 text-xs text-zinc-300 transition-colors">
+            <SlidersHorizontal className="w-3 h-3" />
+            Filters
+          </button>
+          <button
+            onClick={() => setSlideOpen(true)}
+            className="h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-95"
           >
-            {block.active_workers}:{block.active_participants}
-          </div>
-        );
-      })}
-    </div>
-  );
-});
-
-function VirtualizedRoCGrid({
-  blockMap,
-  patchBlock,
-}: {
-  blockMap: Map<string, Block>;
-  patchBlock: (block: Block, patch: Partial<Block>) => void;
-}) {
-  const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: 48,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 24,
-    overscan: 5,
-  });
-
-  return (
-    <div className="overflow-auto">
-      <div className="flex border-b border-zinc-800">
-        <div className="sticky left-0 z-10 w-16 shrink-0 bg-zinc-950 px-2 py-1 text-[10px] font-semibold">Time</div>
-        {days.map((d) => (
-          <div key={d} className="w-20 shrink-0 px-2 py-1 text-center text-[10px] font-semibold">{d}</div>
-        ))}
-      </div>
-      <div ref={parentRef} className="h-[600px] overflow-auto">
-        <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => (
-            <div
-              key={virtualRow.index}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: `${virtualRow.size}px`,
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              <MemoizedGridRow slot={virtualRow.index} blockMap={blockMap} patchBlock={patchBlock} />
-            </div>
-          ))}
+            <Plus className="w-3 h-3 inline-block mr-1.5 -mt-px" />
+            New SIL Quote
+          </button>
         </div>
       </div>
+
+      {/* ─── Telemetry Ribbon ────────────────────────────── */}
+      <div className="flex items-center h-16 px-8 border-b border-white/5 bg-zinc-950/30 shrink-0 overflow-x-auto gap-0">
+        <MetricNode label="Total Pipeline Value" value={formatCurrency(metrics.pipelineValue)} />
+        <div className="w-px h-8 bg-white/5 mx-6 shrink-0" />
+        <MetricNode
+          label="Avg Gross Margin"
+          value={`${metrics.avgMargin.toFixed(1)}%`}
+          danger={metrics.avgMargin < 10}
+          pulse={metrics.avgMargin < 10 && metrics.avgMargin > 0}
+        />
+        <div className="w-px h-8 bg-white/5 mx-6 shrink-0" />
+        <MetricNode label="Pending Approvals" value={String(metrics.pendingCount)} />
+      </div>
+
+      {/* ─── Data Grid ───────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="h-10 border-b border-white/5">
+              <th className="px-8 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[25%]">Quote Name</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[20%]">Facility</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[15%]">Participants</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[15%]">Annual Cost</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[10%]">Margin</th>
+              <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[10%]">Status</th>
+              <th className="px-4 w-[5%]" />
+            </tr>
+          </thead>
+          <tbody>
+            {/* Loading Skeletons */}
+            {loading && quotes.length === 0 &&
+              Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} idx={i} />)
+            }
+
+            {/* Empty State */}
+            {!loading && filtered.length === 0 && (
+              <EmptyState onAdd={() => setSlideOpen(true)} />
+            )}
+
+            {/* Data Rows */}
+            {!loading && filtered.map((q) => {
+              const margin = Number(q.projected_gross_margin_percent || 0);
+              const facility = q.care_facilities?.name || "Unknown";
+              return (
+                <tr
+                  key={q.id}
+                  onClick={() => router.push(`/dashboard/care/sil-quoting/${q.id}`)}
+                  className="group border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer h-16"
+                >
+                  {/* Quote Name */}
+                  <td className="px-8 py-3">
+                    <span className="text-sm text-white font-medium">{q.name}</span>
+                  </td>
+
+                  {/* Facility */}
+                  <td className="px-4 py-3">
+                    <span className="text-[13px] text-zinc-400">{facility}</span>
+                  </td>
+
+                  {/* Participants */}
+                  <td className="px-4 py-3">
+                    <div className="flex -space-x-2">
+                      {/* Show up to 3 initials */}
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="w-7 h-7 rounded-full bg-zinc-800 border-2 border-[#050505] flex items-center justify-center"
+                        >
+                          <span className="text-[9px] text-zinc-400 font-medium">
+                            {getInitials(q.name.split(" ")[i] || q.name)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+
+                  {/* Annual Cost */}
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-[13px] text-white">
+                      {formatCurrency(Number(q.total_annual_cost || 0))}
+                    </span>
+                  </td>
+
+                  {/* Margin */}
+                  <td className="px-4 py-3">
+                    <span className={`font-mono text-[13px] ${marginColor(margin)}`}>
+                      {margin.toFixed(1)}%
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${statusStyle(q.status)}`}>
+                      {statusLabel(q.status)}
+                    </span>
+                  </td>
+
+                  {/* Action */}
+                  <td className="px-4 py-3">
+                    <ChevronRight className="w-4 h-4 text-zinc-700 transition-all duration-200 group-hover:text-zinc-300 group-hover:translate-x-1" />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ─── Creation Slide-Over ──────────────────────────── */}
+      <CreateQuoteSlideOver
+        open={slideOpen}
+        onClose={() => setSlideOpen(false)}
+        orgId={orgId || ""}
+        facilities={facilities}
+        participants={participants}
+        onCreated={handleCreated}
+      />
     </div>
   );
 }
