@@ -5,37 +5,72 @@ import {
   X,
   UserPlus,
   Send,
-  ChevronDown,
   Check,
   Info,
   Crown,
   Shield,
   Wrench,
+  Heart,
+  Stethoscope,
+  ClipboardList,
+  GraduationCap,
+  Building2,
+  UserCog,
+  type LucideIcon,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTeamStore } from "@/lib/team-store";
-import { roleDefinitions, branches, getRoleLabel, type RoleId } from "@/lib/team-data";
+import { roleDefinitions, branches, type RoleId } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
 /* ── Role Card Config ────────────────────────────────────── */
 
-const roleCardConfig: Record<string, { text: string; bg: string; border: string; icon: typeof Shield }> = {
-  owner: { text: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Crown },
-  manager: { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Shield },
-  office_admin: { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Shield },
-  senior_tech: { text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/20", icon: Wrench },
-  technician: { text: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/20", icon: Wrench },
-  apprentice: { text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20", icon: Wrench },
-  subcontractor: { text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20", icon: Wrench },
+interface RoleCardStyle {
+  text: string;
+  bg: string;
+  border: string;
+  icon: LucideIcon;
+  label: string;
+  description: string;
+}
+
+/** Trades-sector role cards */
+const tradesRoleCards: Record<string, RoleCardStyle> = {
+  admin:         { text: "text-amber-400",  bg: "bg-amber-500/10",  border: "border-amber-500/20",  icon: Crown,    label: "Admin",          description: "Full operational access. Manages settings, team, and integrations." },
+  manager:       { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Shield,    label: "Manager",        description: "Manages operations, team, and finances." },
+  office_admin:  { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Shield,    label: "Office Admin",   description: "Handles scheduling, invoicing, and client communication." },
+  senior_tech:   { text: "text-sky-400",    bg: "bg-sky-500/10",    border: "border-sky-500/20",    icon: Wrench,    label: "Senior Tech",    description: "Experienced technician. Can manage their own jobs and mentees." },
+  technician:    { text: "text-sky-400",    bg: "bg-sky-500/10",    border: "border-sky-500/20",    icon: Wrench,    label: "Technician",     description: "Field tech. Views assigned jobs, tracks time, fills forms." },
+  apprentice:    { text: "text-zinc-400",   bg: "bg-zinc-500/10",   border: "border-zinc-500/20",   icon: Wrench,    label: "Apprentice",     description: "Learning. Supervised access only." },
+  subcontractor: { text: "text-zinc-400",   bg: "bg-zinc-500/10",   border: "border-zinc-500/20",   icon: Wrench,    label: "Subcontractor",  description: "External contractor. Limited to assigned jobs only." },
 };
+
+/** Care-sector role cards — NDIS/Aged Care specific labels, icons, and descriptions */
+const careRoleCards: Record<string, RoleCardStyle> = {
+  admin:         { text: "text-amber-400",  bg: "bg-amber-500/10",  border: "border-amber-500/20",  icon: Crown,          label: "Admin",                 description: "Full operational access. Manages rostering, compliance, team, and settings." },
+  manager:       { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Building2,       label: "Service Manager",       description: "Oversees daily operations, rosters, incidents, and participant plans." },
+  office_admin:  { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: ClipboardList,   label: "Rostering Coordinator", description: "Manages shift scheduling, PRODA claims, and participant communication." },
+  senior_tech:   { text: "text-sky-400",    bg: "bg-sky-500/10",    border: "border-sky-500/20",    icon: Stethoscope,     label: "Senior Support Worker", description: "Experienced carer. Mentors new staff, handles complex support needs." },
+  technician:    { text: "text-sky-400",    bg: "bg-sky-500/10",    border: "border-sky-500/20",    icon: Heart,           label: "Support Worker",        description: "Delivers direct care. Logs shift notes, medications, and observations." },
+  apprentice:    { text: "text-teal-400",   bg: "bg-teal-500/10",   border: "border-teal-500/20",   icon: GraduationCap,   label: "Trainee",               description: "New to care. Supervised access for training and shadow shifts." },
+  subcontractor: { text: "text-zinc-400",   bg: "bg-zinc-500/10",   border: "border-zinc-500/20",   icon: UserCog,         label: "Agency Worker",         description: "External agency staff. Limited to assigned shifts only." },
+};
+
+/** Invitable roles — excludes owner */
+const INVITABLE_ROLES: RoleId[] = ["admin", "manager", "office_admin", "senior_tech", "technician", "apprentice", "subcontractor"];
 
 export function InviteModal() {
   const { inviteModalOpen, setInviteModalOpen, inviteMemberServer } = useTeamStore();
   const { addToast } = useToastStore();
+  const { isCare } = useIndustryLexicon();
+
+  const roleCards = isCare ? careRoleCards : tradesRoleCards;
+  const defaultRole: RoleId = isCare ? "technician" : "technician";
 
   const [emails, setEmails] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [selectedRole, setSelectedRole] = useState<RoleId>("technician");
+  const [selectedRole, setSelectedRole] = useState<RoleId>(defaultRole);
   const [selectedBranches, setSelectedBranches] = useState<string[]>(["Brisbane HQ"]);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -45,12 +80,12 @@ export function InviteModal() {
     if (inviteModalOpen) {
       setEmails([]);
       setInputValue("");
-      setSelectedRole("technician");
+      setSelectedRole(defaultRole);
       setSelectedBranches(["Brisbane HQ"]);
       setSending(false);
       setSent(false);
     }
-  }, [inviteModalOpen]);
+  }, [inviteModalOpen, defaultRole]);
 
   const addEmail = useCallback(
     (raw: string) => {
@@ -116,7 +151,7 @@ export function InviteModal() {
     }
   };
 
-  const selectedRoleDef = roleDefinitions.find((r) => r.id === selectedRole);
+  const selectedCard = roleCards[selectedRole];
 
   if (!inviteModalOpen) return null;
 
@@ -140,15 +175,19 @@ export function InviteModal() {
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="fixed left-1/2 top-1/2 z-50 w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-white/5 bg-zinc-950 shadow-2xl"
           >
-            {/* Header — no hr, whitespace separation */}
+            {/* Header */}
             <div className="flex items-center justify-between gap-4 px-6 py-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10">
                   <UserPlus size={14} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="font-display text-[15px] font-semibold tracking-tight text-white">Invite to Workspace</h2>
-                  <p className="text-[11px] text-zinc-500">Send summons to join your team</p>
+                  <h2 className="font-display text-[15px] font-semibold tracking-tight text-white">
+                    {isCare ? "Invite to Care Team" : "Invite to Workspace"}
+                  </h2>
+                  <p className="text-[11px] text-zinc-500">
+                    {isCare ? "Add support workers, managers, and coordinators" : "Send summons to join your team"}
+                  </p>
                 </div>
               </div>
               <button
@@ -208,14 +247,15 @@ export function InviteModal() {
                   Role
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {roleDefinitions.filter((r) => r.id !== "owner").slice(0, 6).map((r) => {
-                    const rc = roleCardConfig[r.id] || roleCardConfig.technician;
-                    const isActive = selectedRole === r.id;
+                  {INVITABLE_ROLES.map((roleId) => {
+                    const rc = roleCards[roleId];
+                    if (!rc) return null;
+                    const isActive = selectedRole === roleId;
                     const RcIcon = rc.icon;
                     return (
                       <button
-                        key={r.id}
-                        onClick={() => setSelectedRole(r.id)}
+                        key={roleId}
+                        onClick={() => setSelectedRole(roleId)}
                         className={`relative flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all duration-200 ${
                           isActive
                             ? `${rc.border} ${rc.bg} ${rc.text}`
@@ -223,7 +263,7 @@ export function InviteModal() {
                         }`}
                       >
                         <RcIcon size={14} />
-                        <span className="text-[9px] font-medium">{r.label}</span>
+                        <span className="text-[9px] font-medium leading-tight">{rc.label}</span>
                         {isActive && (
                           <motion.div
                             layoutId="invite-role-check"
@@ -237,20 +277,20 @@ export function InviteModal() {
                     );
                   })}
                 </div>
-                {selectedRoleDef && (
+                {selectedCard && (
                   <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-white/[0.015] px-2 py-1.5">
                     <Info size={10} className="mt-0.5 shrink-0 text-zinc-700" />
                     <p className="text-[10px] leading-relaxed text-zinc-600">
-                      {selectedRoleDef.description}
+                      {selectedCard.description}
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Branch */}
+              {/* Branch / Location */}
               <div>
                 <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
-                  Branch
+                  {isCare ? "Service Region" : "Branch"}
                 </label>
                 <div className="flex gap-2">
                   {branches.map((branch) => {
@@ -278,7 +318,7 @@ export function InviteModal() {
               </div>
             </div>
 
-            {/* Footer — Primary: white (PRD 55.0) */}
+            {/* Footer */}
             <div className="flex items-center justify-between gap-4 px-6 py-4">
               <p className="text-[11px] text-zinc-500">
                 {emails.length > 0 ? `${emails.length} invite${emails.length > 1 ? "s" : ""} ready` : "Paste or type email addresses"}
@@ -308,7 +348,7 @@ export function InviteModal() {
                     Sending…
                   </>
                 ) : (
-                  <><Send size={13} /> Send Summons</>
+                  <><Send size={13} /> {isCare ? "Send Invite" : "Send Summons"}</>
                 )}
               </button>
             </div>

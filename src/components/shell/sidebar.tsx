@@ -454,7 +454,7 @@ function CollapsibleGroup({
                   data-testid={child.id}
                   className={`group relative flex items-center gap-2.5 rounded-md px-2 py-[5px] text-[12.5px] transition-all duration-100 ${
                     active
-                      ? "border-l-2 border-emerald-500 bg-white/[0.05] pl-[7px] text-white font-medium"
+                      ? "bg-white/[0.05] text-white font-medium"
                       : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
                   }`}
                 >
