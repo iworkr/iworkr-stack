@@ -19,6 +19,7 @@ import {
   getWalletHealthSummaryAction,
   listWalletLedgerEntriesAction,
   createParticipantWalletAction,
+  reconcileWalletAction,
 } from "@/app/actions/wallets";
 import { listCareFacilitiesAction, listFacilityParticipantsAction } from "@/app/actions/care-routines";
 
@@ -411,15 +412,22 @@ function CreateWalletSlideOver({
 
 function WalletLedgerSlideOver({
   wallet,
+  orgId,
   onClose,
+  onReconciled,
 }: {
   wallet: WalletRow | null;
+  orgId: string;
   onClose: () => void;
+  onReconciled: () => void;
 }) {
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [reconciling, setReconciling] = useState(false);
   const [physicalCount, setPhysicalCount] = useState("");
+  const [reconcileReason, setReconcileReason] = useState("");
+  const [reconcileSaving, setReconcileSaving] = useState(false);
+  const [reconcileError, setReconcileError] = useState("");
 
   useEffect(() => {
     if (!wallet) return;
@@ -546,19 +554,50 @@ function WalletLedgerSlideOver({
                     className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-sm text-white font-mono placeholder:text-zinc-600 outline-none focus:border-zinc-700"
                     autoFocus
                   />
+                  {Number(physicalCount) !== Number(wallet.current_balance || 0) && physicalCount !== "" && (
+                    <div>
+                      <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1">
+                        Reason for discrepancy *
+                      </label>
+                      <input
+                        value={reconcileReason}
+                        onChange={(e) => setReconcileReason(e.target.value)}
+                        placeholder="Explain the variance..."
+                        className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700"
+                      />
+                    </div>
+                  )}
+                  {reconcileError && <p className="text-xs text-rose-400">{reconcileError}</p>}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => {
-                        // In production this would call a reconcile server action
-                        setReconciling(false);
-                        setPhysicalCount("");
+                      disabled={reconcileSaving || !physicalCount || (Number(physicalCount) !== Number(wallet.current_balance || 0) && !reconcileReason)}
+                      onClick={async () => {
+                        if (!wallet || !physicalCount) return;
+                        setReconcileSaving(true);
+                        setReconcileError("");
+                        try {
+                          await reconcileWalletAction({
+                            wallet_id: wallet.id,
+                            organization_id: orgId,
+                            physical_count: Number(physicalCount),
+                            reason: reconcileReason || undefined,
+                          });
+                          setReconciling(false);
+                          setPhysicalCount("");
+                          setReconcileReason("");
+                          onReconciled();
+                        } catch (e: any) {
+                          setReconcileError(e?.message || "Reconciliation failed.");
+                        } finally {
+                          setReconcileSaving(false);
+                        }
                       }}
-                      className="flex-1 h-9 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors"
+                      className="flex-1 h-9 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-50"
                     >
-                      Confirm Reconciliation
+                      {reconcileSaving ? "Saving..." : "Confirm Reconciliation"}
                     </button>
                     <button
-                      onClick={() => { setReconciling(false); setPhysicalCount(""); }}
+                      onClick={() => { setReconciling(false); setPhysicalCount(""); setReconcileReason(""); setReconcileError(""); }}
                       className="h-9 px-4 rounded-md border border-white/5 text-xs text-zinc-400 hover:bg-white/5 transition-colors"
                     >
                       Cancel
@@ -801,7 +840,9 @@ export default function PettyCashPage() {
       {/* ─── Wallet Ledger Slide-Over ─────────────────────── */}
       <WalletLedgerSlideOver
         wallet={selectedWallet}
+        orgId={orgId || ""}
         onClose={() => setSelectedWallet(null)}
+        onReconciled={load}
       />
 
       {/* ─── Create Wallet Slide-Over ─────────────────────── */}

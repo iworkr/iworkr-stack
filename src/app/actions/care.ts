@@ -64,6 +64,8 @@ export {
   fetchBudgetAllocationsAction,
   fetchClaimBatchesAction,
   fetchClaimLineItemsAction,
+  createClaimBatchAction,
+  applyClaimResolutionsAction,
   fetchPlanManagerInvoicesAction,
   approvePlanManagerInvoiceAction,
   rejectPlanManagerInvoiceAction,

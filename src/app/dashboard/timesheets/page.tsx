@@ -13,6 +13,7 @@ import {
   getTimesheetTelemetryAction,
   resolveExceptionAction,
   bulkResolveTimeEntriesAction,
+  createManualTimeEntryAction,
   type TriageRow,
 } from "@/app/actions/timesheets";
 
@@ -366,6 +367,85 @@ function ExceptionReviewSlideOver({
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Log Time Slide-Over
+   ═══════════════════════════════════════════════════════════════════ */
+
+function LogTimeSlideOver({ orgId, onClose, onSaved }: { orgId: string; onClose: () => void; onSaved: () => void }) {
+  const [workerId, setWorkerId] = useState("");
+  const [clockIn, setClockIn] = useState("");
+  const [clockOut, setClockOut] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const canSave = workerId && clockIn && clockOut;
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    setError("");
+    try {
+      await createManualTimeEntryAction({
+        organization_id: orgId,
+        worker_id: workerId,
+        clock_in: clockIn,
+        clock_out: clockOut,
+        notes: notes || undefined,
+      });
+      onSaved();
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || "Failed to log time entry.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ x: 500 }} animate={{ x: 0 }} exit={{ x: 500 }}
+        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        className="fixed inset-y-0 right-0 z-50 flex w-[440px] flex-col border-l border-white/5 bg-zinc-950 shadow-2xl"
+      >
+        <div className="flex h-16 items-center justify-between border-b border-white/5 px-6">
+          <h3 className="text-[16px] font-medium text-white">Log Manual Time Entry</h3>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-white/5 hover:text-zinc-300">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div>
+            <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Worker ID</label>
+            <input value={workerId} onChange={(e) => setWorkerId(e.target.value)} placeholder="Worker UUID" className="h-10 w-full rounded-md border border-white/10 bg-zinc-900 px-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Clock In</label>
+            <input type="datetime-local" value={clockIn} onChange={(e) => setClockIn(e.target.value)} className="h-10 w-full rounded-md border border-white/10 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Clock Out</label>
+            <input type="datetime-local" value={clockOut} onChange={(e) => setClockOut(e.target.value)} className="h-10 w-full rounded-md border border-white/10 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Notes (Optional)</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Reason for manual entry..." className="w-full rounded-md border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none" />
+          </div>
+          {error && <p className="text-xs text-rose-400">{error}</p>}
+        </div>
+        <div className="border-t border-white/5 bg-[#050505] p-6">
+          <button onClick={handleSave} disabled={!canSave || saving} className="flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-[13px] font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-50">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
+            {saving ? "Saving..." : "Log Time Entry"}
+          </button>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Main Page
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -385,6 +465,7 @@ export default function TimesheetsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [slideOverEntry, setSlideOverEntry] = useState<TriageRow | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showLogTime, setShowLogTime] = useState(false);
   const [, startTransition] = useTransition();
 
   // ── Load data ─────────────────────────────────────
@@ -458,13 +539,15 @@ export default function TimesheetsPage() {
             total_exceptions: Math.max(0, t.total_exceptions - 1),
           }));
         });
+        // Re-fetch from DB to ensure UI/DB parity
+        loadData();
       } catch (e: any) {
         console.error("[timesheets] approve failed:", e);
       } finally {
         setActionLoading(false);
       }
     },
-    [startTransition]
+    [startTransition, loadData]
   );
 
   const handleReject = useCallback(
@@ -481,13 +564,15 @@ export default function TimesheetsPage() {
             total_exceptions: Math.max(0, t.total_exceptions - 1),
           }));
         });
+        // Re-fetch from DB to ensure UI/DB parity
+        loadData();
       } catch (e: any) {
         console.error("[timesheets] reject failed:", e);
       } finally {
         setActionLoading(false);
       }
     },
-    [startTransition]
+    [startTransition, loadData]
   );
 
   const handleBulkApprove = useCallback(async () => {
@@ -508,12 +593,13 @@ export default function TimesheetsPage() {
         }));
         setSelectedIds(new Set());
       });
+      loadData();
     } catch (e: any) {
       console.error("[timesheets] bulk approve failed:", e);
     } finally {
       setActionLoading(false);
     }
-  }, [selectedIds, startTransition]);
+  }, [selectedIds, startTransition, loadData]);
 
   const handleBulkReject = useCallback(async () => {
     if (selectedIds.size === 0) return;
@@ -529,12 +615,13 @@ export default function TimesheetsPage() {
         }));
         setSelectedIds(new Set());
       });
+      loadData();
     } catch (e: any) {
       console.error("[timesheets] bulk reject failed:", e);
     } finally {
       setActionLoading(false);
     }
-  }, [selectedIds, startTransition]);
+  }, [selectedIds, startTransition, loadData]);
 
   // ── Loading ───────────────────────────────────────
   if (orgLoading) {
@@ -601,7 +688,7 @@ export default function TimesheetsPage() {
           </button>
 
           {/* Log Time CTA */}
-          <button className="ml-3 flex h-8 items-center gap-1.5 rounded-md bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-zinc-200">
+          <button onClick={() => setShowLogTime(true)} className="ml-3 flex h-8 items-center gap-1.5 rounded-md bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-zinc-200">
             <Plus className="h-3 w-3" />
             Log Time
           </button>
@@ -810,6 +897,13 @@ export default function TimesheetsPage() {
             onReject={handleReject}
             loading={actionLoading}
           />
+        )}
+      </AnimatePresence>
+
+      {/* ═══ LOG TIME SLIDE-OVER ═══ */}
+      <AnimatePresence>
+        {showLogTime && orgId && (
+          <LogTimeSlideOver orgId={orgId} onClose={() => setShowLogTime(false)} onSaved={loadData} />
         )}
       </AnimatePresence>
     </div>

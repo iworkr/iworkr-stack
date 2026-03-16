@@ -33,12 +33,13 @@ import {
   type S8AuditEntry,
   type PharmacyOrder,
 } from "@/app/actions/asclepius";
+import { useOrg } from "@/lib/hooks/use-org";
 
 type Tab = "overview" | "s8_ledger" | "inventory" | "pharmacy";
 
 export default function AsclepiusPage() {
+  const { orgId } = useOrg();
   const [tab, setTab] = useState<Tab>("overview");
-  const [orgId, setOrgId] = useState("");
   const [medications, setMedications] = useState<MedicationProfile[]>([]);
   const [lowStock, setLowStock] = useState<any[]>([]);
   const [s8Ledger, setS8Ledger] = useState<S8AuditEntry[]>([]);
@@ -47,18 +48,14 @@ export default function AsclepiusPage() {
   const [editingMed, setEditingMed] = useState<MedicationProfile | null>(null);
 
   const load = useCallback(async () => {
+    if (!orgId) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/user/organization");
-      const { organization_id } = await res.json();
-      if (!organization_id) return;
-      setOrgId(organization_id);
-
       const [meds, alerts, ledger, pharmacyOrders] = await Promise.all([
-        fetchMedicationProfiles(organization_id),
-        fetchLowStockAlerts(organization_id),
-        fetchS8AuditLedger(organization_id),
-        fetchPharmacyOrders(organization_id),
+        fetchMedicationProfiles(orgId),
+        fetchLowStockAlerts(orgId),
+        fetchS8AuditLedger(orgId),
+        fetchPharmacyOrders(orgId),
       ]);
       setMedications(meds);
       setLowStock(alerts);
@@ -68,7 +65,7 @@ export default function AsclepiusPage() {
       // Silent fallback
     }
     setLoading(false);
-  }, []);
+  }, [orgId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -143,7 +140,7 @@ export default function AsclepiusPage() {
         <OverviewTab
           medications={medications}
           lowStock={lowStock}
-          orgId={orgId}
+          orgId={orgId || ""}
           onEdit={setEditingMed}
           onReload={load}
         />
@@ -153,7 +150,7 @@ export default function AsclepiusPage() {
         <InventoryTab
           medications={medications}
           lowStock={lowStock}
-          orgId={orgId}
+          orgId={orgId || ""}
           onReload={load}
         />
       )}
@@ -163,7 +160,7 @@ export default function AsclepiusPage() {
       {editingMed && (
         <MedConfigDrawer
           med={editingMed}
-          orgId={orgId}
+          orgId={orgId || ""}
           onClose={() => setEditingMed(null)}
           onSave={load}
         />
@@ -400,7 +397,7 @@ function InventoryTab({
       setStockInput("");
       await onReload();
     } catch (e) {
-      alert(`Error: ${e}`);
+      console.error("[asclepius] restock error:", e);
     }
   };
 
@@ -503,7 +500,7 @@ function PharmacyTab({
       await updatePharmacyOrderStatus(orderId, status);
       await onReload();
     } catch (e) {
-      alert(`Error: ${e}`);
+      console.error("[asclepius] pharmacy order status error:", e);
     }
   };
 
@@ -611,7 +608,7 @@ function MedConfigDrawer({
       await onSave();
       onClose();
     } catch (e) {
-      alert(`Error: ${e}`);
+      console.error("[asclepius] config save error:", e);
     }
     setSaving(false);
   };

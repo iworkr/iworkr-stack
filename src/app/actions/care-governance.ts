@@ -618,3 +618,80 @@ export async function rejectPlanManagerInvoiceAction(id: string, reason: string)
     throw e;
   }
 }
+
+// ── Create Claim Batch ───────────────────────────────────────────────────────
+
+export async function createClaimBatchAction(input: {
+  organization_id: string;
+  line_item_ids: string[];
+}) {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    // Create the batch record
+    const { data: batch, error: batchError } = await (supabase as any)
+      .from("proda_claim_batches")
+      .insert({
+        organization_id: input.organization_id,
+        status: "draft",
+        submitted_at: null,
+      })
+      .select()
+      .single();
+
+    if (batchError) throw new Error(batchError.message);
+
+    // Assign selected line items to this batch
+    const { error: updateError } = await (supabase as any)
+      .from("claim_line_items")
+      .update({ claim_batch_id: batch.id, status: "pending" })
+      .in("id", input.line_item_ids)
+      .eq("organization_id", input.organization_id);
+
+    if (updateError) throw new Error(updateError.message);
+
+    revalidatePath("/dashboard/finance/ndis-claims");
+    return batch;
+  } catch (e: any) {
+    console.error("[care] createClaimBatchAction failed:", e);
+    throw e;
+  }
+}
+
+// ── Apply Claim Resolutions ─────────────────────────────────────────────────
+
+export async function applyClaimResolutionsAction(input: {
+  organization_id: string;
+  resolutions: Record<string, "shift_oop" | "adjust_hours" | "write_off">;
+}) {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    const updates = Object.entries(input.resolutions).map(([lineItemId, resolution]) => ({
+      id: lineItemId,
+      organization_id: input.organization_id,
+      resolution_action: resolution,
+      status: resolution === "write_off" ? "written_off" : "resolved",
+      resolved_at: new Date().toISOString(),
+    }));
+
+    for (const update of updates) {
+      const { error } = await (supabase as any)
+        .from("claim_line_items")
+        .update({
+          resolution_action: update.resolution_action,
+          status: update.status,
+          resolved_at: update.resolved_at,
+        })
+        .eq("id", update.id)
+        .eq("organization_id", input.organization_id);
+      if (error) throw new Error(error.message);
+    }
+
+    revalidatePath("/dashboard/finance/ndis-claims");
+    return { resolved: updates.length };
+  } catch (e: any) {
+    console.error("[care] applyClaimResolutionsAction failed:", e);
+    throw e;
+  }
+}

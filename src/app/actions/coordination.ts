@@ -14,6 +14,7 @@ const CreateCoordinationEntrySchema = z.object({
   hourly_rate: z.number().min(0),
   activity_type: z.enum(["phone", "email", "research", "meeting", "report_writing", "travel", "other"]),
   case_note: z.string().min(30).max(8000),
+  status: z.enum(["draft", "unbilled", "invoiced", "paid"]).default("unbilled").optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -79,6 +80,17 @@ export async function createCoordinationEntryAction(input: z.infer<typeof Create
   });
 
   if (error) throw new Error(error.message);
+
+  // If draft status requested, update the entry after creation
+  if (parsed.status === "draft" && data) {
+    const entryId = typeof data === "object" ? data.id : data;
+    if (entryId) {
+      await (supabase as any)
+        .from("coordination_time_entries")
+        .update({ status: "draft" })
+        .eq("id", entryId);
+    }
+  }
   revalidatePath("/dashboard/coordination/ledger");
   revalidatePath(`/dashboard/care/participants/${parsed.participant_id}`);
   return data;

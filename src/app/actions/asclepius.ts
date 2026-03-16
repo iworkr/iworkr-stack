@@ -152,14 +152,21 @@ export async function updateMedicationConfig(
     form?: string;
     prn_min_gap_hours?: number | null;
     prn_max_doses_24h?: number | null;
-  }
+  },
+  organizationId?: string
 ) {
   const supabase = await createServerSupabaseClient();
-  const { error } = await (supabase as any)
+  let query = (supabase as any)
     .from("participant_medications")
     .update(updates)
     .eq("id", medicationId);
 
+  // Defense-in-depth: scope to org when provided
+  if (organizationId) {
+    query = query.eq("organization_id", organizationId);
+  }
+
+  const { error } = await query;
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/care/medications");
 }
@@ -298,7 +305,8 @@ export async function fetchPharmacyOrders(organizationId: string): Promise<Pharm
 
 export async function updatePharmacyOrderStatus(
   orderId: string,
-  status: string
+  status: string,
+  organizationId?: string
 ) {
   const supabase = await createServerSupabaseClient();
 
@@ -306,11 +314,17 @@ export async function updatePharmacyOrderStatus(
   if (status === "received") updates.received_at = new Date().toISOString();
   if (status === "acknowledged") updates.acknowledged_at = new Date().toISOString();
 
-  const { error } = await (supabase as any)
+  let query = (supabase as any)
     .from("pharmacy_orders")
     .update(updates)
     .eq("id", orderId);
 
+  // Defense-in-depth: scope to org when provided
+  if (organizationId) {
+    query = query.eq("organization_id", organizationId);
+  }
+
+  const { error } = await query;
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/care/medications");
 }

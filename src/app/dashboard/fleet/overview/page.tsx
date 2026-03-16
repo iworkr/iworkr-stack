@@ -592,7 +592,7 @@ export default function FleetOverviewPage() {
                 <th className="px-8 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[25%]">Vehicle</th>
                 <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[15%]">Status</th>
                 <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[20%]">Assignment</th>
-                <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[15%]">Utilization</th>
+                <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[15%]">Fleet Avg</th>
                 <th className="px-4 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold w-[20%]">Compliance</th>
                 <th className="px-4 w-[5%]" />
               </tr>
@@ -655,7 +655,7 @@ export default function FleetOverviewPage() {
                       )}
                     </td>
 
-                    {/* Col 4: Utilization */}
+                    {/* Col 4: Fleet Avg Utilization */}
                     <td className="px-4 py-3">
                       <UtilizationCell percent={utilization} />
                     </td>

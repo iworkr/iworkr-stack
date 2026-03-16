@@ -228,7 +228,21 @@ function RemediationSlideOver({
             </button>
 
             {/* Action 2: Manual Upload */}
-            <button className="flex w-full items-center gap-3 rounded-md border border-white/5 bg-transparent px-4 py-3 text-left transition-colors hover:bg-white/[0.03]">
+            <button
+              onClick={() => {
+                // Open file picker for certificate upload
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = ".pdf,.jpg,.jpeg,.png,.webp";
+                input.onchange = async () => {
+                  if (!input.files?.[0]) return;
+                  // INCOMPLETE: Wire to Supabase Storage upload + credential update when backend ready
+                  alert(`File "${input.files[0].name}" selected — upload integration pending backend wiring.`);
+                };
+                input.click();
+              }}
+              className="flex w-full items-center gap-3 rounded-md border border-white/5 bg-transparent px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
+            >
               <Upload size={16} className="text-zinc-400" />
               <div>
                 <p className="text-[13px] font-medium text-white">Manually Upload Certificate</p>
@@ -237,7 +251,16 @@ function RemediationSlideOver({
             </button>
 
             {/* Action 3: Suspend (Destructive) */}
-            <button className="mt-6 flex w-full items-center gap-3 rounded-md border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-left transition-colors hover:bg-rose-500/10">
+            <button
+              onClick={() => {
+                if (!gap) return;
+                const confirmed = confirm(`Are you sure you want to suspend this worker profile?\n\nThis will prevent rostering until the compliance gap "${gap.gap_title}" is resolved.`);
+                if (!confirmed) return;
+                // INCOMPLETE: Wire to suspendWorkerProfileAction when backend endpoint ready
+                alert("Worker suspension action triggered — backend integration pending.");
+              }}
+              className="mt-6 flex w-full items-center gap-3 rounded-md border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-left transition-colors hover:bg-rose-500/10"
+            >
               <Lock size={16} className="text-rose-500" />
               <div>
                 <p className="text-[13px] font-medium text-rose-500">Suspend Worker Profile</p>

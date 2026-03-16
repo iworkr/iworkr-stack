@@ -197,10 +197,12 @@ function ShiftNoteSlideOver({
   note,
   onClose,
   onStatusChange,
+  isMutating,
 }: {
   note: ShiftNote | null;
   onClose: () => void;
   onStatusChange: (id: string, status: "reviewed" | "flagged") => void;
+  isMutating?: boolean;
 }) {
   if (!note) return null;
 
@@ -321,18 +323,18 @@ function ShiftNoteSlideOver({
             <div className="p-6 border-t border-white/5 bg-zinc-950 flex gap-3 shrink-0">
               <button
                 onClick={() => onStatusChange(note.id, "flagged")}
-                disabled={isFlagged}
+                disabled={isFlagged || isMutating}
                 className="w-1/3 h-10 rounded-md border border-rose-500/20 bg-transparent text-rose-500 text-xs font-medium hover:bg-rose-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Flag className="w-3 h-3" />
-                Flag Note
+                {isMutating ? "Saving..." : "Flag Note"}
               </button>
               <button
                 onClick={() => onStatusChange(note.id, "reviewed")}
-                disabled={isAlreadyReviewed}
+                disabled={isAlreadyReviewed || isMutating}
                 className="w-2/3 h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {isAlreadyReviewed ? "Already Reviewed" : "Mark as Reviewed"}
+                {isMutating ? "Saving..." : isAlreadyReviewed ? "Already Reviewed" : "Mark as Reviewed"}
               </button>
             </div>
           </motion.div>
@@ -409,6 +411,8 @@ export default function CareShiftNotesReviewPage() {
           )
         );
         setSelectedNote(null);
+        // Re-fetch from DB to confirm server state
+        refresh();
       } catch (err) {
         console.error("Failed to update status:", err);
       }
@@ -557,6 +561,7 @@ export default function CareShiftNotesReviewPage() {
         note={selectedNote}
         onClose={() => setSelectedNote(null)}
         onStatusChange={handleStatusChange}
+        isMutating={isPending}
       />
     </div>
   );

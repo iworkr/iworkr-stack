@@ -182,3 +182,64 @@ export async function logWalletTransactionAction(input: z.infer<typeof LogWallet
   return data;
 }
 
+// ── Reconcile a wallet (physical count vs DB balance) ─────────
+
+export async function reconcileWalletAction(input: {
+  wallet_id: string;
+  organization_id: string;
+  physical_count: number;
+  reason?: string;
+}) {
+  const { supabase, user } = await getAuthed();
+
+  // Get current balance
+  const { data: wallet, error: fetchError } = await (supabase as any)
+    .from("participant_wallets")
+    .select("current_balance")
+    .eq("id", input.wallet_id)
+    .eq("organization_id", input.organization_id)
+    .single();
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  const currentBalance = Number(wallet.current_balance || 0);
+  const variance = input.physical_count - currentBalance;
+
+  if (Math.abs(variance) < 0.01) {
+    // No discrepancy — mark as reconciled
+    await (supabase as any)
+      .from("participant_wallets")
+      .update({ last_reconciled_at: new Date().toISOString() })
+      .eq("id", input.wallet_id);
+    revalidatePath("/dashboard/finance/petty-cash");
+    return { status: "balanced", variance: 0 };
+  }
+
+  // Insert discrepancy record
+  const { error: discError } = await (supabase as any)
+    .from("wallet_discrepancies")
+    .insert({
+      wallet_id: input.wallet_id,
+      organization_id: input.organization_id,
+      expected_balance: currentBalance,
+      physical_count: input.physical_count,
+      variance,
+      reason: input.reason || null,
+      status: "open",
+      reported_by: user.id,
+    });
+
+  if (discError) throw new Error(discError.message);
+
+  // Update wallet balance to physical count
+  await (supabase as any)
+    .from("participant_wallets")
+    .update({
+      current_balance: input.physical_count,
+      last_reconciled_at: new Date().toISOString(),
+    })
+    .eq("id", input.wallet_id);
+
+  revalidatePath("/dashboard/finance/petty-cash");
+  return { status: "discrepancy", variance };
+}

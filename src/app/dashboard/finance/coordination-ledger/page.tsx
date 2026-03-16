@@ -290,6 +290,7 @@ function LogTimeSlideOver({
         hourly_rate: Number(form.hourly_rate) || 65.09,
         activity_type: form.activity_type as "phone" | "email" | "research" | "meeting" | "report_writing" | "travel" | "other",
         case_note: form.case_note,
+        status: asDraft ? "draft" : "unbilled",
       });
       onSaved();
       onClose();

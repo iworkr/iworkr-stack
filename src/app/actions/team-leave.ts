@@ -322,10 +322,11 @@ export async function getOrphanedShiftsForLeaveAction(
   workerId: string,
   startAt: string,
   endAt: string,
+  organizationId?: string,
 ) {
   try {
     const { supabase } = await requireAuthedUser();
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from("schedule_blocks")
       .select("id, title, start_time, end_time, participant_id, participant_profiles(preferred_name, full_name)")
       .eq("assigned_to", workerId)
@@ -335,6 +336,12 @@ export async function getOrphanedShiftsForLeaveAction(
       .order("start_time", { ascending: true })
       .limit(50);
 
+    // Defense-in-depth: scope to org when provided
+    if (organizationId) {
+      query = query.eq("organization_id", organizationId);
+    }
+
+    const { data, error } = await query;
     if (error) throw new Error(error.message);
     return data ?? [];
   } catch (error) {

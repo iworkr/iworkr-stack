@@ -24,6 +24,8 @@ import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import {
   fetchClaimBatchesAction,
   fetchClaimLineItemsAction,
+  createClaimBatchAction,
+  applyClaimResolutionsAction,
 } from "@/app/actions/care";
 
 /* ── Types ────────────────────────────────────────────── */
@@ -137,13 +139,19 @@ function MetricCard({
 function CreateBatchModal({
   open,
   onClose,
+  orgId,
   approvedLines,
+  onCreated,
 }: {
   open: boolean;
   onClose: () => void;
+  orgId: string;
   approvedLines: ClaimLineItem[];
+  onCreated: () => void;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const toggleLine = (id: string) => {
     setSelected((prev) => {
@@ -238,13 +246,31 @@ function CreateBatchModal({
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="stealth-btn-ghost">Cancel</button>
             <button
-              disabled={selected.size === 0}
+              disabled={selected.size === 0 || submitting}
+              onClick={async () => {
+                if (!orgId || selected.size === 0) return;
+                setSubmitting(true);
+                setError("");
+                try {
+                  await createClaimBatchAction({
+                    organization_id: orgId,
+                    line_item_ids: Array.from(selected),
+                  });
+                  onCreated();
+                  onClose();
+                } catch (e: any) {
+                  setError(e?.message || "Failed to create batch.");
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
               className="stealth-btn-brand disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Send className="w-3.5 h-3.5" />
-              Create Batch
+              {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              {submitting ? "Creating..." : "Create Batch"}
             </button>
           </div>
+          {error && <p className="text-xs text-rose-400 mt-1">{error}</p>}
         </div>
       </motion.div>
     </motion.div>
@@ -256,14 +282,20 @@ function CreateBatchModal({
 function BatchDetail({
   batch,
   lineItems,
+  orgId,
   onClose,
+  onResolved,
 }: {
   batch: ClaimBatch;
   lineItems: ClaimLineItem[];
+  orgId: string;
   onClose: () => void;
+  onResolved: () => void;
 }) {
   const failedLines = lineItems.filter((l) => l.status === "failed");
   const [resolutions, setResolutions] = useState<Record<string, string>>({});
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState("");
 
   return (
     <motion.div
@@ -333,9 +365,34 @@ function BatchDetail({
                 </div>
               ))}
               <div className="pt-3">
-                <button className="stealth-btn-brand w-full justify-center">
-                  Apply Resolutions
+                <button
+                  disabled={applying || Object.values(resolutions).filter(Boolean).length === 0}
+                  onClick={async () => {
+                    const filtered = Object.fromEntries(
+                      Object.entries(resolutions).filter(([, v]) => v)
+                    ) as Record<string, "shift_oop" | "adjust_hours" | "write_off">;
+                    if (!Object.keys(filtered).length) return;
+                    setApplying(true);
+                    setApplyError("");
+                    try {
+                      await applyClaimResolutionsAction({
+                        organization_id: orgId,
+                        resolutions: filtered,
+                      });
+                      onResolved();
+                      onClose();
+                    } catch (e: any) {
+                      setApplyError(e?.message || "Failed to apply resolutions.");
+                    } finally {
+                      setApplying(false);
+                    }
+                  }}
+                  className="stealth-btn-brand w-full justify-center disabled:opacity-50"
+                >
+                  {applying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  {applying ? "Applying..." : "Apply Resolutions"}
                 </button>
+                {applyError && <p className="text-xs text-rose-400 mt-1">{applyError}</p>}
               </div>
             </div>
           )}
@@ -560,7 +617,9 @@ export default function NDISClaimsPage() {
                     <BatchDetail
                       batch={batch}
                       lineItems={batchLineItems[batch.id] ?? []}
+                      orgId={orgId || ""}
                       onClose={() => setExpandedBatch(null)}
+                      onResolved={loadData}
                     />
                   )}
                 </AnimatePresence>
@@ -575,7 +634,9 @@ export default function NDISClaimsPage() {
           <CreateBatchModal
             open={createOpen}
             onClose={() => setCreateOpen(false)}
+            orgId={orgId || ""}
             approvedLines={approvedLines}
+            onCreated={loadData}
           />
         )}
       </AnimatePresence>

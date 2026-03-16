@@ -330,7 +330,7 @@ function MedicationSlideOver({
 
             {/* Footer */}
             <div className="p-6 border-t border-white/5 bg-zinc-950 shrink-0">
-              <button className="w-full h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98]">
+              <button onClick={() => { /* TODO: Wire to recordAdministration when eMAR logging form is built */ }} className="w-full h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98]">
                 Log Administration
               </button>
             </div>
@@ -436,7 +436,7 @@ export default function MedicationsPage() {
             <SlidersHorizontal className="w-3 h-3" />
             Filters
           </button>
-          <button className="h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-95">
+          <button onClick={() => { /* TODO: Wire to Add Medication slide-over when med creation form is built */ }} className="h-8 px-4 rounded-md bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-95">
             <Plus className="w-3 h-3 inline-block mr-1.5 -mt-px" />
             Add Medication
           </button>
@@ -546,7 +546,7 @@ export default function MedicationsPage() {
                         </div>
                         <div className="min-w-0">
                           <span className="text-sm text-zinc-100 font-medium truncate block">
-                            Participant
+                            {(med as any).participant_name || (med as any).participant_profiles?.preferred_name || (med as any).participant_profiles?.full_name || `Participant`}
                           </span>
                           <span className="text-[10px] font-mono text-zinc-500 truncate block">
                             ID: {shortId}

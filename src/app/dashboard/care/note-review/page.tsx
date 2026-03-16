@@ -21,35 +21,28 @@ import {
   publishToGlasshouse,
   type PendingNote,
 } from "@/app/actions/glasshouse";
+import { useOrg } from "@/lib/hooks/use-org";
 
 export default function NoteReviewPage() {
+  const { orgId } = useOrg();
   const [notes, setNotes] = useState<PendingNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedNote, setSelectedNote] = useState<PendingNote | null>(null);
   const [familyTitle, setFamilyTitle] = useState("");
   const [familySummary, setFamilySummary] = useState("");
   const [publishing, setPublishing] = useState(false);
-  const [orgId, setOrgId] = useState("");
 
   const loadNotes = useCallback(async () => {
+    if (!orgId) return;
     setLoading(true);
-    // We need the org ID from the URL or context — for now use a simple approach
-    const path = window.location.pathname;
-    // Try to get org from local storage or use a default mechanism
     try {
-      const response = await fetch("/api/user/organization");
-      if (response.ok) {
-        const data = await response.json();
-        setOrgId(data.organization_id || "");
-        const pending = await getPendingFamilyNotes(data.organization_id);
-        setNotes(pending);
-      }
+      const pending = await getPendingFamilyNotes(orgId);
+      setNotes(pending);
     } catch {
-      // Fallback: try fetching without org filter
       setNotes([]);
     }
     setLoading(false);
-  }, []);
+  }, [orgId]);
 
   useEffect(() => { loadNotes(); }, [loadNotes]);
 
@@ -80,6 +73,8 @@ export default function NoteReviewPage() {
     setFamilySummary(sanitized);
   };
 
+  const [publishError, setPublishError] = useState("");
+
   const handlePublish = async () => {
     if (!selectedNote || !familyTitle || !familySummary) return;
     setPublishing(true);
@@ -87,7 +82,7 @@ export default function NoteReviewPage() {
       await publishToGlasshouse({
         progress_note_id: selectedNote.id,
         participant_id: selectedNote.participant_id,
-        organization_id: orgId,
+        organization_id: orgId || "",
         title: familyTitle,
         sanitized_content: familySummary,
         shift_id: selectedNote.shift_id || undefined,
@@ -97,7 +92,7 @@ export default function NoteReviewPage() {
       setFamilySummary("");
       await loadNotes();
     } catch (e) {
-      alert(`Failed to publish: ${e}`);
+      setPublishError(`Failed to publish: ${e instanceof Error ? e.message : String(e)}`);
     }
     setPublishing(false);
   };
@@ -221,13 +216,16 @@ export default function NoteReviewPage() {
               />
 
               <button
-                onClick={handlePublish}
+                onClick={() => { setPublishError(""); handlePublish(); }}
                 disabled={publishing || !familySummary}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50 transition"
               >
                 <Send size={14} />
                 {publishing ? "Publishing..." : "Publish to Family Portal"}
               </button>
+              {publishError && (
+                <p className="mt-2 text-xs text-rose-400">{publishError}</p>
+              )}
             </div>
           )}
         </div>
