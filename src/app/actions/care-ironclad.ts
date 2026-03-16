@@ -443,6 +443,85 @@ export async function listComplianceGapsAction(organizationId: string): Promise<
   }
 }
 
+// ── Auditor Portal Telemetry (Project Overseer) ─────────────────────────────
+
+export async function getAuditorPortalTelemetryAction(organizationId: string) {
+  try {
+    const { supabase } = await requireAuthedUser();
+    const now = new Date();
+
+    const { data: portals } = await (supabase as any)
+      .from("auditor_portals")
+      .select("id, is_revoked, expires_at, created_at")
+      .eq("organization_id", organizationId);
+
+    const active = (portals || []).filter(
+      (p: any) => !p.is_revoked && new Date(p.expires_at) > now
+    ).length;
+
+    // Count access logs for evidence files
+    const activeIds = (portals || [])
+      .filter((p: any) => !p.is_revoked && new Date(p.expires_at) > now)
+      .map((p: any) => p.id);
+
+    let evidenceFiles = 0;
+    let lastLogin = "—";
+    let securityExceptions = 0;
+
+    if (activeIds.length > 0) {
+      const { data: logs } = await (supabase as any)
+        .from("auditor_access_logs")
+        .select("id, action, created_at")
+        .in("portal_id", activeIds)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      evidenceFiles = (logs || []).filter((l: any) => l.action === "view_file" || l.action === "download").length;
+      securityExceptions = (logs || []).filter((l: any) => l.action === "otp_failed" || l.action === "auth_failed").length;
+
+      if (logs && logs.length > 0) {
+        const d = new Date(logs[0].created_at);
+        const isToday = d.toDateString() === now.toDateString();
+        lastLogin = isToday
+          ? `Today, ${d.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: true })}`
+          : d.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
+      }
+    }
+
+    return {
+      active_data_rooms: active,
+      evidence_files_linked: evidenceFiles,
+      last_auditor_login: lastLogin,
+      security_exceptions: securityExceptions,
+    };
+  } catch (error) {
+    console.error("[overseer] getAuditorPortalTelemetryAction", error);
+    return {
+      active_data_rooms: 0,
+      evidence_files_linked: 0,
+      last_auditor_login: "—",
+      security_exceptions: 0,
+    };
+  }
+}
+
+export async function getAuditTrailAction(portalId: string) {
+  try {
+    const { supabase } = await requireAuthedUser();
+    const { data, error } = await (supabase as any)
+      .from("auditor_access_logs")
+      .select("id, action, target_record_id, ip_address, user_agent, created_at")
+      .eq("portal_id", portalId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    return data || [];
+  } catch (error) {
+    console.error("[overseer] getAuditTrailAction", error);
+    return [];
+  }
+}
+
 export async function sendTargetedRemediationAction(input: {
   organization_id: string;
   user_id: string;
