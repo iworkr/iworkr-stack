@@ -24,7 +24,6 @@ import { type RoleId } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useAuthStore } from "@/lib/auth-store";
-import { inviteMember as inviteMemberAction } from "@/app/actions/team";
 
 /* ── Role Card Config ────────────────────────────────────── */
 
@@ -143,17 +142,28 @@ export function InviteModal() {
     let successCount = 0;
     let lastError: string | null = null;
 
-    // Call the server action DIRECTLY — pass orgId if we have it, or empty string
-    // (the server action resolves it from the authenticated user if invalid)
+    // Use fetch() to API route — completely bypasses server action caching.
+    // The API route resolves orgId server-side from the authenticated user.
     for (const email of emails) {
-      const res = await inviteMemberAction({
-        organization_id: orgId || "",
-        email,
-        role: selectedRole,
-        branch: selectedBranches[0] || "HQ",
-      });
-      if (res.error) lastError = res.error;
-      else successCount++;
+      try {
+        const res = await fetch("/api/team/invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            role: selectedRole,
+            branch: selectedBranches[0] || "HQ",
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          lastError = data.error || `HTTP ${res.status}`;
+        } else {
+          successCount++;
+        }
+      } catch (err: any) {
+        lastError = err.message || "Network error";
+      }
     }
 
     setSending(false);
