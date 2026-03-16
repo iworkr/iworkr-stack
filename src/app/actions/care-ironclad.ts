@@ -281,6 +281,188 @@ export async function triggerCredentialRemediationAction(organizationId: string)
   return { notified: nonCompliant.length };
 }
 
+// ── Compliance Gap Grid (Project Ironclad Redesign) ──────────────────────────
+
+export interface ComplianceGapRow {
+  id: string;
+  gap_title: string;
+  gap_detail: string;
+  category: "staffing" | "documentation" | "clinical" | "evv";
+  severity: "critical" | "warning" | "monitor";
+  affected_entity_name: string;
+  affected_entity_avatar: string | null;
+  affected_entity_id: string;
+  source_table: string;
+  source_id: string;
+}
+
+export async function listComplianceGapsAction(organizationId: string): Promise<ComplianceGapRow[]> {
+  try {
+    const { supabase } = await requireAuthedUser();
+    const now = new Date();
+    const nextWeek = new Date(now);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const next30 = new Date(now);
+    next30.setDate(next30.getDate() + 30);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const gaps: ComplianceGapRow[] = [];
+
+    // 1. Staffing gaps - expired/missing worker credentials
+    const { data: credentials } = await (supabase as any)
+      .from("worker_credentials")
+      .select("id, user_id, credential_name, credential_type, expiry_date, verification_status, profiles!worker_credentials_user_id_fkey(full_name, avatar_url)")
+      .eq("organization_id", organizationId);
+
+    for (const cred of (credentials || [])) {
+      const expiry = cred.expiry_date ? new Date(cred.expiry_date) : null;
+      const name = cred.profiles?.full_name || "Unknown Worker";
+      const avatar = cred.profiles?.avatar_url || null;
+
+      if (cred.verification_status !== "verified" || !expiry || expiry < now) {
+        gaps.push({
+          id: `cred-${cred.id}`,
+          gap_title: cred.credential_name || cred.credential_type || "Missing Credential",
+          gap_detail: expiry ? `Expired on ${expiry.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}` : "Not uploaded",
+          category: "staffing",
+          severity: "critical",
+          affected_entity_name: name,
+          affected_entity_avatar: avatar,
+          affected_entity_id: cred.user_id,
+          source_table: "worker_credentials",
+          source_id: cred.id,
+        });
+      } else if (expiry && expiry < next30) {
+        gaps.push({
+          id: `cred-${cred.id}`,
+          gap_title: cred.credential_name || cred.credential_type || "Expiring Credential",
+          gap_detail: `Expires ${expiry.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}`,
+          category: "staffing",
+          severity: "warning",
+          affected_entity_name: name,
+          affected_entity_avatar: avatar,
+          affected_entity_id: cred.user_id,
+          source_table: "worker_credentials",
+          source_id: cred.id,
+        });
+      }
+    }
+
+    // 2. Documentation gaps - expired service agreements
+    const { data: expiredAgreements } = await (supabase as any)
+      .from("service_agreements")
+      .select("id, participant_id, end_date, participant_profiles(preferred_name, full_name)")
+      .eq("organization_id", organizationId)
+      .eq("status", "active")
+      .lt("end_date", now.toISOString().slice(0, 10));
+
+    for (const sa of (expiredAgreements || [])) {
+      const pName = sa.participant_profiles?.preferred_name || sa.participant_profiles?.full_name || "Participant";
+      gaps.push({
+        id: `sa-${sa.id}`,
+        gap_title: "Service Agreement Expired",
+        gap_detail: `Expired on ${new Date(sa.end_date).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}`,
+        category: "documentation",
+        severity: "critical",
+        affected_entity_name: pName,
+        affected_entity_avatar: null,
+        affected_entity_id: sa.participant_id,
+        source_table: "service_agreements",
+        source_id: sa.id,
+      });
+    }
+
+    // 3. Clinical gaps - incidents without linked quality actions
+    const [{ data: incidents }, { data: ciActions }] = await Promise.all([
+      (supabase as any)
+        .from("incidents")
+        .select("id, title, occurred_at")
+        .eq("organization_id", organizationId)
+        .gte("occurred_at", monthStart.toISOString()),
+      (supabase as any)
+        .from("ci_actions")
+        .select("source_id")
+        .eq("organization_id", organizationId)
+        .eq("source_type", "incident"),
+    ]);
+
+    const coveredIncidents = new Set((ciActions || []).map((c: any) => c.source_id as string));
+    for (const inc of (incidents || [])) {
+      if (!coveredIncidents.has(inc.id)) {
+        gaps.push({
+          id: `inc-${inc.id}`,
+          gap_title: inc.title || "Incident Missing Quality Action",
+          gap_detail: `Occurred ${new Date(inc.occurred_at).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}`,
+          category: "clinical",
+          severity: "critical",
+          affected_entity_name: "Incident Report",
+          affected_entity_avatar: null,
+          affected_entity_id: inc.id,
+          source_table: "incidents",
+          source_id: inc.id,
+        });
+      }
+    }
+
+    // 4. Pending policy acknowledgements (documentation)
+    const { data: pendingAcks } = await (supabase as any)
+      .from("policy_acknowledgements")
+      .select("id, user_id, policy_id, due_at, policy_register(title), profiles!policy_acknowledgements_user_id_fkey(full_name, avatar_url)")
+      .eq("organization_id", organizationId)
+      .eq("status", "pending")
+      .limit(100);
+
+    for (const ack of (pendingAcks || [])) {
+      const name = ack.profiles?.full_name || "Unknown Worker";
+      const avatar = ack.profiles?.avatar_url || null;
+      const policyTitle = (ack as any).policy_register?.title || "Policy";
+      const isOverdue = ack.due_at && new Date(ack.due_at) < now;
+
+      gaps.push({
+        id: `ack-${ack.id}`,
+        gap_title: `${policyTitle} — Unacknowledged`,
+        gap_detail: isOverdue ? `Overdue since ${new Date(ack.due_at).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}` : "Pending signature",
+        category: "documentation",
+        severity: isOverdue ? "warning" : "monitor",
+        affected_entity_name: name,
+        affected_entity_avatar: avatar,
+        affected_entity_id: ack.user_id,
+        source_table: "policy_acknowledgements",
+        source_id: ack.id,
+      });
+    }
+
+    // Sort: critical first, then warning, then monitor
+    const severityOrder = { critical: 0, warning: 1, monitor: 2 };
+    gaps.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+
+    return gaps;
+  } catch (error) {
+    console.error("[ironclad] listComplianceGapsAction", error);
+    return [];
+  }
+}
+
+export async function sendTargetedRemediationAction(input: {
+  organization_id: string;
+  user_id: string;
+  gap_title: string;
+}) {
+  const { supabase } = await requireAuthedUser();
+  await supabase.functions.invoke("send-push", {
+    body: {
+      record: {
+        user_id: input.user_id,
+        title: "Action Required: Compliance Gap",
+        body: `Please address: ${input.gap_title}. Upload the required document or contact your manager.`,
+        type: "compliance_alert",
+      },
+    },
+  });
+  revalidatePath("/dashboard/compliance/readiness");
+  return { success: true };
+}
+
 export async function verifyDocumentHashAction(sha256Hash: string) {
   const { supabase } = await requireAuthedUser();
   const hash = sha256Hash.trim().toLowerCase();
