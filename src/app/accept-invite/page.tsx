@@ -54,13 +54,13 @@ function AcceptInviteContent() {
 
   async function validateToken() {
     try {
-      const { data, error: rpcError } = await (supabase as any).rpc("validate_invite_token", {
-        p_token: token!,
+      // Validate via API route (service role, no RPC dependency)
+      const res = await fetch("/api/team/validate-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
       });
-
-      if (rpcError) throw rpcError;
-
-      const result = data as { valid: boolean; error?: string; email?: string; role?: string; organization_name?: string; inviter_name?: string };
+      const result = await res.json();
 
       if (!result.valid) {
         setError(result.error || "This invitation is invalid.");
@@ -148,21 +148,12 @@ function AcceptInviteContent() {
 
   async function acceptInvite() {
     try {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session) throw new Error("No active session");
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/accept-invite`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          },
-          body: JSON.stringify({ token }),
-        }
-      );
+      // Accept via API route (uses server-side auth + service role)
+      const res = await fetch("/api/team/accept-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
 
       const result = await res.json();
 
