@@ -18,12 +18,11 @@ import {
   UserCog,
   type LucideIcon,
 } from "lucide-react";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useTeamStore } from "@/lib/team-store";
-import { branches, type RoleId } from "@/lib/team-data";
+import { type RoleId } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
-import { useOrg } from "@/lib/hooks/use-org";
 import { useAuthStore } from "@/lib/auth-store";
 import { inviteMember as inviteMemberAction } from "@/app/actions/team";
 
@@ -49,7 +48,7 @@ const tradesRoleCards: Record<string, RoleCardStyle> = {
   subcontractor: { text: "text-zinc-400",   bg: "bg-zinc-500/10",   border: "border-zinc-500/20",   icon: Wrench,    label: "Subcontractor",  description: "External contractor. Limited to assigned jobs only." },
 };
 
-/** Care-sector role cards — NDIS/Aged Care specific labels, icons, and descriptions */
+/** Care-sector role cards */
 const careRoleCards: Record<string, RoleCardStyle> = {
   admin:         { text: "text-amber-400",  bg: "bg-amber-500/10",  border: "border-amber-500/20",  icon: Crown,          label: "Admin",                 description: "Full operational access. Manages rostering, compliance, team, and settings." },
   manager:       { text: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Building2,       label: "Service Manager",       description: "Oversees daily operations, rosters, incidents, and participant plans." },
@@ -60,22 +59,32 @@ const careRoleCards: Record<string, RoleCardStyle> = {
   subcontractor: { text: "text-zinc-400",   bg: "bg-zinc-500/10",   border: "border-zinc-500/20",   icon: UserCog,         label: "Agency Worker",         description: "External agency staff. Limited to assigned shifts only." },
 };
 
-/** Invitable roles — excludes owner */
 const INVITABLE_ROLES: RoleId[] = ["admin", "manager", "office_admin", "senior_tech", "technician", "apprentice", "subcontractor"];
 
 export function InviteModal() {
   const { inviteModalOpen, setInviteModalOpen, refresh: refreshTeamStore } = useTeamStore();
   const { addToast } = useToastStore();
   const { isCare } = useIndustryLexicon();
-  const { orgId } = useOrg();
+
+  // Get org directly from auth store — the single source of truth
+  const currentOrg = useAuthStore((s) => s.currentOrg);
+  const orgId = currentOrg?.id ?? null;
+
+  // Load branches from org settings (not hardcoded)
+  const orgBranches = useMemo(() => {
+    const settings = (currentOrg as any)?.settings;
+    if (settings && Array.isArray(settings.branches) && settings.branches.length > 0) {
+      return settings.branches as string[];
+    }
+    return null; // null = no branches configured
+  }, [currentOrg]);
 
   const roleCards = isCare ? careRoleCards : tradesRoleCards;
-  const defaultRole: RoleId = isCare ? "technician" : "technician";
 
   const [emails, setEmails] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [selectedRole, setSelectedRole] = useState<RoleId>(defaultRole);
-  const [selectedBranches, setSelectedBranches] = useState<string[]>(["Brisbane HQ"]);
+  const [selectedRole, setSelectedRole] = useState<RoleId>("technician");
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -84,12 +93,12 @@ export function InviteModal() {
     if (inviteModalOpen) {
       setEmails([]);
       setInputValue("");
-      setSelectedRole(defaultRole);
-      setSelectedBranches(["Brisbane HQ"]);
+      setSelectedRole("technician");
+      setSelectedBranches(orgBranches ? [orgBranches[0]] : []);
       setSending(false);
       setSent(false);
     }
-  }, [inviteModalOpen, defaultRole]);
+  }, [inviteModalOpen, orgBranches]);
 
   const addEmail = useCallback(
     (raw: string) => {
@@ -112,8 +121,7 @@ export function InviteModal() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text");
-    addEmail(pasted);
+    addEmail(e.clipboardData.getData("text"));
     setInputValue("");
   };
 
@@ -130,37 +138,16 @@ export function InviteModal() {
   const handleSend = async () => {
     if (emails.length === 0) return;
 
-    // Resolve orgId: useOrg() hook → auth store → team store (fallback chain)
-    let resolvedOrgId = orgId;
-    if (!resolvedOrgId) {
-      const authOrg = useAuthStore.getState().currentOrg;
-      resolvedOrgId = authOrg?.id ?? null;
-    }
-    if (!resolvedOrgId) {
-      resolvedOrgId = useTeamStore.getState().orgId;
-    }
-
-    if (!resolvedOrgId) {
-      addToast("No organization found. Please reload the page.");
-      return;
-    }
-
-    // Validate UUID format client-side before sending
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(resolvedOrgId)) {
-      console.error("[InviteModal] Invalid orgId format:", resolvedOrgId);
-      addToast("Organization ID is invalid. Please reload the page and try again.");
-      return;
-    }
-
     setSending(true);
 
     let successCount = 0;
     let lastError: string | null = null;
 
+    // Call the server action DIRECTLY — pass orgId if we have it, or empty string
+    // (the server action resolves it from the authenticated user if invalid)
     for (const email of emails) {
       const res = await inviteMemberAction({
-        organization_id: resolvedOrgId,
+        organization_id: orgId || "",
         email,
         role: selectedRole,
         branch: selectedBranches[0] || "HQ",
@@ -271,7 +258,7 @@ export function InviteModal() {
                 </div>
               </div>
 
-              {/* Role Selection — Card Grid */}
+              {/* Role Selection */}
               <div>
                 <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
                   Role
@@ -317,35 +304,37 @@ export function InviteModal() {
                 )}
               </div>
 
-              {/* Branch / Location */}
-              <div>
-                <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
-                  {isCare ? "Service Region" : "Branch"}
-                </label>
-                <div className="flex gap-2">
-                  {branches.map((branch) => {
-                    const isSelected = selectedBranches.includes(branch);
-                    return (
-                      <button
-                        key={branch}
-                        onClick={() => toggleBranch(branch)}
-                        className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-[11px] font-medium transition-all ${
-                          isSelected
-                            ? "border-white/20 bg-white/10 text-white"
-                            : "border-white/[0.05] bg-zinc-900/50 text-zinc-500 hover:text-zinc-300"
-                        }`}
-                      >
-                        <div className={`flex h-3.5 w-3.5 items-center justify-center rounded border transition-colors ${
-                          isSelected ? "border-white bg-white" : "border-zinc-600 bg-transparent"
-                        }`}>
-                          {isSelected && <Check size={8} className="text-black" />}
-                        </div>
-                        {branch}
-                      </button>
-                    );
-                  })}
+              {/* Branch / Location — only show if org has branches configured */}
+              {orgBranches && orgBranches.length > 0 && (
+                <div>
+                  <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
+                    {isCare ? "Service Region" : "Branch"}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {orgBranches.map((branch) => {
+                      const isSelected = selectedBranches.includes(branch);
+                      return (
+                        <button
+                          key={branch}
+                          onClick={() => toggleBranch(branch)}
+                          className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-[11px] font-medium transition-all ${
+                            isSelected
+                              ? "border-white/20 bg-white/10 text-white"
+                              : "border-white/[0.05] bg-zinc-900/50 text-zinc-500 hover:text-zinc-300"
+                          }`}
+                        >
+                          <div className={`flex h-3.5 w-3.5 items-center justify-center rounded border transition-colors ${
+                            isSelected ? "border-white bg-white" : "border-zinc-600 bg-transparent"
+                          }`}>
+                            {isSelected && <Check size={8} className="text-black" />}
+                          </div>
+                          {branch}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Footer */}
