@@ -111,43 +111,42 @@ function AcceptInviteContent() {
     setError("");
 
     try {
-      // Try sign up first
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      // Step A: Create the user via server API (auto-confirms email)
+      const signupRes = await fetch("/api/team/signup-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          email: inviteData.email,
+          password,
+        }),
+      });
+      const signupData = await signupRes.json();
+
+      if (signupData.error === "account_exists") {
+        // Account already exists — just sign in
+      } else if (!signupRes.ok) {
+        throw new Error(signupData.error || "Failed to create account");
+      }
+
+      // Step B: Sign in client-side to establish session cookies
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: inviteData.email,
         password,
-        options: {
-          data: { invited: true, invite_token: token },
-          emailRedirectTo: `${window.location.origin}/accept-invite?token=${token}`,
-        },
       });
 
-      if (signUpError) {
-        if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
-          // User exists — sign in instead
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: inviteData.email,
-            password,
-          });
-          if (signInError) throw signInError;
-        } else {
-          throw signUpError;
-        }
+      if (signInError) {
+        throw new Error(signInError.message);
       }
 
-      // Check if signup requires email confirmation (user might not be fully authed yet)
+      // Verify we're actually signed in
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // User is authenticated — go to profile step
-        setStep("profile");
-      } else if (signUpData?.user && !signUpData.session) {
-        // SignUp succeeded but no session = email confirmation required
-        // For invited users, auto-confirm by signing in if possible
-        // This handles the case where Supabase requires email verification
-        setError("Account created! Please check your email to verify, then come back to this page.");
-        setStep("error");
-      } else {
-        setStep("profile");
+      if (!user) {
+        throw new Error("Sign-in succeeded but session not established. Please try again.");
       }
+
+      // Go to profile step
+      setStep("profile");
     } catch (err: any) {
       setError(err.message || "Failed to create account");
     } finally {
