@@ -113,6 +113,14 @@ serve(async (req: Request) => {
     }
 
     // ── Build telemetry record ───────────────────────────────
+    const fallbackTimestamp = typeof body.timestamp_utc === "string"
+      ? body.timestamp_utc
+      : new Date().toISOString();
+    const normalizedConsoleBuffer = normalizeConsoleBufferInput(
+      body.context?.console_buffer,
+      fallbackTimestamp,
+    );
+
     const record = {
       severity: body.error_details?.name?.includes("Fatal") ? "fatal" :
         body.severity || (body.error_details ? "warning" : "info"),
@@ -156,12 +164,50 @@ serve(async (req: Request) => {
       screenshot_path: screenshotPath,
 
       // Console buffer
-      console_buffer: body.context?.console_buffer || [],
+      console_buffer: normalizedConsoleBuffer,
     };
+
+    const sanitizedPayload = sanitizePayload(body);
+
+    const mobileRecord = {
+      organization_id: body.identity?.organization_id || null,
+      worker_id: body.identity?.user_id || null,
+      error_type: body.error_details?.name || "UnknownError",
+      error_message: body.error_details?.message || "No message",
+      stack_trace: body.error_details?.stack_trace || null,
+      breadcrumbs:
+        body.context?.breadcrumbs ||
+        normalizedConsoleBuffer.map((entry) => entry.message),
+      device_metrics: {
+        platform: normalizePlatform(body.environment?.platform),
+        os_version: body.environment?.os_version || null,
+        app_version: body.environment?.app_version || null,
+        device_model: body.environment?.device_model || null,
+        network_type: body.telemetry?.network_type || null,
+        effective_bandwidth: body.telemetry?.effective_bandwidth || null,
+        battery_level: body.telemetry?.battery_level || null,
+        memory_usage_mb: body.telemetry?.memory_usage_mb || null,
+        gps_lat: body.telemetry?.gps_location?.lat || null,
+        gps_lng: body.telemetry?.gps_location?.lng || null,
+      },
+      screenshot_url: screenshotPath,
+      status: "unresolved",
+      app_version: body.environment?.app_version || "unknown",
+      payload: sanitizedPayload,
+    };
+
+    try {
+      await supabase.from("mobile_telemetry_events").insert(mobileRecord);
+    } catch (mobileInsertError) {
+      console.warn("mobile_telemetry_events insert skipped:", mobileInsertError);
+    }
 
     const { data, error } = await supabase
       .from("telemetry_events")
-      .insert(record)
+      .insert({
+        ...record,
+        payload: sanitizedPayload,
+      })
       .select("id, event_timestamp")
       .single();
 
@@ -219,4 +265,47 @@ function sanitizePayload(body: Record<string, unknown>): Record<string, unknown>
     cleaned.context = ctx;
   }
   return cleaned;
+}
+
+function normalizeConsoleBufferInput(
+  input: unknown,
+  fallbackTimestamp: string,
+): Array<{ level: string; message: string; timestamp: string }> {
+  if (!Array.isArray(input)) return [];
+
+  return input
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return {
+          level: "log",
+          message: entry,
+          timestamp: fallbackTimestamp,
+        };
+      }
+
+      if (entry && typeof entry === "object") {
+        const obj = entry as Record<string, unknown>;
+        return {
+          level:
+            typeof obj.level === "string" && obj.level.trim().length > 0
+              ? obj.level
+              : "log",
+          message:
+            typeof obj.message === "string"
+              ? obj.message
+              : JSON.stringify(obj),
+          timestamp:
+            typeof obj.timestamp === "string" && obj.timestamp.length > 0
+              ? obj.timestamp
+              : fallbackTimestamp,
+        };
+      }
+
+      return {
+        level: "log",
+        message: String(entry),
+        timestamp: fallbackTimestamp,
+      };
+    })
+    .slice(0, 200);
 }

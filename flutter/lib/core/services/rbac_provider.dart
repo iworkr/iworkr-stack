@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 
 // ═══════════════════════════════════════════════════════════
@@ -178,9 +179,45 @@ final userRoleProvider = FutureProvider<UserRole>((ref) async {
   return UserRole.fromString(roleStr);
 });
 
+/// JWT-sourced role — reads from Supabase `appMetadata['role']`.
+/// This is the priority/fallback source injected by the Aegis edge function.
+final jwtRoleProvider = Provider<UserRole?>((ref) {
+  final user = SupabaseService.auth.currentUser;
+  final jwtRole = user?.appMetadata['role']?.toString();
+  if (jwtRole == null) return null;
+  return UserRole.values.firstWhere(
+    (r) => r.name == jwtRole,
+    orElse: () => UserRole.fromString(jwtRole),
+  );
+});
+
+/// Synchronous role provider — resolves immediately for UI tab filtering.
+/// Priority: JWT claims > organization_members > default (technician).
+final currentRoleProvider = Provider<UserRole>((ref) {
+  // 1. Try JWT claims first (injected by Aegis edge function)
+  final jwtRole = ref.watch(jwtRoleProvider);
+  if (jwtRole != null) return jwtRole;
+
+  // 2. Fall back to organization_members data
+  final orgData = ref.watch(organizationProvider).valueOrNull;
+  if (orgData != null) {
+    final roleStr = orgData['role'] as String? ?? 'technician';
+    return UserRole.fromString(roleStr);
+  }
+
+  // 3. Default — safe fallback (lowest clearance)
+  return UserRole.technician;
+});
+
 /// Current user's permission claims
 final userClaimsProvider = FutureProvider<Set<String>>((ref) async {
   final role = await ref.watch(userRoleProvider.future);
+  return claimsForRole(role);
+});
+
+/// Synchronous claims — derived from currentRoleProvider for immediate access
+final currentClaimsProvider = Provider<Set<String>>((ref) {
+  final role = ref.watch(currentRoleProvider);
   return claimsForRole(role);
 });
 

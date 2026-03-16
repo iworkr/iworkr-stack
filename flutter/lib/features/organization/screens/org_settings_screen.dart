@@ -356,6 +356,7 @@ class _CurrencySelector extends StatelessWidget {
               HapticFeedback.lightImpact();
               showModalBottomSheet(
                 context: context,
+                useRootNavigator: true,
                 backgroundColor: Colors.transparent,
                 builder: (_) => Container(
                   decoration: BoxDecoration(

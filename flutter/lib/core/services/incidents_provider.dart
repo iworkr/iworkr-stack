@@ -117,6 +117,11 @@ Future<Incident?> createIncident({
   String? location,
   DateTime? occurredAt,
   String? immediateActions,
+  // Aegis SIRS fields
+  bool isEmergencyServicesInvolved = false,
+  bool isReportable = false,
+  Map<String, dynamic>? incidentPayload,
+  String? witnessDetails,
 }) async {
   final user = SupabaseService.auth.currentUser;
   if (user == null) return null;
@@ -130,27 +135,58 @@ Future<Incident?> createIncident({
       .maybeSingle();
   if (orgRow == null) return null;
 
+  final insertData = <String, dynamic>{
+    'organization_id': orgRow['organization_id'],
+    'worker_id': user.id,
+    'title': title,
+    'description': description,
+    'category': category.value,
+    'severity': severity.name,
+    'status': 'reported',
+    'participant_id': participantId,
+    'shift_id': shiftId,
+    'location': location,
+    'occurred_at': (occurredAt ?? DateTime.now()).toUtc().toIso8601String(),
+    'reported_at': DateTime.now().toUtc().toIso8601String(),
+    'immediate_actions': immediateActions,
+    'is_emergency_services_involved': isEmergencyServicesInvolved,
+    'is_reportable': isReportable,
+    'incident_payload': incidentPayload ?? <String, dynamic>{},
+  };
+
+  if (witnessDetails != null && witnessDetails.isNotEmpty) {
+    insertData['witnesses'] = [{'details': witnessDetails}];
+  }
+
   final data = await SupabaseService.client
       .from('incidents')
-      .insert({
-        'organization_id': orgRow['organization_id'],
-        'worker_id': user.id,
-        'title': title,
-        'description': description,
-        'category': category.value,
-        'severity': severity.name,
-        'status': 'reported',
-        'participant_id': participantId,
-        'shift_id': shiftId,
-        'location': location,
-        'occurred_at': (occurredAt ?? DateTime.now()).toUtc().toIso8601String(),
-        'reported_at': DateTime.now().toUtc().toIso8601String(),
-        'immediate_actions': immediateActions,
-      })
+      .insert(insertData)
       .select('*, profiles!incidents_worker_id_fkey(full_name)')
       .single();
 
-  return Incident.fromJson(data);
+  final incident = Incident.fromJson(data);
+
+  // Trigger Aegis SIRS Triage Router (fire-and-forget)
+  try {
+    await SupabaseService.client.functions.invoke(
+      'aegis-triage-router',
+      body: {
+        'id': incident.id,
+        'organization_id': orgRow['organization_id'],
+        'category': category.value,
+        'severity': severity.name,
+        'is_emergency_services_involved': isEmergencyServicesInvolved,
+        'is_reportable': isReportable,
+        'occurred_at': insertData['occurred_at'],
+        'reported_at': insertData['reported_at'],
+        'incident_payload': incidentPayload ?? <String, dynamic>{},
+      },
+    );
+  } catch (_) {
+    // Non-fatal — incident is already saved, triage can be retried
+  }
+
+  return incident;
 }
 
 Future<void> updateIncidentStatus({

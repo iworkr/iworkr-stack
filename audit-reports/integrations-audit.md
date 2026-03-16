@@ -1,8 +1,8 @@
 # Integrations Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-14T00:57:50.043Z
+> **Generated**: 2026-03-14T15:05:48.015Z
 > **Module**: Integrations (`/dashboard/integrations`)
-> **Total Findings**: 18
+> **Total Findings**: 16
 > **Test Suites**: 16
 
 ---
@@ -11,10 +11,10 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical | 2 |
+| 🔴 Critical | 1 |
 | 🟡 Visual | 0 |
 | 🟣 Dummy Data | 0 |
-| 🟠 Warnings | 4 |
+| 🟠 Warnings | 3 |
 | 🟢 Passes | 12 |
 
 ---
@@ -53,13 +53,9 @@
 
 ## 🔴 Critical Failures
 
-### Console error
-- **Area**: Console
-- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected respons
-
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
+### HTTP 500
+- **Area**: Network
+- **Detail**: http://127.0.0.1:54321/functions/v1/ingest-telemetry
 
 ---
 
@@ -77,17 +73,14 @@ _None._
 
 ## 🟠 Warnings
 
-### HTTP 404
-- http://127.0.0.1:54321/rest/v1/worker_credentials?select=*%2Cprofiles%3Auser_id%28full_name%2Cemail%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=expiry_date.asc.nullsl
+### Console error
+- Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+
+### Console error
+- Failed to load resource: the server responded with a status of 404 (Not Found)
 
 ### HTTP 404
-- http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
-
-### HTTP 404
-- http://127.0.0.1:54321/rest/v1/incidents?select=*%2Cprofiles%21worker_id%28full_name%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=occurred_at.desc&limit=500
-
-### HTTP 404
-- http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0
+- http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
 
 ---
 

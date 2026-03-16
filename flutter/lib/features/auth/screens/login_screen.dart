@@ -216,8 +216,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: c.canvas,
       body: AnimatedScale(
         scale: _showSuccess ? 1.15 : 1.0,
         duration: const Duration(milliseconds: 600),
@@ -228,7 +229,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           child: Stack(
             children: [
               // Noise grain
-              Positioned.fill(child: CustomPaint(painter: _NoisePainter())),
+              Positioned.fill(child: CustomPaint(painter: _NoisePainter(dotColor: c.textPrimary))),
 
               // Vignette
               Positioned.fill(
@@ -237,7 +238,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     gradient: RadialGradient(
                       center: Alignment.center,
                       radius: 0.9,
-                      colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
+                      colors: [Colors.transparent, c.canvas.withValues(alpha: 0.7)],
                       stops: const [0.3, 1.0],
                     ),
                   ),
@@ -245,7 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
 
               // Grid lines
-              Positioned.fill(child: CustomPaint(painter: _GridPainter())),
+              Positioned.fill(child: CustomPaint(painter: _GridPainter(lineColor: c.textPrimary))),
 
               // Aurora gradient at bottom (PRD: Emerald/Zinc at bottom 10%, opacity 10%)
               Positioned(
@@ -517,7 +518,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         // Email input
         TextField(
-          key: const Key('input_email'),
+          key: const Key('auth_email_input'),
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
@@ -539,7 +540,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         // Password input
         TextField(
-          key: const Key('input_password'),
+          key: const Key('auth_password_input'),
           controller: _passwordController,
           obscureText: _obscurePassword,
           style: GoogleFonts.jetBrainsMono(color: c.textPrimary, fontSize: 14),
@@ -573,7 +574,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           width: double.infinity,
           height: 44,
           child: _AuthButton(
-            key: const Key('btn_submit_login'),
+            key: const Key('auth_submit_button'),
             onTap: _loading ? () {} : _handlePasswordLogin,
             filled: true,
             solidFill: true,
@@ -582,7 +583,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 : Text(
                     'Authenticate',
                     style: GoogleFonts.inter(
-                      color: Colors.black,
+                      color: c.canvas,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -706,7 +707,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 ? _buildPulseLoader()
                 : Text(
                     'Send Code',
-                    style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
+                    style: GoogleFonts.inter(color: c.canvas, fontWeight: FontWeight.w600, fontSize: 14),
                   ),
           ),
         ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
@@ -1112,7 +1113,7 @@ class _AuthButtonState extends State<_AuthButton> {
             color: _pressed ? c.borderHover : c.borderMedium,
           ),
           color: widget.solidFill
-              ? (_pressed ? const Color(0xFFE0E0E0) : Colors.white)
+              ? (_pressed ? c.textSecondary : c.textPrimary)
               : widget.filled
                   ? c.activeBg
                   : Colors.transparent,
@@ -1126,9 +1127,12 @@ class _AuthButtonState extends State<_AuthButton> {
 // ── Background Painters ─────────────────────────────────
 
 class _NoisePainter extends CustomPainter {
+  final Color dotColor;
+  _NoisePainter({required this.dotColor});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withValues(alpha: 0.015);
+    final paint = Paint()..color = dotColor.withValues(alpha: 0.015);
     final random = Random(42);
     for (int i = 0; i < 2000; i++) {
       final x = random.nextDouble() * size.width;
@@ -1138,14 +1142,17 @@ class _NoisePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _NoisePainter oldDelegate) => dotColor != oldDelegate.dotColor;
 }
 
 class _GridPainter extends CustomPainter {
+  final Color lineColor;
+  _GridPainter({required this.lineColor});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.02)
+      ..color = lineColor.withValues(alpha: 0.02)
       ..strokeWidth = 0.5;
     const spacing = 80.0;
     for (double x = 0; x < size.width; x += spacing) {
@@ -1157,5 +1164,5 @@ class _GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _GridPainter oldDelegate) => lineColor != oldDelegate.lineColor;
 }

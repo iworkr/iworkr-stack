@@ -1,9 +1,9 @@
 # Dashboard Module — Audit Report
 
-> **Generated**: 2026-03-14T00:47:40.812Z
+> **Generated**: 2026-03-14T14:54:10.342Z
 > **Module**: Dashboard (`/dashboard`)
 > **Test Framework**: Playwright
-> **Total Findings**: 48
+> **Total Findings**: 29
 
 ---
 
@@ -11,55 +11,25 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 25 |
+| 🔴 Critical Failures | 8 |
 | 🟡 Visual Defects | 1 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 12 |
-| 🟢 Flow Passes | 10 |
+| 🟠 Warnings | 4 |
+| 🟢 Flow Passes | 16 |
 
 ---
 
 ## 🔴 Critical Failures
 
 
-### "Schedule" navigation failed
+### "Automations" navigation failed
 - **Widget**: Sidebar
-- **Detail**: Expected URL to contain "/dashboard/schedule" but got "http://localhost:3000/dashboard"
-
-
-### "Messages" navigation failed
-- **Widget**: Sidebar
-- **Detail**: Expected URL to contain "/dashboard/inbox" but got "http://localhost:3000/dashboard"
-
-
-### "Clients" navigation failed
-- **Widget**: Sidebar
-- **Detail**: Expected URL to contain "/dashboard/clients" but got "http://localhost:3000/dashboard"
-
-
-### "Finance" navigation failed
-- **Widget**: Sidebar
-- **Detail**: Expected URL to contain "/dashboard/finance" but got "http://localhost:3000/dashboard"
-
-
-### "Assets" navigation failed
-- **Widget**: Sidebar
-- **Detail**: Expected URL to contain "/dashboard/assets" but got "http://localhost:3000/dashboard"
-
-
-### "Forms" navigation failed
-- **Widget**: Sidebar
-- **Detail**: Expected URL to contain "/dashboard/forms" but got "http://localhost:3000/dashboard"
-
-
-### "Team" navigation failed
-- **Widget**: Sidebar
-- **Detail**: Expected URL to contain "/dashboard/team" but got "http://localhost:3000/dashboard"
+- **Detail**: Expected URL to contain "/dashboard/automations" but got "http://localhost:3000/dashboard"
 
 
 ### Console error detected
 - **Widget**: Console
-- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 503
+- **Detail**: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
 
 
 ### Console error detected
@@ -70,61 +40,6 @@
 ### Console error detected
 - **Widget**: Console
 - **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 503
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 503
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 503
 
 
 ### Console error detected
@@ -132,20 +47,20 @@
 - **Detail**: Error: Failed to initialize WebGL
     at Map._setupPainter (http://localhost:3000/_next/static/chunks/7e9b8_mapbox-gl_dist_mapbox-gl_a3300777.js:48404:65)
     at new Map (http://localhost:3000/_next/static/chunks/7e9b8_mapbox-gl_dist_mapbox-gl_a3300777.js:47686:60)
-    at DispatchMapbox.useEffect (http://localhost:3000/_next/static/chunks/Development_STACK_iWorkr-Linear_src_5758d1f0._.js:1642:33)
+    at DispatchMapbox.useEffect (http://localhost:3000/_next/static/chunks/Development_STACK_iWorkr-Linear_src_cd925679._.js:1642:33)
 
 
 ### Console error detected
 - **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 503 (Service Temporarily Unavailable)
+- **Detail**: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
 
 
-### Console error detected
-- **Widget**: Console
-- **Detail**: WebSocket connection to 'ws://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 500
+### HTTP 500 response
+- **Widget**: Network
+- **Detail**: URL: http://127.0.0.1:54321/functions/v1/ingest-telemetry
 
 
-### HTTP 503 response
+### HTTP 500 response
 - **Widget**: Network
 - **Detail**: URL: http://127.0.0.1:54321/functions/v1/ingest-telemetry
 
@@ -181,43 +96,11 @@ _No dummy data leaks found._
 
 ### HTTP 404 response
 - **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/worker_credentials?select=*%2Cprofiles%3Auser_id%28full_name%2Cemail%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=expiry_date.asc.nullsl
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
 
 ### HTTP 404 response
 - **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/incidents?select=*%2Cprofiles%21worker_id%28full_name%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=occurred_at.desc&limit=500
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/incidents?select=*%2Cprofiles%21worker_id%28full_name%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=occurred_at.desc&limit=500
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/worker_credentials?select=*%2Cprofiles%3Auser_id%28full_name%2Cemail%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0&order=expiry_date.asc.nullsl
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/workspace_branding?select=*&workspace_id=eq.79659103-be73-4043-b958-32e268c852f0
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.79659103-be73-4043-b958-32e268c852f0
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
 
 ### 'C' shortcut unclear
 - **Widget**: Shortcuts
@@ -229,7 +112,13 @@ _No dummy data leaks found._
 ## 🟢 Flow Verification (Passes)
 
 - ✅ **[Sidebar]** "My Jobs" → /dashboard/jobs: Navigation successful.
-- ✅ **[Sidebar]** "Automations" → /dashboard/automations: Navigation successful.
+- ✅ **[Sidebar]** "Schedule" → /dashboard/schedule: Navigation successful.
+- ✅ **[Sidebar]** "Messages" → /dashboard/inbox: Navigation successful.
+- ✅ **[Sidebar]** "Clients" → /dashboard/clients: Navigation successful.
+- ✅ **[Sidebar]** "Finance" → /dashboard/finance: Navigation successful.
+- ✅ **[Sidebar]** "Assets" → /dashboard/assets: Navigation successful.
+- ✅ **[Sidebar]** "Forms" → /dashboard/forms: Navigation successful.
+- ✅ **[Sidebar]** "Team" → /dashboard/team: Navigation successful.
 - ✅ **[Topbar]** Search trigger visible: ⌘K search bar trigger is rendered in the topbar.
 - ✅ **[Style]** All buttons have pointer cursor: Checked 20 buttons — all have cursor: pointer.
 - ✅ **[Style]** Inter font applied: Font family: inter, "inter Fallback"

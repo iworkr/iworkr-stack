@@ -1,4 +1,5 @@
 default_platform(:ios)
+require "shellwords"
 
 platform :ios do
   # ──────────────────────────────────────────────────────────────────
@@ -48,16 +49,31 @@ platform :ios do
       in_house: false
     )
 
-    # 1. Verify Runner.app exists from a prior `flutter build ios` run.
-    #    Build Flutter BEFORE running this lane:
-    #      flutter build ios --release --no-codesign \
-    #        --dart-define=SUPABASE_URL=<url> \
-    #        --dart-define=SUPABASE_ANON_KEY=<key>
-    runner_app = File.expand_path("../../build/ios/iphoneos/Runner.app")
-    unless File.exist?(runner_app)
-      UI.user_error!("Runner.app not found. Run `flutter build ios --release --no-codesign --dart-define=...` first.")
+    # 1. Always build Flutter with explicit release target + dart defines.
+    #    This prevents stale test targets (integration_test/test_bundle.dart)
+    #    or missing Supabase config from leaking into TestFlight releases.
+    # Supabase production defaults are baked into supabase_service.dart.
+    # dart_defines.env is OPTIONAL — only needed to override (e.g. local dev).
+    # Priority: dart_defines.env > env vars > production defaults (always works).
+    dart_defines_file = File.expand_path("../../dart_defines.env", __dir__)
+    flutter_build_env_prefix = "env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u RUBYOPT -u RUBYLIB"
+    if ENV["SKIP_FLUTTER_BUILD"] == "1"
+      UI.important("SKIP_FLUTTER_BUILD=1 set: using existing Flutter iOS artifacts")
+    else
+      if File.exist?(dart_defines_file)
+        UI.message("Using dart_defines.env for build configuration")
+        sh("cd .. && #{flutter_build_env_prefix} flutter build ios --release --no-codesign --target lib/main.dart --dart-define-from-file=#{dart_defines_file.shellescape}")
+      elsif !ENV["SUPABASE_URL"].to_s.empty? && !ENV["SUPABASE_ANON_KEY"].to_s.empty?
+        supabase_url = ENV["SUPABASE_URL"]
+        supabase_anon_key = ENV["SUPABASE_ANON_KEY"]
+        app_url = ENV["APP_URL"] || "https://app.iworkr.com"
+        UI.message("Using env vars for build configuration (SUPABASE_URL set)")
+        sh("cd .. && #{flutter_build_env_prefix} flutter build ios --release --no-codesign --target lib/main.dart --dart-define=SUPABASE_URL=#{supabase_url.shellescape} --dart-define=SUPABASE_ANON_KEY=#{supabase_anon_key.shellescape} --dart-define=APP_URL=#{app_url.shellescape}")
+      else
+        UI.important("No dart_defines.env or env vars found — building with production defaults baked into supabase_service.dart")
+        sh("cd .. && #{flutter_build_env_prefix} flutter build ios --release --no-codesign --target lib/main.dart")
+      end
     end
-    UI.success("Found Runner.app — skipping Flutter build")
 
     # 3. Increment build number (auto-increment based on latest TestFlight build)
     latest = begin
@@ -109,7 +125,13 @@ platform :ios do
   # ──────────────────────────────────────────────────────────────────
   desc "Build IPA without uploading"
   lane :build_only do
-    sh("cd .. && flutter build ios --release --no-codesign")
+    dart_defines_file = File.expand_path("../../dart_defines.env", __dir__)
+    flutter_build_env_prefix = "env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u RUBYOPT -u RUBYLIB"
+    if File.exist?(dart_defines_file)
+      sh("cd .. && #{flutter_build_env_prefix} flutter build ios --release --no-codesign --target lib/main.dart --dart-define-from-file=#{dart_defines_file.shellescape}")
+    else
+      sh("cd .. && #{flutter_build_env_prefix} flutter build ios --release --no-codesign --target lib/main.dart")
+    end
 
     build_app(
       workspace: "Runner.xcworkspace",

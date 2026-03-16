@@ -44,6 +44,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.95.3
         version: 2.98.0
+      '@tanstack/react-virtual':
+        specifier: ^3.13.22
+        version: 3.13.22(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -1440,6 +1443,15 @@ packages:
 
   '@tailwindcss/postcss@4.2.1':
     resolution: {integrity: sha512-OEwGIBnXnj7zJeonOh6ZG9woofIjGrd2BORfvE5p9USYKDCZoQmfqLcfNiRWoJlRWLdNPn2IgVZuWAOM4iTYMw==}
+
+  '@tanstack/react-virtual@3.13.22':
+    resolution: {integrity: sha512-EaOrBBJLi3M0bTMQRjGkxLXRw7Gizwntoy5E2Q2UnSbML7Mo2a1P/Hfkw5tw9FLzK62bj34Jl6VNbQfRV6eJcA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@tanstack/virtual-core@3.13.22':
+    resolution: {integrity: sha512-isuUGKsc5TAPDoHSbWTbl1SCil54zOS2MiWz/9GCWHPUQOvNTQx8qJEWC7UWR0lShhbK0Lmkcf0SZYxvch7G3g==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -5760,6 +5772,14 @@ snapshots:
       '@tailwindcss/oxide': 4.2.1
       postcss: 8.5.6
       tailwindcss: 4.2.1
+
+  '@tanstack/react-virtual@3.13.22(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@tanstack/virtual-core': 3.13.22
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
+  '@tanstack/virtual-core@3.13.22': {}
 
   '@testing-library/dom@10.4.1':
     dependencies:

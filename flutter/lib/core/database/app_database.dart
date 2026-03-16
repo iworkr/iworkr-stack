@@ -34,6 +34,7 @@ class LocalJobs extends Table {
   RealColumn get estimatedHours => real().withDefault(const Constant(0))();
   RealColumn get actualHours => real().withDefault(const Constant(0))();
   IntColumn get estimatedDurationMinutes => integer().nullable()();
+  TextColumn get broadcastStatus => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -148,7 +149,17 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        // Project Terminus: Add broadcast_status column for Equinox parity
+        await migrator.addColumn(localJobs, localJobs.broadcastStatus);
+      }
+    },
+  );
 
   // ── Jobs ─────────────────────────────────────────────
 
@@ -284,6 +295,24 @@ class AppDatabase extends _$AppDatabase {
     return row.read(count) ?? 0;
   }
 
+  Future<List<SyncQueueData>> failedMutations({int limit = 20}) {
+    return (select(syncQueue)
+          ..where((q) => q.status.equals('failed') & q.retryCount.isSmallerThanValue(5))
+          ..orderBy([(q) => OrderingTerm.asc(q.createdAt)])
+          ..limit(limit))
+        .get();
+  }
+
+  Future<void> resetToPending(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (update(syncQueue)..where((q) => q.id.isIn(ids))).write(
+      const SyncQueueCompanion(
+        status: Value('pending'),
+        errorMessage: Value.absent(),
+      ),
+    );
+  }
+
   // ── Upload Queue ─────────────────────────────────────
 
   Future<void> enqueueUpload(UploadQueueCompanion item) {
@@ -304,6 +333,19 @@ class AppDatabase extends _$AppDatabase {
         remotePath: Value(remotePath),
         status: const Value('uploaded'),
       ),
+    );
+  }
+
+  Future<void> incrementUploadRetry(String id) async {
+    await customStatement(
+      'UPDATE upload_queue SET retry_count = retry_count + 1 WHERE id = ?',
+      [id],
+    );
+  }
+
+  Future<void> markUploadFailed(String id) {
+    return (update(uploadQueue)..where((q) => q.id.equals(id))).write(
+      const UploadQueueCompanion(status: Value('failed')),
     );
   }
 

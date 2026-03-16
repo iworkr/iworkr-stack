@@ -1,0 +1,15 @@
+node_modules
+flutter
+electron
+supabase/.branches
+supabase/.temp
+playwright-report
+test-results
+screenshots
+audit-reports
+tools
+*.log
+coverage
+.next
+dist
+out

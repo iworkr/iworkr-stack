@@ -1,0 +1,185 @@
+name: Panopticon Quality Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: panopticon-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Project Terminus: Vitest unit tests ──────────────────────────────────
+  vitest-unit:
+    name: Vitest Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest
+        run: npx vitest run --reporter=verbose
+
+  supabase-rls:
+    name: Supabase RLS pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [vitest-unit]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Run pgTAP RLS suite
+        run: npm run test:db:rls
+
+      - name: Upload RLS artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: panopticon-rls
+          path: supabase/tests/pgtap/
+          retention-days: 14
+
+  web-golden-thread:
+    name: Web Golden Thread
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [supabase-rls]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build app
+        run: npm run build
+
+      - name: Run golden thread e2e
+        env:
+          CI: true
+        run: npm run test:e2e:golden-thread
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: panopticon-web
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  mobile-critical:
+    name: Mobile Critical Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [web-golden-thread]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.32.0"
+          channel: stable
+          cache: true
+
+      - name: Install Flutter deps
+        working-directory: flutter
+        run: flutter pub get
+
+      - name: Run Panopticon integration test
+        working-directory: flutter
+        run: flutter test integration_test/tests/panopticon_test.dart
+
+      - name: Upload mobile artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: panopticon-mobile
+          path: |
+            flutter/screenshots/
+            flutter/test_report.log
+          retention-days: 14
+
+  audit-briefing:
+    name: Audit Briefing
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [supabase-rls, web-golden-thread, mobile-critical]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Generate Panopticon audit scaffold
+        run: npm run audit:panopticon
+
+      - name: Append CI result summary
+        run: |
+          FILE=$(ls audit-reports/panopticon-audit-*.md | head -1)
+          {
+            echo ""
+            echo "## CI Execution Results"
+            echo ""
+            echo "- Supabase RLS pgTAP: **${{ needs.supabase-rls.result }}**"
+            echo "- Web Golden Thread: **${{ needs.web-golden-thread.result }}**"
+            echo "- Mobile Critical Integration: **${{ needs.mobile-critical.result }}**"
+          } >> "$FILE"
+          cat "$FILE"
+
+      - name: Upload audit briefing
+        uses: actions/upload-artifact@v4
+        with:
+          name: panopticon-audit-briefing
+          path: audit-reports/panopticon-audit-*.md
+          retention-days: 30

@@ -10715,7 +10715,13 @@ export type Database = {
         | "investigation"
         | "resolved"
         | "closed"
-      integration_status: "connected" | "disconnected" | "error" | "syncing"
+      integration_status:
+        | "connected"
+        | "disconnected"
+        | "error"
+        | "syncing"
+        | "expired"
+        | "paused"
       invite_status: "pending" | "accepted" | "expired"
       invoice_event_type:
         | "created"
@@ -11071,7 +11077,14 @@ export const Constants = {
         "resolved",
         "closed",
       ],
-      integration_status: ["connected", "disconnected", "error", "syncing"],
+      integration_status: [
+        "connected",
+        "disconnected",
+        "error",
+        "syncing",
+        "expired",
+        "paused",
+      ],
       invite_status: ["pending", "accepted", "expired"],
       invoice_event_type: [
         "created",

@@ -508,6 +508,7 @@ export interface ScheduleBlock {
   id: string;
   jobId: string;
   technicianId: string;
+  participantId?: string;
   title: string;
   client: string;
   location: string;
@@ -516,6 +517,8 @@ export interface ScheduleBlock {
   status: ScheduleBlockStatus;
   travelTime?: number; // in minutes, shows as ghost block before this block
   conflict?: boolean;
+  parentShiftId?: string | null;
+  isShadowShift?: boolean;
 }
 
 export interface Technician {

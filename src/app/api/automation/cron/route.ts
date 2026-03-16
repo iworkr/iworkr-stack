@@ -219,6 +219,7 @@ export async function POST(request: NextRequest) {
     "sync-polar-subscriptions": "sync-polar-status",
     "run-scheduled-automations": "run-automations",
     "process-mail-queue": "process-mail",
+    "chronos-weekly-aggregation": "aggregate-coordination-billing",
   };
 
   // Jobs that can be handled by invoking the GET handler

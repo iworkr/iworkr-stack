@@ -6,35 +6,62 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Callback for widget deep links — set by the router at startup
 typedef WidgetDeepLinkHandler = void Function(String path);
 
-/// Supabase singleton access + deep link handler
+/// Supabase singleton access + deep link handler.
+///
+/// Configuration priority (highest → lowest):
+///   1. Compile-time --dart-define / --dart-define-from-file (CI, Fastlane, local dev)
+///   2. Hardcoded production defaults (guarantees the app ALWAYS starts)
+///
+/// This means:
+///   • `flutter run` with NO flags → connects to production Supabase ✓
+///   • `flutter run --dart-define-from-file=dart_defines.env` → connects to local/staging ✓
+///   • Fastlane deploy_ios → uses dart_defines.env or env vars → production ✓
+///   • TestFlight / App Store release → production baked in ✓
 class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
   static GoTrueClient get auth => client.auth;
 
-  static const String _supabaseUrl = String.fromEnvironment(
+  // ── Production defaults (safe to embed — these are PUBLIC keys) ──────
+  static const String _prodUrl = 'https://olqjuadvseoxpfjzlghb.supabase.co';
+  static const String _prodAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9scWp1YWR2c2VveHBmanpsZ2hiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4ODQ4ODcsImV4cCI6MjA4NzQ2MDg4N30.1-109HFf0IrDugPm7GPpYoAc_RVBXLDpz1zyojs8kZY';
+
+  // ── Compile-time overrides (dart-define takes precedence) ────────────
+  static const String _envUrl = String.fromEnvironment(
     'SUPABASE_URL',
     defaultValue: '',
   );
-  static const String _supabaseAnonKey = String.fromEnvironment(
+  static const String _envAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
     defaultValue: '',
   );
+
+  /// Resolved URL: dart-define override → production default
+  static String get supabaseUrl =>
+      _envUrl.isNotEmpty ? _envUrl : _prodUrl;
+
+  /// Resolved anon key: dart-define override → production default
+  static String get supabaseAnonKey =>
+      _envAnonKey.isNotEmpty ? _envAnonKey : _prodAnonKey;
 
   static WidgetDeepLinkHandler? onWidgetDeepLink;
   static String? pendingWidgetDeepLink;
 
   static Future<void> initialize() async {
-    if (_supabaseUrl.isEmpty) {
-      throw StateError('SUPABASE_URL must be provided via --dart-define');
-    }
-    if (_supabaseAnonKey.isEmpty) {
-      throw StateError('SUPABASE_ANON_KEY must be provided via --dart-define');
-    }
-
+    // Always succeeds — production defaults are always present
     await Supabase.initialize(
-      url: _supabaseUrl,
-      anonKey: _supabaseAnonKey,
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
     );
+
+    if (kDebugMode) {
+      final isLocal = supabaseUrl.contains('127.0.0.1') ||
+          supabaseUrl.contains('localhost');
+      debugPrint(
+        '[Supabase] Initialized → ${isLocal ? "LOCAL" : "PRODUCTION"} '
+        '($supabaseUrl)',
+      );
+    }
   }
 
   /// Initialize deep link listener for auth callbacks AND widget deep links.

@@ -42,7 +42,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>27</string>
+	<string>40</string>
 	<key>NSCameraUsageDescription</key>
 	<string>iWorkr requires camera access to scan equipment barcodes and capture mandatory photographic evidence for job completion.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -87,6 +87,15 @@
 					<string>FlutterSceneDelegate</string>
 					<key>UISceneStoryboardFile</key>
 					<string>Main</string>
+				</dict>
+			</array>
+			<key>UISceneSessionRoleCarPlay</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>iWorkr CarPlay</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate</string>
 				</dict>
 			</array>
 		</dict>

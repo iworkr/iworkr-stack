@@ -5,9 +5,11 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:iworkr_mobile/core/database/app_database.dart';
+import 'package:iworkr_mobile/core/services/mobile_telemetry_engine.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/models/job.dart';
 
@@ -61,6 +63,7 @@ class SyncEngine {
     ]);
   }
 
+  // AUDIT-FLAG: Hydration methods silently swallow ALL exceptions with catch(_){}. No telemetry, no user feedback. If initial sync fails, local DB stays empty.
   Future<void> _hydrateJobs(String orgId) async {
     try {
       final lastSync = await _db.lastSyncTime('jobs');
@@ -346,7 +349,14 @@ class SyncEngine {
     onStatusChange?.call(SyncStatus.syncing);
 
     try {
-      final pending = await _db.pendingMutations();
+      var pending = await _db.pendingMutations();
+      if (pending.isEmpty) {
+        final retryableFailed = await _db.failedMutations(limit: 10);
+        if (retryableFailed.isNotEmpty) {
+          await _db.resetToPending(retryableFailed.map((e) => e.id).toList());
+          pending = await _db.pendingMutations();
+        }
+      }
       if (pending.isEmpty) {
         onStatusChange?.call(SyncStatus.synced);
         return;
@@ -361,9 +371,23 @@ class SyncEngine {
           onStatusChange?.call(SyncStatus.offline);
           return;
         } catch (e) {
+          if (e is PostgrestException && (e.code ?? '').startsWith('PGRST')) {
+            unawaited(MobileTelemetryEngine.instance.captureAndReport(
+              e,
+              StackTrace.current,
+              source: 'sync_engine',
+              fatal: false,
+              extra: <String, dynamic>{
+                'entity_type': item.entityType,
+                'entity_id': item.entityId,
+                'pgrst_code': e.code,
+              },
+            ));
+          }
           await _db.incrementRetry(item.id);
           if (item.retryCount >= 4) {
             await _db.markFailed(item.id, e.toString());
+            onStatusChange?.call(SyncStatus.failed);
           }
         }
       }
@@ -375,15 +399,41 @@ class SyncEngine {
 
   Future<void> _processMutation(SyncQueueData item) async {
     final payload = jsonDecode(item.payload) as Map<String, dynamic>;
+    if (item.entityType == 'telemetry_event') {
+      await SupabaseService.client.functions.invoke(
+        'ingest-telemetry',
+        body: payload,
+      );
+      return;
+    }
     final table = _resolveTable(item.entityType);
 
     switch (item.action) {
       case 'INSERT':
         await SupabaseService.client.from(table).insert(payload);
+        break;
       case 'UPDATE':
-        await SupabaseService.client.from(table).update(payload).eq('id', item.entityId);
+        final updated = await SupabaseService.client
+            .from(table)
+            .update(payload)
+            .eq('id', item.entityId)
+            .select('id')
+            .maybeSingle();
+        if (updated == null) {
+          throw StateError('No rows updated for ${item.entityType}/${item.entityId}');
+        }
+        break;
       case 'DELETE':
-        await SupabaseService.client.from(table).delete().eq('id', item.entityId);
+        final deleted = await SupabaseService.client
+            .from(table)
+            .delete()
+            .eq('id', item.entityId)
+            .select('id')
+            .maybeSingle();
+        if (deleted == null) {
+          throw StateError('No rows deleted for ${item.entityType}/${item.entityId}');
+        }
+        break;
     }
   }
 
@@ -405,6 +455,9 @@ class SyncEngine {
 final syncEngineProvider = Provider<SyncEngine>((ref) {
   final db = ref.watch(appDatabaseProvider);
   final engine = SyncEngine(db, ref);
+  engine.onStatusChange = (status) {
+    ref.read(syncStatusProvider.notifier).state = status;
+  };
   ref.onDispose(() => engine.dispose());
   return engine;
 });

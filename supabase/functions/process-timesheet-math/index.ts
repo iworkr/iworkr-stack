@@ -82,6 +82,41 @@ function hoursBetween(start: string, end: string): number {
   return Math.round(((new Date(end).getTime() - new Date(start).getTime()) / 3600000) * 100) / 100;
 }
 
+interface TimeSegment {
+  start: string;
+  end: string;
+  hours: number;
+  date: string;
+  dayOfWeek: number;
+}
+
+function splitAtMidnight(clockIn: string, clockOut: string): TimeSegment[] {
+  const segments: TimeSegment[] = [];
+  let current = new Date(clockIn);
+  const end = new Date(clockOut);
+
+  while (current < end) {
+    // Calculate next midnight
+    const nextMidnight = new Date(current);
+    nextMidnight.setHours(24, 0, 0, 0);
+
+    const segmentEnd = nextMidnight < end ? nextMidnight : end;
+    const hours = (segmentEnd.getTime() - current.getTime()) / 3600000;
+
+    segments.push({
+      start: current.toISOString(),
+      end: segmentEnd.toISOString(),
+      hours: Math.round(hours * 100) / 100,
+      date: current.toISOString().split("T")[0],
+      dayOfWeek: current.getDay(),
+    });
+
+    current = nextMidnight;
+  }
+
+  return segments;
+}
+
 // ── SCHADS Award Interpretation ──────────────────────────────────────────────
 
 function interpretSCHADS(
@@ -90,92 +125,108 @@ function interpretSCHADS(
   breakMinutes: number,
   isPublicHoliday: boolean,
   weeklyHoursSoFar: number,
+  isPublicHolidayByDate?: (date: string) => boolean,
 ): AwardInterpretation {
   const rawHours = hoursBetween(clockIn, clockOut);
   const netHours = Math.max(0, rawHours - breakMinutes / 60);
-  const dayOfWeek = getDayOfWeek(clockIn);
+  const breakRatio = rawHours > 0 ? netHours / rawHours : 1;
   const categories: PayrollCategory[] = [];
   const allowances: Allowance[] = [];
 
-  if (isPublicHoliday) {
-    categories.push({
-      code: "PH_250",
-      hours: netHours,
-      rate_multiplier: SCHADS_RULES.public_holiday_multiplier,
-      description: "Public Holiday (250%)",
-    });
-  } else if (dayOfWeek === 0) {
-    categories.push({
-      code: "SUN_200",
-      hours: netHours,
-      rate_multiplier: SCHADS_RULES.sunday_multiplier,
-      description: "Sunday (200%)",
-    });
-  } else if (dayOfWeek === 6) {
-    categories.push({
-      code: "SAT_150",
-      hours: netHours,
-      rate_multiplier: SCHADS_RULES.saturday_multiplier,
-      description: "Saturday (150%)",
-    });
-  } else {
-    // Weekday — split by time-of-day loadings and overtime
-    const clockInHour = getHourOfDay(clockIn);
-    const clockOutHour = getHourOfDay(clockOut);
+  // Split across midnight boundaries
+  const segments = splitAtMidnight(clockIn, clockOut);
 
-    let ordinaryHours = Math.min(netHours, SCHADS_RULES.overtime_threshold_daily);
-    let overtimeHours = Math.max(0, netHours - SCHADS_RULES.overtime_threshold_daily);
+  for (const segment of segments) {
+    const segNetHours = Math.round(segment.hours * breakRatio * 100) / 100;
+    if (segNetHours <= 0) continue;
 
-    // Check weekly overtime threshold
-    if (weeklyHoursSoFar + ordinaryHours > SCHADS_RULES.ordinary_hours_weekly) {
-      const weeklyOT = (weeklyHoursSoFar + ordinaryHours) - SCHADS_RULES.ordinary_hours_weekly;
-      ordinaryHours = Math.max(0, ordinaryHours - weeklyOT);
-      overtimeHours += weeklyOT;
-    }
+    // Determine if this segment's date is a public holiday
+    const segIsHoliday = isPublicHolidayByDate
+      ? isPublicHolidayByDate(segment.date)
+      : (isPublicHoliday && segments.length === 1);
 
-    // Evening loading (after 8pm)
-    const eveningHours = clockOutHour >= SCHADS_RULES.evening_start || clockInHour >= SCHADS_RULES.evening_start
-      ? Math.min(ordinaryHours, 2) : 0;
-    const standardHours = ordinaryHours - eveningHours;
-
-    if (standardHours > 0) {
+    if (segIsHoliday) {
       categories.push({
-        code: "BASE_ORD",
-        hours: Math.round(standardHours * 100) / 100,
-        rate_multiplier: 1.0,
-        description: "Ordinary Hours",
+        code: "PH_250",
+        hours: segNetHours,
+        rate_multiplier: SCHADS_RULES.public_holiday_multiplier,
+        description: `Public Holiday (250%) — ${segment.date}`,
       });
-    }
-
-    if (eveningHours > 0) {
+    } else if (segment.dayOfWeek === 0) {
       categories.push({
-        code: "EVE_LOAD",
-        hours: Math.round(eveningHours * 100) / 100,
-        rate_multiplier: 1.0 + SCHADS_RULES.evening_loading,
-        description: "Evening Loading (112.5%)",
+        code: "SUN_200",
+        hours: segNetHours,
+        rate_multiplier: SCHADS_RULES.sunday_multiplier,
+        description: `Sunday (200%) — ${segment.date}`,
       });
-    }
+    } else if (segment.dayOfWeek === 6) {
+      categories.push({
+        code: "SAT_150",
+        hours: segNetHours,
+        rate_multiplier: SCHADS_RULES.saturday_multiplier,
+        description: `Saturday (150%) — ${segment.date}`,
+      });
+    } else {
+      // Weekday — check time-of-day loadings
+      const segStartHour = new Date(segment.start).getHours();
 
-    if (overtimeHours > 0) {
-      const ot15 = Math.min(overtimeHours, SCHADS_RULES.overtime_1_5_max_hours);
-      const ot20 = Math.max(0, overtimeHours - SCHADS_RULES.overtime_1_5_max_hours);
-
-      if (ot15 > 0) {
+      if (segStartHour >= SCHADS_RULES.evening_start || segStartHour < SCHADS_RULES.night_end) {
+        // Night/evening hours
+        const loading = segStartHour >= SCHADS_RULES.evening_start
+          ? SCHADS_RULES.evening_loading
+          : SCHADS_RULES.night_loading;
         categories.push({
-          code: "OVERTIME_1.5",
-          hours: Math.round(ot15 * 100) / 100,
-          rate_multiplier: 1.5,
-          description: "Overtime (150%)",
+          code: segStartHour >= SCHADS_RULES.evening_start ? "EVE_LOAD" : "NIGHT_LOAD",
+          hours: segNetHours,
+          rate_multiplier: 1.0 + loading,
+          description: `${segStartHour >= SCHADS_RULES.evening_start ? "Evening" : "Night"} Loading (${Math.round((1 + loading) * 100)}%) — ${segment.date}`,
+        });
+      } else {
+        categories.push({
+          code: "BASE_ORD",
+          hours: segNetHours,
+          rate_multiplier: 1.0,
+          description: `Ordinary Hours — ${segment.date}`,
         });
       }
-      if (ot20 > 0) {
-        categories.push({
-          code: "OVERTIME_2.0",
-          hours: Math.round(ot20 * 100) / 100,
-          rate_multiplier: 2.0,
-          description: "Overtime (200%)",
-        });
-      }
+    }
+  }
+
+  // Apply overtime on top: check if total exceeds daily threshold
+  let totalOrdinary = categories.reduce((sum, c) => sum + c.hours, 0);
+  if (totalOrdinary > SCHADS_RULES.overtime_threshold_daily) {
+    const overtimeHours = totalOrdinary - SCHADS_RULES.overtime_threshold_daily;
+    const ot15 = Math.min(overtimeHours, SCHADS_RULES.overtime_1_5_max_hours);
+    const ot20 = Math.max(0, overtimeHours - SCHADS_RULES.overtime_1_5_max_hours);
+
+    if (ot15 > 0) {
+      categories.push({
+        code: "OVERTIME_1.5",
+        hours: Math.round(ot15 * 100) / 100,
+        rate_multiplier: 1.5,
+        description: "Overtime (150%)",
+      });
+    }
+    if (ot20 > 0) {
+      categories.push({
+        code: "OVERTIME_2.0",
+        hours: Math.round(ot20 * 100) / 100,
+        rate_multiplier: 2.0,
+        description: "Overtime (200%)",
+      });
+    }
+  }
+
+  // Weekly overtime check
+  if (weeklyHoursSoFar + totalOrdinary > SCHADS_RULES.ordinary_hours_weekly) {
+    const weeklyOT = Math.max(0, (weeklyHoursSoFar + totalOrdinary) - SCHADS_RULES.ordinary_hours_weekly);
+    if (weeklyOT > 0) {
+      categories.push({
+        code: "WEEKLY_OT",
+        hours: Math.round(weeklyOT * 100) / 100,
+        rate_multiplier: 1.5,
+        description: "Weekly Overtime (150%) — exceeds 38h threshold",
+      });
     }
   }
 
@@ -189,7 +240,7 @@ function interpretSCHADS(
     allowances,
     total_hours: Math.round(netHours * 100) / 100,
     total_cost_multiplied_hours: Math.round(totalCostMultiplied * 100) / 100,
-    engine_version: "schads-v1.0",
+    engine_version: "schads-v2.0-terminus",
     processed_at: new Date().toISOString(),
   };
 }
@@ -368,6 +419,20 @@ Deno.serve(async (req) => {
 
     const isPublicHoliday = (holidays || []).length > 0;
 
+    // Build a per-date holiday lookup for split shifts
+    const clockOutDate = entry.clock_out.split("T")[0];
+    const allDates = [clockInDate];
+    if (clockOutDate !== clockInDate) allDates.push(clockOutDate);
+
+    const { data: allHolidays } = await supabase
+      .from("public_holidays")
+      .select("date")
+      .eq("organization_id", organization_id)
+      .in("date", allDates);
+
+    const holidaySet = new Set((allHolidays || []).map((h: { date: string }) => h.date));
+    const isPublicHolidayByDate = (date: string) => holidaySet.has(date);
+
     // 4. Get weekly hours so far (for cumulative overtime)
     const entryDate = new Date(entry.clock_in);
     const dayOfWeek = entryDate.getDay();
@@ -392,7 +457,7 @@ Deno.serve(async (req) => {
 
     // 5. Run the appropriate award engine
     const interpretation = industryType === "care"
-      ? interpretSCHADS(entry.clock_in, entry.clock_out, entry.break_minutes || 0, isPublicHoliday, weeklyHoursSoFar)
+      ? interpretSCHADS(entry.clock_in, entry.clock_out, entry.break_minutes || 0, isPublicHoliday, weeklyHoursSoFar, isPublicHolidayByDate)
       : interpretTrades(entry.clock_in, entry.clock_out, entry.break_minutes || 0, isPublicHoliday, weeklyHoursSoFar);
 
     // 6. Write interpretation back to the time entry

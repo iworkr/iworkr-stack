@@ -255,6 +255,7 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
   void _showNewDmSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => _NewDmSheet(parentRef: ref),
@@ -269,6 +270,7 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),

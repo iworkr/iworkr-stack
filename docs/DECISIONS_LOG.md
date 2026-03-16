@@ -17,6 +17,13 @@
 
 ## Decisions
 
+### 2026-03-14 — Project Synapse v1 delivered as compatibility-first extension
+- **Decision**: Implemented `Project Synapse` by extending the existing `integrations` architecture (instead of replacing it with a brand-new parallel model) with new primitives: `external_mappings`, `integration_webhooks`, `integration_sync_queue`, and hardened `integration_sync_log`.
+- **Why**: The product already had production integrations and UI flows wired to `integrations`; replacing that layer would risk regressions across billing, scheduling, and onboarding. Compatibility-first unlocks immediate webhook ingestion + sync radar while preserving current behavior.
+- **Alternatives considered**: Introduce a new `connected_integrations` table and migrate all app code in one release; build per-provider webhook handlers only.
+- **Consequences**: Faster rollout with lower migration risk, but provider-specific enrichment still requires credentials and tenant-level mappings (`INCOMPLETE:BLOCKED` trails added in queue/ingest functions).
+- **Owner**: Architecture
+
 ### 2026-02-27 — Claude Code configuration with full rules, skills, agents, and workflows
 - **Decision**: Established comprehensive Claude Code setup with `.claude/rules/`, `.claude/skills/`, `.claude/agents/`, `workflows/`, and `docs/STYLE_GUIDE.md` as canonical references.
 - **Why**: Ensure consistent, high-quality output from Claude Code sessions. Enforce iWorkr's Obsidian design system, multi-tenancy security patterns, and INCOMPLETE trail conventions.

@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
+import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/care_shift.dart';
@@ -74,6 +76,11 @@ class _MyShiftsScreenState extends ConsumerState<MyShiftsScreen> {
 
     return Scaffold(
       backgroundColor: c.canvas,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showUnscheduledSupportSheet(context),
+        backgroundColor: ObsidianTheme.careBlue,
+        child: const Icon(PhosphorIconsFill.plus, color: Colors.white, size: 22),
+      ),
       body: CustomScrollView(
         slivers: [
           // ── Glass App Bar ──────────────────────────────
@@ -271,6 +278,7 @@ class _MyShiftsScreenState extends ConsumerState<MyShiftsScreen> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => Container(
@@ -312,6 +320,357 @@ class _MyShiftsScreenState extends ConsumerState<MyShiftsScreen> {
                 ),
               ),
             )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUnscheduledSupportSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _LogUnscheduledSupportSheet(),
+    );
+  }
+}
+
+class _ParticipantOption {
+  final String id;
+  final String label;
+  const _ParticipantOption({required this.id, required this.label});
+}
+
+final _unscheduledParticipantsProvider =
+    FutureProvider<List<_ParticipantOption>>((ref) async {
+  final orgId = await ref.watch(organizationIdProvider.future);
+  if (orgId == null) return const [];
+
+  final rows = await SupabaseService.client
+      .from('participant_profiles')
+      .select('id, preferred_name')
+      .eq('organization_id', orgId)
+      .order('preferred_name');
+
+  return (rows as List).map((row) {
+    final name = ((row['preferred_name'] as String?) ?? '').trim();
+    return _ParticipantOption(
+      id: row['id'] as String,
+      label: name.isEmpty ? 'Unnamed participant' : name,
+    );
+  }).toList();
+});
+
+class _LogUnscheduledSupportSheet extends ConsumerStatefulWidget {
+  const _LogUnscheduledSupportSheet();
+
+  @override
+  ConsumerState<_LogUnscheduledSupportSheet> createState() =>
+      _LogUnscheduledSupportSheetState();
+}
+
+class _LogUnscheduledSupportSheetState
+    extends ConsumerState<_LogUnscheduledSupportSheet> {
+  final _justificationCtrl = TextEditingController();
+  String? _participantId;
+  String _category = 'Community Access';
+  DateTime _supportAt = DateTime.now();
+  int _durationHours = 2;
+  bool _saving = false;
+
+  static const _categories = [
+    'Community Access',
+    'In-Home Support',
+    'Transport',
+    'Personal Care',
+    'SIL',
+    'Therapy',
+  ];
+
+  @override
+  void dispose() {
+    _justificationCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_participantId == null || _justificationCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Participant and justification are required.',
+              style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: ObsidianTheme.amber,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final orgId = await ref.read(organizationIdProvider.future);
+      final userId = SupabaseService.auth.currentUser?.id;
+      if (orgId == null || userId == null) {
+        throw StateError('Unable to resolve worker organization.');
+      }
+
+      final start = _supportAt.toUtc();
+      final end = start.add(Duration(hours: _durationHours));
+
+      await SupabaseService.client.from('schedule_blocks').insert({
+        'organization_id': orgId,
+        'participant_id': _participantId,
+        'technician_id': userId,
+        'title': 'Unscheduled Support — $_category',
+        'client_name': null,
+        'start_time': start.toIso8601String(),
+        'end_time': end.toIso8601String(),
+        'status': 'scheduled',
+        'metadata': {
+          'approval_status': 'pending_approval',
+          'is_unscheduled_support': true,
+          'support_category': _category,
+          'justification': _justificationCtrl.text.trim(),
+          'submitted_by_worker_id': userId,
+          'submitted_at': DateTime.now().toUtc().toIso8601String(),
+        },
+      });
+
+      ref.invalidate(myCareShiftsProvider);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Unscheduled support submitted for coordinator approval.',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: ObsidianTheme.careBlue,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit: $e',
+              style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: ObsidianTheme.rose,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    final participantsAsync = ref.watch(_unscheduledParticipantsProvider);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+          16, 14, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+      decoration: BoxDecoration(
+        color: c.canvas,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: c.border),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: c.borderMedium, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text('Log Unscheduled Support',
+                style: GoogleFonts.inter(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary)),
+            const SizedBox(height: 14),
+            Text('PARTICIPANT',
+                style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11, color: c.textTertiary, letterSpacing: 0.8)),
+            const SizedBox(height: 6),
+            participantsAsync.when(
+              loading: () => const LinearProgressIndicator(minHeight: 2),
+              error: (e, _) => Text('Unable to load participants: $e',
+                  style: GoogleFonts.inter(color: ObsidianTheme.rose)),
+              data: (participants) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: c.border),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _participantId,
+                    isExpanded: true,
+                    hint: Text('Select participant',
+                        style: GoogleFonts.inter(color: c.textTertiary)),
+                    items: participants
+                        .map((p) => DropdownMenuItem<String>(
+                              value: p.id,
+                              child: Text(p.label,
+                                  style: GoogleFonts.inter(color: c.textPrimary)),
+                            ))
+                        .toList(),
+                    onChanged: _saving
+                        ? null
+                        : (value) => setState(() => _participantId = value),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('SUPPORT CATEGORY',
+                style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11, color: c.textTertiary, letterSpacing: 0.8)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _categories
+                  .map((cat) => ChoiceChip(
+                        label: Text(cat),
+                        selected: _category == cat,
+                        onSelected: _saving
+                            ? null
+                            : (_) => setState(() => _category = cat),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 12),
+            Text('WHEN + DURATION',
+                style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11, color: c.textTertiary, letterSpacing: 0.8)),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _saving
+                        ? null
+                        : () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _supportAt,
+                              firstDate: DateTime.now()
+                                  .subtract(const Duration(days: 14)),
+                              lastDate:
+                                  DateTime.now().add(const Duration(days: 30)),
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                _supportAt = DateTime(picked.year, picked.month,
+                                    picked.day, _supportAt.hour, _supportAt.minute);
+                              });
+                            }
+                          },
+                    child: Text(DateFormat('EEE d MMM').format(_supportAt)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _saving
+                        ? null
+                        : () async {
+                            final t = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.fromDateTime(_supportAt),
+                            );
+                            if (t != null) {
+                              setState(() {
+                                _supportAt = DateTime(_supportAt.year,
+                                    _supportAt.month, _supportAt.day, t.hour, t.minute);
+                              });
+                            }
+                          },
+                    child: Text(DateFormat('h:mm a').format(_supportAt)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 84,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: c.border),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _durationHours,
+                        items: const [1, 2, 3, 4, 5, 6]
+                            .map((h) => DropdownMenuItem<int>(
+                                  value: h,
+                                  child: Text('${h}h'),
+                                ))
+                            .toList(),
+                        onChanged: _saving
+                            ? null
+                            : (v) => setState(() => _durationHours = v ?? 2),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text('JUSTIFICATION',
+                style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11, color: c.textTertiary, letterSpacing: 0.8)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _justificationCtrl,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Why was this not rostered?',
+                hintStyle: GoogleFonts.inter(color: c.textTertiary),
+                filled: true,
+                fillColor: c.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: c.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: c.border),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton(
+                onPressed: _saving ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ObsidianTheme.careBlue,
+                  foregroundColor: Colors.white,
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Submit For Approval'),
+              ),
+            ),
           ],
         ),
       ),

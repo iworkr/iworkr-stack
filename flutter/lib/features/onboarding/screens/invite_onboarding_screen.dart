@@ -565,16 +565,20 @@ class _InviteOnboardingScreenState extends ConsumerState<InviteOnboardingScreen>
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: onTap != null && !_submitting ? Colors.white : Colors.white.withValues(alpha: 0.15),
+          color: onTap != null && !_submitting
+              ? context.iColors.textPrimary
+              : context.iColors.textPrimary.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: _submitting
-              ? const CupertinoActivityIndicator(color: Colors.black)
+              ? CupertinoActivityIndicator(color: context.iColors.canvas)
               : Text(label, style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: onTap != null ? Colors.black : Colors.white.withValues(alpha: 0.3),
+                  color: onTap != null
+                      ? context.iColors.canvas
+                      : context.iColors.textPrimary.withValues(alpha: 0.3),
                 )),
         ),
       ),

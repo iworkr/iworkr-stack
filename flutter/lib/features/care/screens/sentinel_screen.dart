@@ -96,7 +96,7 @@ class _SentinelScreenState extends ConsumerState<SentinelScreen> {
               GestureDetector(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  // TODO: Sentinel settings / scan history
+                  // INCOMPLETE:TODO(Sentinel settings and scan history route not wired yet; action button is currently non-functional).
                 },
                 child: Padding(
                   padding: const EdgeInsets.only(right: 16),
@@ -265,6 +265,7 @@ class _SentinelScreenState extends ConsumerState<SentinelScreen> {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _AlertActionSheet(alert: alert),

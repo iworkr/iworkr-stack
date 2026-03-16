@@ -25,6 +25,7 @@ import {
   Cpu,
   Shield,
 } from "lucide-react";
+import Link from "next/link";
 import { getSystemStats, getAuditLogs } from "@/app/actions/superadmin";
 
 /* ── Stat Card ────────────────────────────────────────────────── */
@@ -142,6 +143,13 @@ export default function SystemPage() {
           <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
           Refresh
         </button>
+        <Link
+          href="/olympus/system/dlq"
+          className="ml-2 inline-flex items-center gap-1.5 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-medium text-emerald-300 hover:bg-emerald-500/20"
+        >
+          <AlertTriangle size={11} />
+          Open DLQ
+        </Link>
       </div>
 
       <div className="p-8 space-y-8">

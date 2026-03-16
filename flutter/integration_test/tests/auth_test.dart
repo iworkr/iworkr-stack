@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:integration_test/integration_test.dart';
 import '../robots/login_robot.dart';
 import '../robots/dashboard_robot.dart';
@@ -16,6 +17,11 @@ void authTests(IntegrationTestWidgetsFlutterBinding binding) {
 
     setUp(() {
       screenshots = ScreenshotHelper(binding);
+    });
+
+    setUp(() async {
+      // Ensure deterministic auth start state for login-screen tests.
+      await Supabase.instance.client.auth.signOut();
     });
 
     qaseTestWidgets('AUTH-001: Login screen displays correctly', (
@@ -152,3 +158,7 @@ void authTests(IntegrationTestWidgetsFlutterBinding binding) {
     });
   });
 }
+
+// Patrol bundles *_test.dart files and expects a main() in each target.
+// This file is orchestrated by app_test.dart, so keep this no-op entrypoint.
+void main() {}

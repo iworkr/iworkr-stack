@@ -16,6 +16,7 @@ import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 void showAiCortex(BuildContext context, {String? jobId}) {
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => AiCortexSheet(jobId: jobId),

@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/medications_provider.dart';
+import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/participant_medication.dart';
@@ -21,7 +22,9 @@ import 'package:iworkr_mobile/models/participant_medication.dart';
 // record administration events for care participants.
 
 class MedicationsScreen extends ConsumerStatefulWidget {
-  const MedicationsScreen({super.key});
+  final String? participantId;
+  final String? shiftId;
+  const MedicationsScreen({super.key, this.participantId, this.shiftId});
 
   @override
   ConsumerState<MedicationsScreen> createState() => _MedicationsScreenState();
@@ -34,6 +37,8 @@ class _MedicationsScreenState extends ConsumerState<MedicationsScreen> {
   Widget build(BuildContext context) {
     final c = context.iColors;
     final medsAsync = ref.watch(medicationsStreamProvider);
+    final activeShiftState = ref.watch(activeShiftStateProvider);
+    final contextualParticipantId = widget.participantId ?? activeShiftState.participantId;
 
     return Scaffold(
       backgroundColor: c.canvas,
@@ -73,20 +78,46 @@ class _MedicationsScreenState extends ConsumerState<MedicationsScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: medsAsync.when(
+              child: Column(
+                children: [
+                  if (contextualParticipantId == null)
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: ObsidianTheme.amber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: ObsidianTheme.amber.withValues(alpha: 0.35)),
+                      ),
+                      child: Text(
+                        'Open from an active shift to scope medications to one participant.',
+                        style: GoogleFonts.inter(
+                            fontSize: 12, color: ObsidianTheme.amber),
+                      ),
+                    ),
+                  medsAsync.when(
                 loading: () => const SizedBox(height: 56),
                 error: (_, __) => const SizedBox(height: 56),
-                data: (meds) => Row(
+                data: (meds) {
+                  final scoped = contextualParticipantId == null
+                      ? meds
+                      : meds.where((m) => m.participantId == contextualParticipantId).toList();
+                  return Row(
                   children: [
-                    _SummaryTile(icon: PhosphorIconsLight.pill, label: 'Active', value: '${meds.length}', color: ObsidianTheme.careBlue),
+                    _SummaryTile(icon: PhosphorIconsLight.pill, label: 'Active', value: '${scoped.length}', color: ObsidianTheme.careBlue),
                     const SizedBox(width: 8),
-                    _SummaryTile(icon: PhosphorIconsLight.clockAfternoon, label: 'PRN', value: '${meds.where((m) => m.isPrn).length}', color: ObsidianTheme.blue),
+                    _SummaryTile(icon: PhosphorIconsLight.clockAfternoon, label: 'PRN', value: '${scoped.where((m) => m.isPrn).length}', color: ObsidianTheme.blue),
                     const SizedBox(width: 8),
                     _SummaryTile(icon: PhosphorIconsLight.warning, label: 'Ending Soon',
-                        value: '${meds.where((m) => m.endDate != null && m.endDate!.difference(DateTime.now()).inDays <= 14 && m.endDate!.isAfter(DateTime.now())).length}',
+                        value: '${scoped.where((m) => m.endDate != null && m.endDate!.difference(DateTime.now()).inDays <= 14 && m.endDate!.isAfter(DateTime.now())).length}',
                         color: ObsidianTheme.amber),
                   ],
-                ),
+                );
+                },
+              ),
+                ],
               ),
             ).animate().fadeIn(duration: 300.ms).moveY(begin: 8, end: 0),
           ),
@@ -126,7 +157,9 @@ class _MedicationsScreenState extends ConsumerState<MedicationsScreen> {
               child: Center(child: Text('Error: $e', style: TextStyle(color: c.textTertiary))),
             ),
             data: (meds) {
-              var filtered = meds;
+              var filtered = contextualParticipantId == null
+                  ? meds
+                  : meds.where((m) => m.participantId == contextualParticipantId).toList();
               if (_searchQuery.isNotEmpty) {
                 filtered = filtered.where((m) =>
                     m.medicationName.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
@@ -218,6 +251,7 @@ class _MedicationCard extends StatelessWidget {
         HapticFeedback.mediumImpact();
         showModalBottomSheet(
           context: context,
+          useRootNavigator: true,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (_) => _RecordMARSheet(medication: medication),
@@ -335,10 +369,10 @@ class _RecordMARSheet extends ConsumerStatefulWidget {
 
 class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
   final _notesCtrl = TextEditingController();
-  final _witnessCtrl = TextEditingController();
   final _refusalReasonCtrl = TextEditingController();
   MAROutcome _selectedOutcome = MAROutcome.given;
   bool _submitting = false;
+  String? _selectedWitnessId;
 
   // Only show outcomes that are actionable (not pending)
   static const _selectableOutcomes = [
@@ -351,7 +385,6 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
   @override
   void dispose() {
     _notesCtrl.dispose();
-    _witnessCtrl.dispose();
     _refusalReasonCtrl.dispose();
     super.dispose();
   }
@@ -362,6 +395,9 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
     MAROutcome.withheld => PhosphorIconsLight.pause,
     MAROutcome.notAvailable => PhosphorIconsLight.questionMark,
     MAROutcome.pending => PhosphorIconsLight.clock,
+    MAROutcome.vomited => PhosphorIconsLight.warningCircle,
+    MAROutcome.dropped => PhosphorIconsLight.arrowDown,
+    MAROutcome.selfAdministered => PhosphorIconsLight.user,
   };
 
   Color _outcomeColor(MAROutcome outcome) => switch (outcome) {
@@ -370,6 +406,9 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
     MAROutcome.withheld => ObsidianTheme.amber,
     MAROutcome.notAvailable => ObsidianTheme.textTertiary,
     MAROutcome.pending => ObsidianTheme.textTertiary,
+    MAROutcome.vomited => ObsidianTheme.rose,
+    MAROutcome.dropped => ObsidianTheme.amber,
+    MAROutcome.selfAdministered => ObsidianTheme.careBlue,
   };
 
   Future<void> _submit() async {
@@ -377,23 +416,29 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
 
     setState(() => _submitting = true);
     try {
-      await recordAdministration(
+      final saved = await recordAdministration(
         medicationId: widget.medication.id,
         scheduledTime: DateTime.now(),
         outcome: _selectedOutcome,
         notes: _notesCtrl.text.trim().isNotEmpty ? _notesCtrl.text.trim() : null,
-        witnessedBy: _witnessCtrl.text.trim().isNotEmpty ? _witnessCtrl.text.trim() : null,
+        witnessedBy: _selectedWitnessId,
         refusalReason: _selectedOutcome == MAROutcome.refused
             ? _refusalReasonCtrl.text.trim()
             : null,
       );
+      if (saved == null) {
+        throw StateError('Administration was not saved. Please try again.');
+      }
+
+      ref.invalidate(marEntriesProvider(widget.medication.id));
+      ref.invalidate(todaysPendingMARProvider);
 
       HapticFeedback.mediumImpact();
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Administration recorded — ${_selectedOutcome.label}',
+            content: Text('Administration saved — ${_selectedOutcome.label}',
                 style: GoogleFonts.inter(color: Colors.white)),
             backgroundColor: _outcomeColor(_selectedOutcome),
             behavior: SnackBarBehavior.floating,
@@ -420,6 +465,7 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
   Widget build(BuildContext context) {
     final c = context.iColors;
     final med = widget.medication;
+    final witnessesAsync = ref.watch(eligibleWitnessesProvider);
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
@@ -557,9 +603,93 @@ class _RecordMARSheetState extends ConsumerState<_RecordMARSheet> {
                 Text('Optional — required for S8 medications', style: GoogleFonts.inter(
                     fontSize: 12, color: c.textDisabled)),
                 const SizedBox(height: 6),
-                _MARTextField(
-                  controller: _witnessCtrl,
-                  hint: 'Full name of witness',
+                witnessesAsync.when(
+                  loading: () => Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: c.border),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  error: (err, _) => Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.35)),
+                    ),
+                    child: Text(
+                      'Unable to load witnesses: $err',
+                      style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.rose),
+                    ),
+                  ),
+                  data: (witnesses) {
+                    if (witnesses.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: c.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: c.border),
+                        ),
+                        child: Text(
+                          'No active staff profiles available.',
+                          style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
+                        ),
+                      );
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: c.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: c.border),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedWitnessId,
+                          hint: Text(
+                            'Select witness',
+                            style: GoogleFonts.inter(fontSize: 14, color: c.textTertiary),
+                          ),
+                          dropdownColor: c.surface,
+                          iconEnabledColor: c.textSecondary,
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: '',
+                              child: Text(
+                                'No witness',
+                                style: GoogleFonts.inter(fontSize: 14, color: c.textSecondary),
+                              ),
+                            ),
+                            ...witnesses.map((w) => DropdownMenuItem<String>(
+                                  value: w.id,
+                                  child: Text(
+                                    w.label,
+                                    style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
+                                  ),
+                                )),
+                          ],
+                          onChanged: _submitting
+                              ? null
+                              : (value) => setState(
+                                    () => _selectedWitnessId =
+                                        (value == null || value.isEmpty) ? null : value,
+                                  ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
               ],

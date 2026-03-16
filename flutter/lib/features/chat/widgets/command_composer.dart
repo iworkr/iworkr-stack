@@ -74,6 +74,7 @@ class CommandComposerState extends State<CommandComposer> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => _MemberPickerSheet(
@@ -92,6 +93,7 @@ class CommandComposerState extends State<CommandComposer> {
     HapticFeedback.selectionClick();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => _JobReferencePicker(
@@ -120,6 +122,7 @@ class CommandComposerState extends State<CommandComposer> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: BoxDecoration(
@@ -176,6 +179,7 @@ class CommandComposerState extends State<CommandComposer> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: BoxDecoration(
@@ -257,6 +261,7 @@ class CommandComposerState extends State<CommandComposer> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(

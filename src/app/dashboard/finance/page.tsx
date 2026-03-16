@@ -372,13 +372,29 @@ export default function FinancePage() {
               </button>
             )}
             {isCare && (
-              <button
-                onClick={() => router.push("/dashboard/care/funding-engine")}
-                className="flex items-center gap-1 text-[var(--brand)] text-[12px] hover:underline"
-              >
-                Open Funding Engine
-                <ArrowRight size={11} />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => router.push("/dashboard/care/funding-engine")}
+                  className="flex items-center gap-1 text-[var(--brand)] text-[12px] hover:underline"
+                >
+                  Open Funding Engine
+                  <ArrowRight size={11} />
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/finance/travel")}
+                  className="flex items-center gap-1 text-cyan-400 text-[12px] hover:underline"
+                >
+                  Open Travel Ledger
+                  <ArrowRight size={11} />
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/finance/petty-cash")}
+                  className="flex items-center gap-1 text-emerald-400 text-[12px] hover:underline"
+                >
+                  Open Petty Cash
+                  <ArrowRight size={11} />
+                </button>
+              </div>
             )}
           </div>
           <div className="flex items-center gap-2">

@@ -123,6 +123,7 @@ function mapServerBlock(b: any): ScheduleBlock {
     id: b.id,
     jobId: b.job_id || "",
     technicianId: b.technician_id || "",
+    participantId: b.participant_id || undefined,
     title: b.title,
     client: b.client_name || "",
     location: b.location || "",
@@ -131,6 +132,8 @@ function mapServerBlock(b: any): ScheduleBlock {
     status: b.status,
     travelTime: b.travel_minutes || undefined,
     conflict: b.is_conflict || false,
+    parentShiftId: b.parent_shift_id || null,
+    isShadowShift: b.is_shadow_shift === true || b.metadata?.is_shadow_shift === true,
   };
 }
 
@@ -270,16 +273,26 @@ export const useScheduleStore = create<ScheduleState>()(
     const previousBlocks = [...get().blocks];
 
     /* ── Step 2: Optimistic local update ───────────────── */
+    const movedDelta = snappedHour - block.startHour;
     set((s) => ({
-      blocks: s.blocks.map((b) =>
-        b.id === blockId
-          ? {
-              ...b,
-              startHour: snappedHour,
-              ...(newTechId ? { technicianId: newTechId } : {}),
-            }
-          : b
-      ),
+      blocks: s.blocks.map((b) => {
+        if (b.id === blockId) {
+          return {
+            ...b,
+            startHour: snappedHour,
+            ...(newTechId ? { technicianId: newTechId } : {}),
+          };
+        }
+        // Shadow blocks visually tether to parent while dragging.
+        if (b.parentShiftId === blockId && b.isShadowShift) {
+          return {
+            ...b,
+            startHour: b.startHour + movedDelta,
+            ...(newTechId ? { technicianId: newTechId } : {}),
+          };
+        }
+        return b;
+      }),
     }));
 
     /* ── Step 3: Persist to server (UTC-normalized) ────── */
@@ -322,6 +335,7 @@ export const useScheduleStore = create<ScheduleState>()(
         body: JSON.stringify({
           organization_id: orgId,
           technician_id: techId,
+          participant_id: block.participantId,
           start_time: startISO,
           end_time: endISO,
           location: block.location,
@@ -357,9 +371,12 @@ export const useScheduleStore = create<ScheduleState>()(
 
     // Optimistic local update
     set((s) => ({
-      blocks: s.blocks.map((b) =>
-        b.id === blockId ? { ...b, duration: snapped } : b
-      ),
+      blocks: s.blocks.map((b) => {
+        if (b.id === blockId) return { ...b, duration: snapped };
+        // Shadow duration follows parent shift.
+        if (b.parentShiftId === blockId && b.isShadowShift) return { ...b, duration: snapped };
+        return b;
+      }),
     }));
 
     // Persist to server (UTC-normalized)

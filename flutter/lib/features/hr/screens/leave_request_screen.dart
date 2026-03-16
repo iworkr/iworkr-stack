@@ -10,6 +10,7 @@ import 'package:iworkr_mobile/core/services/timeclock_provider.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
+import 'package:iworkr_mobile/core/widgets/slide_to_act.dart';
 
 class LeaveRequestScreen extends ConsumerStatefulWidget {
   const LeaveRequestScreen({super.key});
@@ -23,6 +24,7 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
   Widget build(BuildContext context) {
     final c = context.iColors;
     final leaveAsync = ref.watch(leaveRequestsProvider);
+    final balanceAsync = ref.watch(leaveBalanceProvider);
 
     return Scaffold(
       backgroundColor: c.canvas,
@@ -77,11 +79,54 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _showEmergencySickSheet(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: ObsidianTheme.radiusMd,
+                        color: ObsidianTheme.amber.withValues(alpha: 0.15),
+                        border: Border.all(color: ObsidianTheme.amber.withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(PhosphorIconsLight.warningCircle, size: 14, color: ObsidianTheme.amber),
+                          const SizedBox(width: 4),
+                          Text(
+                            'I Cannot Work Today',
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: ObsidianTheme.amber),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             )
                 .animate()
                 .fadeIn(duration: 300.ms, curve: ObsidianTheme.easeOutExpo),
+
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: balanceAsync.when(
+                data: (balance) {
+                  final annual = (balance?['annual_leave_hours'] as num?)?.toDouble() ?? 0;
+                  final sick = (balance?['sick_leave_hours'] as num?)?.toDouble() ?? 0;
+                  return Row(
+                    children: [
+                      Expanded(child: _BalanceTile(label: 'Annual Balance', value: '${annual.toStringAsFixed(1)}h', color: ObsidianTheme.emerald)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _BalanceTile(label: 'Sick Balance', value: '${sick.toStringAsFixed(1)}h', color: ObsidianTheme.amber)),
+                    ],
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ),
 
             const SizedBox(height: 20),
 
@@ -124,6 +169,7 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -144,6 +190,99 @@ class _LeaveRequestScreenState extends ConsumerState<LeaveRequestScreen> {
           ref.invalidate(leaveRequestsProvider);
           if (context.mounted) Navigator.of(context).pop();
         },
+      ),
+    );
+  }
+
+  void _showEmergencySickSheet(BuildContext context) {
+    final c = context.iColors;
+    HapticFeedback.heavyImpact();
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: EdgeInsets.fromLTRB(16, 18, 16, MediaQuery.of(context).viewPadding.bottom + 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Emergency Sick Report',
+              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: c.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This instantly notifies your manager and starts drop & cover for your scheduled shifts today.',
+              style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary, height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            SlideToAct(
+              label: 'Slide to confirm illness',
+              color: ObsidianTheme.amber,
+              icon: PhosphorIconsLight.arrowFatLinesRight,
+              onSlideComplete: () async {
+                final orgId = await ref.read(organizationIdProvider.future);
+                if (orgId == null) return;
+                await reportEmergencySickToday(
+                  organizationId: orgId,
+                  reason: 'Emergency report from mobile leave screen',
+                );
+                ref.invalidate(leaveRequestsProvider);
+                if (mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Emergency sick logged. Rest mode activated.',
+                        style: GoogleFonts.inter(color: Colors.white),
+                      ),
+                      backgroundColor: ObsidianTheme.amber,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BalanceTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _BalanceTile({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: ObsidianTheme.radiusMd,
+        color: c.surface,
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: GoogleFonts.jetBrainsMono(fontSize: 9, letterSpacing: 1.2, color: c.textTertiary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
       ),
     );
   }

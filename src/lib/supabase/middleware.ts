@@ -1,6 +1,31 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// ═══════════════════════════════════════════════════════════════
+// ── Project Aegis — Edge RBAC Middleware ──────────────────────
+// Uses JWT app_metadata for fast role checks (no DB round-trip).
+// Falls back to DB query when app_metadata isn't populated yet.
+// ═══════════════════════════════════════════════════════════════
+
+/** Route prefix → roles allowed to access it */
+const RBAC_ROUTES: Record<string, string[]> = {
+  "/dashboard/finance": ["owner", "admin", "manager", "office_admin"],
+  "/dashboard/team": ["owner", "admin", "manager"],
+  "/dashboard/settings": ["owner", "admin"],
+  "/dashboard/integrations": ["owner", "admin", "manager"],
+  "/dashboard/billing": ["owner"],
+  "/dashboard/dispatch": ["owner", "admin", "manager"],
+  "/dashboard/care/medications/asclepius": ["owner", "admin", "manager"],
+  "/dashboard/care/governance": ["owner", "admin"],
+  "/dashboard/ai-agent": ["owner", "admin"],
+};
+
+/** Roles that belong in the /portal experience, not /dashboard */
+const PORTAL_ROLES = ["participant", "carer"];
+
+/** Emails that are always treated as super admins (bootstrap fallback) */
+const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -29,7 +54,7 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Refresh the session
+  // Refresh the session — also validates JWT
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -40,14 +65,18 @@ export async function updateSession(request: NextRequest) {
   // Returns hard 404 (not 401) to prevent path enumeration
   if (pathname.startsWith("/olympus")) {
     if (!user) {
-      // Not authenticated → 404
       const url = request.nextUrl.clone();
       url.pathname = "/not-found";
       return NextResponse.rewrite(url);
     }
 
-    // Check is_super_admin flag on profile
-    // Gracefully handle case where column doesn't exist yet (migration not applied)
+    // Fast path: check JWT app_metadata first
+    const isSuperAdminJwt = user.app_metadata?.is_super_admin === true;
+    if (isSuperAdminJwt) {
+      return supabaseResponse;
+    }
+
+    // Fallback: check profile table (for when JWT claims aren't synced yet)
     try {
       const { data: adminProfile, error: profileError } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
         .from("profiles")
@@ -55,10 +84,8 @@ export async function updateSession(request: NextRequest) {
         .eq("id", user.id)
         .maybeSingle();
 
-      // If the column doesn't exist yet (migration 084 not applied),
-      // fall back to email-based allowlist for initial access
       if (profileError || adminProfile === null) {
-        const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
+        // Column doesn't exist or no profile — fallback to email allowlist
         if (!SUPER_ADMIN_EMAILS.includes(user.email || "")) {
           const url = request.nextUrl.clone();
           url.pathname = "/not-found";
@@ -68,14 +95,12 @@ export async function updateSession(request: NextRequest) {
       }
 
       if (!adminProfile?.is_super_admin) {
-        // Not a super admin → 404 (stealth denial)
         const url = request.nextUrl.clone();
         url.pathname = "/not-found";
         return NextResponse.rewrite(url);
       }
     } catch {
-      // If anything fails in the super admin check, fall back to email check
-      const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
+      // If anything fails, fall back to email check
       if (!SUPER_ADMIN_EMAILS.includes(user.email || "")) {
         const url = request.nextUrl.clone();
         url.pathname = "/not-found";
@@ -83,25 +108,61 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
-    // Super admin verified — allow through
     return supabaseResponse;
   }
 
-  // Allow public routes (auth, invite acceptance, landing, api)
+  // ─── Public Routes ────────────────────────────────────────────
   const publicPaths = ["/auth", "/accept-invite", "/join", "/invite", "/api"];
   if (publicPaths.some((p) => pathname.startsWith(p)) || pathname === "/") {
     if (pathname === "/auth" && user) {
       const next = request.nextUrl.searchParams.get("next");
+
+      // Determine redirect target from JWT claims first (fast path)
+      const jwtRole = user.app_metadata?.role as string | undefined;
+      const jwtOrgId = user.app_metadata?.org_id as string | undefined;
+
+      let hasOrg = !!jwtOrgId;
+      let hasPortalLink = PORTAL_ROLES.includes(jwtRole ?? "");
+
+      // If JWT doesn't have claims, fall back to DB queries
+      if (!jwtRole && !jwtOrgId) {
+        const { data: activeMembership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle();
+
+        hasOrg = !!activeMembership;
+
+        if (!hasOrg) {
+          const { data: portalLink } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+            .from("participant_network_members")
+            .select("participant_id")
+            .eq("user_id", user.id)
+            .limit(1)
+            .maybeSingle();
+          hasPortalLink = !!portalLink;
+        }
+      }
+
       const url = request.nextUrl.clone();
-      url.pathname = next || "/dashboard";
+      if (next) {
+        url.pathname = next;
+      } else if (hasPortalLink && !hasOrg) {
+        url.pathname = "/portal";
+      } else {
+        url.pathname = "/dashboard";
+      }
       url.searchParams.delete("next");
       return NextResponse.redirect(url);
     }
     return supabaseResponse;
   }
 
-  // Protected routes: redirect to /auth if not signed in
-  const protectedPaths = ["/dashboard", "/setup", "/settings", "/checkout"];
+  // ─── Protected Routes: require auth ───────────────────────────
+  const protectedPaths = ["/dashboard", "/setup", "/settings", "/checkout", "/portal"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   if (isProtected && !user) {
@@ -111,20 +172,82 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If signed in and visiting /dashboard, check if user has an org
-  // Redirect to /setup if they haven't completed onboarding (no org membership)
-  if (user && pathname.startsWith("/dashboard")) {
-    // First check for active membership (includes any status filter)
-    const { data: membership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-      .from("organization_members")
-      .select("organization_id, role")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle();
+  // ─── Extract role from JWT app_metadata (fast path) ───────────
+  const jwtRole = user?.app_metadata?.role as string | undefined;
+  const jwtOrgId = user?.app_metadata?.org_id as string | undefined;
 
-    if (!membership) {
-      // Also check if membership exists with ANY status (could be pending/invited)
+  // ─── Portal Routes ────────────────────────────────────────────
+  // Portal is for participants/carers. Staff shouldn't access it.
+  if (user && pathname.startsWith("/portal")) {
+    // If JWT says user is staff (not participant/carer), redirect to dashboard
+    if (jwtRole && !PORTAL_ROLES.includes(jwtRole)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // If no JWT role, fall back to DB check
+    if (!jwtRole) {
+      const { data: hasPortalLink } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from("participant_network_members")
+        .select("participant_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!hasPortalLink) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
+  // ─── Dashboard Routes ─────────────────────────────────────────
+  if (user && pathname.startsWith("/dashboard")) {
+    // If JWT says user is a portal role, redirect to /portal
+    if (jwtRole && PORTAL_ROLES.includes(jwtRole)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/portal";
+      return NextResponse.redirect(url);
+    }
+
+    // Resolve role — prefer JWT, fall back to DB
+    let role: string | undefined = jwtRole;
+    let hasActiveMembership = !!jwtOrgId;
+
+    if (!role) {
+      // No JWT claims — query organization_members
+      const { data: membership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from("organization_members")
+        .select("organization_id, role")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+
+      if (membership) {
+        role = (membership as { role?: string }).role;
+        hasActiveMembership = true;
+      }
+    }
+
+    // No active membership — check portal link or send to setup
+    if (!hasActiveMembership) {
+      const { data: hasPortalLink } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from("participant_network_members")
+        .select("participant_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (hasPortalLink) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/portal";
+        return NextResponse.redirect(url);
+      }
+
+      // Check for any membership (pending/invited)
       const { data: anyMembership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
         .from("organization_members")
         .select("organization_id, role, status")
@@ -133,7 +256,7 @@ export async function updateSession(request: NextRequest) {
         .maybeSingle();
 
       if (anyMembership) {
-        // Membership exists but not active — let them through (dashboard can handle)
+        // Membership exists but not active — let dashboard handle the state
         return supabaseResponse;
       }
 
@@ -145,7 +268,6 @@ export async function updateSession(request: NextRequest) {
         .maybeSingle();
 
       if (profile?.onboarding_completed) {
-        // Onboarding completed but no org — let them through rather than loop
         return supabaseResponse;
       }
 
@@ -154,20 +276,13 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // RBAC enforcement at the Edge
-    const RBAC_ROUTES: Record<string, string[]> = {
-      "/dashboard/finance": ["owner", "admin", "manager", "office_admin"],
-      "/dashboard/team": ["owner", "admin", "manager"],
-      "/dashboard/settings": ["owner", "admin"],
-      "/dashboard/integrations": ["owner", "admin", "manager"],
-      "/dashboard/billing": ["owner"],
-    };
-    const role = (membership as { role?: string }).role as string | undefined;
-    if (role) {
+    // ─── RBAC Enforcement at the Edge ─────────────────────────
+    // Don't block the /dashboard/unauthorized page itself
+    if (role && !pathname.startsWith("/dashboard/unauthorized")) {
       for (const [routePrefix, allowedRoles] of Object.entries(RBAC_ROUTES)) {
         if (pathname.startsWith(routePrefix) && !allowedRoles.includes(role)) {
           const url = request.nextUrl.clone();
-          url.pathname = "/dashboard";
+          url.pathname = "/dashboard/unauthorized";
           return NextResponse.redirect(url);
         }
       }

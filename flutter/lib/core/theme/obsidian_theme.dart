@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iworkr_mobile/core/theme/alabaster_theme.dart';
+import 'package:iworkr_mobile/core/theme/brand_theme.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 
 /// The Obsidian Interface — unified design system matching iWorkr Web 1:1.
@@ -427,6 +428,17 @@ class ObsidianTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: brandColor,
       ),
+      extensions: [
+        IWorkrColors.dark,
+        BrandTheme(
+          primary: brandColor,
+          onPrimary: onBrand,
+          accent: const Color(0xFF3B82F6),
+          primaryDim: brandColor.withValues(alpha: 0.1),
+          primaryGlow: brandColor.withValues(alpha: 0.3),
+          appName: 'iWorkr',
+        ),
+      ],
     );
   }
 
@@ -485,6 +497,17 @@ class ObsidianTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: brandColor,
       ),
+      extensions: [
+        IWorkrColors.light,
+        BrandTheme(
+          primary: brandColor,
+          onPrimary: onBrand,
+          accent: const Color(0xFF3B82F6),
+          primaryDim: brandColor.withValues(alpha: 0.1),
+          primaryGlow: brandColor.withValues(alpha: 0.3),
+          appName: 'iWorkr',
+        ),
+      ],
     );
   }
 }

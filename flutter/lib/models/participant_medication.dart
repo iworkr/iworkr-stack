@@ -1,5 +1,5 @@
 /// Participant medication model — maps to public.participant_medications
-/// Project Nightingale: Electronic Medication Administration Records (eMAR)
+/// Project Nightingale → Project Asclepius: Advanced eMAR & Clinical Pharmacology
 class ParticipantMedication {
   final String id;
   final String organizationId;
@@ -20,6 +20,13 @@ class ParticipantMedication {
   // Joined
   final String? participantName;
 
+  // ── Asclepius Extensions ───────────────────────────────────
+  final bool isS8Controlled; // Schedule 8 Controlled Drug
+  final String packType; // webster_pak, loose_box, bottle
+  final String form; // tablet, capsule, liquid, etc.
+  final int? prnMinGapHours; // Minimum hours between PRN doses
+  final int? prnMaxDoses24h; // Max doses in rolling 24h window
+
   const ParticipantMedication({
     required this.id,
     required this.organizationId,
@@ -38,6 +45,11 @@ class ParticipantMedication {
     required this.createdAt,
     required this.updatedAt,
     this.participantName,
+    this.isS8Controlled = false,
+    this.packType = 'loose_box',
+    this.form = 'tablet',
+    this.prnMinGapHours,
+    this.prnMaxDoses24h,
   });
 
   factory ParticipantMedication.fromJson(Map<String, dynamic> json) {
@@ -58,6 +70,12 @@ class ParticipantMedication {
       notes: json['notes'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      // Asclepius
+      isS8Controlled: json['is_s8_controlled'] as bool? ?? false,
+      packType: json['pack_type'] as String? ?? 'loose_box',
+      form: json['form'] as String? ?? 'tablet',
+      prnMinGapHours: json['prn_min_gap_hours'] as int?,
+      prnMaxDoses24h: json['prn_max_doses_24h'] as int?,
     );
   }
 }
@@ -65,14 +83,17 @@ class ParticipantMedication {
 /// MAR entry — maps to public.medication_administration_records
 class MAREntry {
   final String id;
+  final String organizationId;
+  final String participantId;
   final String medicationId;
   final String administeredBy;
-  final DateTime scheduledTime;
   final DateTime? administeredAt;
   final MAROutcome outcome;
-  final String? refusalReason;
   final String? notes;
-  final String? witnessedBy;
+  final String? prnEffectiveness;
+  final DateTime? prnFollowupAt;
+  final bool prnFollowupDone;
+  final String? witnessId;
   final DateTime createdAt;
   // Joined
   final String? administerName;
@@ -80,35 +101,68 @@ class MAREntry {
 
   const MAREntry({
     required this.id,
+    required this.organizationId,
+    required this.participantId,
     required this.medicationId,
     required this.administeredBy,
-    required this.scheduledTime,
     this.administeredAt,
     required this.outcome,
-    this.refusalReason,
     this.notes,
-    this.witnessedBy,
+    this.prnEffectiveness,
+    this.prnFollowupAt,
+    this.prnFollowupDone = false,
+    this.witnessId,
     required this.createdAt,
     this.administerName,
     this.witnessName,
+    this.stockCountBefore,
+    this.stockCountAfter,
+    this.prnEfficacyStatus,
+    this.prnEfficacyLoggedAt,
+    this.isS8Administration = false,
   });
 
   factory MAREntry.fromJson(Map<String, dynamic> json) {
-    final adminProfile = json['administered_by_profile'] as Map<String, dynamic>?;
+    final workerProfile = (json['worker_profile'] ?? json['profiles']) as Map<String, dynamic>?;
+    final witnessProfile = json['witness_profile'] as Map<String, dynamic>?;
     return MAREntry(
       id: json['id'] as String,
+      organizationId: json['organization_id'] as String? ?? '',
+      participantId: json['participant_id'] as String? ?? '',
       medicationId: json['medication_id'] as String,
-      administeredBy: json['administered_by'] as String,
-      scheduledTime: DateTime.parse(json['scheduled_time'] as String),
+      administeredBy: json['worker_id'] as String? ?? '',
       administeredAt: json['administered_at'] != null ? DateTime.tryParse(json['administered_at'] as String) : null,
-      outcome: MAROutcome.fromString(json['outcome'] as String? ?? 'pending'),
-      refusalReason: json['refusal_reason'] as String?,
+      outcome: MAROutcome.fromString(json['outcome'] as String? ?? 'not_available'),
       notes: json['notes'] as String?,
-      witnessedBy: json['witnessed_by'] as String?,
+      prnEffectiveness: json['prn_effectiveness'] as String?,
+      prnFollowupAt: json['prn_followup_at'] != null ? DateTime.tryParse(json['prn_followup_at'] as String) : null,
+      prnFollowupDone: json['prn_followup_done'] as bool? ?? false,
+      witnessId: json['witness_id'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
-      administerName: adminProfile?['full_name'] as String?,
+      administerName: workerProfile?['full_name'] as String?,
+      witnessName: witnessProfile?['full_name'] as String?,
+      // Asclepius
+      stockCountBefore: (json['stock_count_before'] as num?)?.toDouble(),
+      stockCountAfter: (json['stock_count_after'] as num?)?.toDouble(),
+      prnEfficacyStatus: json['prn_efficacy_status'] as String?,
+      prnEfficacyLoggedAt: json['prn_efficacy_logged_at'] != null
+          ? DateTime.tryParse(json['prn_efficacy_logged_at'] as String)
+          : null,
+      isS8Administration: json['is_s8_administration'] as bool? ?? false,
     );
   }
+
+  // Asclepius extensions
+  final double? stockCountBefore;
+  final double? stockCountAfter;
+  final String? prnEfficacyStatus; // pending, no_improvement, partial, complete
+  final DateTime? prnEfficacyLoggedAt;
+  final bool isS8Administration;
+
+  // Backward compatibility with older MAR UI contracts.
+  DateTime get scheduledTime => administeredAt ?? createdAt;
+  String? get refusalReason => null;
+  String? get witnessedBy => witnessId;
 }
 
 enum MedicationRoute {
@@ -188,7 +242,9 @@ enum MedicationFrequency {
 }
 
 enum MAROutcome {
-  pending, given, refused, withheld, notAvailable;
+  pending, given, refused, withheld, notAvailable,
+  // Asclepius additions
+  vomited, dropped, selfAdministered;
 
   static MAROutcome fromString(String s) {
     switch (s) {
@@ -196,6 +252,9 @@ enum MAROutcome {
       case 'refused': return refused;
       case 'withheld': return withheld;
       case 'not_available': return notAvailable;
+      case 'vomited': return vomited;
+      case 'dropped': return dropped;
+      case 'self_administered': return selfAdministered;
       default: return pending;
     }
   }
@@ -203,6 +262,7 @@ enum MAROutcome {
   String get value {
     switch (this) {
       case notAvailable: return 'not_available';
+      case selfAdministered: return 'self_administered';
       default: return name;
     }
   }
@@ -214,6 +274,9 @@ enum MAROutcome {
       case refused: return 'Refused';
       case withheld: return 'Withheld';
       case notAvailable: return 'Not Available';
+      case vomited: return 'Vomited';
+      case dropped: return 'Dropped/Destroyed';
+      case selfAdministered: return 'Self-Administered';
     }
   }
 }

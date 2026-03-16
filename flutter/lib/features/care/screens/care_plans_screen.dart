@@ -198,6 +198,7 @@ class _CarePlansScreenState extends ConsumerState<CarePlansScreen> {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _CarePlanDetailSheet(plan: plan),
@@ -208,6 +209,7 @@ class _CarePlansScreenState extends ConsumerState<CarePlansScreen> {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _CreatePlanSheet(),
@@ -707,6 +709,7 @@ class _CarePlanDetailSheet extends ConsumerWidget {
   void _showAddGoalDialog(BuildContext context, CarePlan plan) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _AddGoalSheet(plan: plan),

@@ -216,3 +216,249 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+export interface ShiftTravelLogRow {
+  id: string;
+  organization_id: string;
+  shift_id: string;
+  worker_id: string;
+  participant_id: string | null;
+  travel_type: "provider_travel" | "participant_transport";
+  start_time: string;
+  end_time: string | null;
+  claimed_distance_km: number;
+  expected_distance_km: number | null;
+  variance_percent: number | null;
+  variance_status: "auto_approved" | "flagged_amber" | "manual_review" | null;
+  is_approved: boolean;
+  payroll_wage_amount: number | null;
+  payroll_allowance_amount: number | null;
+  ndis_billed_amount: number | null;
+  capped_billable_minutes: number | null;
+  route_polyline: string | null;
+  raw_breadcrumbs: Array<{ lat: number; lng: number; timestamp?: string; speed?: number }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listShiftTravelLogsAction(
+  organizationId: string,
+  filters?: {
+    date?: string;
+    worker_id?: string;
+    participant_id?: string;
+    travel_type?: "provider_travel" | "participant_transport";
+    flagged_only?: boolean;
+  },
+): Promise<ShiftTravelLogRow[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    let query = (supabase as any)
+      .from("shift_travel_logs")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("start_time", { ascending: false })
+      .limit(500);
+
+    if (filters?.date) {
+      query = query
+        .gte("start_time", `${filters.date}T00:00:00Z`)
+        .lte("start_time", `${filters.date}T23:59:59Z`);
+    }
+    if (filters?.worker_id) query = query.eq("worker_id", filters.worker_id);
+    if (filters?.participant_id) query = query.eq("participant_id", filters.participant_id);
+    if (filters?.travel_type) query = query.eq("travel_type", filters.travel_type);
+    if (filters?.flagged_only) query = query.eq("variance_status", "flagged_amber");
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    return (data || []).map((row: any) => ({
+      ...row,
+      claimed_distance_km: parseFloat(row.claimed_distance_km) || 0,
+      expected_distance_km: row.expected_distance_km != null ? parseFloat(row.expected_distance_km) : null,
+      variance_percent: row.variance_percent != null ? parseFloat(row.variance_percent) : null,
+      payroll_wage_amount: row.payroll_wage_amount != null ? parseFloat(row.payroll_wage_amount) : null,
+      payroll_allowance_amount: row.payroll_allowance_amount != null ? parseFloat(row.payroll_allowance_amount) : null,
+      ndis_billed_amount: row.ndis_billed_amount != null ? parseFloat(row.ndis_billed_amount) : null,
+      raw_breadcrumbs: row.raw_breadcrumbs || [],
+    })) as ShiftTravelLogRow[];
+  } catch (error) {
+    console.error("[travel] listShiftTravelLogsAction", error);
+    return [];
+  }
+}
+
+export async function startShiftTravelLogAction(input: {
+  organization_id: string;
+  shift_id: string;
+  worker_id: string;
+  participant_id?: string | null;
+  travel_type: "provider_travel" | "participant_transport";
+  start_time: string;
+  start_lat?: number;
+  start_lng?: number;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await (supabase as any)
+    .from("shift_travel_logs")
+    .insert({
+      organization_id: input.organization_id,
+      shift_id: input.shift_id,
+      worker_id: input.worker_id,
+      participant_id: input.participant_id || null,
+      travel_type: input.travel_type,
+      start_time: input.start_time,
+      start_lat: input.start_lat ?? null,
+      start_lng: input.start_lng ?? null,
+      raw_breadcrumbs: [],
+      claimed_distance_km: 0,
+    })
+    .select("*")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function completeShiftTravelLogAction(input: {
+  log_id: string;
+  end_time: string;
+  end_lat?: number;
+  end_lng?: number;
+  raw_breadcrumbs: Array<{ lat: number; lng: number; timestamp?: string; speed?: number }>;
+  claimed_distance_km?: number;
+  route_polyline?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: existing, error: existingError } = await (supabase as any)
+    .from("shift_travel_logs")
+    .select("*")
+    .eq("id", input.log_id)
+    .single();
+
+  if (existingError) throw new Error(existingError.message);
+
+  const breadcrumbs = input.raw_breadcrumbs || [];
+  let calculatedDistance = 0;
+  for (let i = 1; i < breadcrumbs.length; i++) {
+    const a = breadcrumbs[i - 1];
+    const b = breadcrumbs[i];
+    calculatedDistance += haversineKm(a.lat, a.lng, b.lat, b.lng);
+  }
+  calculatedDistance = Math.round(calculatedDistance * 100) / 100;
+
+  const expected = (input.end_lat != null && input.end_lng != null && existing?.start_lat != null && existing?.start_lng != null)
+    ? await calculateTravelTime(existing.start_lat, existing.start_lng, input.end_lat, input.end_lng)
+    : { distance_km: calculatedDistance, duration_minutes: 0, source: "haversine" as const };
+
+  const claimed = input.claimed_distance_km != null
+    ? Math.max(0, input.claimed_distance_km)
+    : calculatedDistance;
+
+  const minutes = Math.max(
+    0,
+    Math.round((new Date(input.end_time).getTime() - new Date(existing.start_time).getTime()) / 60000),
+  );
+
+  const { data, error } = await (supabase as any)
+    .from("shift_travel_logs")
+    .update({
+      end_time: input.end_time,
+      end_lat: input.end_lat ?? null,
+      end_lng: input.end_lng ?? null,
+      raw_breadcrumbs: breadcrumbs,
+      route_polyline: input.route_polyline || null,
+      calculated_distance_km: calculatedDistance,
+      expected_distance_km: expected.distance_km,
+      claimed_distance_km: claimed,
+      travel_minutes: minutes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.log_id)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+
+  const { data: variance } = await (supabase as any).rpc("analyze_travel_variance", { p_log_id: input.log_id });
+  const { data: financials } = await (supabase as any).rpc("calculate_travel_financials", { p_log_id: input.log_id });
+
+  return { log: data, variance, financials };
+}
+
+export async function approveTravelVarianceAction(input: {
+  log_id: string;
+  approved: boolean;
+  approval_note?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: userCtx } = await supabase.auth.getUser();
+  const userId = userCtx.user?.id ?? null;
+  const { error } = await (supabase as any)
+    .from("shift_travel_logs")
+    .update({
+      is_approved: input.approved,
+      approved_by: userId,
+      approved_at: new Date().toISOString(),
+      approval_note: input.approval_note ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.log_id);
+  if (error) throw new Error(error.message);
+
+  await (supabase as any).rpc("calculate_travel_financials", { p_log_id: input.log_id });
+}
+
+export async function adjustTravelClaimDistanceAction(input: {
+  log_id: string;
+  claimed_distance_km: number;
+  reason?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await (supabase as any)
+    .from("shift_travel_logs")
+    .update({
+      claimed_distance_km: Math.max(0, input.claimed_distance_km),
+      approval_note: input.reason ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.log_id);
+  if (error) throw new Error(error.message);
+
+  await (supabase as any).rpc("analyze_travel_variance", { p_log_id: input.log_id });
+  await (supabase as any).rpc("calculate_travel_financials", { p_log_id: input.log_id });
+}
+
+export async function compileTravelAllowanceSummaryAction(input: {
+  organization_id: string;
+  period_start: string;
+  period_end: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await (supabase as any)
+    .from("shift_travel_logs")
+    .select("worker_id, claimed_distance_km, payroll_allowance_amount")
+    .eq("organization_id", input.organization_id)
+    .eq("is_approved", true)
+    .gte("start_time", `${input.period_start}T00:00:00Z`)
+    .lte("start_time", `${input.period_end}T23:59:59Z`);
+  if (error) throw new Error(error.message);
+
+  const summary = new Map<string, { worker_id: string; total_km: number; total_allowance: number }>();
+  for (const row of data || []) {
+    const workerId = row.worker_id as string;
+    const km = parseFloat(row.claimed_distance_km) || 0;
+    const allowance = parseFloat(row.payroll_allowance_amount) || 0;
+    const current = summary.get(workerId) || { worker_id: workerId, total_km: 0, total_allowance: 0 };
+    current.total_km += km;
+    current.total_allowance += allowance;
+    summary.set(workerId, current);
+  }
+
+  return Array.from(summary.values()).map((s) => ({
+    ...s,
+    total_km: Math.round(s.total_km * 100) / 100,
+    total_allowance: Math.round(s.total_allowance * 100) / 100,
+    xero_earning_rate_hint: "KILOMETER_ALLOWANCE_TAX_FREE",
+  }));
+}

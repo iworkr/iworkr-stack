@@ -40,6 +40,7 @@ function mapServerIntegration(s: any, clientTemplate: Integration | undefined): 
   if (!clientTemplate) {
     return {
       id: s.id,
+      provider: s.provider,
       name: s.provider,
       description: "",
       category: "financial" as IntegrationCategory,
@@ -55,6 +56,7 @@ function mapServerIntegration(s: any, clientTemplate: Integration | undefined): 
   return {
     ...clientTemplate,
     id: s.id,
+    provider: s.provider,
     status: s.status || clientTemplate.status,
     lastSynced: s.last_sync ? timeSince(s.last_sync) : clientTemplate.lastSynced,
     error: s.error_message || undefined,

@@ -179,6 +179,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     HapticFeedback.lightImpact();
     final pin = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _PinSetupSheet(),
@@ -741,6 +742,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   void _showUpgradeSheet(bool isPro) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _UpgradeSheet(isPro: isPro),

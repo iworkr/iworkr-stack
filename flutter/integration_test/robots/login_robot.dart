@@ -15,16 +15,21 @@ class LoginRobot extends BaseRobot {
   Finder get _phoneEntryScreen => findByKey('phone-entry');
   Finder get _googleButton => findByKey('btn_auth_google');
   Finder get _successScreen => findByKey('success');
-  Finder get _inputEmail => findByKey('input_email');
-  Finder get _inputPassword => findByKey('input_password');
-  Finder get _submitButton => findByKey('btn_submit_login');
+  Finder get _inputEmail => findByKey('auth_email_input');
+  Finder get _inputPassword => findByKey('auth_password_input');
+  Finder get _submitButton => findByKey('auth_submit_button');
 
   // ── Verifications ─────────────────────────────────────────
 
   Future<void> expectLoginScreenVisible() async {
     TestLogger.step('Verify login screen is visible');
-    await waitFor(_choiceScreen, timeout: const Duration(seconds: 15));
-    expectVisible(_choiceScreen, label: 'Auth choice screen');
+    try {
+      await waitFor(_choiceScreen, timeout: const Duration(seconds: 15));
+      expectVisible(_choiceScreen, label: 'Auth choice screen');
+    } catch (_) {
+      await waitFor(_inputEmail, timeout: const Duration(seconds: 15));
+      expectVisible(_inputEmail, label: 'Auth email input');
+    }
   }
 
   void expectEmailFormVisible() {
@@ -98,7 +103,10 @@ class LoginRobot extends BaseRobot {
 
   Future<void> loginWithEmail(String email, String password) async {
     TestLogger.section('Login Flow — Email/Password');
-    await selectEmailMethod();
+    if (_choiceScreen.evaluate().isNotEmpty) {
+      await selectEmailMethod();
+    }
+    await waitFor(_inputEmail, timeout: const Duration(seconds: 15));
     await enterEmail(email);
     await enterPassword(password);
     await tapInitialize();

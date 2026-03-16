@@ -115,6 +115,19 @@
             android:name=".widget.ActiveJobService"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <!-- Project Outrider: Android Auto Integration -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
+        <service
+            android:name=".automotive.OutriderCarService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.car.app.CarAppService" />
+            </intent-filter>
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

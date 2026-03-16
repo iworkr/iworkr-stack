@@ -114,10 +114,43 @@ jobs:
             ${{ env.ELECTRON_DIR }}/out/latest.yml
           retention-days: 30
 
+  # ── Build Linux (AppImage) ─────────────────────────────
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "${{ env.ELECTRON_DIR }}/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ${{ env.ELECTRON_DIR }}
+        run: npm ci
+
+      - name: Build Linux AppImage
+        working-directory: ${{ env.ELECTRON_DIR }}
+        run: npm run dist:linux
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: |
+            ${{ env.ELECTRON_DIR }}/out/*.AppImage
+            ${{ env.ELECTRON_DIR }}/out/latest-linux.yml
+          retention-days: 30
+
   # ── Upload to Supabase Storage ─────────────────────────
   publish:
     name: Publish to Supabase
-    needs: [build-mac, build-win]
+    needs: [build-mac, build-win, build-linux]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -135,6 +168,12 @@ jobs:
 
       - name: List artifacts
         run: find artifacts -type f | head -20
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-builds
+          path: artifacts/linux
 
       - name: Upload to Supabase Storage
         env:
@@ -171,6 +210,12 @@ jobs:
           done
           [ -f "artifacts/win/latest.yml" ] && upload_file "artifacts/win/latest.yml" "win/latest.yml" "text/yaml"
 
+          # Upload Linux artifacts
+          for f in artifacts/linux/*.AppImage; do
+            [ -f "$f" ] && upload_file "$f" "linux/$(basename $f)" "application/octet-stream"
+          done
+          [ -f "artifacts/linux/latest-linux.yml" ] && upload_file "artifacts/linux/latest-linux.yml" "linux/latest-linux.yml" "text/yaml"
+
           echo ""
           echo "✅ All artifacts published to Supabase Storage"
 
@@ -196,5 +241,6 @@ jobs:
             artifacts/mac-builds/*.dmg
             artifacts/mac-builds/*.zip
             artifacts/win-builds/*.exe
+            artifacts/linux-builds/*.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

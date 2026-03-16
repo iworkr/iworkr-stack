@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-03-14T12:24:03.743Z",
+  "errors": 355,
+  "warnings": 459,
+  "baseline": {
+    "maxErrors": 359,
+    "maxWarnings": 459,
+    "notes": "Project Crucible snapshot baseline as of 2026-03-14 audit."
+  }
+}

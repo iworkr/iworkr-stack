@@ -8,6 +8,7 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
 import { SlideOver } from "@/components/shell/slide-over";
 import { ActionToastContainer } from "@/components/app/action-toast";
+import { NotificationToastContainer } from "@/components/shell/notification-toast";
 import { DataProvider } from "@/components/app/data-provider";
 import { HydrationGate } from "@/components/app/hydration-gate";
 import { MapboxProvider } from "@/components/maps/mapbox-provider";
@@ -30,6 +31,7 @@ const CreateInvoiceModal = dynamic(() => import("@/components/app/create-invoice
 const KeyboardShortcuts = dynamic(() => import("@/components/app/keyboard-shortcuts").then((m) => m.KeyboardShortcuts), { ssr: false });
 const UpgradeCelebration = dynamic(() => import("@/components/monetization/upgrade-celebration").then((m) => m.UpgradeCelebration), { ssr: false });
 const UpgradeModal = dynamic(() => import("@/components/app/upgrade-modal").then((m) => m.UpgradeModal), { ssr: false });
+const ChronosFAB = dynamic(() => import("@/components/shell/chronos-fab").then((m) => m.ChronosFAB), { ssr: false });
 
 export default function DashboardLayout({
   children,
@@ -98,6 +100,7 @@ export default function DashboardLayout({
           i: "/dashboard/inbox",
           c: "/dashboard/clients",
           f: "/dashboard/finance",
+          l: "/dashboard/coordination/ledger",
           a: "/dashboard/assets",
           o: "/dashboard/forms",
           t: "/dashboard/team",
@@ -246,11 +249,13 @@ export default function DashboardLayout({
         onClose={() => setShortcutsOpen(false)}
       />
       <ActionToastContainer />
+      <NotificationToastContainer />
       <UpgradeModal />
       <UpgradeCelebration />
       <DesktopBridge />
       <DesktopBadge />
       <DesktopOfflineBanner />
+      <ChronosFAB />
     </div>
     </HydrationGate>
     </MapboxProvider>

@@ -105,6 +105,7 @@ class FeatureGate extends ConsumerWidget {
   void _showWebManagedSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _WebManagedSheet(requiredTier: requiredTier),

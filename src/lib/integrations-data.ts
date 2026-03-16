@@ -1,7 +1,7 @@
 /* ── Integrations & Ecosystem Data ──────────────────── */
 
 export type IntegrationCategory = "financial" | "communication" | "storage" | "calendar" | "maps" | "marketing";
-export type IntegrationStatus = "connected" | "disconnected" | "error" | "syncing";
+export type IntegrationStatus = "connected" | "disconnected" | "error" | "syncing" | "expired" | "paused";
 
 export interface SyncSetting {
   id: string;
@@ -19,6 +19,7 @@ export interface AccountMapping {
 
 export interface Integration {
   id: string;
+  provider?: string;
   name: string;
   description: string;
   category: IntegrationCategory;

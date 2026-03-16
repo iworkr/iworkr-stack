@@ -150,3 +150,5 @@ void panopticonTests(IntegrationTestWidgetsFlutterBinding binding) {
     );
   });
 }
+
+void main() {}

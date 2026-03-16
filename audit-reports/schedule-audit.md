@@ -1,9 +1,9 @@
 # Schedule Module — Comprehensive Audit Report (Post-PRD)
 
-> **Generated**: 2026-03-14T00:50:21.221Z
+> **Generated**: 2026-03-14T14:56:38.764Z
 > **Module**: Schedule (`/dashboard/schedule`)
 > **Test Framework**: Playwright (18 test suites)
-> **Total Findings**: 3
+> **Total Findings**: 12
 > **PRD**: Schedule Module Live Activation (P0)
 
 ---
@@ -12,22 +12,36 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 0 |
-| 🟡 Visual Defects | 0 |
+| 🔴 Critical Failures | 3 |
+| 🟡 Visual Defects | 1 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 0 |
-| 🟢 Flow Passes | 3 |
+| 🟠 Warnings | 4 |
+| 🟢 Flow Passes | 4 |
 
 ---
 
 ## 🔴 Critical Failures
 
-_No critical failures found._
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+
+### Console error
+- **Area**: Console
+- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+### HTTP 500
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/functions/v1/ingest-telemetry
+
 ---
 
 ## 🟡 Visual Defects
 
-_No visual defects found._
+### No travel time ghosts
+- **Area**: Travel
+- **Detail**: No dashed travel-time indicators found — may be scrolled out of view.
+
 ---
 
 ## 🟣 Dummy Data Leaks
@@ -37,14 +51,30 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
-_No warnings._
+### No blocks to drag
+- **Area**: DragDrop
+- **Detail**: Skipping.
+
+### No blocks
+- **Area**: PeekNav
+- **Detail**: Skipping.
+
+### HTTP 404
+- **Area**: Network
+- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
+
+### No blocks for action test
+- **Area**: PeekActions
+- **Detail**: Skipping — no blocks on schedule.
+
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Keyboard]** V key cycles view scale: Changed from "Day" to ""
-- ✅ **[Keyboard]** U key opens backlog drawer: Backlog sidebar drawer appeared.
-- ✅ **[Keyboard]** Escape closes drawer: Pressed Escape to close backlog drawer.
+- ✅ **[Backlog]** Backlog drawer opens: 280px drawer sidebar visible.
+- ✅ **[Style]** All checked buttons have pointer cursor: Checked 12 buttons.
+- ✅ **[Style]** Inter font applied: Font: inter, "inter Fallback"
+- ✅ **[EmptyState]** Technicians present — skip empty state: 1 technician rows visible.
 
 ---
 

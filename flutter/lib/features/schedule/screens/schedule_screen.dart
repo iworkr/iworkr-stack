@@ -763,6 +763,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _JobBriefSheet(block: block),
     );

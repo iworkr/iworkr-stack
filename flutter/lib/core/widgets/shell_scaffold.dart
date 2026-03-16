@@ -1,47 +1,69 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
 import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
-import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
-import 'package:iworkr_mobile/features/search/screens/command_palette_screen.dart';
 
-/// The Obsidian Dock — route-reactive, role-aware floating glass navigation bar.
-///
-/// The dock NEVER holds its own state. It derives the active tab
-/// entirely from the current GoRouter URI (the "Source of Truth").
-///
-/// RBAC: Tabs are filtered based on the user's clearance level.
-/// The Finance tab only appears for Level 3+ (Manager/Admin/Owner).
+// ═══════════════════════════════════════════════════════════
+// ── Apple-Style Floating Dock — Icon-Only, Glass Pill ────
+// ═══════════════════════════════════════════════════════════
+//
+// Equal-width icon tabs. Selected tab gets a glassmorphic pill
+// that slides between positions with spring physics. No text.
+// Clean, minimal, native iOS feel.
+//
+// Project Aegis: Tabs are now filtered by UserRole via
+// currentRoleProvider. Workers see a reduced dock; admins
+// see the full set.
+
 class ShellScaffold extends ConsumerWidget {
   final Widget child;
   const ShellScaffold({super.key, required this.child});
 
-  /// Trades tabs (default)
+  // ── Full tab sets (unfiltered) ─────────────────────────
+
   static const _tradesTabs = [
-    _DockTab(routePrefix: '/', icon: PhosphorIconsLight.houseLine, activeIcon: PhosphorIconsFill.houseLine, label: 'Home'),
-    _DockTab(routePrefix: '/jobs', icon: PhosphorIconsLight.briefcase, activeIcon: PhosphorIconsFill.briefcase, label: 'Jobs'),
-    _DockTab(routePrefix: '/schedule', icon: PhosphorIconsLight.calendarBlank, activeIcon: PhosphorIconsFill.calendarBlank, label: 'Timeline'),
-    _DockTab(routePrefix: '/chat', icon: PhosphorIconsLight.chatCircle, activeIcon: PhosphorIconsFill.chatCircle, label: 'Comms'),
-    _DockTab(routePrefix: '/profile', icon: PhosphorIconsLight.userCircle, activeIcon: PhosphorIconsFill.userCircle, label: 'Profile'),
+    _DockTab(routePrefix: '/', icon: PhosphorIconsLight.houseLine, activeIcon: PhosphorIconsFill.houseLine, label: 'Home', requiresClaim: null),
+    _DockTab(routePrefix: '/jobs', icon: PhosphorIconsLight.briefcase, activeIcon: PhosphorIconsFill.briefcase, label: 'Jobs', requiresClaim: null),
+    _DockTab(routePrefix: '/schedule', icon: PhosphorIconsLight.calendarBlank, activeIcon: PhosphorIconsFill.calendarBlank, label: 'Schedule', requiresClaim: null),
+    _DockTab(routePrefix: '/chat', icon: PhosphorIconsLight.chatCircle, activeIcon: PhosphorIconsFill.chatCircle, label: 'Chat', requiresClaim: null),
+    _DockTab(routePrefix: '/profile', icon: PhosphorIconsLight.userCircle, activeIcon: PhosphorIconsFill.userCircle, label: 'Profile', requiresClaim: null),
   ];
 
-  /// Care tabs (Project Nightingale) — replaces "Jobs" label with "Shifts"
-  /// and swaps Chat with Care Hub for quick access
   static const _careTabs = [
-    _DockTab(routePrefix: '/', icon: PhosphorIconsLight.houseLine, activeIcon: PhosphorIconsFill.houseLine, label: 'Home'),
-    _DockTab(routePrefix: '/jobs', icon: PhosphorIconsLight.briefcase, activeIcon: PhosphorIconsFill.briefcase, label: 'Shifts'),
-    _DockTab(routePrefix: '/schedule', icon: PhosphorIconsLight.calendarBlank, activeIcon: PhosphorIconsFill.calendarBlank, label: 'Roster'),
-    _DockTab(routePrefix: '/care', icon: PhosphorIconsLight.heartbeat, activeIcon: PhosphorIconsFill.heartbeat, label: 'Care'),
-    _DockTab(routePrefix: '/profile', icon: PhosphorIconsLight.userCircle, activeIcon: PhosphorIconsFill.userCircle, label: 'Profile'),
+    _DockTab(routePrefix: '/', icon: PhosphorIconsLight.houseLine, activeIcon: PhosphorIconsFill.houseLine, label: 'Home', requiresClaim: null),
+    _DockTab(routePrefix: '/schedule', icon: PhosphorIconsLight.calendarBlank, activeIcon: PhosphorIconsFill.calendarBlank, label: 'Roster', requiresClaim: null),
+    _DockTab(routePrefix: '/participants', icon: PhosphorIconsLight.usersThree, activeIcon: PhosphorIconsFill.usersThree, label: 'Participants', requiresClaim: null),
+    _DockTab(routePrefix: '/profile', icon: PhosphorIconsLight.userCircle, activeIcon: PhosphorIconsFill.userCircle, label: 'Profile', requiresClaim: null),
   ];
 
-  /// Derive the active tab index from the current route URI.
+  // ── Role-based tab filtering ───────────────────────────
+
+  /// Filters the dock tabs based on the user's role and claims.
+  /// Workers (technician, apprentice, senior_tech, subcontractor) get
+  /// a reduced set. Admin+ (owner, admin, manager, office_admin) see
+  /// everything. Tabs with a `requiresClaim` are only shown if the
+  /// user's claims contain that value.
+  static List<_DockTab> _filterTabsForRole(
+    List<_DockTab> tabs,
+    UserRole role,
+    Set<String> claims,
+  ) {
+    return tabs.where((tab) {
+      // If the tab requires a specific claim, check it
+      if (tab.requiresClaim != null) {
+        return claims.contains(tab.requiresClaim);
+      }
+      // All unrestricted tabs are always visible
+      return true;
+    }).toList();
+  }
+
   int _resolveIndex(String location, List<_DockTab> tabs) {
     for (int i = 0; i < tabs.length; i++) {
       final prefix = tabs[i].routePrefix;
@@ -49,10 +71,9 @@ class ShellScaffold extends ConsumerWidget {
       if (location.startsWith(prefix)) return i;
     }
     if (location.startsWith('/inbox')) return 0;
-    // Care sub-routes → highlight Care tab
-    if (location.startsWith('/care')) {
+    if (location.startsWith('/care') && !location.startsWith('/care/my-shifts')) {
       for (int i = 0; i < tabs.length; i++) {
-        if (tabs[i].routePrefix == '/care') return i;
+        if (tabs[i].routePrefix == '/schedule') return i;
       }
     }
     return 0;
@@ -61,38 +82,40 @@ class ShellScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.toString();
-    final roleAsync = ref.watch(userRoleProvider);
     final isCare = ref.watch(isCareProvider);
+    final shiftState = ref.watch(activeShiftStateProvider);
+    final isInActiveWorkspace = shiftState.hasActiveShift;
+    final role = ref.watch(currentRoleProvider);
+    final claims = ref.watch(currentClaimsProvider);
 
-    // Use care-specific tabs for care orgs (Project Nightingale)
-    final tabs = isCare ? _careTabs : _tradesTabs;
+    final rawTabs = isCare ? _careTabs : _tradesTabs;
+    final tabs = _filterTabsForRole(rawTabs, role, claims);
     final current = _resolveIndex(location, tabs);
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       body: child,
       extendBody: true,
-      bottomNavigationBar: _ObsidianDock(
-        tabs: tabs,
-        currentIndex: current,
-        isCare: isCare,
-        onTabTap: (index) {
-          if (index != current) {
-            HapticFeedback.selectionClick();
-            context.go(tabs[index].routePrefix);
-          }
-        },
-        onSearchTap: () {
-          HapticFeedback.lightImpact();
-          showCommandPalette(context);
-        },
-        role: roleAsync.valueOrNull,
-      ),
+      bottomNavigationBar: (isInActiveWorkspace || keyboardOpen)
+          ? null
+          : _GlassDock(
+              tabs: tabs,
+              currentIndex: current,
+              onTabTap: (index) {
+                if (index != current) {
+                  HapticFeedback.lightImpact();
+                  context.go(tabs[index].routePrefix);
+                } else {
+                  HapticFeedback.selectionClick();
+                }
+              },
+            ),
     );
   }
 }
 
 // ══════════════════════════════════════════════════════
-// ── Dock Tab Data ────────────────────────────────────
+// ── Tab Data ────────────────────────────────────────
 // ══════════════════════════════════════════════════════
 
 class _DockTab {
@@ -100,162 +123,116 @@ class _DockTab {
   final IconData icon;
   final IconData activeIcon;
   final String label;
+
+  /// If non-null, the tab is only shown when the user's claims contain this value.
+  /// Null means the tab is unrestricted (visible to all roles).
+  final String? requiresClaim;
+
   const _DockTab({
     required this.routePrefix,
     required this.icon,
     required this.activeIcon,
     required this.label,
+    this.requiresClaim,
   });
 }
 
 // ══════════════════════════════════════════════════════
-// ── Obsidian Dock ────────────────────────────────────
+// ── Glass Dock (The Floating Bar) ───────────────────
 // ══════════════════════════════════════════════════════
 
-class _ObsidianDock extends StatelessWidget {
+class _GlassDock extends StatelessWidget {
   final List<_DockTab> tabs;
   final int currentIndex;
   final ValueChanged<int> onTabTap;
-  final VoidCallback onSearchTap;
-  final UserRole? role;
-  final bool isCare;
 
-  const _ObsidianDock({
+  const _GlassDock({
     required this.tabs,
     required this.currentIndex,
     required this.onTabTap,
-    required this.onSearchTap,
-    this.role,
-    this.isCare = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final isDark = context.isDark;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      child: ClipRRect(
-        borderRadius: ObsidianTheme.radiusDock,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Builder(builder: (context) {
-            final c = context.iColors;
-            return Container(
-            height: 60,
-            decoration: BoxDecoration(
-              color: c.dockBg,
-              borderRadius: ObsidianTheme.radiusDock,
-              border: Border.all(color: c.borderMedium),
-              boxShadow: context.isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // First 3 tabs (Home, Jobs, Timeline)
-                ...List.generate(3, (i) => _DockButton(
-                  tab: tabs[i],
-                  isActive: i == currentIndex,
-                  isCare: isCare,
-                  onTap: () => onTabTap(i),
-                )),
-
-                // Center Search (opens overlay, not a route)
-                _SearchButton(onTap: onSearchTap),
-
-                // Last 2 tabs (Comms, Profile)
-                ...List.generate(2, (j) {
-                  final i = j + 3;
-                  return _DockButton(
-                    tab: tabs[i],
-                    isActive: i == currentIndex,
-                    isCare: isCare,
-                    onTap: () => onTabTap(i),
-                  );
-                }),
-              ],
-            ),
-          );
-          }),
-        ),
+      padding: EdgeInsets.only(
+        bottom: bottomPad + 8,
+        left: 40,
+        right: 40,
       ),
-    )
-        .animate()
-        .fadeIn(delay: 200.ms, duration: 400.ms)
-        .moveY(begin: 20, end: 0, delay: 200.ms, duration: 500.ms, curve: Curves.easeOutQuart);
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// ── Dock Button ──────────────────────────────────────
-// ══════════════════════════════════════════════════════
-
-class _DockButton extends StatelessWidget {
-  final _DockTab tab;
-  final bool isActive;
-  final bool isCare;
-  final VoidCallback onTap;
-
-  const _DockButton({
-    required this.tab,
-    required this.isActive,
-    this.isCare = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final accentColor = isCare ? ObsidianTheme.careBlue : ObsidianTheme.emerald;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56,
-        height: 56,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.85, end: 1.0).animate(animation),
-                    child: child,
-                  ),
-                );
-              },
-              child: Icon(
-                isActive ? tab.activeIcon : tab.icon,
-                key: ValueKey('${tab.routePrefix}_$isActive'),
-                size: 22,
-                color: isActive ? accentColor : ObsidianTheme.textTertiary,
-              ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
-            const SizedBox(height: 4),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              width: isActive ? 4 : 0,
-              height: isActive ? 4 : 0,
-              decoration: BoxDecoration(
-                color: accentColor,
-                shape: BoxShape.circle,
-                boxShadow: isActive
-                    ? [BoxShadow(color: accentColor.withValues(alpha: 0.4), blurRadius: 6)]
-                    : null,
-              ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.black.withValues(alpha: 0.06),
+                  width: 0.5,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final tileWidth = (constraints.maxWidth - 8) / tabs.length;
+                  return Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      // ── Sliding Glass Pill ──
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOutCubic,
+                        left: 4 + (currentIndex * tileWidth),
+                        child: _GlassPill(
+                          width: tileWidth,
+                          isDark: isDark,
+                        ),
+                      ),
+
+                      // ── Tab Icons ──
+                      Row(
+                        children: List.generate(tabs.length, (i) {
+                          return _DockIcon(
+                            tab: tabs[i],
+                            isActive: i == currentIndex,
+                            width: tileWidth,
+                            isDark: isDark,
+                            onTap: () => onTabTap(i),
+                          );
+                        }),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -263,32 +240,142 @@ class _DockButton extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════
-// ── Search Button (Center) ───────────────────────────
+// ── Sliding Glass Pill (The Selection Indicator) ────
 // ══════════════════════════════════════════════════════
 
-class _SearchButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _SearchButton({required this.onTap});
+class _GlassPill extends StatelessWidget {
+  final double width;
+  final bool isDark;
+
+  const _GlassPill({required this.width, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56,
-        height: 56,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              PhosphorIconsLight.magnifyingGlass,
-              size: 22,
-              color: ObsidianTheme.textTertiary,
+    return Container(
+      width: width - 4,
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.10)
+            : Colors.white.withValues(alpha: 0.85),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.black.withValues(alpha: 0.04),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// ── Dock Icon (Equal-Width, Icon Only) ──────────────
+// ══════════════════════════════════════════════════════
+
+class _DockIcon extends StatefulWidget {
+  final _DockTab tab;
+  final bool isActive;
+  final double width;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _DockIcon({
+    required this.tab,
+    required this.isActive,
+    required this.width,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  State<_DockIcon> createState() => _DockIconState();
+}
+
+class _DockIconState extends State<_DockIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pressCtrl;
+  late final Animation<double> _pressScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
+      reverseDuration: const Duration(milliseconds: 250),
+    );
+    _pressScale = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _pressCtrl, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pressCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+
+    return Semantics(
+      label: widget.tab.label,
+      button: true,
+      selected: widget.isActive,
+      child: GestureDetector(
+        onTapDown: (_) => _pressCtrl.forward(),
+        onTapUp: (_) {
+          _pressCtrl.reverse();
+          widget.onTap();
+        },
+        onTapCancel: () => _pressCtrl.reverse(),
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: widget.width,
+          height: 56,
+          child: Center(
+            child: AnimatedBuilder(
+              animation: _pressScale,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pressScale.value,
+                  child: child,
+                );
+              },
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) {
+                  return ScaleTransition(
+                    scale: animation,
+                    child: FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Icon(
+                  widget.isActive ? widget.tab.activeIcon : widget.tab.icon,
+                  key: ValueKey(widget.isActive),
+                  size: widget.isActive ? 22 : 21,
+                  color: widget.isActive
+                      ? (widget.isDark ? c.textPrimary : c.textPrimary)
+                      : c.textTertiary,
+                ),
+              ),
             ),
-            const SizedBox(height: 4),
-            const SizedBox.shrink(),
-          ],
+          ),
         ),
       ),
     );

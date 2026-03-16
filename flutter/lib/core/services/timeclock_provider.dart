@@ -60,11 +60,25 @@ final leaveRequestsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   final data = await SupabaseService.client
       .from('leave_requests')
       .select()
-      .eq('user_id', userId)
+      .or('user_id.eq.$userId,worker_id.eq.$userId')
       .order('start_date', ascending: false)
-      .limit(20);
+      .limit(50);
 
   return (data as List).cast<Map<String, dynamic>>();
+});
+
+/// Cached leave balances for the current worker.
+final leaveBalanceProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final userId = SupabaseService.auth.currentUser?.id;
+  if (userId == null) return null;
+
+  final data = await SupabaseService.client
+      .from('leave_balances_cache')
+      .select()
+      .eq('worker_id', userId)
+      .maybeSingle();
+
+  return data;
 });
 
 /// Clock in — creates a new time entry.
@@ -135,21 +149,64 @@ Future<void> submitLeaveRequest({
   required String type,
   required DateTime startDate,
   required DateTime endDate,
+  bool isFullDay = true,
+  String? medicalCertUrl,
   String? reason,
 }) async {
   final userId = SupabaseService.auth.currentUser?.id;
   if (userId == null) return;
 
-  final days = endDate.difference(startDate).inDays + 1;
+  final days = endDate.difference(startDate).inDays + 1.0;
 
   await SupabaseService.client.from('leave_requests').insert({
     'organization_id': organizationId,
+    'worker_id': userId,
     'user_id': userId,
-    'type': type,
+    'leave_type': type,
+    'type': type, // backward compatibility with legacy payload readers
     'start_date': startDate.toIso8601String().split('T').first,
     'end_date': endDate.toIso8601String().split('T').first,
+    'start_at': startDate.toUtc().toIso8601String(),
+    'end_at': endDate.toUtc().toIso8601String(),
+    'is_full_day': isFullDay,
     'days': days,
+    'medical_cert_url': medicalCertUrl,
     'reason': reason,
+    'source': 'mobile',
+    'emergency_reported': false,
     'status': 'pending',
+  });
+}
+
+/// Emergency sick path — immediate approved leave with drop-and-cover trigger.
+Future<void> reportEmergencySickToday({
+  required String organizationId,
+  String? reason,
+}) async {
+  final userId = SupabaseService.auth.currentUser?.id;
+  if (userId == null) return;
+
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month, now.day, 0, 0, 0);
+  final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+  await SupabaseService.client.from('leave_requests').insert({
+    'organization_id': organizationId,
+    'worker_id': userId,
+    'user_id': userId,
+    'leave_type': 'sick',
+    'type': 'sick',
+    'start_date': start.toIso8601String().split('T').first,
+    'end_date': end.toIso8601String().split('T').first,
+    'start_at': start.toUtc().toIso8601String(),
+    'end_at': end.toUtc().toIso8601String(),
+    'is_full_day': true,
+    'days': 1.0,
+    'reason': reason ?? 'Emergency sick call',
+    'source': 'emergency_sick',
+    'emergency_reported': true,
+    'status': 'approved',
+    'approved_by': userId,
+    'approved_at': now.toUtc().toIso8601String(),
   });
 }

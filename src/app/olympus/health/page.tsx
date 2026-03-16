@@ -83,7 +83,7 @@ interface TelemetryEvent {
   has_screenshot: boolean;
   screenshot_path: string | null;
   screenshot_url?: string | null;
-  console_buffer: Array<{ level: string; message: string; timestamp: string }>;
+  console_buffer: unknown[];
   resolved_by: string | null;
   resolved_at: string | null;
   resolution_notes: string | null;
@@ -92,6 +92,41 @@ interface TelemetryEvent {
   user_role: string | null;
   gps_lat: number | null;
   gps_lng: number | null;
+}
+
+function normalizeConsoleEntry(
+  entry: unknown,
+  fallbackTimestamp: string,
+): { level: string; message: string; timestamp: string } {
+  if (typeof entry === "string") {
+    return {
+      level: "log",
+      message: entry,
+      timestamp: fallbackTimestamp,
+    };
+  }
+  if (entry && typeof entry === "object") {
+    const obj = entry as Record<string, unknown>;
+    return {
+      level:
+        typeof obj.level === "string" && obj.level.trim().length > 0
+          ? obj.level
+          : "log",
+      message:
+        typeof obj.message === "string"
+          ? obj.message
+          : JSON.stringify(obj),
+      timestamp:
+        typeof obj.timestamp === "string" && obj.timestamp.length > 0
+          ? obj.timestamp
+          : fallbackTimestamp,
+    };
+  }
+  return {
+    level: "log",
+    message: String(entry),
+    timestamp: fallbackTimestamp,
+  };
 }
 
 /* ── Severity Badge ─────────────────────────────────────────────── */
@@ -645,13 +680,17 @@ export default function HealthPage() {
                     </div>
                     <div className="max-h-[200px] overflow-y-auto">
                       {selectedEvent.console_buffer.map((entry, i) => {
+                        const normalized = normalizeConsoleEntry(
+                          entry,
+                          selectedEvent.event_timestamp,
+                        );
                         const levelColor = {
                           error: "text-red-400",
                           warn: "text-amber-400",
                           info: "text-blue-400",
                           log: "text-zinc-500",
                           debug: "text-zinc-700",
-                        }[entry.level] || "text-zinc-600";
+                        }[normalized.level] || "text-zinc-600";
 
                         return (
                           <div
@@ -659,12 +698,12 @@ export default function HealthPage() {
                             className="flex items-start gap-2 border-b border-white/[0.01] px-3.5 py-1 hover:bg-white/[0.01] font-mono text-[9px]"
                           >
                             <span className={`flex-shrink-0 font-bold uppercase ${levelColor}`}>
-                              {entry.level.slice(0, 4).padEnd(4)}
+                              {normalized.level.slice(0, 4).padEnd(4)}
                             </span>
                             <span className="text-zinc-600 flex-shrink-0">
-                              {new Date(entry.timestamp).toLocaleTimeString()}
+                              {new Date(normalized.timestamp).toLocaleTimeString()}
                             </span>
-                            <span className="text-zinc-400 break-all">{entry.message}</span>
+                            <span className="text-zinc-400 break-all">{normalized.message}</span>
                           </div>
                         );
                       })}

@@ -12,8 +12,11 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/industry_provider.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/jobs_provider.dart';
 import 'package:iworkr_mobile/core/services/schedule_provider.dart';
+import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
+import 'package:iworkr_mobile/core/services/governance_policy_provider.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/services/credentials_provider.dart';
 import 'package:iworkr_mobile/core/services/incidents_provider.dart';
@@ -25,8 +28,8 @@ import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
 import 'package:iworkr_mobile/features/scan/screens/scanner_screen.dart';
 import 'package:iworkr_mobile/features/search/screens/command_palette_screen.dart';
-import 'package:iworkr_mobile/features/workspace/widgets/workspace_switcher_sheet.dart';
-import 'package:iworkr_mobile/models/job.dart';
+import 'package:iworkr_mobile/features/workspace/widgets/workspace_mega_menu.dart';
+import 'package:iworkr_mobile/models/care_shift.dart';
 import 'package:iworkr_mobile/models/schedule_block.dart';
 
 // ═══════════════════════════════════════════════════════════
@@ -40,24 +43,44 @@ class DashboardScreen extends ConsumerStatefulWidget {
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen>
+    with TickerProviderStateMixin {
   bool _wormholeTrigger = false;
   bool _scrolled = false;
+  late final WorkspaceMegaMenuController _megaMenu;
+  final _appBarLayerLink = LayerLink();
 
-  Future<void> _openSwitcher() async {
-    final switched = await showWorkspaceSwitcher(context);
-    if (switched && mounted) {
-      setState(() => _wormholeTrigger = true);
-      ref.invalidate(profileProvider);
-      ref.invalidate(jobsStreamProvider);
-      ref.invalidate(myTodayBlocksProvider);
-    }
+  @override
+  void initState() {
+    super.initState();
+    _megaMenu = WorkspaceMegaMenuController(
+      vsync: this,
+      link: _appBarLayerLink,
+    );
+    _megaMenu.onWorkspaceSwitched = () {
+      if (mounted) {
+        setState(() => _wormholeTrigger = true);
+      }
+    };
+  }
+
+  @override
+  void dispose() {
+    _megaMenu.dispose();
+    super.dispose();
+  }
+
+  void _toggleMegaMenu() {
+    _megaMenu.open(context, ref);
   }
 
   Future<void> _refresh() async {
     HapticFeedback.mediumImpact();
     ref.invalidate(jobsStreamProvider);
     ref.invalidate(myTodayBlocksProvider);
+    ref.invalidate(myCareShiftsProvider);
+    ref.invalidate(credentialStatsProvider);
+    ref.invalidate(incidentStatsProvider);
     ref.invalidate(profileProvider);
     ref.invalidate(allWorkspacesProvider);
   }
@@ -88,9 +111,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: MediaQuery.of(context).padding.top + 60,
+                      ),
+                    ),
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
                       sliver: SliverList.list(
                         children: ref.watch(isCareProvider)
                             ? _buildCareDashboard(ref, context)
@@ -103,9 +130,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               _GlassAppBar(
                 workspace: wsAsync.valueOrNull,
                 scrolled: _scrolled,
-                onWorkspaceTap: _openSwitcher,
+                onWorkspaceTap: _toggleMegaMenu,
                 onSearchTap: () => showCommandPalette(context),
                 onNotificationTap: () => context.push('/inbox'),
+                megaMenuAnimation: _megaMenu.animation,
+                layerLink: _appBarLayerLink,
               ),
             ],
           ),
@@ -129,15 +158,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   /// Care-specific dashboard layout (Project Nightingale)
   List<Widget> _buildCareDashboard(WidgetRef ref, BuildContext context) => [
-        _CareClockInCard(ref: ref),
-        const SizedBox(height: 12),
+        const _CareShiftHero(),
+        const SizedBox(height: 14),
+        const _CareQuickActions(),
+        const SizedBox(height: 14),
         _CareTodayRoster(ref: ref),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _CareComplianceBanner(ref: ref),
-        const SizedBox(height: 12),
-        _CareQuickActions(),
-        const SizedBox(height: 12),
-        _ScheduleCard(ref: ref),
       ];
 }
 
@@ -151,6 +178,8 @@ class _GlassAppBar extends StatelessWidget {
   final VoidCallback onWorkspaceTap;
   final VoidCallback onSearchTap;
   final VoidCallback onNotificationTap;
+  final AnimationController? megaMenuAnimation;
+  final LayerLink? layerLink;
 
   const _GlassAppBar({
     required this.workspace,
@@ -158,6 +187,8 @@ class _GlassAppBar extends StatelessWidget {
     required this.onWorkspaceTap,
     required this.onSearchTap,
     required this.onNotificationTap,
+    this.megaMenuAnimation,
+    this.layerLink,
   });
 
   @override
@@ -165,59 +196,84 @@ class _GlassAppBar extends StatelessWidget {
     final c = context.iColors;
     final topPad = MediaQuery.of(context).padding.top;
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.fromLTRB(16, topPad + 10, 16, 10),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.6),
-            border: Border(
-              bottom: BorderSide(
-                color: scrolled
-                    ? c.border
-                    : Colors.transparent,
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: onWorkspaceTap,
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _WorkspaceLogo(workspace: workspace),
-                    const SizedBox(width: 10),
-                    Text(
-                      workspace?.name ?? 'iWorkr',
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: c.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      PhosphorIconsBold.caretDown,
-                      size: 10,
-                      color: c.textMuted,
-                    ),
-                  ],
+    return CompositedTransformTarget(
+      link: layerLink ?? LayerLink(),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: EdgeInsets.fromLTRB(16, topPad + 10, 16, 10),
+            decoration: BoxDecoration(
+              color: c.canvas.withValues(alpha: 0.85),
+              border: Border(
+                bottom: BorderSide(
+                  color: scrolled
+                      ? c.border
+                      : Colors.transparent,
                 ),
               ),
-              const Spacer(),
-              const _SyncStatusIndicator(),
-              const SizedBox(width: 6),
-              _GhostIconButton(
-                icon: CupertinoIcons.search,
-                onTap: onSearchTap,
-              ),
-              const SizedBox(width: 6),
-              _NotificationButton(onTap: onNotificationTap),
-            ],
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: onWorkspaceTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _WorkspaceLogo(workspace: workspace),
+                      const SizedBox(width: 10),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.45,
+                        ),
+                        child: Text(
+                          workspace?.name ?? 'iWorkr',
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: c.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      megaMenuAnimation != null
+                          ? AnimatedBuilder(
+                              animation: megaMenuAnimation!,
+                              builder: (context, child) {
+                                return Transform.rotate(
+                                  angle: megaMenuAnimation!.value * 3.14159,
+                                  child: child,
+                                );
+                              },
+                              child: Icon(
+                                PhosphorIconsBold.caretDown,
+                                size: 10,
+                                color: c.textMuted,
+                              ),
+                            )
+                          : Icon(
+                              PhosphorIconsBold.caretDown,
+                              size: 10,
+                              color: c.textMuted,
+                            ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                const _SyncStatusIndicator(),
+                const SizedBox(width: 6),
+                _GhostIconButton(
+                  icon: CupertinoIcons.search,
+                  onTap: onSearchTap,
+                ),
+                const SizedBox(width: 6),
+                _NotificationButton(onTap: onNotificationTap),
+              ],
+            ),
           ),
         ),
       ),
@@ -1054,85 +1110,100 @@ class _CareComplianceBanner extends ConsumerWidget {
 
     final hasAlerts = credStats.expired > 0 || credStats.expiring > 0 || incStats.critical > 0;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.push('/care');
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: c.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: hasAlerts ? ObsidianTheme.amber.withValues(alpha: 0.3) : c.border,
-            ),
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        context.push('/care');
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: hasAlerts ? ObsidianTheme.amber.withValues(alpha: 0.25) : c.border,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(PhosphorIconsLight.heartbeat, size: 20, color: ObsidianTheme.emerald),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text('Care Overview', style: GoogleFonts.inter(
-                      fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary,
-                    )),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(PhosphorIconsFill.shieldCheck, size: 16,
+                    color: hasAlerts ? ObsidianTheme.amber : ObsidianTheme.emerald),
+                const SizedBox(width: 8),
+                Text(
+                  'COMPLIANCE',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.5,
+                    color: hasAlerts ? ObsidianTheme.amber : ObsidianTheme.emerald,
                   ),
-                  Icon(PhosphorIconsLight.caretRight, size: 16, color: c.textTertiary),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _MiniStat(
+                ),
+                const Spacer(),
+                Icon(PhosphorIconsLight.caretRight, size: 16, color: c.textTertiary),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _ComplianceStat(
                     label: 'Credentials',
                     value: '${credStats.verified}/${credStats.total}',
                     color: credStats.expired > 0 ? ObsidianTheme.rose : ObsidianTheme.emerald,
+                    icon: PhosphorIconsFill.certificate,
                   ),
-                  const SizedBox(width: 16),
-                  _MiniStat(
-                    label: 'Open Incidents',
+                ),
+                Container(width: 1, height: 36, color: c.border),
+                Expanded(
+                  child: _ComplianceStat(
+                    label: 'Incidents',
                     value: '${incStats.open}',
                     color: incStats.critical > 0 ? ObsidianTheme.rose : ObsidianTheme.amber,
+                    icon: PhosphorIconsFill.warningCircle,
                   ),
-                  if (credStats.expiring > 0) ...[
-                    const SizedBox(width: 16),
-                    _MiniStat(
+                ),
+                if (credStats.expiring > 0) ...[
+                  Container(width: 1, height: 36, color: c.border),
+                  Expanded(
+                    child: _ComplianceStat(
                       label: 'Expiring',
                       value: '${credStats.expiring}',
                       color: ObsidianTheme.amber,
+                      icon: PhosphorIconsFill.timer,
                     ),
-                  ],
+                  ),
                 ],
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     )
         .animate()
-        .fadeIn(delay: 600.ms, duration: 400.ms)
-        .moveY(begin: 12, delay: 600.ms, duration: 400.ms, curve: Curves.easeOutQuart);
+        .fadeIn(delay: 300.ms, duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+        .moveY(begin: 10, delay: 300.ms, duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1));
   }
 }
 
-class _MiniStat extends StatelessWidget {
+class _ComplianceStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _MiniStat({required this.label, required this.value, required this.color});
+  final IconData icon;
+  const _ComplianceStat({required this.label, required this.value, required this.color, required this.icon});
 
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(height: 6),
         Text(value, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: color)),
+        const SizedBox(height: 2),
         Text(label, style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary)),
       ],
     );
@@ -1204,6 +1275,556 @@ class _WormholeTransitionState extends State<WormholeTransition>
 // ═══════════════════════════════════════════════════════════
 // ── Care: Clock In / Out Card ────────────────────────────
 // ═══════════════════════════════════════════════════════════
+
+class _CareShiftHero extends ConsumerStatefulWidget {
+  const _CareShiftHero();
+
+  @override
+  ConsumerState<_CareShiftHero> createState() => _CareShiftHeroState();
+}
+
+class _CareShiftHeroState extends ConsumerState<_CareShiftHero> {
+  List<CareShift>? _directShifts;
+  String? _debugInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchShiftsDirect();
+  }
+
+  /// Direct Supabase query — bypasses all provider chains
+  Future<void> _fetchShiftsDirect() async {
+    try {
+      final userId = SupabaseService.auth.currentUser?.id;
+      if (userId == null) {
+        setState(() => _debugInfo = 'No auth user');
+        return;
+      }
+
+      // Get the user's org directly
+      final membership = await SupabaseService.client
+          .from('organization_members')
+          .select('organization_id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+
+      if (membership == null) {
+        setState(() => _debugInfo = 'No org membership for $userId');
+        return;
+      }
+
+      final orgId = membership['organization_id'] as String;
+      final now = DateTime.now();
+      final rangeStart = now.subtract(const Duration(days: 1)).toUtc().toIso8601String();
+      final rangeEnd = now.add(const Duration(days: 7)).toUtc().toIso8601String();
+
+      final List<dynamic> data = await SupabaseService.client
+          .from('schedule_blocks')
+          .select('*, participant_profiles(preferred_name, critical_alerts)')
+          .eq('organization_id', orgId)
+          .eq('technician_id', userId)
+          .gte('start_time', rangeStart)
+          .lte('start_time', rangeEnd)
+          .neq('status', 'cancelled')
+          .order('start_time');
+
+      final shifts = data.map((s) => CareShift.fromJson(s as Map<String, dynamic>)).toList();
+      setState(() {
+        _directShifts = shifts;
+        _debugInfo = 'org=$orgId user=$userId found=${shifts.length}';
+      });
+    } catch (e) {
+      setState(() => _debugInfo = 'Error: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    final active = ref.watch(activeShiftStateProvider);
+
+    // Use direct query results, falling back to provider
+    final providerShifts = ref.watch(myTodayShiftsProvider);
+    final todayShifts = providerShifts.isNotEmpty
+        ? providerShifts
+        : (_directShifts ?? []).where((s) {
+            final local = s.scheduledStart.toLocal();
+            final now = DateTime.now();
+            return local.year == now.year && local.month == now.month && local.day == now.day;
+          }).toList();
+
+    // If direct fetch found shifts but provider didn't, use all direct shifts as "upcoming"
+    final allUpcoming = (_directShifts ?? []).where((s) => s.scheduledEnd.isAfter(DateTime.now()) && s.status != CareShiftStatus.cancelled).toList();
+
+    final accent = ObsidianTheme.careBlue;
+
+    // ── State 1: Active Shift (Clocked In) ──
+    if (active.hasActiveShift) {
+      final startedAt = active.clockInTime ?? DateTime.now();
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: ObsidianTheme.emerald.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: ObsidianTheme.emerald,
+                    boxShadow: [
+                      BoxShadow(color: ObsidianTheme.emerald.withValues(alpha: 0.4), blurRadius: 6),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text('ON SHIFT',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      color: ObsidianTheme.emerald,
+                      fontWeight: FontWeight.w700,
+                    )),
+              ],
+            ),
+            const SizedBox(height: 14),
+            StreamBuilder<int>(
+              stream: Stream.periodic(const Duration(seconds: 1), (i) => i),
+              builder: (context, _) {
+                final elapsed = DateTime.now().difference(startedAt);
+                final h = elapsed.inHours.toString().padLeft(2, '0');
+                final m = (elapsed.inMinutes % 60).toString().padLeft(2, '0');
+                final s = (elapsed.inSeconds % 60).toString().padLeft(2, '0');
+                return Text(
+                  '$h:$m:$s',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: active.shiftId == null
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      context.push('/care/shift/${active.shiftId}');
+                    },
+              child: Container(
+                width: double.infinity,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: ObsidianTheme.rose,
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(PhosphorIconsBold.signOut, size: 16, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Text('Clock Out & Debrief',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          )),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ).animate()
+          .fadeIn(duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+          .moveY(begin: 8, duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1));
+    }
+
+    // ── State 2: Upcoming Shift ──
+    // Use today's shifts if available, otherwise use any upcoming shift from direct fetch
+    final effectiveUpcoming = todayShifts.isNotEmpty ? todayShifts : allUpcoming;
+    if (effectiveUpcoming.isNotEmpty) {
+      final now = DateTime.now();
+      final upcoming = effectiveUpcoming
+          .where((s) => s.scheduledEnd.isAfter(now))
+          .toList()
+        ..sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
+
+      if (upcoming.isNotEmpty) {
+        final next = upcoming.first;
+        final startTime = DateFormat('h:mm a').format(next.scheduledStart);
+        final endTime = DateFormat('h:mm a').format(next.scheduledEnd);
+        final timeUntil = next.scheduledStart.difference(now);
+        final countdownLabel = timeUntil.isNegative
+            ? 'Started'
+            : timeUntil.inHours > 0
+                ? 'In ${timeUntil.inHours}h ${timeUntil.inMinutes % 60}m'
+                : 'In ${timeUntil.inMinutes}m';
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: c.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(PhosphorIconsFill.clock, size: 16, color: accent),
+                  const SizedBox(width: 8),
+                  Text('NEXT SHIFT',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 10,
+                        letterSpacing: 1.5,
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                      )),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      countdownLabel,
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: accent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '$startTime — $endTime',
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: c.textPrimary,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(PhosphorIconsLight.user, size: 14, color: c.textMuted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      next.participantName ?? 'Participant',
+                      style: GoogleFonts.inter(fontSize: 14, color: c.textSecondary, fontWeight: FontWeight.w500),
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              if ((next.serviceType ?? '').isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(PhosphorIconsLight.heartbeat, size: 14, color: c.textMuted),
+                    const SizedBox(width: 6),
+                    Text(
+                      next.serviceType!,
+                      style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
+                    ),
+                  ],
+                ),
+              ],
+              if ((next.location ?? '').isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(PhosphorIconsLight.mapPin, size: 14, color: c.textMuted),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        next.location!,
+                        style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  context.push('/care/shift/${next.id}');
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: accent,
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(PhosphorIconsBold.play, size: 16, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text('Clock In',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            )),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ).animate()
+            .fadeIn(duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+            .moveY(begin: 8, duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1));
+      }
+    }
+
+    // ── State 3: No Upcoming Shifts ──
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        children: [
+          Icon(PhosphorIconsLight.sunHorizon, size: 36, color: c.textTertiary),
+          const SizedBox(height: 12),
+          Text(
+            'You have no upcoming shifts',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: c.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Enjoy your time off. Check the roster for available shifts.',
+            style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
+            textAlign: TextAlign.center,
+          ),
+          if (_debugInfo != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _debugInfo!,
+              style: GoogleFonts.jetBrainsMono(fontSize: 9, color: c.textTertiary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              context.go('/schedule');
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: c.borderMedium),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(PhosphorIconsLight.calendarBlank, size: 16, color: c.textSecondary),
+                  const SizedBox(width: 8),
+                  Text('View Roster',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: c.textSecondary,
+                      )),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate()
+        .fadeIn(duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+        .moveY(begin: 8, duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1));
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ── Care: Quick Actions Grid ─────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+class _CareQuickActions extends StatelessWidget {
+  const _CareQuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+
+    final actions = [
+      _QuickActionData('Participants', PhosphorIconsFill.usersThree, ObsidianTheme.careBlue, '/participants'),
+      _QuickActionData('Medications', PhosphorIconsFill.pill, ObsidianTheme.violet, '/care/medications/asclepius'),
+      _QuickActionData('Incidents', PhosphorIconsFill.warningCircle, ObsidianTheme.amber, '/care/incidents'),
+      _QuickActionData('Credentials', PhosphorIconsFill.certificate, ObsidianTheme.emerald, '/care/credentials'),
+    ];
+
+    return Row(
+      children: actions.asMap().entries.map((entry) {
+        final i = entry.key;
+        final a = entry.value;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: i == 0 ? 0 : 4,
+              right: i == actions.length - 1 ? 0 : 4,
+            ),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push(a.route);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: c.border),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: a.color.withValues(alpha: 0.10),
+                      ),
+                      child: Icon(a.icon, size: 18, color: a.color),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      a.label,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: c.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ).animate()
+              .fadeIn(delay: Duration(milliseconds: 100 + i * 50), duration: 350.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+              .moveY(begin: 6, delay: Duration(milliseconds: 100 + i * 50), duration: 350.ms, curve: const Cubic(0.16, 1, 0.3, 1)),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _QuickActionData {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String route;
+  const _QuickActionData(this.label, this.icon, this.color, this.route);
+}
+
+class _CareMandatoryReads extends ConsumerStatefulWidget {
+  const _CareMandatoryReads();
+
+  @override
+  ConsumerState<_CareMandatoryReads> createState() => _CareMandatoryReadsState();
+}
+
+class _CareMandatoryReadsState extends ConsumerState<_CareMandatoryReads> {
+  int _count = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final pending = await fetchPendingCriticalPolicies();
+      if (!mounted) return;
+      setState(() {
+        _count = pending.length;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading || _count == 0) return const SizedBox.shrink();
+    final c = context.iColors;
+    return GestureDetector(
+      onTap: () => context.push('/care/governance/policies'),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: ObsidianTheme.rose.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(PhosphorIconsLight.warning, size: 16, color: ObsidianTheme.rose),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Mandatory reads pending: $_count',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: c.textPrimary,
+                ),
+              ),
+            ),
+            Icon(PhosphorIconsLight.caretRight,
+                size: 14, color: c.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _CareClockInCard extends ConsumerStatefulWidget {
   final WidgetRef ref;
@@ -1471,13 +2092,13 @@ class _CareTodayRoster extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.iColors;
-    final jobsAsync = ref.watch(jobsStreamProvider);
+    final todayShifts = ref.watch(myTodayShiftsProvider);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: ObsidianTheme.radiusLg,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: c.border),
       ),
       child: Column(
@@ -1485,14 +2106,14 @@ class _CareTodayRoster extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(PhosphorIconsFill.calendarCheck, size: 18, color: ObsidianTheme.careBlue),
+              Icon(PhosphorIconsFill.calendarCheck, size: 16, color: ObsidianTheme.careBlue),
               const SizedBox(width: 8),
               Text(
                 'TODAY\'S ROSTER',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.5,
                   color: ObsidianTheme.careBlue,
                 ),
               ),
@@ -1500,39 +2121,29 @@ class _CareTodayRoster extends ConsumerWidget {
               GestureDetector(
                 onTap: () => context.go('/schedule'),
                 child: Text(
-                  'View Full Roster →',
+                  'View All →',
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: ObsidianTheme.textMuted,
+                    color: c.textTertiary,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          jobsAsync.when(
-            data: (jobs) {
-              final today = DateTime.now();
-              final todayJobs = jobs.where((j) {
-                final due = j.dueDate;
-                if (due == null) return false;
-                return due.year == today.year &&
-                    due.month == today.month &&
-                    due.day == today.day;
-              }).toList();
-
-              if (todayJobs.isEmpty) {
+          Builder(builder: (_) {
+              if (todayShifts.isEmpty) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(PhosphorIconsLight.sunHorizon, size: 32, color: ObsidianTheme.textTertiary),
+                        Icon(PhosphorIconsLight.sunHorizon, size: 28, color: c.textTertiary),
                         const SizedBox(height: 8),
                         Text(
                           'No shifts scheduled today',
-                          style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted),
+                          style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
                         ),
                       ],
                     ),
@@ -1541,45 +2152,49 @@ class _CareTodayRoster extends ConsumerWidget {
               }
 
               return Column(
-                children: todayJobs.take(4).map((job) {
-                  final status = job.status;
-                  final title = job.title;
-                  final clientName = job.clientName ?? '';
+                children: todayShifts.take(4).indexed.map((entry) {
+                  final (i, shift) = entry;
+                  final status = shift.status;
+                  final title = shift.serviceType ?? 'Support Shift';
+                  final participantName = shift.participantName ?? '';
+                  final timeStr = '${DateFormat('h:mm a').format(shift.scheduledStart)} – ${DateFormat('h:mm a').format(shift.scheduledEnd)}';
 
                   Color statusColor;
                   String statusLabel;
-                  if (status.isActive) {
+                  if (status == CareShiftStatus.inProgress) {
                     statusColor = ObsidianTheme.careBlue;
-                    statusLabel = 'IN PROGRESS';
-                  } else if (status.isTerminal && status != JobStatus.cancelled) {
+                    statusLabel = 'ACTIVE';
+                  } else if (status == CareShiftStatus.completed) {
                     statusColor = ObsidianTheme.emerald;
-                    statusLabel = 'COMPLETED';
-                  } else if (status == JobStatus.scheduled || status == JobStatus.todo) {
+                    statusLabel = 'DONE';
+                  } else if (status == CareShiftStatus.published) {
                     statusColor = ObsidianTheme.amber;
                     statusLabel = 'UPCOMING';
                   } else {
-                    statusColor = ObsidianTheme.textTertiary;
+                    statusColor = c.textTertiary;
                     statusLabel = status.label.toUpperCase();
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: EdgeInsets.only(bottom: i < todayShifts.take(4).length - 1 ? 8 : 0),
                     child: GestureDetector(
-                      onTap: () => context.push('/jobs/${job.id}'),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/care/shift/${shift.id}');
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: c.canvas,
-                          borderRadius: ObsidianTheme.radiusMd,
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: status.isActive
-                                ? ObsidianTheme.careBlue.withValues(alpha: 0.3)
+                            color: status == CareShiftStatus.inProgress
+                                ? ObsidianTheme.careBlue.withValues(alpha: 0.25)
                                 : c.border,
                           ),
                         ),
                         child: Row(
                           children: [
-                            // Status indicator
                             Container(
                               width: 4,
                               height: 40,
@@ -1596,34 +2211,42 @@ class _CareTodayRoster extends ConsumerWidget {
                                   Text(
                                     title,
                                     style: GoogleFonts.inter(
-                                      fontSize: 13,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: ObsidianTheme.textPrimary,
+                                      color: c.textPrimary,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 3),
-                                  if (clientName.isNotEmpty)
+                                  const SizedBox(height: 2),
+                                  if (participantName.isNotEmpty)
                                     Text(
-                                      clientName,
+                                      participantName,
                                       style: GoogleFonts.inter(
-                                        fontSize: 11,
-                                        color: ObsidianTheme.textSecondary,
+                                        fontSize: 12,
+                                        color: c.textSecondary,
                                       ),
                                     ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    timeStr,
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 11,
+                                      color: c.textTertiary,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: statusColor.withValues(alpha: 0.12),
+                                color: statusColor.withValues(alpha: 0.10),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 statusLabel,
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.jetBrainsMono(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.5,
@@ -1638,106 +2261,11 @@ class _CareTodayRoster extends ConsumerWidget {
                   );
                 }).toList(),
               );
-            },
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Center(child: CupertinoActivityIndicator()),
-            ),
-            error: (_, __) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Text('Unable to load roster', style: GoogleFonts.inter(fontSize: 13, color: ObsidianTheme.textMuted)),
-            ),
-          ),
+            }),
         ],
       ),
-    ).animate().fadeIn(delay: 100.ms, duration: 400.ms).moveY(begin: 10, end: 0, delay: 100.ms, duration: 400.ms, curve: Curves.easeOutQuart);
+    ).animate()
+        .fadeIn(delay: 200.ms, duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1))
+        .moveY(begin: 10, end: 0, delay: 200.ms, duration: 400.ms, curve: const Cubic(0.16, 1, 0.3, 1));
   }
-}
-
-// ═══════════════════════════════════════════════════════════
-// ── Care: Quick Actions ──────────────────────────────────
-// ═══════════════════════════════════════════════════════════
-
-class _CareQuickActions extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final c = context.iColors;
-    final actions = [
-      _CareAction('Medications', PhosphorIconsLight.pill, '/care/medications', ObsidianTheme.careBlue),
-      _CareAction('Observations', PhosphorIconsLight.heartbeat, '/care/observations', ObsidianTheme.violet),
-      _CareAction('Incidents', PhosphorIconsLight.warningCircle, '/care/incidents', ObsidianTheme.amber),
-      _CareAction('Credentials', PhosphorIconsLight.certificate, '/care/credentials', ObsidianTheme.emerald),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 2, bottom: 10),
-          child: Text(
-            'CARE TOOLS',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-              color: ObsidianTheme.textMuted,
-            ),
-          ),
-        ),
-        Row(
-          children: actions.map((a) => Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: a == actions.last ? 0 : 8),
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  context.push(a.route);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: ObsidianTheme.radiusMd,
-                    border: Border.all(color: c.border),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: a.color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(a.icon, size: 18, color: a.color),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        a.label,
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: ObsidianTheme.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          )).toList(),
-        ),
-      ],
-    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).moveY(begin: 10, end: 0, delay: 200.ms, duration: 400.ms, curve: Curves.easeOutQuart);
-  }
-}
-
-class _CareAction {
-  final String label;
-  final IconData icon;
-  final String route;
-  final Color color;
-  const _CareAction(this.label, this.icon, this.route, this.color);
 }

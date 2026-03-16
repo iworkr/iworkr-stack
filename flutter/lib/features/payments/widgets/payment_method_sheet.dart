@@ -16,6 +16,7 @@ void showPaymentMethodSheet(BuildContext context, Invoice invoice) {
   HapticFeedback.mediumImpact();
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     builder: (_) => _PaymentMethodSheet(invoice: invoice),

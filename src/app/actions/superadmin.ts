@@ -749,3 +749,112 @@ export async function getSystemStats() {
     return err(e.message);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODULE 7: WEBHOOK DLQ
+   ═══════════════════════════════════════════════════════════════════ */
+
+/** List unresolved webhook dead letters for triage */
+export async function listWebhookDeadLetters(limit = 100, offset = 0) {
+  try {
+    const caller = await verifySuperAdmin();
+    if (!caller) return err("Unauthorized");
+
+    const admin = createAdminSupabaseClient();
+    const { data, error, count } = await admin
+      .from("webhook_dead_letters")
+      .select("*", { count: "exact" })
+      .eq("is_resolved", false)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) return err(error.message);
+    return ok({ rows: data || [], total: count || 0 });
+  } catch (e: any) {
+    return err(e.message);
+  }
+}
+
+/** Replay a DLQ payload through webhooks-ingest and mark resolved if successful */
+export async function replayWebhookDeadLetter(deadLetterId: string) {
+  try {
+    const caller = await verifySuperAdmin();
+    if (!caller) return err("Unauthorized");
+
+    const admin = createAdminSupabaseClient();
+    const { data: deadLetter, error: fetchErr } = await admin
+      .from("webhook_dead_letters")
+      .select("*")
+      .eq("id", deadLetterId)
+      .maybeSingle();
+
+    if (fetchErr) return err(fetchErr.message);
+    if (!deadLetter) return err("Dead letter not found");
+    if (deadLetter.is_resolved) return err("Dead letter is already resolved");
+
+    const headerObj = (deadLetter.headers as Record<string, string> | null) || {};
+    const normalizedHeaders: Record<string, string> = {};
+
+    // Preserve key routing headers required by webhooks-ingest.
+    for (const key of ["x-iworkr-provider", "x-xero-tenant-id", "xero-tenant-id", "stripe-signature", "x-xero-signature"]) {
+      const value = headerObj[key] || headerObj[key.toLowerCase()];
+      if (typeof value === "string" && value.trim().length > 0) {
+        normalizedHeaders[key] = value;
+      }
+    }
+
+    const { data: invokeData, error: invokeErr } = await admin.functions.invoke("webhooks-ingest", {
+      headers: normalizedHeaders,
+      body: deadLetter.raw_payload,
+    });
+
+    if (invokeErr) {
+      await logAudit({
+        adminId: caller.id,
+        adminEmail: caller.email,
+        actionType: "REPLAY_DLQ_FAILED",
+        targetTable: "webhook_dead_letters",
+        targetRecordId: deadLetterId,
+        mutationPayload: { invoke_error: invokeErr.message },
+      });
+      return err(invokeErr.message);
+    }
+
+    const nowIso = new Date().toISOString();
+    const replayStatus = (invokeData as Record<string, unknown> | null)?.status;
+    const shouldResolve = replayStatus !== "dlq_routed";
+
+    const patch: Record<string, unknown> = {
+      updated_at: nowIso,
+      failure_reason: shouldResolve
+        ? deadLetter.failure_reason
+        : `${deadLetter.failure_reason} | REPLAY_STILL_UNRESOLVED @ ${nowIso}`,
+    };
+    if (shouldResolve) {
+      patch.is_resolved = true;
+      patch.resolved_at = nowIso;
+      patch.resolved_by = caller.id;
+    }
+
+    const { error: updateErr } = await admin
+      .from("webhook_dead_letters")
+      .update(patch)
+      .eq("id", deadLetterId);
+
+    if (updateErr) return err(updateErr.message);
+
+    await logAudit({
+      adminId: caller.id,
+      adminEmail: caller.email,
+      actionType: shouldResolve ? "REPLAY_DLQ_SUCCESS" : "REPLAY_DLQ_PARTIAL",
+      targetTable: "webhook_dead_letters",
+      targetRecordId: deadLetterId,
+      mutationPayload: { response: invokeData },
+      notes: shouldResolve ? "Dead letter replayed and resolved" : "Replay completed but still unresolved",
+    });
+
+    return ok({ replay_result: invokeData, resolved: shouldResolve });
+  } catch (e: any) {
+    return err(e.message);
+  }
+}

@@ -4,6 +4,8 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { refreshIntegrationToken } from "./integration-oauth";
+import { decrypt } from "@/lib/encryption";
+import type { Json } from "@/lib/supabase/types";
 
 /* ── Sync Orchestrator ────────────────────────────────── */
 
@@ -34,7 +36,25 @@ export async function triggerSync(integrationId: string): Promise<{ error?: stri
   // Check token expiry
   if (int.token_expires_at && new Date(int.token_expires_at) < new Date()) {
     const refreshResult = await refreshIntegrationToken(integrationId);
-    if (refreshResult.error) return { error: `Token expired: ${refreshResult.error}` };
+    if (refreshResult.error) {
+      await supabase
+        .from("integrations")
+        .update({
+          status: "expired",
+          error_message: `Token expired: ${refreshResult.error}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", integrationId);
+      await writeSyncLog(supabase, {
+        integrationId: int.id,
+        organizationId: int.organization_id,
+        direction: "bidirectional",
+        entityType: "token",
+        status: "error",
+        errorMessage: `Token expired: ${refreshResult.error}`,
+      });
+      return { error: `Token expired: ${refreshResult.error}` };
+    }
   }
 
   // Mark as syncing
@@ -75,6 +95,14 @@ export async function triggerSync(integrationId: string): Promise<{ error?: stri
         error_message: null,
       })
       .eq("id", integrationId);
+    await writeSyncLog(supabase, {
+      integrationId: int.id,
+      organizationId: int.organization_id,
+      direction: "bidirectional",
+      entityType: "sync",
+      status: "success",
+      metadata: { provider: int.provider, synced_count: syncedCount },
+    });
 
     revalidatePath("/dashboard/integrations");
     return { synced: syncedCount };
@@ -86,18 +114,111 @@ export async function triggerSync(integrationId: string): Promise<{ error?: stri
         error_message: err.message || "Sync failed",
       })
       .eq("id", integrationId);
+    await writeSyncLog(supabase, {
+      integrationId: int.id,
+      organizationId: int.organization_id,
+      direction: "bidirectional",
+      entityType: "sync",
+      status: "error",
+      errorMessage: err.message || "Sync failed",
+      metadata: { provider: int.provider },
+    });
 
     return { error: err.message || "Sync failed" };
   }
+}
+
+type SyncLogInput = {
+  integrationId: string;
+  organizationId: string;
+  direction: "push" | "pull" | "bidirectional" | "inbound" | "outbound";
+  entityType: string;
+  status: "success" | "error" | "skipped" | "pending";
+  errorMessage?: string;
+  metadata?: Record<string, unknown>;
+};
+
+async function writeSyncLog(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  input: SyncLogInput
+) {
+  await supabase.from("integration_sync_log").insert({
+    integration_id: input.integrationId,
+    organization_id: input.organizationId,
+    direction: input.direction,
+    entity_type: input.entityType,
+    status: input.status,
+    error_message: input.errorMessage || null,
+    metadata: (input.metadata || {}) as Json,
+  });
+}
+
+export async function getSyncRadarFeed(orgId: string, limit = 15): Promise<{
+  data: Array<{
+    id: string;
+    integration_id: string;
+    direction: string;
+    entity_type: string;
+    status: string;
+    error_message: string | null;
+    created_at: string | null;
+    integration_name?: string;
+  }>;
+  error?: string;
+  activeCount?: number;
+}> {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: "Unauthorized" };
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { data: [], error: "Unauthorized" };
+
+  const { data, error } = await (supabase as any).rpc("get_sync_radar_feed", {
+    p_org_id: orgId,
+    p_limit: limit,
+  });
+  if (error) return { data: [], error: error.message };
+
+  const rows = Array.isArray(data) ? data : [];
+  const integrationIds = Array.from(new Set(rows.map((r) => r.integration_id).filter(Boolean)));
+  let nameMap: Record<string, string> = {};
+  if (integrationIds.length > 0) {
+    const { data: ints } = await supabase
+      .from("integrations")
+      .select("id, provider")
+      .in("id", integrationIds);
+    nameMap = Object.fromEntries((ints || []).map((i) => [i.id, i.provider]));
+  }
+
+  const activeCount = rows.filter(
+    (r) =>
+      r.status === "pending" ||
+      (typeof r.created_at === "string" && Date.now() - new Date(r.created_at).getTime() < 90_000)
+  ).length;
+
+  return {
+    data: rows.map((r) => ({
+      ...r,
+      integration_name: nameMap[r.integration_id] || "integration",
+    })),
+    activeCount,
+  };
 }
 
 /* ── Xero Sync ────────────────────────────────────────── */
 
 async function syncXero(int: any): Promise<number> {
   if (!process.env.XERO_CLIENT_ID || !process.env.XERO_CLIENT_SECRET) return 0;
+  const accessToken = int.access_token ? decrypt(int.access_token) : "";
   const res = await fetch("https://api.xero.com/api.xro/2.0/Contacts?page=1&pageSize=100", {
     headers: {
-      Authorization: `Bearer ${int.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
       "Xero-Tenant-Id": int.settings?.tenant_id || "",
       Accept: "application/json",
     },
@@ -111,11 +232,12 @@ async function syncXero(int: any): Promise<number> {
 
 async function syncQuickBooks(int: any): Promise<number> {
   if (!process.env.QUICKBOOKS_CLIENT_ID || !process.env.QUICKBOOKS_CLIENT_SECRET) return 0;
+  const accessToken = int.access_token ? decrypt(int.access_token) : "";
   const realmId = int.settings?.realm_id;
   if (!realmId) throw new Error("QuickBooks realm_id not set in integration settings");
   const res = await fetch(
     `https://quickbooks.api.intuit.com/v3/company/${realmId}/query?query=${encodeURIComponent("SELECT * FROM Customer MAXRESULTS 100")}`,
-    { headers: { Authorization: `Bearer ${int.access_token}`, Accept: "application/json" } }
+    { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" } }
   );
   if (!res.ok) throw new Error(`QuickBooks API error: ${res.status}`);
   const data = await res.json();
@@ -126,9 +248,10 @@ async function syncQuickBooks(int: any): Promise<number> {
 
 async function syncGmail(int: any): Promise<number> {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) return 0;
+  const accessToken = int.access_token ? decrypt(int.access_token) : "";
   const res = await fetch(
     "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=is:inbox",
-    { headers: { Authorization: `Bearer ${int.access_token}` } }
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   if (!res.ok) throw new Error(`Gmail API error: ${res.status}`);
   const data = await res.json();
@@ -139,11 +262,12 @@ async function syncGmail(int: any): Promise<number> {
 
 async function syncGoogleCalendar(int: any): Promise<number> {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) return 0;
+  const accessToken = int.access_token ? decrypt(int.access_token) : "";
   const now = new Date().toISOString();
   const maxDate = new Date(Date.now() + 30 * 86400000).toISOString();
   const res = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now}&timeMax=${maxDate}&maxResults=100&singleEvents=true`,
-    { headers: { Authorization: `Bearer ${int.access_token}` } }
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   if (!res.ok) throw new Error(`Google Calendar API error: ${res.status}`);
   const data = await res.json();
@@ -154,11 +278,12 @@ async function syncGoogleCalendar(int: any): Promise<number> {
 
 async function syncGoHighLevel(int: any): Promise<number> {
   if (!int.access_token) return 0;
+  const accessToken = decrypt(int.access_token);
   const locationId = int.settings?.location_id;
   if (!locationId) throw new Error("GoHighLevel location_id not set in integration settings");
   const res = await fetch(
     `https://services.leadconnectorhq.com/contacts/?locationId=${locationId}&limit=100`,
-    { headers: { Authorization: `Bearer ${int.access_token}`, Version: "2021-07-28" } }
+    { headers: { Authorization: `Bearer ${accessToken}`, Version: "2021-07-28" } }
   );
   if (!res.ok) throw new Error(`GoHighLevel API error: ${res.status}`);
   const data = await res.json();
@@ -195,6 +320,7 @@ export async function pushInvoiceToProvider(invoiceId: string, orgId: string): P
 
     for (const int of integrations) {
       if (int.provider === "xero" && process.env.XERO_CLIENT_ID) {
+        const accessToken = int.access_token ? decrypt(int.access_token) : "";
         const { data: invoice } = await supabase
           .from("invoices")
           .select("*, line_items:invoice_line_items(*)")
@@ -205,7 +331,7 @@ export async function pushInvoiceToProvider(invoiceId: string, orgId: string): P
         const res = await fetch("https://api.xero.com/api.xro/2.0/Invoices", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${int.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
             "Xero-Tenant-Id": (int.settings as any)?.tenant_id || "",
             "Content-Type": "application/json",
           },

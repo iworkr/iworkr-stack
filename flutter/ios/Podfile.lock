@@ -1,6 +1,9 @@
 PODS:
   - app_links (6.4.1):
     - Flutter
+  - battery_plus (1.0.0):
+    - Flutter
+  - CocoaAsyncSocket (7.6.5)
   - connectivity_plus (0.0.1):
     - Flutter
   - CwlCatchException (2.2.1):
@@ -12,6 +15,8 @@ PODS:
   - flutter_app_group_directory (0.0.1):
     - Flutter
   - flutter_secure_storage (6.0.0):
+    - Flutter
+  - flutter_tts (0.0.1):
     - Flutter
   - geolocator_apple (1.2.0):
     - Flutter
@@ -29,6 +34,8 @@ PODS:
     - Flutter
   - image_picker_ios (0.0.1):
     - Flutter
+  - in_app_review (2.0.0):
+    - Flutter
   - integration_test (0.0.1):
     - Flutter
   - live_activities (0.0.1):
@@ -40,6 +47,12 @@ PODS:
     - Flutter
     - StripeTerminal (~> 4.6.0)
   - mobile_scanner (7.0.0):
+    - Flutter
+    - FlutterMacOS
+  - package_info_plus (0.4.5):
+    - Flutter
+  - patrol (0.0.1):
+    - CocoaAsyncSocket (~> 7.6)
     - Flutter
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
@@ -68,20 +81,25 @@ PODS:
 
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
+  - battery_plus (from `.symlinks/plugins/battery_plus/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - flutter_app_group_directory (from `.symlinks/plugins/flutter_app_group_directory/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - google_maps_flutter_ios (from `.symlinks/plugins/google_maps_flutter_ios/ios`)
   - home_widget (from `.symlinks/plugins/home_widget/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
+  - in_app_review (from `.symlinks/plugins/in_app_review/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - live_activities (from `.symlinks/plugins/live_activities/ios`)
   - local_auth_darwin (from `.symlinks/plugins/local_auth_darwin/darwin`)
   - mek_stripe_terminal (from `.symlinks/plugins/mek_stripe_terminal/ios`)
   - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
+  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
+  - patrol (from `.symlinks/plugins/patrol/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -92,6 +110,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - CocoaAsyncSocket
     - CwlCatchException
     - CwlCatchExceptionSupport
     - Google-Maps-iOS-Utils
@@ -103,6 +122,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   app_links:
     :path: ".symlinks/plugins/app_links/ios"
+  battery_plus:
+    :path: ".symlinks/plugins/battery_plus/ios"
   connectivity_plus:
     :path: ".symlinks/plugins/connectivity_plus/ios"
   device_info_plus:
@@ -113,6 +134,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_app_group_directory/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  flutter_tts:
+    :path: ".symlinks/plugins/flutter_tts/ios"
   geolocator_apple:
     :path: ".symlinks/plugins/geolocator_apple/darwin"
   google_maps_flutter_ios:
@@ -121,6 +144,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/home_widget/ios"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
+  in_app_review:
+    :path: ".symlinks/plugins/in_app_review/ios"
   integration_test:
     :path: ".symlinks/plugins/integration_test/ios"
   live_activities:
@@ -131,6 +156,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/mek_stripe_terminal/ios"
   mobile_scanner:
     :path: ".symlinks/plugins/mobile_scanner/darwin"
+  package_info_plus:
+    :path: ".symlinks/plugins/package_info_plus/ios"
+  patrol:
+    :path: ".symlinks/plugins/patrol/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   purchases_flutter:
@@ -148,6 +177,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   app_links: 3dbc685f76b1693c66a6d9dd1e9ab6f73d97dc0a
+  battery_plus: b42253f6d2dde71712f8c36fef456d99121c5977
+  CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   CwlCatchException: 7acc161b299a6de7f0a46a6ed741eae2c8b4d75a
   CwlCatchExceptionSupport: 54ccab8d8c78907b57f99717fb19d4cc3bce02dc
@@ -155,17 +186,21 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_app_group_directory: 55b5362007d1c0cb45dc1dd1e94f67d615f45a6b
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  flutter_tts: 35ac3c7d42412733e795ea96ad2d7e05d0a75113
   geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
   Google-Maps-iOS-Utils: bed22fa703c919259b3901449434d60d994fae20
   google_maps_flutter_ios: 0cf046caf50b00d95071f79e8031fcd5ef902beb
   GoogleMaps: fe4035acb768ed14ce732811363f232550ba55af
   home_widget: 54b4f6b36ed8d64cfee594a476225c35c3e45091
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
+  in_app_review: 7dd1ea365263f834b8464673f9df72c80c17c937
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   live_activities: 4dfa736d0736e1c77866a2f9c056a76513cc9e7b
   local_auth_darwin: c3ee6cce0a8d56be34c8ccb66ba31f7f180aaebb
   mek_stripe_terminal: d317573feabf753651c1c184c2dae07950d50030
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
+  patrol: cea8074f183a2a4232d0ebd10569ae05149ada42
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   purchases_flutter: 4d1eb4df39dc92f573069226fc6e2bafcfe3e929
   PurchasesHybridCommon: 0fc10b0328a4dca5c607f845130e59f7427f4b69
@@ -177,6 +212,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   workmanager_apple: 904529ae31e97fc5be632cf628507652294a0778
 
-PODFILE CHECKSUM: b67083625cc15733c76004e4c804c63f8210b4f6
+PODFILE CHECKSUM: 678770f2f189254b78c67136cc21fe1addd16de8
 
 COCOAPODS: 1.16.2

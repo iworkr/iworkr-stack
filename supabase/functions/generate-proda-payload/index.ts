@@ -38,6 +38,20 @@ interface ParticipantInfo {
   client_id: string;
 }
 
+interface TravelLogClaim {
+  id: string;
+  participant_id: string | null;
+  travel_type: "provider_travel" | "participant_transport";
+  start_time: string;
+  claimed_distance_km: number;
+  capped_billable_minutes: number | null;
+  provider_time_item_number: string | null;
+  provider_km_item_number: string | null;
+  participant_transport_item_number: string | null;
+  payroll_allowance_amount: number | null;
+  ndis_billed_amount: number | null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -45,7 +59,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { organization_id, claim_line_item_ids } = body;
+    const { organization_id, claim_line_item_ids, include_travel = true } = body;
 
     if (!organization_id || !claim_line_item_ids?.length) {
       return new Response(
@@ -143,7 +157,7 @@ serve(async (req) => {
     const registrationNumber = org?.metadata?.ndis_registration_number || "PENDING";
 
     const csvHeader = "RegistrationNumber,NDISNumber,SupportItemNumber,DateOfSupport,Quantity,UnitPrice,TotalPrice,GST,ClaimReference,ParticipantName";
-    const csvRows = (claimLines as ClaimLine[]).map((cl) => {
+    const csvRows: string[] = (claimLines as ClaimLine[]).map((cl) => {
       const participant = participantMap.get(cl.participant_id);
       const clientName = clientNameMap.get(participant?.client_id || "") || "Unknown";
       return [
@@ -159,6 +173,91 @@ serve(async (req) => {
         `"${clientName}"`,
       ].join(",");
     });
+
+    // Append approved travel claim rows (Project Odyssey)
+    let appendedTravelRows = 0;
+    if (include_travel) {
+      const { data: travelRows } = await adminClient
+        .from("shift_travel_logs")
+        .select(`
+          id,
+          participant_id,
+          travel_type,
+          start_time,
+          claimed_distance_km,
+          capped_billable_minutes,
+          provider_time_item_number,
+          provider_km_item_number,
+          participant_transport_item_number,
+          payroll_allowance_amount,
+          ndis_billed_amount
+        `)
+        .eq("organization_id", organization_id)
+        .eq("is_approved", true)
+        .eq("is_claim_exported", false);
+
+      for (const row of (travelRows || []) as TravelLogClaim[]) {
+        if (!row.participant_id) continue;
+        const participant = participantMap.get(row.participant_id);
+        if (!participant?.ndis_number) continue;
+        const clientName = clientNameMap.get(participant.client_id || "") || "Unknown";
+        const serviceDate = row.start_time?.slice(0, 10) || "";
+
+        if (row.travel_type === "provider_travel") {
+          const billableHours = ((row.capped_billable_minutes || 0) / 60);
+          if (billableHours > 0) {
+            const unitPrice = 65.47;
+            const total = unitPrice * billableHours;
+            csvRows.push([
+              registrationNumber,
+              participant.ndis_number || "",
+              row.provider_time_item_number || "01_011_0107_1_1",
+              serviceDate,
+              billableHours.toFixed(2),
+              unitPrice.toFixed(2),
+              total.toFixed(2),
+              "0.00",
+              `TRV-T-${row.id.substring(0, 6).toUpperCase()}`,
+              `"${clientName}"`,
+            ].join(","));
+            appendedTravelRows += 1;
+          }
+          if (row.claimed_distance_km > 0) {
+            const unitPrice = 0.96;
+            const total = unitPrice * row.claimed_distance_km;
+            csvRows.push([
+              registrationNumber,
+              participant.ndis_number || "",
+              row.provider_km_item_number || "01_799_0107_1_1",
+              serviceDate,
+              row.claimed_distance_km.toFixed(2),
+              unitPrice.toFixed(2),
+              total.toFixed(2),
+              "0.00",
+              `TRV-K-${row.id.substring(0, 6).toUpperCase()}`,
+              `"${clientName}"`,
+            ].join(","));
+            appendedTravelRows += 1;
+          }
+        } else if (row.claimed_distance_km > 0) {
+          const unitPrice = 0.96;
+          const total = unitPrice * row.claimed_distance_km;
+          csvRows.push([
+            registrationNumber,
+            participant.ndis_number || "",
+            row.participant_transport_item_number || "04_590_0125_6_1",
+            serviceDate,
+            row.claimed_distance_km.toFixed(2),
+            unitPrice.toFixed(2),
+            total.toFixed(2),
+            "0.00",
+            `TRN-K-${row.id.substring(0, 6).toUpperCase()}`,
+            `"${clientName}"`,
+          ].join(","));
+          appendedTravelRows += 1;
+        }
+      }
+    }
 
     const csvContent = [csvHeader, ...csvRows].join("\n");
 
@@ -211,6 +310,18 @@ serve(async (req) => {
       .update({ claim_batch_id: batch.id, status: "submitted" })
       .in("id", claim_line_item_ids);
 
+    if (include_travel) {
+      await adminClient
+        .from("shift_travel_logs")
+        .update({
+          is_claim_exported: true,
+          claim_exported_at: new Date().toISOString(),
+        })
+        .eq("organization_id", organization_id)
+        .eq("is_approved", true)
+        .eq("is_claim_exported", false);
+    }
+
     // Update batch status to submitted
     await adminClient
       .from("proda_claim_batches")
@@ -226,6 +337,7 @@ serve(async (req) => {
         total_amount: totalAmount,
         payload_url: fileName,
         csv_preview: csvContent.split("\n").slice(0, 5).join("\n") + "\n...",
+        travel_rows_added: appendedTravelRows,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

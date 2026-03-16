@@ -142,6 +142,7 @@ serve(async (req) => {
       default:
         break;
     }
+  // FIXME: HIGH — No DLQ routing. Failed RevenueCat webhook payloads are lost. Route to webhook_dead_letters table on catch.
   } catch (err) {
     console.error("RevenueCat webhook error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {

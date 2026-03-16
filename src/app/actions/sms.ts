@@ -21,9 +21,7 @@ export async function sendAppDownloadLink(phone: string): Promise<{ error?: stri
     }
 
     const appUrl = getAppUrl();
-    // TODO: Replace placeholder App Store / Play Store URLs with actual published app URLs
-    // iOS: Submit via App Store Connect → copy the final URL
-    // Android: Publish via Google Play Console → copy the final URL
+    // INCOMPLETE:PARTIAL(App links still point to placeholder store URLs; replace with final App Store Connect and Google Play production URLs before GA).
     const IOS_APP_URL = "https://apps.apple.com/app/iworkr"; // placeholder
     const ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=com.iworkr.app"; // placeholder
     const message = `Download iWorkr for your team:\niOS: ${IOS_APP_URL}\nAndroid: ${ANDROID_APP_URL}\nDesktop: ${appUrl}/download`;

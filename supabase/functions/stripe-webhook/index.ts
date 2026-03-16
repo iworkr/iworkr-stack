@@ -220,6 +220,7 @@ Deno.serve(async (req: Request) => {
         break;
       }
     }
+  // FIXME: HIGH — No DLQ routing. Failed Stripe webhook payloads are lost. Route to webhook_dead_letters table on catch.
   } catch (err) {
     console.error(`Webhook error [${type}]:`, err);
     return new Response("Webhook handler error", { status: 500 });

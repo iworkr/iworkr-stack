@@ -18,6 +18,7 @@ import {
   LogOut,
   AlertTriangle,
   Radar,
+  ShieldAlert,
 } from "lucide-react";
 
 /* ── Nav Items ────────────────────────────────────────────────── */
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { id: "billing", label: "Billing", icon: CreditCard, href: "/olympus/billing" },
   { id: "database", label: "Database", icon: Database, href: "/olympus/database" },
   { id: "health", label: "Health", icon: Radar, href: "/olympus/health" },
+  { id: "aegis", label: "Aegis SIRS", icon: ShieldAlert, href: "/olympus/aegis/triage" },
   { id: "system", label: "System", icon: Activity, href: "/olympus/system" },
 ];
 

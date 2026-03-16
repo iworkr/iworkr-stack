@@ -24,6 +24,7 @@ import 'package:iworkr_mobile/models/telemetry_event.dart';
 void showEvidenceLocker(BuildContext context, {required String jobId}) {
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _EvidenceLockerSheet(jobId: jobId),

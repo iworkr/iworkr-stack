@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/mobile_telemetry_engine.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/models/worker_credential.dart';
 
@@ -27,7 +28,7 @@ final credentialsStreamProvider = StreamProvider<List<WorkerCredential>>((ref) {
     try {
       final data = await client
           .from('worker_credentials')
-          .select('*, profiles(full_name, email, avatar_url)')
+          .select('*, profiles!worker_credentials_user_id_fkey(full_name, email, avatar_url), verifier:profiles!worker_credentials_verified_by_fkey(full_name)')
           .eq('organization_id', orgId)
           .order('expiry_date', ascending: true);
 
@@ -121,35 +122,46 @@ Future<WorkerCredential?> createCredential({
   String? documentUrl,
   String? notes,
 }) async {
-  final user = SupabaseService.auth.currentUser;
-  if (user == null) return null;
+  try {
+    final user = SupabaseService.auth.currentUser;
+    if (user == null) return null;
 
-  final orgRow = await SupabaseService.client
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .limit(1)
-      .maybeSingle();
-  if (orgRow == null) return null;
+    final orgRow = await SupabaseService.client
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+    if (orgRow == null) return null;
 
-  final data = await SupabaseService.client
-      .from('worker_credentials')
-      .insert({
-        'organization_id': orgRow['organization_id'],
-        'user_id': userId,
-        'credential_type': credentialType.value,
-        'credential_name': credentialName,
-        'issued_date': issuedDate?.toIso8601String(),
-        'expiry_date': expiryDate?.toIso8601String(),
-        'document_url': documentUrl,
-        'notes': notes,
-        'verification_status': 'pending',
-      })
-      .select('*, profiles(full_name, email, avatar_url)')
-      .single();
+    final data = await SupabaseService.client
+        .from('worker_credentials')
+        .insert({
+          'organization_id': orgRow['organization_id'],
+          'user_id': userId,
+          'credential_type': credentialType.value,
+          'credential_name': credentialName,
+          'issued_date': issuedDate?.toIso8601String(),
+          'expiry_date': expiryDate?.toIso8601String(),
+          'document_url': documentUrl,
+          'notes': notes,
+          'verification_status': 'pending',
+        })
+        .select('*, profiles!worker_credentials_user_id_fkey(full_name, email, avatar_url), verifier:profiles!worker_credentials_verified_by_fkey(full_name)')
+        .single();
 
-  return WorkerCredential.fromJson(data);
+    return WorkerCredential.fromJson(data);
+  } on PostgrestException catch (e, stack) {
+    await MobileTelemetryEngine.instance.captureAndReport(
+      e,
+      stack,
+      source: 'credentials.createCredential',
+      fatal: false,
+      extra: <String, dynamic>{'pgrst_code': e.code},
+    );
+    rethrow;
+  }
 }
 
 Future<void> updateCredentialStatus({

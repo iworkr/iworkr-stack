@@ -48,13 +48,42 @@ final organizationProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   return data;
 });
 
-/// Provides the organization ID (active workspace)
+/// Provides the organization ID (active workspace) — always validated
 final organizationIdProvider = FutureProvider<String?>((ref) async {
-  final activeWsId = ref.watch(activeWorkspaceIdProvider);
-  if (activeWsId != null) return activeWsId;
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return null;
 
-  final orgData = await ref.watch(organizationProvider.future);
-  return orgData?['organization_id'] as String?;
+  // Always fetch the user's actual memberships first
+  final workspaces = await ref.watch(allWorkspacesProvider.future);
+  if (workspaces.isEmpty) return null;
+
+  final validOrgIds = workspaces.map((w) => w.organizationId).toSet();
+
+  // Check if the active workspace ID is valid for this user
+  final activeWsId = ref.watch(activeWorkspaceIdProvider);
+  if (activeWsId != null && validOrgIds.contains(activeWsId)) {
+    return activeWsId;
+  }
+
+  // Fall back to first workspace
+  return workspaces.first.organizationId;
+});
+
+/// True when user is linked to at least one participant portal profile.
+final portalAccessProvider = FutureProvider<bool>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return false;
+  try {
+    final row = await SupabaseService.client
+        .from('participant_network_members')
+        .select('participant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+    return row != null;
+  } catch (_) {
+    return false;
+  }
 });
 
 /// Auth notifier — handles all authentication methods.

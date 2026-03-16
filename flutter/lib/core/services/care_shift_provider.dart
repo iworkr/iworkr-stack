@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
@@ -9,9 +11,12 @@ import 'package:iworkr_mobile/models/care_shift.dart';
 // ── Care Shift Provider — Field Operative Roster ─────────
 // ═══════════════════════════════════════════════════════════
 //
-// Project Nightingale: Fetches the current worker's shifts
-// within a 6-week window (past 14 days → future 28 days).
-// Powered by Supabase Realtime for instant schedule updates.
+// Project Nightingale + Monolith-Execution:
+// Manages shift state, clock-in/out, SIL multi-participant
+// context, and persists active workspace state for cold starts.
+
+const _kActiveWorkspaceKey = 'active_workspace_state_v1';
+const _storage = FlutterSecureStorage();
 
 /// Selected date for the worker's roster view
 final rosterSelectedDateProvider = StateProvider<DateTime>((ref) {
@@ -19,51 +24,283 @@ final rosterSelectedDateProvider = StateProvider<DateTime>((ref) {
   return DateTime(now.year, now.month, now.day);
 });
 
+enum ActiveShiftStatus { none, active, onBreak }
+
+class ActiveShiftState {
+  final String? shiftId;
+  final String? participantId;
+  final String? timeEntryId;
+  final DateTime? clockInTime;
+  final ActiveShiftStatus status;
+  /// For SIL multi-participant shifts — all participant IDs in this shift
+  final List<String> silParticipantIds;
+  /// Currently selected participant index in SIL carousel
+  final int silActiveIndex;
+
+  const ActiveShiftState({
+    this.shiftId,
+    this.participantId,
+    this.timeEntryId,
+    this.clockInTime,
+    this.status = ActiveShiftStatus.none,
+    this.silParticipantIds = const [],
+    this.silActiveIndex = 0,
+  });
+
+  bool get hasActiveShift =>
+      status == ActiveShiftStatus.active && shiftId != null;
+  bool get isSilShift => silParticipantIds.length > 1;
+
+  ActiveShiftState copyWith({
+    String? shiftId,
+    String? participantId,
+    String? timeEntryId,
+    DateTime? clockInTime,
+    ActiveShiftStatus? status,
+    List<String>? silParticipantIds,
+    int? silActiveIndex,
+  }) =>
+      ActiveShiftState(
+        shiftId: shiftId ?? this.shiftId,
+        participantId: participantId ?? this.participantId,
+        timeEntryId: timeEntryId ?? this.timeEntryId,
+        clockInTime: clockInTime ?? this.clockInTime,
+        status: status ?? this.status,
+        silParticipantIds: silParticipantIds ?? this.silParticipantIds,
+        silActiveIndex: silActiveIndex ?? this.silActiveIndex,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'shiftId': shiftId,
+        'participantId': participantId,
+        'timeEntryId': timeEntryId,
+        'clockInTime': clockInTime?.toIso8601String(),
+        'status': status.name,
+        'silParticipantIds': silParticipantIds,
+        'silActiveIndex': silActiveIndex,
+      };
+
+  factory ActiveShiftState.fromJson(Map<String, dynamic> j) =>
+      ActiveShiftState(
+        shiftId: j['shiftId'] as String?,
+        participantId: j['participantId'] as String?,
+        timeEntryId: j['timeEntryId'] as String?,
+        clockInTime: j['clockInTime'] != null
+            ? DateTime.tryParse(j['clockInTime'] as String)
+            : null,
+        status: ActiveShiftStatus.values.firstWhere(
+          (s) => s.name == (j['status'] as String?),
+          orElse: () => ActiveShiftStatus.none,
+        ),
+        silParticipantIds:
+            (j['silParticipantIds'] as List<dynamic>?)?.cast<String>() ??
+                const [],
+        silActiveIndex: (j['silActiveIndex'] as int?) ?? 0,
+      );
+}
+
+/// Persist active workspace state to secure storage for cold-start rehydration
+Future<void> persistWorkspaceState(ActiveShiftState state) async {
+  if (state.hasActiveShift) {
+    await _storage.write(
+      key: _kActiveWorkspaceKey,
+      value: jsonEncode(state.toJson()),
+    );
+  } else {
+    await _storage.delete(key: _kActiveWorkspaceKey);
+  }
+}
+
+/// Restore active workspace state from secure storage
+Future<ActiveShiftState?> restoreWorkspaceState() async {
+  final raw = await _storage.read(key: _kActiveWorkspaceKey);
+  if (raw == null) return null;
+  try {
+    return ActiveShiftState.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Clear persisted workspace state (on clock-out)
+Future<void> clearWorkspaceState() async {
+  await _storage.delete(key: _kActiveWorkspaceKey);
+}
+
 /// Active shift state — tracks if the worker is currently on a shift
 final activeShiftProvider = StateProvider<CareShift?>((ref) => null);
+final activeShiftTimeEntryIdProvider = StateProvider<String?>((ref) => null);
+final activeShiftStateProvider =
+    StateProvider<ActiveShiftState>((ref) => const ActiveShiftState());
+
+/// SIL participants for the active shift
+final silParticipantsProvider =
+    FutureProvider.family<List<_SilParticipant>, String>(
+        (ref, shiftId) async {
+  final rows = await SupabaseService.client
+      .from('shift_participants')
+      .select('participant_id, is_primary, participant_profiles(preferred_name, critical_alerts)')
+      .eq('shift_id', shiftId)
+      .order('is_primary', ascending: false);
+
+  return (rows as List).map((r) {
+    final profile = r['participant_profiles'] as Map<String, dynamic>?;
+    return _SilParticipant(
+      id: r['participant_id']?.toString() ?? '',
+      name: profile?['preferred_name']?.toString() ?? 'Unnamed',
+      isPrimary: r['is_primary'] == true,
+      alerts: (profile?['critical_alerts'] as List<dynamic>?)
+              ?.cast<String>() ??
+          const [],
+    );
+  }).toList();
+});
+
+class _SilParticipant {
+  final String id;
+  final String name;
+  final bool isPrimary;
+  final List<String> alerts;
+  const _SilParticipant({
+    required this.id,
+    required this.name,
+    this.isPrimary = false,
+    this.alerts = const [],
+  });
+}
+
+/// Shift tasks for a given shift
+final shiftTasksProvider =
+    StreamProvider.family<List<ShiftTask>, String>((ref, shiftId) async* {
+  final initial = await SupabaseService.client
+      .from('shift_tasks')
+      .select()
+      .eq('shift_id', shiftId)
+      .order('sort_order');
+
+  yield (initial as List)
+      .map((r) => ShiftTask.fromJson(r as Map<String, dynamic>))
+      .toList();
+
+  await for (final _ in SupabaseService.client
+      .from('shift_tasks')
+      .stream(primaryKey: ['id']).eq('shift_id', shiftId)) {
+    final rows = await SupabaseService.client
+        .from('shift_tasks')
+        .select()
+        .eq('shift_id', shiftId)
+        .order('sort_order');
+    yield (rows as List)
+        .map((r) => ShiftTask.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+});
+
+class ShiftTask {
+  final String id;
+  final String title;
+  final String? description;
+  final bool isMandatory;
+  final bool isCompleted;
+  final DateTime? completedAt;
+
+  const ShiftTask({
+    required this.id,
+    required this.title,
+    this.description,
+    this.isMandatory = false,
+    this.isCompleted = false,
+    this.completedAt,
+  });
+
+  factory ShiftTask.fromJson(Map<String, dynamic> j) => ShiftTask(
+        id: j['id']?.toString() ?? '',
+        title: j['title']?.toString() ?? '',
+        description: j['description']?.toString(),
+        isMandatory: j['is_mandatory'] == true,
+        isCompleted: j['is_completed'] == true,
+        completedAt: j['completed_at'] != null
+            ? DateTime.tryParse(j['completed_at'].toString())
+            : null,
+      );
+}
+
+/// Complete a shift task
+Future<void> completeShiftTask(String taskId) async {
+  final userId = SupabaseService.auth.currentUser?.id;
+  await SupabaseService.client.from('shift_tasks').update({
+    'is_completed': true,
+    'completed_at': DateTime.now().toUtc().toIso8601String(),
+    'completed_by': userId,
+  }).eq('id', taskId);
+}
+
+/// Uncomplete a shift task
+Future<void> uncompleteShiftTask(String taskId) async {
+  await SupabaseService.client.from('shift_tasks').update({
+    'is_completed': false,
+    'completed_at': null,
+    'completed_by': null,
+  }).eq('id', taskId);
+}
 
 /// The worker's shifts over a 6-week window — Realtime-powered
-final myCareShiftsProvider = StreamProvider<List<CareShift>>((ref) {
-  final orgIdAsync = ref.watch(organizationIdProvider);
+final myCareShiftsProvider = StreamProvider<List<CareShift>>((ref) async* {
+  // Properly await the organization ID so we never get a null race
+  final orgId = await ref.watch(organizationIdProvider.future);
   final userId = SupabaseService.auth.currentUser?.id;
 
-  final orgId = orgIdAsync.valueOrNull;
-  if (orgId == null || userId == null) return const Stream.empty();
+  if (orgId == null || userId == null) {
+    yield [];
+    return;
+  }
 
   final client = SupabaseService.client;
-  final controller = StreamController<List<CareShift>>();
 
   final now = DateTime.now();
   final rangeStart = now.subtract(const Duration(days: 14)).toUtc().toIso8601String();
   final rangeEnd = now.add(const Duration(days: 28)).toUtc().toIso8601String();
 
-  Future<void> fetchShifts() async {
-    try {
-      // Query schedule_blocks with participant profile joins
-      final List<dynamic> data = await client
-          .from('schedule_blocks')
-          .select('*, participant_profiles(preferred_name, avatar_url, critical_alerts)')
-          .eq('organization_id', orgId)
-          .eq('technician_id', userId)
-          .gte('start_time', rangeStart)
-          .lte('start_time', rangeEnd)
-          .order('start_time');
+  Future<List<CareShift>> fetchShifts() async {
+    final List<dynamic> data = await client
+        .from('schedule_blocks')
+        .select('*, participant_profiles(preferred_name, critical_alerts)')
+        .eq('organization_id', orgId)
+        .eq('technician_id', userId)
+        .gte('start_time', rangeStart)
+        .lte('start_time', rangeEnd)
+        .order('start_time');
 
-      if (!controller.isClosed) {
-        controller.add(
-          data.map((s) => CareShift.fromJson(s as Map<String, dynamic>)).toList(),
-        );
-      }
-    } catch (e) {
-      if (!controller.isClosed) {
-        controller.addError(e);
-      }
+    final shifts =
+        data.map((s) => CareShift.fromJson(s as Map<String, dynamic>)).toList();
+
+    // Sync active shift state
+    final inProgress = shifts.where((s) => s.status == CareShiftStatus.inProgress);
+    if (inProgress.isNotEmpty) {
+      final active = inProgress.first;
+      ref.read(activeShiftProvider.notifier).state = active;
+      ref.read(activeShiftStateProvider.notifier).state = ActiveShiftState(
+        shiftId: active.id,
+        participantId: active.participantId,
+        clockInTime: active.actualStart ?? active.scheduledStart,
+        status: ActiveShiftStatus.active,
+      );
+    } else {
+      ref.read(activeShiftProvider.notifier).state = null;
+      ref.read(activeShiftStateProvider.notifier).state =
+          const ActiveShiftState();
     }
+
+    return shifts;
   }
 
-  fetchShifts();
+  // Emit initial data
+  yield await fetchShifts();
 
   // Listen for realtime changes on schedule_blocks
+  final controller = StreamController<List<CareShift>>();
+
   final sub = client
       .channel('my-care-shifts-$userId')
       .onPostgresChanges(
@@ -75,7 +312,12 @@ final myCareShiftsProvider = StreamProvider<List<CareShift>>((ref) {
           column: 'organization_id',
           value: orgId,
         ),
-        callback: (_) => fetchShifts(),
+        callback: (_) async {
+          try {
+            final shifts = await fetchShifts();
+            if (!controller.isClosed) controller.add(shifts);
+          } catch (_) {}
+        },
       )
       .subscribe();
 
@@ -84,17 +326,18 @@ final myCareShiftsProvider = StreamProvider<List<CareShift>>((ref) {
     controller.close();
   });
 
-  return controller.stream;
+  yield* controller.stream;
 });
 
-/// Shifts for a specific date
+/// Shifts for a specific date (compares in local timezone)
 final shiftsForDateProvider = Provider.family<List<CareShift>, DateTime>((ref, date) {
   final shiftsAsync = ref.watch(myCareShiftsProvider);
   return shiftsAsync.when(
     data: (shifts) => shifts.where((s) {
-      return s.scheduledStart.year == date.year &&
-          s.scheduledStart.month == date.month &&
-          s.scheduledStart.day == date.day;
+      final local = s.scheduledStart.toLocal();
+      return local.year == date.year &&
+          local.month == date.month &&
+          local.day == date.day;
     }).toList()
       ..sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart)),
     loading: () => [],
@@ -170,7 +413,7 @@ Future<void> declineShift(String shiftId, String reason) async {
 }
 
 /// Clock in to a shift with EVV data
-Future<void> clockInToShift({
+Future<String?> clockInToShift({
   required String shiftId,
   required String organizationId,
   required double lat,
@@ -179,7 +422,7 @@ Future<void> clockInToShift({
   String? overrideReason,
 }) async {
   final userId = SupabaseService.auth.currentUser?.id;
-  if (userId == null) return;
+  if (userId == null) return null;
 
   final now = DateTime.now().toUtc().toIso8601String();
 
@@ -190,7 +433,7 @@ Future<void> clockInToShift({
   }).eq('id', shiftId);
 
   // Create a time entry for EVV
-  await SupabaseService.client.from('time_entries').insert({
+  final inserted = await SupabaseService.client.from('time_entries').insert({
     'organization_id': organizationId,
     'user_id': userId,
     'worker_id': userId,
@@ -202,7 +445,9 @@ Future<void> clockInToShift({
     'clock_in_lng': lng,
     'is_geofence_override': isGeofenceOverride,
     'geofence_override_reason': overrideReason,
-  });
+  }).select('id').single();
+
+  return inserted['id'] as String?;
 }
 
 /// Clock out of a shift with EVV data

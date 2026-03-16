@@ -12,7 +12,8 @@
     "pack": "tsc && electron-builder --dir",
     "dist:mac": "tsc && electron-builder --mac",
     "dist:win": "tsc && electron-builder --win",
-    "dist:all": "tsc && electron-builder --mac --win",
+    "dist:linux": "tsc && electron-builder --linux AppImage",
+    "dist:all": "tsc && electron-builder --mac --win --linux AppImage",
     "clean": "rm -rf dist out"
   },
   "dependencies": {
@@ -32,6 +33,12 @@
     "productName": "iWorkr",
     "directories": {
       "output": "dist"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office"
     }
   }
 }

@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iworkr_mobile/core/database/app_database.dart';
+import 'package:iworkr_mobile/core/database/sync_engine.dart';
 import 'package:iworkr_mobile/core/router/app_router.dart';
 import 'package:iworkr_mobile/core/services/brand_provider.dart';
 import 'package:iworkr_mobile/core/services/native_bridge_service.dart';
 import 'package:iworkr_mobile/core/services/background_sync_service.dart';
+import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
+import 'package:iworkr_mobile/core/services/mobile_telemetry_engine.dart';
 import 'package:iworkr_mobile/core/services/revenuecat_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -12,192 +18,68 @@ import 'package:iworkr_mobile/core/theme/theme_provider.dart';
 import 'package:iworkr_mobile/core/widgets/auth_curtain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Default to dark chrome — will be updated dynamically by AnnotatedRegion
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-    systemNavigationBarColor: Color(0xFF050505),
-    systemNavigationBarIconBrightness: Brightness.light,
-  ));
+    // Default to dark chrome — will be updated dynamically by AnnotatedRegion
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Color(0xFF050505),
+      systemNavigationBarIconBrightness: Brightness.light,
+    ));
 
-  try {
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      unawaited(MobileTelemetryEngine.instance.captureAndReport(
+        details.exception,
+        details.stack ?? StackTrace.current,
+        source: 'flutter_error',
+        fatal: true,
+      ));
+    };
+
+    WidgetsBinding.instance.platformDispatcher.onError = (Object error, StackTrace stack) {
+      unawaited(MobileTelemetryEngine.instance.captureAndReport(
+        error,
+        stack,
+        source: 'platform_dispatcher',
+        fatal: true,
+      ));
+      return true;
+    };
+
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      unawaited(MobileTelemetryEngine.instance.captureAndReport(
+        details.exception,
+        details.stack ?? StackTrace.current,
+        source: 'error_widget',
+        fatal: false,
+      ));
+      return GracefulErrorFallback(details: details);
+    };
+
+    // Supabase ALWAYS initializes — production defaults baked in.
+    // Override with --dart-define-from-file=dart_defines.env for local dev.
     await SupabaseService.initialize();
     SupabaseService.initDeepLinks();
-  } catch (e) {
-    // Show a helpful config error screen instead of crashing
-    runApp(_ConfigErrorApp(error: e.toString()));
-    return;
-  }
 
-  await RevenueCatService.instance.initialize();
-  await BackgroundSyncService.instance.initialize();
+    await RevenueCatService.instance.initialize();
+    await BackgroundSyncService.instance.initialize();
 
-  runApp(const ProviderScope(child: IWorkrApp()));
-}
-
-/// Shown when the app can't start due to missing configuration.
-class _ConfigErrorApp extends StatelessWidget {
-  final String error;
-  const _ConfigErrorApp({required this.error});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF050505),
-      ),
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFF43F5E).withValues(alpha: 0.1),
-                    border: Border.all(
-                      color: const Color(0xFFF43F5E).withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.settings_outlined,
-                    color: Color(0xFFF43F5E),
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Configuration Required',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  error,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.white.withValues(alpha: 0.04),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'HOW TO FIX',
-                        style: TextStyle(
-                          color: const Color(0xFF10B981),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _step('1', 'Start local Supabase:', 'supabase start'),
-                      const SizedBox(height: 8),
-                      _step('2', 'Run with dart-defines:', 'flutter run --dart-define-from-file=dart_defines.env'),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Edit dart_defines.env with your Supabase URL and anon key.',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.35),
-                          fontSize: 11,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  static Widget _step(String num, String label, String code) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 18,
-          height: 18,
-          margin: const EdgeInsets.only(top: 1),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(5),
-            color: Colors.white.withValues(alpha: 0.06),
-          ),
-          child: Center(
-            child: Text(
-              num,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  color: Colors.white.withValues(alpha: 0.04),
-                ),
-                child: Text(
-                  code,
-                  style: const TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    color: Color(0xFF10B981),
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+    runApp(ProviderScope(
+      observers: [TelemetryProviderObserver()],
+      child: const IWorkrApp(),
+    ));
+  }, (Object error, StackTrace stackTrace) {
+    unawaited(MobileTelemetryEngine.instance.captureAndReport(
+      error,
+      stackTrace,
+      source: 'run_zoned_guarded',
+      fatal: true,
+    ));
+  });
 }
 
 class IWorkrApp extends ConsumerStatefulWidget {
@@ -225,7 +107,14 @@ class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserv
   void _initBridgeIfNeeded() {
     if (_bridgeInitialized) return;
     _bridgeInitialized = true;
+    final syncEngine = ref.read(syncEngineProvider);
+    unawaited(syncEngine.drainQueue());
+    MobileTelemetryEngine.instance.initialize(ref.read(appDatabaseProvider));
+    MobileTelemetryEngine.instance.addBreadcrumb('App bootstrap complete');
     ref.read(nativeBridgeProvider).initialize();
+
+    // Monolith-Execution: Rehydrate active workspace from secure storage
+    unawaited(_rehydrateActiveWorkspace());
 
     SupabaseService.auth.onAuthStateChange.listen((event) {
       final bridge = ref.read(nativeBridgeProvider);
@@ -237,13 +126,72 @@ class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserv
     });
   }
 
+  Future<void> _rehydrateActiveWorkspace() async {
+    try {
+      final persisted = await restoreWorkspaceState();
+      if (persisted != null && persisted.hasActiveShift) {
+        ref.read(activeShiftStateProvider.notifier).state = persisted;
+        ref.read(activeShiftTimeEntryIdProvider.notifier).state =
+            persisted.timeEntryId;
+        MobileTelemetryEngine.instance.addBreadcrumb(
+            'Rehydrated active workspace: shift=${persisted.shiftId}');
+      }
+    } catch (e) {
+      MobileTelemetryEngine.instance.addBreadcrumb(
+          'Workspace rehydration failed: $e');
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    MobileTelemetryEngine.instance.addBreadcrumb('Lifecycle state: $state');
     if (state == AppLifecycleState.resumed && _bridgeInitialized) {
       ref.read(nativeBridgeProvider).syncAll();
     }
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       BackgroundSyncService.instance.triggerImmediateSync();
+      // Project Terminus: Persist workspace state + release S8 locks on app kill
+      _persistAndReleaseLocks();
+    }
+    if (state == AppLifecycleState.detached) {
+      // Final attempt — app is being killed by OS/user
+      MobileTelemetryEngine.instance.addBreadcrumb('App detached — releasing locks');
+      _persistAndReleaseLocks();
+    }
+  }
+
+  /// Project Terminus: Serialize active shift state and release any zombie S8 locks
+  void _persistAndReleaseLocks() {
+    try {
+      final shiftState = ref.read(activeShiftStateProvider);
+      if (shiftState.hasActiveShift) {
+        // Persist workspace state synchronously to SharedPreferences
+        persistWorkspaceState(shiftState);
+        MobileTelemetryEngine.instance.addBreadcrumb(
+          'Persisted workspace state: shift=${shiftState.shiftId}',
+        );
+      }
+      // Fire synchronous HTTP call to release any pending S8 medication locks
+      _releaseS8Locks();
+    } catch (e) {
+      MobileTelemetryEngine.instance.addBreadcrumb(
+        'Lifecycle cleanup failed: $e',
+      );
+    }
+  }
+
+  /// Calls the Supabase RPC to release zombie-locked S8 medication records
+  Future<void> _releaseS8Locks() async {
+    try {
+      final user = SupabaseService.auth.currentUser;
+      if (user == null) return;
+      await SupabaseService.client.rpc('release_s8_medication_locks', params: {
+        'p_user_id': user.id,
+        'p_timeout_minutes': 15,
+      });
+      MobileTelemetryEngine.instance.addBreadcrumb('S8 locks released for ${user.id}');
+    } catch (e) {
+      MobileTelemetryEngine.instance.addBreadcrumb('S8 lock release failed: $e');
     }
   }
 
@@ -282,11 +230,17 @@ class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserv
         darkTheme: ObsidianTheme.darkThemeWith(brandColor),
         routerConfig: router,
         builder: (context, child) {
-          return AuthCurtain(
-            child: GestureDetector(
-              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-              behavior: HitTestBehavior.translucent,
-              child: child ?? const SizedBox.shrink(),
+          return RepaintBoundary(
+            key: MobileTelemetryEngine.instance.repaintBoundaryKey,
+            child: AuthCurtain(
+              child: GestureDetector(
+                onTap: () {
+                  MobileTelemetryEngine.instance.addBreadcrumb('Tap to dismiss keyboard');
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
+                behavior: HitTestBehavior.translucent,
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           );
         },

@@ -208,7 +208,35 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
       } catch { /* non-critical */ }
     } else if (provider === "xero") {
       connectedAs = "Xero Organization";
-      // Xero tenant ID would be fetched from /connections endpoint
+      try {
+        const connRes = await fetch("https://api.xero.com/connections", {
+          headers: { Authorization: `Bearer ${tokens.access_token}` },
+        });
+        if (connRes.ok) {
+          const connections = await connRes.json();
+          const first = Array.isArray(connections) ? connections[0] : null;
+          const tenantId = first?.tenantId || first?.tenant_id;
+          connectedEmail = first?.email || connectedEmail;
+          connectedAs = first?.tenantName || connectedAs;
+          if (tenantId) {
+            await (supabase as any).rpc("upsert_tenant_integration_secret", {
+              p_organization_id: integration.organization_id,
+              p_integration_type: "xero",
+              p_xero_tenant_id: tenantId,
+              p_access_token: tokens.access_token,
+              p_refresh_token: tokens.refresh_token ?? null,
+              p_expires_at: expiresAt,
+              p_metadata: {
+                integration_id: integrationId,
+                connected_as: connectedAs,
+                connected_email: connectedEmail || null,
+              },
+            });
+          }
+        }
+      } catch {
+        // Non-fatal: integration remains connected, but tenant routing may need manual reconnect.
+      }
     } else if (provider === "quickbooks") {
       connectedAs = "QuickBooks Company";
     }
@@ -284,7 +312,7 @@ export async function refreshIntegrationToken(integrationId: string): Promise<{ 
     if (tokens.error) {
       await supabase
         .from("integrations")
-        .update({ status: "error", error_message: "Token refresh failed. Re-authenticate required." })
+        .update({ status: "expired", error_message: "Token refresh failed. Re-authenticate required." })
         .eq("id", integrationId);
       return { error: tokens.error_description || "Refresh failed" };
     }

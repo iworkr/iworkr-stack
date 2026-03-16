@@ -38,6 +38,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ScheduleWeekView } from "@/components/schedule/schedule-week-view";
 import { ScheduleMonthView } from "@/components/schedule/schedule-month-view";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { attachShadowWorkerAction, listShadowEligibleWorkersAction } from "@/app/actions/doppelganger";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -119,6 +120,7 @@ const viewScaleLabels: Record<ViewScale, string> = {
 const contextItems: ContextMenuItem[] = [
   { id: "open", label: "Open Job Control", icon: <ExternalLink size={13} />, shortcut: "↵" },
   { id: "copy", label: "Copy Job ID", icon: <Copy size={13} />, shortcut: "⌘L" },
+  { id: "attach_shadow", label: "Attach Shadow Worker", icon: <User size={13} /> },
   { id: "divider-1", label: "", divider: true },
   { id: "unschedule", label: "Unschedule", icon: <ArrowLeftToLine size={13} /> },
   { id: "delete", label: "Delete", icon: <Trash2 size={13} />, danger: true },
@@ -255,6 +257,9 @@ export default function SchedulePage() {
   const [ctxMenu, setCtxMenu] = useState<{ open: boolean; x: number; y: number; blockId: string }>({
     open: false, x: 0, y: 0, blockId: "",
   });
+  const [shadowPicker, setShadowPicker] = useState<{ open: boolean; parentBlockId: string | null }>({ open: false, parentBlockId: null });
+  const [eligibleShadowWorkers, setEligibleShadowWorkers] = useState<Array<{ id: string; name: string; rank: number }>>([]);
+  const [selectedShadowWorkerId, setSelectedShadowWorkerId] = useState<string>("");
 
   /* ── Now line (updates every minute) ────────────────────── */
   const [nowTime, setNowTime] = useState(new Date());
@@ -519,6 +524,22 @@ export default function SchedulePage() {
     } else if (actionId === "copy") {
       navigator.clipboard?.writeText(block.jobId);
       addToast(`${block.jobId} copied`);
+    } else if (actionId === "attach_shadow") {
+      if (block.isShadowShift) {
+        addToast("Shadow shifts cannot host another shadow.");
+        return;
+      }
+      if (!orgId) return;
+      listShadowEligibleWorkersAction(orgId, block.participantId)
+        .then((workers) => {
+          const sorted = [...workers]
+            .sort((a, b) => a.rank - b.rank)
+            .map((w) => ({ id: w.id, name: w.name, rank: w.rank }));
+          setEligibleShadowWorkers(sorted);
+          setSelectedShadowWorkerId(sorted[0]?.id || "");
+          setShadowPicker({ open: true, parentBlockId: block.id });
+        })
+        .catch((err) => addToast((err as Error).message || "Failed loading eligible workers"));
     } else if (actionId === "unschedule") {
       unscheduleBlock(block.id);
       addToast(`${block.title} moved to backlog`);
@@ -1010,13 +1031,13 @@ export default function SchedulePage() {
                                     duration: 0.3,
                                     ease: [0.16, 1, 0.3, 1],
                                   }}
-                                  className={`schedule-block-hover absolute top-2 origin-left cursor-grab overflow-hidden rounded-lg ${colors.bg} ${colors.border} backdrop-blur-sm ${
+                                  className={`schedule-block-hover absolute ${block.isShadowShift ? "top-5 border-dashed opacity-90" : "top-2"} origin-left cursor-grab overflow-hidden rounded-lg ${colors.bg} ${colors.border} backdrop-blur-sm ${
                                     block.conflict ? "ring-1 ring-rose-500/30" : ""
                                   } ${isCascadingDelay ? "ring-1 ring-amber-500/40" : ""} ${isPeeking ? "ring-1 ring-white/15" : ""} ${
                                     isInProgress ? "animate-capsule-glow" : ""
-                                  } ${isUrgent || isOnSite ? "diagonal-stripe" : ""}`}
+                                  } ${isUrgent || isOnSite ? "diagonal-stripe" : ""} ${block.isShadowShift ? "bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.02)_0px,rgba(255,255,255,0.02)_6px,transparent_6px,transparent_12px)]" : ""}`}
                                   style={{
-                                    left: blockLeft,
+                                    left: block.isShadowShift ? blockLeft + 10 : blockLeft,
                                     width: Math.max(24, blockWidth),
                                     height: ROW_H - 16,
                                     ["--capsule-glow-color" as string]: colors.glow,
@@ -1049,6 +1070,9 @@ export default function SchedulePage() {
                                       )}
                                     </div>
                                     <span className={`truncate text-[11px] font-medium ${colors.text}`}>{block.title}</span>
+                                    {block.isShadowShift && (
+                                      <span className="truncate text-[9px] font-mono text-zinc-500">TRAINING · NON-BILLABLE</span>
+                                    )}
                                     {blockWidth > 80 && (
                                       <span className={`truncate text-[10px] ${colors.text} opacity-50`}>{block.client}</span>
                                     )}
@@ -1341,6 +1365,69 @@ export default function SchedulePage() {
         onSelect={handleContextAction}
         onClose={() => setCtxMenu((p) => ({ ...p, open: false }))}
       />
+
+      <AnimatePresence>
+        {shadowPicker.open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm"
+            onClick={() => setShadowPicker({ open: false, parentBlockId: null })}
+          >
+            <motion.div
+              initial={{ y: 12, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 10, opacity: 0 }}
+              className="mx-auto mt-28 w-full max-w-md rounded-xl border border-white/[0.1] bg-[#0B0B0B] p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="mb-2 font-mono text-[10px] tracking-[0.14em] text-zinc-500 uppercase">Project Doppelganger</p>
+              <h3 className="text-base font-semibold text-zinc-100">Attach Shadow Worker</h3>
+              <p className="mt-1 text-xs text-zinc-400">Create a child training shift tethered to this primary shift.</p>
+              <select
+                className="mt-3 w-full rounded-md border border-white/[0.1] bg-black/30 px-2 py-2 text-sm text-zinc-200"
+                value={selectedShadowWorkerId}
+                onChange={(e) => setSelectedShadowWorkerId(e.target.value)}
+              >
+                {eligibleShadowWorkers.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} {w.rank === 0 ? "(new / untrained)" : `(completed ${w.rank})`}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  className="rounded-md border border-white/[0.1] px-3 py-1.5 text-sm text-zinc-300"
+                  onClick={() => setShadowPicker({ open: false, parentBlockId: null })}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                  disabled={!selectedShadowWorkerId || !shadowPicker.parentBlockId}
+                  onClick={async () => {
+                    try {
+                      await attachShadowWorkerAction({
+                        parent_shift_id: shadowPicker.parentBlockId!,
+                        trainee_worker_id: selectedShadowWorkerId,
+                      });
+                      addToast("Shadow shift attached.");
+                      await refresh();
+                    } catch (e) {
+                      addToast((e as Error).message || "Failed to attach shadow worker");
+                    } finally {
+                      setShadowPicker({ open: false, parentBlockId: null });
+                    }
+                  }}
+                >
+                  Attach Shadow
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

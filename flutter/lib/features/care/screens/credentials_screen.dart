@@ -204,6 +204,7 @@ class _CredentialsScreenState extends ConsumerState<CredentialsScreen> {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _AddCredentialSheet(),

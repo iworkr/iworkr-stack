@@ -30,6 +30,7 @@ Future<bool> showObsidianPaywall(
   HapticFeedback.mediumImpact();
   final result = await showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     isDismissible: true,

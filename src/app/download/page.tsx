@@ -12,7 +12,6 @@ import {
   Bell,
   Lock,
   Cpu,
-  Wifi,
   WifiOff,
   ArrowRight,
   Check,
@@ -27,6 +26,7 @@ interface VersionInfo {
   macArmUrl: string;
   macIntelUrl: string;
   winUrl: string;
+  linuxUrl: string;
 }
 
 const FEATURES = [
@@ -79,12 +79,11 @@ function detectPlatform(): Platform {
 }
 
 export default function DownloadPage() {
-  const [platform, setPlatform] = useState<Platform>("unknown");
+  const [platform] = useState<Platform>(() => detectPlatform());
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [showAllPlatforms, setShowAllPlatforms] = useState(false);
 
   useEffect(() => {
-    setPlatform(detectPlatform());
     fetch("/api/desktop/version")
       .then((r) => r.json())
       .then(setVersionInfo)
@@ -424,9 +423,9 @@ function getPrimaryDownload(
       meta: "Windows 10+ · x64 · .exe",
     },
     linux: {
-      url: "#",
+      url: info?.linuxUrl ?? "#",
       label: "Download for Linux",
-      meta: "Coming soon", // INCOMPLETE:TODO — Linux desktop build not available; need to add Linux target to Electron build pipeline and publish .AppImage/.deb artifacts. Done when Linux download URL points to a real binary.
+      meta: "Ubuntu/Debian · x64 · .AppImage",
     },
     unknown: {
       url: info?.macArmUrl ?? "#",

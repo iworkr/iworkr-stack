@@ -3,6 +3,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { compileTravelAllowanceSummaryAction } from "./travel";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -533,6 +534,11 @@ export async function createPayrollExportAction(input: {
 
     const worker_count = new Set((timesheets || []).map((t: any) => t.worker_id)).size;
     const total_hours = (timesheets || []).reduce((sum: number, t: any) => sum + (parseFloat(t.total_hours) || 0), 0);
+    const travelAllowances = await compileTravelAllowanceSummaryAction({
+      organization_id: input.organization_id,
+      period_start: input.period_start,
+      period_end: input.period_end,
+    });
 
     const { data, error } = await (supabase as any)
       .from("payroll_exports")
@@ -541,6 +547,10 @@ export async function createPayrollExportAction(input: {
         worker_count,
         total_hours,
         exported_by: user.id,
+        api_response: {
+          travel_allowances: travelAllowances,
+          xero_allowance_earning_rate: "KILOMETER_ALLOWANCE_TAX_FREE",
+        },
       })
       .select()
       .single();

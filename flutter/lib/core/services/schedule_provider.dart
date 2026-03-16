@@ -36,45 +36,39 @@ final dispatchTeamProvider = FutureProvider<List<Map<String, dynamic>>>((ref) as
 });
 
 /// Schedule blocks for the selected technician + date — Realtime
-final technicianScheduleProvider = StreamProvider<List<ScheduleBlock>>((ref) {
-  final orgIdAsync = ref.watch(organizationIdProvider);
+final technicianScheduleProvider = StreamProvider<List<ScheduleBlock>>((ref) async* {
+  final orgId = await ref.watch(organizationIdProvider.future);
   final date = ref.watch(selectedDateProvider);
   final techId = ref.watch(effectiveTechnicianIdProvider);
 
-  final orgId = orgIdAsync.valueOrNull;
-  if (orgId == null || techId == null) return const Stream.empty();
+  if (orgId == null || techId == null) {
+    yield [];
+    return;
+  }
 
   final client = SupabaseService.client;
-  final controller = StreamController<List<ScheduleBlock>>();
 
   final startOfDay = DateTime(date.year, date.month, date.day).toUtc().toIso8601String();
   final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59).toUtc().toIso8601String();
 
-  Future<void> fetchBlocks() async {
-    try {
-      final data = await client
-          .from('schedule_blocks')
-          .select()
-          .eq('organization_id', orgId)
-          .eq('technician_id', techId)
-          .gte('start_time', startOfDay)
-          .lte('start_time', endOfDay)
-          .order('start_time');
+  Future<List<ScheduleBlock>> fetchBlocks() async {
+    final data = await client
+        .from('schedule_blocks')
+        .select()
+        .eq('organization_id', orgId)
+        .eq('technician_id', techId)
+        .gte('start_time', startOfDay)
+        .lte('start_time', endOfDay)
+        .order('start_time');
 
-      if (!controller.isClosed) {
-        controller.add(
-          (data as List).map((b) => ScheduleBlock.fromJson(b as Map<String, dynamic>)).toList(),
-        );
-      }
-    } catch (e) {
-      if (!controller.isClosed) {
-        controller.addError(e);
-      }
-    }
+    return (data as List).map((b) => ScheduleBlock.fromJson(b as Map<String, dynamic>)).toList();
   }
 
-  fetchBlocks();
+  // Emit initial data
+  yield await fetchBlocks();
 
+  // Listen for realtime changes
+  final controller = StreamController<List<ScheduleBlock>>();
   final channelName = 'dispatch-$techId-${date.millisecondsSinceEpoch}';
   final sub = client
       .channel(channelName)
@@ -87,7 +81,12 @@ final technicianScheduleProvider = StreamProvider<List<ScheduleBlock>>((ref) {
           column: 'technician_id',
           value: techId,
         ),
-        callback: (_) => fetchBlocks(),
+        callback: (_) async {
+          try {
+            final blocks = await fetchBlocks();
+            if (!controller.isClosed) controller.add(blocks);
+          } catch (_) {}
+        },
       )
       .subscribe();
 
@@ -96,47 +95,39 @@ final technicianScheduleProvider = StreamProvider<List<ScheduleBlock>>((ref) {
     controller.close();
   });
 
-  return controller.stream;
+  yield* controller.stream;
 });
 
 /// Provides schedule blocks for the selected date — Realtime-powered
-final scheduleBlocksProvider = StreamProvider<List<ScheduleBlock>>((ref) {
-  final orgIdAsync = ref.watch(organizationIdProvider);
+final scheduleBlocksProvider = StreamProvider<List<ScheduleBlock>>((ref) async* {
+  final orgId = await ref.watch(organizationIdProvider.future);
   final date = ref.watch(selectedDateProvider);
 
-  final orgId = orgIdAsync.valueOrNull;
-  if (orgId == null) return const Stream.empty();
+  if (orgId == null) {
+    yield [];
+    return;
+  }
 
   final client = SupabaseService.client;
-  final controller = StreamController<List<ScheduleBlock>>();
 
   final startOfDay = DateTime(date.year, date.month, date.day).toUtc().toIso8601String();
   final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59).toUtc().toIso8601String();
 
-  Future<void> fetchBlocks() async {
-    try {
-      final data = await client
-          .from('schedule_blocks')
-          .select()
-          .eq('organization_id', orgId)
-          .gte('start_time', startOfDay)
-          .lte('start_time', endOfDay)
-          .order('start_time');
+  Future<List<ScheduleBlock>> fetchBlocks() async {
+    final data = await client
+        .from('schedule_blocks')
+        .select()
+        .eq('organization_id', orgId)
+        .gte('start_time', startOfDay)
+        .lte('start_time', endOfDay)
+        .order('start_time');
 
-      if (!controller.isClosed) {
-        controller.add(
-          (data as List).map((b) => ScheduleBlock.fromJson(b as Map<String, dynamic>)).toList(),
-        );
-      }
-    } catch (e) {
-      if (!controller.isClosed) {
-        controller.addError(e);
-      }
-    }
+    return (data as List).map((b) => ScheduleBlock.fromJson(b as Map<String, dynamic>)).toList();
   }
 
-  fetchBlocks();
+  yield await fetchBlocks();
 
+  final controller = StreamController<List<ScheduleBlock>>();
   final sub = client
       .channel('schedule-blocks-realtime')
       .onPostgresChanges(
@@ -148,7 +139,12 @@ final scheduleBlocksProvider = StreamProvider<List<ScheduleBlock>>((ref) {
           column: 'organization_id',
           value: orgId,
         ),
-        callback: (_) => fetchBlocks(),
+        callback: (_) async {
+          try {
+            final blocks = await fetchBlocks();
+            if (!controller.isClosed) controller.add(blocks);
+          } catch (_) {}
+        },
       )
       .subscribe();
 
@@ -157,49 +153,41 @@ final scheduleBlocksProvider = StreamProvider<List<ScheduleBlock>>((ref) {
     controller.close();
   });
 
-  return controller.stream;
+  yield* controller.stream;
 });
 
 /// Today's blocks for the current user — Realtime-powered
-final myTodayBlocksProvider = StreamProvider<List<ScheduleBlock>>((ref) {
-  final orgIdAsync = ref.watch(organizationIdProvider);
+final myTodayBlocksProvider = StreamProvider<List<ScheduleBlock>>((ref) async* {
+  final orgId = await ref.watch(organizationIdProvider.future);
   final userId = SupabaseService.auth.currentUser?.id;
 
-  final orgId = orgIdAsync.valueOrNull;
-  if (orgId == null || userId == null) return const Stream.empty();
+  if (orgId == null || userId == null) {
+    yield [];
+    return;
+  }
 
   final client = SupabaseService.client;
-  final controller = StreamController<List<ScheduleBlock>>();
 
   final now = DateTime.now();
   final startOfDay = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
   final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59).toUtc().toIso8601String();
 
-  Future<void> fetchBlocks() async {
-    try {
-      final data = await client
-          .from('schedule_blocks')
-          .select()
-          .eq('organization_id', orgId)
-          .eq('technician_id', userId)
-          .gte('start_time', startOfDay)
-          .lte('start_time', endOfDay)
-          .order('start_time');
+  Future<List<ScheduleBlock>> fetchBlocks() async {
+    final data = await client
+        .from('schedule_blocks')
+        .select()
+        .eq('organization_id', orgId)
+        .eq('technician_id', userId)
+        .gte('start_time', startOfDay)
+        .lte('start_time', endOfDay)
+        .order('start_time');
 
-      if (!controller.isClosed) {
-        controller.add(
-          (data as List).map((b) => ScheduleBlock.fromJson(b as Map<String, dynamic>)).toList(),
-        );
-      }
-    } catch (e) {
-      if (!controller.isClosed) {
-        controller.addError(e);
-      }
-    }
+    return (data as List).map((b) => ScheduleBlock.fromJson(b as Map<String, dynamic>)).toList();
   }
 
-  fetchBlocks();
+  yield await fetchBlocks();
 
+  final controller = StreamController<List<ScheduleBlock>>();
   final sub = client
       .channel('my-schedule-realtime')
       .onPostgresChanges(
@@ -211,7 +199,12 @@ final myTodayBlocksProvider = StreamProvider<List<ScheduleBlock>>((ref) {
           column: 'technician_id',
           value: userId,
         ),
-        callback: (_) => fetchBlocks(),
+        callback: (_) async {
+          try {
+            final blocks = await fetchBlocks();
+            if (!controller.isClosed) controller.add(blocks);
+          } catch (_) {}
+        },
       )
       .subscribe();
 
@@ -220,44 +213,36 @@ final myTodayBlocksProvider = StreamProvider<List<ScheduleBlock>>((ref) {
     controller.close();
   });
 
-  return controller.stream;
+  yield* controller.stream;
 });
 
 /// Backlog jobs — Realtime-powered, updates when job status changes
-final backlogJobsProvider = StreamProvider<List<Job>>((ref) {
-  final orgIdAsync = ref.watch(organizationIdProvider);
+final backlogJobsProvider = StreamProvider<List<Job>>((ref) async* {
+  final orgId = await ref.watch(organizationIdProvider.future);
 
-  final orgId = orgIdAsync.valueOrNull;
-  if (orgId == null) return const Stream.empty();
-
-  final client = SupabaseService.client;
-  final controller = StreamController<List<Job>>();
-
-  Future<void> fetchBacklog() async {
-    try {
-      final data = await client
-          .from('jobs')
-          .select('*, clients(name), profiles!jobs_assignee_id_fkey(full_name)')
-          .eq('organization_id', orgId)
-          .isFilter('deleted_at', null)
-          .eq('status', 'backlog')
-          .order('created_at', ascending: false)
-          .limit(30);
-
-      if (!controller.isClosed) {
-        controller.add(
-          (data as List).map((j) => Job.fromJson(j as Map<String, dynamic>)).toList(),
-        );
-      }
-    } catch (e) {
-      if (!controller.isClosed) {
-        controller.addError(e);
-      }
-    }
+  if (orgId == null) {
+    yield [];
+    return;
   }
 
-  fetchBacklog();
+  final client = SupabaseService.client;
 
+  Future<List<Job>> fetchBacklog() async {
+    final data = await client
+        .from('jobs')
+        .select('*, clients(name), profiles!jobs_assignee_id_fkey(full_name)')
+        .eq('organization_id', orgId)
+        .isFilter('deleted_at', null)
+        .eq('status', 'backlog')
+        .order('created_at', ascending: false)
+        .limit(30);
+
+    return (data as List).map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
+  }
+
+  yield await fetchBacklog();
+
+  final controller = StreamController<List<Job>>();
   final sub = client
       .channel('backlog-jobs-realtime')
       .onPostgresChanges(
@@ -269,7 +254,12 @@ final backlogJobsProvider = StreamProvider<List<Job>>((ref) {
           column: 'organization_id',
           value: orgId,
         ),
-        callback: (_) => fetchBacklog(),
+        callback: (_) async {
+          try {
+            final jobs = await fetchBacklog();
+            if (!controller.isClosed) controller.add(jobs);
+          } catch (_) {}
+        },
       )
       .subscribe();
 
@@ -278,7 +268,7 @@ final backlogJobsProvider = StreamProvider<List<Job>>((ref) {
     controller.close();
   });
 
-  return controller.stream;
+  yield* controller.stream;
 });
 
 /// Dispatch a job to a specific technician at a specific time.

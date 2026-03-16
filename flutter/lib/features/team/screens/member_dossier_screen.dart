@@ -79,6 +79,7 @@ class _MemberDossierScreenState extends ConsumerState<MemberDossierScreen> {
   }) async {
     final result = await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _ConfirmSheet(title: title, body: body, actionLabel: actionLabel, isDestructive: isDestructive),
     );
@@ -88,6 +89,7 @@ class _MemberDossierScreenState extends ConsumerState<MemberDossierScreen> {
   Future<String?> _showRemoveConfirmation() async {
     return showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _RemoveConfirmSheet(memberName: widget.member.fullName),

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "iWorkr — Secure Document Portal",
-  description: "View, approve, and pay documents securely.",
+  title: "iWorkr — Family & Participant Portal",
+  description: "Live roster, budget telemetry, care updates, and secure signatures.",
 };
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {

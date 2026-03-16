@@ -15,6 +15,15 @@ export interface WorkspaceBranding {
   dns_status: "unconfigured" | "pending" | "verified" | "failed";
   dns_records: DnsRecord[];
   updated_at: string;
+  // Project Chameleon — White-Label fields
+  app_name: string | null;
+  app_icon_url: string | null;
+  accent_color_hex: string | null;
+  build_status: "none" | "queued" | "building" | "deployed" | "awaiting_store_review" | "failed";
+  build_log_url: string | null;
+  enterprise_bundle_id: string | null;
+  last_build_at: string | null;
+  build_requested_by: string | null;
 }
 
 export interface DnsRecord {

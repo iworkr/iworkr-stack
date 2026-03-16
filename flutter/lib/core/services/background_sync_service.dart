@@ -72,7 +72,8 @@ void backgroundSyncCallback() {
           try {
             final file = File(upload.localPath);
             if (!file.existsSync()) {
-              await db.markUploaded(upload.id, '');
+              await db.markUploadFailed(upload.id);
+              log('[BackgroundSync] Upload file missing, marked failed: ${upload.id}');
               continue;
             }
             final bytes = await file.readAsBytes();
@@ -95,7 +96,14 @@ void backgroundSyncCallback() {
 
             log('[BackgroundSync] Uploaded: ${upload.id}');
           } catch (e) {
-            log('[BackgroundSync] Upload failed: ${upload.id} - $e');
+            final retries = upload.retryCount + 1;
+            if (retries > 4) {
+              await db.markUploadFailed(upload.id);
+              log('[BackgroundSync] Upload permanently failed: ${upload.id} - $e');
+            } else {
+              await db.incrementUploadRetry(upload.id);
+              log('[BackgroundSync] Upload retry $retries for ${upload.id}');
+            }
           }
         }
       }
@@ -113,23 +121,44 @@ void backgroundSyncCallback() {
 Future<void> _processMutation(SyncQueueData item) async {
   final payload = item.payload;
 
+  if (item.entityType == 'telemetry_event') {
+    await SupabaseService.client.functions.invoke(
+      'ingest-telemetry',
+      body: _decodePayload(payload),
+    );
+    return;
+  }
+
   switch (item.action) {
     case 'UPDATE':
-      await SupabaseService.client
+      final updated = await SupabaseService.client
           .from(_tableForEntity(item.entityType))
           .update(_decodePayload(payload))
-          .eq('id', item.entityId);
+          .eq('id', item.entityId)
+          .select('id')
+          .maybeSingle();
+      if (updated == null) {
+        throw Exception('No rows updated for ${item.entityType}/${item.entityId}');
+      }
+      break;
     case 'INSERT':
       final data = _decodePayload(payload);
       data['id'] = item.entityId;
       await SupabaseService.client
           .from(_tableForEntity(item.entityType))
           .upsert(data);
+      break;
     case 'DELETE':
-      await SupabaseService.client
+      final deleted = await SupabaseService.client
           .from(_tableForEntity(item.entityType))
           .delete()
-          .eq('id', item.entityId);
+          .eq('id', item.entityId)
+          .select('id')
+          .maybeSingle();
+      if (deleted == null) {
+        throw Exception('No rows deleted for ${item.entityType}/${item.entityId}');
+      }
+      break;
     default:
       throw Exception('Unknown action: ${item.action}');
   }

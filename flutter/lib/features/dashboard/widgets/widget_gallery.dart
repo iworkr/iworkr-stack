@@ -16,6 +16,7 @@ Future<DashboardWidgetConfig?> showWidgetGallery(BuildContext context, WidgetRef
   final catalog = ref.read(filteredWidgetCatalogProvider).valueOrNull ?? widgetCatalog;
   return showModalBottomSheet<DashboardWidgetConfig>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _WidgetGallerySheet(catalog: catalog),

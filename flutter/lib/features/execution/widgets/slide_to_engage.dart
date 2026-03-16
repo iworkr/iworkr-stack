@@ -50,35 +50,36 @@ class _SlideToEngageState extends State<SlideToEngage>
     super.dispose();
   }
 
-  double get _maxDrag {
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null) return 200;
-    return box.size.width - _thumbSize - 8;
+  double _maxDragForWidth(double width) {
+    final safeWidth = width.isFinite ? width : 260;
+    return (safeWidth - _thumbSize - 8).clamp(32.0, 4096.0);
   }
 
-  double get _progress => (_dragPosition / _maxDrag).clamp(0.0, 1.0);
+  double _progressFor(double maxDrag) =>
+      (_dragPosition / maxDrag).clamp(0.0, 1.0);
 
-  void _onDragUpdate(DragUpdateDetails details) {
+  void _onDragUpdate(DragUpdateDetails details, double maxDrag) {
     if (_completed || !widget.enabled) return;
 
     setState(() {
-      _dragPosition = (_dragPosition + details.delta.dx).clamp(0.0, _maxDrag);
+      _dragPosition = (_dragPosition + details.delta.dx).clamp(0.0, maxDrag);
     });
 
     // Rising haptic intensity
-    if (_progress > 0.25 && _progress < 0.5) {
+    final progress = _progressFor(maxDrag);
+    if (progress > 0.25 && progress < 0.5) {
       HapticFeedback.selectionClick();
-    } else if (_progress > 0.5 && _progress < 0.75) {
+    } else if (progress > 0.5 && progress < 0.75) {
       HapticFeedback.lightImpact();
-    } else if (_progress > 0.75) {
+    } else if (progress > 0.75) {
       HapticFeedback.mediumImpact();
     }
   }
 
-  void _onDragEnd(DragEndDetails details) {
+  void _onDragEnd(DragEndDetails details, double maxDrag) {
     if (_completed) return;
 
-    if (_progress > 0.85) {
+    if (_progressFor(maxDrag) > 0.85) {
       setState(() => _completed = true);
       HapticFeedback.heavyImpact();
       widget.onEngaged();
@@ -97,6 +98,12 @@ class _SlideToEngageState extends State<SlideToEngage>
         height: _trackHeight,
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final maxDrag = _maxDragForWidth(constraints.maxWidth);
+            final progress = _progressFor(maxDrag);
+            final progressWidth =
+                (_dragPosition + _thumbSize + 8).clamp(0.0, constraints.maxWidth);
+            final completedLeft =
+                (constraints.maxWidth - _thumbSize - 4).clamp(4.0, maxDrag + 4);
             return Stack(
               alignment: Alignment.centerLeft,
               children: [
@@ -118,13 +125,13 @@ class _SlideToEngageState extends State<SlideToEngage>
                 AnimatedContainer(
                   duration: _completed ? ObsidianTheme.standard : Duration.zero,
                   height: _trackHeight,
-                  width: _dragPosition + _thumbSize + 8,
+                  width: progressWidth,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(31),
                     gradient: LinearGradient(
                       colors: [
-                        ObsidianTheme.emerald.withValues(alpha: 0.08 * _progress),
-                        ObsidianTheme.emerald.withValues(alpha: 0.15 * _progress),
+                        ObsidianTheme.emerald.withValues(alpha: 0.08 * progress),
+                        ObsidianTheme.emerald.withValues(alpha: 0.15 * progress),
                       ],
                     ),
                   ),
@@ -200,11 +207,12 @@ class _SlideToEngageState extends State<SlideToEngage>
                 // Draggable thumb
                 AnimatedPositioned(
                   duration: _completed ? ObsidianTheme.standard : Duration.zero,
-                  left: _completed ? constraints.maxWidth - _thumbSize - 4 : _dragPosition + 4,
+                  left: _completed ? completedLeft : _dragPosition + 4,
                   top: (_trackHeight - _thumbSize) / 2,
                   child: GestureDetector(
-                    onHorizontalDragUpdate: _onDragUpdate,
-                    onHorizontalDragEnd: _onDragEnd,
+                    onHorizontalDragUpdate: (details) =>
+                        _onDragUpdate(details, maxDrag),
+                    onHorizontalDragEnd: (details) => _onDragEnd(details, maxDrag),
                     child: AnimatedContainer(
                       duration: ObsidianTheme.fast,
                       width: _thumbSize,
@@ -216,7 +224,7 @@ class _SlideToEngageState extends State<SlideToEngage>
                             : Color.lerp(
                                 c.borderMedium,
                                 ObsidianTheme.emerald.withValues(alpha: 0.3),
-                                _progress,
+                                progress,
                               ),
                         border: Border.all(
                           color: _completed
@@ -224,16 +232,16 @@ class _SlideToEngageState extends State<SlideToEngage>
                               : Color.lerp(
                                   c.borderHover,
                                   ObsidianTheme.emerald.withValues(alpha: 0.6),
-                                  _progress,
+                                  progress,
                                 )!,
                           width: 1.5,
                         ),
                         boxShadow: [
-                          if (_progress > 0.3)
+                          if (progress > 0.3)
                             BoxShadow(
-                              color: ObsidianTheme.emerald.withValues(alpha: 0.2 * _progress),
-                              blurRadius: 12 * _progress,
-                              spreadRadius: 2 * _progress,
+                              color: ObsidianTheme.emerald.withValues(alpha: 0.2 * progress),
+                              blurRadius: 12 * progress,
+                              spreadRadius: 2 * progress,
                             ),
                         ],
                       ),
@@ -241,7 +249,9 @@ class _SlideToEngageState extends State<SlideToEngage>
                         _completed
                             ? PhosphorIconsBold.lockKey
                             : PhosphorIconsLight.caretDoubleRight,
-                        color: _completed ? Colors.white : Colors.white.withValues(alpha: 0.6 + _progress * 0.4),
+                        color: _completed
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.6 + progress * 0.4),
                         size: 20,
                       ),
                     ),

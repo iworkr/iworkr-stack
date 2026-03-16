@@ -271,6 +271,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _AddItemSheet(onAdd: (desc, qty, price) {
@@ -291,6 +292,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _ClientPickerSheet(orgId: orgId),

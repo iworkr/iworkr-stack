@@ -22,7 +22,15 @@ import { useIntegrationsStore } from "@/lib/integrations-store";
 import { useToastStore } from "@/components/app/action-toast";
 import { getSyncLog } from "@/app/actions/integration-oauth";
 import { triggerSync } from "@/app/actions/integration-sync";
-import { connectWithApiKey, updateProviderSettings } from "@/app/actions/integration-oauth";
+import { connectWithApiKey } from "@/app/actions/integration-oauth";
+
+type SyncLogEntry = {
+  id: string;
+  direction: "push" | "pull" | "bidirectional" | "inbound" | "outbound";
+  entity_type: string;
+  status: "success" | "error" | "skipped" | "pending";
+  created_at: string;
+};
 
 export function ConfigPanel() {
   const {
@@ -39,7 +47,7 @@ export function ConfigPanel() {
   const { addToast } = useToastStore();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [syncLog, setSyncLog] = useState<any[]>([]);
+  const [syncLog, setSyncLog] = useState<SyncLogEntry[]>([]);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [showSyncLog, setShowSyncLog] = useState(false);
 
@@ -163,7 +171,7 @@ export function ConfigPanel() {
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto">
               {/* Status banner */}
-              {integration.status === "error" && integration.error && (
+              {(integration.status === "error" || integration.status === "expired") && integration.error && (
                 <div className="mx-6 mt-4 flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/[0.04] p-4">
                   <AlertTriangle size={14} className="mt-0.5 shrink-0 text-red-400" />
                   <div>

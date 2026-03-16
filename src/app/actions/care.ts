@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Barrel re-export — original monolith decomposed into domain modules.
  * All existing imports from "@/app/actions/care" continue to work unchanged.
@@ -70,3 +68,24 @@ export {
   approvePlanManagerInvoiceAction,
   rejectPlanManagerInvoiceAction,
 } from "./care-governance";
+
+// ── Rosetta: Dynamic Shift Notes ──
+export {
+  listShiftNoteTemplatesAction,
+  createShiftNoteTemplateAction,
+  listTemplateAssignmentRulesAction,
+  createTemplateAssignmentRuleAction,
+  listShiftNoteSubmissionsAction,
+  acknowledgeShiftNoteSubmissionAction,
+} from "./care-shift-notes";
+
+// ── Ironclad: Audit & Compliance Fortress ──
+export {
+  listIroncladScopeOptionsAction,
+  createAuditorPortalAction,
+  listAuditorPortalsAction,
+  revokeAuditorPortalAction,
+  getComplianceReadinessAction,
+  triggerCredentialRemediationAction,
+  verifyDocumentHashAction,
+} from "./care-ironclad";

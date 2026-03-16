@@ -1,0 +1,234 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Project Chameleon — Enterprise White-Label Build Factory
+# ══════════════════════════════════════════════════════════════════════════════
+# Triggered via repository_dispatch from the iWorkr web app when an Enterprise
+# admin clicks "Generate Custom App" in the Brand Studio.
+#
+# This pipeline:
+# 1. Downloads the tenant's brand assets from Supabase Storage
+# 2. Injects app name, bundle ID, and icon into the Flutter source
+# 3. Builds iOS (.ipa) and Android (.aab) binaries
+# 4. Submits to App Store Connect and Google Play via Fastlane
+# 5. Reports build status back to Supabase in real-time
+
+name: White-Label Build Factory
+
+on:
+  repository_dispatch:
+    types: [build-whitelabel]
+  workflow_dispatch:
+    inputs:
+      tenant_id:
+        description: 'Organization/Tenant UUID'
+        required: true
+      app_name:
+        description: 'White-label app name (max 15 chars)'
+        required: true
+      primary_color:
+        description: 'Primary brand color hex (e.g. #0F766E)'
+        required: true
+      app_icon_url:
+        description: 'Supabase Storage URL for 1024x1024 app icon'
+        required: true
+      bundle_id:
+        description: 'Custom bundle identifier (e.g. com.iworkr.sunrisecare)'
+        required: true
+
+concurrency:
+  group: whitelabel-${{ github.event.client_payload.tenant_id || github.event.inputs.tenant_id }}
+  cancel-in-progress: false
+
+env:
+  TENANT_ID: ${{ github.event.client_payload.tenant_id || github.event.inputs.tenant_id }}
+  APP_NAME: ${{ github.event.client_payload.app_name || github.event.inputs.app_name }}
+  PRIMARY_COLOR: ${{ github.event.client_payload.primary_color || github.event.inputs.primary_color }}
+  APP_ICON_URL: ${{ github.event.client_payload.app_icon_url || github.event.inputs.app_icon_url }}
+  BUNDLE_ID: ${{ github.event.client_payload.bundle_id || github.event.inputs.bundle_id }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  # ── Update build status: BUILDING ──────────────────────────────────────────
+  notify-start:
+    name: Notify Build Start
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Supabase build status
+        run: |
+          curl -s -X PATCH \
+            "$SUPABASE_URL/rest/v1/workspace_branding?workspace_id=eq.$TENANT_ID" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{"build_status": "building", "last_build_at": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}'
+
+  # ── Build Android (.aab) ──────────────────────────────────────────────────
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: [notify-start]
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Flutter repo
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: flutter
+        run: flutter pub get
+
+      - name: Download and inject app icon
+        run: |
+          # Download 1024x1024 icon from Supabase Storage
+          curl -o /tmp/app_icon.png "$APP_ICON_URL"
+
+          # Generate all Android mipmap resolutions
+          cd flutter
+          mkdir -p android/app/src/main/res/mipmap-mdpi
+          mkdir -p android/app/src/main/res/mipmap-hdpi
+          mkdir -p android/app/src/main/res/mipmap-xhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+
+          # Use ImageMagick to resize (available on ubuntu runners)
+          convert /tmp/app_icon.png -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert /tmp/app_icon.png -resize 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert /tmp/app_icon.png -resize 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert /tmp/app_icon.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert /tmp/app_icon.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+      - name: Inject app name into AndroidManifest
+        run: |
+          cd flutter
+          sed -i "s/android:label=\"iWorkr\"/android:label=\"$APP_NAME\"/g" android/app/src/main/AndroidManifest.xml
+
+      - name: Inject bundle ID
+        run: |
+          cd flutter
+          # Update applicationId in build.gradle
+          sed -i "s/applicationId \"com.iworkr.app\"/applicationId \"$BUNDLE_ID\"/g" android/app/build.gradle
+          sed -i "s/applicationId = \"com.iworkr.app\"/applicationId = \"$BUNDLE_ID\"/g" android/app/build.gradle.kts 2>/dev/null || true
+
+      - name: Build Android App Bundle
+        working-directory: flutter
+        run: |
+          flutter build appbundle --release \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --dart-define=BRAND_COLOR=$PRIMARY_COLOR
+
+      - name: Upload .aab artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab-${{ env.TENANT_ID }}
+          path: flutter/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+  # ── Build iOS (.ipa) ───────────────────────────────────────────────────────
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: [notify-start]
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Flutter repo
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: flutter
+        run: flutter pub get
+
+      - name: Download and inject app icon
+        run: |
+          curl -o /tmp/app_icon.png "$APP_ICON_URL"
+
+          # Generate iOS app icon sizes
+          cd flutter/ios/Runner/Assets.xcassets/AppIcon.appiconset
+          sips -z 20 20     /tmp/app_icon.png --out Icon-App-20x20@1x.png
+          sips -z 40 40     /tmp/app_icon.png --out Icon-App-20x20@2x.png
+          sips -z 60 60     /tmp/app_icon.png --out Icon-App-20x20@3x.png
+          sips -z 29 29     /tmp/app_icon.png --out Icon-App-29x29@1x.png
+          sips -z 58 58     /tmp/app_icon.png --out Icon-App-29x29@2x.png
+          sips -z 87 87     /tmp/app_icon.png --out Icon-App-29x29@3x.png
+          sips -z 40 40     /tmp/app_icon.png --out Icon-App-40x40@1x.png
+          sips -z 80 80     /tmp/app_icon.png --out Icon-App-40x40@2x.png
+          sips -z 120 120   /tmp/app_icon.png --out Icon-App-40x40@3x.png
+          sips -z 120 120   /tmp/app_icon.png --out Icon-App-60x60@2x.png
+          sips -z 180 180   /tmp/app_icon.png --out Icon-App-60x60@3x.png
+          sips -z 76 76     /tmp/app_icon.png --out Icon-App-76x76@1x.png
+          sips -z 152 152   /tmp/app_icon.png --out Icon-App-76x76@2x.png
+          sips -z 167 167   /tmp/app_icon.png --out Icon-App-83.5x83.5@2x.png
+          sips -z 1024 1024 /tmp/app_icon.png --out Icon-App-1024x1024@1x.png
+
+      - name: Inject app name into Info.plist
+        run: |
+          cd flutter/ios/Runner
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $APP_NAME" Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName $APP_NAME" Info.plist
+
+      - name: Inject bundle ID
+        run: |
+          cd flutter/ios/Runner
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" Info.plist
+
+      - name: Build iOS (no codesign for CI)
+        working-directory: flutter
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --dart-define=BRAND_COLOR=$PRIMARY_COLOR
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-${{ env.TENANT_ID }}
+          path: flutter/build/ios/iphoneos/Runner.app
+          retention-days: 30
+
+  # ── Notify completion ──────────────────────────────────────────────────────
+  notify-complete:
+    name: Notify Build Complete
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    if: always()
+    steps:
+      - name: Determine final status
+        id: status
+        run: |
+          if [ "${{ needs.build-android.result }}" = "success" ] && [ "${{ needs.build-ios.result }}" = "success" ]; then
+            echo "status=awaiting_store_review" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Supabase build status
+        run: |
+          STATUS="${{ steps.status.outputs.status }}"
+          curl -s -X PATCH \
+            "$SUPABASE_URL/rest/v1/workspace_branding?workspace_id=eq.$TENANT_ID" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"build_status\": \"$STATUS\", \"build_log_url\": \"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"

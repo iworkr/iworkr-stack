@@ -9,7 +9,7 @@ const AUTH_STATE = "e2e/.auth/user.json";
 const auditModules = [
   "dashboard", "inbox", "jobs", "schedule", "clients",
   "finance", "assets", "forms", "team", "automations",
-  "integrations",
+  "integrations", "gateway-intake", "convoy-fleet", "aegis-dlq",
 ];
 
 const chromeAuditProjects = auditModules.map((mod) => ({
@@ -111,6 +111,12 @@ export default defineConfig({
     {
       name: "comprehensive",
       testMatch: /comprehensive\/.*\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "panopticon-golden",
+      testMatch: /golden-threads\/.*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },

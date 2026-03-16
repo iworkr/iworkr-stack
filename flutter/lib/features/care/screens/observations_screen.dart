@@ -8,7 +8,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/observations_provider.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/models/health_observation.dart';
@@ -20,8 +22,11 @@ import 'package:iworkr_mobile/models/health_observation.dart';
 // Project Nightingale: View and record health observations
 // / vital signs for care participants.
 
+// AUDIT-FLAG: No active shift check before allowing observation recording. Should verify ActiveShiftState.hasActiveShift.
+
 class ObservationsScreen extends ConsumerStatefulWidget {
-  const ObservationsScreen({super.key});
+  final String? participantId;
+  const ObservationsScreen({super.key, this.participantId});
 
   @override
   ConsumerState<ObservationsScreen> createState() => _ObservationsScreenState();
@@ -197,19 +202,49 @@ class _ObservationsScreenState extends ConsumerState<ObservationsScreen> {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _RecordObservationSheet(),
+      builder: (_) => _RecordObservationSheet(
+        lockedParticipantId: widget.participantId,
+      ),
     );
   }
 }
+
+class _ParticipantOption {
+  final String id;
+  final String label;
+  const _ParticipantOption({required this.id, required this.label});
+}
+
+final participantOptionsProvider = FutureProvider<List<_ParticipantOption>>((ref) async {
+  final orgId = await ref.watch(organizationIdProvider.future);
+  if (orgId == null) return const [];
+
+  final data = await SupabaseService.client
+      .from('participant_profiles')
+      .select('id, preferred_name')
+      .eq('organization_id', orgId)
+      .order('preferred_name');
+
+  return (data as List)
+      .map((row) => _ParticipantOption(
+            id: row['id'] as String,
+            label: ((row['preferred_name'] as String?) ?? '').trim().isNotEmpty
+                ? (row['preferred_name'] as String)
+                : 'Unnamed participant',
+          ))
+      .toList();
+});
 
 // ═══════════════════════════════════════════════════════════
 // ── Record Observation Bottom Sheet ──────────────────────
 // ═══════════════════════════════════════════════════════════
 
 class _RecordObservationSheet extends ConsumerStatefulWidget {
-  const _RecordObservationSheet();
+  final String? lockedParticipantId;
+  const _RecordObservationSheet({this.lockedParticipantId});
 
   @override
   ConsumerState<_RecordObservationSheet> createState() => _RecordObservationSheetState();
@@ -219,16 +254,21 @@ class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet
   final _valueCtrl = TextEditingController();
   final _secondaryValueCtrl = TextEditingController(); // For BP diastolic
   final _notesCtrl = TextEditingController();
-  final _participantIdCtrl = TextEditingController();
   ObservationType _selectedType = ObservationType.heartRate;
   bool _submitting = false;
+  String? _selectedParticipantId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedParticipantId = widget.lockedParticipantId;
+  }
 
   @override
   void dispose() {
     _valueCtrl.dispose();
     _secondaryValueCtrl.dispose();
     _notesCtrl.dispose();
-    _participantIdCtrl.dispose();
     super.dispose();
   }
 
@@ -289,24 +329,39 @@ class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet
   Future<void> _submit() async {
     if (_valueCtrl.text.trim().isEmpty) return;
     if (_selectedType == ObservationType.bloodPressure && _secondaryValueCtrl.text.trim().isEmpty) return;
+    if (_selectedParticipantId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please select a participant before recording.',
+              style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: ObsidianTheme.amber,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     setState(() => _submitting = true);
     try {
-      await recordObservation(
-        participantId: _participantIdCtrl.text.trim().isNotEmpty
-            ? _participantIdCtrl.text.trim()
-            : 'default',
+      final saved = await recordObservation(
+        participantId: _selectedParticipantId!,
         type: _selectedType,
         values: _buildValues(),
         notes: _notesCtrl.text.trim().isNotEmpty ? _notesCtrl.text.trim() : null,
       );
+      if (saved == null) {
+        throw StateError('Observation was not saved. Please try again.');
+      }
+
+      ref.invalidate(observationsStreamProvider);
+      ref.invalidate(todaysObservationsProvider);
 
       HapticFeedback.mediumImpact();
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_selectedType.label} recorded',
+            content: Text('${_selectedType.label} saved and synced',
                 style: GoogleFonts.inter(color: Colors.white)),
             backgroundColor: ObsidianTheme.careBlue,
             behavior: SnackBarBehavior.floating,
@@ -332,6 +387,7 @@ class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
+    final participantsAsync = ref.watch(participantOptionsProvider);
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
@@ -352,6 +408,98 @@ class _RecordObservationSheetState extends ConsumerState<_RecordObservationSheet
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
+                // ── Participant Selector ───────────────────
+                Text('PARTICIPANT', style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11, fontWeight: FontWeight.w600, color: c.textTertiary, letterSpacing: 0.8)),
+                const SizedBox(height: 8),
+                participantsAsync.when(
+                  loading: () => Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: c.border),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  error: (err, _) => Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      'Unable to load participants: $err',
+                      style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.rose),
+                    ),
+                  ),
+                  data: (participants) {
+                    if (participants.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: c.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: ObsidianTheme.amber.withValues(alpha: 0.35)),
+                        ),
+                        child: Text(
+                          'No participants available for this workspace.',
+                          style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.amber),
+                        ),
+                      );
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: c.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: c.border),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedParticipantId,
+                          hint: Text(
+                            'Select participant',
+                            style: GoogleFonts.inter(fontSize: 14, color: c.textTertiary),
+                          ),
+                          dropdownColor: c.surface,
+                          iconEnabledColor: c.textSecondary,
+                          items: participants
+                              .map((p) => DropdownMenuItem<String>(
+                                    value: p.id,
+                                    child: Text(
+                                      p.label,
+                                      style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (_submitting || widget.lockedParticipantId != null)
+                              ? null
+                              : (value) => setState(() => _selectedParticipantId = value),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                if (widget.lockedParticipantId != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      'Locked to active shift participant.',
+                      style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+
                 // ── Observation Type Selector ──────────────
                 Text('OBSERVATION TYPE', style: GoogleFonts.jetBrainsMono(
                     fontSize: 11, fontWeight: FontWeight.w600, color: c.textTertiary, letterSpacing: 0.8)),

@@ -29,7 +29,8 @@ final sentinelAlertsStreamProvider =
     try {
       final data = await client
           .from('sentinel_alerts')
-          .select('*, participant_profiles(full_name, preferred_name), profiles(full_name)')
+          .select(
+              '*, participant_profiles(preferred_name), worker_profile:profiles!sentinel_alerts_worker_id_fkey(full_name)')
           .eq('organization_id', orgId)
           .order('created_at', ascending: false)
           .limit(200);

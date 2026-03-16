@@ -56,3 +56,5 @@ void dayInLifeTests(IntegrationTestWidgetsFlutterBinding binding) {
     });
   });
 }
+
+void main() {}

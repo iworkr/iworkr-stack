@@ -4,8 +4,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 interface ValidateRequest {
   organization_id: string;
   technician_id: string;
+  participant_id?: string;
   start_time: string;
   end_time: string;
+  requires_transport?: boolean;
   job_id?: string;
   location?: string;
   location_lat?: number;
@@ -97,6 +99,53 @@ export async function POST(request: NextRequest) {
     let travel: ValidationResult["travel"] = null;
     const warnings: string[] = [];
 
+    if (body.requires_transport) {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: credentials } = await (supabase as any)
+        .from("worker_credentials")
+        .select("credential_type, credential_name, verification_status, expiry_date")
+        .eq("organization_id", organization_id)
+        .eq("user_id", technician_id);
+
+      const hasValidDriversLicense = (credentials || []).some((c: any) =>
+        c.credential_type === "DRIVERS_LICENSE" &&
+        c.verification_status === "verified" &&
+        (!c.expiry_date || c.expiry_date >= today),
+      );
+      const hasValidInsurance = (credentials || []).some((c: any) =>
+        c.verification_status === "verified" &&
+        (!c.expiry_date || c.expiry_date >= today) &&
+        (
+          (c.credential_type === "OTHER" && typeof c.credential_name === "string" && c.credential_name.toLowerCase().includes("insurance")) ||
+          (c.credential_type === "OTHER" && typeof c.credential_name === "string" && c.credential_name.toLowerCase().includes("vehicle"))
+        ),
+      );
+
+      if (!hasValidDriversLicense) {
+        warnings.push("Cannot assign transport shift: Worker driver's license is missing, unverified, or expired.");
+      }
+      if (!hasValidInsurance) {
+        warnings.push("Cannot assign transport shift: Worker vehicle insurance is missing, unverified, or expired.");
+      }
+    }
+
+    if (body.participant_id) {
+      const { data: familiarity } = await (supabase as any)
+        .from("worker_participant_familiarity")
+        .select("is_cleared_for_independent, shadow_shifts_completed, shadow_shifts_required")
+        .eq("organization_id", organization_id)
+        .eq("worker_id", technician_id)
+        .eq("participant_id", body.participant_id)
+        .maybeSingle();
+      if (!familiarity || familiarity.is_cleared_for_independent !== true) {
+        const completed = Number(familiarity?.shadow_shifts_completed || 0);
+        const required = Number(familiarity?.shadow_shifts_required || 3);
+        warnings.push(
+          `Training warning: worker has not completed required shadow shifts for this participant (${completed}/${required}).`,
+        );
+      }
+    }
+
     if (precedingBlocks.length > 0) {
       const prevBlock = precedingBlocks[0];
       const prevEnd = new Date(prevBlock.end_time);
@@ -157,7 +206,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result: ValidationResult = {
-      valid: conflicts.length === 0,
+      valid: conflicts.length === 0 && !warnings.some((w) => w.startsWith("Cannot assign transport shift")),
       conflicts,
       travel,
       warnings,

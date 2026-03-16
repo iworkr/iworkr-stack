@@ -174,6 +174,7 @@ serve(async (req) => {
       JSON.stringify({ received: true }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
+  // FIXME: HIGH — No DLQ routing. Failed Polar webhook payloads are lost. Route to webhook_dead_letters table on catch.
   } catch (err) {
     console.error("Webhook processing error:", err);
     return new Response(

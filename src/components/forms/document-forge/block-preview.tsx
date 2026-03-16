@@ -35,10 +35,11 @@ export function BlockPreview({
       );
 
     case "short_text":
+    case "number":
       return (
         <div className="group">
           <input
-            type="text"
+            type={block.type === "number" ? "number" : "text"}
             readOnly={builder}
             placeholder={block.placeholder || "Enter text…"}
             className={`${stealthInputClass} py-1.5`}
@@ -57,14 +58,16 @@ export function BlockPreview({
       );
 
     case "date":
+    case "time":
       return (
         <div className="flex h-9 items-center gap-2 border-b border-transparent px-0 text-[13px] text-zinc-500 focus-within:border-white">
           <Calendar size={14} className="shrink-0 text-zinc-600" />
-          <span>Select date…</span>
+          <span>{block.type === "time" ? "Select time…" : "Select date…"}</span>
         </div>
       );
 
     case "dropdown":
+    case "radio":
       return (
         <div className="flex h-9 items-center justify-between border-b border-white/5 px-0 text-[13px] text-zinc-500">
           <span>Select…</span>
@@ -99,10 +102,23 @@ export function BlockPreview({
       );
 
     case "photo_evidence":
+    case "photo_upload":
       return (
         <div className="flex h-20 items-center justify-center rounded-xl border-2 border-dashed border-white/15 bg-white/[0.02] transition-colors hover:border-white/25">
           <Camera size={20} className="mr-2 text-zinc-600" />
           <span className="text-[12px] text-zinc-500">Dropzone — add photo</span>
+        </div>
+      );
+
+    case "blood_pressure":
+    case "blood_glucose":
+    case "weight":
+    case "mood_slider":
+    case "body_map":
+    case "goal_linker":
+      return (
+        <div className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 text-[12px] text-zinc-500">
+          {block.type.replace(/_/g, " ")} widget
         </div>
       );
 

@@ -118,6 +118,7 @@ ALTER TABLE public.message_acknowledgements ENABLE ROW LEVEL SECURITY;
 
 -- ─── 5. Typing Indicators (ephemeral, cleaned by cron) ─────────────────────
 
+-- AUDIT-FLAG: care_typing_indicators table is created WITHOUT RLS. Enable ROW LEVEL SECURITY.
 CREATE TABLE IF NOT EXISTS public.care_typing_indicators (
   channel_id  uuid NOT NULL REFERENCES public.care_chat_channels(id) ON DELETE CASCADE,
   user_id     uuid NOT NULL,
@@ -147,7 +148,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'care_chat_channels' AND policyname = 'Org admins manage channels') THEN
     EXECUTE 'CREATE POLICY "Org admins manage channels" ON public.care_chat_channels FOR ALL USING (
       EXISTS (
-        SELECT 1 FROM public.organization_members
+        SELECT 1 FROM public.organization_members members
         WHERE members.organization_id = care_chat_channels.organization_id
         AND members.user_id = auth.uid()
         AND members.role IN (''owner'', ''admin'')

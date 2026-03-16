@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -8,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
+import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/slide_to_act.dart';
@@ -93,10 +91,13 @@ class _ActiveShiftHudScreenState extends ConsumerState<ActiveShiftHudScreen> {
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
-      // TODO: Get actual time entry ID from active entry
+      final resolvedTimeEntryId = await _resolveActiveTimeEntryId();
+      if (resolvedTimeEntryId == null) {
+        throw Exception('No active time entry found for this shift. Please refresh and try again.');
+      }
       await clockOutOfShift(
         shiftId: widget.shiftId,
-        timeEntryId: widget.shiftId, // Placeholder — should use real time entry ID
+        timeEntryId: resolvedTimeEntryId,
         clockInTime: DateTime.now().subtract(_elapsed),
         lat: position.latitude,
         lng: position.longitude,
@@ -104,6 +105,7 @@ class _ActiveShiftHudScreenState extends ConsumerState<ActiveShiftHudScreen> {
       );
 
       ref.read(activeShiftProvider.notifier).state = null;
+      ref.read(activeShiftTimeEntryIdProvider.notifier).state = null;
 
       if (mounted) {
         HapticFeedback.heavyImpact();
@@ -121,6 +123,31 @@ class _ActiveShiftHudScreenState extends ConsumerState<ActiveShiftHudScreen> {
         setState(() => _clockingOut = false);
       }
     }
+  }
+
+  Future<String?> _resolveActiveTimeEntryId() async {
+    final fromState = ref.read(activeShiftTimeEntryIdProvider);
+    if (fromState != null && fromState.isNotEmpty) {
+      return fromState;
+    }
+
+    final userId = SupabaseService.auth.currentUser?.id;
+    final rows = await SupabaseService.client
+        .from('time_entries')
+        .select('id')
+        .eq('shift_id', widget.shiftId)
+        .eq('worker_id', userId ?? '')
+        .inFilter('status', ['active', 'break'])
+        .order('clock_in', ascending: false)
+        .limit(1);
+    if (rows.isNotEmpty) {
+      final id = rows.first['id'] as String?;
+      if (id != null && id.isNotEmpty) {
+        ref.read(activeShiftTimeEntryIdProvider.notifier).state = id;
+        return id;
+      }
+    }
+    return null;
   }
 
   @override
@@ -224,7 +251,20 @@ class _ActiveShiftHudScreenState extends ConsumerState<ActiveShiftHudScreen> {
                       color: ObsidianTheme.blue,
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        context.push('/care/observations');
+                        final participantId = shift?.participantId;
+                        if (participantId != null && participantId.isNotEmpty) {
+                          context.push('/care/observations/record?participant_id=$participantId');
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Participant context unavailable for this shift.',
+                                style: GoogleFonts.inter(color: Colors.white),
+                              ),
+                              backgroundColor: ObsidianTheme.rose,
+                            ),
+                          );
+                        }
                       },
                     ).animate().fadeIn(delay: 150.ms, duration: 300.ms).moveY(begin: 12, end: 0),
                     _ActionCard(

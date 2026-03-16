@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { type Integration } from "@/lib/integrations-data";
 import { useIntegrationsStore } from "@/lib/integrations-store";
@@ -21,12 +21,12 @@ export function IntegrationCard({ integration: int, index }: IntegrationCardProp
   const { openConfigPanel, connectServer, setStripeModalOpen } = useIntegrationsStore();
   const { addToast } = useToastStore();
   const isConnected = int.status === "connected" || int.status === "syncing";
-  const isError = int.status === "error";
+  const isError = int.status === "error" || int.status === "expired";
   const isSyncing = int.status === "syncing";
   const [connecting, setConnecting] = useState(false);
 
   // Derive provider slug from the integration data
-  const providerSlug = (int as any).provider ||
+  const providerSlug = int.provider ||
     int.id.replace("int-", "").replace("gcal", "google_calendar").replace("ocal", "outlook_calendar").replace("gdrive", "google_drive").replace("gmaps", "google_maps").replace("ghl", "gohighlevel");
 
   const handleClick = async () => {
@@ -126,7 +126,9 @@ export function IntegrationCard({ integration: int, index }: IntegrationCardProp
           {isError && (
             <div className="flex items-center gap-1.5">
               <span className="h-[6px] w-[6px] rounded-full bg-red-500" />
-              <span className="text-[9px] text-red-400">Error</span>
+              <span className="text-[9px] text-red-400">
+                {int.status === "expired" ? "Reconnect" : "Error"}
+              </span>
             </div>
           )}
 

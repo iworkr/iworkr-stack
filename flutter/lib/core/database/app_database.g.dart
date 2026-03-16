@@ -238,6 +238,17 @@ class $LocalJobsTable extends LocalJobs
         type: DriftSqlType.int,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _broadcastStatusMeta = const VerificationMeta(
+    'broadcastStatus',
+  );
+  @override
+  late final GeneratedColumn<String> broadcastStatus = GeneratedColumn<String>(
+    'broadcast_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -283,6 +294,7 @@ class $LocalJobsTable extends LocalJobs
     estimatedHours,
     actualHours,
     estimatedDurationMinutes,
+    broadcastStatus,
     createdAt,
     updatedAt,
   ];
@@ -451,6 +463,15 @@ class $LocalJobsTable extends LocalJobs
         ),
       );
     }
+    if (data.containsKey('broadcast_status')) {
+      context.handle(
+        _broadcastStatusMeta,
+        broadcastStatus.isAcceptableOrUnknown(
+          data['broadcast_status']!,
+          _broadcastStatusMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -560,6 +581,10 @@ class $LocalJobsTable extends LocalJobs
         DriftSqlType.int,
         data['${effectivePrefix}estimated_duration_minutes'],
       ),
+      broadcastStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}broadcast_status'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -599,6 +624,7 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
   final double estimatedHours;
   final double actualHours;
   final int? estimatedDurationMinutes;
+  final String? broadcastStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
   const LocalJob({
@@ -623,6 +649,7 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
     required this.estimatedHours,
     required this.actualHours,
     this.estimatedDurationMinutes,
+    this.broadcastStatus,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -672,6 +699,9 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
         estimatedDurationMinutes,
       );
     }
+    if (!nullToAbsent || broadcastStatus != null) {
+      map['broadcast_status'] = Variable<String>(broadcastStatus);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -720,6 +750,9 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
       estimatedDurationMinutes: estimatedDurationMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(estimatedDurationMinutes),
+      broadcastStatus: broadcastStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(broadcastStatus),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -754,6 +787,7 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
       estimatedDurationMinutes: serializer.fromJson<int?>(
         json['estimatedDurationMinutes'],
       ),
+      broadcastStatus: serializer.fromJson<String?>(json['broadcastStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -785,6 +819,7 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
       'estimatedDurationMinutes': serializer.toJson<int?>(
         estimatedDurationMinutes,
       ),
+      'broadcastStatus': serializer.toJson<String?>(broadcastStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -812,6 +847,7 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
     double? estimatedHours,
     double? actualHours,
     Value<int?> estimatedDurationMinutes = const Value.absent(),
+    Value<String?> broadcastStatus = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => LocalJob(
@@ -838,6 +874,9 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
     estimatedDurationMinutes: estimatedDurationMinutes.present
         ? estimatedDurationMinutes.value
         : this.estimatedDurationMinutes,
+    broadcastStatus: broadcastStatus.present
+        ? broadcastStatus.value
+        : this.broadcastStatus,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -884,6 +923,9 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
       estimatedDurationMinutes: data.estimatedDurationMinutes.present
           ? data.estimatedDurationMinutes.value
           : this.estimatedDurationMinutes,
+      broadcastStatus: data.broadcastStatus.present
+          ? data.broadcastStatus.value
+          : this.broadcastStatus,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -913,6 +955,7 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
           ..write('estimatedHours: $estimatedHours, ')
           ..write('actualHours: $actualHours, ')
           ..write('estimatedDurationMinutes: $estimatedDurationMinutes, ')
+          ..write('broadcastStatus: $broadcastStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -942,6 +985,7 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
     estimatedHours,
     actualHours,
     estimatedDurationMinutes,
+    broadcastStatus,
     createdAt,
     updatedAt,
   ]);
@@ -970,6 +1014,7 @@ class LocalJob extends DataClass implements Insertable<LocalJob> {
           other.estimatedHours == this.estimatedHours &&
           other.actualHours == this.actualHours &&
           other.estimatedDurationMinutes == this.estimatedDurationMinutes &&
+          other.broadcastStatus == this.broadcastStatus &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -996,6 +1041,7 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
   final Value<double> estimatedHours;
   final Value<double> actualHours;
   final Value<int?> estimatedDurationMinutes;
+  final Value<String?> broadcastStatus;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1021,6 +1067,7 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
     this.estimatedHours = const Value.absent(),
     this.actualHours = const Value.absent(),
     this.estimatedDurationMinutes = const Value.absent(),
+    this.broadcastStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1047,6 +1094,7 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
     this.estimatedHours = const Value.absent(),
     this.actualHours = const Value.absent(),
     this.estimatedDurationMinutes = const Value.absent(),
+    this.broadcastStatus = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1077,6 +1125,7 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
     Expression<double>? estimatedHours,
     Expression<double>? actualHours,
     Expression<int>? estimatedDurationMinutes,
+    Expression<String>? broadcastStatus,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1104,6 +1153,7 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
       if (actualHours != null) 'actual_hours': actualHours,
       if (estimatedDurationMinutes != null)
         'estimated_duration_minutes': estimatedDurationMinutes,
+      if (broadcastStatus != null) 'broadcast_status': broadcastStatus,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1132,6 +1182,7 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
     Value<double>? estimatedHours,
     Value<double>? actualHours,
     Value<int?>? estimatedDurationMinutes,
+    Value<String?>? broadcastStatus,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1159,6 +1210,7 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
       actualHours: actualHours ?? this.actualHours,
       estimatedDurationMinutes:
           estimatedDurationMinutes ?? this.estimatedDurationMinutes,
+      broadcastStatus: broadcastStatus ?? this.broadcastStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1233,6 +1285,9 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
         estimatedDurationMinutes.value,
       );
     }
+    if (broadcastStatus.present) {
+      map['broadcast_status'] = Variable<String>(broadcastStatus.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1269,6 +1324,7 @@ class LocalJobsCompanion extends UpdateCompanion<LocalJob> {
           ..write('estimatedHours: $estimatedHours, ')
           ..write('actualHours: $actualHours, ')
           ..write('estimatedDurationMinutes: $estimatedDurationMinutes, ')
+          ..write('broadcastStatus: $broadcastStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -4427,6 +4483,7 @@ typedef $$LocalJobsTableCreateCompanionBuilder =
       Value<double> estimatedHours,
       Value<double> actualHours,
       Value<int?> estimatedDurationMinutes,
+      Value<String?> broadcastStatus,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -4454,6 +4511,7 @@ typedef $$LocalJobsTableUpdateCompanionBuilder =
       Value<double> estimatedHours,
       Value<double> actualHours,
       Value<int?> estimatedDurationMinutes,
+      Value<String?> broadcastStatus,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -4570,6 +4628,11 @@ class $$LocalJobsTableFilterComposer
 
   ColumnFilters<int> get estimatedDurationMinutes => $composableBuilder(
     column: $table.estimatedDurationMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get broadcastStatus => $composableBuilder(
+    column: $table.broadcastStatus,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4698,6 +4761,11 @@ class $$LocalJobsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get broadcastStatus => $composableBuilder(
+    column: $table.broadcastStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -4801,6 +4869,11 @@ class $$LocalJobsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get broadcastStatus => $composableBuilder(
+    column: $table.broadcastStatus,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -4857,6 +4930,7 @@ class $$LocalJobsTableTableManager
                 Value<double> estimatedHours = const Value.absent(),
                 Value<double> actualHours = const Value.absent(),
                 Value<int?> estimatedDurationMinutes = const Value.absent(),
+                Value<String?> broadcastStatus = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4882,6 +4956,7 @@ class $$LocalJobsTableTableManager
                 estimatedHours: estimatedHours,
                 actualHours: actualHours,
                 estimatedDurationMinutes: estimatedDurationMinutes,
+                broadcastStatus: broadcastStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -4909,6 +4984,7 @@ class $$LocalJobsTableTableManager
                 Value<double> estimatedHours = const Value.absent(),
                 Value<double> actualHours = const Value.absent(),
                 Value<int?> estimatedDurationMinutes = const Value.absent(),
+                Value<String?> broadcastStatus = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -4934,6 +5010,7 @@ class $$LocalJobsTableTableManager
                 estimatedHours: estimatedHours,
                 actualHours: actualHours,
                 estimatedDurationMinutes: estimatedDurationMinutes,
+                broadcastStatus: broadcastStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

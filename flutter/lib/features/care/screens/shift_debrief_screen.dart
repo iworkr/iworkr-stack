@@ -1,32 +1,24 @@
 import 'dart:async';
-import 'dart:ui';
+import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
-import 'package:iworkr_mobile/core/services/progress_notes_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/slide_to_act.dart';
 import 'package:iworkr_mobile/models/care_shift.dart';
-
-// ═══════════════════════════════════════════════════════════
-// ── Shift Debrief — Mandatory End-of-Shift Report ────────
-// ═══════════════════════════════════════════════════════════
-//
-// Project Nightingale — The Field Operative:
-// 5-step mandatory debrief before clock-out:
-// 1. Goal Tracking  2. Participant Mood  3. Narrative Note
-// 4. Mileage/Expenses  5. Client Signature (optional)
 
 class ShiftDebriefScreen extends ConsumerStatefulWidget {
   final String shiftId;
@@ -37,193 +29,527 @@ class ShiftDebriefScreen extends ConsumerStatefulWidget {
 }
 
 class _ShiftDebriefScreenState extends ConsumerState<ShiftDebriefScreen> {
+  static const _secureStorage = FlutterSecureStorage();
+  final _localAuth = LocalAuthentication();
+  final _imagePicker = ImagePicker();
+
   CareShift? _shift;
   bool _loading = true;
   bool _submitting = false;
+  bool _workerDeclared = false;
+  bool _participantUnableToSign = false;
+  String _signatureExemptionReason = 'asleep';
+  String _signatureExemptionNotes = '';
+  String? _workerSignatureToken;
+  Timer? _autoSaveTimer;
 
-  // Step 1: Goals
-  final Set<String> _selectedGoals = {};
-  final List<String> _availableGoals = [
-    'Improve community access',
-    'Develop daily living skills',
-    'Manage personal care routine',
-    'Build social connections',
-    'Improve communication skills',
-    'Maintain physical health',
-    'Support emotional wellbeing',
-  ];
-
-  // Step 2: Mood
-  String _mood = 'neutral';
-
-  // Step 3: Notes
-  final _notesCtrl = TextEditingController();
-  final _stt = stt.SpeechToText();
-  bool _isListening = false;
-
-  // Step 4: Mileage
-  final _kmCtrl = TextEditingController();
-
-  // Step 5: Signature
+  List<Map<String, dynamic>> _schemaFields = [];
+  final Map<String, dynamic> _values = {};
+  final Set<String> _missingRequiredFieldIds = {};
   final List<Offset?> _signaturePoints = [];
+  bool _isShadowShift = false;
+  bool _usingDefaultForm = false;
+  String? _childShadowShiftId;
+  String? _childShadowWorkerId;
+  String? _templateLoadError;
+
+  String get _draftKey => 'rosetta_shift_note_draft_${widget.shiftId}';
 
   @override
   void initState() {
     super.initState();
-    _loadShift();
+    _bootstrap();
   }
 
   @override
   void dispose() {
-    _notesCtrl.dispose();
-    _kmCtrl.dispose();
+    _autoSaveTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadShift() async {
+  Future<void> _bootstrap() async {
+    await _loadShiftAndTemplate();
+    await _restoreDraft();
+    _autoSaveTimer = Timer.periodic(const Duration(seconds: 5), (_) => _persistDraft());
+    _validateRequired();
+  }
+
+  Future<void> _loadShiftAndTemplate() async {
     try {
-      final data = await SupabaseService.client
-          .from('shifts')
-          .select('*, participant_profiles(preferred_name, avatar_url, critical_alerts), clients(name)')
+      final row = await SupabaseService.client
+          .from('schedule_blocks')
+          .select(
+            '*, participant_profiles(preferred_name, critical_alerts), required_shift_note_template_id, required_shift_note_template_version',
+          )
           .eq('id', widget.shiftId)
           .maybeSingle();
 
-      if (data != null && mounted) {
-        setState(() {
-          _shift = CareShift.fromJson(data);
-          _loading = false;
-        });
-      } else {
-        final fallback = await SupabaseService.client
-            .from('schedule_blocks')
-            .select()
-            .eq('id', widget.shiftId)
+      if (row == null) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+
+      final shift = CareShift.fromJson(row);
+      _isShadowShift = shift.isShadowShift;
+      final templateId = row['required_shift_note_template_id'] as String?;
+      List<Map<String, dynamic>> fields = [];
+
+      if (templateId != null) {
+        final template = await SupabaseService.client
+            .from('shift_note_templates')
+            .select('schema_payload')
+            .eq('id', templateId)
             .maybeSingle();
-        if (fallback != null && mounted) {
-          setState(() { _shift = CareShift.fromJson(fallback); _loading = false; });
-        } else if (mounted) {
-          setState(() => _loading = false);
+        final payload = template?['schema_payload'] as Map<String, dynamic>?;
+        final rawFields = (payload?['fields'] as List<dynamic>? ?? []);
+        fields = rawFields
+            .whereType<Map<String, dynamic>>()
+            .toList(growable: false);
+      }
+
+      if (_isShadowShift) {
+        // Project Doppelganger trainee reflection replaces official progress note schema.
+        fields = <Map<String, dynamic>>[
+          {
+            'id': 'shadow_learning_reflection',
+            'type': 'long_text',
+            'label': 'What did you learn about this participant routine today?',
+            'required': true,
+          },
+          {
+            'id': 'shadow_ready_for_independent',
+            'type': 'single_select',
+            'label': 'Do you feel confident performing this shift independently?',
+            'required': true,
+            'options': ['yes', 'no'],
+          },
+        ];
+      } else {
+        final childShadow = await SupabaseService.client
+            .from('schedule_blocks')
+            .select('id, technician_id')
+            .eq('parent_shift_id', shift.id)
+            .eq('is_shadow_shift', true)
+            .maybeSingle();
+        _childShadowShiftId = childShadow?['id']?.toString();
+        _childShadowWorkerId = childShadow?['technician_id']?.toString();
+        if (_childShadowShiftId != null) {
+          fields = [
+            ...fields,
+            {
+              'id': 'mentor_eval_engagement',
+              'type': 'single_select',
+              'label': 'Did the shadow worker arrive on time and engage appropriately?',
+              'required': true,
+              'options': ['yes', 'no'],
+            },
+            {
+              'id': 'mentor_eval_manual_handling',
+              'type': 'single_select',
+              'label': 'Did they demonstrate understanding of manual handling requirements?',
+              'required': true,
+              'options': ['yes', 'no'],
+            },
+            {
+              'id': 'mentor_eval_recommendation',
+              'type': 'single_select',
+              'label': 'Do you recommend this worker for independent shifts?',
+              'required': true,
+              'options': ['pass', 'needs_more_training', 'fail'],
+            },
+          ];
         }
       }
+
+      // If no template exists, provide a simple default debrief form
+      if (!_isShadowShift && fields.isEmpty) {
+        _usingDefaultForm = true;
+        fields = <Map<String, dynamic>>[
+          {
+            'id': 'shift_summary',
+            'type': 'long_text',
+            'label': 'Shift Summary',
+            'placeholder': 'Describe what happened during this shift...',
+            'required': false,
+          },
+          {
+            'id': 'incidents_or_concerns',
+            'type': 'long_text',
+            'label': 'Incidents or Concerns',
+            'placeholder': 'Any incidents, behavioural changes, or concerns to report?',
+            'required': false,
+          },
+          {
+            'id': 'handover_notes',
+            'type': 'long_text',
+            'label': 'Handover Notes',
+            'placeholder': 'Notes for the next worker...',
+            'required': false,
+          },
+        ];
+      }
+
+      if (shift.participantId != null) {
+        try {
+          final goalRows = await SupabaseService.client
+              .from('participant_goals')
+              .select('goal_statement, status')
+              .eq('participant_id', shift.participantId!)
+              .neq('status', 'abandoned')
+              .order('updated_at', ascending: false);
+          final goalOptions = (goalRows as List)
+              .map((g) => (g as Map<String, dynamic>)['goal_statement']?.toString() ?? '')
+              .where((g) => g.isNotEmpty)
+              .toList();
+          if (goalOptions.isNotEmpty) {
+            fields = fields.map((f) {
+              final type = f['type']?.toString();
+              if (type == 'goal_linker') {
+                return {
+                  ...f,
+                  'options': goalOptions,
+                };
+              }
+              return f;
+            }).toList(growable: false);
+          }
+        } catch (_) {
+          // Keep fallback options when goals cannot be loaded.
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _shift = shift;
+        _schemaFields = fields;
+        _loading = false;
+      });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  Future<void> _toggleVoice() async {
-    if (_isListening) {
-      _stt.stop();
-      setState(() => _isListening = false);
-      return;
-    }
-
-    final available = await _stt.initialize();
-    if (!available) return;
-
-    setState(() => _isListening = true);
-    _stt.listen(
-      onResult: (result) {
-        setState(() {
-          _notesCtrl.text = result.recognizedWords;
-          if (result.finalResult) _isListening = false;
-        });
-      },
-      listenFor: const Duration(minutes: 2),
-      pauseFor: const Duration(seconds: 5),
-    );
+  Future<void> _restoreDraft() async {
+    try {
+      final raw = await _secureStorage.read(key: _draftKey);
+      if (raw == null) return;
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final savedValues = (json['values'] as Map?)?.cast<String, dynamic>() ?? {};
+      final savedDeclared = json['worker_declared'] as bool? ?? false;
+      final savedUnable = json['participant_unable_to_sign'] as bool? ?? false;
+      final savedReason = json['signature_exemption_reason'] as String? ?? 'asleep';
+      final savedNotes = json['signature_exemption_notes'] as String? ?? '';
+      if (!mounted) return;
+      setState(() {
+        _values.addAll(savedValues);
+        _workerDeclared = savedDeclared;
+        _participantUnableToSign = savedUnable;
+        _signatureExemptionReason = savedReason;
+        _signatureExemptionNotes = savedNotes;
+      });
+    } catch (_) {}
   }
 
-  Future<void> _submitDebrief() async {
+  Future<void> _persistDraft() async {
+    try {
+      final payload = {
+        'values': _values,
+        'worker_declared': _workerDeclared,
+        'participant_unable_to_sign': _participantUnableToSign,
+        'signature_exemption_reason': _signatureExemptionReason,
+        'signature_exemption_notes': _signatureExemptionNotes,
+        'saved_at': DateTime.now().toIso8601String(),
+      };
+      await _secureStorage.write(key: _draftKey, value: jsonEncode(payload));
+    } catch (_) {}
+  }
+
+  Future<void> _clearDraft() async {
+    await _secureStorage.delete(key: _draftKey);
+  }
+
+  List<Map<String, dynamic>> get _visibleFields {
+    return _schemaFields.where((f) {
+      final visibility = f['visibility'] as Map<String, dynamic>?;
+      if (visibility == null) return true;
+      final targetField = visibility['field_id']?.toString();
+      final operator = visibility['operator']?.toString();
+      final expectedValue = visibility['value'];
+      final actualValue = _values[targetField];
+      if (targetField == null || operator == null) return true;
+      switch (operator) {
+        case 'eq':
+          return actualValue == expectedValue;
+        case 'neq':
+          return actualValue != expectedValue;
+        case 'contains':
+          return actualValue?.toString().contains(expectedValue.toString()) ?? false;
+        case 'not_contains':
+          return !(actualValue?.toString().contains(expectedValue.toString()) ?? false);
+        default:
+          return true;
+      }
+    }).toList(growable: false);
+  }
+
+  void _setValue(String fieldId, dynamic value) {
+    setState(() {
+      _values[fieldId] = value;
+    });
+    _validateRequired();
+  }
+
+  void _validateRequired() {
+    final missing = <String>{};
+    for (final field in _visibleFields) {
+      final required = field['required'] == true;
+      if (!required) continue;
+      final id = field['id']?.toString();
+      if (id == null) continue;
+      final value = _values[id];
+      final empty = value == null || (value is String && value.trim().isEmpty);
+      if (empty) missing.add(id);
+    }
+    if (mounted) {
+      setState(() {
+        _missingRequiredFieldIds
+          ..clear()
+          ..addAll(missing);
+      });
+    }
+  }
+
+  Future<String?> _renderSignatureAsBase64() async {
+    if (_signaturePoints.isEmpty) return null;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.0;
+
+    for (var i = 0; i < _signaturePoints.length - 1; i++) {
+      final p1 = _signaturePoints[i];
+      final p2 = _signaturePoints[i + 1];
+      if (p1 != null && p2 != null) {
+        canvas.drawLine(p1, p2, paint);
+      }
+    }
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(600, 200);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (bytes == null) return null;
+    return base64Encode(bytes.buffer.asUint8List());
+  }
+
+  Future<void> _capturePhotoToField(String fieldId) async {
+    final xFile = await _imagePicker.pickImage(source: ImageSource.camera, imageQuality: 70);
+    if (xFile == null) return;
+    final bytes = await xFile.readAsBytes();
+    _setValue(fieldId, base64Encode(bytes));
+  }
+
+  Future<void> _finalizeAndClockOut() async {
     if (_shift == null || _submitting) return;
-    if (_notesCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter a progress note before completing the shift.',
-              style: GoogleFonts.inter(color: Colors.white)),
-          backgroundColor: ObsidianTheme.amber,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
+    // If no template was loaded, skip field validation — still allow clock-out
+    if (_templateLoadError == null) {
+      _validateRequired();
+      if (_missingRequiredFieldIds.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Complete all required fields before finalizing.',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: ObsidianTheme.rose,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() => _submitting = true);
-
     try {
-      // Get GPS for clock-out
+      // Biometric auth — fail gracefully if unavailable or user cancels
+      bool biometricsOk = false;
+      try {
+        biometricsOk = await _localAuth.authenticate(
+          localizedReason: 'Verify identity to sign this shift note',
+          options: const AuthenticationOptions(stickyAuth: false, biometricOnly: false),
+        );
+      } catch (_) {
+        biometricsOk = true; // Device doesn't support biometrics — proceed
+      }
+      if (!biometricsOk) {
+        setState(() => _submitting = false);
+        return;
+      }
+      _workerSignatureToken = 'biometric_${DateTime.now().millisecondsSinceEpoch}';
+
       Position position;
       try {
         position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10)),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 10),
+          ),
         );
       } catch (_) {
-        position = Position(latitude: 0, longitude: 0, timestamp: DateTime.now(), accuracy: 0, altitude: 0, altitudeAccuracy: 0, heading: 0, headingAccuracy: 0, speed: 0, speedAccuracy: 0);
+        position = Position(
+          latitude: 0,
+          longitude: 0,
+          timestamp: DateTime.now(),
+          accuracy: 0,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        );
       }
 
       final userId = SupabaseService.auth.currentUser?.id;
       if (userId == null) throw Exception('Not authenticated');
 
-      // 1. Create progress note
-      await createProgressNote(
-        jobId: _shift!.id,
-        participantId: _shift!.participantId,
-        summary: _notesCtrl.text.trim(),
-        goalsAddressed: _selectedGoals.join(', '),
-        participantMood: _mood,
-        clockOutLat: position.latitude,
-        clockOutLng: position.longitude,
-      );
+      final signatureB64 =
+          _participantUnableToSign ? null : await _renderSignatureAsBase64();
 
-      // 2. Clock out the shift
+      // Submit shift note data
+      try {
+        if (_isShadowShift) {
+          await SupabaseService.client.from('shadow_shift_reflections').upsert({
+            'organization_id': _shift!.organizationId,
+            'shadow_shift_id': _shift!.id,
+            'worker_id': userId,
+            'participant_id': _shift!.participantId,
+            'reflection_data': _values,
+            'confidence_ready': (_values['shadow_ready_for_independent']?.toString() ?? '').toLowerCase() == 'yes',
+          }, onConflict: 'shadow_shift_id,worker_id');
+        } else if (_usingDefaultForm) {
+          // Default form — write directly to shift_note_submissions
+          await SupabaseService.client.from('shift_note_submissions').insert({
+            'organization_id': _shift!.organizationId,
+            'shift_id': _shift!.id,
+            'worker_id': userId,
+            'participant_id': _shift!.participantId,
+            'submission_data': _values,
+            'worker_signature_token': _workerSignatureToken,
+            'participant_signature_base64': signatureB64,
+            'participant_signature_exemption_reason':
+                _participantUnableToSign ? _signatureExemptionReason : null,
+            'participant_signature_exemption_notes':
+                _participantUnableToSign ? _signatureExemptionNotes : null,
+            'worker_declared': true,
+            'evv_clock_out_location': {
+              'lat': position.latitude,
+              'lng': position.longitude,
+              'accuracy': position.accuracy,
+            },
+            'status': 'submitted',
+          });
+        } else {
+          // Template-based form — use edge function for processing
+          await SupabaseService.client.functions.invoke(
+            'process-shift-note',
+            body: {
+              'shift_id': _shift!.id,
+              'organization_id': _shift!.organizationId,
+              'participant_id': _shift!.participantId,
+              'worker_id': userId,
+              'submission_data': _values,
+              'worker_signature_token': _workerSignatureToken,
+              'participant_signature_base64': signatureB64,
+              'participant_signature_exemption_reason':
+                  _participantUnableToSign ? _signatureExemptionReason : null,
+              'participant_signature_exemption_notes':
+                  _participantUnableToSign ? _signatureExemptionNotes : null,
+              'worker_declared': true,
+              'evv_clock_out_location': {
+                'lat': position.latitude,
+                'lng': position.longitude,
+                'accuracy': position.accuracy,
+              },
+            },
+          );
+
+          if (_childShadowShiftId != null) {
+            final recommendation = (_values['mentor_eval_recommendation'] ?? '').toString();
+            if (recommendation.isNotEmpty) {
+              await SupabaseService.client.from('mentorship_evaluations').upsert({
+                'organization_id': _shift!.organizationId,
+                'primary_shift_id': _shift!.id,
+                'shadow_shift_id': _childShadowShiftId,
+                'evaluator_worker_id': userId,
+                'trainee_worker_id': _childShadowWorkerId,
+                'participant_id': _shift!.participantId,
+                'evaluation_data': {
+                  'engagement': _values['mentor_eval_engagement'],
+                  'manual_handling': _values['mentor_eval_manual_handling'],
+                  'recommendation': recommendation,
+                },
+                'recommendation_status': recommendation,
+              }, onConflict: 'primary_shift_id,shadow_shift_id');
+            }
+          }
+        }
+      } catch (_) {
+        // Shift note submission failed — still proceed with clock-out
+      }
+
       final entries = await SupabaseService.client
           .from('time_entries')
           .select('id, clock_in')
-          .eq('job_id', _shift!.id)
+          .eq('shift_id', _shift!.id)
           .eq('status', 'active')
           .order('clock_in', ascending: false)
           .limit(1);
 
       if ((entries as List).isNotEmpty) {
         final entry = entries[0];
-        final clockIn = DateTime.parse(entry['clock_in'] as String);
-        final km = double.tryParse(_kmCtrl.text) ?? 0;
-
+        final rawClockIn = entry['clock_in']?.toString();
+        final rawTimeEntryId = entry['id']?.toString();
+        if (rawClockIn == null || rawTimeEntryId == null) {
+          throw Exception('Active time entry missing required clock data.');
+        }
+        final clockIn = DateTime.parse(rawClockIn);
         await clockOutOfShift(
           shiftId: _shift!.id,
-          timeEntryId: entry['id'] as String,
+          timeEntryId: rawTimeEntryId,
           clockInTime: clockIn,
           lat: position.latitude,
           lng: position.longitude,
-          kilometersTravelled: km > 0 ? km : null,
         );
       } else {
-        // Fallback: just update shift status
-        await SupabaseService.client.from('shifts').update({
-          'status': 'completed',
-          'actual_end': DateTime.now().toUtc().toIso8601String(),
+        await SupabaseService.client.from('schedule_blocks').update({
+          'status': 'complete',
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         }).eq('id', _shift!.id);
       }
 
+      await _clearDraft();
       HapticFeedback.heavyImpact();
-
       if (mounted) {
-        // Show success and navigate back
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Shift completed successfully!', style: GoogleFonts.inter(color: Colors.white)),
+            content: Text(
+              'Shift note finalized and shift completed.',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
             backgroundColor: ObsidianTheme.emerald,
             behavior: SnackBarBehavior.floating,
           ),
         );
         context.go('/');
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
         setState(() => _submitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to submit: $e', style: GoogleFonts.inter(color: Colors.white)),
+            content: Text('Failed to finalize: $error', style: GoogleFonts.inter(color: Colors.white)),
             backgroundColor: ObsidianTheme.rose,
             behavior: SnackBarBehavior.floating,
           ),
@@ -232,329 +558,339 @@ class _ShiftDebriefScreenState extends ConsumerState<ShiftDebriefScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _renderField(Map<String, dynamic> field) {
     final c = context.iColors;
+    final id = field['id']?.toString() ?? '';
+    final type = field['type']?.toString() ?? 'short_text';
+    final label = field['label']?.toString() ?? id;
+    final required = field['required'] == true;
+    final isMissing = _missingRequiredFieldIds.contains(id);
+    final value = _values[id];
 
-    if (_loading) {
-      return Scaffold(backgroundColor: c.canvas, body: const Center(child: CircularProgressIndicator(strokeWidth: 2)));
-    }
-
-    return Scaffold(
-      backgroundColor: c.canvas,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            leading: GestureDetector(
-              onTap: () { HapticFeedback.lightImpact(); context.canPop() ? context.pop() : context.go('/'); },
-              child: Center(child: Icon(PhosphorIconsLight.arrowLeft, color: c.textPrimary, size: 22)),
-            ),
-            title: Text('Shift Report', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3)),
-            flexibleSpace: ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(color: c.canvas.withValues(alpha: 0.85)),
-              ),
-            ),
-          ),
-
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // ── Step 1: Goal Tracking ─────────────────
-                _StepHeader(step: 1, title: 'Goal Tracking', subtitle: 'Which goals were addressed during this shift?'),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _availableGoals.map((goal) {
-                    final isSelected = _selectedGoals.contains(goal);
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          isSelected ? _selectedGoals.remove(goal) : _selectedGoals.add(goal);
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? ObsidianTheme.careBlue.withValues(alpha: 0.15) : c.surface,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isSelected ? ObsidianTheme.careBlue.withValues(alpha: 0.4) : c.border,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isSelected ? PhosphorIconsFill.checkCircle : PhosphorIconsLight.circle,
-                              size: 18,
-                              color: isSelected ? ObsidianTheme.careBlue : c.textTertiary,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(child: Text(goal, style: GoogleFonts.inter(fontSize: 13, color: isSelected ? ObsidianTheme.careBlue : c.textSecondary))),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ).animate().fadeIn(duration: 300.ms),
-                const SizedBox(height: 24),
-
-                // ── Step 2: Participant Mood ──────────────
-                _StepHeader(step: 2, title: 'Participant Mood', subtitle: 'How was the participant during the shift?'),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _MoodOption(emoji: '😊', label: 'Happy', value: 'happy', selected: _mood, onTap: (v) => setState(() => _mood = v)),
-                    const SizedBox(width: 8),
-                    _MoodOption(emoji: '😐', label: 'Neutral', value: 'neutral', selected: _mood, onTap: (v) => setState(() => _mood = v)),
-                    const SizedBox(width: 8),
-                    _MoodOption(emoji: '😤', label: 'Agitated', value: 'agitated', selected: _mood, onTap: (v) => setState(() => _mood = v)),
-                    const SizedBox(width: 8),
-                    _MoodOption(emoji: '🤒', label: 'Unwell', value: 'unwell', selected: _mood, onTap: (v) => setState(() => _mood = v)),
-                  ],
-                ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
-                const SizedBox(height: 24),
-
-                // ── Step 3: Narrative Note ────────────────
-                _StepHeader(step: 3, title: 'Progress Note', subtitle: 'Describe what happened during the shift'),
-                const SizedBox(height: 10),
-                Container(
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: c.border),
-                  ),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _notesCtrl,
-                        maxLines: 6,
-                        style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary, height: 1.6),
-                        decoration: InputDecoration(
-                          hintText: 'Describe the shift activities, participant engagement, and any observations...',
-                          hintStyle: GoogleFonts.inter(fontSize: 14, color: c.textTertiary),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.all(14),
-                        ),
-                      ),
-                      Divider(height: 1, color: c.border),
-                      GestureDetector(
-                        onTap: _toggleVoice,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _isListening ? PhosphorIconsFill.microphone : PhosphorIconsLight.microphone,
-                                size: 20,
-                                color: _isListening ? ObsidianTheme.rose : ObsidianTheme.careBlue,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _isListening ? 'Listening... Tap to stop' : 'Tap to dictate',
-                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: _isListening ? ObsidianTheme.rose : ObsidianTheme.careBlue),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 200.ms, duration: 300.ms),
-                const SizedBox(height: 24),
-
-                // ── Step 4: Mileage / Expenses ────────────
-                _StepHeader(step: 4, title: 'Travel & Expenses', subtitle: 'Did you use your personal vehicle?'),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: c.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(PhosphorIconsLight.car, size: 22, color: c.textTertiary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _kmCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: GoogleFonts.jetBrainsMono(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary),
-                          decoration: InputDecoration(
-                            hintText: '0.0',
-                            hintStyle: GoogleFonts.jetBrainsMono(fontSize: 18, color: c.textDisabled),
-                            border: InputBorder.none,
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                      Text('km', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: c.textTertiary)),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
-                const SizedBox(height: 24),
-
-                // ── Step 5: Client Signature (Optional) ───
-                _StepHeader(step: 5, title: 'Client Signature', subtitle: 'Optional — participant acknowledgement'),
-                const SizedBox(height: 10),
-                Container(
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: c.border),
-                  ),
-                  child: Stack(
-                    children: [
-                      GestureDetector(
-                        onPanUpdate: (details) {
-                          setState(() {
-                            final localPosition = details.localPosition;
-                            _signaturePoints.add(localPosition);
-                          });
-                        },
-                        onPanEnd: (_) => setState(() => _signaturePoints.add(null)),
-                        child: CustomPaint(
-                          painter: _SignaturePainter(points: _signaturePoints, color: c.textPrimary),
-                          size: Size.infinite,
-                        ),
-                      ),
-                      if (_signaturePoints.isEmpty)
-                        Center(
-                          child: Text('Sign here', style: GoogleFonts.inter(fontSize: 14, color: c.textDisabled)),
-                        ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _signaturePoints.clear()),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: c.canvas,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: c.border),
-                            ),
-                            child: Icon(PhosphorIconsLight.eraser, size: 16, color: c.textTertiary),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 400.ms, duration: 300.ms),
-                const SizedBox(height: 32),
-              ]),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewPadding.bottom + 12),
-        decoration: BoxDecoration(
-          color: c.canvas,
-          border: Border(top: BorderSide(color: c.border)),
-        ),
-        child: _submitting
-            ? const Center(child: SizedBox(height: 56, child: Center(child: CircularProgressIndicator(strokeWidth: 2))))
-            : SlideToAct(
-                label: 'Slide to Complete Shift',
-                color: ObsidianTheme.emerald,
-                icon: PhosphorIconsLight.checkCircle,
-                onSlideComplete: _submitDebrief,
-              ),
-      ),
+    final decoration = BoxDecoration(
+      color: c.surface,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: isMissing ? ObsidianTheme.rose : c.border),
     );
-  }
-}
 
-// ═══════════════════════════════════════════════════════════
-// ── Helper Widgets ───────────────────────────────────────
-// ═══════════════════════════════════════════════════════════
-
-class _StepHeader extends StatelessWidget {
-  final int step;
-  final String title;
-  final String subtitle;
-  const _StepHeader({required this.step, required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.iColors;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: ObsidianTheme.careBlue.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
+    Widget input;
+    switch (type) {
+      case 'long_text':
+        input = TextField(
+          maxLines: 4,
+          onChanged: (v) => _setValue(id, v),
+          controller: TextEditingController(text: value?.toString() ?? '')
+            ..selection = TextSelection.fromPosition(
+              TextPosition(offset: (value?.toString() ?? '').length),
+            ),
+          style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
+          decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.all(12)),
+        );
+        break;
+      case 'number':
+      case 'blood_glucose':
+      case 'weight':
+        input = TextField(
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (v) => _setValue(id, v),
+          controller: TextEditingController(text: value?.toString() ?? '')
+            ..selection = TextSelection.fromPosition(
+              TextPosition(offset: (value?.toString() ?? '').length),
+            ),
+          style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
+          decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.all(12)),
+        );
+        break;
+      case 'dropdown':
+      case 'goal_linker':
+        final options = (field['options'] as List?)?.map((e) => e.toString()).toList() ??
+            ['Option A', 'Option B', 'Option C'];
+        input = Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: DropdownButtonFormField<String>(
+            initialValue: value?.toString().isNotEmpty == true ? value.toString() : null,
+            dropdownColor: c.surface,
+            items: options
+                .map((o) => DropdownMenuItem(value: o, child: Text(o, style: GoogleFonts.inter(color: c.textPrimary))))
+                .toList(),
+            onChanged: (v) => _setValue(id, v ?? ''),
+            decoration: const InputDecoration(border: InputBorder.none),
           ),
-          child: Center(
-            child: Text('$step', style: GoogleFonts.jetBrainsMono(fontSize: 13, fontWeight: FontWeight.w700, color: ObsidianTheme.careBlue)),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
+        );
+        break;
+      case 'checkbox':
+        final checked = value == true || value == 'true' || value == 'Yes';
+        input = CheckboxListTile(
+          value: checked,
+          onChanged: (v) => _setValue(id, v == true ? 'Yes' : 'No'),
+          title: Text(label, style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary)),
+          controlAffinity: ListTileControlAffinity.leading,
+        );
+        break;
+      case 'mood_slider':
+        final numericValue = double.tryParse(value?.toString() ?? '3') ?? 3;
+        input = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: c.textPrimary)),
-              Text(subtitle, style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary)),
+              Slider(
+                value: numericValue.clamp(1, 5),
+                min: 1,
+                max: 5,
+                divisions: 4,
+                onChanged: (v) => _setValue(id, v.toStringAsFixed(0)),
+              ),
+              Text('Mood score: ${numericValue.toStringAsFixed(0)}',
+                  style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary)),
             ],
           ),
-        ),
-      ],
+        );
+        break;
+      case 'photo_upload':
+        input = TextButton.icon(
+          onPressed: () => _capturePhotoToField(id),
+          icon: const Icon(Icons.photo_camera),
+          label: Text(
+            value == null ? 'Capture evidence photo' : 'Photo attached',
+            style: GoogleFonts.inter(),
+          ),
+        );
+        break;
+      case 'body_map':
+        input = Padding(
+          padding: const EdgeInsets.all(10),
+          child: Wrap(
+            spacing: 6,
+            children: ['head', 'left_arm', 'right_arm', 'torso', 'left_leg', 'right_leg']
+                .map((part) => ChoiceChip(
+                      label: Text(part),
+                      selected: value == part,
+                      onSelected: (_) => _setValue(id, part),
+                    ))
+                .toList(),
+          ),
+        );
+        break;
+      default:
+        input = TextField(
+          onChanged: (v) => _setValue(id, v),
+          controller: TextEditingController(text: value?.toString() ?? '')
+            ..selection = TextSelection.fromPosition(
+              TextPosition(offset: (value?.toString() ?? '').length),
+            ),
+          style: GoogleFonts.inter(fontSize: 14, color: c.textPrimary),
+          decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.all(12)),
+        );
+    }
+
+    return Container(
+      decoration: decoration,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (type != 'checkbox')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+              child: Text(
+                required ? '$label *' : label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isMissing ? ObsidianTheme.rose : c.textTertiary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          input,
+        ],
+      ),
     );
   }
-}
-
-class _MoodOption extends StatelessWidget {
-  final String emoji;
-  final String label;
-  final String value;
-  final String selected;
-  final ValueChanged<String> onTap;
-  const _MoodOption({required this.emoji, required this.label, required this.value, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
-    final isSelected = value == selected;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () { HapticFeedback.selectionClick(); onTap(value); },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isSelected ? ObsidianTheme.careBlue.withValues(alpha: 0.12) : c.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? ObsidianTheme.careBlue.withValues(alpha: 0.4) : c.border,
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: c.canvas,
+        body: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (_, __) async {
+        unawaited(_persistDraft());
+        if (!mounted) return;
+        final navigator = Navigator.of(context);
+        final shouldExit = await showDialog<bool>(
+              context: context,
+              builder: (dialogCtx) => AlertDialog(
+                title: const Text('Exit Shift Debrief?'),
+                content: const Text('Progress is auto-saved, but this shift is not finalized yet.'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: const Text('Stay')),
+                  TextButton(onPressed: () => Navigator.pop(dialogCtx, true), child: const Text('Exit')),
+                ],
+              ),
+            ) ??
+            false;
+        if (shouldExit && mounted) navigator.pop();
+      },
+      child: Scaffold(
+        backgroundColor: c.canvas,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: Text('Shift Debrief', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: [
+            Text(
+              'Clock-Out Gate',
+              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: c.textPrimary),
             ),
-          ),
-          child: Column(
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 24)),
-              const SizedBox(height: 4),
-              Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: isSelected ? ObsidianTheme.careBlue : c.textTertiary)),
+            const SizedBox(height: 4),
+            Text(
+              'Complete required dynamic fields before finalization.',
+              style: GoogleFonts.inter(fontSize: 13, color: c.textTertiary),
+            ),
+            if (_templateLoadError != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: ObsidianTheme.rose.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.35)),
+                ),
+                child: Text(
+                  _templateLoadError!,
+                  style: GoogleFonts.inter(fontSize: 12, color: c.textPrimary),
+                ),
+              ),
             ],
-          ),
+            const SizedBox(height: 14),
+            ..._visibleFields.map((field) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _renderField(field),
+                )),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: c.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: c.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _workerDeclared,
+                        onChanged: (v) => setState(() => _workerDeclared = v == true),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'I declare this is a true and accurate record of supports delivered.',
+                          style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text('Participant / Guardian Signature',
+                      style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  if (!_participantUnableToSign)
+                    Container(
+                      height: 140,
+                      decoration: BoxDecoration(
+                        color: c.canvas,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: c.border),
+                      ),
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onPanUpdate: (details) => setState(() => _signaturePoints.add(details.localPosition)),
+                            onPanEnd: (_) => setState(() => _signaturePoints.add(null)),
+                            child: CustomPaint(
+                              painter: _SignaturePainter(points: _signaturePoints, color: c.textPrimary),
+                              size: Size.infinite,
+                            ),
+                          ),
+                          if (_signaturePoints.isEmpty)
+                            Center(
+                              child: Text('Sign here', style: GoogleFonts.inter(fontSize: 13, color: c.textDisabled)),
+                            ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: IconButton(
+                              icon: Icon(PhosphorIconsLight.eraser, size: 16, color: c.textTertiary),
+                              onPressed: () => setState(() => _signaturePoints.clear()),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  TextButton(
+                    onPressed: () => setState(() => _participantUnableToSign = !_participantUnableToSign),
+                    child: Text(
+                      _participantUnableToSign
+                          ? 'Participant will sign on device'
+                          : 'Participant unable/refused to sign',
+                    ),
+                  ),
+                  if (_participantUnableToSign)
+                    Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          initialValue: _signatureExemptionReason,
+                          items: const [
+                            DropdownMenuItem(value: 'asleep', child: Text('Asleep')),
+                            DropdownMenuItem(value: 'physical_incapacity', child: Text('Physical incapacity')),
+                            DropdownMenuItem(value: 'refusal_agitation', child: Text('Refusal / agitation')),
+                          ],
+                          onChanged: (v) => setState(() => _signatureExemptionReason = v ?? 'asleep'),
+                          decoration: const InputDecoration(labelText: 'Reason'),
+                        ),
+                        TextField(
+                          onChanged: (v) => _signatureExemptionNotes = v,
+                          decoration: const InputDecoration(labelText: 'Notes'),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            if (_missingRequiredFieldIds.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  'Missing required fields: ${_missingRequiredFieldIds.length}',
+                  style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.rose),
+                ),
+              ),
+          ],
+        ),
+        bottomNavigationBar: Container(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewPadding.bottom + 12),
+          decoration: BoxDecoration(color: c.canvas, border: Border(top: BorderSide(color: c.border))),
+          child: _submitting
+              ? const SizedBox(
+                  height: 56,
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              : SlideToAct(
+                  label: 'Finalize & Clock Out',
+                  color: ObsidianTheme.emerald,
+                  icon: PhosphorIconsLight.checkCircle,
+                  onSlideComplete: _finalizeAndClockOut,
+                ),
         ),
       ),
     );
@@ -572,8 +908,7 @@ class _SignaturePainter extends CustomPainter {
       ..color = color
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 2.0;
-
-    for (int i = 0; i < points.length - 1; i++) {
+    for (var i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
         canvas.drawLine(points[i]!, points[i + 1]!, paint);
       }

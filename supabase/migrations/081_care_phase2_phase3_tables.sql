@@ -325,63 +325,63 @@ BEGIN
   -- Behaviour Support Plans
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'behaviour_support_plans' AND policyname = 'Org members manage BSPs') THEN
     EXECUTE 'CREATE POLICY "Org members manage BSPs" ON public.behaviour_support_plans FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = behaviour_support_plans.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = behaviour_support_plans.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   -- Behaviour Events
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'behaviour_events' AND policyname = 'Org members manage behaviour events') THEN
     EXECUTE 'CREATE POLICY "Org members manage behaviour events" ON public.behaviour_events FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = behaviour_events.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = behaviour_events.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   -- Restrictive Practices
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'restrictive_practices' AND policyname = 'Org members manage restrictive practices') THEN
     EXECUTE 'CREATE POLICY "Org members manage restrictive practices" ON public.restrictive_practices FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = restrictive_practices.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = restrictive_practices.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   -- CI Actions
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ci_actions' AND policyname = 'Org members manage CI actions') THEN
     EXECUTE 'CREATE POLICY "Org members manage CI actions" ON public.ci_actions FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = ci_actions.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = ci_actions.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   -- Policy Register
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'policy_register' AND policyname = 'Org members manage policies') THEN
     EXECUTE 'CREATE POLICY "Org members manage policies" ON public.policy_register FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = policy_register.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = policy_register.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   -- Policy Acknowledgements
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'policy_acknowledgements' AND policyname = 'Org members manage acknowledgements') THEN
     EXECUTE 'CREATE POLICY "Org members manage acknowledgements" ON public.policy_acknowledgements FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = policy_acknowledgements.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = policy_acknowledgements.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   -- Governance Meetings
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'governance_meetings' AND policyname = 'Org members manage governance meetings') THEN
     EXECUTE 'CREATE POLICY "Org members manage governance meetings" ON public.governance_meetings FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = governance_meetings.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = governance_meetings.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   -- Onboarding Checklists
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'onboarding_checklists' AND policyname = 'Org members manage onboarding') THEN
     EXECUTE 'CREATE POLICY "Org members manage onboarding" ON public.onboarding_checklists FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = onboarding_checklists.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = onboarding_checklists.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   -- Support Coordination Cases
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'support_coordination_cases' AND policyname = 'Org members manage SC cases') THEN
     EXECUTE 'CREATE POLICY "Org members manage SC cases" ON public.support_coordination_cases FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = support_coordination_cases.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = support_coordination_cases.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 END $$;

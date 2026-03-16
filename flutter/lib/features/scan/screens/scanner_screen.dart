@@ -353,6 +353,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _ManualEntrySheet(

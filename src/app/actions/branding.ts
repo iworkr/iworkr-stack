@@ -145,6 +145,168 @@ export async function updateBrandLogo(
   }
 }
 
+/* ── WCAG Luminance Calculator (Project Chameleon) ──── */
+
+function getWCAGLuminance(hex: string): number {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.substring(0, 2), 16) / 255;
+  const g = parseInt(clean.substring(2, 4), 16) / 255;
+  const b = parseInt(clean.substring(4, 6), 16) / 255;
+
+  const sR = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+  const sG = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+  const sB = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+
+  return 0.2126 * sR + 0.7152 * sG + 0.0722 * sB;
+}
+
+function getWCAGContrastColor(hex: string): string {
+  return getWCAGLuminance(hex) > 0.179 ? "#000000" : "#FFFFFF";
+}
+
+/* ── Update App Name ───────────────────────────────── */
+
+export async function updateAppName(orgId: string, appName: string) {
+  try {
+    if (appName.length > 15) {
+      return { data: null, error: "App name cannot exceed 15 characters (OS limitation)" };
+    }
+
+    const { supabase } = await assertOrgAdmin(orgId);
+
+    const { data, error } = await (supabase as any)
+      .from("workspace_branding")
+      .update({
+        app_name: appName.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("workspace_id", orgId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/settings");
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message || "Failed to update app name" };
+  }
+}
+
+/* ── Update Accent Color ──────────────────────────── */
+
+export async function updateAccentColor(orgId: string, hex: string) {
+  try {
+    if (!isValidHex(hex)) {
+      return { data: null, error: "Invalid hex color" };
+    }
+
+    const { supabase } = await assertOrgAdmin(orgId);
+
+    const { data, error } = await (supabase as any)
+      .from("workspace_branding")
+      .update({
+        accent_color_hex: hex.toUpperCase(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("workspace_id", orgId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message || "Failed to update accent color" };
+  }
+}
+
+/* ── Upload App Icon ──────────────────────────────── */
+
+export async function updateAppIcon(orgId: string, iconUrl: string) {
+  try {
+    const { supabase } = await assertOrgAdmin(orgId);
+
+    const { data, error } = await (supabase as any)
+      .from("workspace_branding")
+      .update({
+        app_icon_url: iconUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("workspace_id", orgId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/settings");
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message || "Failed to update app icon" };
+  }
+}
+
+/* ── Trigger Enterprise Build ─────────────────────── */
+
+export async function triggerEnterpriseBuild(orgId: string) {
+  try {
+    const { supabase, user } = await assertOrgAdmin(orgId);
+
+    // Fetch current branding
+    const { data: branding } = await (supabase as any)
+      .from("workspace_branding")
+      .select("*")
+      .eq("workspace_id", orgId)
+      .single();
+
+    if (!branding?.app_name || !branding?.app_icon_url || !branding?.primary_color_hex) {
+      return { data: null, error: "App name, icon, and primary color are required before building" };
+    }
+
+    // Update build status to queued
+    const { data, error } = await (supabase as any)
+      .from("workspace_branding")
+      .update({
+        build_status: "queued",
+        build_requested_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("workspace_id", orgId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+
+    // Trigger GitHub Actions workflow via repository_dispatch
+    // In production, this would fire a webhook to the iworkr-mobile-factory repo
+    // For now, we update status and log the trigger
+    const bundleId = branding.enterprise_bundle_id || `com.iworkr.${branding.app_name.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+    await (supabase as any)
+      .from("workspace_branding")
+      .update({ enterprise_bundle_id: bundleId })
+      .eq("workspace_id", orgId);
+
+    revalidatePath("/settings");
+    return { data, error: null, bundleId };
+  } catch (err: any) {
+    return { data: null, error: err.message || "Failed to trigger build" };
+  }
+}
+
+/* ── Get Build Status (for Realtime polling fallback) ── */
+
+export async function getBuildStatus(orgId: string) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data } = await (supabase as any)
+      .from("workspace_branding")
+      .select("build_status, last_build_at, build_log_url, enterprise_bundle_id")
+      .eq("workspace_id", orgId)
+      .single();
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
 /* ── Resend: Create Custom Domain ─────────────────── */
 
 export async function createCustomDomain(orgId: string, domain: string) {

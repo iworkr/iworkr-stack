@@ -22,6 +22,7 @@ Future<bool> showWorkspaceSwitcher(BuildContext context) async {
   HapticFeedback.selectionClick();
   final result = await showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black54,

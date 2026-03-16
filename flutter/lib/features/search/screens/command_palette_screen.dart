@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:iworkr_mobile/core/services/search_provider.dart';
+import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
 import 'package:iworkr_mobile/core/widgets/animated_empty_state.dart';
 import 'package:iworkr_mobile/features/jobs/screens/create_job_sheet.dart';
@@ -51,10 +52,6 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
-    // Reset query on exit
-    Future.microtask(() {
-      if (mounted) return;
-    });
     super.dispose();
   }
 
@@ -81,6 +78,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final query = ref.watch(searchQueryProvider);
     final resultsAsync = ref.watch(searchResultsProvider);
 
@@ -95,7 +93,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              color: ObsidianTheme.void_.withValues(alpha: 0.92),
+              color: c.canvas.withValues(alpha: 0.92),
               child: SafeArea(
                 child: GestureDetector(
                   onTap: () {},
@@ -130,10 +128,11 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
   // ── Search Input ────────────────────────────────────
 
   Widget _buildSearchInput(String query) {
+    final c = context.iColors;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: ObsidianTheme.border)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: c.border)),
       ),
       child: Row(
         children: [
@@ -143,7 +142,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
               PhosphorIconsLight.magnifyingGlass,
               key: ValueKey(query.isNotEmpty),
               size: 20,
-              color: query.isNotEmpty ? Colors.white : ObsidianTheme.textTertiary,
+              color: query.isNotEmpty ? c.textPrimary : c.textTertiary,
             ),
           ),
           const SizedBox(width: 12),
@@ -155,7 +154,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: c.textPrimary,
                 letterSpacing: -0.3,
               ),
               cursorColor: ObsidianTheme.emerald,
@@ -165,7 +164,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
                 hintStyle: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
-                  color: ObsidianTheme.textTertiary,
+                  color: c.textTertiary,
                 ),
                 border: InputBorder.none,
                 isDense: true,
@@ -183,9 +182,9 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
                 width: 24, height: 24,
                 decoration: BoxDecoration(
                   borderRadius: ObsidianTheme.radiusMd,
-                  color: ObsidianTheme.shimmerBase,
+                  color: c.shimmerBase,
                 ),
-                child: const Center(child: Icon(PhosphorIconsLight.x, size: 12, color: ObsidianTheme.textTertiary)),
+                child: Center(child: Icon(PhosphorIconsLight.x, size: 12, color: c.textTertiary)),
               ),
             ),
           const SizedBox(width: 8),
@@ -196,7 +195,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
             },
             child: Text(
               'Cancel',
-              style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: c.textSecondary),
             ),
           ),
         ],
@@ -207,6 +206,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
   // ── Zero State (Recent + Quick Actions) ─────────────
 
   Widget _buildZeroState() {
+    final c = context.iColors;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
       children: [
@@ -230,7 +230,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
         Center(
           child: Text(
             'Start typing to search jobs, clients, assets & team',
-            style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textTertiary),
+            style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
           ),
         ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
       ],
@@ -238,6 +238,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
   }
 
   Widget _buildQuickActionChips() {
+    final c = context.iColors;
     final chips = [
       ('New Job', PhosphorIconsLight.plus, () => showCreateJobSheet(context)),
       ('My Schedule', PhosphorIconsLight.calendarBlank, () { Navigator.pop(context); context.go('/schedule'); }),
@@ -263,14 +264,14 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: ObsidianTheme.radiusFull,
-                color: ObsidianTheme.shimmerBase,
-                border: Border.all(color: ObsidianTheme.border),
+                color: c.shimmerBase,
+                border: Border.all(color: c.border),
               ),
               child: Row(
                 children: [
-                  Icon(icon, size: 14, color: ObsidianTheme.textSecondary),
+                  Icon(icon, size: 14, color: c.textSecondary),
                   const SizedBox(width: 8),
-                  Text(label, style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.textSecondary, fontWeight: FontWeight.w500)),
+                  Text(label, style: GoogleFonts.inter(fontSize: 12, color: c.textSecondary, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -342,15 +343,17 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
   }
 
   Widget _buildSectionHeader(String text) {
+    final c = context.iColors;
     return Text(
       text,
-      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: ObsidianTheme.textTertiary, letterSpacing: 1.5),
+      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: c.textTertiary, letterSpacing: 1.5),
     );
   }
 
   // ── Result Row ──────────────────────────────────────
 
   Widget _buildResultRow(SearchResult result, String query, int index) {
+    final c = context.iColors;
     IconData icon;
     Color iconColor;
     switch (result.type) {
@@ -359,7 +362,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
         iconColor = ObsidianTheme.blue;
       case SearchResultType.client:
         icon = PhosphorIconsLight.user;
-        iconColor = ObsidianTheme.textSecondary;
+        iconColor = c.textSecondary;
       case SearchResultType.asset:
         icon = PhosphorIconsLight.cube;
         iconColor = ObsidianTheme.amber;
@@ -395,7 +398,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
             if (result.mono != null) ...[
               Text(
                 result.mono!,
-                style: GoogleFonts.jetBrainsMono(fontSize: 11, color: ObsidianTheme.textTertiary),
+                style: GoogleFonts.jetBrainsMono(fontSize: 11, color: c.textTertiary),
               ),
               const SizedBox(width: 8),
             ],
@@ -409,7 +412,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
                   if (result.subtitle.isNotEmpty)
                     Text(
                       result.subtitle,
-                      style: GoogleFonts.inter(fontSize: 11, color: ObsidianTheme.textTertiary),
+                      style: GoogleFonts.inter(fontSize: 11, color: c.textTertiary),
                       maxLines: 1, overflow: TextOverflow.ellipsis,
                     ),
                 ],
@@ -417,7 +420,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
             ),
 
             // Arrow
-            Icon(PhosphorIconsLight.caretRight, size: 14, color: ObsidianTheme.textTertiary),
+            Icon(PhosphorIconsLight.caretRight, size: 14, color: c.textTertiary),
           ],
         ),
       ),
@@ -427,12 +430,13 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
         .moveY(begin: 6, end: 0, delay: Duration(milliseconds: 30 + index * 20), duration: 300.ms, curve: const Cubic(0.16, 1, 0.3, 1));
   }
 
-  /// Highlights matched query text as White/Bold, rest as Zinc-400
+  /// Highlights matched query text as Primary/Bold, rest as Secondary
   Widget _buildHighlightedText(String text, String query) {
+    final c = context.iColors;
     if (query.isEmpty) {
       return Text(
         text,
-        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
+        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textPrimary),
         maxLines: 1, overflow: TextOverflow.ellipsis,
       );
     }
@@ -444,7 +448,7 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
     if (matchIndex < 0) {
       return Text(
         text,
-        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ObsidianTheme.textSecondary),
+        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: c.textSecondary),
         maxLines: 1, overflow: TextOverflow.ellipsis,
       );
     }
@@ -453,13 +457,13 @@ class _CommandPaletteScreenState extends ConsumerState<CommandPaletteScreen> {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       text: TextSpan(
-        style: GoogleFonts.inter(fontSize: 14, color: ObsidianTheme.textSecondary),
+        style: GoogleFonts.inter(fontSize: 14, color: c.textSecondary),
         children: [
           if (matchIndex > 0)
             TextSpan(text: text.substring(0, matchIndex)),
           TextSpan(
             text: text.substring(matchIndex, matchIndex + query.length),
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: c.textPrimary),
           ),
           if (matchIndex + query.length < text.length)
             TextSpan(text: text.substring(matchIndex + query.length)),

@@ -1452,6 +1452,7 @@ class _JobHudScreenState extends ConsumerState<JobHudScreen>
 
     final note = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _SubtaskNoteSheet(

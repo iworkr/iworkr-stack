@@ -50,12 +50,14 @@ class ProgressNote {
 
   factory ProgressNote.fromJson(Map<String, dynamic> json) {
     final profile = json['profiles'] as Map<String, dynamic>?;
+    final createdAtRaw = json['created_at']?.toString();
+    final updatedAtRaw = json['updated_at']?.toString() ?? createdAtRaw;
     return ProgressNote(
-      id: json['id'] as String,
-      organizationId: json['organization_id'] as String,
-      jobId: json['job_id'] as String?,
-      participantId: json['participant_id'] as String?,
-      workerId: json['worker_id'] as String,
+      id: json['id']?.toString() ?? '',
+      organizationId: json['organization_id']?.toString() ?? '',
+      jobId: json['job_id']?.toString(),
+      participantId: json['participant_id']?.toString(),
+      workerId: json['worker_id']?.toString() ?? '',
       summary: json['summary'] as String?,
       goalsAddressed: json['goals_addressed'] as String?,
       participantMood: json['participant_mood'] as String?,
@@ -64,12 +66,20 @@ class ProgressNote {
       participantFeedback: json['participant_feedback'] as String?,
       clockInLat: (json['clock_in_lat'] as num?)?.toDouble(),
       clockInLng: (json['clock_in_lng'] as num?)?.toDouble(),
-      clockInTime: json['clock_in_time'] != null ? DateTime.tryParse(json['clock_in_time'] as String) : null,
+      clockInTime: json['clock_in_time'] != null
+          ? DateTime.tryParse(json['clock_in_time'].toString())
+          : null,
       clockOutLat: (json['clock_out_lat'] as num?)?.toDouble(),
       clockOutLng: (json['clock_out_lng'] as num?)?.toDouble(),
-      clockOutTime: json['clock_out_time'] != null ? DateTime.tryParse(json['clock_out_time'] as String) : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      clockOutTime: json['clock_out_time'] != null
+          ? DateTime.tryParse(json['clock_out_time'].toString())
+          : null,
+      createdAt: createdAtRaw != null
+          ? DateTime.tryParse(createdAtRaw) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: updatedAtRaw != null
+          ? DateTime.tryParse(updatedAtRaw) ?? DateTime.now()
+          : DateTime.now(),
       workerName: profile?['full_name'] as String?,
     );
   }

@@ -23,7 +23,8 @@ import 'package:iworkr_mobile/models/health_observation.dart';
 // readings (e.g., BGL < 4.0 mmol/L triggers red warning).
 
 class RecordObservationScreen extends ConsumerStatefulWidget {
-  const RecordObservationScreen({super.key});
+  final String participantId;
+  const RecordObservationScreen({super.key, required this.participantId});
 
   @override
   ConsumerState<RecordObservationScreen> createState() => _RecordObservationScreenState();
@@ -56,16 +57,16 @@ class _RecordObservationScreenState extends ConsumerState<RecordObservationScree
 
     switch (_selectedType!) {
       case ObservationType.bloodGlucose:
-        if (val < 4.0) warning = 'CRITICAL LOW — Hypoglycemia detected (${val} mmol/L). Seek immediate assistance.';
-        if (val > 15.0) warning = 'CRITICAL HIGH — Hyperglycemia detected (${val} mmol/L). Notify coordinator.';
+        if (val < 4.0) warning = 'CRITICAL LOW — Hypoglycemia detected ($val mmol/L). Seek immediate assistance.';
+        if (val > 15.0) warning = 'CRITICAL HIGH — Hyperglycemia detected ($val mmol/L). Notify coordinator.';
         break;
       case ObservationType.heartRate:
         if (val < 50) warning = 'LOW HEART RATE — Bradycardia (${val.toInt()} BPM). Monitor closely.';
         if (val > 120) warning = 'HIGH HEART RATE — Tachycardia (${val.toInt()} BPM). Notify coordinator.';
         break;
       case ObservationType.temperature:
-        if (val < 35.0) warning = 'LOW TEMPERATURE — Hypothermia risk (${val}°C).';
-        if (val > 38.5) warning = 'HIGH TEMPERATURE — Fever detected (${val}°C). Monitor closely.';
+        if (val < 35.0) warning = 'LOW TEMPERATURE — Hypothermia risk ($val°C).';
+        if (val > 38.5) warning = 'HIGH TEMPERATURE — Fever detected ($val°C). Monitor closely.';
         break;
       case ObservationType.oxygenSaturation:
         if (val < 92) warning = 'LOW SpO2 — Oxygen desaturation (${val.toInt()}%). Seek immediate assistance.';
@@ -135,10 +136,8 @@ class _RecordObservationScreenState extends ConsumerState<RecordObservationScree
     setState(() => _submitting = true);
 
     try {
-      // TODO: In a real shift context, participantId comes from the active shift
-      // For now, we pass a placeholder that will be set from shift context
       await recordObservation(
-        participantId: '', // Set from active shift context
+        participantId: widget.participantId,
         type: _selectedType!,
         values: _buildValues(),
         notes: _notesCtrl.text.trim().isNotEmpty ? _notesCtrl.text.trim() : null,

@@ -23,6 +23,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _InviteSheet(ref: ref),
@@ -217,6 +218,7 @@ class _MemberCard extends StatelessWidget {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         decoration: BoxDecoration(

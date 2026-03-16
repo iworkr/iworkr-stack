@@ -181,25 +181,25 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'timesheets' AND policyname = 'Org members manage timesheets') THEN
     EXECUTE 'CREATE POLICY "Org members manage timesheets" ON public.timesheets FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = timesheets.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = timesheets.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'time_entries' AND policyname = 'Org members manage time entries') THEN
     EXECUTE 'CREATE POLICY "Org members manage time entries" ON public.time_entries FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = time_entries.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = time_entries.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'payroll_exports' AND policyname = 'Org members manage payroll exports') THEN
     EXECUTE 'CREATE POLICY "Org members manage payroll exports" ON public.payroll_exports FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = payroll_exports.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = payroll_exports.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'timesheet_adjustments' AND policyname = 'Org members manage timesheet adjustments') THEN
     EXECUTE 'CREATE POLICY "Org members manage timesheet adjustments" ON public.timesheet_adjustments FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.organization_members WHERE members.organization_id = timesheet_adjustments.organization_id AND members.user_id = auth.uid())
+      EXISTS (SELECT 1 FROM public.organization_members members WHERE members.organization_id = timesheet_adjustments.organization_id AND members.user_id = auth.uid())
     )';
   END IF;
 END $$;

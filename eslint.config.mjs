@@ -21,6 +21,15 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "audit-reports/**",
   ]),
+  // Project Terminus: Strict type safety enforcement
+  // New code must not introduce `any` — existing violations tracked via lint baseline.
+  {
+    files: ["src/**/*.ts", "src/**/*.tsx"],
+    rules: {
+      // Warn on new `any` usage — will be enforced as error once baseline is cleared
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

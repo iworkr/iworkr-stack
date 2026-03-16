@@ -285,16 +285,29 @@ setup("authenticate via Supabase", async ({ page }) => {
 
         // Create a test invoice
         if (clientId) {
-          await admin.from("invoices").insert({
-            organization_id: orgId,
-            client_id: clientId,
-            status: "draft",
-            amount: 150000, // $1,500.00 in cents
-            due_date: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
-            line_items: [
-              { description: "Plumbing repair — labor", quantity: 2, unit_price: 7500 },
-            ],
-          }).select().single().catch(() => null);
+          try {
+            const { error: invoiceErr } = await admin
+              .from("invoices")
+              .insert({
+                organization_id: orgId,
+                client_id: clientId,
+                status: "draft",
+                amount: 150000, // $1,500.00 in cents
+                due_date: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
+                line_items: [{ description: "Plumbing repair — labor", quantity: 2, unit_price: 7500 }],
+              })
+              .select()
+              .single();
+
+            if (invoiceErr) {
+              throw invoiceErr;
+            }
+          } catch (invoiceSeedErr) {
+            console.warn(
+              "Invoice seed skipped:",
+              invoiceSeedErr instanceof Error ? invoiceSeedErr.message : invoiceSeedErr
+            );
+          }
         }
 
         console.log("Test data seeded successfully.");

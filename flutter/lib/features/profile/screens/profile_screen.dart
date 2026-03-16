@@ -41,7 +41,7 @@ class ProfileScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Profile',
+                    'Profile & Earnings',
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -269,6 +269,17 @@ class ProfileScreen extends ConsumerWidget {
                     index: 0,
                   ),
                   Divider(height: 1, color: c.border),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.wallet,
+                    label: 'Timesheets & Earnings',
+                    subtitle: 'Processed, approved, disputed',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/care/timesheets');
+                    },
+                    index: 1,
+                  ),
+                  Divider(height: 1, color: c.border),
                   // Weekly Hours
                   Consumer(
                     builder: (_, ref, __) {
@@ -282,7 +293,7 @@ class ProfileScreen extends ConsumerWidget {
                           HapticFeedback.lightImpact();
                           context.push('/profile/timeclock');
                         },
-                        index: 1,
+                        index: 2,
                       );
                     },
                   ),
@@ -296,7 +307,7 @@ class ProfileScreen extends ConsumerWidget {
                       HapticFeedback.lightImpact();
                       context.push('/profile/leave');
                     },
-                    index: 2,
+                    index: 3,
                   ),
                 ],
               ),

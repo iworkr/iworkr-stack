@@ -48,6 +48,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const InviteMemberSheet(),
@@ -57,6 +58,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
   void _showSeatLimitGate() {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _SeatLimitSheet(),
     );

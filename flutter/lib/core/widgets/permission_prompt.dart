@@ -29,6 +29,7 @@ Future<bool> showPermissionSoftPrompt(
   HapticFeedback.mediumImpact();
   final result = await showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     isDismissible: true,
@@ -51,6 +52,7 @@ Future<void> showPermissionRecoverySheet(
   HapticFeedback.heavyImpact();
   await showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     builder: (_) => _RecoverySheet(title: title, body: body),

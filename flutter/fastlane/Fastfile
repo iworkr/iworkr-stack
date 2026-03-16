@@ -1,0 +1,85 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Project Chameleon — Fastlane Configuration
+# Enterprise white-label build lanes with dynamic parameters
+# ══════════════════════════════════════════════════════════════════════════════
+
+default_platform(:ios)
+
+# ── Shared configuration ──────────────────────────────────────────────────────
+
+APP_NAME = ENV['APP_NAME'] || 'iWorkr'
+APP_IDENTIFIER = ENV['BUNDLE_ID'] || 'com.iworkr.app'
+TEAM_ID = ENV['APPLE_TEAM_ID'] || '7S2XCJ2V5F'
+
+# ── iOS Lanes ─────────────────────────────────────────────────────────────────
+
+platform :ios do
+  desc "Deploy white-labeled iOS app to TestFlight"
+  lane :deploy_whitelabel do
+    # Setup signing via match (git-based cert storage)
+    match(
+      type: "appstore",
+      app_identifier: APP_IDENTIFIER,
+      team_id: TEAM_ID,
+      readonly: true,
+    )
+
+    # Build the Flutter iOS app
+    Dir.chdir("..") do
+      sh("flutter build ios --release --dart-define=BRAND_COLOR=#{ENV['PRIMARY_COLOR']}")
+    end
+
+    # Build and archive
+    build_app(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      output_directory: "build/ios",
+      output_name: "#{APP_NAME}.ipa",
+    )
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      app_identifier: APP_IDENTIFIER,
+      skip_waiting_for_build_processing: true,
+      team_id: TEAM_ID,
+    )
+  end
+
+  desc "Build iOS without deploying (for CI verification)"
+  lane :build_only do
+    Dir.chdir("..") do
+      sh("flutter build ios --release --no-codesign")
+    end
+  end
+end
+
+# ── Android Lanes ─────────────────────────────────────────────────────────────
+
+platform :android do
+  desc "Deploy white-labeled Android app to Google Play"
+  lane :deploy_whitelabel do
+    # Build the Flutter Android app
+    Dir.chdir("..") do
+      sh("flutter build appbundle --release --dart-define=BRAND_COLOR=#{ENV['PRIMARY_COLOR']}")
+    end
+
+    # Upload to Google Play (requires service account JSON)
+    supply(
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+      package_name: APP_IDENTIFIER,
+      track: "internal", # Start with internal testing
+      json_key: ENV['GOOGLE_PLAY_JSON_KEY_PATH'] || "fastlane/google-play-key.json",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+
+  desc "Build Android without deploying (for CI verification)"
+  lane :build_only do
+    Dir.chdir("..") do
+      sh("flutter build appbundle --release")
+    end
+  end
+end

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
+import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
+import 'package:iworkr_mobile/core/services/mobile_telemetry_engine.dart';
 import 'package:iworkr_mobile/core/services/rbac_provider.dart';
+import 'package:iworkr_mobile/core/services/industry_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/features/auth/screens/login_screen.dart';
+import 'package:iworkr_mobile/features/auth/screens/security_lock_screen.dart';
 import 'package:iworkr_mobile/features/dashboard/screens/dashboard_screen.dart';
 import 'package:iworkr_mobile/features/inbox/screens/inbox_screen.dart';
 import 'package:iworkr_mobile/features/jobs/screens/job_detail_screen.dart';
@@ -56,10 +60,20 @@ import 'package:iworkr_mobile/features/care/screens/sentinel_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/my_shifts_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/shift_detail_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/shift_debrief_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/shift_travel_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/shift_wallet_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/create_incident_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/record_observation_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/worker_timesheets_screen.dart';
 import 'package:iworkr_mobile/features/care/screens/worker_credentials_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/shift_routines_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/policy_gate_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/fleet_checkout_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/participants_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/participant_profile_screen.dart';
+import 'package:iworkr_mobile/features/care/screens/active_workspace_screen.dart';
+import 'package:iworkr_mobile/features/notifications/screens/notification_center_screen.dart';
+import 'package:iworkr_mobile/features/portal/screens/family_portal_screen.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/core/widgets/shell_scaffold.dart';
 
@@ -82,6 +96,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
+    observers: [TelemetryNavigatorObserver()],
     refreshListenable: authNotifier,
     redirect: (context, state) {
       final isLoggedIn = SupabaseService.auth.currentUser != null;
@@ -89,13 +104,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isOnOnboarding = state.matchedLocation == '/onboarding';
       final isOnPaywall = state.matchedLocation == '/paywall';
       final isOnInvite = state.matchedLocation == '/accept-invite';
+      final isOnPortal = state.matchedLocation.startsWith('/portal');
 
       if (!isLoggedIn && !isOnLogin && !isOnInvite) return '/login';
       if (isLoggedIn && isOnLogin) {
+        final hasPortalAccess = ref.read(portalAccessProvider).valueOrNull ?? false;
+        final orgData = ref.read(organizationProvider).valueOrNull;
+        if (hasPortalAccess && orgData == null) {
+          return '/portal';
+        }
         // Check if onboarding is needed
         final profile = ref.read(profileProvider).valueOrNull;
         if (profile != null && !profile.onboardingCompleted) {
-          final orgData = ref.read(organizationProvider).valueOrNull;
           if (orgData == null) return '/onboarding';
         }
         return '/';
@@ -104,16 +124,48 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Allow onboarding, paywall, and invite routes
       if (isOnOnboarding || isOnPaywall || isOnInvite) return null;
 
+      // Monolith-Execution: Lock user in active workspace if shift is active
+      if (isLoggedIn) {
+        final shiftState = ref.read(activeShiftStateProvider);
+        final isOnActiveWorkspace =
+            state.matchedLocation == '/active-workspace';
+        // Routes that should be accessible FROM the active workspace
+        final isWorkspaceChildRoute =
+            state.matchedLocation.startsWith('/care/') ||
+                state.matchedLocation.startsWith('/participants/');
+
+        if (shiftState.hasActiveShift &&
+            !isOnActiveWorkspace &&
+            !isWorkspaceChildRoute) {
+          return '/active-workspace';
+        }
+      }
+
       // Route guard: check clearance for restricted routes
       if (isLoggedIn) {
+        final hasPortalAccess = ref.read(portalAccessProvider).valueOrNull ?? false;
+        final orgData = ref.read(organizationProvider).valueOrNull;
+
+        if (hasPortalAccess && orgData == null && !isOnPortal) {
+          return '/portal';
+        }
+        if (!hasPortalAccess && isOnPortal) {
+          return '/';
+        }
+
         final path = state.matchedLocation;
+
+        // ── Project Aegis: Role-based route enforcement ──
+        // Use the synchronous currentRoleProvider for immediate decisions.
+        final role = ref.read(currentRoleProvider);
+        final claims = ref.read(currentClaimsProvider);
+
+        // Already on the lock screen — don't redirect again
+        if (path == '/security-lock') return null;
+
+        // Check restricted route prefixes against user's claims
         for (final prefix in restrictedRoutePrefixes) {
           if (path.startsWith(prefix)) {
-            final orgRow = ref.read(organizationProvider).valueOrNull;
-            final roleStr = orgRow?['role'] as String? ?? 'technician';
-            final role = UserRole.fromString(roleStr);
-            final claims = claimsForRole(role);
-
             final requiredClaim = {
               '/finance': Claims.financeView,
               '/admin': Claims.adminView,
@@ -127,9 +179,25 @@ final routerProvider = Provider<GoRouter>((ref) {
             );
 
             if (requiredClaim.value.isNotEmpty && !claims.contains(requiredClaim.value)) {
-              return '/';
+              return '/security-lock';
             }
             break;
+          }
+        }
+
+        // Workers (operator-level) trying to access admin-only full-screen routes
+        if (role.isOperator) {
+          const workerBlockedPrefixes = [
+            '/finance',
+            '/admin',
+            '/fleet',
+            '/overwatch',
+            '/organization',
+          ];
+          for (final blocked in workerBlockedPrefixes) {
+            if (path.startsWith(blocked)) {
+              return '/security-lock';
+            }
           }
         }
       }
@@ -167,6 +235,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             transitionsBuilder: _fadeTransition,
           );
         },
+      ),
+      GoRoute(
+        path: '/portal',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const FamilyPortalScreen(),
+          transitionsBuilder: _fadeTransition,
+        ),
+      ),
+
+      // ── Project Aegis: Security Lock (RBAC denied) ─────────
+      GoRoute(
+        path: '/security-lock',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const SecurityLockScreen(),
+          transitionsBuilder: _fadeTransition,
+        ),
       ),
 
       // ── Deep Link Routes (workspace-scoped, no dock) ───────
@@ -274,10 +360,32 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/schedule',
+            pageBuilder: (context, state) {
+              final isCare = ref.read(isCareProvider);
+              return CustomTransitionPage(
+                child: isCare ? const MyShiftsScreen() : const ScheduleScreen(),
+                transitionsBuilder: _fadeTransition,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/participants',
             pageBuilder: (context, state) => CustomTransitionPage(
-              child: const ScheduleScreen(),
+              child: const ParticipantsScreen(),
               transitionsBuilder: _fadeTransition,
             ),
+            routes: [
+              GoRoute(
+                path: ':participantId',
+                pageBuilder: (context, state) {
+                  final participantId = state.pathParameters['participantId']!;
+                  return CustomTransitionPage(
+                    child: ParticipantProfileScreen(participantId: participantId),
+                    transitionsBuilder: _slideUpTransition,
+                  );
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/jobs',
@@ -348,6 +456,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+
+      // ── Active Workspace (Monolith-Execution: No dock, locked HUD) ─
+      GoRoute(
+        path: '/active-workspace',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const ActiveWorkspaceScreen(),
+          transitionsBuilder: _fadeTransition,
+        ),
       ),
 
       // ── Root Routes (Full-screen, no dock) ─────────────────
@@ -513,10 +631,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/care/medications',
         parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          child: const MedicationsScreen(),
-          transitionsBuilder: _slideUpTransition,
-        ),
+            pageBuilder: (context, state) {
+              final participantId = state.uri.queryParameters['participant_id'];
+              final shiftId = state.uri.queryParameters['shift_id'];
+              return CustomTransitionPage(
+                child: MedicationsScreen(
+                  participantId: participantId,
+                  shiftId: shiftId,
+                ),
+                transitionsBuilder: _slideUpTransition,
+              );
+            },
       ),
       GoRoute(
         path: '/care/incidents',
@@ -540,10 +665,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/care/observations',
         parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          child: const ObservationsScreen(),
-          transitionsBuilder: _slideUpTransition,
-        ),
+            pageBuilder: (context, state) {
+              final participantId = state.uri.queryParameters['participant_id'];
+              return CustomTransitionPage(
+                child: ObservationsScreen(participantId: participantId),
+                transitionsBuilder: _slideUpTransition,
+              );
+            },
       ),
       GoRoute(
         path: '/care/progress-notes',
@@ -575,6 +703,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const BudgetDashboardScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/care/governance/policies',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const PolicyGateScreen(),
           transitionsBuilder: _slideUpTransition,
         ),
       ),
@@ -610,6 +746,51 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/care/shift/:shiftId/travel',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final shiftId = state.pathParameters['shiftId']!;
+          final mode = state.uri.queryParameters['mode'] ?? 'provider';
+          return CustomTransitionPage(
+            child: ShiftTravelScreen(shiftId: shiftId, mode: mode),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/care/shift/:shiftId/wallets',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final shiftId = state.pathParameters['shiftId']!;
+          return CustomTransitionPage(
+            child: ShiftWalletScreen(shiftId: shiftId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/care/shift/:shiftId/routines',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final shiftId = state.pathParameters['shiftId']!;
+          return CustomTransitionPage(
+            child: ShiftRoutinesScreen(shiftId: shiftId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/care/shift/:shiftId/vehicle-checkout',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final shiftId = state.pathParameters['shiftId']!;
+          return CustomTransitionPage(
+            child: FleetCheckoutScreen(shiftId: shiftId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
+      ),
+      GoRoute(
         path: '/care/incidents/new',
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -620,10 +801,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/care/observations/record',
         parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          child: const RecordObservationScreen(),
-          transitionsBuilder: _slideUpTransition,
-        ),
+        pageBuilder: (context, state) {
+          final participantId = state.uri.queryParameters['participant_id'];
+          if (participantId == null || participantId.isEmpty) {
+            return CustomTransitionPage(
+              child: const ObservationsScreen(),
+              transitionsBuilder: _slideUpTransition,
+            );
+          }
+          return CustomTransitionPage(
+            child: RecordObservationScreen(participantId: participantId),
+            transitionsBuilder: _slideUpTransition,
+          );
+        },
       ),
       GoRoute(
         path: '/care/timesheets',
@@ -646,6 +836,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const StealthDemoScreen(),
+          transitionsBuilder: _slideUpTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/notifications',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const NotificationCenterScreen(),
           transitionsBuilder: _slideUpTransition,
         ),
       ),

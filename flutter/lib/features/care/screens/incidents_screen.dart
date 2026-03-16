@@ -187,6 +187,7 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _ReportIncidentSheet(),
@@ -390,31 +391,97 @@ class _ReportIncidentSheetState extends ConsumerState<_ReportIncidentSheet> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _actionsCtrl = TextEditingController();
+  final _witnessCtrl = TextEditingController();
   IncidentCategory _category = IncidentCategory.other;
   IncidentSeverity _severity = IncidentSeverity.medium;
   bool _submitting = false;
+
+  // ── Aegis SIRS Triage Fields ──
+  bool _emergencyServices = false;
+  bool _requiresHospitalization = false;
+  bool _isUnlawfulContact = false;
+  bool _isUnauthorizedRestraint = false;
+  bool _isReportable = false;
 
   @override
   void dispose() {
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _actionsCtrl.dispose();
+    _witnessCtrl.dispose();
     super.dispose();
+  }
+
+  /// Auto-compute reportability from triage answers
+  void _recalcReportable() {
+    setState(() {
+      _isReportable = _emergencyServices ||
+          _requiresHospitalization ||
+          _isUnlawfulContact ||
+          _isUnauthorizedRestraint ||
+          _severity == IncidentSeverity.critical ||
+          _category == IncidentCategory.abuseAllegation;
+    });
   }
 
   Future<void> _submit() async {
     if (_titleCtrl.text.trim().isEmpty || _descCtrl.text.trim().isEmpty) return;
     setState(() => _submitting = true);
+    try {
+      final saved = await createIncident(
+        title: _titleCtrl.text.trim(),
+        description: _descCtrl.text.trim(),
+        category: _category,
+        severity: _severity,
+        immediateActions: _actionsCtrl.text.trim().isNotEmpty
+            ? _actionsCtrl.text.trim()
+            : null,
+        isEmergencyServicesInvolved: _emergencyServices,
+        isReportable: _isReportable,
+        witnessDetails: _witnessCtrl.text.trim().isNotEmpty
+            ? _witnessCtrl.text.trim()
+            : null,
+        incidentPayload: {
+          'requires_hospitalization': _requiresHospitalization,
+          'is_unlawful_contact': _isUnlawfulContact,
+          'is_unauthorized_restrictive_practice': _isUnauthorizedRestraint,
+        },
+      );
+      if (saved == null) {
+        throw StateError('Incident was not saved. Please try again.');
+      }
 
-    await createIncident(
-      title: _titleCtrl.text.trim(),
-      description: _descCtrl.text.trim(),
-      category: _category,
-      severity: _severity,
-      immediateActions: _actionsCtrl.text.trim().isNotEmpty ? _actionsCtrl.text.trim() : null,
-    );
+      ref.invalidate(incidentsStreamProvider);
+      ref.invalidate(incidentStatsProvider);
 
-    if (mounted) Navigator.pop(context);
+      if (mounted) {
+        HapticFeedback.mediumImpact();
+        Navigator.pop(context);
+        final banner = _isReportable
+            ? 'SIRS Reportable incident logged — triage classification in progress'
+            : 'Incident reported successfully';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(banner, style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: _isReportable ? ObsidianTheme.rose : ObsidianTheme.careBlue,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to report incident: $e', style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: ObsidianTheme.rose,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -422,7 +489,7 @@ class _ReportIncidentSheetState extends ConsumerState<_ReportIncidentSheet> {
     final c = context.iColors;
 
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
       decoration: BoxDecoration(
         color: c.canvas,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -435,14 +502,102 @@ class _ReportIncidentSheetState extends ConsumerState<_ReportIncidentSheet> {
           Container(width: 40, height: 4, decoration: BoxDecoration(color: c.borderMedium, borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 16),
           Text('Report Incident', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600, color: c.textPrimary)),
-          const SizedBox(height: 20),
+          const SizedBox(height: 6),
+          Text('SIRS COMPLIANCE INTAKE', style: GoogleFonts.jetBrainsMono(fontSize: 9, fontWeight: FontWeight.w700, color: ObsidianTheme.rose, letterSpacing: 2)),
+          const SizedBox(height: 16),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
+                // ── IMMEDIATE DANGER CHECK ──
+                _SirsToggle(
+                  label: 'Are emergency services (Ambulance/Police) involved?',
+                  value: _emergencyServices,
+                  isUrgent: true,
+                  onChanged: (v) {
+                    _emergencyServices = v;
+                    _recalcReportable();
+                  },
+                ),
+                if (_emergencyServices)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ObsidianTheme.rose.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(PhosphorIconsFill.warning, color: ObsidianTheme.rose, size: 24),
+                        const SizedBox(height: 6),
+                        Text('SIRS PRIORITY 1 — 24hr SLA',
+                            style: GoogleFonts.jetBrainsMono(fontSize: 11, fontWeight: FontWeight.w700, color: ObsidianTheme.rose)),
+                        const SizedBox(height: 4),
+                        Text('This incident will trigger mandatory NDIS notification within 24 hours.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(fontSize: 11, color: c.textSecondary)),
+                      ],
+                    ),
+                  ),
+                _SirsToggle(
+                  label: 'Did the participant require hospitalization?',
+                  value: _requiresHospitalization,
+                  onChanged: (v) {
+                    _requiresHospitalization = v;
+                    _recalcReportable();
+                  },
+                ),
+                _SirsToggle(
+                  label: 'Was there unlawful physical contact or sexual misconduct?',
+                  value: _isUnlawfulContact,
+                  isUrgent: true,
+                  onChanged: (v) {
+                    _isUnlawfulContact = v;
+                    _recalcReportable();
+                  },
+                ),
+                _SirsToggle(
+                  label: 'Was an unauthorized restrictive practice used?',
+                  value: _isUnauthorizedRestraint,
+                  onChanged: (v) {
+                    _isUnauthorizedRestraint = v;
+                    _recalcReportable();
+                  },
+                ),
+
+                // Reportable indicator
+                if (_isReportable)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: ObsidianTheme.rose.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: ObsidianTheme.rose.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(PhosphorIconsFill.shieldWarning, size: 16, color: ObsidianTheme.rose),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text('This incident is NDIS Reportable',
+                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: ObsidianTheme.rose)),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 4),
                 _StealthField(controller: _titleCtrl, label: 'Title', hint: 'Brief description of incident'),
                 const SizedBox(height: 12),
-                _StealthField(controller: _descCtrl, label: 'Description', hint: 'What happened?', maxLines: 4),
+                _StealthField(
+                  controller: _descCtrl,
+                  label: 'Description',
+                  hint: 'Describe the sequence of events objectively. State facts, known injuries, and immediate actions taken.',
+                  maxLines: 4,
+                ),
                 const SizedBox(height: 12),
                 // Category selector
                 Text('Category', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: c.textSecondary)),
@@ -451,7 +606,10 @@ class _ReportIncidentSheetState extends ConsumerState<_ReportIncidentSheet> {
                   spacing: 6,
                   runSpacing: 6,
                   children: IncidentCategory.values.map((cat) => GestureDetector(
-                    onTap: () => setState(() => _category = cat),
+                    onTap: () {
+                      setState(() => _category = cat);
+                      _recalcReportable();
+                    },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
@@ -480,7 +638,10 @@ class _ReportIncidentSheetState extends ConsumerState<_ReportIncidentSheet> {
                     };
                     return Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() => _severity = sev),
+                        onTap: () {
+                          setState(() => _severity = sev);
+                          _recalcReportable();
+                        },
                         child: Container(
                           margin: const EdgeInsets.only(right: 6),
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -500,7 +661,9 @@ class _ReportIncidentSheetState extends ConsumerState<_ReportIncidentSheet> {
                   }).toList(),
                 ),
                 const SizedBox(height: 12),
-                _StealthField(controller: _actionsCtrl, label: 'Immediate Actions Taken', hint: 'What was done right away?', maxLines: 2),
+                _StealthField(controller: _actionsCtrl, label: 'Immediate Actions Taken', hint: 'First aid, police contact, manager notified...', maxLines: 2),
+                const SizedBox(height: 12),
+                _StealthField(controller: _witnessCtrl, label: 'Witnesses', hint: 'Names and contact details of any witnesses', maxLines: 2),
                 const SizedBox(height: 24),
               ],
             ),
@@ -521,11 +684,79 @@ class _ReportIncidentSheetState extends ConsumerState<_ReportIncidentSheet> {
                 ),
                 child: _submitting
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text('Report Incident', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+                    : Text(
+                        _isReportable ? 'Submit SIRS Report' : 'Report Incident',
+                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ── SIRS Triage Toggle ───────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+class _SirsToggle extends StatelessWidget {
+  final String label;
+  final bool value;
+  final bool isUrgent;
+  final ValueChanged<bool> onChanged;
+
+  const _SirsToggle({
+    required this.label,
+    required this.value,
+    this.isUrgent = false,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.iColors;
+    final activeColor = isUrgent ? ObsidianTheme.rose : ObsidianTheme.amber;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: value ? activeColor.withValues(alpha: 0.08) : c.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: value ? activeColor.withValues(alpha: 0.3) : c.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(label, style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary)),
+              ),
+              Container(
+                width: 40,
+                height: 24,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: value ? activeColor : c.borderMedium,
+                ),
+                alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+                padding: const EdgeInsets.all(2),
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

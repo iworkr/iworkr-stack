@@ -86,7 +86,7 @@ export default function IntegrationsPage() {
     [integrations]
   );
   const errorCount = useMemo(
-    () => integrations.filter((i) => i.status === "error").length,
+    () => integrations.filter((i) => i.status === "error" || i.status === "expired").length,
     [integrations]
   );
 

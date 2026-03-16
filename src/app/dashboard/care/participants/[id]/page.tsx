@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Calendar,
   Plus,
+  Wallet,
   MoreHorizontal,
   ExternalLink,
 } from "lucide-react";
@@ -30,6 +31,8 @@ import {
   fetchClinicalTimeline,
   type ParticipantWithBudget,
 } from "@/app/actions/participants";
+import { inviteFamilyPortalMember } from "@/app/actions/portal-family";
+import { getParticipantCoordinationLogsAction } from "@/app/actions/coordination";
 import { formatNDISNumber } from "@/lib/ndis-utils";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -57,6 +60,16 @@ interface BudgetData {
   burn_rate: number;
   days_elapsed: number;
   days_total: number;
+}
+
+interface CoordinationLogEntry {
+  id: string;
+  start_time: string;
+  billable_units: number;
+  activity_type: string;
+  case_note: string;
+  total_charge: number;
+  status: string;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -902,6 +915,41 @@ function ClinicalTimelineBox({ timeline }: { timeline: TimelineEntry[] }) {
   );
 }
 
+function CoordinationLogBox({ logs }: { logs: CoordinationLogEntry[] }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease, delay: 0.35 }}
+      className="col-span-4 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl p-5"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+          Support Coordination Log
+        </h3>
+        <span className="font-mono text-[10px] text-zinc-600">{logs.length} entries</span>
+      </div>
+      <div className="space-y-2">
+        {logs.map((row) => (
+          <div key={row.id} className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[12px] text-zinc-200">
+                {new Date(row.start_time).toLocaleString("en-AU")} · {(row.billable_units * 0.1).toFixed(1)}h · {row.activity_type}
+              </p>
+              <p className="font-mono text-[12px] text-emerald-300">${Number(row.total_charge || 0).toFixed(2)}</p>
+            </div>
+            <p className="mt-1 line-clamp-2 text-[11px] text-zinc-500">{row.case_note}</p>
+          </div>
+        ))}
+        {logs.length === 0 && (
+          <p className="text-[12px] text-zinc-600">No support coordination micro-logs yet.</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    Main Page
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -916,6 +964,7 @@ export default function ParticipantDossierPage() {
   const [participant, setParticipant] = useState<ParticipantWithBudget | null>(null);
   const [budget, setBudget] = useState<BudgetData | null>(null);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [coordinationLogs, setCoordinationLogs] = useState<CoordinationLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -928,10 +977,15 @@ export default function ParticipantDossierPage() {
       setError(null);
 
       try {
-        const [dossier, budgetData, timelineData] = await Promise.all([
+        const [dossier, budgetData, timelineData, coordinationData] = await Promise.all([
           fetchParticipantDossier(participantId, orgId!),
           fetchBudgetTelemetry(participantId, orgId!),
           fetchClinicalTimeline(participantId, orgId!),
+          getParticipantCoordinationLogsAction({
+            organization_id: orgId!,
+            participant_id: participantId,
+            limit: 20,
+          }),
         ]);
 
         if (!dossier) {
@@ -943,6 +997,7 @@ export default function ParticipantDossierPage() {
         setParticipant(dossier);
         setBudget(budgetData);
         setTimeline(timelineData as TimelineEntry[]);
+        setCoordinationLogs((coordinationData || []) as CoordinationLogEntry[]);
       } catch (err) {
         console.error("Failed to load participant dossier:", err);
         setError("Failed to load participant data");
@@ -1047,6 +1102,15 @@ export default function ParticipantDossierPage() {
             <motion.button
               whileTap={{ scale: 0.97 }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[12px] font-medium text-zinc-300 hover:bg-white/[0.08] transition-colors"
+              onClick={() => router.push(`/dashboard/care/participants/${participant.id}/persona`)}
+            >
+              <Shield size={13} />
+              Persona
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[12px] font-medium text-zinc-300 hover:bg-white/[0.08] transition-colors"
             >
               <Plus size={13} />
               Create Shift
@@ -1055,9 +1119,33 @@ export default function ParticipantDossierPage() {
             <motion.button
               whileTap={{ scale: 0.97 }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[12px] font-medium text-zinc-300 hover:bg-white/[0.08] transition-colors"
+              onClick={() => router.push(`/dashboard/care/participants/${participant.id}/finance`)}
             >
-              <Upload size={13} />
-              Upload Document
+              <Wallet size={13} />
+              Wallets & Funds
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[12px] font-medium text-zinc-300 hover:bg-white/[0.08] transition-colors"
+              onClick={async () => {
+                const email = window.prompt("Invite Family Portal member (email)");
+                if (!email || !orgId) return;
+                const result = await inviteFamilyPortalMember({
+                  organization_id: orgId,
+                  participant_id: participant.id,
+                  email: email.trim(),
+                  relationship_type: "primary_guardian",
+                });
+                if (!result.success) {
+                  window.alert(result.error || "Invitation failed.");
+                  return;
+                }
+                window.alert("Invitation sent.");
+              }}
+            >
+              <Users size={13} />
+              Invite to Family Portal
             </motion.button>
 
             <button className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors text-zinc-600 hover:text-zinc-400">
@@ -1092,6 +1180,7 @@ export default function ParticipantDossierPage() {
         <CareNetworkBox participant={participant} />
         <DocumentVaultBox participant={participant} />
         <ClinicalTimelineBox timeline={timeline} />
+        <CoordinationLogBox logs={coordinationLogs} />
       </div>
     </div>
   );

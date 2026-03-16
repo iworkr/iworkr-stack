@@ -1,0 +1,5 @@
+test_runner:
+  flakiness_attempts: 1
+  wait: 2000
+
+app_name: iWorkr

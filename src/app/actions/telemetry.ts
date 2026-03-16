@@ -17,6 +17,65 @@ function err(msg: string) {
   return { data: null, error: msg };
 }
 
+type NormalizedConsoleEntry = {
+  level: string;
+  message: string;
+  timestamp: string;
+};
+
+function normalizeConsoleBuffer(
+  input: unknown,
+  fallbackTimestamp: string,
+): NormalizedConsoleEntry[] {
+  if (!Array.isArray(input)) return [];
+
+  return input
+    .map((entry): NormalizedConsoleEntry => {
+      if (typeof entry === "string") {
+        return {
+          level: "log",
+          message: entry,
+          timestamp: fallbackTimestamp,
+        };
+      }
+
+      if (entry && typeof entry === "object") {
+        const obj = entry as Record<string, unknown>;
+        const level = typeof obj.level === "string" && obj.level.trim().length > 0
+          ? obj.level
+          : "log";
+        const message =
+          typeof obj.message === "string"
+            ? obj.message
+            : JSON.stringify(obj);
+        const timestamp =
+          typeof obj.timestamp === "string" && obj.timestamp.length > 0
+            ? obj.timestamp
+            : fallbackTimestamp;
+        return { level, message, timestamp };
+      }
+
+      return {
+        level: "log",
+        message: String(entry),
+        timestamp: fallbackTimestamp,
+      };
+    })
+    .slice(0, 200);
+}
+
+function normalizeTelemetryRow<T extends Record<string, unknown>>(row: T): T {
+  const fallbackTimestamp =
+    typeof row.event_timestamp === "string" && row.event_timestamp.length > 0
+      ? row.event_timestamp
+      : new Date().toISOString();
+
+  return {
+    ...row,
+    console_buffer: normalizeConsoleBuffer(row.console_buffer, fallbackTimestamp),
+  };
+}
+
 async function verifySuperAdmin() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -156,7 +215,8 @@ export async function listTelemetryEvents(params?: {
     const { data, error, count } = await query;
     if (error) return err(error.message);
 
-    return { data: { rows: data || [], total: count || 0 }, error: null };
+    const rows = (data || []).map((row) => normalizeTelemetryRow(row));
+    return { data: { rows, total: count || 0 }, error: null };
   } catch (e: any) {
     return err(e.message);
   }
@@ -195,13 +255,8 @@ export async function getTelemetryEventDetail(eventId: string) {
       }
     }
 
-    return {
-      data: {
-        ...data,
-        screenshot_url: screenshotUrl,
-      },
-      error: null,
-    };
+    const normalized = normalizeTelemetryRow(data);
+    return { data: { ...normalized, screenshot_url: screenshotUrl }, error: null };
   } catch (e: any) {
     return err(e.message);
   }

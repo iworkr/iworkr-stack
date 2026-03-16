@@ -174,3 +174,5 @@ void criticalOpsTests(IntegrationTestWidgetsFlutterBinding binding) {
     });
   });
 }
+
+void main() {}

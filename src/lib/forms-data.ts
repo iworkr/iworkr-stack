@@ -9,21 +9,41 @@ export type BlockType =
   | "text"
   | "short_text"
   | "long_text"
+  | "number"
   | "date"
+  | "time"
   | "dropdown"
   | "signature"
   | "gps_stamp"
   | "photo_evidence"
   | "risk_matrix"
-  | "checkbox";
+  | "checkbox"
+  | "radio"
+  | "blood_pressure"
+  | "blood_glucose"
+  | "weight"
+  | "mood_slider"
+  | "body_map"
+  | "goal_linker"
+  | "photo_upload";
 
 export interface FormBlock {
   id: string;
   type: BlockType;
   label: string;
   required: boolean;
+  family_visible?: boolean;
   placeholder?: string;
   options?: string[]; // for dropdown
+  validation?: {
+    min?: number;
+    max?: number;
+  };
+  visibility?: {
+    field_id: string;
+    operator: "eq" | "neq" | "contains" | "not_contains";
+    value: string | number | boolean;
+  };
   value?: string;
 }
 

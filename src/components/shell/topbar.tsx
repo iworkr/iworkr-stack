@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
+  Activity,
   ChevronRight,
   Menu,
   Settings,
@@ -17,10 +18,16 @@ import {
   Building2,
   Plus,
   MapPin,
+  AtSign,
+  Clock,
+  Megaphone,
+  Briefcase,
+  DollarSign,
+  CheckCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useShellStore } from "@/lib/shell-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useInboxStore } from "@/lib/inbox-store";
@@ -29,6 +36,9 @@ import { DesktopUpdateIndicator } from "@/lib/desktop/desktop-update-indicator";
 import { translateLabel, type IndustryType } from "@/lib/industry-lexicon";
 import { getBranches, type Branch } from "@/app/actions/branches";
 import { useOrg } from "@/lib/hooks/use-org";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { markAllRead } from "@/app/actions/notifications";
+import { useToastStore } from "@/components/shell/notification-toast";
 
 /* ── Breadcrumbs ─────────────────────────────────────── */
 
@@ -46,6 +56,11 @@ function getBreadcrumbs(pathname: string, branchName: string, industryType: Indu
     schedule: t("Schedule"),
     clients: t("Clients"),
     finance: "Finance",
+    coordination: "Coordination",
+    ledger: "Ledger",
+    sil: "SIL",
+    quoting: "Quoting",
+    variance: "Variance",
     settings: "Settings",
     assets: "Assets",
     forms: "Forms",
@@ -56,6 +71,17 @@ function getBreadcrumbs(pathname: string, branchName: string, industryType: Indu
     crm: t("Sales Pipeline"),
     credentials: "Credentials",
     care: "Care",
+    governance: "Governance",
+    compliance: "Compliance",
+    policies: "Policies",
+    fleet: "Fleet",
+    vehicles: "Vehicles",
+    overview: "Overview",
+    plan: "Plan",
+    reviews: "Reviews",
+    build: "Build",
+    training: "Training",
+    audits: "Audits",
     medications: "Medications",
     incidents: "Incidents",
     observations: "Observations",
@@ -243,6 +269,42 @@ function BranchSelector({
   );
 }
 
+/* ── Notification helpers ────────────────────────────────── */
+
+const NOTIFICATION_TYPE_CONFIG: Record<string, { icon: typeof Bell; color: string }> = {
+  mention:      { icon: AtSign,     color: "text-blue-500 bg-blue-500/10" },
+  nudge:        { icon: Clock,      color: "text-amber-500 bg-amber-500/10" },
+  announcement: { icon: Megaphone,  color: "text-rose-500 bg-rose-500/10" },
+  job_assigned: { icon: Briefcase,  color: "text-emerald-500 bg-emerald-500/10" },
+  invoice_paid: { icon: DollarSign, color: "text-emerald-500 bg-emerald-500/10" },
+  system:       { icon: Bell,       color: "text-zinc-400 bg-zinc-400/10" },
+};
+
+function getNotifIcon(type: string) {
+  return NOTIFICATION_TYPE_CONFIG[type] || NOTIFICATION_TYPE_CONFIG.system;
+}
+
+/** Turn a date string or "2m ago" into a short relative label. */
+function relativeTime(input: string): string {
+  // If it's already a relative string, return it
+  if (/^\d+[smhd]\s?ago$/i.test(input)) return input;
+
+  const date = new Date(input);
+  if (isNaN(date.getTime())) return input;
+
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 /* ── Notifications Popover ──────────────────────────────── */
 
 function NotificationsPopover({
@@ -257,9 +319,14 @@ function NotificationsPopover({
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const items = useInboxStore((s) => s.items);
-  const unreadItems = items.filter((i) => !i.read && !i.archived).slice(0, 4);
+  const addRealtimeItem = useInboxStore((s) => s.addRealtimeItem);
+  const userId = useAuthStore((s) => s.profile?.id);
+  const displayItems = items.filter((i) => !i.archived).slice(0, 5);
   const unreadCount = items.filter((i) => !i.read && !i.archived).length;
+  const [markingAll, setMarkingAll] = useState(false);
+  const addToast = useToastStore((s) => s.addToast);
 
+  // Outside-click handler
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
@@ -267,6 +334,59 @@ function NotificationsPopover({
     if (open) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, onClose]);
+
+  // Realtime subscription
+  const handleNewNotification = useCallback(
+    (payload: { new: Record<string, unknown> }) => {
+      addRealtimeItem(payload);
+      // Trigger a toast for the new notification
+      const n = payload.new;
+      addToast({
+        id: (n.id as string) || crypto.randomUUID(),
+        type: (n.type as string) || "system",
+        title: (n.title as string) || "New notification",
+        body: (n.body as string) || "",
+        action_url: (n.action_url as string) || undefined,
+        created_at: (n.created_at as string) || new Date().toISOString(),
+      });
+    },
+    [addRealtimeItem, addToast],
+  );
+
+  useEffect(() => {
+    if (!userId || !isSupabaseConfigured) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel("notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        handleNewNotification,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, handleNewNotification]);
+
+  const handleMarkAllRead = async () => {
+    setMarkingAll(true);
+    try {
+      await markAllRead();
+      // Optimistic: mark all items as read in local store
+      useInboxStore.setState((s) => ({
+        items: s.items.map((i) => ({ ...i, read: true })),
+      }));
+    } finally {
+      setMarkingAll(false);
+    }
+  };
 
   return (
     <div ref={ref} className="relative">
@@ -277,7 +397,7 @@ function NotificationsPopover({
       >
         <Bell size={14} strokeWidth={1.5} />
         {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[var(--brand)] ring-1 ring-black" />
+          <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 ring-1 ring-black" />
         )}
       </motion.button>
 
@@ -290,16 +410,30 @@ function NotificationsPopover({
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             className="absolute right-0 top-full z-50 mt-1.5 w-80 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
           >
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
-              <span className="text-[12px] font-medium text-zinc-300">Notifications</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] font-medium text-zinc-300">Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="rounded-full bg-emerald-500/12 px-1.5 py-0.5 text-[9px] font-medium text-emerald-500">
+                    {unreadCount} new
+                  </span>
+                )}
+              </div>
               {unreadCount > 0 && (
-                <span className="rounded-full bg-[var(--brand)]/12 px-1.5 py-0.5 text-[9px] font-medium text-[var(--brand)]">
-                  {unreadCount} new
-                </span>
+                <button
+                  onClick={handleMarkAllRead}
+                  disabled={markingAll}
+                  className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300 disabled:opacity-50"
+                >
+                  <CheckCheck size={10} />
+                  Mark all read
+                </button>
               )}
             </div>
 
-            {unreadItems.length === 0 ? (
+            {/* Items list */}
+            {displayItems.length === 0 ? (
               <div className="flex flex-col items-center py-10">
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
@@ -313,34 +447,202 @@ function NotificationsPopover({
                 <p className="mt-0.5 text-[10px] text-zinc-700">You&apos;re all caught up.</p>
               </div>
             ) : (
-              <div className="max-h-[300px] divide-y divide-white/[0.04] overflow-y-auto">
-                {unreadItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => { onClose(); router.push("/dashboard/inbox"); }}
-                    className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.03]"
-                  >
-                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand)]" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="truncate text-[11px] font-medium text-zinc-300">{item.sender}</span>
-                        <span className="shrink-0 text-[9px] text-zinc-700">{item.time}</span>
+              <div className="max-h-[320px] divide-y divide-white/[0.04] overflow-y-auto">
+                {displayItems.map((item) => {
+                  const isUnread = !item.read;
+                  const config = getNotifIcon(item.type);
+                  const Icon = config.icon;
+                  const [iconText, iconBg] = config.color.split(" ");
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        onClose();
+                        router.push("/dashboard/inbox");
+                      }}
+                      className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04] ${
+                        isUnread ? "bg-white/[0.03]" : ""
+                      }`}
+                    >
+                      {/* Icon */}
+                      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${iconBg}`}>
+                        <Icon size={13} className={iconText} />
                       </div>
-                      <p className="truncate text-[10px] text-zinc-600">{item.body}</p>
-                    </div>
-                  </button>
-                ))}
+                      {/* Content */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5 truncate text-[11px] font-medium text-zinc-300">
+                            {isUnread && (
+                              <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                            )}
+                            {item.sender}
+                          </span>
+                          <span className="shrink-0 text-[9px] text-zinc-600">
+                            {relativeTime(item.time)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-[10px] text-zinc-500">{item.body}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
+            {/* Footer — View all */}
             <div className="border-t border-white/[0.06] p-2">
-              <button
-                onClick={() => { onClose(); router.push("/dashboard/inbox"); }}
-                className="w-full rounded-md py-1.5 text-center text-[11px] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
+              <Link
+                href="/dashboard/inbox"
+                onClick={onClose}
+                className="flex w-full items-center justify-center gap-1.5 rounded-md py-1.5 text-center text-[11px] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
               >
-                View all notifications
-              </button>
+                View all
+                <ChevronRight size={10} />
+              </Link>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ── Sync Radar Popover ─────────────────────────────────────── */
+
+type SyncRadarLog = {
+  id: string;
+  integration_name: string;
+  entity_type: string;
+  status: string;
+  error_message: string | null;
+  created_at: string | null;
+};
+
+function SyncRadarPopover({
+  open,
+  orgId,
+  onToggle,
+  onClose,
+}: {
+  open: boolean;
+  orgId: string | null;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [logs, setLogs] = useState<SyncRadarLog[]>([]);
+  const [activeCount, setActiveCount] = useState(0);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!orgId) return;
+    let mounted = true;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/integrations/sync-radar?orgId=${orgId}&limit=12`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!mounted) return;
+        setLogs(Array.isArray(data.logs) ? data.logs : []);
+        setActiveCount(Number(data.activeCount || 0));
+      } catch {
+        // Ignore transient polling failures.
+      }
+    };
+
+    load();
+    timer = setInterval(load, 12000);
+    return () => {
+      mounted = false;
+      if (timer) clearInterval(timer);
+    };
+  }, [orgId]);
+
+  return (
+    <div ref={ref} className="relative">
+      <motion.button
+        whileTap={{ scale: 0.96 }}
+        onClick={onToggle}
+        className="relative flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
+        aria-label="Open sync radar"
+      >
+        <Activity size={14} strokeWidth={1.7} className={activeCount > 0 ? "text-[var(--brand)]" : ""} />
+        {activeCount > 0 && (
+          <>
+            <span className="absolute inset-0 animate-ping rounded-md border border-[var(--brand)]/50" />
+            <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--brand)] ring-1 ring-black" />
+          </>
+        )}
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: -4 }}
+            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute right-0 top-full z-50 mt-1.5 w-[22rem] overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
+          >
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
+              <span className="text-[12px] font-medium text-zinc-300">Sync Radar</span>
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
+                  activeCount > 0 ? "bg-[var(--brand)]/12 text-[var(--brand)]" : "bg-white/[0.06] text-zinc-500"
+                }`}
+              >
+                {activeCount > 0 ? `${activeCount} active` : "Idle"}
+              </span>
+            </div>
+
+            {logs.length === 0 ? (
+              <div className="flex flex-col items-center py-10">
+                <Activity size={16} className="mb-2 text-zinc-700" />
+                <p className="text-[12px] text-zinc-500">No recent sync activity</p>
+                <p className="mt-0.5 text-[10px] text-zinc-700">Events appear here as providers sync.</p>
+              </div>
+            ) : (
+              <div className="max-h-[300px] divide-y divide-white/[0.04] overflow-y-auto">
+                {logs.map((log) => {
+                  const statusClass =
+                    log.status === "success"
+                      ? "text-emerald-400"
+                      : log.status === "pending"
+                        ? "text-amber-400"
+                        : "text-red-400";
+                  return (
+                    <div key={log.id} className="flex items-start gap-2.5 px-4 py-2.5">
+                      <div className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${statusClass.replace("text-", "bg-")}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-[11px] font-medium text-zinc-300">
+                            {log.integration_name} · {log.entity_type}
+                          </span>
+                          <span className={`shrink-0 text-[9px] font-medium uppercase ${statusClass}`}>
+                            {log.status}
+                          </span>
+                        </div>
+                        <p className="truncate text-[10px] text-zinc-600">
+                          {log.error_message || "Sync completed"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -470,10 +772,12 @@ export function Topbar() {
   const pathname = usePathname();
   const { setMobileSidebarOpen } = useShellStore();
   const { currentOrg } = useAuthStore();
+  const { orgId } = useOrg();
   const industryType = ((currentOrg as Record<string, unknown> | null)?.industry_type === "care" ? "care" : "trades") as IndustryType;
   const breadcrumbs = getBreadcrumbs(pathname, "", industryType);
 
   const [branchOpen, setBranchOpen] = useState(false);
+  const [radarOpen, setRadarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -518,7 +822,7 @@ export function Topbar() {
       </nav>
 
       {/* Desktop update indicator */}
-      {typeof window !== "undefined" && (window as any).iworkr && (
+      {typeof window !== "undefined" && "iworkr" in window && (
         <DesktopUpdateIndicator />
       )}
 
@@ -527,11 +831,24 @@ export function Topbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-1">
+        <SyncRadarPopover
+          open={radarOpen}
+          orgId={orgId}
+          onToggle={() => {
+            setBranchOpen(false);
+            setNotifOpen(false);
+            setProfileOpen(false);
+            setRadarOpen((p) => !p);
+          }}
+          onClose={() => setRadarOpen(false)}
+        />
+
         {/* Notification Bell */}
         <NotificationsPopover
           open={notifOpen}
           onToggle={() => {
             setBranchOpen(false);
+            setRadarOpen(false);
             setProfileOpen(false);
             setNotifOpen((p) => !p);
           }}
@@ -543,6 +860,7 @@ export function Topbar() {
           open={profileOpen}
           onToggle={() => {
             setBranchOpen(false);
+            setRadarOpen(false);
             setNotifOpen(false);
             setProfileOpen((p) => !p);
           }}

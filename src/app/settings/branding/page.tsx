@@ -30,6 +30,10 @@ import {
   createCustomDomain,
   verifyCustomDomain,
   removeCustomDomain,
+  updateAppName,
+  updateAccentColor,
+  updateAppIcon,
+  triggerEnterpriseBuild,
 } from "@/app/actions/branding";
 import { createClient } from "@/lib/supabase/client";
 
@@ -83,6 +87,13 @@ export default function BrandingPage() {
   const [verifying, setVerifying] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [previewMode, setPreviewMode] = useState<"dark" | "light">("dark");
+  const [appName, setAppName] = useState("");
+  const [accentInput, setAccentInput] = useState("#3B82F6");
+  const [savingAppName, setSavingAppName] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [buildTriggered, setBuildTriggered] = useState(false);
+  const [buildStatus, setBuildStatus] = useState<string>("none");
+  const appIconRef = useRef<HTMLInputElement>(null);
 
   const lightLogoRef = useRef<HTMLInputElement>(null);
   const darkLogoRef = useRef<HTMLInputElement>(null);
@@ -98,7 +109,10 @@ export default function BrandingPage() {
     if (branding?.primary_color_hex) {
       setColorInput(branding.primary_color_hex);
     }
-  }, [branding?.primary_color_hex]);
+    if (branding?.app_name) setAppName(branding.app_name);
+    if (branding?.accent_color_hex) setAccentInput(branding.accent_color_hex);
+    if (branding?.build_status) setBuildStatus(branding.build_status);
+  }, [branding?.primary_color_hex, branding?.app_name, branding?.accent_color_hex, branding?.build_status]);
 
   // Debounced color save
   const handleColorChange = useCallback(
@@ -535,7 +549,332 @@ export default function BrandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════ */}
-      {/* ─── Section 4: Custom Email Domain ─── */}
+      {/* ─── Section 4: App Identity & Enterprise ─── */}
+      {/* ═══════════════════════════════════════════════════ */}
+
+        {/* ── App Name & Identity ──────────────────────────────── */}
+        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[var(--brand)]" />
+            <h2 className="text-[14px] font-semibold text-zinc-100">App Identity</h2>
+            <span className="ml-auto rounded border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-300">Enterprise</span>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-[11px] text-zinc-500">App Name (max 15 characters)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  maxLength={15}
+                  value={appName}
+                  onChange={(e) => setAppName(e.target.value)}
+                  placeholder="iWorkr"
+                  className="flex-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[13px] text-zinc-200 outline-none focus:border-[var(--brand)]/40"
+                />
+                <button
+                  disabled={savingAppName || !orgId}
+                  onClick={async () => {
+                    if (!orgId) return;
+                    setSavingAppName(true);
+                    const r = await updateAppName(orgId, appName);
+                    setSavingAppName(false);
+                    if (r.error) addToast(r.error);
+                    else addToast("App name updated");
+                  }}
+                  className="rounded-lg bg-white/[0.06] px-3 py-2 text-[12px] text-zinc-300 hover:bg-white/[0.1]"
+                >
+                  {savingAppName ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                </button>
+              </div>
+              <p className="mt-1 text-[10px] text-zinc-600">{appName.length}/15 characters</p>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[11px] text-zinc-500">Accent Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={accentInput}
+                  onChange={(e) => {
+                    setAccentInput(e.target.value);
+                    if (orgId && isValidHex(e.target.value)) {
+                      updateAccentColor(orgId, e.target.value);
+                    }
+                  }}
+                  className="h-9 w-9 cursor-pointer rounded-lg border border-white/[0.1] bg-transparent"
+                />
+                <input
+                  type="text"
+                  value={accentInput}
+                  onChange={(e) => setAccentInput(e.target.value)}
+                  onBlur={() => {
+                    if (orgId && isValidHex(accentInput)) {
+                      updateAccentColor(orgId, accentInput);
+                    }
+                  }}
+                  className="w-28 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 font-mono text-[12px] text-zinc-300 outline-none"
+                />
+                <div className="h-6 w-6 rounded-full" style={{ backgroundColor: accentInput }} />
+              </div>
+            </div>
+          </div>
+
+          {/* App Icon Upload */}
+          <div className="mt-4">
+            <label className="mb-1 block text-[11px] text-zinc-500">App Icon (1024×1024 PNG, no transparency)</label>
+            <input
+              ref={appIconRef}
+              type="file"
+              accept="image/png"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !orgId) return;
+
+                // Validate dimensions and transparency
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = async () => {
+                  if (img.width !== 1024 || img.height !== 1024) {
+                    addToast("App icon must be exactly 1024×1024 pixels");
+                    URL.revokeObjectURL(url);
+                    return;
+                  }
+
+                  // Check transparency via canvas
+                  const canvas = document.createElement("canvas");
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  const ctx = canvas.getContext("2d")!;
+                  ctx.drawImage(img, 0, 0);
+                  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                  let hasTransparency = false;
+                  for (let i = 3; i < imageData.data.length; i += 4) {
+                    if (imageData.data[i] < 255) { hasTransparency = true; break; }
+                  }
+
+                  if (hasTransparency) {
+                    addToast("iOS App Icons cannot contain transparency. Please upload a solid image.");
+                    URL.revokeObjectURL(url);
+                    return;
+                  }
+
+                  URL.revokeObjectURL(url);
+
+                  // Upload to storage
+                  setUploadingIcon(true);
+                  const supabase = createClient();
+                  const ext = file.name.split(".").pop();
+                  const path = `${orgId}/app-icon.${ext}`;
+                  const { error: uploadErr } = await supabase.storage
+                    .from("brand-assets")
+                    .upload(path, file, { upsert: true, contentType: file.type });
+
+                  if (uploadErr) {
+                    addToast(uploadErr.message);
+                    setUploadingIcon(false);
+                    return;
+                  }
+
+                  const { data: urlData } = supabase.storage.from("brand-assets").getPublicUrl(path);
+                  const result = await updateAppIcon(orgId, urlData.publicUrl);
+                  setUploadingIcon(false);
+
+                  if (result.error) addToast(result.error);
+                  else {
+                    addToast("App icon uploaded");
+                    forceRefresh(orgId);
+                  }
+                };
+                img.src = url;
+              }}
+            />
+            <div className="flex items-center gap-3">
+              {branding?.app_icon_url ? (
+                <img src={branding.app_icon_url} alt="App icon" className="h-16 w-16 rounded-2xl border border-white/[0.08]" />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.02]">
+                  <ImageIcon className="h-5 w-5 text-zinc-600" />
+                </div>
+              )}
+              <button
+                onClick={() => appIconRef.current?.click()}
+                disabled={uploadingIcon}
+                className="rounded-lg bg-white/[0.06] px-4 py-2 text-[12px] text-zinc-300 hover:bg-white/[0.1]"
+              >
+                {uploadingIcon ? <Loader2 className="h-3 w-3 animate-spin" /> : "Upload App Icon"}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Mobile Device Mockup (Live Preview) ──────────────── */}
+        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Eye className="h-4 w-4 text-[var(--brand)]" />
+            <h2 className="text-[14px] font-semibold text-zinc-100">Mobile Preview</h2>
+          </div>
+          <div className="flex justify-center">
+            <div className="relative w-[280px] overflow-hidden rounded-[36px] border-[3px] border-zinc-700 bg-black p-1">
+              {/* Status bar */}
+              <div className="flex items-center justify-between rounded-t-[32px] bg-[#0A0A0A] px-5 py-2">
+                <span className="text-[10px] text-zinc-400">9:41</span>
+                <div className="mx-auto h-5 w-20 rounded-full bg-zinc-900" />
+                <span className="text-[10px] text-zinc-400">100%</span>
+              </div>
+              {/* App Header */}
+              <div className="flex items-center gap-2 bg-[#0A0A0A] px-4 py-3">
+                {branding?.logo_dark_url ? (
+                  <img src={branding.logo_dark_url} alt="" className="h-6 max-w-[120px] object-contain" />
+                ) : (
+                  <span className="font-mono text-[13px] font-bold" style={{ color: colorInput }}>{appName || "iWorkr"}</span>
+                )}
+              </div>
+              {/* Body */}
+              <div className="space-y-2 bg-[#0A0A0A] px-4 pb-3">
+                <div className="rounded-lg bg-zinc-900 p-3">
+                  <p className="text-[10px] text-zinc-500">Active Shift</p>
+                  <p className="text-[12px] text-zinc-200">Morning Support — 06:00 to 14:00</p>
+                  <div className="mt-2 h-1 rounded-full bg-zinc-800">
+                    <div className="h-full w-3/4 rounded-full" style={{ backgroundColor: colorInput }} />
+                  </div>
+                </div>
+                <button className="w-full rounded-lg py-2.5 text-center text-[12px] font-semibold" style={{ backgroundColor: colorInput, color: getContrastYIQ(colorInput) }}>
+                  Clock In
+                </button>
+                <button className="w-full rounded-lg border py-2 text-center text-[11px]" style={{ borderColor: colorInput, color: colorInput }}>
+                  View Schedule
+                </button>
+                <div className="flex gap-1">
+                  <span className="rounded px-2 py-0.5 text-[9px] font-medium" style={{ backgroundColor: colorInput + "20", color: colorInput }}>Active</span>
+                  <span className="rounded bg-zinc-800 px-2 py-0.5 text-[9px] text-zinc-400">Pending</span>
+                  <span className="rounded bg-zinc-800 px-2 py-0.5 text-[9px] text-zinc-400">Complete</span>
+                </div>
+              </div>
+              {/* Bottom Nav */}
+              <div className="flex items-center justify-around border-t border-zinc-800 bg-[#0A0A0A] py-2 rounded-b-[32px]">
+                <div className="flex flex-col items-center">
+                  <div className="h-4 w-4 rounded" style={{ backgroundColor: colorInput }} />
+                  <span className="mt-0.5 text-[8px]" style={{ color: colorInput }}>Home</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="h-4 w-4 rounded bg-zinc-700" />
+                  <span className="mt-0.5 text-[8px] text-zinc-600">Jobs</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="h-4 w-4 rounded bg-zinc-700" />
+                  <span className="mt-0.5 text-[8px] text-zinc-600">Schedule</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="h-4 w-4 rounded bg-zinc-700" />
+                  <span className="mt-0.5 text-[8px] text-zinc-600">Profile</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p className="mt-3 text-center text-[10px] text-zinc-600">Colors update in real-time as you adjust the picker above</p>
+        </section>
+
+        {/* ── Enterprise Build Factory ─────────────────────────── */}
+        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-amber-400" />
+            <h2 className="text-[14px] font-semibold text-zinc-100">Enterprise Build Factory</h2>
+            <span className="ml-auto rounded border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-300">Enterprise Only</span>
+          </div>
+          <p className="mb-4 text-[12px] text-zinc-500">
+            Generate a fully white-labeled iOS and Android app with your brand name, icon, and colors.
+            The build is compiled in the cloud and submitted directly to the App Store and Google Play.
+          </p>
+
+          {buildStatus === "none" && (
+            <button
+              disabled={buildTriggered || !orgId || !branding?.app_name || !branding?.app_icon_url}
+              onClick={async () => {
+                if (!orgId) return;
+                setBuildTriggered(true);
+                const r = await triggerEnterpriseBuild(orgId);
+                if (r.error) { addToast(r.error); setBuildTriggered(false); }
+                else { setBuildStatus("queued"); addToast("Build queued — your custom app is being compiled"); forceRefresh(orgId); }
+              }}
+              className="rounded-lg bg-amber-500/20 px-6 py-2.5 text-[13px] font-medium text-amber-200 hover:bg-amber-500/30 disabled:opacity-40"
+            >
+              🚀 Generate Custom App
+            </button>
+          )}
+
+          {buildStatus === "queued" && (
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+                <span className="text-[13px] text-amber-200">Build queued — waiting for cloud runner...</span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+                <div className="h-full w-1/6 animate-pulse rounded-full bg-amber-400" />
+              </div>
+            </div>
+          )}
+
+          {buildStatus === "building" && (
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                <span className="text-[13px] text-blue-200">Compiling your custom app...</span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+                <div className="h-full w-1/2 rounded-full bg-blue-400 transition-all duration-1000" />
+              </div>
+              <p className="mt-1 text-[10px] text-zinc-600">Building iOS (.ipa) and Android (.aab) binaries</p>
+            </div>
+          )}
+
+          {buildStatus === "awaiting_store_review" && (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                <span className="text-[13px] text-emerald-200">App submitted — awaiting store review</span>
+              </div>
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Your app has been successfully built and submitted. Apple and Google are currently reviewing
+                the binaries. This typically takes 24–48 hours.
+              </p>
+            </div>
+          )}
+
+          {buildStatus === "deployed" && (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                <span className="text-[13px] text-emerald-200">Your custom app is live! 🎉</span>
+              </div>
+              {branding?.enterprise_bundle_id && (
+                <p className="mt-1 font-mono text-[10px] text-zinc-500">Bundle: {branding.enterprise_bundle_id}</p>
+              )}
+            </div>
+          )}
+
+          {buildStatus === "failed" && (
+            <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-rose-400" />
+                <span className="text-[13px] text-rose-200">Build failed</span>
+              </div>
+              <button
+                onClick={() => { setBuildStatus("none"); setBuildTriggered(false); }}
+                className="mt-2 rounded bg-rose-500/20 px-3 py-1 text-[11px] text-rose-200"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!branding?.app_name && (
+            <p className="mt-2 text-[10px] text-zinc-600">⚠ Set an App Name and upload an App Icon above before generating.</p>
+          )}
+        </section>
+
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* ─── Section 5: Custom Email Domain ─── */}
       {/* ═══════════════════════════════════════════════════ */}
       <section className="mb-10">
         <div className="flex items-center gap-2 mb-1">

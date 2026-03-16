@@ -32,6 +32,7 @@ class JobsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.iColors;
     final t = ref.watch(labelTranslatorProvider);
+    final isCare = ref.watch(isCareProvider);
     final jobsAsync = ref.watch(jobsStreamProvider);
     final filter = ref.watch(jobFilterProvider);
 
@@ -98,10 +99,10 @@ class JobsScreen extends ConsumerWidget {
                 children: [
                   _FilterPill(label: 'All', isActive: filter == null, onTap: () => ref.read(jobFilterProvider.notifier).state = null),
                   _FilterPill(label: 'Active', isActive: filter == JobStatus.inProgress, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.inProgress),
-                  _FilterPill(label: 'Scheduled', isActive: filter == JobStatus.scheduled, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.scheduled),
+                  _FilterPill(label: isCare ? 'Upcoming' : 'Scheduled', isActive: filter == JobStatus.scheduled, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.scheduled),
                   _FilterPill(label: 'To Do', isActive: filter == JobStatus.todo, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.todo),
                   _FilterPill(label: 'Done', isActive: filter == JobStatus.done, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.done),
-                  _FilterPill(label: 'Invoiced', isActive: filter == JobStatus.invoiced, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.invoiced),
+                  _FilterPill(label: isCare ? 'Processed' : 'Invoiced', isActive: filter == JobStatus.invoiced, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.invoiced),
                   _FilterPill(label: 'Draft', isActive: filter == JobStatus.backlog, onTap: () => ref.read(jobFilterProvider.notifier).state = JobStatus.backlog),
                 ],
               ),

@@ -26,6 +26,7 @@ export async function GET() {
       macArmUrl: `${SUPABASE_STORAGE_URL}/mac/iWorkr-${version}-arm64.dmg`,
       macIntelUrl: `${SUPABASE_STORAGE_URL}/mac/iWorkr-${version}-x64.dmg`,
       winUrl: `${SUPABASE_STORAGE_URL}/win/iWorkr-Setup-${version}.exe`,
+      linuxUrl: `${SUPABASE_STORAGE_URL}/linux/iWorkr-${version}.AppImage`,
     });
   } catch {
     return NextResponse.json(getFallbackVersion(), { status: 200 });
@@ -45,5 +46,6 @@ function getFallbackVersion() {
     macArmUrl: `${SUPABASE_STORAGE_URL}/mac/iWorkr-1.0.0-arm64.dmg`,
     macIntelUrl: `${SUPABASE_STORAGE_URL}/mac/iWorkr-1.0.0-x64.dmg`,
     winUrl: `${SUPABASE_STORAGE_URL}/win/iWorkr-Setup-1.0.0.exe`,
+    linuxUrl: `${SUPABASE_STORAGE_URL}/linux/iWorkr-1.0.0.AppImage`,
   };
 }

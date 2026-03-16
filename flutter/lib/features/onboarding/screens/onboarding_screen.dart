@@ -163,7 +163,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Setup failed: $e',
-              style: GoogleFonts.inter(color: Colors.white)),
+              style: GoogleFonts.inter(color: context.iColors.canvas)),
           backgroundColor: ObsidianTheme.rose,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -387,6 +387,7 @@ class _BottomCTA extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.iColors;
     final accent = isCare ? ObsidianTheme.blue : ObsidianTheme.emerald;
 
     return Padding(
@@ -406,10 +407,10 @@ class _BottomCTA extends StatelessWidget {
           ),
           child: Center(
             child: submitting
-                ? const SizedBox(
+                ? SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                    child: CircularProgressIndicator(strokeWidth: 2.5, color: c.canvas),
                   )
                 : Row(
                     mainAxisSize: MainAxisSize.min,
@@ -419,7 +420,7 @@ class _BottomCTA extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: canProceed ? Colors.black : accent.withValues(alpha: 0.4),
+                          color: canProceed ? c.canvas : accent.withValues(alpha: 0.4),
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -428,7 +429,7 @@ class _BottomCTA extends StatelessWidget {
                         Icon(
                           PhosphorIconsLight.arrowRight,
                           size: 16,
-                          color: canProceed ? Colors.black : accent.withValues(alpha: 0.3),
+                          color: canProceed ? c.canvas : accent.withValues(alpha: 0.3),
                         ),
                       ],
                       if (isLastStep) ...[
@@ -436,7 +437,7 @@ class _BottomCTA extends StatelessWidget {
                         Icon(
                           PhosphorIconsLight.rocketLaunch,
                           size: 18,
-                          color: canProceed ? Colors.black : accent.withValues(alpha: 0.3),
+                          color: canProceed ? c.canvas : accent.withValues(alpha: 0.3),
                         ),
                       ],
                     ],
@@ -721,13 +722,13 @@ class _StepRole extends StatelessWidget {
   }
 
   static final _tradesRoles = [
-    _RoleData('owner', 'Owner', 'I run the business', PhosphorIconsLight.crown, 'FULL ACCESS', const Color(0xFFA78BFA)),
+    _RoleData('owner', 'Owner', 'I run the business', PhosphorIconsLight.crown, 'FULL ACCESS', ObsidianTheme.violet),
     _RoleData('dispatcher', 'Dispatcher', 'I manage the team and schedule', PhosphorIconsLight.headset, 'DISPATCH', ObsidianTheme.amber),
     _RoleData('technician', 'Technician', 'I work in the field', PhosphorIconsLight.wrench, 'OPERATOR', ObsidianTheme.emerald),
   ];
 
   static final _careRoles = [
-    _RoleData('owner', 'Provider Owner', 'I run the care organisation', PhosphorIconsLight.crown, 'FULL ACCESS', const Color(0xFFA78BFA)),
+    _RoleData('owner', 'Provider Owner', 'I run the care organisation', PhosphorIconsLight.crown, 'FULL ACCESS', ObsidianTheme.violet),
     _RoleData('coordinator', 'Care Coordinator', 'I manage rosters and participants', PhosphorIconsLight.headset, 'COORDINATION', ObsidianTheme.blue),
     _RoleData('support_worker', 'Support Worker', 'I deliver direct support', PhosphorIconsLight.heartbeat, 'FIELD', ObsidianTheme.emerald),
   ];

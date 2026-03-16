@@ -2,7 +2,7 @@
 
 export type MemberStatus = "active" | "pending" | "suspended" | "archived";
 export type OnlineStatus = "online" | "idle" | "offline";
-export type RoleId = "owner" | "manager" | "senior_tech" | "technician" | "apprentice" | "subcontractor" | "office_admin";
+export type RoleId = "owner" | "admin" | "manager" | "senior_tech" | "technician" | "apprentice" | "subcontractor" | "office_admin";
 
 export interface Skill {
   id: string;
@@ -102,6 +102,24 @@ export const roleDefinitions: RoleDefinition[] = [
       team: ["view", "create", "edit", "delete", "export"],
       settings: ["view", "create", "edit", "delete", "export"],
       integrations: ["view", "create", "edit", "delete", "export"],
+    },
+    scopes: { jobVisibility: "all", invoiceApproval: true, canManageTeam: true },
+  },
+  {
+    id: "admin",
+    label: "Admin",
+    description: "Full operational access. Can manage settings, team, and integrations.",
+    color: "admin",
+    permissions: {
+      jobs: ["view", "create", "edit", "delete", "export"],
+      clients: ["view", "create", "edit", "delete", "export"],
+      finance: ["view", "create", "edit", "delete", "export"],
+      schedule: ["view", "create", "edit", "delete", "export"],
+      assets: ["view", "create", "edit", "delete", "export"],
+      forms: ["view", "create", "edit", "delete", "export"],
+      team: ["view", "create", "edit", "delete"],
+      settings: ["view", "create", "edit", "delete"],
+      integrations: ["view", "create", "edit", "delete"],
     },
     scopes: { jobVisibility: "all", invoiceApproval: true, canManageTeam: true },
   },

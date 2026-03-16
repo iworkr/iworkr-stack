@@ -36,6 +36,7 @@ class CollectPaymentSheet extends ConsumerStatefulWidget {
   }) {
     return showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       isDismissible: false,

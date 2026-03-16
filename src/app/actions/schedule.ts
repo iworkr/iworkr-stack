@@ -22,6 +22,8 @@ const UpdateScheduleBlockSchema = z.object({
   is_conflict: z.boolean().optional(),
   notes: z.string().max(2000).optional().nullable(),
   metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+  requires_transport: z.boolean().optional(),
+  estimated_transport_km: z.number().min(0).max(2000).optional().nullable(),
 });
 
 export interface ScheduleBlock {
@@ -88,6 +90,8 @@ export interface CreateScheduleBlockParams {
   travel_minutes?: number | null;
   notes?: string | null;
   metadata?: Record<string, any> | null;
+  requires_transport?: boolean;
+  estimated_transport_km?: number | null;
 }
 
 export interface UpdateScheduleBlockParams {
@@ -103,6 +107,46 @@ export interface UpdateScheduleBlockParams {
   is_conflict?: boolean;
   notes?: string | null;
   metadata?: Record<string, any> | null;
+  requires_transport?: boolean;
+  estimated_transport_km?: number | null;
+}
+
+async function validateTransportCredentials(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  orgId: string,
+  technicianId: string,
+): Promise<{ ok: boolean; reason?: string }> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: credentials, error } = await (supabase as any)
+    .from("worker_credentials")
+    .select("credential_type, credential_name, verification_status, expiry_date")
+    .eq("organization_id", orgId)
+    .eq("user_id", technicianId);
+  if (error) return { ok: false, reason: error.message };
+
+  const rows = credentials || [];
+  const hasValidDriversLicense = rows.some((c: any) =>
+    c.credential_type === "DRIVERS_LICENSE" &&
+    c.verification_status === "verified" &&
+    (!c.expiry_date || c.expiry_date >= today),
+  );
+
+  const hasValidInsurance = rows.some((c: any) =>
+    c.verification_status === "verified" &&
+    (!c.expiry_date || c.expiry_date >= today) &&
+    (
+      (c.credential_type === "OTHER" && typeof c.credential_name === "string" && c.credential_name.toLowerCase().includes("insurance")) ||
+      (c.credential_type === "OTHER" && typeof c.credential_name === "string" && c.credential_name.toLowerCase().includes("vehicle"))
+    ),
+  );
+
+  if (!hasValidDriversLicense) {
+    return { ok: false, reason: "Cannot assign transport shift: worker driver's license is missing, unverified, or expired." };
+  }
+  if (!hasValidInsurance) {
+    return { ok: false, reason: "Cannot assign transport shift: worker vehicle insurance is missing, unverified, or expired." };
+  }
+  return { ok: true };
 }
 
 /**
@@ -197,6 +241,17 @@ export async function createScheduleBlock(params: CreateScheduleBlockParams) {
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
+    if (params.requires_transport && params.technician_id) {
+      const credentialCheck = await validateTransportCredentials(
+        supabase,
+        params.organization_id,
+        params.technician_id,
+      );
+      if (!credentialCheck.ok) {
+        return { data: null, error: credentialCheck.reason || "Transport credential validation failed" };
+      }
+    }
+
     // Check for conflicts if technician is assigned
     if (params.technician_id) {
       const { data: conflictingBlocks, error: conflictError } = await supabase
@@ -228,6 +283,8 @@ export async function createScheduleBlock(params: CreateScheduleBlockParams) {
           is_conflict: true,
           notes: params.notes || null,
           metadata: params.metadata || null,
+          requires_transport: params.requires_transport || false,
+          estimated_transport_km: params.estimated_transport_km || null,
         };
 
         const { data: block, error: insertError } = await supabase
@@ -260,6 +317,8 @@ export async function createScheduleBlock(params: CreateScheduleBlockParams) {
       is_conflict: false,
       notes: params.notes || null,
       metadata: params.metadata || null,
+      requires_transport: params.requires_transport || false,
+      estimated_transport_km: params.estimated_transport_km || null,
     };
 
     const { data: block, error: insertError } = await supabase
@@ -321,6 +380,18 @@ export async function updateScheduleBlock(blockId: string, updates: UpdateSchedu
     const startTime = updates.start_time || currentBlock.start_time;
     const endTime = updates.end_time || currentBlock.end_time;
     const technicianId = updates.technician_id !== undefined ? updates.technician_id : currentBlock.technician_id;
+    const requiresTransport = updates.requires_transport === true;
+
+    if (requiresTransport && technicianId) {
+      const credentialCheck = await validateTransportCredentials(
+        supabase,
+        currentBlock.organization_id,
+        technicianId,
+      );
+      if (!credentialCheck.ok) {
+        return { data: null, error: credentialCheck.reason || "Transport credential validation failed" };
+      }
+    }
 
     let isConflict = updates.is_conflict;
     if (technicianId && (updates.start_time || updates.end_time || updates.technician_id !== undefined)) {
@@ -355,6 +426,8 @@ export async function updateScheduleBlock(blockId: string, updates: UpdateSchedu
     else if (isConflict !== undefined) updateData.is_conflict = isConflict;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
     if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
+    if (updates.requires_transport !== undefined) updateData.requires_transport = updates.requires_transport;
+    if (updates.estimated_transport_km !== undefined) updateData.estimated_transport_km = updates.estimated_transport_km;
 
     updateData.updated_at = new Date().toISOString();
 

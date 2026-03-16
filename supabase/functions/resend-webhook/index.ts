@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -52,6 +53,30 @@ function extractTag(tags: { name: string; value: string }[] | undefined, tagName
   return tag?.value ?? null;
 }
 
+const ResendWebhookSchema = z.object({
+  type: z.enum([
+    "email.sent",
+    "email.delivered",
+    "email.bounced",
+    "email.complained",
+    "email.opened",
+  ]),
+  created_at: z.string().datetime().optional(),
+  data: z.object({
+    email_id: z.string().optional(),
+    to: z.array(z.string().email()).optional(),
+    tags: z
+      .array(
+        z.object({
+          name: z.string(),
+          value: z.string(),
+        }),
+      )
+      .optional(),
+    reason: z.string().optional(),
+  }),
+});
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(req) });
@@ -62,6 +87,39 @@ Deno.serve(async (req: Request) => {
   }
 
   const body = await req.text();
+  let parsedBody: unknown = {};
+  try {
+    parsedBody = body ? JSON.parse(body) : {};
+  } catch {
+    return new Response(
+      JSON.stringify({
+        error: "Malformed Payload",
+        details: [{ message: "Request body must be valid JSON" }],
+      }),
+      {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      },
+    );
+  }
+
+  const validation = ResendWebhookSchema.safeParse(parsedBody);
+  if (!validation.success) {
+    return new Response(
+      JSON.stringify({
+        error: "Malformed Payload",
+        details: validation.error.issues.map((issue) => ({
+          path: issue.path,
+          message: issue.message,
+          code: issue.code,
+        })),
+      }),
+      {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      },
+    );
+  }
 
   if (!RESEND_WEBHOOK_SECRET) {
     console.error("RESEND_WEBHOOK_SECRET is not set");
@@ -99,15 +157,7 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  let webhook: { type: string; data: { email_id?: string; to?: string[]; tags?: { name: string; value: string }[] } };
-  try {
-    webhook = JSON.parse(body);
-  } catch {
-    return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-    });
-  }
+  const webhook = validation.data;
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
@@ -176,6 +226,7 @@ Deno.serve(async (req: Request) => {
       default:
         console.log(`Unhandled Resend event: ${type}`);
     }
+  // FIXME: MEDIUM — No DLQ routing. Failed Resend webhook payloads should be routed to webhook_dead_letters.
   } catch (err) {
     console.error(`Resend webhook error [${type}]:`, err);
   }

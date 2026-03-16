@@ -47,6 +47,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Enforce lint baseline (no regressions)
+        run: npm run lint:baseline
+
       - name: Build Next.js app
         run: npm run build
 

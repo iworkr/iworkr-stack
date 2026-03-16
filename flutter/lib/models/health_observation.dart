@@ -4,11 +4,17 @@ class HealthObservation {
   final String id;
   final String organizationId;
   final String participantId;
-  final String recordedBy;
+  final String workerId;
+  final String? shiftId;
   final ObservationType observationType;
-  final Map<String, dynamic> values;
+  final double? valueNumeric;
+  final String? valueText;
+  final int? valueSystolic;
+  final int? valueDiastolic;
+  final String? unit;
+  final bool isAbnormal;
   final String? notes;
-  final DateTime recordedAt;
+  final DateTime observedAt;
   final DateTime createdAt;
   // Joined
   final String? recorderName;
@@ -18,61 +24,85 @@ class HealthObservation {
     required this.id,
     required this.organizationId,
     required this.participantId,
-    required this.recordedBy,
+    required this.workerId,
+    this.shiftId,
     required this.observationType,
-    required this.values,
+    this.valueNumeric,
+    this.valueText,
+    this.valueSystolic,
+    this.valueDiastolic,
+    this.unit,
+    this.isAbnormal = false,
     this.notes,
-    required this.recordedAt,
+    required this.observedAt,
     required this.createdAt,
     this.recorderName,
     this.participantName,
   });
 
+  // FIXME: MEDIUM — organizationId, participantId, workerId use hard 'as String' cast. Will crash on null JSON. Use '?.toString() ?? ""'.
   factory HealthObservation.fromJson(Map<String, dynamic> json) {
-    final profile = json['profiles'] as Map<String, dynamic>?;
+    final profile = (json['worker'] ?? json['profiles']) as Map<String, dynamic>?;
     return HealthObservation(
       id: json['id'] as String,
       organizationId: json['organization_id'] as String,
       participantId: json['participant_id'] as String,
-      recordedBy: json['recorded_by'] as String,
+      workerId: json['worker_id'] as String,
+      shiftId: json['shift_id'] as String?,
       observationType: ObservationType.fromString(json['observation_type'] as String? ?? 'general'),
-      values: (json['values'] as Map<String, dynamic>?) ?? {},
+      valueNumeric: (json['value_numeric'] as num?)?.toDouble(),
+      valueText: json['value_text'] as String?,
+      valueSystolic: json['value_systolic'] as int?,
+      valueDiastolic: json['value_diastolic'] as int?,
+      unit: json['unit'] as String?,
+      isAbnormal: json['is_abnormal'] as bool? ?? false,
       notes: json['notes'] as String?,
-      recordedAt: DateTime.parse(json['recorded_at'] as String),
+      observedAt: DateTime.parse(json['observed_at'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       recorderName: profile?['full_name'] as String?,
     );
   }
 
+  // Backward compatibility aliases for existing UI code paths.
+  String get recordedBy => workerId;
+  DateTime get recordedAt => observedAt;
+  Map<String, dynamic> get values => <String, dynamic>{
+        if (valueNumeric != null) 'numeric': valueNumeric,
+        if (valueText != null) 'text': valueText,
+        if (valueSystolic != null) 'systolic': valueSystolic,
+        if (valueDiastolic != null) 'diastolic': valueDiastolic,
+        if (unit != null) 'unit': unit,
+      };
+
   /// Extract a formatted value string for display
   String get displayValue {
     switch (observationType) {
       case ObservationType.bloodPressure:
-        return '${values['systolic'] ?? '--'}/${values['diastolic'] ?? '--'} mmHg';
+        return '${valueSystolic ?? '--'}/${valueDiastolic ?? '--'} ${unit ?? 'mmHg'}';
       case ObservationType.heartRate:
-        return '${values['bpm'] ?? '--'} BPM';
+        return '${valueNumeric?.toStringAsFixed(0) ?? '--'} ${unit ?? 'BPM'}';
       case ObservationType.temperature:
-        return '${values['celsius'] ?? '--'}°C';
+        return '${valueNumeric?.toStringAsFixed(1) ?? '--'}${unit ?? '°C'}';
       case ObservationType.bloodGlucose:
-        return '${values['mmol'] ?? '--'} mmol/L';
+        return '${valueNumeric?.toStringAsFixed(1) ?? '--'} ${unit ?? 'mmol/L'}';
       case ObservationType.oxygenSaturation:
-        return '${values['spo2'] ?? '--'}%';
+        return '${valueNumeric?.toStringAsFixed(0) ?? '--'}${unit ?? '%'}';
       case ObservationType.weight:
-        return '${values['kg'] ?? '--'} kg';
+        return '${valueNumeric?.toStringAsFixed(1) ?? '--'} ${unit ?? 'kg'}';
       case ObservationType.painLevel:
-        return '${values['level'] ?? '--'}/10';
+        return '${valueNumeric?.toStringAsFixed(0) ?? '--'}/10';
       case ObservationType.moodRating:
-        return '${values['rating'] ?? '--'}/5';
+        return '${valueNumeric?.toStringAsFixed(0) ?? '--'}/5';
       case ObservationType.fluidIntake:
-        return '${values['ml'] ?? '--'} ml';
+        return '${valueNumeric?.toStringAsFixed(0) ?? '--'} ${unit ?? 'ml'}';
       case ObservationType.bowelMovement:
-        return '${values['type'] ?? '--'} (Bristol Scale)';
+        return valueText ?? '--';
       case ObservationType.sleepQuality:
-        return '${values['hours'] ?? '--'} hrs';
+        return '${valueNumeric?.toStringAsFixed(1) ?? '--'} ${unit ?? 'hrs'}';
       case ObservationType.respiration:
-        return '${values['rate'] ?? '--'} breaths/min';
+        return '${valueNumeric?.toStringAsFixed(0) ?? '--'} ${unit ?? 'breaths/min'}';
       case ObservationType.general:
-        return values['summary'] as String? ?? '--';
+        return valueText ?? '--';
     }
   }
 }

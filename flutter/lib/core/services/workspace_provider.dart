@@ -125,12 +125,21 @@ class ActiveWorkspaceNotifier extends StateNotifier<String?> {
 
   Future<void> _loadPersistedWorkspace() async {
     try {
-      final stored = await _storage.read(key: _kActiveWorkspaceKey);
-      if (stored != null && stored.isNotEmpty) {
-        state = stored;
-        return;
-      }
       final workspaces = await ref.read(allWorkspacesProvider.future);
+      final stored = await _storage.read(key: _kActiveWorkspaceKey);
+
+      // Validate that the persisted workspace belongs to the current user
+      if (stored != null && stored.isNotEmpty) {
+        final valid = workspaces.any((w) => w.organizationId == stored);
+        if (valid) {
+          state = stored;
+          return;
+        }
+        // Persisted workspace is stale (different user) — clear it
+        await _storage.delete(key: _kActiveWorkspaceKey);
+      }
+
+      // Fall back to the user's first workspace
       if (workspaces.isNotEmpty) {
         state = workspaces.first.organizationId;
         await _storage.write(

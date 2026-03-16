@@ -11,6 +11,9 @@ import { z } from "zod";
 const notificationTypeSchema = z.enum([
   "job_assigned", "quote_approved", "mention", "system",
   "review", "invoice_paid", "schedule_conflict", "form_signed", "team_invite",
+  "job_cancelled", "job_rescheduled", "message_received", "compliance_warning",
+  "nudge_clock_in", "nudge_clock_out", "announcement",
+  "shift_assigned", "shift_rescheduled", "chat_reply", "chat_mention",
 ]);
 
 const CreateNotificationSchema = z.object({
@@ -39,19 +42,23 @@ export interface Notification {
   id: string;
   organization_id: string;
   user_id: string;
-  type: "job_assigned" | "quote_approved" | "mention" | "system" | "review" | "invoice_paid" | "schedule_conflict" | "form_signed" | "team_invite";
+  type: string;
   title: string;
   body: string | null;
   sender_id: string | null;
   sender_name: string | null;
   context: string | null;
   read: boolean;
+  read_at: string | null;
   archived: boolean;
   snoozed_until: string | null;
   related_job_id: string | null;
   related_client_id: string | null;
   related_entity_type: string | null;
   related_entity_id: string | null;
+  action_url: string | null;
+  action_link: string | null;
+  priority: "low" | "normal" | "high" | "urgent" | null;
   metadata: Record<string, any> | null;
   created_at: string;
 }
@@ -314,7 +321,7 @@ export async function createNotification(params: CreateNotificationParams) {
       .insert({
         organization_id: params.organization_id,
         user_id: params.user_id,
-        type: params.type,
+        type: params.type as any,
         title: params.title,
         body: params.body || null,
         sender_id: params.sender_id || null,
@@ -328,7 +335,7 @@ export async function createNotification(params: CreateNotificationParams) {
         read: false,
         archived: false,
         snoozed_until: null,
-      })
+      } as any)
       .select()
       .single();
 
@@ -398,5 +405,204 @@ export async function getUnreadCount() {
     return { data: count || 0, error: null };
   } catch (error: any) {
     return { data: null, error: error.message || "Failed to get unread count" };
+  }
+}
+
+/* ── Notification Preferences ────────────────────────── */
+
+export interface NotificationPreferences {
+  id?: string;
+  user_id?: string;
+  email_enabled: boolean;
+  push_enabled: boolean;
+  sms_enabled: boolean;
+  in_app_enabled: boolean;
+  quiet_hours_start: string | null; // e.g. "22:00"
+  quiet_hours_end: string | null;   // e.g. "07:00"
+  muted_types: string[];            // notification types to mute
+}
+
+const UpdatePreferencesSchema = z.object({
+  email_enabled: z.boolean().optional(),
+  push_enabled: z.boolean().optional(),
+  sms_enabled: z.boolean().optional(),
+  in_app_enabled: z.boolean().optional(),
+  quiet_hours_start: z.string().max(10).nullable().optional(),
+  quiet_hours_end: z.string().max(10).nullable().optional(),
+  muted_types: z.array(z.string()).optional(),
+});
+
+export async function getNotificationPreferences() {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await (supabase as any)
+      .from("user_notification_preferences")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      logger.error("Failed to fetch notification preferences", "notifications", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    // Return defaults if no row exists yet
+    if (!data) {
+      return {
+        data: {
+          email_enabled: true,
+          push_enabled: true,
+          sms_enabled: false,
+          in_app_enabled: true,
+          quiet_hours_start: null,
+          quiet_hours_end: null,
+          muted_types: [],
+        } as NotificationPreferences,
+        error: null,
+      };
+    }
+
+    return { data: data as NotificationPreferences, error: null };
+  } catch (error: any) {
+    logger.error("Notification preferences error", "notifications", error);
+    return { data: null, error: error.message || "Failed to fetch preferences" };
+  }
+}
+
+export async function updateNotificationPreferences(prefs: Partial<NotificationPreferences>) {
+  try {
+    const parsed = UpdatePreferencesSchema.safeParse(prefs);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await (supabase as any)
+      .from("user_notification_preferences")
+      .upsert(
+        {
+          user_id: user.id,
+          ...parsed.data,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      )
+      .select()
+      .single();
+
+    if (error) {
+      logger.error("Failed to update notification preferences", "notifications", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    return { data: data as NotificationPreferences, error: null };
+  } catch (error: any) {
+    logger.error("Update preferences error", "notifications", error);
+    return { data: null, error: error.message || "Failed to update preferences" };
+  }
+}
+
+/* ── Device Registration ─────────────────────────────── */
+
+const RegisterDeviceSchema = z.object({
+  fcm_token: z.string().min(1, "FCM token is required"),
+  device_type: z.enum(["web", "ios", "android"]),
+  app_version: z.string().max(50).optional(),
+  device_name: z.string().max(200).optional(),
+});
+
+export async function registerDevice(params: {
+  fcm_token: string;
+  device_type: "web" | "ios" | "android";
+  app_version?: string;
+  device_name?: string;
+}) {
+  try {
+    const parsed = RegisterDeviceSchema.safeParse(params);
+    if (!parsed.success) {
+      return { data: null, error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    const { data, error } = await (supabase as any)
+      .from("user_devices")
+      .upsert(
+        {
+          user_id: user.id,
+          fcm_token: parsed.data.fcm_token,
+          device_type: parsed.data.device_type,
+          app_version: parsed.data.app_version || null,
+          device_name: parsed.data.device_name || null,
+          is_active: true,
+          last_active_at: new Date().toISOString(),
+        },
+        { onConflict: "fcm_token" },
+      )
+      .select()
+      .single();
+
+    if (error) {
+      logger.error("Device registration error", "notifications", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (error: any) {
+    logger.error("Register device error", "notifications", error);
+    return { data: null, error: error.message || "Failed to register device" };
+  }
+}
+
+/* ── Broadcast Announcement ──────────────────────────── */
+
+export async function broadcastAnnouncement(orgId: string, title: string, body: string) {
+  try {
+    if (!orgId || !title) {
+      return { data: null, error: "Organization ID and title are required" };
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Not authenticated" };
+
+    // Verify org membership + admin role
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!membership) return { data: null, error: "Unauthorized" };
+    if (!["owner", "admin"].includes(membership.role)) {
+      return { data: null, error: "Only admins can broadcast announcements" };
+    }
+
+    // Call the broadcast_announcement RPC
+    const { data, error } = await (supabase as any).rpc("broadcast_announcement", {
+      p_organization_id: orgId,
+      p_title: title,
+      p_body: body,
+    });
+
+    if (error) {
+      logger.error("Broadcast announcement error", "notifications", undefined, { error: error.message });
+      return { data: null, error: error.message };
+    }
+
+    revalidatePath(INBOX_PATH);
+    return { data: data || { success: true }, error: null };
+  } catch (error: any) {
+    logger.error("Broadcast error", "notifications", error);
+    return { data: null, error: error.message || "Failed to broadcast announcement" };
   }
 }

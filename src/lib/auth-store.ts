@@ -175,3 +175,26 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// ── Project Aegis: Role Selectors ────────────────────────────
+// Prefer membership role (authoritative, from DB).
+// Fall back to JWT app_metadata.role for edge/middleware parity.
+
+/** Returns the user's resolved role string. Safe to call outside React. */
+export function getUserRole(): string {
+  const state = useAuthStore.getState();
+  const membershipRole = state.currentMembership?.role as string | undefined;
+  if (membershipRole) return membershipRole;
+  const jwtRole = state.user?.app_metadata?.role as string | undefined;
+  return jwtRole ?? "technician";
+}
+
+/** React hook selector — use inside components: `useUserRole()` */
+export function useUserRole(): string {
+  return useAuthStore((s) => {
+    const membershipRole = s.currentMembership?.role as string | undefined;
+    if (membershipRole) return membershipRole;
+    const jwtRole = s.user?.app_metadata?.role as string | undefined;
+    return jwtRole ?? "technician";
+  });
+}

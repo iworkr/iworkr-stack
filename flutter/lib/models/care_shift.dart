@@ -26,6 +26,8 @@ class CareShift {
   final String? generatedFromTemplateId;
   final bool isShortNoticeCancellation;
   final String? cancellationReason;
+  final bool isShadowShift;
+  final String? parentShiftId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -55,10 +57,13 @@ class CareShift {
     this.generatedFromTemplateId,
     this.isShortNoticeCancellation = false,
     this.cancellationReason,
+    this.isShadowShift = false,
+    this.parentShiftId,
     required this.createdAt,
     required this.updatedAt,
   });
 
+  // FIXME: MEDIUM — scheduledStart/scheduledEnd fallback chain is fragile. If both 'scheduled_start' AND 'start_time' are null, 'as String' throws.
   factory CareShift.fromJson(Map<String, dynamic> json) {
     // Handle joined participant data
     final participant = json['participant_profiles'] as Map<String, dynamic>?;
@@ -102,6 +107,8 @@ class CareShift {
       generatedFromTemplateId: json['generated_from_template_id'] as String?,
       isShortNoticeCancellation: json['is_short_notice_cancellation'] as bool? ?? false,
       cancellationReason: json['cancellation_reason'] as String?,
+      isShadowShift: json['is_shadow_shift'] as bool? ?? metadata['is_shadow_shift'] as bool? ?? false,
+      parentShiftId: json['parent_shift_id'] as String? ?? metadata['parent_shift_id'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String? ?? json['created_at'] as String),
     );
@@ -119,9 +126,10 @@ class CareShift {
 
   bool get isToday {
     final now = DateTime.now();
-    return scheduledStart.year == now.year &&
-        scheduledStart.month == now.month &&
-        scheduledStart.day == now.day;
+    final local = scheduledStart.toLocal();
+    return local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
   }
 
   bool get isPast => scheduledEnd.isBefore(DateTime.now());

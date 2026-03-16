@@ -158,3 +158,5 @@ void navigationTests(IntegrationTestWidgetsFlutterBinding binding) {
     });
   });
 }
+
+void main() {}

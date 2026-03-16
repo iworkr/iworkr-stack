@@ -15,11 +15,12 @@ import 'package:iworkr_mobile/core/widgets/stealth_text_field.dart';
 import 'package:iworkr_mobile/core/widgets/stealth_toast.dart';
 import 'package:iworkr_mobile/models/job.dart';
 
-/// Shows the "New Job" modal sheet from any screen.
+/// Shows the "Log Unscheduled Support" modal sheet from any screen.
 Future<void> showCreateJobSheet(BuildContext context) {
   HapticFeedback.mediumImpact();
   return showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => const _CreateJobSheet(),
@@ -108,7 +109,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
   Future<void> _createJob() async {
     if (!_isValid) {
       HapticFeedback.heavyImpact();
-      setState(() => _error = 'Job title is required');
+      setState(() => _error = 'Support title is required');
       return;
     }
 
@@ -209,7 +210,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                 child: Row(
                   children: [
                     Text(
-                      'New Job',
+                      'Log Unscheduled Support',
                       style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary, letterSpacing: -0.3),
                     ),
                     const Spacer(),
@@ -239,11 +240,11 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     children: [
                       // ── Client Lookup ──────────────────────
-                      _buildSectionLabel('CLIENT / LOCATION', c),
+                      _buildSectionLabel('PARTICIPANT / LOCATION', c),
                       const SizedBox(height: 8),
                       StealthTextField(
-                        label: 'Client',
-                        hintText: 'Search client name...',
+                        label: 'Participant',
+                        hintText: 'Search participant name...',
                         controller: _clientController,
                         prefixIcon: PhosphorIconsLight.magnifyingGlass,
                         onChanged: _searchClients,
@@ -262,17 +263,17 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
                       const SizedBox(height: 24),
 
-                      // ── Job Definition ─────────────────────
-                      _buildSectionLabel('JOB DEFINITION', c),
+                      // ── Support Definition ─────────────────
+                      _buildSectionLabel('SUPPORT DEFINITION', c),
                       const SizedBox(height: 8),
                       _buildTemplateChips(c),
                       const SizedBox(height: 10),
                       StealthTextField(
-                        label: 'Job Title',
+                        label: 'Support Title',
                         controller: _titleController,
                         prefixIcon: PhosphorIconsLight.briefcase,
                         errorText: _error != null && _titleController.text.trim().isEmpty
-                            ? 'Job title is required'
+                            ? 'Support title is required'
                             : null,
                         onChanged: (_) {
                           if (_error != null) setState(() => _error = null);
@@ -391,8 +392,8 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                 children: [
                   Icon(PhosphorIconsLight.plus, size: 14, color: ObsidianTheme.emerald),
                   const SizedBox(width: 10),
-                  Text(
-                    'Create "${_clientController.text}" as new client',
+                    Text(
+                    'Create "${_clientController.text}" as participant',
                     style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.emerald),
                   ),
                 ],
@@ -408,11 +409,11 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
 
   Widget _buildTemplateChips(IWorkrColors c) {
     const templates = [
-      ('Service', 'General Service', JobPriority.medium),
-      ('Install', 'New Installation', JobPriority.medium),
-      ('Urgent', 'Urgent Repair', JobPriority.urgent),
-      ('Quote', 'Site Inspection & Quote', JobPriority.low),
-      ('Callout', 'Emergency Callout', JobPriority.high),
+      ('Community Access', 'Community Access Support', JobPriority.medium),
+      ('Personal Care', 'Personal Care Visit', JobPriority.high),
+      ('In-Home Support', 'In-Home Support Shift', JobPriority.medium),
+      ('SIL', 'Supported Independent Living', JobPriority.medium),
+      ('Transport', 'Participant Transport Support', JobPriority.low),
     ];
 
     return SizedBox(
@@ -746,7 +747,7 @@ class _CreateJobSheetState extends ConsumerState<_CreateJobSheet> {
                       child: CircularProgressIndicator(strokeWidth: 1.5, color: ObsidianTheme.emerald),
                     )
                   : Text(
-                      _isValid ? 'Create Job' : 'Enter job title to continue',
+                      _isValid ? 'Submit Support Entry' : 'Enter support title to continue',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
