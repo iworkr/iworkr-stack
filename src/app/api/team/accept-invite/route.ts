@@ -4,56 +4,101 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 /**
  * POST /api/team/accept-invite
- * Accepts an invite: adds user to org, marks invite as accepted.
- * Requires authenticated user.
+ *
+ * Accepts an invite: optionally updates profile, adds user to org, marks invite accepted.
+ * Uses service role for all writes (no RLS issues).
+ *
+ * Body: { token: string, full_name?: string, phone?: string }
  */
 export async function POST(req: NextRequest) {
   try {
-    const { token } = await req.json();
+    const body = await req.json();
+    const { token, full_name, phone } = body;
 
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
     }
 
-    // Get authenticated user
+    // ── 1. Get authenticated user from cookies ───────────
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "You must be signed in to accept an invitation. Please create an account first." }, { status: 401 });
     }
 
-    // Service role for writes
+    // ── 2. Service role client for all writes ────────────
     const serviceClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Fetch invite
+    // ── 3. Fetch and validate invite ─────────────────────
     const { data: invite, error: fetchErr } = await serviceClient
       .from("organization_invites")
       .select("*")
       .eq("token", token)
-      .eq("status", "pending")
       .maybeSingle();
 
     if (fetchErr || !invite) {
-      return NextResponse.json({ error: "Invite not found or already used" }, { status: 404 });
+      return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
+    }
+
+    if (invite.status === "accepted") {
+      // Already accepted — just redirect, don't error
+      return NextResponse.json({
+        success: true,
+        already_accepted: true,
+        organization_id: invite.organization_id,
+      });
+    }
+
+    if (invite.status !== "pending") {
+      return NextResponse.json({ error: `This invitation is ${invite.status}` }, { status: 400 });
     }
 
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
       return NextResponse.json({ error: "This invitation has expired" }, { status: 410 });
     }
 
-    // Check if already a member
-    const { data: existing } = await serviceClient
+    // ── 4. Update profile if provided ────────────────────
+    if (full_name) {
+      await serviceClient
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          email: user.email || invite.email,
+          full_name: full_name,
+          phone: phone || null,
+          onboarding_completed: true,
+        }, { onConflict: "id" });
+    } else {
+      // Ensure profile exists at minimum
+      const { data: existing } = await serviceClient
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!existing) {
+        await serviceClient
+          .from("profiles")
+          .insert({
+            id: user.id,
+            email: user.email || invite.email,
+          });
+      }
+    }
+
+    // ── 5. Check if already a member ─────────────────────
+    const { data: existingMember } = await serviceClient
       .from("organization_members")
-      .select("user_id")
+      .select("user_id, status")
       .eq("organization_id", invite.organization_id)
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (existing) {
-      // Mark invite as accepted anyway
+    if (existingMember) {
+      // Already a member — mark invite accepted, return success
       await serviceClient
         .from("organization_invites")
         .update({ status: "accepted" })
@@ -66,7 +111,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Add user as organization member
+    // ── 6. Add user as organization member ───────────────
     const { error: insertErr } = await serviceClient
       .from("organization_members")
       .insert({
@@ -80,24 +125,16 @@ export async function POST(req: NextRequest) {
 
     if (insertErr) {
       console.error("[accept-invite] member insert error:", insertErr.message);
-      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+      return NextResponse.json({ error: "Failed to add you to the team: " + insertErr.message }, { status: 500 });
     }
 
-    // Mark invite as accepted
+    // ── 7. Mark invite as accepted ───────────────────────
     await serviceClient
       .from("organization_invites")
       .update({ status: "accepted" })
       .eq("id", invite.id);
 
-    // Ensure profile exists
-    await serviceClient
-      .from("profiles")
-      .upsert({
-        id: user.id,
-        email: user.email || invite.email,
-      }, { onConflict: "id" });
-
-    // Audit log (non-fatal)
+    // ── 8. Audit log (non-fatal) ─────────────────────────
     try {
       await serviceClient.from("audit_log").insert({
         organization_id: invite.organization_id,
@@ -105,11 +142,11 @@ export async function POST(req: NextRequest) {
         action: "member.joined",
         entity_type: "organization_member",
         entity_id: user.id,
-        new_data: { role: invite.role, via: "invite_accept" },
+        new_data: { role: invite.role, via: "invite_accept", full_name: full_name || null },
       });
     } catch { /* non-fatal */ }
 
-    // Get org info for response
+    // ── 9. Get org info for response ─────────────────────
     const { data: org } = await serviceClient
       .from("organizations")
       .select("name, slug")

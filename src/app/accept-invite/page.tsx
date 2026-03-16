@@ -2,12 +2,20 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
-import { Lock, CheckCircle, AlertTriangle, Loader2, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { Lock, CheckCircle, AlertTriangle, Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════
 // ── Accept Invite — Obsidian Onboarding Flow ─────────────
 // ═══════════════════════════════════════════════════════════
+
+interface InviteData {
+  email: string;
+  role: string;
+  organization_name: string;
+  organization_id: string;
+  inviter_name: string;
+}
 
 function AcceptInviteContent() {
   const router = useRouter();
@@ -15,13 +23,8 @@ function AcceptInviteContent() {
   const token = searchParams.get("token");
   const supabase = createClient();
 
-  const [step, setStep] = useState<"loading" | "auth" | "profile" | "success" | "error">("loading");
-  const [inviteData, setInviteData] = useState<{
-    email: string;
-    role: string;
-    organization_name: string;
-    inviter_name: string;
-  } | null>(null);
+  const [step, setStep] = useState<"loading" | "auth" | "profile" | "accepting" | "success" | "error">("loading");
+  const [inviteData, setInviteData] = useState<InviteData | null>(null);
   const [error, setError] = useState("");
 
   // Auth fields
@@ -34,6 +37,7 @@ function AcceptInviteContent() {
   const [phone, setPhone] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const hasAutoAccepted = useRef(false);
 
   // Password requirements
   const hasLength = password.length >= 8;
@@ -52,9 +56,9 @@ function AcceptInviteContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // ── Step 1: Validate the invite token ──────────────────
   async function validateToken() {
     try {
-      // Validate via API route (service role, no RPC dependency)
       const res = await fetch("/api/team/validate-invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,19 +72,30 @@ function AcceptInviteContent() {
         return;
       }
 
-      setInviteData({
-        email: result.email!,
-        role: result.role!,
-        organization_name: result.organization_name!,
+      const invite: InviteData = {
+        email: result.email,
+        role: result.role,
+        organization_name: result.organization_name,
+        organization_id: result.organization_id,
         inviter_name: result.inviter_name || "Your team",
-      });
+      };
+      setInviteData(invite);
 
-      // Check if user is already authenticated
+      // Check if the INVITED user is already authenticated
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Already logged in — go straight to accepting
-        await acceptInvite();
+      if (user && user.email?.toLowerCase() === invite.email.toLowerCase()) {
+        // Already logged in as the invited user — skip to profile/accept
+        if (!hasAutoAccepted.current) {
+          hasAutoAccepted.current = true;
+          setStep("accepting");
+          await acceptInviteForUser(invite);
+        }
+      } else if (user && user.email?.toLowerCase() !== invite.email.toLowerCase()) {
+        // Logged in as DIFFERENT user (e.g. admin viewing the link)
+        // Show auth step — they need to sign in as the invited email
+        setStep("auth");
       } else {
+        // Not logged in — show create account / sign in
         setStep("auth");
       }
     } catch {
@@ -89,21 +104,25 @@ function AcceptInviteContent() {
     }
   }
 
+  // ── Step 2: Create account or sign in ──────────────────
   async function handleCreateAccount() {
     if (!passwordValid || !inviteData) return;
     setSubmitting(true);
+    setError("");
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      // Try sign up first
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: inviteData.email,
         password,
         options: {
           data: { invited: true, invite_token: token },
+          emailRedirectTo: `${window.location.origin}/accept-invite?token=${token}`,
         },
       });
 
       if (signUpError) {
-        if (signUpError.message.includes("already registered")) {
+        if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
           // User exists — sign in instead
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email: inviteData.email,
@@ -115,40 +134,63 @@ function AcceptInviteContent() {
         }
       }
 
-      setStep("profile");
-    } catch (err) {
-      setError((err as Error).message);
+      // Check if signup requires email confirmation (user might not be fully authed yet)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // User is authenticated — go to profile step
+        setStep("profile");
+      } else if (signUpData?.user && !signUpData.session) {
+        // SignUp succeeded but no session = email confirmation required
+        // For invited users, auto-confirm by signing in if possible
+        // This handles the case where Supabase requires email verification
+        setError("Account created! Please check your email to verify, then come back to this page.");
+        setStep("error");
+      } else {
+        setStep("profile");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to create account");
     } finally {
       setSubmitting(false);
     }
   }
 
+  // ── Step 3: Complete profile + accept ──────────────────
   async function handleProfileComplete() {
-    if (!fullName.trim()) return;
+    if (!fullName.trim() || !inviteData) return;
     setSubmitting(true);
+    setError("");
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Update profile
-      await supabase.from("profiles").upsert({
-        id: user.id,
-        email: user.email ?? "",
-        full_name: fullName.trim(),
-        phone: phone.trim() || null,
+      // Use the API route to update profile + accept invite in one go
+      // This uses service role so RLS doesn't block it
+      const res = await fetch("/api/team/accept-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          full_name: fullName.trim(),
+          phone: phone.trim() || null,
+        }),
       });
 
-      await acceptInvite();
-    } catch (err) {
-      setError((err as Error).message);
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Failed to join team");
+      }
+
+      setStep("success");
+      setTimeout(() => router.push("/dashboard"), 2500);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
       setSubmitting(false);
     }
   }
 
-  async function acceptInvite() {
+  // ── Auto-accept for already-authenticated invited user ─
+  async function acceptInviteForUser(invite: InviteData) {
     try {
-      // Accept via API route (uses server-side auth + service role)
       const res = await fetch("/api/team/accept-invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -160,27 +202,25 @@ function AcceptInviteContent() {
       if (!res.ok) throw new Error(result.error || "Failed to accept invite");
 
       setStep("success");
-      setTimeout(() => router.push("/dashboard"), 2000);
-    } catch (err) {
-      setError((err as Error).message);
+      setTimeout(() => router.push("/dashboard"), 2500);
+    } catch (err: any) {
+      setError(err.message || "Failed to accept invitation");
       setStep("error");
     }
   }
 
   return (
     <div className="relative min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
-      {/* Noise — standardized */}
       <div className="stealth-noise fixed" />
 
-      {/* Atmospheric glow */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-[var(--brand)] opacity-[0.025] blur-[180px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        {/* ── Glass Modal ────────────────────────────── */}
         <div className="bg-[var(--surface-1)] border border-[var(--border-base)] rounded-2xl p-8 shadow-2xl">
 
+          {/* ── Loading ───────────────────────────────── */}
           {step === "loading" && (
             <div className="flex flex-col items-center gap-4 py-8">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
@@ -188,14 +228,15 @@ function AcceptInviteContent() {
             </div>
           )}
 
+          {/* ── Error ─────────────────────────────────── */}
           {step === "error" && (
             <div className="flex flex-col items-center gap-4 py-6">
               <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
                 <Lock className="w-6 h-6 text-rose-500" />
               </div>
-              <h2 className="text-lg font-semibold text-white">Invitation Invalid</h2>
+              <h2 className="text-lg font-semibold text-white">Invitation Issue</h2>
               <p className="text-sm text-zinc-500 text-center max-w-[320px]">
-                {error || "This invitation has expired or has already been used. Please ask your administrator to send a new one."}
+                {error || "This invitation has expired or has already been used."}
               </p>
               <button
                 onClick={() => router.push("/")}
@@ -206,18 +247,19 @@ function AcceptInviteContent() {
             </div>
           )}
 
+          {/* ── Auth: Create Account / Sign In ────────── */}
           {step === "auth" && inviteData && (
             <div className="flex flex-col gap-6">
               <div className="text-center">
                 <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-6 h-6 text-emerald-500" />
+                  <UserPlus className="w-6 h-6 text-emerald-500" />
                 </div>
                 <h2 className="text-lg font-semibold text-white">
-                  Welcome to {inviteData.organization_name}
+                  Join {inviteData.organization_name}
                 </h2>
                 <p className="text-sm text-zinc-500 mt-1">
                   {inviteData.inviter_name} invited you as{" "}
-                  <span className="text-zinc-300 capitalize">{inviteData.role.replace("_", " ")}</span>
+                  <span className="text-zinc-300 capitalize">{inviteData.role.replace(/_/g, " ")}</span>
                 </p>
               </div>
 
@@ -260,7 +302,6 @@ function AcceptInviteContent() {
                   />
                 </div>
 
-                {/* Password requirements */}
                 <div className="space-y-1 pt-1">
                   <Requirement met={hasLength}>8+ characters</Requirement>
                   <Requirement met={hasNumber}>Contains a number</Requirement>
@@ -281,14 +322,18 @@ function AcceptInviteContent() {
                 disabled={!passwordValid || submitting}
                 className="w-full py-3 bg-white text-black font-semibold text-sm rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Account"}
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Account & Continue"}
               </button>
             </div>
           )}
 
+          {/* ── Profile: Name + Phone ─────────────────── */}
           {step === "profile" && (
             <div className="flex flex-col gap-6">
               <div className="text-center">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-6 h-6 text-emerald-500" />
+                </div>
                 <h2 className="text-lg font-semibold text-white">Complete Your Profile</h2>
                 <p className="text-sm text-zinc-500 mt-1">
                   Just a few details so your team can find you.
@@ -297,12 +342,13 @@ function AcceptInviteContent() {
 
               <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-1.5 block">Full Name</label>
+                  <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-1.5 block">Full Name *</label>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Your full name"
+                    autoFocus
                     className="w-full px-4 py-3 bg-white/[0.03] border border-[var(--border-base)] rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
                   />
                 </div>
@@ -313,37 +359,53 @@ function AcceptInviteContent() {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+1 234 567 890 (optional)"
+                    placeholder="+61 400 000 000 (optional)"
                     className="w-full px-4 py-3 bg-white/[0.03] border border-[var(--border-base)] rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/30 transition-colors"
                   />
                 </div>
               </div>
+
+              {error && (
+                <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <p className="text-xs text-rose-400">{error}</p>
+                </div>
+              )}
 
               <button
                 onClick={handleProfileComplete}
                 disabled={!fullName.trim() || submitting}
                 className="w-full py-3 bg-white text-black font-semibold text-sm rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue"}
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join Team"}
               </button>
             </div>
           )}
 
+          {/* ── Accepting (auto) ──────────────────────── */}
+          {step === "accepting" && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+              <p className="text-sm text-zinc-500">Joining your team...</p>
+            </div>
+          )}
+
+          {/* ── Success ───────────────────────────────── */}
           {step === "success" && (
             <div className="flex flex-col items-center gap-4 py-8">
               <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                 <CheckCircle className="w-8 h-8 text-emerald-500" />
               </div>
-              <h2 className="text-lg font-semibold text-white">You&apos;re In</h2>
+              <h2 className="text-lg font-semibold text-white">You&apos;re In!</h2>
               <p className="text-sm text-zinc-500">
-                Redirecting to your dashboard...
+                {inviteData ? `Welcome to ${inviteData.organization_name}` : "Welcome to the team"}
               </p>
+              <p className="text-xs text-zinc-600">Redirecting to your dashboard...</p>
               <Loader2 className="w-5 h-5 text-zinc-600 animate-spin mt-2" />
             </div>
           )}
         </div>
 
-        {/* ── Footer ─────────────────────────────────── */}
         <p className="text-center text-[10px] text-zinc-700 mt-6">
           iWorkr — Field Service Operating System
         </p>
