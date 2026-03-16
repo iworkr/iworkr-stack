@@ -93,7 +93,6 @@ export async function POST(req: NextRequest) {
           organization_id: orgId,
           email,
           role: role || "technician",
-          branch: branch || "HQ",
           status: "pending",
           invited_by: user.id,
           token,
@@ -117,7 +116,7 @@ export async function POST(req: NextRequest) {
         action: "member.invited",
         entity_type: "organization_invite",
         entity_id: invite.id,
-        new_data: { email, role: role || "technician", branch: branch || "HQ" },
+        new_data: { email, role: role || "technician" },
       });
     } catch { /* audit is non-fatal */ }
 
