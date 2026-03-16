@@ -44,7 +44,7 @@ export async function listCoordinationEntriesAction(input: {
   const { supabase, user } = await requireUser();
   let query = (supabase as any)
     .from("coordination_time_entries")
-    .select("*")
+    .select("*, participant_profiles(preferred_name, full_name, clients(name), ndis_number)")
     .eq("organization_id", input.organization_id)
     .order("start_time", { ascending: false })
     .limit(input.limit || 250);
@@ -152,6 +152,54 @@ export async function getCoordinationDailyKPIAction(input: {
     target_hours: target,
     progress_percent: target > 0 ? Math.min(100, (billableHours / target) * 100) : 0,
     entries_count: rows.length,
+  };
+}
+
+export async function getCoordinationLedgerSummaryAction(organizationId: string) {
+  const { supabase, user } = await requireUser();
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const [{ data: weekRows }, { data: unbilledRows }, { data: invoicedRows }, { data: draftRows }] = await Promise.all([
+    (supabase as any)
+      .from("coordination_time_entries")
+      .select("billable_units")
+      .eq("organization_id", organizationId)
+      .eq("coordinator_id", user.id)
+      .gte("start_time", weekStart.toISOString()),
+    (supabase as any)
+      .from("coordination_time_entries")
+      .select("billable_charge")
+      .eq("organization_id", organizationId)
+      .eq("coordinator_id", user.id)
+      .eq("status", "unbilled"),
+    (supabase as any)
+      .from("coordination_time_entries")
+      .select("billable_charge")
+      .eq("organization_id", organizationId)
+      .eq("coordinator_id", user.id)
+      .in("status", ["invoiced", "paid"])
+      .gte("start_time", monthStart),
+    (supabase as any)
+      .from("coordination_time_entries")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("coordinator_id", user.id)
+      .eq("status", "draft"),
+  ]);
+
+  const weeklyUnits = (weekRows || []).reduce((s: number, r: any) => s + Number(r.billable_units || 0), 0);
+  const unbilledWip = (unbilledRows || []).reduce((s: number, r: any) => s + Number(r.billable_charge || 0), 0);
+  const invoicedMtd = (invoicedRows || []).reduce((s: number, r: any) => s + Number(r.billable_charge || 0), 0);
+
+  return {
+    weekly_billable_hours: Number((weeklyUnits * 0.1).toFixed(1)),
+    unbilled_wip: Number(unbilledWip.toFixed(2)),
+    invoiced_mtd: Number(invoicedMtd.toFixed(2)),
+    draft_entries: (draftRows || []).length,
   };
 }
 
