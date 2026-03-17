@@ -47,6 +47,7 @@ import {
   Grid3X3,
   Eye,
   Send,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -200,6 +201,7 @@ const CARE_NAV: NavGroup[] = [
       { id: "nav_forms", label: "Forms", icon: FileText, href: "/dashboard/forms" },
       { id: "nav_automations", label: "Automations", icon: Zap, href: "/dashboard/automations", badge: "PRO", module: "integrations" },
       { id: "nav_integrations", label: "Integrations", icon: Plug, href: "/dashboard/integrations", badge: "PRO", module: "integrations" },
+      { id: "nav_accounting_sync", label: "Accounting Sync", icon: RefreshCw, href: "/dashboard/settings/integrations", module: "integrations" },
       { id: "nav_ai_agent", label: "AI Agent", icon: Bot, href: "/dashboard/ai-agent", module: "integrations" },
     ],
   },
@@ -238,6 +240,7 @@ const TRADES_NAV: NavGroup[] = [
       { id: "nav_invoices", label: "Invoices", icon: Banknote, href: "/dashboard/finance", shortcut: "G F", module: "finance" },
       { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets" },
       { id: "nav_travel_ledger", label: "Travel Ledger", icon: Map, href: "/dashboard/finance/travel-ledger" },
+      { id: "nav_sync_errors", label: "Sync Errors", icon: AlertOctagon, href: "/dashboard/finance/sync-errors" },
     ],
   },
   { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
