@@ -5,11 +5,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
 import { completeOnboarding, sendTeamInvites } from "@/app/actions/onboarding";
 import { useAuthStore } from "@/lib/auth-store";
+import { useNewWorkspaceContext } from "@/lib/new-workspace-context";
 
 export function StepComplete() {
   const { companyName, organizationId, teamInvites, industryType } = useOnboardingStore();
   const isCare = industryType === "care";
   const { refreshOrganizations } = useAuthStore();
+  const { isModal, onComplete } = useNewWorkspaceContext();
   const [entering, setEntering] = useState(false);
 
   const reset = useOnboardingStore((s) => s.reset);
@@ -36,13 +38,17 @@ export function StepComplete() {
       // Graceful degradation — continue to dashboard even if backend isn't configured
     }
 
-    // Clear the onboarding store so we don't loop back to the complete step
-    reset();
-
-    setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 1200);
-  }, [entering, organizationId, teamInvites, refreshOrganizations, reset]);
+    if (isModal && organizationId) {
+      // Modal mode: switch to the new workspace instead of hard-navigating
+      onComplete(organizationId);
+    } else {
+      // Standalone /setup mode: clear store and navigate
+      reset();
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1200);
+    }
+  }, [entering, organizationId, teamInvites, refreshOrganizations, reset, isModal, onComplete]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {

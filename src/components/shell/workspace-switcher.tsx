@@ -10,9 +10,11 @@ import {
   GitBranch,
   Loader2,
   ShieldAlert,
+  Plus,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { clearOrgCache } from "@/lib/hooks/use-org";
+import { NewWorkspaceModal } from "@/components/shell/new-workspace-modal";
 
 interface Branch {
   id: string;
@@ -42,6 +44,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
   const [switchError, setSwitchError] = useState<string | null>(null);
   const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [newWorkspaceOpen, setNewWorkspaceOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const currentOrg = useAuthStore((s) => s.currentOrg);
@@ -341,9 +344,31 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
                 ))}
               </div>
             )}
+
+            {/* Create new workspace */}
+            <div className="border-t border-white/[0.05] p-1.5">
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  setNewWorkspaceOpen(true);
+                }}
+                className="mx-0 flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-emerald-500/[0.08] hover:text-emerald-400"
+              >
+                <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-dashed border-zinc-600 transition-colors group-hover:border-emerald-500/60">
+                  <Plus size={9} className="text-zinc-600" />
+                </div>
+                Create new workspace
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Full-screen workspace creation modal */}
+      <NewWorkspaceModal
+        open={newWorkspaceOpen}
+        onClose={() => setNewWorkspaceOpen(false)}
+      />
     </div>
   );
 }
