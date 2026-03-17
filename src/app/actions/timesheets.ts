@@ -629,6 +629,7 @@ export async function fetchTimesheetAdjustmentsAction(organizationId: string, en
 
 export interface TriageRow {
   id: string;
+  timesheet_id: string | null;
   worker_id: string;
   worker_name: string;
   worker_avatar: string | null;
@@ -696,6 +697,7 @@ export async function fetchTimesheetTriageAction(
 
       return {
         id: e.id,
+        timesheet_id: e.timesheet_id ?? null,
         worker_id: e.worker_id ?? "",
         worker_name: e.profiles?.full_name || "Unknown",
         worker_avatar: e.profiles?.avatar_url || null,

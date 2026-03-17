@@ -16,6 +16,7 @@ import {
   createManualTimeEntryAction,
   type TriageRow,
 } from "@/app/actions/timesheets";
+import { PayrollEngineBreakdown } from "@/components/timesheets/payroll-engine-breakdown";
 
 /* ═══════════════════════════════════════════════════════════════════
    Types & Constants
@@ -181,12 +182,14 @@ function ExceptionReviewSlideOver({
   onApprove,
   onReject,
   loading,
+  orgId,
 }: {
   entry: TriageRow;
   onClose: () => void;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
   loading: boolean;
+  orgId: string;
 }) {
   const schedStart = formatTime(entry.scheduled_start);
   const schedEnd = formatTime(entry.scheduled_end);
@@ -338,6 +341,21 @@ function ExceptionReviewSlideOver({
               <p className="text-[14px] italic leading-relaxed text-zinc-300">
                 &ldquo;{entry.notes}&rdquo;
               </p>
+            </div>
+          )}
+
+          {/* SCHADS Payroll Engine Breakdown */}
+          {entry.timesheet_id ? (
+            <PayrollEngineBreakdown
+              timesheetId={entry.timesheet_id}
+              orgId={orgId}
+              workerName={entry.worker_name}
+              periodLabel={entry.shift_date}
+            />
+          ) : (
+            <div className="mt-6 border-t border-white/5 pt-4">
+              <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Payroll Engine Breakdown</p>
+              <p className="text-[11px] text-zinc-700 italic">No timesheet linked to this time entry — payroll cannot be run.</p>
             </div>
           )}
         </div>
@@ -896,6 +914,7 @@ export default function TimesheetsPage() {
             onApprove={handleApprove}
             onReject={handleReject}
             loading={actionLoading}
+            orgId={orgId!}
           />
         )}
       </AnimatePresence>
