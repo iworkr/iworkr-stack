@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import 'package:iworkr_mobile/core/services/native_bridge_service.dart';
 import 'package:iworkr_mobile/core/services/background_sync_service.dart';
 import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
 import 'package:iworkr_mobile/core/services/mobile_telemetry_engine.dart';
+import 'package:iworkr_mobile/core/services/notification_provider.dart';
 import 'package:iworkr_mobile/core/services/revenuecat_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';
@@ -64,6 +66,12 @@ void main() {
     // Override with --dart-define-from-file=dart_defines.env for local dev.
     await SupabaseService.initialize();
     SupabaseService.initDeepLinks();
+
+    // Project Beacon-Recovery: Firebase + FCM pre-run initialization
+    // Must run AFTER WidgetsFlutterBinding.ensureInitialized()
+    // and BEFORE runApp so the background handler is registered in time.
+    await Firebase.initializeApp();
+    await FCMService.preRunInit();
 
     await RevenueCatService.instance.initialize();
     await BackgroundSyncService.instance.initialize();
@@ -123,6 +131,31 @@ class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserv
       } else if (event.event == AuthChangeEvent.signedOut) {
         bridge.clearAll();
       }
+    });
+
+    // Project Beacon-Recovery: Bind FCM token lifecycle to auth events
+    // SIGNED_IN  → upsert device token for new user
+    // SIGNED_OUT → purge token to prevent cross-account leaks
+    FCMService.instance.bindToAuthStream();
+
+    // Initialize push for the already-logged-in user (if any)
+    if (SupabaseService.auth.currentUser != null) {
+      unawaited(FCMService.instance.initialize());
+    }
+
+    // Check if app was cold-booted from a notification tap
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(FCMService.instance.checkInitialMessage());
+
+      // Listen for deep-link routes dispatched by FCM payload router
+      FCMService.instance.pendingRouteStream.listen((path) {
+        try {
+          final router = ref.read(routerProvider);
+          router.go(path);
+        } catch (e) {
+          MobileTelemetryEngine.instance.addBreadcrumb('[FCM] Router navigate failed: $e');
+        }
+      });
     });
   }
 

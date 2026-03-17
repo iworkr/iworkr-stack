@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:iworkr_mobile/core/services/notification_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import 'package:iworkr_mobile/core/services/workspace_provider.dart';
 import 'package:iworkr_mobile/models/profile.dart';
@@ -180,9 +181,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
     );
   }
 
-  /// Sign out and clear secure storage
+  /// Sign out and clear secure storage.
+  /// Also purges FCM token to prevent cross-account notification leaks.
   Future<void> signOut() async {
     state = const AsyncValue.loading();
+    // Project Beacon-Recovery: purge device token BEFORE session is destroyed
+    // so we still have auth.uid() available for the Supabase delete query.
+    try {
+      await FCMService.instance.purgeTokenOnLogout();
+    } catch (_) {
+      // Non-fatal — proceed with sign-out regardless
+    }
     await _clearSession();
     await SupabaseService.auth.signOut();
     state = const AsyncValue.data(null);
