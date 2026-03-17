@@ -236,6 +236,7 @@ const TRADES_NAV: NavGroup[] = [
     children: [
       { id: "nav_invoices", label: "Invoices", icon: Banknote, href: "/dashboard/finance", shortcut: "G F", module: "finance" },
       { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets" },
+      { id: "nav_travel_ledger", label: "Travel Ledger", icon: Map, href: "/dashboard/finance/travel-ledger" },
     ],
   },
   { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
