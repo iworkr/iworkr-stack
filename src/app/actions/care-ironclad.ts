@@ -542,6 +542,168 @@ export async function sendTargetedRemediationAction(input: {
   return { success: true };
 }
 
+// ── Ironclad-Remediation: Upload Certificate ─────────────────────────────────
+
+export interface UploadCertificateInput {
+  worker_id: string;
+  organization_id: string;
+  credential_type: string;
+  issued_date: string;
+  expiry_date: string;
+  file_name: string;
+  file_base64: string;
+  mime_type: string;
+}
+
+export async function uploadWorkerCertificateAction(input: UploadCertificateInput): Promise<{
+  success: boolean;
+  storage_path?: string;
+  public_url?: string;
+  error?: string;
+}> {
+  try {
+    const { supabase, user } = await requireAuthedUser();
+
+    // Build sanitized file path: [worker_uuid]/[credential_type]_[timestamp].[ext]
+    const ext = input.mime_type === "application/pdf" ? "pdf"
+      : input.mime_type === "image/png" ? "png"
+      : input.mime_type === "image/webp" ? "webp"
+      : "jpg";
+    const ts = Math.floor(Date.now() / 1000);
+    const safeType = input.credential_type.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    const filePath = `${input.worker_id}/${safeType}_${ts}.${ext}`;
+
+    // Decode base64 → Uint8Array
+    const binaryStr = atob(input.file_base64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+
+    const { error: uploadError } = await supabase.storage
+      .from("compliance-documents")
+      .upload(filePath, bytes, {
+        contentType: input.mime_type,
+        upsert: true,
+      });
+
+    if (uploadError) throw new Error(uploadError.message);
+
+    // Upsert credential record
+    const { error: dbError } = await (supabase as any)
+      .from("worker_credentials")
+      .upsert({
+        user_id: input.worker_id,
+        organization_id: input.organization_id,
+        credential_type: input.credential_type,
+        storage_path: filePath,
+        document_url: filePath,
+        issued_date: input.issued_date,
+        expiry_date: input.expiry_date,
+        verification_status: "verified",
+        verified_by: user.id,
+        verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: "user_id,credential_type,organization_id",
+      });
+
+    if (dbError) throw new Error(dbError.message);
+
+    revalidatePath("/dashboard/compliance/readiness");
+    return { success: true, storage_path: filePath };
+  } catch (err: any) {
+    console.error("[ironclad] uploadWorkerCertificateAction", err);
+    return { success: false, error: err?.message || "Upload failed" };
+  }
+}
+
+// ── Ironclad-Remediation: Preview Suspension Impact ──────────────────────────
+
+export interface SuspensionImpact {
+  worker_name: string;
+  orphaned_shifts: number;
+  has_active_timesheet: boolean;
+}
+
+export async function previewSuspensionImpactAction(workerId: string): Promise<SuspensionImpact> {
+  try {
+    const { supabase } = await requireAuthedUser();
+    const { data, error } = await (supabase as any).rpc("preview_suspension_impact", {
+      p_worker_id: workerId,
+    });
+    if (error) throw new Error(error.message);
+    return {
+      worker_name: data?.worker_name || "Unknown",
+      orphaned_shifts: data?.orphaned_shifts || 0,
+      has_active_timesheet: data?.has_active_timesheet || false,
+    };
+  } catch (err: any) {
+    console.error("[ironclad] previewSuspensionImpactAction", err);
+    return { worker_name: "Unknown", orphaned_shifts: 0, has_active_timesheet: false };
+  }
+}
+
+// ── Ironclad-Remediation: Suspend Worker Cascade ─────────────────────────────
+
+export async function suspendWorkerCascadeAction(input: {
+  worker_id: string;
+  admin_id: string;
+  reason: string;
+}): Promise<{
+  success: boolean;
+  orphaned_shifts?: number;
+  revenue_risk?: number;
+  worker_name?: string;
+  error?: string;
+}> {
+  try {
+    const { supabase } = await requireAuthedUser();
+    const { data, error } = await (supabase as any).rpc("suspend_worker_cascade", {
+      p_worker_id: input.worker_id,
+      p_admin_id: input.admin_id,
+      p_reason: input.reason,
+    });
+    if (error) throw new Error(error.message);
+    revalidatePath("/dashboard/compliance/readiness");
+    revalidatePath("/dashboard/workforce/team");
+    return {
+      success: true,
+      orphaned_shifts: data?.orphaned_shifts || 0,
+      revenue_risk: data?.revenue_risk || 0,
+      worker_name: data?.worker_name || "Worker",
+    };
+  } catch (err: any) {
+    console.error("[ironclad] suspendWorkerCascadeAction", err);
+    return { success: false, error: err?.message || "Suspension failed" };
+  }
+}
+
+// ── Ironclad-Remediation: Lift Suspension ─────────────────────────────────────
+
+export async function liftWorkerSuspensionAction(input: {
+  worker_id: string;
+  admin_id: string;
+  notes?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { supabase } = await requireAuthedUser();
+    const { data, error } = await (supabase as any).rpc("lift_worker_suspension", {
+      p_worker_id: input.worker_id,
+      p_admin_id: input.admin_id,
+      p_notes: input.notes || null,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error("RPC returned failure");
+    revalidatePath("/dashboard/compliance/readiness");
+    revalidatePath("/dashboard/workforce/team");
+    return { success: true };
+  } catch (err: any) {
+    console.error("[ironclad] liftWorkerSuspensionAction", err);
+    return { success: false, error: err?.message || "Failed to lift suspension" };
+  }
+}
+
 export async function verifyDocumentHashAction(sha256Hash: string) {
   const { supabase } = await requireAuthedUser();
   const hash = sha256Hash.trim().toLowerCase();

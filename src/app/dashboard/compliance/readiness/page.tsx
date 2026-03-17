@@ -4,18 +4,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import {
-  Search, ChevronRight, Filter, Upload, X,
-  Loader2, ShieldCheck, Bell, Lock,
-  AlertTriangle,
+  Search, Filter, Upload,
+  Loader2, ShieldCheck,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
   getComplianceReadinessAction,
   listComplianceGapsAction,
   sendTargetedRemediationAction,
-  triggerCredentialRemediationAction,
   type ComplianceGapRow,
 } from "@/app/actions/care-ironclad";
+import { RemediationSlideOver } from "@/components/governance/RemediationSlideOver";
+import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════════
    Types & Constants
@@ -131,148 +131,6 @@ function EmptyState() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   Remediation Slide-Over
-   ═══════════════════════════════════════════════════════════════════ */
-
-function RemediationSlideOver({
-  gap,
-  orgId,
-  onClose,
-  onAction,
-}: {
-  gap: ComplianceGapRow;
-  orgId: string;
-  onClose: () => void;
-  onAction: () => void;
-}) {
-  const [sending, setSending] = useState(false);
-
-  const handleDispatchNotification = async () => {
-    setSending(true);
-    try {
-      await sendTargetedRemediationAction({
-        organization_id: orgId,
-        user_id: gap.affected_entity_id,
-        gap_title: gap.gap_title,
-      });
-      onAction();
-      onClose();
-    } catch (e: any) {
-      console.error("[ironclad] dispatch failed:", e);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ x: 450 }}
-        animate={{ x: 0 }}
-        exit={{ x: 450 }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed inset-y-0 right-0 z-50 flex w-[450px] flex-col border-l border-white/5 bg-zinc-950 shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex h-16 items-center justify-between border-b border-white/5 px-6">
-          <h3 className="text-[16px] font-medium text-white">Remediate Compliance Gap</h3>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-white/5 hover:text-zinc-300">
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Entity Block */}
-          <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-zinc-900/50 p-4">
-            {gap.affected_entity_avatar ? (
-              <img src={gap.affected_entity_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-[12px] font-semibold text-zinc-300">
-                {getInitials(gap.affected_entity_name)}
-              </div>
-            )}
-            <div>
-              <p className="text-[14px] font-medium text-white">{gap.affected_entity_name}</p>
-              <p className="text-[11px] text-zinc-500 capitalize">{categoryLabel(gap.category)}</p>
-            </div>
-            <div className="ml-auto">
-              <GhostBadge severity={gap.severity} />
-            </div>
-          </div>
-
-          {/* Gap Details */}
-          <div className="rounded-lg border border-white/5 bg-zinc-900/50 p-4">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Missing Credential / Gap</p>
-            <p className="text-[14px] font-medium text-white">{gap.gap_title}</p>
-            <p className="mt-1 font-mono text-[11px] text-rose-400">{gap.gap_detail}</p>
-          </div>
-
-          {/* Action Matrix */}
-          <div className="space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Remediation Actions</p>
-
-            {/* Action 1: Dispatch Push Notification */}
-            <button
-              onClick={handleDispatchNotification}
-              disabled={sending}
-              className="flex w-full items-center gap-3 rounded-md border border-white/5 bg-transparent px-4 py-3 text-left transition-colors hover:bg-white/[0.03] disabled:opacity-50"
-            >
-              {sending ? <Loader2 size={16} className="animate-spin text-emerald-400" /> : <Bell size={16} className="text-emerald-400" />}
-              <div>
-                <p className="text-[13px] font-medium text-white">Dispatch Push Notification</p>
-                <p className="text-[11px] text-zinc-500">Send targeted alert to this worker&apos;s mobile app.</p>
-              </div>
-            </button>
-
-            {/* Action 2: Manual Upload */}
-            <button
-              onClick={() => {
-                // Open file picker for certificate upload
-                const input = document.createElement("input");
-                input.type = "file";
-                input.accept = ".pdf,.jpg,.jpeg,.png,.webp";
-                input.onchange = async () => {
-                  if (!input.files?.[0]) return;
-                  // INCOMPLETE: Wire to Supabase Storage upload + credential update when backend ready
-                  alert(`File "${input.files[0].name}" selected — upload integration pending backend wiring.`);
-                };
-                input.click();
-              }}
-              className="flex w-full items-center gap-3 rounded-md border border-white/5 bg-transparent px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
-            >
-              <Upload size={16} className="text-zinc-400" />
-              <div>
-                <p className="text-[13px] font-medium text-white">Manually Upload Certificate</p>
-                <p className="text-[11px] text-zinc-500">Upload a document on the worker&apos;s behalf.</p>
-              </div>
-            </button>
-
-            {/* Action 3: Suspend (Destructive) */}
-            <button
-              onClick={() => {
-                if (!gap) return;
-                const confirmed = confirm(`Are you sure you want to suspend this worker profile?\n\nThis will prevent rostering until the compliance gap "${gap.gap_title}" is resolved.`);
-                if (!confirmed) return;
-                // INCOMPLETE: Wire to suspendWorkerProfileAction when backend endpoint ready
-                alert("Worker suspension action triggered — backend integration pending.");
-              }}
-              className="mt-6 flex w-full items-center gap-3 rounded-md border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-left transition-colors hover:bg-rose-500/10"
-            >
-              <Lock size={16} className="text-rose-500" />
-              <div>
-                <p className="text-[13px] font-medium text-rose-500">Suspend Worker Profile</p>
-                <p className="text-[11px] text-zinc-500">Prevent rostering until the gap is resolved.</p>
-              </div>
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    Main Page
@@ -287,6 +145,16 @@ export default function ComplianceReadinessPage() {
   const [gaps, setGaps] = useState<ComplianceGapRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [slideOverGap, setSlideOverGap] = useState<ComplianceGapRow | null>(null);
+  const [userId, setUserId] = useState<string>("");
+  const [dispatchSending, setDispatchSending] = useState(false);
+
+  // Resolve current admin user id on mount
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.id) setUserId(data.user.id);
+    });
+  }, []);
 
   // ── Load data ─────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -538,8 +406,26 @@ export default function ComplianceReadinessPage() {
           <RemediationSlideOver
             gap={slideOverGap}
             orgId={orgId}
+            userId={userId}
             onClose={() => setSlideOverGap(null)}
             onAction={loadData}
+            dispatchSending={dispatchSending}
+            onDispatchNotification={async () => {
+              if (!slideOverGap) return;
+              setDispatchSending(true);
+              try {
+                await sendTargetedRemediationAction({
+                  organization_id: orgId,
+                  user_id: slideOverGap.affected_entity_id,
+                  gap_title: slideOverGap.gap_title,
+                });
+                loadData();
+              } catch (e: any) {
+                console.error("[ironclad] dispatch failed:", e);
+              } finally {
+                setDispatchSending(false);
+              }
+            }}
           />
         )}
       </AnimatePresence>
