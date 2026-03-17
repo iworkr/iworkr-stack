@@ -4,7 +4,10 @@ import path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 
-const AUTH_STATE = "e2e/.auth/user.json";
+const ADMIN_STATE  = "e2e/.auth/admin.json";
+const WORKER_STATE = "e2e/.auth/worker.json";
+/** Legacy alias — kept for backwards compatibility with older spec files */
+const AUTH_STATE   = "e2e/.auth/user.json";
 
 const auditModules = [
   "dashboard", "inbox", "jobs", "schedule", "clients",
@@ -50,7 +53,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -59,13 +62,13 @@ export default defineConfig({
   },
 
   projects: [
-    // Auth setup (runs first)
+    // ── Auth setup (runs first, generates all storageState files) ────────────
     { name: "setup", testMatch: /global-setup\.ts/ },
 
-    // Audit projects (Chrome)
+    // ── Audit projects (Chrome, admin session) ───────────────────────────────
     ...chromeAuditProjects,
 
-    // Smoke — sharded for parallel execution (core + settings run concurrently)
+    // ── Smoke (admin session) ─────────────────────────────────────────────────
     {
       name: "smoke-core",
       testMatch: /smoke-core\.spec\.ts/,
@@ -84,12 +87,16 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
+
+    // ── Auth flow (no storageState — tests the login page itself) ─────────────
     {
       name: "auth-flow",
       testMatch: /auth\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
       dependencies: ["setup"],
     },
+
+    // ── Functional (admin session) ────────────────────────────────────────────
     {
       name: "functional",
       testMatch: /functional\.spec\.ts/,
@@ -121,7 +128,23 @@ export default defineConfig({
       dependencies: ["setup"],
     },
 
-    // Cross-browser smoke (Firefox + WebKit)
+    // ── RBAC testing (worker session — restricted access) ─────────────────────
+    {
+      name: "rbac-worker",
+      testMatch: /rbac-worker\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: WORKER_STATE },
+      dependencies: ["setup"],
+    },
+
+    // ── Admin-explicit (alias for admin.json, used when tests need the owner role) ─
+    {
+      name: "admin-explicit",
+      testMatch: /admin-explicit\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: ADMIN_STATE },
+      dependencies: ["setup"],
+    },
+
+    // ── Cross-browser smoke (Firefox + WebKit) ────────────────────────────────
     {
       name: "smoke-firefox",
       testMatch: /smoke(-core|-settings)?\.spec\.ts/,
@@ -138,7 +161,7 @@ export default defineConfig({
 
   webServer: {
     command: "npm run dev",
-    url: "http://localhost:3000",
+    url: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 30_000,
   },

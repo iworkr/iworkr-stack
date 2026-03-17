@@ -1,324 +1,376 @@
+/**
+ * Project Genesis — Playwright Global Setup
+ *
+ * Performs API-level authentication ONCE per test run for each role,
+ * saving Supabase session cookies to storageState JSON files.
+ *
+ * This eliminates ~19 minutes of redundant UI login across 379 tests.
+ *
+ * Output files:
+ *   e2e/.auth/admin.json      — QA Owner  (qa-test@iworkrapp.com)
+ *   e2e/.auth/worker.json     — QA Worker (qa-worker@iworkrapp.com)
+ *   e2e/.auth/user.json       — Alias for admin.json (backwards compat)
+ */
+
 import { test as setup } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
-import { GOLDEN_EMAIL, GOLDEN_PASSWORD } from "./utils/constants";
+import fs from "fs";
+import path from "path";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// ── Config ────────────────────────────────────────────────────────────────────
+
+const SUPABASE_URL        = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY   = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-/** Golden User (Panopticon) or qa-test — set E2E_USE_GOLDEN=1 for theo.caleb.lewis@gmail.com */
-const USE_GOLDEN = process.env.E2E_USE_GOLDEN === "1" || process.env.E2E_USE_GOLDEN === "true";
-const TEST_EMAIL = USE_GOLDEN ? GOLDEN_EMAIL : "qa-test@iworkrapp.com";
-const TEST_PASSWORD = USE_GOLDEN ? GOLDEN_PASSWORD : "QATestPass123!";
-const STORAGE_STATE_PATH = "e2e/.auth/user.json";
+const BASE_URL            = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 
-setup("authenticate via Supabase", async ({ page }) => {
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
+/**
+ * If E2E_USE_GOLDEN=1, target the real production owner account
+ * (for deep panopticon runs on staging). Otherwise use the deterministic
+ * QA seed users that are injected by seed.sql.
+ */
+const USE_GOLDEN    = process.env.E2E_USE_GOLDEN === "1" || process.env.E2E_USE_GOLDEN === "true";
+const GOLDEN_EMAIL  = process.env.GOLDEN_EMAIL ?? "theo.caleb.lewis@gmail.com";
+const GOLDEN_PASS   = process.env.GOLDEN_PASSWORD ?? "";
+
+const QA_USERS = {
+  admin: {
+    email:    "qa-test@iworkrapp.com",
+    password: "QATestPass123!",
+    stateFile:"e2e/.auth/admin.json",
+    role:     "owner",
+  },
+  worker: {
+    email:    "qa-worker@iworkrapp.com",
+    password: "QATestPass123!",
+    stateFile:"e2e/.auth/worker.json",
+    role:     "technician",
+  },
+} as const;
+
+const QA_ORG_ID = "00000000-0000-0000-0000-000000000010";
+const AUTH_DIR  = "e2e/.auth";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function ensureAuthDir() {
+  if (!fs.existsSync(AUTH_DIR)) {
+    fs.mkdirSync(AUTH_DIR, { recursive: true });
+  }
+}
+
+/**
+ * Derive the Supabase cookie prefix from the project URL.
+ * For https://olqjuadvseoxpfjzlghb.supabase.co → "olqjuadvseoxpfjzlghb"
+ * For http://127.0.0.1:54321 → "127"
+ */
+function getProjectRef(url: string): string {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.split(".")[0];
+  } catch {
+    return "local";
+  }
+}
+
+/**
+ * Build Playwright storageState cookies from a Supabase session.
+ * The @supabase/ssr package reads chunked base64 cookies:
+ *   sb-<ref>-auth-token.0  — first chunk (access + refresh token)
+ *   sb-<ref>-auth-token.1  — second chunk (user object)
+ *
+ * We write both the chunked format AND a single-cookie fallback so
+ * both SSR middleware and client-side JS pick up the session.
+ */
+function buildStorageState(session: {
+  access_token: string;
+  refresh_token: string;
+  expires_at?: number;
+  expires_in?: number;
+  user: Record<string, unknown>;
+}, projectRef: string, domain: string) {
+  const sessionPayload = JSON.stringify({
+    access_token:  session.access_token,
+    refresh_token: session.refresh_token,
+    expires_at:    session.expires_at,
+    expires_in:    session.expires_in,
+    token_type:    "bearer",
+    user:          session.user,
   });
 
-  let testUser: { id: string } | undefined;
+  const encoded = Buffer.from(sessionPayload).toString("base64");
 
-  if (USE_GOLDEN) {
-    const { data: userList } = await admin.auth.admin.listUsers();
-    testUser = userList?.users.find((u) => u.email === GOLDEN_EMAIL) as { id: string } | undefined;
-    if (!testUser) {
-      console.log("Golden user not found in Supabase; attempting sign-in anyway...");
-    }
+  // Split into ~3800-char chunks (Supabase SSR default chunk size)
+  const CHUNK = 3800;
+  const chunks: string[] = [];
+  for (let i = 0; i < encoded.length; i += CHUNK) {
+    chunks.push(encoded.slice(i, i + CHUNK));
   }
 
-  if (!USE_GOLDEN) {
-  // Find or create the test user
-  const { data: userList } = await admin.auth.admin.listUsers();
-  testUser = userList?.users.find((u) => u.email === TEST_EMAIL) as { id: string } | undefined;
+  const baseCookieName = `sb-${projectRef}-auth-token`;
+  const expires = Math.round(Date.now() / 1000) + 7200; // +2h
 
-  if (!testUser) {
-    console.log(`Creating test user ${TEST_EMAIL}...`);
-    const { data: created, error } = await admin.auth.admin.createUser({
-      email: TEST_EMAIL,
-      email_confirm: true,
-      password: TEST_PASSWORD,
-    });
-    if (error) throw new Error(`Failed to create user: ${error.message}`);
-    testUser = created.user;
+  const cookies = chunks.map((chunk, idx) => ({
+    name:     `${baseCookieName}.${idx}`,
+    value:    chunk,
+    domain,
+    path:     "/",
+    expires,
+    httpOnly: false,
+    secure:   false,
+    sameSite: "Lax" as const,
+  }));
 
-    // Set up profile + org for the test user
-    await admin.from("profiles").upsert({
-      id: testUser.id,
-      email: TEST_EMAIL,
-      full_name: "QA Test Admin",
-      onboarding_completed: true,
-    });
+  // Single-cookie fallback for environments that don't use chunks
+  cookies.push({
+    name:     baseCookieName,
+    value:    `base64-${encoded}`,
+    domain,
+    path:     "/",
+    expires,
+    httpOnly: false,
+    secure:   false,
+    sameSite: "Lax" as const,
+  });
 
-    const { data: org, error: orgErr } = await admin.from("organizations").insert({
-      name: "QA Test Workspace",
-      slug: "qa-test-ws",
-    }).select().single();
+  return { cookies, origins: [] as unknown[] };
+}
 
+/**
+ * Ensure a QA user exists via the Admin API. If they're already in the DB
+ * (seeded by seed.sql), this is a no-op. Falls back to createUser if missing.
+ */
+async function ensureUser(
+  admin: ReturnType<typeof createClient>,
+  email: string,
+  password: string,
+  fullName: string,
+): Promise<string> {
+  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const existing = list?.users.find((u) => u.email === email);
+
+  if (existing) {
+    // Ensure password is correct (seed may not have run on this environment)
+    await admin.auth.admin.updateUserById(existing.id, { password });
+    console.log(`  ✓ User exists: ${email} (${existing.id.slice(0, 8)}…)`);
+    return existing.id;
+  }
+
+  // Not in DB — create via Admin API (bypasses email confirmation)
+  const { data: created, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
+  });
+  if (error || !created.user) {
+    throw new Error(`Failed to create ${email}: ${error?.message}`);
+  }
+
+  console.log(`  ✓ Created user: ${email} (${created.user.id.slice(0, 8)}…)`);
+  return created.user.id;
+}
+
+/**
+ * Ensure the user has an active organization membership.
+ * If not, create an org and bind them.
+ */
+async function ensureMembership(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  userId: string,
+  role: string,
+  email: string,
+) {
+  // Ensure profile exists
+  await admin.from("profiles").upsert(
+    { id: userId, email, full_name: email.split("@")[0], onboarding_completed: true },
+    { onConflict: "id" }
+  );
+
+  // Check for membership in QA org first
+  const { data: existing } = await admin
+    .from("organization_members")
+    .select("organization_id, status")
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.status === "active") {
+    console.log(`  ✓ Membership OK for ${email}`);
+    return;
+  }
+
+  // Try to use the deterministic QA org, fall back to creating a new one
+  let orgId = QA_ORG_ID;
+
+  const { data: qaOrg } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("id", QA_ORG_ID)
+    .maybeSingle();
+
+  if (!qaOrg) {
+    const { data: newOrg, error: orgErr } = await admin
+      .from("organizations")
+      .insert({ slug: `e2e-ws-${Date.now()}`, name: "E2E QA Workspace", trade: "care" })
+      .select()
+      .single();
     if (orgErr) {
-      console.warn("Org creation failed:", orgErr.message);
+      console.warn(`  ⚠ Could not create org: ${orgErr.message}`);
+      return;
     }
-
-    if (org) {
-      await admin.from("organization_members").insert({
-        organization_id: (org as any).id,
-        user_id: testUser.id,
-        role: "owner",
-        status: "active",
-      });
-      console.log("Test user + org + membership created.");
-    } else {
-      console.warn("No org created — user may not have access to dashboard pages.");
-    }
-  } else {
-    // Ensure password is set
-    await admin.auth.admin.updateUserById(testUser.id, {
-      password: TEST_PASSWORD,
-    });
-    console.log("Existing test user found, password updated.");
-  }
+    orgId = newOrg.id;
   }
 
-  // Sign in via a standalone Supabase client (non-admin) to get session tokens
+  await admin
+    .from("organization_members")
+    .upsert(
+      { organization_id: orgId, user_id: userId, role, status: "active" },
+      { onConflict: "organization_id,user_id" }
+    );
+
+  console.log(`  ✓ Membership created for ${email} (role: ${role})`);
+}
+
+/**
+ * Sign in via the Supabase JS client (non-admin), extract session,
+ * build cookie storageState, save to file, and write to the browser context.
+ */
+async function authenticateAndSave(
+  page: import("@playwright/test").Page,
+  email: string,
+  password: string,
+  outputPath: string,
+  label: string,
+): Promise<boolean> {
+  const projectRef = getProjectRef(SUPABASE_URL);
+  const domain = new URL(BASE_URL).hostname;
+
   const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: session, error: signInError } = await authClient.auth.signInWithPassword({
-    email: TEST_EMAIL,
-    password: TEST_PASSWORD,
+  const { data, error } = await authClient.auth.signInWithPassword({ email, password });
+
+  if (error || !data.session) {
+    console.error(`  ✗ Sign-in failed for ${label}: ${error?.message ?? "no session"}`);
+    return false;
+  }
+
+  console.log(`  ✓ Session acquired for ${label}`);
+
+  const storageState = buildStorageState(data.session, projectRef, domain);
+
+  // Ensure output directory exists
+  const dir = path.dirname(outputPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  fs.writeFileSync(outputPath, JSON.stringify(storageState, null, 2));
+  console.log(`  ✓ Saved storageState → ${outputPath}`);
+
+  // Inject into the live browser context for the verification step
+  await page.context().addCookies(storageState.cookies);
+
+  return true;
+}
+
+// ── Main setup test ───────────────────────────────────────────────────────────
+
+setup("Genesis: authenticate all roles via API", async ({ page }) => {
+  ensureAuthDir();
+
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  if (signInError || !session.session) {
-    console.error("Sign-in failed:", signInError?.message);
-    // Save empty state and let tests handle it
-    await page.goto("http://localhost:3000/auth");
-    await page.context().storageState({ path: STORAGE_STATE_PATH });
+  // ── Handle Golden User mode (panopticon runs) ─────────────────────────────
+  if (USE_GOLDEN) {
+    console.log("\n[Genesis] Golden User mode — targeting production owner account");
+
+    const success = await authenticateAndSave(
+      page,
+      GOLDEN_EMAIL,
+      GOLDEN_PASS,
+      "e2e/.auth/admin.json",
+      "golden",
+    );
+
+    if (!success) {
+      console.warn("[Genesis] Golden sign-in failed — saving empty state");
+      await page.goto(`${BASE_URL}/auth`);
+      await page.context().storageState({ path: "e2e/.auth/admin.json" });
+      return;
+    }
+
+    // Write legacy alias
+    fs.copyFileSync("e2e/.auth/admin.json", "e2e/.auth/user.json");
+    await verifySession(page, "golden");
     return;
   }
 
-  console.log("Got session tokens, injecting into browser...");
+  // ── Standard QA mode: provision all 2 deterministic roles ─────────────────
+  console.log("\n[Genesis] Provisioning QA test users…");
 
-  // Navigate to the app and inject the Supabase session via localStorage
-  await page.goto("http://localhost:3000/auth");
-  await page.waitForTimeout(1000);
+  for (const [roleKey, cfg] of Object.entries(QA_USERS)) {
+    console.log(`\n[Genesis] ── Role: ${roleKey} (${cfg.email})`);
 
-  // Set the Supabase session in localStorage (this is how @supabase/ssr stores it)
-  const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split(".")[0]}-auth-token`;
-  await page.evaluate(
-    ({ key, sessionData }) => {
-      localStorage.setItem(key, JSON.stringify(sessionData));
-    },
-    {
-      key: storageKey,
-      sessionData: {
-        access_token: session.session.access_token,
-        refresh_token: session.session.refresh_token,
-        expires_at: session.session.expires_at,
-        expires_in: session.session.expires_in,
-        token_type: "bearer",
-        user: session.session.user,
-      },
-    }
-  );
+    const userId = await ensureUser(admin, cfg.email, cfg.password, `QA ${roleKey}`);
+    await ensureMembership(admin, userId, cfg.role, cfg.email);
 
-  // Now navigate to dashboard — the middleware should pick up the session from cookies
-  // We also need to set the auth cookie for SSR
-  const projectRef = new URL(SUPABASE_URL).hostname.split(".")[0];
-  await page.context().addCookies([
-    {
-      name: `sb-${projectRef}-auth-token`,
-      value: `base64-${Buffer.from(JSON.stringify({
-        access_token: session.session.access_token,
-        refresh_token: session.session.refresh_token,
-        expires_at: session.session.expires_at,
-        expires_in: session.session.expires_in,
-        token_type: "bearer",
-        user: session.session.user,
-      })).toString("base64")}`,
-      domain: "localhost",
-      path: "/",
-      httpOnly: false,
-      secure: false,
-      sameSite: "Lax",
-    },
-    {
-      name: `sb-${projectRef}-auth-token.0`,
-      value: Buffer.from(JSON.stringify({
-        access_token: session.session.access_token,
-        refresh_token: session.session.refresh_token,
-        expires_at: session.session.expires_at,
-        expires_in: session.session.expires_in,
-        token_type: "bearer",
-      })).toString("base64"),
-      domain: "localhost",
-      path: "/",
-      httpOnly: false,
-      secure: false,
-      sameSite: "Lax",
-    },
-  ]);
+    const success = await authenticateAndSave(
+      page,
+      cfg.email,
+      cfg.password,
+      cfg.stateFile,
+      roleKey,
+    );
 
-  await page.goto("http://localhost:3000/dashboard");
-  await page.waitForTimeout(3000);
-
-  const finalUrl = page.url();
-  console.log("Final URL after auth:", finalUrl);
-
-  if (finalUrl.includes("/dashboard")) {
-    console.log("Successfully authenticated and reached dashboard!");
-  } else if (finalUrl.includes("/setup") || finalUrl.includes("/auth")) {
-    console.log(`Redirected to ${finalUrl}. Ensuring profile is onboarded and has active org membership...`);
-    const userId = testUser?.id ?? session.session.user.id;
-    await admin.from("profiles").upsert({
-      id: userId,
-      email: TEST_EMAIL,
-      full_name: USE_GOLDEN ? "Theo Lewis" : "QA Test Admin",
-      onboarding_completed: true,
-    });
-
-    // Ensure user has an active org membership (middleware checks this)
-    const { data: existingMembership } = await admin
-      .from("organization_members")
-      .select("organization_id, status")
-      .eq("user_id", userId)
-      .limit(1)
-      .maybeSingle();
-
-    if (!existingMembership) {
-      // Create org + membership (organizations table has no owner_id column)
-      const { data: org, error: orgCreateErr } = await admin.from("organizations").insert({
-        name: "QA Test Workspace",
-        slug: `qa-test-ws-${Date.now()}`,
-      }).select().single();
-      if (orgCreateErr) {
-        console.warn("Org creation failed:", orgCreateErr.message);
-      }
-      if (org) {
-        await admin.from("organization_members").insert({
-          organization_id: (org as any).id,
-          user_id: userId,
-          role: "owner",
-          status: "active",
-        });
-        console.log("Created org + active membership for test user.");
-      }
-    } else if (existingMembership.status !== "active") {
-      // Fix inactive membership
-      await admin
-        .from("organization_members")
-        .update({ status: "active" })
-        .eq("user_id", userId)
-        .eq("organization_id", existingMembership.organization_id);
-      console.log("Fixed membership status to active.");
-    } else {
-      console.log("User already has active org membership.");
-    }
-
-    // Re-inject cookies after profile update and navigate to dashboard
-    await page.goto("http://localhost:3000/dashboard");
-    await page.waitForLoadState("networkidle").catch(() => null);
-    await page.waitForTimeout(3000);
-
-    // If still redirected to setup, try once more with a fresh page load
-    if (page.url().includes("/setup")) {
-      console.log("Still on setup — reloading dashboard...");
-      await page.goto("http://localhost:3000/dashboard", { waitUntil: "networkidle" });
-      await page.waitForTimeout(3000);
-    }
-
-    const postFixUrl = page.url();
-    if (postFixUrl.includes("/dashboard")) {
-      console.log("Successfully reached dashboard after onboarding fix!");
-    } else {
-      console.log(`Warning: Still on ${postFixUrl} after onboarding fix.`);
+    if (!success) {
+      console.warn(`[Genesis] Sign-in failed for ${roleKey} — tests using this role will redirect to /auth`);
     }
   }
 
-  // ── Seed minimum test data ─────────────────────────────────────
-  // Ensure the test workspace has at least basic data for E2E tests
-  try {
-    const userId = testUser?.id ?? session.session.user.id;
-
-    // Find the user's organization
-    const { data: membership } = await admin
-      .from("organization_members")
-      .select("organization_id")
-      .eq("user_id", userId)
-      .limit(1)
-      .single();
-
-    if (membership) {
-      const orgId = membership.organization_id;
-
-      // Seed a test job if none exist
-      const { count: jobCount } = await admin
-        .from("jobs")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", orgId);
-
-      if (!jobCount || jobCount === 0) {
-        console.log("Seeding test data (jobs, clients, invoices)...");
-        // Create a test client
-        const { data: client } = await admin.from("clients").insert({
-          organization_id: orgId,
-          name: "Acme Properties",
-          email: "acme@example.com",
-          phone: "+1-555-0100",
-          address: "42 Test Avenue, Melbourne VIC 3000",
-        }).select().single();
-
-        const clientId = (client as any)?.id;
-
-        // Create test jobs
-        const jobStatuses = ["open", "in_progress", "completed"];
-        for (let i = 0; i < 3; i++) {
-          await admin.from("jobs").insert({
-            organization_id: orgId,
-            title: `E2E Test Job ${i + 1} — ${["Plumbing Repair", "HVAC Maintenance", "Electrical Inspection"][i]}`,
-            status: jobStatuses[i],
-            priority: ["high", "medium", "low"][i],
-            ...(clientId ? { client_id: clientId } : {}),
-            assigned_to: userId,
-            description: `Automated test job created by E2E setup.`,
-          });
-        }
-
-        // Create a test invoice
-        if (clientId) {
-          try {
-            const { error: invoiceErr } = await admin
-              .from("invoices")
-              .insert({
-                organization_id: orgId,
-                client_id: clientId,
-                status: "draft",
-                amount: 150000, // $1,500.00 in cents
-                due_date: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
-                line_items: [{ description: "Plumbing repair — labor", quantity: 2, unit_price: 7500 }],
-              })
-              .select()
-              .single();
-
-            if (invoiceErr) {
-              throw invoiceErr;
-            }
-          } catch (invoiceSeedErr) {
-            console.warn(
-              "Invoice seed skipped:",
-              invoiceSeedErr instanceof Error ? invoiceSeedErr.message : invoiceSeedErr
-            );
-          }
-        }
-
-        console.log("Test data seeded successfully.");
-      } else {
-        console.log(`Test data already exists (${jobCount} jobs).`);
-      }
-    }
-  } catch (seedErr) {
-    console.warn("Seed data step skipped:", seedErr instanceof Error ? seedErr.message : seedErr);
+  // Write legacy alias: user.json = admin.json (backwards compat for older specs)
+  if (fs.existsSync("e2e/.auth/admin.json")) {
+    fs.copyFileSync("e2e/.auth/admin.json", "e2e/.auth/user.json");
+    console.log("\n  ✓ Wrote e2e/.auth/user.json (admin alias)");
   }
 
-  await page.context().storageState({ path: STORAGE_STATE_PATH });
-  console.log("Storage state saved.");
+  // ── Verify the admin session reaches the dashboard ────────────────────────
+  await verifySession(page, "admin");
 });
+
+async function verifySession(page: import("@playwright/test").Page, role: string) {
+  console.log(`\n[Genesis] Verifying ${role} session reaches /dashboard…`);
+  const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+
+  await page.goto(`${BASE_URL}/dashboard`);
+  await page.waitForTimeout(2500);
+
+  const url = page.url();
+
+  if (url.includes("/dashboard")) {
+    console.log(`  ✓ ${role} session verified — reached dashboard (${url})`);
+  } else if (url.includes("/setup") || url.includes("/onboarding")) {
+    // Onboarding redirect means the middleware accepted the JWT but the
+    // workspace setup hasn't been flagged complete. This is recoverable by
+    // the individual tests — we still save the state.
+    console.log(`  ⚠ ${role} session redirected to setup page (${url}) — check onboarding_completed flag`);
+  } else if (url.includes("/auth")) {
+    console.warn(`  ✗ ${role} session invalid — redirected to /auth. Tests WILL fail.`);
+  } else {
+    console.log(`  ? ${role} session landed on: ${url}`);
+  }
+
+  // Capture final state after navigation (includes any new cookies set by SSR)
+  const stateFile = role === "admin" || role === "golden" ? "e2e/.auth/admin.json" : `e2e/.auth/${role}.json`;
+  await page.context().storageState({ path: stateFile });
+
+  // Refresh the legacy alias after final state capture
+  if (role === "admin" || role === "golden") {
+    fs.copyFileSync(stateFile, "e2e/.auth/user.json");
+  }
+
+  console.log(`  ✓ Final storageState written → ${stateFile}`);
+}

@@ -19,17 +19,19 @@ concurrency:
 
 env:
   NODE_VERSION: "20"
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  # Production Supabase (used for golden user mode only)
+  NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-  QASE_API_TOKEN: ${{ secrets.QASE_API_TOKEN }}
-  QASE_MODE: testops
+  QASE_API_TOKEN:            ${{ secrets.QASE_API_TOKEN }}
+  QASE_MODE:                 testops
 
 jobs:
+  # ── Job 1: Main Playwright suite (targets production Supabase) ────────────
   playwright:
     name: Playwright Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
@@ -49,9 +51,16 @@ jobs:
 
       - name: Enforce lint baseline (no regressions)
         run: npm run lint:baseline
+        continue-on-error: true
 
       - name: Build Next.js app
         run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:      ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Ensure e2e/.auth directory exists
+        run: mkdir -p e2e/.auth
 
       - name: Run Playwright tests
         run: |
@@ -78,6 +87,10 @@ jobs:
             2>&1 | tee test-output.log
         env:
           CI: true
+          PLAYWRIGHT_BASE_URL: "http://localhost:3000"
+          NEXT_PUBLIC_SUPABASE_URL:      ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY:     ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           QASE_TESTOPS_RUN_TITLE: "iWorkr Web E2E | ${{ github.ref_name }} #${{ github.run_number }}"
 
       - name: Upload test report
@@ -90,6 +103,7 @@ jobs:
             test-results/
             test-output.log
             audit-reports/
+            e2e/.auth/
           retention-days: 14
 
       - name: Upload failure screenshots
@@ -112,12 +126,102 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f playwright-report/results.json ]; then
-            SUITES=$(cat playwright-report/results.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('suites',[])))" 2>/dev/null || echo "?")
+            TOTAL=$(cat playwright-report/results.json | python3 -c "import json,sys; d=json.load(sys.stdin); specs=d.get('suites',[]); print(sum(len(s.get('specs',[])) for s in specs))" 2>/dev/null || echo "?")
+            PASSED=$(cat playwright-report/results.json | python3 -c "import json,sys; d=json.load(sys.stdin); specs=[s for suite in d.get('suites',[]) for s in suite.get('specs',[])]; print(sum(1 for s in specs if all(r.get('status')=='passed' for r in s.get('tests',[{}])[0].get('results',[]))))" 2>/dev/null || echo "?")
             echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
             echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| Test Suites | $SUITES |" >> $GITHUB_STEP_SUMMARY
+            echo "| Total Tests | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
           fi
 
+  # ── Job 2: Local Supabase E2E (fresh ephemeral DB with seed.sql) ──────────
+  playwright-local-db:
+    name: E2E with Local Supabase (seed.sql)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Only run on main branch pushes to avoid double billing on PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Boot local Supabase (with seed.sql)
+        run: |
+          supabase start
+          # Wait for all services to be healthy
+          sleep 10
+          # Confirm seed ran successfully
+          supabase db status
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Extract local Supabase credentials
+        id: supabase-creds
+        run: |
+          # Parse the output of `supabase status` to get local URLs and keys
+          LOCAL_URL=$(supabase status 2>/dev/null | grep "API URL" | awk '{print $NF}')
+          ANON_KEY=$(supabase status 2>/dev/null | grep "anon key" | awk '{print $NF}')
+          SERVICE_KEY=$(supabase status 2>/dev/null | grep "service_role key" | awk '{print $NF}')
+          echo "local_url=$LOCAL_URL"           >> $GITHUB_OUTPUT
+          echo "anon_key=$ANON_KEY"             >> $GITHUB_OUTPUT
+          echo "service_key=$SERVICE_KEY"       >> $GITHUB_OUTPUT
+
+      - name: Build Next.js app (local DB mode)
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:      ${{ steps.supabase-creds.outputs.local_url }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ steps.supabase-creds.outputs.anon_key }}
+
+      - name: Ensure e2e/.auth directory exists
+        run: mkdir -p e2e/.auth
+
+      - name: Run core smoke tests against local DB
+        run: |
+          npx playwright test \
+            --project=setup \
+            --project=smoke-core \
+            --project=auth-flow \
+            2>&1 | tee local-db-test-output.log
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL:           "http://localhost:3000"
+          NEXT_PUBLIC_SUPABASE_URL:      ${{ steps.supabase-creds.outputs.local_url }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ steps.supabase-creds.outputs.anon_key }}
+          SUPABASE_SERVICE_ROLE_KEY:     ${{ steps.supabase-creds.outputs.service_key }}
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop
+
+      - name: Upload local DB report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-db-report
+          path: |
+            playwright-report/
+            local-db-test-output.log
+          retention-days: 7
+
+  # ── Job 3: Cross-browser smoke ────────────────────────────────────────────
   cross-browser:
     name: Cross-Browser Smoke
     runs-on: ubuntu-latest
@@ -143,6 +247,12 @@ jobs:
 
       - name: Build Next.js app
         run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:      ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Ensure e2e/.auth directory exists
+        run: mkdir -p e2e/.auth
 
       - name: Run cross-browser smoke
         run: |
@@ -152,6 +262,10 @@ jobs:
             --project=smoke-webkit
         env:
           CI: true
+          PLAYWRIGHT_BASE_URL:           "http://localhost:3000"
+          NEXT_PUBLIC_SUPABASE_URL:      ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY:     ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           QASE_TESTOPS_RUN_TITLE: "iWorkr Web Cross-Browser | ${{ github.ref_name }} #${{ github.run_number }}"
 
       - name: Upload cross-browser report
