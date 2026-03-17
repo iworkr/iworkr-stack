@@ -158,6 +158,7 @@ const CARE_NAV: NavGroup[] = [
       { id: "nav_sil_fin", label: "SIL Quoting & Variance", icon: Grid3X3, href: "/dashboard/care/sil-quoting", module: "finance" },
       { id: "nav_petty_cash", label: "Petty Cash", icon: Banknote, href: "/dashboard/finance/petty-cash", module: "finance" },
       { id: "nav_coordination", label: "Coordination Ledger", icon: Timer, href: "/dashboard/coordination/ledger", module: "finance" },
+      { id: "nav_iworkr_connect", label: "iWorkr Connect", icon: Zap, href: "/dashboard/finance/iworkr-connect", module: "finance" },
     ],
   },
 
