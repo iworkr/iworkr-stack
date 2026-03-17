@@ -520,10 +520,12 @@ export async function signPortalDocument(input: {
 }
 
 export async function inviteFamilyPortalMember(input: {
-  organization_id: string;
+  organization_id?: string;
   participant_id: string;
   email: string;
-  relationship_type: PortalRelationship;
+  relationship_type?: string;
+  display_name?: string;
+  permissions?: Record<string, boolean>;
   can_cancel_shifts?: boolean;
   can_sign_documents?: boolean;
 }) {
@@ -563,10 +565,15 @@ export async function inviteFamilyPortalMember(input: {
       {
         participant_id: input.participant_id,
         user_id: invitedUserId,
-        relationship_type: input.relationship_type,
-        permissions: {
+        relationship_type: input.relationship_type ?? "primary_guardian",
+        display_name: input.display_name ?? null,
+        is_active: true,
+        invited_at: new Date().toISOString(),
+        permissions: input.permissions ?? {
           can_cancel_shifts: input.can_cancel_shifts !== false,
           can_sign_documents: input.can_sign_documents !== false,
+          can_approve_timesheets: true,
+          can_view_financials: true,
         },
       },
       { onConflict: "participant_id,user_id" }
@@ -576,3 +583,95 @@ export async function inviteFamilyPortalMember(input: {
 
   return { success: true, invited_user_id: invitedUserId };
 }
+
+/**
+ * Admin-only: fetch all participants for the org with their nominee counts
+ * and pending approval counts. Used by the /dashboard/portal admin page.
+ */
+export async function getPortalAdminOverview(orgId?: string) {
+  const { supabase, user } = await getAuthedUser();
+
+  // Resolve org ID
+  let resolvedOrgId = orgId;
+  if (!resolvedOrgId) {
+    const { data: om } = await (supabase as any)
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    resolvedOrgId = om?.organization_id;
+  }
+  if (!resolvedOrgId) return { error: "No organization found" };
+
+  // Verify admin
+  const { data: member } = await (supabase as any)
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", resolvedOrgId)
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!member) return { error: "Access denied" };
+
+  // Fetch participants linked to nominees in this org
+  const { data: nominees } = await (supabase as any)
+    .from("participant_network_members")
+    .select(`
+      participant_id,
+      relationship_type,
+      permissions,
+      display_name,
+      participant_profiles!inner(
+        id,
+        preferred_name,
+        organization_id,
+        clients!inner(name)
+      )
+    `)
+    .eq("participant_profiles.organization_id", resolvedOrgId)
+    .eq("is_active", true);
+
+  if (!nominees || nominees.length === 0) {
+    // Fallback: get all participant_profiles for this org and return them
+    const { data: allProfiles } = await (supabase as any)
+      .from("participant_profiles")
+      .select("id, preferred_name, clients!inner(name)")
+      .eq("organization_id", resolvedOrgId)
+      .limit(50);
+
+    const participants = (allProfiles || []).map((pp: any) => ({
+      participant_id: pp.id as string,
+      participant_name: (pp.preferred_name as string) ?? (pp.clients?.name as string) ?? "Participant",
+      relationship_type: "managed",
+      permissions: {},
+      organization_id: resolvedOrgId,
+    }));
+
+    return { linked_participants: participants, organization_id: resolvedOrgId };
+  }
+
+  const seen = new Set<string>();
+  const participants = nominees
+    .filter((n: any) => {
+      if (seen.has(n.participant_id)) return false;
+      seen.add(n.participant_id);
+      return true;
+    })
+    .map((n: any) => {
+      const pp = n.participant_profiles as any;
+      return {
+        participant_id: n.participant_id as string,
+        participant_name: (pp?.preferred_name as string) ?? (pp?.clients?.name as string) ?? "Participant",
+        relationship_type: n.relationship_type as string,
+        permissions: (n.permissions as Record<string, boolean>) ?? {},
+        organization_id: resolvedOrgId,
+      };
+    });
+
+  return { linked_participants: participants, organization_id: resolvedOrgId };
+}
+

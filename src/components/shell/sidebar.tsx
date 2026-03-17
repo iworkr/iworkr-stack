@@ -225,6 +225,7 @@ const TRADES_NAV: NavGroup[] = [
     children: [
       { id: "nav_clients", label: "Clients", icon: Users, href: "/dashboard/clients", shortcut: "G C" },
       { id: "nav_crm", label: "Sales Pipeline", icon: Workflow, href: "/dashboard/crm" },
+      { id: "nav_portal", label: "Family Portal", icon: Heart, href: "/dashboard/portal" },
     ],
   },
   {
