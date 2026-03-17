@@ -19,9 +19,13 @@ const CreateCoordinationEntrySchema = z.object({
 });
 
 const UpdateCoordinationEntrySchema = z.object({
-  id: z.string().uuid(),
-  case_note: z.string().min(30).max(8000).optional(),
-  activity_type: z.enum(["phone", "email", "research", "meeting", "report_writing", "travel", "other"]).optional(),
+  id: z.string().uuid("Invalid Entry ID"),
+  start_time: z.string().min(1),
+  end_time: z.string().min(1),
+  ndis_line_item: z.string().min(3).max(80),
+  hourly_rate: z.number().min(0),
+  activity_type: z.enum(["phone", "email", "research", "meeting", "report_writing", "travel", "other"]),
+  case_note: z.string().min(30, "Case note must be at least 30 characters").max(8000),
 });
 
 async function requireUser() {
@@ -100,20 +104,87 @@ export async function updateCoordinationEntryAction(input: z.infer<typeof Update
   const parsed = UpdateCoordinationEntrySchema.parse(input);
   const { supabase, user } = await requireUser();
 
-  const { data, error } = await (supabase as any)
+  // ── Step 1: Pre-flight financial lock check ────────────────────────────────
+  const { data: current, error: fetchErr } = await (supabase as any)
+    .from("coordination_time_entries")
+    .select("status, raw_duration_minutes, activity_type, case_note, start_time, end_time, ndis_line_item, hourly_rate")
+    .eq("id", parsed.id)
+    .single();
+
+  if (fetchErr || !current) {
+    throw new Error("Entry not found.");
+  }
+
+  if (["invoiced", "paid"].includes(current.status?.toLowerCase())) {
+    throw new Error("FINANCIAL_LOCK: Cannot modify an invoiced or paid ledger entry.");
+  }
+
+  // ── Step 2: Calculate new duration from times ──────────────────────────────
+  const startMs = new Date(parsed.start_time).getTime();
+  const endMs = new Date(parsed.end_time).getTime();
+  const newDurationMins = Math.max(0, Math.round((endMs - startMs) / 60000));
+  const newBillableUnits = Math.ceil(newDurationMins / 6); // 1 unit = 6 min (NDIS standard)
+  const newTotalCharge = Number(((newBillableUnits / 10) * Number(parsed.hourly_rate)).toFixed(2));
+
+  // ── Step 3: Execute the update ─────────────────────────────────────────────
+  const { data: updated, error: updateErr } = await (supabase as any)
     .from("coordination_time_entries")
     .update({
-      ...(parsed.case_note !== undefined ? { case_note: parsed.case_note } : {}),
-      ...(parsed.activity_type !== undefined ? { activity_type: parsed.activity_type } : {}),
+      start_time: parsed.start_time,
+      end_time: parsed.end_time,
+      ndis_line_item: parsed.ndis_line_item,
+      hourly_rate: parsed.hourly_rate,
+      activity_type: parsed.activity_type,
+      case_note: parsed.case_note,
+      raw_duration_minutes: newDurationMins,
+      billable_units: newBillableUnits,
+      total_charge: newTotalCharge,
+      billable_charge: newTotalCharge,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", parsed.id)
-    .eq("coordinator_id", user.id)
-    .eq("status", "unbilled")
     .select("*")
     .single();
-  if (error) throw new Error(error.message);
+
+  if (updateErr) throw new Error(updateErr.message);
+
+  // ── Step 4: Forensic audit log ─────────────────────────────────────────────
+  const hasChanges =
+    current.raw_duration_minutes !== newDurationMins ||
+    current.activity_type !== parsed.activity_type ||
+    current.case_note !== parsed.case_note ||
+    current.ndis_line_item !== parsed.ndis_line_item ||
+    Number(current.hourly_rate) !== Number(parsed.hourly_rate);
+
+  if (hasChanges) {
+    await (supabase as any)
+      .from("audit_log")
+      .insert({
+        user_id: user.id,
+        action: "LEDGER_UPDATED",
+        entity_type: "coordination_time_entries",
+        entity_id: parsed.id,
+        old_data: {
+          duration_minutes: current.raw_duration_minutes,
+          activity_type: current.activity_type,
+          ndis_line_item: current.ndis_line_item,
+          hourly_rate: current.hourly_rate,
+          case_note: current.case_note?.slice(0, 200),
+        },
+        new_data: {
+          duration_minutes: newDurationMins,
+          activity_type: parsed.activity_type,
+          ndis_line_item: parsed.ndis_line_item,
+          hourly_rate: parsed.hourly_rate,
+          case_note: parsed.case_note?.slice(0, 200),
+        },
+        created_at: new Date().toISOString(),
+      });
+  }
+
+  revalidatePath("/dashboard/finance/coordination-ledger");
   revalidatePath("/dashboard/coordination/ledger");
-  return data;
+  return updated;
 }
 
 export async function listCoordinationParticipantsAction(organizationId: string, search?: string) {

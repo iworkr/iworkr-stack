@@ -12,11 +12,14 @@ import {
   Receipt,
   Play,
   Square,
+  Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
   listCoordinationEntriesAction,
   createCoordinationEntryAction,
+  updateCoordinationEntryAction,
   listCoordinationParticipantsAction,
   getCoordinationLedgerSummaryAction,
 } from "@/app/actions/coordination";
@@ -202,6 +205,9 @@ function LogTimeSlideOver({
   onSaved: () => void;
   editEntry: CoordEntry | null;
 }) {
+  const isEditMode = !!editEntry;
+  const isLocked = isEditMode && (editEntry.status === "invoiced" || editEntry.status === "paid");
+
   const [form, setForm] = useState({
     participant_id: "",
     start_time: "",
@@ -220,7 +226,7 @@ function LogTimeSlideOver({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timerStartRef = useRef<Date | null>(null);
 
-  // Populate form from editEntry
+  // Populate form from editEntry whenever it changes
   useEffect(() => {
     if (editEntry) {
       setForm({
@@ -233,6 +239,10 @@ function LogTimeSlideOver({
         case_note: editEntry.case_note || "",
         status: "unbilled",
       });
+      setError("");
+    } else {
+      setForm({ participant_id: "", start_time: "", end_time: "", ndis_line_item: "07_002_0106_8_3", hourly_rate: "65.09", activity_type: "phone", case_note: "", status: "unbilled" });
+      setError("");
     }
   }, [editEntry]);
 
@@ -266,7 +276,6 @@ function LogTimeSlideOver({
     }
   };
 
-  // Cleanup
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
   const handleSave = async (asDraft: boolean) => {
@@ -281,57 +290,110 @@ function LogTimeSlideOver({
     setSaving(true);
     setError("");
     try {
-      await createCoordinationEntryAction({
-        organization_id: orgId,
-        participant_id: form.participant_id,
-        start_time: new Date(form.start_time).toISOString(),
-        end_time: new Date(form.end_time).toISOString(),
-        ndis_line_item: form.ndis_line_item,
-        hourly_rate: Number(form.hourly_rate) || 65.09,
-        activity_type: form.activity_type as "phone" | "email" | "research" | "meeting" | "report_writing" | "travel" | "other",
-        case_note: form.case_note,
-        status: asDraft ? "draft" : "unbilled",
-      });
+      if (isEditMode && editEntry?.id) {
+        // ── UPDATE path ───────────────────────────────────────────────────────
+        await updateCoordinationEntryAction({
+          id: editEntry.id,
+          start_time: new Date(form.start_time).toISOString(),
+          end_time: new Date(form.end_time).toISOString(),
+          ndis_line_item: form.ndis_line_item,
+          hourly_rate: Number(form.hourly_rate) || 65.09,
+          activity_type: form.activity_type as "phone" | "email" | "research" | "meeting" | "report_writing" | "travel" | "other",
+          case_note: form.case_note,
+        });
+      } else {
+        // ── CREATE path ───────────────────────────────────────────────────────
+        await createCoordinationEntryAction({
+          organization_id: orgId,
+          participant_id: form.participant_id,
+          start_time: new Date(form.start_time).toISOString(),
+          end_time: new Date(form.end_time).toISOString(),
+          ndis_line_item: form.ndis_line_item,
+          hourly_rate: Number(form.hourly_rate) || 65.09,
+          activity_type: form.activity_type as "phone" | "email" | "research" | "meeting" | "report_writing" | "travel" | "other",
+          case_note: form.case_note,
+          status: asDraft ? "draft" : "unbilled",
+        });
+      }
       onSaved();
       onClose();
-      // Reset
       setForm({ participant_id: "", start_time: "", end_time: "", ndis_line_item: "07_002_0106_8_3", hourly_rate: "65.09", activity_type: "phone", case_note: "", status: "unbilled" });
       setTimerSeconds(0);
       setUseTimer(false);
     } catch (e) {
-      setError((e as Error).message);
+      const msg = (e as Error).message;
+      if (msg.includes("FINANCIAL_LOCK")) {
+        setError("Update failed. This entry was invoiced by another user while you were editing.");
+        // Close after a brief moment so the user sees the error
+        setTimeout(() => onClose(), 3000);
+      } else {
+        setError(msg);
+      }
     }
     setSaving(false);
   };
 
   const timerDisplay = `${String(Math.floor(timerSeconds / 3600)).padStart(2, "0")}:${String(Math.floor((timerSeconds % 3600) / 60)).padStart(2, "0")}:${String(timerSeconds % 60).padStart(2, "0")}`;
 
+  // Shared disabled input class for locked state
+  const lockedInputCls = "bg-zinc-950 text-zinc-500 border-transparent cursor-not-allowed";
+  const fieldCls = (base: string) => isLocked ? `${base} ${lockedInputCls}` : base;
+
   return (
     <AnimatePresence>
       {open && (
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="fixed right-0 top-0 bottom-0 z-50 w-[450px] bg-zinc-950 border-l border-white/5 shadow-2xl flex flex-col">
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed right-0 top-0 bottom-0 z-50 w-[450px] bg-zinc-950 border-l border-white/5 shadow-2xl flex flex-col"
+          >
             {/* Header */}
-            <div className="h-16 px-6 border-b border-white/5 flex items-center justify-between shrink-0">
-              <h2 className="text-base font-medium text-white">{editEntry ? "Edit Entry" : "Log Coordination Time"}</h2>
-              <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white/5 text-zinc-500"><X className="w-4 h-4" /></button>
+            <div className="h-16 px-6 border-b border-white/5 flex items-start justify-between shrink-0 pt-4">
+              <div>
+                <h2 className={`text-base font-medium ${isEditMode ? "text-zinc-300" : "text-white"}`}>
+                  {isEditMode ? "Edit Time Entry" : "Log Coordination Time"}
+                </h2>
+                {isEditMode && editEntry && (
+                  <p className="font-mono text-[10px] text-zinc-500 mt-0.5">
+                    ID: {editEntry.id.slice(0, 8).toUpperCase()}
+                    {isLocked && <span className="ml-2 text-blue-400 uppercase tracking-widest">{editEntry.status}</span>}
+                  </p>
+                )}
+              </div>
+              <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white/5 text-zinc-500 mt-0.5"><X className="w-4 h-4" /></button>
             </div>
+
+            {/* Locked banner */}
+            {isLocked && (
+              <div className="mx-6 mt-4 flex items-start gap-2.5 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+                <Lock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[13px] font-medium text-blue-300">Entry Locked</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">This entry has been {editEntry?.status} and cannot be modified.</p>
+                </div>
+              </div>
+            )}
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* Live Timer Toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-400">Use Live Timer</span>
-                <button
-                  onClick={() => { setUseTimer(!useTimer); if (timerRunning) stopTimer(); }}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${useTimer ? "bg-emerald-500" : "bg-zinc-800"}`}
-                >
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${useTimer ? "translate-x-5" : "translate-x-0.5"}`} />
-                </button>
-              </div>
+              {/* Live Timer Toggle — only in create mode */}
+              {!isEditMode && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-400">Use Live Timer</span>
+                  <button
+                    onClick={() => { setUseTimer(!useTimer); if (timerRunning) stopTimer(); }}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${useTimer ? "bg-emerald-500" : "bg-zinc-800"}`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${useTimer ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              )}
 
-              {useTimer && (
+              {useTimer && !isEditMode && (
                 <div className="text-center py-4 rounded-lg border border-white/5 bg-zinc-900/50">
                   <p className="font-mono text-4xl text-white tracking-wider">{timerDisplay}</p>
                   <div className="mt-3 flex justify-center gap-3">
@@ -347,7 +409,12 @@ function LogTimeSlideOver({
               {/* Participant */}
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Participant</label>
-                <select value={form.participant_id} onChange={(e) => setForm((s) => ({ ...s, participant_id: e.target.value }))} className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700">
+                <select
+                  disabled={isLocked}
+                  value={form.participant_id}
+                  onChange={(e) => setForm((s) => ({ ...s, participant_id: e.target.value }))}
+                  className={fieldCls("w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700")}
+                >
                   <option value="">Select participant…</option>
                   {participants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
@@ -358,16 +425,28 @@ function LogTimeSlideOver({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Start</label>
-                    <input type="datetime-local" value={form.start_time} onChange={(e) => setForm((s) => ({ ...s, start_time: e.target.value }))} className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700" />
+                    <input
+                      type="datetime-local"
+                      disabled={isLocked}
+                      value={form.start_time}
+                      onChange={(e) => setForm((s) => ({ ...s, start_time: e.target.value }))}
+                      className={fieldCls("w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700")}
+                    />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">End</label>
-                    <input type="datetime-local" value={form.end_time} onChange={(e) => setForm((s) => ({ ...s, end_time: e.target.value }))} className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700" />
+                    <input
+                      type="datetime-local"
+                      disabled={isLocked}
+                      value={form.end_time}
+                      onChange={(e) => setForm((s) => ({ ...s, end_time: e.target.value }))}
+                      className={fieldCls("w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700")}
+                    />
                   </div>
                 </div>
               )}
 
-              {/* Duration (read-only) */}
+              {/* Duration (read-only display) */}
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Duration</label>
                 <div className="h-9 rounded-md border border-white/5 bg-zinc-900/50 px-3 flex items-center font-mono text-sm text-white">
@@ -378,7 +457,12 @@ function LogTimeSlideOver({
               {/* Activity Type */}
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Activity Type</label>
-                <select value={form.activity_type} onChange={(e) => setForm((s) => ({ ...s, activity_type: e.target.value }))} className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700">
+                <select
+                  disabled={isLocked}
+                  value={form.activity_type}
+                  onChange={(e) => setForm((s) => ({ ...s, activity_type: e.target.value }))}
+                  className={fieldCls("w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white outline-none focus:border-zinc-700")}
+                >
                   {["phone", "email", "research", "meeting", "report_writing", "travel", "other"].map((t) => <option key={t} value={t}>{activityLabel(t)}</option>)}
                 </select>
               </div>
@@ -386,35 +470,74 @@ function LogTimeSlideOver({
               {/* NDIS Line Item */}
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">NDIS Support Item</label>
-                <input value={form.ndis_line_item} onChange={(e) => setForm((s) => ({ ...s, ndis_line_item: e.target.value }))} placeholder="07_002_0106_8_3" className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white font-mono placeholder:text-zinc-600 outline-none focus:border-zinc-700" />
+                <input
+                  disabled={isLocked}
+                  value={form.ndis_line_item}
+                  onChange={(e) => setForm((s) => ({ ...s, ndis_line_item: e.target.value }))}
+                  placeholder="07_002_0106_8_3"
+                  className={fieldCls("w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white font-mono placeholder:text-zinc-600 outline-none focus:border-zinc-700")}
+                />
               </div>
 
               {/* Hourly Rate */}
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Hourly Rate ($)</label>
-                <input type="number" step="0.01" value={form.hourly_rate} onChange={(e) => setForm((s) => ({ ...s, hourly_rate: e.target.value }))} className="w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white font-mono placeholder:text-zinc-600 outline-none focus:border-zinc-700" />
+                <input
+                  type="number"
+                  step="0.01"
+                  disabled={isLocked}
+                  value={form.hourly_rate}
+                  onChange={(e) => setForm((s) => ({ ...s, hourly_rate: e.target.value }))}
+                  className={fieldCls("w-full h-9 rounded-md border border-white/5 bg-zinc-900 px-3 text-xs text-white font-mono placeholder:text-zinc-600 outline-none focus:border-zinc-700")}
+                />
               </div>
 
               {/* Case Note */}
               <div className="flex-1">
                 <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold block mb-1.5">Case Note</label>
                 <textarea
+                  disabled={isLocked}
                   value={form.case_note}
                   onChange={(e) => setForm((s) => ({ ...s, case_note: e.target.value }))}
                   rows={5}
                   placeholder="Detail the actions taken, outcomes achieved, and next steps..."
-                  className="w-full rounded-md border border-white/5 bg-zinc-900 px-3 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700 resize-none leading-relaxed"
+                  className={fieldCls("w-full rounded-md border border-white/5 bg-zinc-900 px-3 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-700 resize-none leading-relaxed")}
                 />
                 <span className="text-[10px] text-zinc-600 mt-1 block">{form.case_note.length}/8000 (min 30)</span>
               </div>
 
-              {error && <p className="text-xs text-rose-400">{error}</p>}
+              {error && (
+                <div className="flex items-start gap-2 rounded-md border border-rose-500/20 bg-rose-500/5 px-3 py-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-rose-400">{error}</p>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-white/5 bg-[#050505] shrink-0 flex gap-3">
-              <button onClick={() => handleSave(true)} disabled={saving} className="w-1/3 h-10 rounded-md border border-white/5 text-zinc-400 text-xs font-medium hover:bg-white/5 transition-colors disabled:opacity-50">Save as Draft</button>
-              <button onClick={() => handleSave(false)} disabled={saving} className="w-2/3 h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98] disabled:opacity-50">{saving ? "Saving…" : "Finalize Entry"}</button>
+            <div className="p-6 border-t border-white/5 bg-[#050505] shrink-0">
+              {isLocked ? (
+                /* Locked state — no submit button */
+                <div className="flex items-center justify-center gap-2 h-10 rounded-md border border-white/5 bg-transparent">
+                  <Lock className="w-3.5 h-3.5 text-zinc-600" />
+                  <span className="text-xs text-zinc-600">This entry has been invoiced and cannot be modified.</span>
+                </div>
+              ) : isEditMode ? (
+                /* Edit mode — single Update button in emerald */
+                <button
+                  onClick={() => handleSave(false)}
+                  disabled={saving}
+                  className="w-full h-10 rounded-md bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-400 transition-colors active:scale-[0.98] disabled:opacity-50"
+                >
+                  {saving ? "Updating…" : "Update Entry"}
+                </button>
+              ) : (
+                /* Create mode — Draft + Finalize */
+                <div className="flex gap-3">
+                  <button onClick={() => handleSave(true)} disabled={saving} className="w-1/3 h-10 rounded-md border border-white/5 text-zinc-400 text-xs font-medium hover:bg-white/5 transition-colors disabled:opacity-50">Save as Draft</button>
+                  <button onClick={() => handleSave(false)} disabled={saving} className="w-2/3 h-10 rounded-md bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.98] disabled:opacity-50">{saving ? "Saving…" : "Finalize Entry"}</button>
+                </div>
+              )}
             </div>
           </motion.div>
         </>
