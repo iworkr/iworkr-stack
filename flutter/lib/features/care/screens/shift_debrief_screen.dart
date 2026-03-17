@@ -53,6 +53,12 @@ class _ShiftDebriefScreenState extends ConsumerState<ShiftDebriefScreen> {
   String? _childShadowWorkerId;
   String? _templateLoadError;
 
+  // ── Teleology: Goal Tracking State ──────────────────────
+  List<Map<String, dynamic>> _activeGoals = [];
+  final Map<String, String> _goalRatings = {}; // goal_id -> 'REGRESSED'|'MAINTAINED'|'PROGRESSED'
+  final Map<String, String> _goalObservations = {}; // goal_id -> observation text
+  bool _goalsLoaded = false;
+
   String get _draftKey => 'rosetta_shift_note_draft_${widget.shiftId}';
 
   @override
@@ -72,6 +78,31 @@ class _ShiftDebriefScreenState extends ConsumerState<ShiftDebriefScreen> {
     await _restoreDraft();
     _autoSaveTimer = Timer.periodic(const Duration(seconds: 5), (_) => _persistDraft());
     _validateRequired();
+    await _loadActiveGoals();
+  }
+
+  Future<void> _loadActiveGoals() async {
+    if (_shift?.participantId == null) return;
+    try {
+      final rows = await SupabaseService.client
+          .rpc('get_active_goals_for_participant', params: {'p_participant_id': _shift!.participantId})
+          .select();
+      if (mounted) {
+        setState(() {
+          _activeGoals = (rows as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+          // Default all goals to MAINTAINED
+          for (final g in _activeGoals) {
+            final id = g['id'] as String? ?? '';
+            if (id.isNotEmpty && !_goalRatings.containsKey(id)) {
+              _goalRatings[id] = 'MAINTAINED';
+            }
+          }
+          _goalsLoaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _goalsLoaded = true);
+    }
   }
 
   Future<void> _loadShiftAndTemplate() async {
@@ -499,6 +530,39 @@ class _ShiftDebriefScreenState extends ConsumerState<ShiftDebriefScreen> {
         // Shift note submission failed — still proceed with clock-out
       }
 
+      // ── Teleology: Submit goal linkages atomically ──────
+      if (_activeGoals.isNotEmpty) {
+        try {
+          final linkages = _goalRatings.entries
+              .where((e) => e.value != 'MAINTAINED' || (_goalObservations[e.key]?.isNotEmpty ?? false))
+              .map((e) => {
+                'goal_id': e.key,
+                'progress_rating': e.value,
+                'worker_observation': _goalObservations[e.key] ?? '',
+              })
+              .toList();
+          if (linkages.isNotEmpty) {
+            final teIdx = await SupabaseService.client
+                .from('time_entries')
+                .select('id')
+                .eq('shift_id', _shift!.id)
+                .order('clock_in', ascending: false)
+                .limit(1);
+            final teId = (teIdx as List).isNotEmpty ? teIdx[0]['id'] as String? : null;
+            await SupabaseService.client.rpc('submit_timesheet_with_goals', params: {
+              'p_organization_id': _shift!.organizationId,
+              'p_shift_id': _shift!.id,
+              'p_worker_id': userId,
+              'p_participant_id': _shift!.participantId,
+              'p_time_entry_id': teId,
+              'p_goal_linkages': linkages,
+            });
+          }
+        } catch (_) {
+          // Goal linkage submission failed — non-blocking, still proceed
+        }
+      }
+
       final entries = await SupabaseService.client
           .from('time_entries')
           .select('id, clock_in')
@@ -875,6 +939,145 @@ class _ShiftDebriefScreenState extends ConsumerState<ShiftDebriefScreen> {
                   style: GoogleFonts.inter(fontSize: 12, color: ObsidianTheme.rose),
                 ),
               ),
+            // ── Teleology: Goal Tracking Step ───────────────
+            if (_goalsLoaded && _activeGoals.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: ObsidianTheme.emerald,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Goal Tracking',
+                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: c.textPrimary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Link this shift to participant goals. Your observations fuel their funding renewal.',
+                style: GoogleFonts.inter(fontSize: 12, color: c.textTertiary),
+              ),
+              const SizedBox(height: 10),
+              ..._activeGoals.map((goal) {
+                final goalId = goal['id'] as String? ?? '';
+                final goalTitle = goal['title'] as String? ?? goal['goal_statement'] as String? ?? 'Untitled Goal';
+                final domain = goal['domain'] as String? ?? 'DAILY_LIVING';
+                final currentRating = _goalRatings[goalId] ?? 'MAINTAINED';
+                final obs = _goalObservations[goalId] ?? '';
+                final showObs = currentRating != 'MAINTAINED' || obs.isNotEmpty;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: currentRating == 'PROGRESSED'
+                          ? ObsidianTheme.emerald.withValues(alpha: 0.4)
+                          : currentRating == 'REGRESSED'
+                              ? ObsidianTheme.rose.withValues(alpha: 0.4)
+                              : c.border,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(goalTitle,
+                                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: c.textPrimary)),
+                                Text(domain.replaceAll('_', ' '),
+                                    style: GoogleFonts.inter(fontSize: 10, color: c.textTertiary, letterSpacing: 0.5)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Tri-state toggle
+                      Row(
+                        children: [
+                          _GoalRatingPill(
+                            label: 'Regressed',
+                            active: currentRating == 'REGRESSED',
+                            color: ObsidianTheme.rose,
+                            onTap: () => setState(() {
+                              _goalRatings[goalId] = 'REGRESSED';
+                            }),
+                          ),
+                          const SizedBox(width: 6),
+                          _GoalRatingPill(
+                            label: 'Maintained',
+                            active: currentRating == 'MAINTAINED',
+                            color: Colors.white54,
+                            onTap: () => setState(() {
+                              _goalRatings[goalId] = 'MAINTAINED';
+                            }),
+                          ),
+                          const SizedBox(width: 6),
+                          _GoalRatingPill(
+                            label: 'Progressed',
+                            active: currentRating == 'PROGRESSED',
+                            color: ObsidianTheme.emerald,
+                            onTap: () => setState(() {
+                              _goalRatings[goalId] = 'PROGRESSED';
+                            }),
+                          ),
+                        ],
+                      ),
+                      // Observation text field (auto-expands on non-Maintained)
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut,
+                        child: showObs
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: TextField(
+                                  controller: TextEditingController(text: obs)
+                                    ..selection = TextSelection.fromPosition(TextPosition(offset: obs.length)),
+                                  onChanged: (v) => _goalObservations[goalId] = v,
+                                  style: GoogleFonts.inter(fontSize: 13, color: c.textPrimary),
+                                  maxLines: 2,
+                                  decoration: InputDecoration(
+                                    hintText: 'Brief note on this goal (optional)…',
+                                    hintStyle: GoogleFonts.inter(fontSize: 12, color: c.textDisabled),
+                                    filled: true,
+                                    fillColor: c.canvas,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: c.border),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: c.border),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: ObsidianTheme.emerald, width: 1.5),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           ],
         ),
         bottomNavigationBar: Container(
@@ -891,6 +1094,45 @@ class _ShiftDebriefScreenState extends ConsumerState<ShiftDebriefScreen> {
                   icon: PhosphorIconsLight.checkCircle,
                   onSlideComplete: _finalizeAndClockOut,
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GoalRatingPill extends StatelessWidget {
+  final String label;
+  final bool active;
+  final Color color;
+  final VoidCallback onTap;
+  const _GoalRatingPill({required this.label, required this.active, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: active ? color.withValues(alpha: 0.18) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: active ? color : Colors.white.withValues(alpha: 0.1),
+              width: active ? 1.5 : 1,
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              color: active ? color : Colors.white.withValues(alpha: 0.5),
+              letterSpacing: 0.2,
+            ),
+          ),
         ),
       ),
     );

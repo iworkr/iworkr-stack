@@ -144,6 +144,7 @@ const CARE_NAV: NavGroup[] = [
       { id: "nav_shift_notes", label: "Shift Notes & Comms", icon: ClipboardList, href: "/dashboard/care/notes" },
       { id: "nav_medications", label: "eMAR / Medications", icon: Pill, href: "/dashboard/care/medications" },
       { id: "nav_incidents", label: "Incidents & Observations", icon: AlertOctagon, href: "/dashboard/care/incidents" },
+      { id: "nav_goal_matrix", label: "Goal Matrix", icon: Activity, href: "/dashboard/clinical/goals" },
     ],
   },
 
