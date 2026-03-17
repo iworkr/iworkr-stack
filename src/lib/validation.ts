@@ -126,8 +126,8 @@ export const createScheduleBlockSchema = z.object({
   title: z.string().min(1).max(200),
   client_name: z.string().max(200).optional(),
   location: z.string().max(500).optional(),
-  start_time: z.string().min(1, "Start time is required"),
-  end_time: z.string().min(1, "End time is required"),
+  start_time: z.string().datetime({ offset: true, message: "start_time must be a strict ISO-8601 UTC string (e.g. 2026-03-17T01:00:00.000Z)" }),
+  end_time: z.string().datetime({ offset: true, message: "end_time must be a strict ISO-8601 UTC string (e.g. 2026-03-17T02:00:00.000Z)" }),
   travel_minutes: z.number().min(0).max(480).optional().default(0),
   notes: z.string().max(2000).optional(),
 });

@@ -870,7 +870,7 @@ class _TaskItem extends StatelessWidget {
                 ),
               if (task.isCompleted && task.completedAt != null)
                 Text(
-                  DateFormat.Hm().format(task.completedAt!),
+                  DateFormat.Hm().format(task.completedAt!.toLocal()),
                   style: GoogleFonts.jetBrainsMono(
                       fontSize: 10, color: c.textTertiary),
                 ),

@@ -84,10 +84,10 @@ class CareShift {
       organizationId: json['organization_id'] as String,
       participantId: json['participant_id'] as String?,
       workerId: json['worker_id'] as String? ?? json['assignee_id'] as String? ?? json['technician_id'] as String?,
-      scheduledStart: DateTime.parse(json['scheduled_start']?.toString() ?? json['start_time']?.toString() ?? DateTime.now().toIso8601String()),
-      scheduledEnd: DateTime.parse(json['scheduled_end']?.toString() ?? json['end_time']?.toString() ?? DateTime.now().toIso8601String()),
-      actualStart: json['actual_start'] != null ? DateTime.tryParse(json['actual_start'] as String) : null,
-      actualEnd: json['actual_end'] != null ? DateTime.tryParse(json['actual_end'] as String) : null,
+      scheduledStart: DateTime.parse(json['scheduled_start']?.toString() ?? json['start_time']?.toString() ?? DateTime.now().toIso8601String()).toLocal(),
+      scheduledEnd: DateTime.parse(json['scheduled_end']?.toString() ?? json['end_time']?.toString() ?? DateTime.now().toIso8601String()).toLocal(),
+      actualStart: json['actual_start'] != null ? DateTime.tryParse(json['actual_start'] as String)?.toLocal() : null,
+      actualEnd: json['actual_end'] != null ? DateTime.tryParse(json['actual_end'] as String)?.toLocal() : null,
       ndisLineItem: json['ndis_line_item'] as String? ?? metadata['ndis_line_item'] as String?,
       serviceType: json['service_type'] as String? ?? metadata['service_type'] as String? ?? json['title'] as String?,
       status: CareShiftStatus.fromString(json['status'] as String? ?? 'published'),
@@ -109,8 +109,8 @@ class CareShift {
       cancellationReason: json['cancellation_reason'] as String?,
       isShadowShift: json['is_shadow_shift'] as bool? ?? metadata['is_shadow_shift'] as bool? ?? false,
       parentShiftId: json['parent_shift_id'] as String? ?? metadata['parent_shift_id'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String? ?? json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String? ?? json['created_at'] as String).toLocal(),
     );
   }
 

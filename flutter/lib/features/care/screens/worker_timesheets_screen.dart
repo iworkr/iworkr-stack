@@ -188,8 +188,8 @@ class _TimesheetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
-    final clockIn = DateTime.tryParse(entry['clock_in']?.toString() ?? '');
-    final clockOut = entry['clock_out'] != null ? DateTime.tryParse(entry['clock_out'].toString()) : null;
+    final clockIn = DateTime.tryParse(entry['clock_in']?.toString() ?? '')?.toLocal();
+    final clockOut = entry['clock_out'] != null ? DateTime.tryParse(entry['clock_out'].toString())?.toLocal() : null;
     final totalMin = entry['total_minutes'] as int? ?? 0;
     final hours = totalMin ~/ 60;
     final mins = totalMin % 60;

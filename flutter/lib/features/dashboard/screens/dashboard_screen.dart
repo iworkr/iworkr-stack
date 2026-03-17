@@ -1881,7 +1881,7 @@ class _CareClockInCardState extends ConsumerState<_CareClockInCard> {
     setState(() => _loading = true);
     HapticFeedback.heavyImpact();
     final pos = await _getPosition();
-    final clockInTime = DateTime.parse(entry['clock_in']);
+    final clockInTime = DateTime.parse(entry['clock_in']).toLocal();
     final breakMins = entry['break_duration_minutes'] as int? ?? 0;
     await clockOut(
       entryId: entry['id'],
@@ -1952,7 +1952,7 @@ class _CareClockInCardState extends ConsumerState<_CareClockInCard> {
                     ),
                     const SizedBox(height: 2),
                     if (isClockedIn && entryAsync.valueOrNull != null)
-                      _ElapsedTimer(clockIn: DateTime.parse(entryAsync.value!['clock_in']))
+                      _ElapsedTimer(clockIn: DateTime.parse(entryAsync.value!['clock_in']).toLocal())
                     else
                       Text(
                         'Tap to start your shift',

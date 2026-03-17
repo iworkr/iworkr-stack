@@ -1460,7 +1460,7 @@ class _HandoverBubble extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: c.textSecondary)),
                 const Spacer(),
-                Text(DateFormat('d MMM HH:mm').format(message.createdAt),
+                Text(DateFormat('d MMM HH:mm').format(message.createdAt.toLocal()),
                     style: GoogleFonts.inter(
                         fontSize: 11, color: c.textTertiary)),
               ],

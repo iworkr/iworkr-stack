@@ -79,7 +79,7 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
       final status = active['status'] as String? ?? 'active';
       if (status == 'active') {
         HapticFeedback.heavyImpact();
-        final clockInTime = DateTime.parse(active['clock_in'] as String);
+        final clockInTime = DateTime.parse(active['clock_in'] as String).toLocal();
         final breakMins = active['break_duration_minutes'] as int? ?? 0;
         await clockOut(
           entryId: active['id'] as String,
@@ -89,7 +89,7 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
         _elapsedTimer?.cancel();
       } else if (status == 'break') {
         HapticFeedback.mediumImpact();
-        final breakStart = DateTime.parse(active['break_start'] as String);
+        final breakStart = DateTime.parse(active['break_start'] as String).toLocal();
         final breakMins = DateTime.now().difference(breakStart).inMinutes +
             (active['break_duration_minutes'] as int? ?? 0);
         await endBreak(active['id'] as String, breakMins);
@@ -121,7 +121,7 @@ class _TimeClockScreenState extends ConsumerState<TimeClockScreen>
     final isOnBreak = active?['status'] == 'break';
 
     if (isClockedIn && _elapsedTimer == null) {
-      final clockInTime = DateTime.parse(active['clock_in'] as String);
+      final clockInTime = DateTime.parse(active['clock_in'] as String).toLocal();
       _startElapsedTimer(clockInTime);
     }
 
@@ -523,8 +523,8 @@ class _ShiftHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
-    final clockIn = DateTime.tryParse(entry['clock_in']?.toString() ?? '');
-    final clockOutTime = DateTime.tryParse(entry['clock_out']?.toString() ?? '');
+    final clockIn = DateTime.tryParse(entry['clock_in']?.toString() ?? '')?.toLocal();
+    final clockOutTime = DateTime.tryParse(entry['clock_out']?.toString() ?? '')?.toLocal();
     final totalMinutes = entry['total_minutes'] as int? ?? 0;
     final breakMinutes = entry['break_duration_minutes'] as int? ?? 0;
     final geoWarning = entry['geo_warning'] as bool? ?? false;

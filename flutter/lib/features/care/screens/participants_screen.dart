@@ -556,19 +556,20 @@ class _ParticipantTileState extends State<_ParticipantTile> {
     if (nextShift == null) return 'No upcoming shifts';
 
     final now = DateTime.now();
+    final localShift = nextShift.toLocal();
     final today = DateTime(now.year, now.month, now.day);
-    final shiftDay = DateTime(nextShift.year, nextShift.month, nextShift.day);
+    final shiftDay = DateTime(localShift.year, localShift.month, localShift.day);
 
     if (shiftDay == today) {
-      return 'Next: Today at ${DateFormat.jm().format(nextShift)}';
+      return 'Next: Today at ${DateFormat.jm().format(localShift)}';
     }
 
     final tomorrow = today.add(const Duration(days: 1));
     if (shiftDay == tomorrow) {
-      return 'Next: Tomorrow at ${DateFormat.jm().format(nextShift)}';
+      return 'Next: Tomorrow at ${DateFormat.jm().format(localShift)}';
     }
 
-    return 'Next: ${DateFormat.MMMd().format(nextShift)}';
+    return 'Next: ${DateFormat.MMMd().format(localShift)}';
   }
 }
 

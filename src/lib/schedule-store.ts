@@ -22,6 +22,7 @@ import {
 import { useToastStore } from "@/components/app/action-toast";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/auth-store";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 export type ViewScale = "day" | "week" | "month";
 
@@ -46,11 +47,18 @@ function getInitials(name: string): string {
 }
 
 /* ── Helper function to convert time to decimal hours ─── */
-function timeToDecimalHours(timeStr: string): number {
+/* PRD §3.2 Meridian: When a workspace timezone is known, we read
+   the time in that timezone so block positions on the grid align
+   with "business local" hours rather than browser or UTC hours.
+   Falls back to UTC hours (consistent with decimalHourToISO). */
+function timeToDecimalHours(timeStr: string, workspaceTz?: string | null): number {
   const date = new Date(timeStr);
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  return hours + minutes / 60;
+  if (workspaceTz) {
+    const zoned = toZonedTime(date, workspaceTz);
+    return zoned.getHours() + zoned.getMinutes() / 60;
+  }
+  // Fallback: use UTC hours (consistent with Date.UTC in decimalHourToISO)
+  return date.getUTCHours() + date.getUTCMinutes() / 60;
 }
 
 /* ── Helper function to calculate duration in hours ────── */
@@ -61,13 +69,24 @@ function calculateDuration(startTime: string, endTime: string): number {
 }
 
 /* ── Convert decimal hour to strict UTC ISO timestamp ──── */
-/* PRD §2.2: All mutation timestamps MUST be UTC. We construct
-   the Date in UTC explicitly so .toISOString() yields the
-   exact intended hour regardless of browser timezone offset. */
-function decimalHourToISO(date: string, hour: number): string {
+/* PRD Meridian §3.2: When a workspace timezone is known (e.g.
+   'Australia/Brisbane'), we convert the "grid-local" time to UTC
+   using fromZonedTime so that 9:00 AM Brisbane is always saved as
+   23:00Z the previous day — immune to the dispatcher's browser TZ.
+   Falls back to raw Date.UTC when no workspace timezone is set. */
+function decimalHourToISO(date: string, hour: number, workspaceTz?: string | null): string {
   const [year, month, day] = date.split("-").map(Number);
   const h = Math.floor(hour);
   const m = Math.round((hour - h) * 60);
+
+  if (workspaceTz) {
+    // Build a "wall-clock" date in the workspace timezone, then convert to UTC
+    const zonedDate = new Date(year, month - 1, day, h, m, 0, 0);
+    return fromZonedTime(zonedDate, workspaceTz).toISOString();
+  }
+
+  // Fallback: treat the hour as UTC directly (matches legacy behaviour
+  // for customers who run their browser in the same TZ as their business)
   const d = new Date(Date.UTC(year, month - 1, day, h, m, 0, 0));
   return d.toISOString();
 }
@@ -123,7 +142,7 @@ interface ScheduleState {
   handleRealtimeUpdate: () => void;
 }
 
-function mapServerBlock(b: any): ScheduleBlock {
+function mapServerBlock(b: any, workspaceTz?: string | null): ScheduleBlock {
   return {
     id: b.id,
     jobId: b.job_id || "",
@@ -132,7 +151,7 @@ function mapServerBlock(b: any): ScheduleBlock {
     title: b.title,
     client: b.client_name || "",
     location: b.location || "",
-    startHour: b.start_time ? timeToDecimalHours(b.start_time) : 0,
+    startHour: b.start_time ? timeToDecimalHours(b.start_time, workspaceTz) : 0,
     duration: b.start_time && b.end_time ? calculateDuration(b.start_time, b.end_time) : 0,
     status: b.status,
     travelTime: b.travel_minutes || undefined,
@@ -186,7 +205,8 @@ export const useScheduleStore = create<ScheduleState>()(
 
       if (data) {
         const d = data as { blocks: any[]; technicians: any[]; backlog: BacklogJob[]; events: ScheduleEvent[] };
-        const mappedBlocks = (d.blocks || []).map(mapServerBlock);
+        const workspaceTz = (useAuthStore.getState().currentOrg as Record<string, unknown> | null)?.timezone as string | null;
+        const mappedBlocks = (d.blocks || []).map((b) => mapServerBlock(b, workspaceTz));
         const mappedTechs = (d.technicians || []).map(mapServerTechnician);
 
         set({
@@ -214,7 +234,8 @@ export const useScheduleStore = create<ScheduleState>()(
           if (Array.isArray(techBlocks)) allBlocks.push(...techBlocks);
         });
       }
-      const mappedBlocks2 = allBlocks.map(mapServerBlock);
+      const workspaceTz2 = (useAuthStore.getState().currentOrg as Record<string, unknown> | null)?.timezone as string | null;
+      const mappedBlocks2 = allBlocks.map((b) => mapServerBlock(b, workspaceTz2));
       const mappedTechs2 = (techniciansResult.data || []).map(mapServerTechnician);
 
       set({
@@ -246,7 +267,8 @@ export const useScheduleStore = create<ScheduleState>()(
       const { data } = await getScheduleView(orgId, selectedDate);
       if (data) {
         const d = data as { blocks: any[]; technicians: any[]; backlog: BacklogJob[]; events: ScheduleEvent[] };
-        const mappedBlocks = (d.blocks || []).map(mapServerBlock);
+        const workspaceTz = (useAuthStore.getState().currentOrg as Record<string, unknown> | null)?.timezone as string | null;
+        const mappedBlocks = (d.blocks || []).map((b) => mapServerBlock(b, workspaceTz));
         const mappedTechs = (d.technicians || []).map(mapServerTechnician);
         set({
           blocks: mappedBlocks,
@@ -310,8 +332,9 @@ export const useScheduleStore = create<ScheduleState>()(
 
     /* ── Step 3: Persist to server (UTC-normalized) ────── */
     const date = get().selectedDate;
-    const startISO = decimalHourToISO(date, snappedHour);
-    const endISO = decimalHourToISO(date, snappedHour + block.duration);
+    const workspaceTz = (useAuthStore.getState().currentOrg as Record<string, unknown> | null)?.timezone as string | null;
+    const startISO = decimalHourToISO(date, snappedHour, workspaceTz);
+    const endISO = decimalHourToISO(date, snappedHour + block.duration, workspaceTz);
     const techId = newTechId || block.technicianId;
 
     // Lock: prevent realtime refresh from overwriting our optimistic state
@@ -399,7 +422,8 @@ export const useScheduleStore = create<ScheduleState>()(
 
     // Persist to server (UTC-normalized)
     const date = get().selectedDate;
-    const endISO = decimalHourToISO(date, block.startHour + snapped);
+    const workspaceTz = (useAuthStore.getState().currentOrg as Record<string, unknown> | null)?.timezone as string | null;
+    const endISO = decimalHourToISO(date, block.startHour + snapped, workspaceTz);
     _mutationInFlight++;
     resizeScheduleBlockServer(blockId, endISO)
       .then((result) => {
@@ -486,8 +510,9 @@ export const useScheduleStore = create<ScheduleState>()(
     const duration = (job.estimated_duration_minutes || 60) / 60;
     const snappedHour = Math.round(startHour * 4) / 4;
 
-    const startISO = decimalHourToISO(selectedDate, snappedHour);
-    const endISO = decimalHourToISO(selectedDate, snappedHour + duration);
+    const workspaceTz = (useAuthStore.getState().currentOrg as Record<string, unknown> | null)?.timezone as string | null;
+    const startISO = decimalHourToISO(selectedDate, snappedHour, workspaceTz);
+    const endISO = decimalHourToISO(selectedDate, snappedHour + duration, workspaceTz);
 
     // ─── Nightingale: Credential Hard Gate ────────────────────
     // For care organizations, validate that the worker has all required

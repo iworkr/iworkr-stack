@@ -15,8 +15,8 @@ const UpdateScheduleBlockSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   client_name: z.string().max(200).optional().nullable(),
   location: z.string().max(500).optional().nullable(),
-  start_time: z.string().optional(),
-  end_time: z.string().optional(),
+  start_time: z.string().datetime({ offset: true }).optional(),
+  end_time: z.string().datetime({ offset: true }).optional(),
   status: z.enum(["scheduled", "en_route", "in_progress", "complete", "cancelled"]).optional(),
   travel_minutes: z.number().min(0).max(480).optional().nullable(),
   is_conflict: z.boolean().optional(),
@@ -1026,8 +1026,8 @@ export async function createScheduleEvent(params: CreateScheduleEventParams) {
       user_id: z.string().uuid(),
       type: z.enum(["break", "meeting", "personal", "unavailable"]),
       title: z.string().min(1).max(200),
-      start_time: z.string().min(1),
-      end_time: z.string().min(1),
+      start_time: z.string().datetime({ offset: true }),
+      end_time: z.string().datetime({ offset: true }),
       notes: z.string().max(2000).optional().nullable(),
     });
     const validated = validate(CreateScheduleEventSchema, params);

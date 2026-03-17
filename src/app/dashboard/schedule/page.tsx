@@ -130,7 +130,8 @@ const contextItems: ContextMenuItem[] = [
 
 function timeToDecimalHours(timeStr: string): number {
   const date = new Date(timeStr);
-  return date.getHours() + date.getMinutes() / 60;
+  // Use UTC hours to match the UTC-anchored decimalHourToISO in the store
+  return date.getUTCHours() + date.getUTCMinutes() / 60;
 }
 
 function calculateDuration(startTime: string, endTime: string): number {

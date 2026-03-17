@@ -514,7 +514,7 @@ class _ShiftDebriefScreenState extends ConsumerState<ShiftDebriefScreen> {
         if (rawClockIn == null || rawTimeEntryId == null) {
           throw Exception('Active time entry missing required clock data.');
         }
-        final clockIn = DateTime.parse(rawClockIn);
+        final clockIn = DateTime.parse(rawClockIn).toLocal();
         await clockOutOfShift(
           shiftId: _shift!.id,
           timeEntryId: rawTimeEntryId,
