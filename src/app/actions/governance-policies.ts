@@ -275,3 +275,244 @@ export async function getPolicyDossierDataAction(input: { policy_id: string; org
   return { policy, acknowledgements: rows || [] };
 }
 
+// ── Project Lexicon: Governance Dashboard Telemetry ───────────────────────────
+
+export interface PolicyRow {
+  id: string;
+  title: string;
+  category: string;
+  version: string;
+  status: string;
+  document_url: string | null;
+  review_date: string | null;
+  effective_date: string | null;
+  requires_acknowledgement: boolean;
+  current_version_id: string | null;
+  created_at: string;
+  updated_at: string;
+  ack_total: number;
+  ack_signed: number;
+}
+
+export interface GovernanceTelemetry {
+  total_active: number;
+  upcoming_reviews: number;
+  ack_rate: number;
+  overdue_acks: number;
+}
+
+export async function getGovernanceDashboardAction(organizationId: string): Promise<{
+  policies: PolicyRow[];
+  telemetry: GovernanceTelemetry;
+}> {
+  const { supabase } = await requireUser();
+
+  // Fetch all policies for the org (no is_active filter — use status field)
+  const { data: rawPolicies, error: pErr } = await supabase
+    .from("policy_register")
+    .select("id, title, category, version, status, document_url, review_date, effective_date, requires_acknowledgement, current_version_id, created_at, updated_at")
+    .eq("organization_id", organizationId)
+    .order("updated_at", { ascending: false });
+
+  if (pErr) throw new Error(pErr.message);
+  const policies = rawPolicies || [];
+
+  // Fetch acknowledgement counts grouped by policy_id
+  const policyIds = policies.map((p: any) => p.id);
+  const ackMap: Record<string, { total: number; signed: number }> = {};
+
+  if (policyIds.length > 0) {
+    const { data: acks } = await supabase
+      .from("policy_acknowledgements")
+      .select("policy_id, status")
+      .eq("organization_id", organizationId)
+      .in("policy_id", policyIds);
+
+    for (const ack of acks || []) {
+      if (!ackMap[ack.policy_id]) ackMap[ack.policy_id] = { total: 0, signed: 0 };
+      ackMap[ack.policy_id].total++;
+      if (ack.status === "signed") ackMap[ack.policy_id].signed++;
+    }
+  }
+
+  const enriched: PolicyRow[] = policies.map((p: any) => ({
+    ...p,
+    ack_total: ackMap[p.id]?.total ?? 0,
+    ack_signed: ackMap[p.id]?.signed ?? 0,
+  }));
+
+  // Telemetry calculations
+  const now = new Date();
+  const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const activeStatuses = ["active", "current", "published"];
+
+  const totalActive = enriched.filter((p) => activeStatuses.includes(p.status?.toLowerCase() ?? "")).length;
+
+  const upcomingReviews = enriched.filter((p) => {
+    if (!p.review_date) return false;
+    const rd = new Date(p.review_date);
+    return rd >= now && rd <= in30Days;
+  }).length;
+
+  const allAckTotal  = enriched.reduce((s, p) => s + p.ack_total, 0);
+  const allAckSigned = enriched.reduce((s, p) => s + p.ack_signed, 0);
+  const ackRate      = allAckTotal > 0 ? Math.round((allAckSigned / allAckTotal) * 100) : 100;
+
+  // Overdue: pending acks where due_at has passed
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const { count: overdueCount } = await supabase
+    .from("policy_acknowledgements")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("status", "pending")
+    .lt("due_at", sevenDaysAgo.toISOString());
+
+  return {
+    policies: enriched,
+    telemetry: {
+      total_active: totalActive,
+      upcoming_reviews: upcomingReviews,
+      ack_rate: ackRate,
+      overdue_acks: overdueCount ?? 0,
+    },
+  };
+}
+
+export async function publishPolicyWithFileAction(input: {
+  organization_id: string;
+  title: string;
+  category: string;
+  version_number: string;
+  review_date: string;
+  audience: "all" | "specific_roles" | "specific_workers";
+  roles?: string[];
+  file_base64?: string;
+  file_name?: string;
+  mime_type?: string;
+}) {
+  const { supabase, user } = await requireUser();
+
+  let storagePath: string | null = null;
+
+  // Upload PDF to Supabase Storage if provided
+  if (input.file_base64 && input.file_name) {
+    const safeName = input.file_name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    storagePath = `${input.organization_id}/policies/${input.category}/${Date.now()}_${safeName}`;
+    const bytes = Uint8Array.from(atob(input.file_base64), (c) => c.charCodeAt(0));
+    const { error: upErr } = await supabase.storage
+      .from("documents")
+      .upload(storagePath, bytes, { upsert: true, contentType: input.mime_type ?? "application/pdf" });
+    if (upErr) throw new Error(`Storage upload failed: ${upErr.message}`);
+  }
+
+  // Upsert policy_register
+  const { data: policy, error: pErr } = await supabase
+    .from("policy_register")
+    .insert({
+      organization_id: input.organization_id,
+      title: input.title,
+      category: input.category,
+      version: input.version_number,
+      status: "active",
+      review_date: input.review_date,
+      effective_date: new Date().toISOString().slice(0, 10),
+      document_url: storagePath,
+      target_audience_rules: { audience: input.audience, roles: input.roles ?? [] },
+      enforcement_level: 2,
+      grace_period_days: 7,
+      requires_acknowledgement: true,
+      created_by: user.id,
+    })
+    .select("id, organization_id, title")
+    .single();
+  if (pErr) throw new Error(pErr.message);
+
+  // Create policy_versions row
+  const { data: version, error: vErr } = await supabase
+    .from("policy_versions")
+    .insert({
+      policy_id: policy.id,
+      organization_id: input.organization_id,
+      version_number: input.version_number,
+      document_url: storagePath,
+      published_by: user.id,
+    })
+    .select("id")
+    .single();
+  if (vErr) throw new Error(vErr.message);
+
+  // Update policy with current_version_id
+  await supabase
+    .from("policy_register")
+    .update({ current_version_id: version.id })
+    .eq("id", policy.id);
+
+  // Distribute acknowledgements
+  try {
+    await supabase.functions.invoke("distribute-policy", {
+      body: { policy_version_id: version.id },
+    });
+  } catch {
+    // Non-fatal — distribution failure doesn't block the publish
+  }
+
+  revalidatePath("/dashboard/governance/policies");
+  return { policy_id: policy.id, version_id: version.id };
+}
+
+export async function nudgeUnreadStaffAction(input: { organization_id: string; policy_id: string; policy_title: string }) {
+  const { supabase } = await requireUser();
+
+  const { data: pendingRows, error } = await supabase
+    .from("policy_acknowledgements")
+    .select("user_id")
+    .eq("organization_id", input.organization_id)
+    .eq("policy_id", input.policy_id)
+    .eq("status", "pending");
+  if (error) throw new Error(error.message);
+
+  const userIds = [...new Set((pendingRows || []).map((r: any) => r.user_id))];
+  if (userIds.length === 0) return { nudged: 0 };
+
+  try {
+    await (supabase as any).functions.invoke("dispatch-outbound", {
+      body: {
+        organization_id: input.organization_id,
+        user_ids: userIds,
+        title: "Policy signature required",
+        body: `${input.policy_title} requires your acknowledgement. Please sign before your deadline.`,
+        data: { type: "policy_nudge", policy_id: input.policy_id },
+      },
+    });
+  } catch {
+    // Fallback to legacy send-push function
+    try {
+      await (supabase as any).functions.invoke("send-push", {
+        body: {
+          organization_id: input.organization_id,
+          user_ids: userIds,
+          title: "Policy signature required",
+          body: `${input.policy_title} requires your acknowledgement.`,
+          data: { type: "policy_nudge", policy_id: input.policy_id },
+        },
+      });
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  return { nudged: userIds.length };
+}
+
+export async function getAuditTrackerAction(input: { organization_id: string; policy_id: string }) {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase
+    .from("policy_acknowledgements")
+    .select("id, user_id, status, acknowledged_at, ip_address, policy_version, profiles!policy_acknowledgements_user_id_fkey(full_name, email)")
+    .eq("organization_id", input.organization_id)
+    .eq("policy_id", input.policy_id)
+    .order("status", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
