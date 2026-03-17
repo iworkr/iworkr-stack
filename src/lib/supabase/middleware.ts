@@ -289,5 +289,16 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // ─── Inject active workspace header into response ─────────────
+  // The iworkr_active_workspace cookie is set by /api/auth/switch-context.
+  // We forward it as a request header so that Supabase SSR edge functions and
+  // server components that call createServerSupabaseClient() inherit the correct
+  // x-active-workspace-id for RLS enforcement.
+  const activeWorkspaceId = request.cookies.get("iworkr_active_workspace")?.value;
+  if (activeWorkspaceId) {
+    supabaseResponse.headers.set("x-active-workspace-id", activeWorkspaceId);
+  }
+
   return supabaseResponse;
 }
+

@@ -21,6 +21,8 @@ export interface AuthState {
 
   initialize: () => Promise<void>;
   setCurrentOrg: (org: Organization) => void;
+  /** Full workspace switch: updates cookie, purges caches, sets membership. */
+  switchOrg: (newOrgId: string) => Promise<{ ok: boolean; error?: string }>;
   refreshProfile: () => Promise<void>;
   refreshOrganizations: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -104,6 +106,69 @@ export const useAuthStore = create<AuthState>()(
 
   setCurrentOrg: (org) => {
     set({ currentOrg: org });
+  },
+
+  switchOrg: async (newOrgId) => {
+    const { user, organizations } = get();
+    if (!user) return { ok: false, error: "Not authenticated" };
+
+    // Check if already on this org
+    if (get().currentOrg?.id === newOrgId) return { ok: true };
+
+    try {
+      // 1. Validate membership via API route (sets HTTP-only cookie)
+      const res = await fetch("/api/auth/switch-context", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId: newOrgId }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return { ok: false, error: body.error ?? "Switch failed" };
+      }
+
+      // 2. Find the new org in the local store (fast path, no network)
+      const targetOrg = organizations.find((o) => o.id === newOrgId) ?? null;
+
+      // 3. Fetch the new membership record to update role
+      const supabase = createClient();
+      const { data: newMembership } = await (supabase as any)
+        .from("organization_members")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("organization_id", newOrgId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      // 4. Update store with new context
+      set({
+        currentOrg: targetOrg,
+        currentMembership: newMembership
+          ? {
+              organization_id: newMembership.organization_id,
+              user_id: newMembership.user_id,
+              role: newMembership.role,
+              status: newMembership.status,
+              branch: newMembership.branch,
+              skills: newMembership.skills,
+              hourly_rate: newMembership.hourly_rate,
+              invited_by: newMembership.invited_by,
+              joined_at: newMembership.joined_at,
+              last_active_at: newMembership.last_active_at ?? null,
+              role_id: newMembership.role_id ?? null,
+            }
+          : null,
+      });
+
+      // 5. Purge all module-level caches to prevent stale data bleed
+      clearAllCaches();
+
+      return { ok: true };
+    } catch (err) {
+      console.error("[switchOrg] error:", err);
+      return { ok: false, error: "Unexpected error during workspace switch" };
+    }
   },
 
   refreshProfile: async () => {

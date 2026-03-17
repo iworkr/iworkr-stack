@@ -65,6 +65,7 @@ import { ProBadge } from "@/components/monetization/pro-badge";
 import { roleDefinitions, type RoleId, type PermissionModule } from "@/lib/team-data";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useBrandingStore } from "@/lib/stores/branding-store";
+import { WorkspaceSwitcher as WorkspaceSwitcherNew } from "@/components/shell/workspace-switcher";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Project Yggdrasil — Nested Accordion Sidebar (Information Architecture v2)
@@ -647,7 +648,7 @@ export function Sidebar() {
         )}
 
         {/* ── Workspace Switcher ── */}
-        <WorkspaceSwitcher companyName={companyName} logoUrl={brandingLogo} collapsed={sidebarCollapsed} />
+        <WorkspaceSwitcherNew collapsed={sidebarCollapsed} />
 
         {/* ── Search Bar (Cmd+K) ── */}
         {!sidebarCollapsed ? (

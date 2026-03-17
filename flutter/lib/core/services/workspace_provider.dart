@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 
 // ── Secure Storage ─────────────────────────────────────
@@ -133,6 +134,8 @@ class ActiveWorkspaceNotifier extends StateNotifier<String?> {
         final valid = workspaces.any((w) => w.organizationId == stored);
         if (valid) {
           state = stored;
+          // Inject header on boot so the very first query is scoped correctly
+          _updateSupabaseHeaders(stored);
           return;
         }
         // Persisted workspace is stale (different user) — clear it
@@ -142,6 +145,7 @@ class ActiveWorkspaceNotifier extends StateNotifier<String?> {
       // Fall back to the user's first workspace
       if (workspaces.isNotEmpty) {
         state = workspaces.first.organizationId;
+        _updateSupabaseHeaders(workspaces.first.organizationId);
         await _storage.write(
           key: _kActiveWorkspaceKey,
           value: workspaces.first.organizationId,
@@ -161,6 +165,23 @@ class ActiveWorkspaceNotifier extends StateNotifier<String?> {
     state = workspaceId;
     await _storage.write(key: _kActiveWorkspaceKey, value: workspaceId);
     await _recordLastActive(workspaceId);
+    // Inject active workspace header into the Supabase client for RLS enforcement
+    _updateSupabaseHeaders(workspaceId);
+  }
+
+  /// Injects x-active-workspace-id into the Supabase client's global headers
+  /// so that all subsequent queries are scoped to the active workspace.
+  static void _updateSupabaseHeaders(String workspaceId) {
+    try {
+      // supabase_flutter exposes headers via the rest property
+      // We use the dynamic accessor to avoid depending on internal APIs
+      final client = (Supabase.instance.client as dynamic);
+      if (client?.rest?.headers != null) {
+        client.rest.headers['x-active-workspace-id'] = workspaceId;
+      }
+    } catch (_) {
+      // Non-fatal — the server-side RLS handles the fallback
+    }
   }
 
   Future<void> _recordLastActive(String workspaceId) async {

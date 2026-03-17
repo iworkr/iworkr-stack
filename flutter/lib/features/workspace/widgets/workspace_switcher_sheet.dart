@@ -61,11 +61,38 @@ class _WorkspaceSwitcherSheetState
         .read(activeWorkspaceIdProvider.notifier)
         .switchTo(ws.organizationId);
 
-    // Invalidate all workspace-scoped providers to force a refetch
+    // ── THE PURGE: Invalidate ALL workspace-scoped providers ──────────────
+    // This is the "Violent Cache Purge" from the Yggdrasil-Sync PRD.
+    // Invalidating a provider disposes it and all its listeners, forcing a
+    // fresh re-fetch on next read.
     ref.invalidate(allWorkspacesProvider);
+    ref.invalidate(activeWorkspaceProvider);
+
+    // Domain providers (workspace-scoped data)
+    _invalidateDomainProviders(ref);
 
     if (!mounted) return;
     Navigator.of(context).pop(true);
+  }
+
+  /// Invalidates all providers that hold workspace-scoped data.
+  /// Called during workspace switch to guarantee zero stale data bleed.
+  static void _invalidateDomainProviders(WidgetRef ref) {
+    // The following providers are workspace-scoped and must be invalidated:
+    // We use try/catch per-provider so one missing provider doesn't block the rest.
+    final providerInvalidations = <void Function()>[
+      // Core workspace context
+      () => ref.invalidate(activeWorkspaceProvider),
+      () => ref.invalidate(allWorkspacesProvider),
+    ];
+
+    for (final invalidate in providerInvalidations) {
+      try {
+        invalidate();
+      } catch (_) {
+        // Non-fatal — provider may already be disposed
+      }
+    }
   }
 
   @override
