@@ -17,25 +17,25 @@ import { useMemo, useState } from "react";
  *   - Supports `variant="round"` (user) or `variant="rounded"` (workspace).
  */
 
-// ── Colour palette — muted, dark-friendly, Obsidian-aesthetic ──
-// Each is [bg, text] for dark backgrounds
+// ── Colour palette — solid flat colours, dark-friendly ──
+// Each is [bg, text] — clean solid backgrounds, white/light text
 const PALETTE: [string, string][] = [
-  ["#3B1D5E", "#C4A0E8"], // Deep purple
-  ["#1D3A5E", "#8FBCE8"], // Steel blue
-  ["#1D5E4A", "#8AE8C8"], // Emerald teal
-  ["#5E3A1D", "#E8B88A"], // Warm amber
-  ["#5E1D3A", "#E88AB8"], // Rose
-  ["#1D5E5E", "#8AE8E8"], // Cyan
-  ["#4A3A1D", "#D4C88A"], // Gold
-  ["#3A1D5E", "#B88AE8"], // Violet
-  ["#1D4A3A", "#8AD4B8"], // Sage
-  ["#5E2A1D", "#E8A08A"], // Coral
-  ["#2A1D5E", "#A08AE8"], // Indigo
-  ["#1D5E2A", "#8AE8A0"], // Mint
-  ["#5E1D1D", "#E88A8A"], // Crimson
-  ["#1D2A5E", "#8AA0E8"], // Cobalt
-  ["#4A5E1D", "#C4E88A"], // Lime
-  ["#5E4A1D", "#E8D48A"], // Honey
+  ["#6366F1", "#FFFFFF"], // Indigo
+  ["#8B5CF6", "#FFFFFF"], // Violet
+  ["#EC4899", "#FFFFFF"], // Pink
+  ["#EF4444", "#FFFFFF"], // Red
+  ["#F97316", "#FFFFFF"], // Orange
+  ["#EAB308", "#18181B"], // Yellow (dark text)
+  ["#22C55E", "#FFFFFF"], // Green
+  ["#14B8A6", "#FFFFFF"], // Teal
+  ["#06B6D4", "#FFFFFF"], // Cyan
+  ["#3B82F6", "#FFFFFF"], // Blue
+  ["#A855F7", "#FFFFFF"], // Purple
+  ["#D946EF", "#FFFFFF"], // Fuchsia
+  ["#F43F5E", "#FFFFFF"], // Rose
+  ["#0EA5E9", "#FFFFFF"], // Sky
+  ["#10B981", "#FFFFFF"], // Emerald
+  ["#84CC16", "#18181B"], // Lime (dark text)
 ];
 
 /** Simple string hash → deterministic index into PALETTE */
