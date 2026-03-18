@@ -214,7 +214,7 @@ export const useAutomationsStore = create<AutomationsState>()(
 
   loadFromServer: async (orgId: string) => {
     const state = get();
-    if (state.loading) return;
+    if (state.loading && state.orgId === orgId) return;
     if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
 
     const hasCache = state.flows.length > 0 && state.orgId === orgId;
@@ -226,6 +226,9 @@ export const useAutomationsStore = create<AutomationsState>()(
         getAutomationStats(orgId),
         getAutomationRuns(orgId),
       ]);
+
+      // Anti-slingshot: verify orgId is still current before writing
+      if (get().orgId !== orgId) return;
 
       const serverFlows = flowsResult.data ? (flowsResult.data as any[]).map(mapServerFlow) : [];
       const serverLogs = logsResult.data ? (logsResult.data as any[]).map(mapServerLog) : [];
@@ -242,7 +245,7 @@ export const useAutomationsStore = create<AutomationsState>()(
         _lastFetchedAt: Date.now(),
       });
     } catch {
-      set({ loaded: true, loading: false });
+      if (get().orgId === orgId) set({ loaded: true, loading: false });
     }
   },
 

@@ -68,13 +68,17 @@ export default function IntegrationsPage() {
       // Refresh store to pick up new connection
       refresh();
       // Open config panel for the new connection
-      if (id) setTimeout(() => openConfigPanel(id), 1000);
-      // Clean up URL
-      setTimeout(() => {
+      const configTimer = id ? setTimeout(() => openConfigPanel(id), 1000) : null;
+      // Clean up URL — with proper cleanup to prevent slingshot
+      const cleanupTimer = setTimeout(() => {
         setShowConfetti(false);
         setSuccessProvider(null);
         router.replace("/dashboard/integrations", { scroll: false });
       }, 3500);
+      return () => {
+        if (configTimer) clearTimeout(configTimer);
+        clearTimeout(cleanupTimer);
+      };
     } else if (connection === "error") {
       router.replace("/dashboard/integrations", { scroll: false });
     }

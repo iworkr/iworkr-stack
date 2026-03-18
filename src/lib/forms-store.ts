@@ -222,7 +222,7 @@ export const useFormsStore = create<FormsState>()(
 
   loadFromServer: async (orgId: string) => {
     const state = get();
-    if (state.loading) return;
+    if (state.loading && state.orgId === orgId) return;
     if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
 
     const hasCache = state.templates.length > 0 && state.orgId === orgId;
@@ -234,6 +234,9 @@ export const useFormsStore = create<FormsState>()(
         getFormSubmissions(orgId),
         getFormsOverview(orgId),
       ]);
+
+      // Anti-slingshot: verify orgId is still current before writing
+      if (get().orgId !== orgId) return;
 
       const serverTemplates = formsRes.data
         ? formsRes.data.map(mapServerTemplate)
@@ -253,7 +256,7 @@ export const useFormsStore = create<FormsState>()(
         _lastFetchedAt: Date.now(),
       });
     } catch {
-      set({ loaded: true, loading: false });
+      if (get().orgId === orgId) set({ loaded: true, loading: false });
     }
   },
 

@@ -278,7 +278,8 @@ export const useJobsStore = create<JobsState>()(
 
   loadFromServer: async (orgId: string) => {
     const state = get();
-    if (state.loading) return;
+    // Allow re-fetch if org changed even while loading (prevents slingshot lock)
+    if (state.loading && state.orgId === orgId) return;
     if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
 
     const hasCache = state.jobs.length > 0 && state.orgId === orgId;
@@ -286,6 +287,8 @@ export const useJobsStore = create<JobsState>()(
 
     try {
       const { data, error } = await getJobs(orgId);
+      // Anti-slingshot: verify orgId is still current before writing results
+      if (get().orgId !== orgId) return;
       if (!error) {
         const mapped = (data || []).map(mapServerJob);
         set({ jobs: mapped, loaded: true, loading: false, _stale: false, _lastFetchedAt: Date.now() });
@@ -293,7 +296,7 @@ export const useJobsStore = create<JobsState>()(
         set({ loaded: true, loading: false });
       }
     } catch {
-      set({ loaded: true, loading: false });
+      if (get().orgId === orgId) set({ loaded: true, loading: false });
     }
   },
 

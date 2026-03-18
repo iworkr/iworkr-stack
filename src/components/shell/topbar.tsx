@@ -36,6 +36,7 @@ import { DesktopUpdateIndicator } from "@/lib/desktop/desktop-update-indicator";
 import { translateLabel, type IndustryType } from "@/lib/industry-lexicon";
 import { getBranches, type Branch } from "@/app/actions/branches";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useActiveBranch, setActiveBranchId as setGlobalBranch } from "@/lib/hooks/use-active-branch";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { markAllRead } from "@/app/actions/notifications";
 import { useToastStore } from "@/components/shell/notification-toast";
@@ -117,23 +118,25 @@ function BranchSelector({
   const router = useRouter();
   const { orgId } = useOrg();
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
+  const [activeBranchId, setActiveBranchId] = useActiveBranch();
   const [loaded, setLoaded] = useState(false);
 
-  // Load branches
+  // Load branches and restore selection from unified hook
   useEffect(() => {
     if (!orgId) return;
+    let cancelled = false;
     getBranches(orgId).then(({ data }) => {
+      if (cancelled) return;
       setBranches(data || []);
       setLoaded(true);
-      // Default to HQ or first branch
-      if (data && data.length > 0) {
-        const stored = localStorage.getItem("iworkr-active-branch");
-        const match = data.find((b) => b.id === stored);
-        setActiveBranchId(match?.id || data.find((b) => b.is_headquarters)?.id || data[0].id);
+      // If no branch is selected yet, default to HQ or first branch
+      if (data && data.length > 0 && !activeBranchId) {
+        const hq = data.find((b) => b.is_headquarters);
+        setActiveBranchId(hq?.id || data[0].id);
       }
     });
-  }, [orgId]);
+    return () => { cancelled = true; };
+  }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Outside click
   useEffect(() => {
@@ -148,8 +151,7 @@ function BranchSelector({
   const activeName = activeBranch?.name || (branches.length === 0 && loaded ? "No branches" : "");
 
   function selectBranch(id: string) {
-    setActiveBranchId(id);
-    localStorage.setItem("iworkr-active-branch", id);
+    setActiveBranchId(id); // writes to localStorage + dispatches event via unified hook
     onClose();
   }
 

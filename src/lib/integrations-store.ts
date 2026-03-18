@@ -129,7 +129,7 @@ export const useIntegrationsStore = create<IntegrationsState>()(
 
   loadFromServer: async (orgId: string) => {
     const state = get();
-    if (state.loading) return;
+    if (state.loading && state.orgId === orgId) return;
     if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
 
     const hasCache = state.integrations.length > 0 && state.orgId === orgId;
@@ -140,6 +140,9 @@ export const useIntegrationsStore = create<IntegrationsState>()(
         getIntegrations(orgId),
         getIntegrationsOverview(orgId),
       ]);
+
+      // Anti-slingshot: verify orgId is still current before writing
+      if (get().orgId !== orgId) return;
 
       const serverIntegrations = integrationsRes.data
         ? (integrationsRes.data as any[]).map((s: any) => mapServerIntegration(s, undefined))
@@ -154,7 +157,7 @@ export const useIntegrationsStore = create<IntegrationsState>()(
         _lastFetchedAt: Date.now(),
       });
     } catch {
-      set({ loaded: true, loading: false });
+      if (get().orgId === orgId) set({ loaded: true, loading: false });
     }
   },
 

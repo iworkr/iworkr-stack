@@ -181,7 +181,7 @@ export const useClientsStore = create<ClientsState>()(
 
   loadFromServer: async (orgId: string) => {
     const state = get();
-    if (state.loading) return;
+    if (state.loading && state.orgId === orgId) return;
     if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
 
     const hasCache = state.clients.length > 0 && state.orgId === orgId;
@@ -189,6 +189,8 @@ export const useClientsStore = create<ClientsState>()(
 
     try {
       const { data, error } = await getClientsWithStats(orgId);
+      // Anti-slingshot: verify orgId is still current before writing
+      if (get().orgId !== orgId) return;
       if (data && !error) {
         const mapped = (data as any[]).map(mapServerClient);
         set({ clients: mapped, loaded: true, loading: false, _stale: false, _lastFetchedAt: Date.now() });
@@ -196,7 +198,7 @@ export const useClientsStore = create<ClientsState>()(
         set({ loaded: true, loading: false });
       }
     } catch {
-      set({ loaded: true, loading: false });
+      if (get().orgId === orgId) set({ loaded: true, loading: false });
     }
   },
 

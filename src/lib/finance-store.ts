@@ -94,7 +94,7 @@ export const useFinanceStore = create<FinanceState>()(
 
   loadFromServer: async (orgId: string) => {
     const state = get();
-    if (state.loading) return;
+    if (state.loading && state.orgId === orgId) return;
     if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
 
     const hasCache = state.invoices.length > 0 && state.orgId === orgId;
@@ -207,6 +207,8 @@ export const useFinanceStore = create<FinanceState>()(
         );
       }
 
+      // Anti-slingshot: verify orgId is still current before writing
+      if (get().orgId !== orgId) return;
       set({
         invoices: mappedInvoices,
         payouts: mappedPayouts,
@@ -219,7 +221,7 @@ export const useFinanceStore = create<FinanceState>()(
       });
     } catch (error) {
       console.error("Failed to load finance data:", error);
-      set({ loaded: true, loading: false });
+      if (get().orgId === orgId) set({ loaded: true, loading: false });
     }
   },
 

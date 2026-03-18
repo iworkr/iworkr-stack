@@ -57,14 +57,17 @@ function AuthPageInner() {
 
   // If already authenticated, redirect to dashboard
   useEffect(() => {
+    let cancelled = false;
     async function checkSession() {
       const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
       if (user) {
         const next = searchParams.get("next");
         router.replace(next || "/dashboard");
       }
     }
     checkSession();
+    return () => { cancelled = true; };
   }, [router, searchParams, supabase.auth]);
 
   async function handleGoogleAuth() {

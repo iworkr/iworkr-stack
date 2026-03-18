@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from "@/lib/auth-store";
 import { cachedFetch } from "@/lib/cache-utils";
 import { clearOrgCache } from "@/lib/hooks/use-org";
+import { useActiveBranch, setActiveBranchId as setGlobalBranch } from "@/lib/hooks/use-active-branch";
 import { NewWorkspaceModal } from "@/components/shell/new-workspace-modal";
 
 interface Branch {
@@ -43,7 +44,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
-  const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
+  const [activeBranchId, setActiveBranchId] = useActiveBranch();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [newWorkspaceOpen, setNewWorkspaceOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -110,8 +111,9 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
         return;
       }
 
-      // Purge org module cache
+      // Purge org module cache + clear branch selection for new workspace
       clearOrgCache();
+      setGlobalBranch(null);
 
       // Update Supabase browser client header dynamically
       try {
@@ -126,8 +128,9 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
         // non-fatal
       }
 
-      // Force full Server Component re-render + redirect to dashboard root
-      router.refresh();
+      // Navigate to dashboard — router.push alone triggers both navigation
+      // and Server Component re-render. The old router.refresh() + router.push()
+      // double-fire caused wasted work and potential race conditions.
       router.push("/dashboard");
     } catch (err) {
       console.error("[WorkspaceSwitcher] switch error:", err);
@@ -140,12 +143,10 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
   const handleSwitchBranch = useCallback((branchId: string | null) => {
     setActiveBranchId(branchId);
     setOpen(false);
-    // Branch switches are client-side filter-only — no full cache purge
-    // The branch ID is available via the `useActiveBranch` hook for components to filter on
-    sessionStorage.setItem("iworkr_active_branch_ui", branchId ?? "");
-    // Dispatch a custom event so other components can react immediately
-    window.dispatchEvent(new CustomEvent("iworkr:branch-change", { detail: { branchId } }));
-  }, []);
+    // Branch switches are client-side filter-only — no full cache purge.
+    // setActiveBranchId (from useActiveBranch) writes to localStorage and
+    // dispatches the iworkr:branch-change event automatically.
+  }, [setActiveBranchId]);
 
   if (collapsed) {
     return (

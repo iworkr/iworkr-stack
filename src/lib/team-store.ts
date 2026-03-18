@@ -236,7 +236,7 @@ export const useTeamStore = create<TeamState>()(
 
   loadFromServer: async (orgId: string) => {
     const state = get();
-    if (state.loading) return;
+    if (state.loading && state.orgId === orgId) return;
     if (isFresh(state._lastFetchedAt) && state.orgId === orgId) return;
 
     const hasCache = state.members.length > 0 && state.orgId === orgId;
@@ -286,6 +286,8 @@ export const useTeamStore = create<TeamState>()(
         }
       }
 
+      // Anti-slingshot: verify orgId is still current before writing
+      if (get().orgId !== orgId) return;
       set({
         members: serverMembers,
         roles: serverRoles,
@@ -296,7 +298,7 @@ export const useTeamStore = create<TeamState>()(
         _lastFetchedAt: Date.now(),
       });
     } catch {
-      set({ loaded: true, loading: false });
+      if (get().orgId === orgId) set({ loaded: true, loading: false });
     }
   },
 

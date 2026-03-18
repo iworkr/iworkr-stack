@@ -194,7 +194,7 @@ export const useScheduleStore = create<ScheduleState>()(
 
   loadFromServer: async (orgId: string, date: string) => {
     const state = get();
-    if (state.loading) return;
+    if (state.loading && state.orgId === orgId) return;
     if (isFresh(state._lastFetchedAt) && state.orgId === orgId && state.selectedDate === date) return;
 
     const hasCache = state.blocks.length > 0 && state.orgId === orgId;
@@ -204,6 +204,8 @@ export const useScheduleStore = create<ScheduleState>()(
       const { data } = await getScheduleView(orgId, date);
 
       if (data) {
+        // Anti-slingshot: verify orgId is still current
+        if (get().orgId !== orgId) return;
         const d = data as { blocks: any[]; technicians: any[]; backlog: BacklogJob[]; events: ScheduleEvent[] };
         const workspaceTz = (useAuthStore.getState().currentOrg as Record<string, unknown> | null)?.timezone as string | null;
         const mappedBlocks = (d.blocks || []).map((b) => mapServerBlock(b, workspaceTz));
@@ -238,6 +240,8 @@ export const useScheduleStore = create<ScheduleState>()(
       const mappedBlocks2 = allBlocks.map((b) => mapServerBlock(b, workspaceTz2));
       const mappedTechs2 = (techniciansResult.data || []).map(mapServerTechnician);
 
+      // Anti-slingshot
+      if (get().orgId !== orgId) return;
       set({
         blocks: mappedBlocks2,
         technicians: mappedTechs2,
@@ -248,7 +252,7 @@ export const useScheduleStore = create<ScheduleState>()(
       });
     } catch (error) {
       console.error("Failed to load schedule data:", error);
-      set({ loaded: true, loading: false });
+      if (get().orgId === orgId) set({ loaded: true, loading: false });
     }
   },
 
