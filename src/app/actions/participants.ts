@@ -271,7 +271,7 @@ export async function createParticipantIntake(data: {
         name: `${data.first_name} ${data.last_name}`,
         email: data.email || null,
         phone: data.phone || null,
-        type: "individual",
+        type: "residential",
       })
       .select("id")
       .single();
