@@ -201,8 +201,9 @@ export async function getStaffProfile(
 export async function upsertStaffProfile(data: {
   user_id: string;
   organization_id: string;
-  employment_type: string;
-  schads_level: string;
+  employment_type?: string;
+  award_type?: string;
+  schads_level?: string;
   base_hourly_rate?: number;
   max_weekly_hours?: number;
   contracted_hours?: number | null;
@@ -223,49 +224,60 @@ export async function upsertStaffProfile(data: {
   try {
     const supabase = await createServerSupabaseClient();
 
-    // Auto-lookup SCHADS rate if no explicit rate provided
+    // Auto-lookup SCHADS rate if not explicitly provided but level + empType are
     let rate = data.base_hourly_rate;
-    if (!rate || rate <= 0) {
-      const { data: rateRow } = await (supabase as any).rpc("get_schads_rate_with_loading", {
-        p_level_code: data.schads_level,
-        p_employment_type: data.employment_type,
-      });
-      rate = parseFloat(rateRow) || 0;
+    if ((!rate || rate <= 0) && data.schads_level && data.employment_type) {
+      try {
+        const { data: rateRow } = await (supabase as any).rpc("get_schads_rate_with_loading", {
+          p_level_code: data.schads_level,
+          p_employment_type: data.employment_type,
+        });
+        rate = parseFloat(rateRow) || 0;
+      } catch {
+        // RPC may not exist — fall through
+      }
     }
+
+    // Build the payload: only include fields that were explicitly passed
+    // This prevents wiping availability/qualifications/etc. on a partial update
+    const payload: Record<string, any> = {
+      user_id: data.user_id,
+      organization_id: data.organization_id,
+    };
+    if (data.employment_type !== undefined) payload.employment_type = data.employment_type;
+    if (data.award_type !== undefined) payload.award_type = data.award_type;
+    if (data.schads_level !== undefined) payload.schads_level = data.schads_level;
+    if (rate !== undefined && rate > 0) payload.base_hourly_rate = rate;
+    if (data.max_weekly_hours !== undefined) payload.max_weekly_hours = data.max_weekly_hours;
+    if (data.contracted_hours !== undefined) payload.contracted_hours = data.contracted_hours;
+    if (data.qualifications !== undefined) payload.qualifications = data.qualifications;
+    if (data.home_address !== undefined) payload.home_address = data.home_address;
+    if (data.home_lat !== undefined) payload.home_lat = data.home_lat;
+    if (data.home_lng !== undefined) payload.home_lng = data.home_lng;
+    if (data.availability !== undefined) payload.availability = data.availability;
+    if (data.emergency_contact !== undefined) payload.emergency_contact = data.emergency_contact;
+    if (data.date_of_birth !== undefined) payload.date_of_birth = data.date_of_birth;
+    if (data.superannuation_fund !== undefined) payload.superannuation_fund = data.superannuation_fund;
+    if (data.superannuation_number !== undefined) payload.superannuation_number = data.superannuation_number;
+    if (data.visa_status !== undefined) payload.visa_status = data.visa_status;
+    if (data.vehicle_registration !== undefined) payload.vehicle_registration = data.vehicle_registration;
+    if (data.license_number !== undefined) payload.license_number = data.license_number;
+    if (data.notes !== undefined) payload.notes = data.notes;
 
     const { error } = await (supabase as any)
       .from("staff_profiles")
-      .upsert({
-        user_id: data.user_id,
-        organization_id: data.organization_id,
-        employment_type: data.employment_type,
-        schads_level: data.schads_level,
-        base_hourly_rate: rate,
-        max_weekly_hours: data.max_weekly_hours ?? 38,
-        contracted_hours: data.contracted_hours,
-        qualifications: data.qualifications || [],
-        home_address: data.home_address,
-        home_lat: data.home_lat,
-        home_lng: data.home_lng,
-        availability: data.availability || {},
-        emergency_contact: data.emergency_contact,
-        date_of_birth: data.date_of_birth,
-        superannuation_fund: data.superannuation_fund,
-        superannuation_number: data.superannuation_number,
-        visa_status: data.visa_status,
-        vehicle_registration: data.vehicle_registration,
-        license_number: data.license_number,
-        notes: data.notes,
-      }, { onConflict: "user_id,organization_id" });
+      .upsert(payload, { onConflict: "user_id,organization_id" });
 
     if (error) return { success: false, error: error.message };
 
     // Also sync hourly_rate to organization_members for backwards compatibility
-    await (supabase as any)
-      .from("organization_members")
-      .update({ hourly_rate: rate })
-      .eq("user_id", data.user_id)
-      .eq("organization_id", data.organization_id);
+    if (rate && rate > 0) {
+      await (supabase as any)
+        .from("organization_members")
+        .update({ hourly_rate: rate })
+        .eq("user_id", data.user_id)
+        .eq("organization_id", data.organization_id);
+    }
 
     return { success: true };
   } catch (e: any) {

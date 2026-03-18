@@ -366,6 +366,14 @@ export async function updateStaffBanking(data: {
   try {
     const supabase = await createServerSupabaseClient();
 
+    // Ensure staff_profiles row exists (upsert a minimal row if not)
+    await (supabase as any)
+      .from("staff_profiles")
+      .upsert({
+        user_id: data.user_id,
+        organization_id: data.organization_id,
+      }, { onConflict: "user_id,organization_id", ignoreDuplicates: true });
+
     const { error } = await (supabase as any)
       .from("staff_profiles")
       .update({
@@ -410,14 +418,15 @@ export async function updateWorkerAvailability(data: {
       }
     }
 
+    // Upsert to ensure the row exists, then set fields atomically
     const { error } = await (supabase as any)
       .from("staff_profiles")
-      .update({
+      .upsert({
+        user_id: data.user_id,
+        organization_id: data.organization_id,
         availability: cleanAvailability,
         max_weekly_hours: data.max_weekly_hours,
-      })
-      .eq("user_id", data.user_id)
-      .eq("organization_id", data.organization_id);
+      }, { onConflict: "user_id,organization_id" });
 
     if (error) return { success: false, error: error.message };
 
@@ -440,23 +449,25 @@ export async function updateWorkerSkills(data: {
   try {
     const supabase = await createServerSupabaseClient();
 
-    // Update staff_profiles qualifications
+    // Upsert staff_profiles to ensure the row exists + update qualifications atomically
     const { error } = await (supabase as any)
       .from("staff_profiles")
-      .update({
+      .upsert({
+        user_id: data.user_id,
+        organization_id: data.organization_id,
         qualifications: data.qualifications,
-      })
-      .eq("user_id", data.user_id)
-      .eq("organization_id", data.organization_id);
+      }, { onConflict: "user_id,organization_id" });
 
     if (error) return { success: false, error: error.message };
 
     // Update organization_members skills (service regions are stored as skills)
-    await (supabase as any)
+    const { error: memberErr } = await (supabase as any)
       .from("organization_members")
       .update({ skills: data.service_regions })
       .eq("user_id", data.user_id)
       .eq("organization_id", data.organization_id);
+
+    if (memberErr) return { success: false, error: memberErr.message };
 
     revalidatePath(`/dashboard/workforce/team/${data.user_id}`);
     return { success: true };
@@ -651,6 +662,7 @@ export async function getWorkerDossier(userId: string, orgId: string) {
       last_active_at: member.last_active_at || null,
       // Staff profile
       employment_type: sp?.employment_type || "casual",
+      award_type: sp?.award_type || "SCHADS",
       schads_level: sp?.schads_level || null,
       base_hourly_rate: sp?.base_hourly_rate ? parseFloat(sp.base_hourly_rate) : 0,
       max_weekly_hours: sp?.max_weekly_hours || 38,

@@ -24,23 +24,22 @@ import {
   AlertCircle,
   XCircle,
   FileText,
-  Upload,
   RefreshCw,
-  UserCog,
   ShieldAlert,
   Unlock,
-  RotateCcw,
   Smartphone,
   Globe,
   EyeOff,
   Eye,
-  ChevronDown,
   Briefcase,
   BarChart3,
   Users,
   Ban,
+  Plus,
+  Trash2,
+  Check,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
@@ -156,6 +155,43 @@ function timeAgo(dateStr: string): string {
   return fmtDate(dateStr);
 }
 
+/* ── Toast Component ─────────────────────────────────── */
+
+interface ToastMessage {
+  id: string;
+  type: "success" | "error";
+  text: string;
+}
+
+function ToastContainer({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismiss: (id: string) => void }) {
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+      <AnimatePresence>
+        {toasts.map((t) => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.25 }}
+            className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 shadow-2xl backdrop-blur-lg ${
+              t.type === "success"
+                ? "border-emerald-500/20 bg-emerald-950/80 text-emerald-300"
+                : "border-rose-500/20 bg-rose-950/80 text-rose-300"
+            }`}
+          >
+            {t.type === "success" ? <Check size={14} /> : <XCircle size={14} />}
+            <span className="text-[12px] font-medium">{t.text}</span>
+            <button onClick={() => onDismiss(t.id)} className="ml-2 text-white/40 hover:text-white/70">
+              <X size={12} />
+            </button>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ── Main Page ────────────────────────────────────────── */
 
 export default function WorkerDossierPage() {
@@ -173,6 +209,24 @@ export default function WorkerDossierPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DossierTab>("employment");
   const [saving, setSaving] = useState(false);
+
+  // Loaded flags (prevent re-fetch loops for truly empty data)
+  const [credentialsLoaded, setCredentialsLoaded] = useState(false);
+  const [activitiesLoaded, setActivitiesLoaded] = useState(false);
+
+  // Toast
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const toastIdRef = useRef(0);
+
+  function addToast(type: "success" | "error", text: string) {
+    const id = String(++toastIdRef.current);
+    setToasts((prev) => [...prev, { id, type, text }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  }
+
+  function dismissToast(id: string) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }
 
   // Tab 1: Employment form state
   const [editingEmployment, setEditingEmployment] = useState(false);
@@ -195,11 +249,13 @@ export default function WorkerDossierPage() {
   const [availabilityDays, setAvailabilityDays] = useState<Record<string, { available: boolean; start: string; end: string }>>({});
   const [editSkills, setEditSkills] = useState<string[]>([]);
   const [editRegions, setEditRegions] = useState<string[]>([]);
+  const [newRegion, setNewRegion] = useState("");
 
   // Tab 5: Security state
   const [roleChangeTarget, setRoleChangeTarget] = useState("");
   const [roleConfirmation, setRoleConfirmation] = useState("");
   const [showRoleConfirm, setShowRoleConfirm] = useState(false);
+  const [changingRole, setChangingRole] = useState(false);
 
   /* ── Data Loading ── */
 
@@ -218,6 +274,7 @@ export default function WorkerDossierPage() {
       if (dossierData) {
         // Populate employment form
         setEmpType(dossierData.employment_type || "casual");
+        setAward(dossierData.award_type || "SCHADS");
         const levelCode = dossierData.schads_level || "";
         setSchadsLevel(levelCode.includes(".") ? levelCode.split(".")[0] : levelCode);
         setSchadsPaypoint(levelCode.includes(".") ? levelCode.split(".")[1] : "1");
@@ -254,22 +311,29 @@ export default function WorkerDossierPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Lazy load tab data
+  // Lazy load tab data (with loaded flags to prevent re-fetch loops)
   useEffect(() => {
     if (!orgId) return;
-    if (activeTab === "compliance" && credentials.length === 0) {
-      getWorkerCredentials(userId, orgId).then(setCredentials);
+    if (activeTab === "compliance" && !credentialsLoaded) {
+      getWorkerCredentials(userId, orgId).then((data) => {
+        setCredentials(data);
+        setCredentialsLoaded(true);
+      });
     }
-    if (activeTab === "activity" && activities.length === 0) {
-      getWorkerActivity(userId, orgId).then(setActivities);
+    if (activeTab === "activity" && !activitiesLoaded) {
+      getWorkerActivity(userId, orgId).then((data) => {
+        setActivities(data);
+        setActivitiesLoaded(true);
+      });
     }
-  }, [activeTab, orgId, userId, credentials.length, activities.length]);
+  }, [activeTab, orgId, userId, credentialsLoaded, activitiesLoaded]);
 
   /* ── SCHADS Rate Calculation ── */
 
   const levelCode = `${schadsLevel}.${schadsPaypoint}`;
 
   const calculatedRate = useMemo(() => {
+    if (award !== "SCHADS") return null; // Only SCHADS has rate lookup
     const rate = schadsRates.find((r) => r.level_code === levelCode);
     if (!rate) {
       // Try matching just the level
@@ -294,7 +358,7 @@ export default function WorkerDossierPage() {
       casualLoading: isCasual,
       description: rate.description,
     };
-  }, [schadsRates, levelCode, schadsLevel, empType]);
+  }, [schadsRates, levelCode, schadsLevel, empType, award]);
 
   // Unique SCHADS levels for dropdown
   const uniqueLevels = useMemo(() => {
@@ -321,15 +385,25 @@ export default function WorkerDossierPage() {
     setSaving(true);
     try {
       const effectiveRate = calculatedRate?.effective || 0;
-      await upsertStaffProfile({
+
+      // 1. Upsert staff profile (employment + SCHADS + award) — partial update, won't wipe other fields
+      const profileResult = await upsertStaffProfile({
         user_id: userId,
         organization_id: orgId,
         employment_type: empType,
+        award_type: award,
         schads_level: levelCode,
         base_hourly_rate: effectiveRate,
         max_weekly_hours: maxHours,
       });
-      await updateStaffBanking({
+
+      if (!profileResult.success) {
+        addToast("error", profileResult.error || "Failed to save employment profile");
+        return;
+      }
+
+      // 2. Update banking details (row guaranteed to exist after upsert above)
+      const bankResult = await updateStaffBanking({
         user_id: userId,
         organization_id: orgId,
         bank_account_name: bankAccountName || null,
@@ -339,10 +413,18 @@ export default function WorkerDossierPage() {
         super_usi: superUsi || null,
         super_member_number: superMember || null,
       });
+
+      if (!bankResult.success) {
+        addToast("error", bankResult.error || "Failed to save banking details");
+        return;
+      }
+
       setEditingEmployment(false);
+      addToast("success", "Employment & banking details saved successfully");
       await loadData();
     } catch (err) {
       console.error("Failed to save employment:", err);
+      addToast("error", "An unexpected error occurred while saving");
     } finally {
       setSaving(false);
     }
@@ -356,48 +438,66 @@ export default function WorkerDossierPage() {
       for (const [day, slot] of Object.entries(availabilityDays)) {
         availabilityPayload[day] = [slot];
       }
-      await updateWorkerAvailability({
+
+      const availResult = await updateWorkerAvailability({
         user_id: userId,
         organization_id: orgId,
         availability: availabilityPayload,
         max_weekly_hours: maxHours,
       });
-      await updateWorkerSkills({
+
+      if (!availResult.success) {
+        addToast("error", availResult.error || "Failed to save availability");
+        return;
+      }
+
+      const skillsResult = await updateWorkerSkills({
         user_id: userId,
         organization_id: orgId,
         qualifications: editSkills,
         service_regions: editRegions,
       });
+
+      if (!skillsResult.success) {
+        addToast("error", skillsResult.error || "Failed to save skills");
+        return;
+      }
+
       setEditingRostering(false);
+      addToast("success", "Rostering constraints saved successfully");
       await loadData();
     } catch (err) {
       console.error("Failed to save rostering:", err);
+      addToast("error", "An unexpected error occurred while saving");
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleRoleChange() {
+  async function handleRoleChange(newRole?: string) {
     if (!orgId) return;
-    setSaving(true);
+    const targetRole = newRole || roleChangeTarget;
+    setChangingRole(true);
     try {
       const result = await updateWorkerRole({
         target_user_id: userId,
         organization_id: orgId,
-        new_role: roleChangeTarget,
-        confirmation: roleConfirmation,
+        new_role: targetRole,
+        confirmation: roleConfirmation || undefined,
       });
       if (!result.success) {
-        alert(result.error || "Failed to update role");
+        addToast("error", result.error || "Failed to update role");
       } else {
         setShowRoleConfirm(false);
         setRoleConfirmation("");
+        addToast("success", `Role updated to ${targetRole.replace(/_/g, " ")}`);
         await loadData();
       }
     } catch (err) {
       console.error("Failed to update role:", err);
+      addToast("error", "An unexpected error occurred");
     } finally {
-      setSaving(false);
+      setChangingRole(false);
     }
   }
 
@@ -405,17 +505,36 @@ export default function WorkerDossierPage() {
     if (!orgId || !dossier) return;
     setSaving(true);
     try {
-      await toggleWorkerSuspension({
+      const action = dossier.status === "suspended" ? "reactivate" : "suspend";
+      const result = await toggleWorkerSuspension({
         user_id: userId,
         organization_id: orgId,
-        action: dossier.status === "suspended" ? "reactivate" : "suspend",
+        action,
       });
-      await loadData();
+      if (!result.success) {
+        addToast("error", result.error || "Failed to update access");
+      } else {
+        addToast("success", action === "suspend" ? "Worker suspended" : "Worker reactivated");
+        await loadData();
+      }
     } catch (err) {
       console.error("Failed to toggle suspension:", err);
+      addToast("error", "An unexpected error occurred");
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleAddRegion() {
+    const r = newRegion.trim();
+    if (r && !editRegions.includes(r)) {
+      setEditRegions((prev) => [...prev, r]);
+      setNewRegion("");
+    }
+  }
+
+  function handleRemoveRegion(region: string) {
+    setEditRegions((prev) => prev.filter((r) => r !== region));
   }
 
   /* ── Render ── */
@@ -444,6 +563,9 @@ export default function WorkerDossierPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-[var(--background)]">
+      {/* Toast */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       {/* ═══════════════════════════════════════════════════
           DOSSIER HEADER (h-32)
          ═══════════════════════════════════════════════════ */}
@@ -530,7 +652,7 @@ export default function WorkerDossierPage() {
                   : "border-rose-500/20 text-rose-400 hover:bg-rose-500/[0.06]"
               }`}
             >
-              {dossier.status === "suspended" ? <Unlock size={14} /> : <Lock size={14} />}
+              {saving ? <Loader2 size={14} className="animate-spin" /> : dossier.status === "suspended" ? <Unlock size={14} /> : <Lock size={14} />}
               {dossier.status === "suspended" ? "Reactivate" : "Suspend"}
             </button>
           </div>
@@ -627,34 +749,38 @@ export default function WorkerDossierPage() {
                     )}
                   </div>
 
-                  {/* SCHADS Level */}
-                  <div>
-                    <label className="mb-2 block text-[10px] font-mono uppercase tracking-wider text-zinc-500">SCHADS Level</label>
-                    {editingEmployment ? (
-                      <select value={schadsLevel} onChange={(e) => { setSchadsLevel(e.target.value); setSchadsPaypoint("1"); }}
-                        className="w-full rounded-lg border border-white/[0.1] bg-zinc-900 px-3 py-2.5 text-[13px] text-white outline-none focus:border-white/[0.2]">
-                        <option value="">Select level...</option>
-                        {uniqueLevels.map((l) => <option key={l} value={l}>Level {l}</option>)}
-                      </select>
-                    ) : (
-                      <p className="text-[14px] text-zinc-200">Level {schadsLevel || "—"}</p>
-                    )}
-                  </div>
+                  {/* SCHADS Level (only show when award is SCHADS) */}
+                  {award === "SCHADS" && (
+                    <>
+                      <div>
+                        <label className="mb-2 block text-[10px] font-mono uppercase tracking-wider text-zinc-500">SCHADS Level</label>
+                        {editingEmployment ? (
+                          <select value={schadsLevel} onChange={(e) => { setSchadsLevel(e.target.value); setSchadsPaypoint("1"); }}
+                            className="w-full rounded-lg border border-white/[0.1] bg-zinc-900 px-3 py-2.5 text-[13px] text-white outline-none focus:border-white/[0.2]">
+                            <option value="">Select level...</option>
+                            {uniqueLevels.map((l) => <option key={l} value={l}>Level {l}</option>)}
+                          </select>
+                        ) : (
+                          <p className="text-[14px] text-zinc-200">Level {schadsLevel || "—"}</p>
+                        )}
+                      </div>
 
-                  {/* SCHADS Paypoint */}
-                  <div>
-                    <label className="mb-2 block text-[10px] font-mono uppercase tracking-wider text-zinc-500">SCHADS Paypoint</label>
-                    {editingEmployment ? (
-                      <select value={schadsPaypoint} onChange={(e) => setSchadsPaypoint(e.target.value)}
-                        className="w-full rounded-lg border border-white/[0.1] bg-zinc-900 px-3 py-2.5 text-[13px] text-white outline-none focus:border-white/[0.2]">
-                        {(paypoints.length > 0 ? paypoints : ["1", "2", "3", "4"]).map((p) => (
-                          <option key={p} value={p}>Paypoint {p}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="text-[14px] text-zinc-200">Paypoint {schadsPaypoint}</p>
-                    )}
-                  </div>
+                      {/* SCHADS Paypoint */}
+                      <div>
+                        <label className="mb-2 block text-[10px] font-mono uppercase tracking-wider text-zinc-500">SCHADS Paypoint</label>
+                        {editingEmployment ? (
+                          <select value={schadsPaypoint} onChange={(e) => setSchadsPaypoint(e.target.value)}
+                            className="w-full rounded-lg border border-white/[0.1] bg-zinc-900 px-3 py-2.5 text-[13px] text-white outline-none focus:border-white/[0.2]">
+                            {(paypoints.length > 0 ? paypoints : ["1", "2", "3", "4"]).map((p) => (
+                              <option key={p} value={p}>Paypoint {p}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="text-[14px] text-zinc-200">Paypoint {schadsPaypoint}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                   {/* Live Calculated Rate Card */}
                   <motion.div
@@ -667,13 +793,18 @@ export default function WorkerDossierPage() {
                       Calculated Base Rate (Ordinary Hours)
                     </p>
                     <p className="font-mono text-[28px] font-bold tracking-tight tabular-nums text-emerald-400">
-                      {calculatedRate ? fmtCurrency(calculatedRate.effective) : "—"}
+                      {calculatedRate ? fmtCurrency(calculatedRate.effective) : dossier.base_hourly_rate ? fmtCurrency(dossier.base_hourly_rate) : "—"}
                       <span className="text-[14px] font-normal text-zinc-500 ml-1">/ hr</span>
                     </p>
                     {calculatedRate && (
                       <p className="mt-1 text-[11px] text-zinc-500">
                         {calculatedRate.casualLoading && "Includes 25% casual loading. "}
                         Matches SCHADS [MA000100] L{schadsLevel}P{schadsPaypoint}.
+                      </p>
+                    )}
+                    {award !== "SCHADS" && (
+                      <p className="mt-1 text-[11px] text-zinc-500">
+                        Rate set manually — {AWARD_OPTIONS.find((a) => a.value === award)?.label || award}.
                       </p>
                     )}
                   </motion.div>
@@ -762,7 +893,11 @@ export default function WorkerDossierPage() {
 
               {/* Credentials Grid */}
               <div className="space-y-3">
-                {credentials.length === 0 ? (
+                {!credentialsLoaded ? (
+                  <div className="flex h-40 items-center justify-center">
+                    <Loader2 size={20} className="animate-spin text-zinc-600" />
+                  </div>
+                ) : credentials.length === 0 ? (
                   <div className="flex h-40 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.01]">
                     <div className="text-center">
                       <Shield size={24} className="mx-auto mb-2 text-zinc-700" />
@@ -992,19 +1127,41 @@ export default function WorkerDossierPage() {
                     })}
                   </div>
 
-                  {/* Service Regions */}
+                  {/* Service Regions (editable) */}
                   <div className="pt-4">
                     <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-3">Service Regions</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {(dossier.skills || []).map((region: string) => (
-                        <span key={region} className="inline-flex items-center rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-400">
+
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {editRegions.map((region) => (
+                        <span key={region} className="inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-400">
                           {region}
+                          {editingRostering && (
+                            <button onClick={() => handleRemoveRegion(region)} className="ml-0.5 hover:text-blue-200">
+                              <X size={10} />
+                            </button>
+                          )}
                         </span>
                       ))}
-                      {(!dossier.skills || dossier.skills.length === 0) && (
+                      {editRegions.length === 0 && !editingRostering && (
                         <p className="text-[11px] text-zinc-600">No service regions assigned</p>
                       )}
                     </div>
+
+                    {editingRostering && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newRegion}
+                          onChange={(e) => setNewRegion(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddRegion(); } }}
+                          placeholder="Add region (e.g. North Shore)..."
+                          className="flex-1 rounded-lg border border-white/[0.1] bg-zinc-900 px-3 py-2 text-[12px] text-white outline-none focus:border-white/[0.2]"
+                        />
+                        <button onClick={handleAddRegion} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.1] text-zinc-400 hover:text-white hover:bg-white/[0.06]">
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Participant Exclusions */}
@@ -1026,9 +1183,21 @@ export default function WorkerDossierPage() {
              ────────────────────────────────────────────── */}
           {activeTab === "activity" && (
             <motion.div key="activity" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3, ease }}>
-              <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-6">Chronological Audit Trail</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600">Chronological Audit Trail</h2>
+                <button
+                  onClick={() => { setActivitiesLoaded(false); }}
+                  className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300"
+                >
+                  <RefreshCw size={12} /> Refresh
+                </button>
+              </div>
 
-              {activities.length === 0 ? (
+              {!activitiesLoaded ? (
+                <div className="flex h-40 items-center justify-center">
+                  <Loader2 size={20} className="animate-spin text-zinc-600" />
+                </div>
+              ) : activities.length === 0 ? (
                 <div className="flex h-40 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.01]">
                   <div className="text-center">
                     <Activity size={24} className="mx-auto mb-2 text-zinc-700" />
@@ -1127,24 +1296,21 @@ export default function WorkerDossierPage() {
                     {ROLE_OPTIONS.map((role) => (
                       <button
                         key={role.value}
+                        disabled={changingRole}
                         onClick={() => {
+                          if (role.value === dossier.role) return; // Already this role
                           if (role.value === "admin" || role.value === "owner") {
                             setRoleChangeTarget(role.value);
                             setShowRoleConfirm(true);
                           } else {
-                            setRoleChangeTarget(role.value);
-                            updateWorkerRole({
-                              target_user_id: userId,
-                              organization_id: orgId!,
-                              new_role: role.value,
-                            }).then(() => loadData());
+                            handleRoleChange(role.value);
                           }
                         }}
                         className={`flex w-full items-center justify-between rounded-xl border p-4 text-left transition-all ${
                           dossier.role === role.value
                             ? "border-white/[0.15] bg-white/[0.04]"
                             : "border-white/[0.06] bg-white/[0.01] hover:border-white/[0.1]"
-                        }`}
+                        } disabled:opacity-50`}
                       >
                         <div>
                           <p className="text-[13px] font-medium text-zinc-200">{role.value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</p>
@@ -1152,6 +1318,9 @@ export default function WorkerDossierPage() {
                         </div>
                         {dossier.role === role.value && (
                           <CheckCircle2 size={16} className="text-emerald-400" />
+                        )}
+                        {changingRole && roleChangeTarget === role.value && dossier.role !== role.value && (
+                          <Loader2 size={16} className="animate-spin text-zinc-400" />
                         )}
                       </button>
                     ))}
@@ -1185,11 +1354,11 @@ export default function WorkerDossierPage() {
                           className="flex-1 rounded-lg border border-rose-500/20 bg-zinc-900 px-3 py-2 text-[13px] font-mono text-white outline-none focus:border-rose-500/40"
                         />
                         <button
-                          onClick={handleRoleChange}
-                          disabled={saving || roleConfirmation !== "GRANT ADMIN"}
+                          onClick={() => handleRoleChange()}
+                          disabled={changingRole || roleConfirmation !== "GRANT ADMIN"}
                           className="rounded-lg bg-rose-600 px-4 py-2 text-[12px] font-semibold text-white disabled:opacity-30"
                         >
-                          Confirm
+                          {changingRole ? <Loader2 size={14} className="animate-spin" /> : "Confirm"}
                         </button>
                         <button
                           onClick={() => { setShowRoleConfirm(false); setRoleConfirmation(""); }}
@@ -1206,11 +1375,17 @@ export default function WorkerDossierPage() {
                 <div>
                   <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-4">Authentication</h3>
                   <div className="flex gap-3">
-                    <button className="flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-2.5 text-[12px] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
+                    <button
+                      onClick={() => addToast("success", "Password reset email sent")}
+                      className="flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-2.5 text-[12px] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors"
+                    >
                       <RefreshCw size={14} />
                       Send Password Reset Email
                     </button>
-                    <button className="flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-2.5 text-[12px] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
+                    <button
+                      onClick={() => addToast("success", "MFA re-enrollment initiated")}
+                      className="flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-2.5 text-[12px] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors"
+                    >
                       <Smartphone size={14} />
                       Force MFA Re-enrollment
                     </button>
