@@ -20,6 +20,7 @@ import { MessageInput } from "./message-input";
 import { PollMessage } from "./poll-message";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { typingDotsAnimation } from "@/components/dashboard/lottie-data-relay";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Time formatting ──────────────────────────────────── */
 
@@ -222,12 +223,6 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
               const grouped = shouldGroupWithPrevious(messages, i);
               const showDate = shouldShowDateSeparator(messages, i);
               const senderName = msg.profiles?.full_name || "Unknown";
-              const initials = senderName
-                .split(" ")
-                .map((w) => w[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase();
               const isHovered = hoveredMessageId === msg.id;
 
               return (
@@ -263,23 +258,8 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
                   >
                     {/* Avatar or spacer */}
                     {!grouped ? (
-                      <div
-                        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[10px] font-semibold ${
-                          isSelf
-                            ? "bg-white/10 text-white"
-                            : "bg-zinc-800/80 text-zinc-400"
-                        }`}
-                      >
-                        {msg.profiles?.avatar_url ? (
-                          <img
-                            src={msg.profiles.avatar_url}
-                            alt=""
-                            className="h-8 w-8 rounded-lg object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          initials
-                        )}
+                      <div className="mt-0.5">
+                        <LetterAvatar name={senderName} src={msg.profiles?.avatar_url} size={32} variant="rounded" />
                       </div>
                     ) : (
                       <div className="w-8 shrink-0" />

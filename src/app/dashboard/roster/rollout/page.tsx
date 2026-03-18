@@ -27,6 +27,7 @@ import {
   type RolloutProjection,
   type RolloutConflict,
 } from "@/app/actions/roster-templates";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Constants & Helpers ──────────────────────────────────── */
 
@@ -680,15 +681,11 @@ function ShiftCard({ projection }: { projection: RolloutProjection }) {
 
       {/* Worker */}
       <div className="flex items-center gap-2 min-w-0">
-        <div
-          className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0 ${
-            projection.assigned_worker_id
-              ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20"
-              : "bg-red-500/10 text-red-400 ring-1 ring-red-500/20"
-          }`}
-        >
-          {projection.assigned_worker_id ? getInitials(projection.assigned_worker_name) : "?"}
-        </div>
+        <LetterAvatar
+          name={projection.assigned_worker_name || "?"}
+          size={24}
+          className={projection.assigned_worker_id ? "ring-1 ring-emerald-500/20" : "ring-1 ring-red-500/20"}
+        />
         <span className="text-[12px] text-zinc-300 truncate">
           {projection.assigned_worker_name || <span className="text-red-400 italic">Unassigned</span>}
         </span>

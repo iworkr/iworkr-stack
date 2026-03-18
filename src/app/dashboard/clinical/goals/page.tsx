@@ -29,6 +29,7 @@ import {
   type ProgressRating,
 } from "@/app/actions/teleology";
 import { useOrg } from "@/lib/hooks/use-org";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 // ── Helpers ──────────────────────────────────────────────
 const DOMAIN_LABELS: Record<GoalDomain, string> = {
@@ -256,28 +257,11 @@ function EvidenceSlideOver({
         ) : (
           filtered.map((item) => {
             const ratingCfg = RATING_CONFIG[item.progress_rating];
-            const initials = item.worker_name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase();
-
             return (
               <div key={item.linkage_id} className="flex gap-3 group">
                 {/* Avatar */}
                 <div className="flex-shrink-0">
-                  {item.worker_avatar_url ? (
-                    <img
-                      src={item.worker_avatar_url}
-                      alt={item.worker_name}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400">
-                      {initials}
-                    </div>
-                  )}
+                  <LetterAvatar name={item.worker_name} src={item.worker_avatar_url} size={32} />
                 </div>
 
                 {/* Content */}

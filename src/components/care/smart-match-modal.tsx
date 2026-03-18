@@ -24,6 +24,7 @@ import {
   type EligibleWorker,
 } from "@/app/actions/staff-profiles";
 import { evaluateShiftRevenue } from "@/app/actions/shift-cost";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -106,13 +107,7 @@ function WorkerCard({
     >
       {/* Header */}
       <div className="flex items-start gap-3 mb-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-800 text-[11px] font-semibold text-zinc-400 ring-1 ring-white/[0.08]">
-          {worker.avatar_url ? (
-            <img src={worker.avatar_url} alt="" className="h-full w-full rounded-lg object-cover" />
-          ) : (
-            worker.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
-          )}
-        </div>
+        <LetterAvatar name={worker.full_name || "?"} src={worker.avatar_url} size={36} variant="rounded" ring />
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-zinc-200 truncate">{worker.full_name}</p>
           <div className="flex items-center gap-2 mt-0.5">

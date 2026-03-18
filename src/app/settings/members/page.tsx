@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Plus, MoreHorizontal } from "lucide-react";
 import { useTeamStore } from "@/lib/team-store";
 import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 function ShimmerRow() {
   return (
@@ -78,9 +79,6 @@ export default function MembersPage() {
 
         {/* Rows */}
         {members.map((member, i) => {
-          const initials = member.name
-            ? member.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-            : "??";
           const onlineStatus = member.onlineStatus || "offline";
           const role = member.role || "member";
 
@@ -93,8 +91,8 @@ export default function MembersPage() {
               className="flex items-center border-b border-[rgba(255,255,255,0.04)] px-4 py-3 transition-colors hover:bg-[rgba(255,255,255,0.02)]"
             >
               <div className="flex flex-1 items-center gap-3">
-                <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-medium text-zinc-400">
-                  {initials}
+                <div className="relative">
+                  <LetterAvatar name={member.name || "?"} size={32} />
                   <div className={`absolute -right-0.5 -bottom-0.5 h-[9px] w-[9px] rounded-full border-[1.5px] border-black ${
                     onlineStatus === "online" ? "bg-emerald-500" : onlineStatus === "idle" ? "bg-amber-500" : "bg-zinc-600"
                   }`} />

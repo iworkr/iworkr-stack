@@ -34,6 +34,7 @@ import { useInboxStore } from "@/lib/inbox-store";
 import { Shimmer } from "@/components/ui/shimmer";
 import { DesktopUpdateIndicator } from "@/lib/desktop/desktop-update-indicator";
 import { translateLabel, type IndustryType } from "@/lib/industry-lexicon";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 import { getBranches, type Branch } from "@/app/actions/branches";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useActiveBranch, setActiveBranchId as setGlobalBranch } from "@/lib/hooks/use-active-branch";
@@ -669,9 +670,6 @@ function ProfileMenu({
   const displayName = profile?.full_name || "";
   const displayEmail = profile?.email || "";
   const avatarUrl = profile?.avatar_url;
-  const initials = displayName
-    ? displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-    : "";
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -693,16 +691,11 @@ function ProfileMenu({
 
   return (
     <div ref={ref} className="relative">
-      <button
-        onClick={onToggle}
-        className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-white/[0.08] transition-all duration-150 hover:ring-white/[0.2]"
-      >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-        ) : initials ? (
-          initials
+      <button onClick={onToggle} className="transition-all duration-150 hover:ring-2 hover:ring-white/[0.2] rounded-full">
+        {displayName ? (
+          <LetterAvatar name={displayName} src={avatarUrl} size={24} ring />
         ) : (
-          <Shimmer className="h-3 w-3 rounded-full" />
+          <Shimmer className="h-6 w-6 rounded-full" />
         )}
       </button>
 
@@ -717,13 +710,7 @@ function ProfileMenu({
           >
             {/* User info */}
             <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/[0.08]" referrerPolicy="no-referrer" />
-              ) : initials ? (
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-medium text-zinc-400 ring-1 ring-white/[0.08]">
-                  {initials}
-                </div>
-              ) : null}
+              {displayName && <LetterAvatar name={displayName} src={avatarUrl} size={28} ring />}
               <div className="min-w-0">
                 <p className="truncate text-[12px] font-medium text-zinc-200">
                   {displayName || <Shimmer className="h-3 w-24" />}

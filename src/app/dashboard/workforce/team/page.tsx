@@ -25,6 +25,7 @@ import {
   type WorkforceMember,
   type WorkforceTelemetry,
 } from "@/app/actions/workforce-dossier";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Constants ────────────────────────────────────────── */
 
@@ -363,13 +364,7 @@ export default function WorkforceTeamPage() {
                     {/* Worker */}
                     <div className="col-span-3 flex items-center gap-3">
                       <div className="relative shrink-0">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-800 text-[12px] font-semibold text-zinc-400 overflow-hidden">
-                          {member.avatar_url ? (
-                            <img src={member.avatar_url} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            member.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-                          )}
-                        </div>
+                        <LetterAvatar name={member.full_name} src={member.avatar_url} size={36} variant="rounded" />
                         <div className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0A0A0A] ${
                           member.status === "active" ? "bg-emerald-500" : member.status === "suspended" ? "bg-rose-500" : "bg-zinc-600"
                         }`} />

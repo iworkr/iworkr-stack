@@ -31,7 +31,7 @@ const CreateInvoiceModal = dynamic(() => import("@/components/app/create-invoice
 const KeyboardShortcuts = dynamic(() => import("@/components/app/keyboard-shortcuts").then((m) => m.KeyboardShortcuts), { ssr: false });
 const UpgradeCelebration = dynamic(() => import("@/components/monetization/upgrade-celebration").then((m) => m.UpgradeCelebration), { ssr: false });
 const UpgradeModal = dynamic(() => import("@/components/app/upgrade-modal").then((m) => m.UpgradeModal), { ssr: false });
-const ChronosFAB = dynamic(() => import("@/components/shell/chronos-fab").then((m) => m.ChronosFAB), { ssr: false });
+// ChronosFAB removed — will be re-enabled when Chronos feature is ready
 
 export default function DashboardLayout({
   children,
@@ -255,7 +255,7 @@ export default function DashboardLayout({
       <DesktopBridge />
       <DesktopBadge />
       <DesktopOfflineBanner />
-      <ChronosFAB />
+      {/* ChronosFAB removed — will be re-enabled when Chronos feature is ready */}
     </div>
     </HydrationGate>
     </MapboxProvider>

@@ -16,6 +16,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { cachedFetch } from "@/lib/cache-utils";
 import { clearOrgCache } from "@/lib/hooks/use-org";
 import { useActiveBranch, setActiveBranchId as setGlobalBranch } from "@/lib/hooks/use-active-branch";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 import { NewWorkspaceModal } from "@/components/shell/new-workspace-modal";
 
 interface Branch {
@@ -159,10 +160,8 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
         >
           {switching ? (
             <Loader2 size={14} className="animate-spin text-zinc-400" />
-          ) : logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="h-5 w-5 object-contain" />
           ) : (
-            <Building2 size={14} className="text-zinc-400" />
+            <LetterAvatar name={companyName || "W"} src={logoUrl} size={20} variant="rounded" />
           )}
         </button>
       </div>
@@ -187,16 +186,8 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
           <div className="flex h-5 w-5 shrink-0 items-center justify-center">
             <Loader2 size={14} className="animate-spin text-emerald-400" />
           </div>
-        ) : logoUrl ? (
-          <img
-            src={logoUrl}
-            alt="Logo"
-            className="h-5 w-5 shrink-0 rounded object-contain"
-          />
         ) : (
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-gradient-to-br from-indigo-500/80 to-purple-600/80">
-            <Building2 size={11} className="text-white" />
-          </div>
+          <LetterAvatar name={companyName || "W"} src={logoUrl} size={20} variant="rounded" />
         )}
 
         <div className="min-w-0 flex-1 text-left">
@@ -240,13 +231,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
           >
             {/* Current org header */}
             <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
-              {logoUrl ? (
-                <img src={logoUrl} alt="" className="h-7 w-7 shrink-0 rounded object-contain" />
-              ) : (
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500/80 to-purple-600/80">
-                  <Building2 size={13} className="text-white" />
-                </div>
-              )}
+              <LetterAvatar name={companyName || "W"} src={logoUrl} size={28} variant="rounded" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[12px] font-semibold text-zinc-100">{companyName}</p>
                 {currentRole && (
@@ -329,17 +314,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
                     onClick={() => handleSwitchOrg(org.id)}
                     className="mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
                   >
-                    {org.logo_url ? (
-                      <img
-                        src={org.logo_url}
-                        alt=""
-                        className="h-5 w-5 shrink-0 rounded object-contain"
-                      />
-                    ) : (
-                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-zinc-800">
-                        <Building2 size={10} className="text-zinc-400" />
-                      </div>
-                    )}
+                    <LetterAvatar name={org.name || "W"} src={org.logo_url} size={20} variant="rounded" />
                     <span className="truncate">{org.name}</span>
                   </button>
                 ))}

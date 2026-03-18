@@ -36,6 +36,7 @@ import {
   type SchadsRate,
 } from "@/app/actions/staff-profiles";
 import { careSkillDefinitions } from "@/lib/team-data";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Constants ────────────────────────────────────────── */
 
@@ -344,13 +345,7 @@ export default function StaffProfilePage() {
           >
             <div className="flex items-start gap-4">
               <div className="relative">
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-zinc-800 text-lg font-semibold text-zinc-400 ring-2 ring-white/[0.06]">
-                  {p?.avatar_url ? (
-                    <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    p?.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?"
-                  )}
-                </div>
+                <LetterAvatar name={p?.full_name || "?"} src={p?.avatar_url} size={56} variant="rounded" ring />
                 <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[var(--surface-0)] ${
                   p?.status === "active" ? "bg-emerald-500" : p?.status === "suspended" ? "bg-rose-500" : "bg-zinc-600"
                 }`} />

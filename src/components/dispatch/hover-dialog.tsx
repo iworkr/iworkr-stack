@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useDispatchMap } from "./dispatch-map-context";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 export interface HoverDialogTech {
   id: string;
@@ -78,9 +79,7 @@ export function HoverDialog({ tech, anchor }: HoverDialogProps) {
       }}
     >
       <div className="flex items-center gap-2">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-600 text-[10px] font-medium text-zinc-300">
-          {(tech.name ?? "?").slice(0, 2).toUpperCase()}
-        </div>
+        <LetterAvatar name={tech.name ?? "?"} size={24} />
         <span className="truncate text-[13px] font-medium text-white">{tech.name ?? "Technician"}</span>
       </div>
       <div className="mt-2 space-y-1 border-t border-white/10 pt-2">

@@ -61,6 +61,7 @@ import {
 } from "@/app/actions/staff-profiles";
 import { careSkillDefinitions, skillDefinitions } from "@/lib/team-data";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Constants ────────────────────────────────────────── */
 
@@ -590,13 +591,7 @@ export default function WorkerDossierPage() {
           {/* Identity Cluster */}
           <div className="flex items-center gap-5">
             <div className="relative">
-              <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-zinc-800 text-xl font-semibold text-zinc-300 ring-2 ring-white/[0.08] overflow-hidden">
-                {dossier.avatar_url ? (
-                  <img src={dossier.avatar_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  dossier.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "?"
-                )}
-              </div>
+              <LetterAvatar name={dossier.full_name || "?"} src={dossier.avatar_url} size={80} variant="rounded" ring />
               <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-[3px] border-[#050505] ${
                 dossier.status === "active" ? "bg-emerald-500" : dossier.status === "suspended" ? "bg-rose-500" : "bg-zinc-600"
               }`} />

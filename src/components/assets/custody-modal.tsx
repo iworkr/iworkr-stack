@@ -7,6 +7,7 @@ import { getTeamMembers } from "@/app/actions/team";
 import { useAssetsStore } from "@/lib/assets-store";
 import { useOrg } from "@/lib/hooks/use-org";
 import type { Asset } from "@/lib/assets-data";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 interface TeamMember {
   user_id: string;
@@ -133,9 +134,7 @@ export function CustodyModal({ asset, isOpen, onClose }: CustodyModalProps) {
                       : "hover:bg-white/[0.03] border border-transparent"
                   }`}
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 text-[10px] font-semibold text-zinc-300">
-                    {m.full_name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)}
-                  </div>
+                  <LetterAvatar name={m.full_name} size={32} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12px] font-medium text-zinc-300">{m.full_name}</p>
                     <p className="truncate text-[10px] text-zinc-600">{m.email}</p>

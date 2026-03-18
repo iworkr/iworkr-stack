@@ -5,6 +5,7 @@ import { Users } from "lucide-react";
 import { useTeamStore } from "@/lib/team-store";
 import { WidgetShell } from "./widget-shell";
 import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
@@ -74,9 +75,6 @@ export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
           </div>
         ) : (
           display.map((m, i) => {
-            const initials = m.name
-              ? m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-              : "??";
             const isOnline = m.onlineStatus === "online";
             return (
               <motion.div
@@ -86,8 +84,8 @@ export function WidgetTeamStatus({ size = "medium" }: { size?: WidgetSize }) {
                 transition={{ delay: 0.1 + i * 0.04, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 className="flex items-center gap-2.5 px-4 py-2 transition-colors duration-150 hover:bg-[var(--subtle-bg)]"
               >
-                <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[8px] font-medium text-[var(--text-muted)]" style={{ background: "var(--avatar-bg)" }}>
-                  {initials}
+                <div className="relative">
+                  <LetterAvatar name={m.name || "?"} size={24} />
                   <div
                     className="absolute -right-px -bottom-px h-[6px] w-[6px] rounded-full"
                     style={{

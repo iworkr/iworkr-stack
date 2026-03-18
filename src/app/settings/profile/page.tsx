@@ -7,6 +7,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
 import { useToastStore } from "@/components/app/action-toast";
 import { createClient } from "@/lib/supabase/client";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 export default function ProfilePage() {
   const { currentOrg, currentMembership } = useAuthStore();
@@ -46,10 +47,6 @@ export default function ProfilePage() {
     }
   }
 
-  const initials = fullName
-    ? fullName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-    : "";
-
   return (
     <>
       {/* ─── Page intro — premium control-center header ─── */}
@@ -68,17 +65,8 @@ export default function ProfilePage() {
       {/* Avatar */}
       <div className="mb-8 flex items-center gap-5">
         <div className="relative">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={fullName || ""}
-              className="h-16 w-16 rounded-full object-cover ring-1 ring-white/[0.08]"
-              referrerPolicy="no-referrer"
-            />
-          ) : initials ? (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-lg font-medium text-zinc-300">
-              {initials}
-            </div>
+          {fullName ? (
+            <LetterAvatar name={fullName} src={avatarUrl} size={64} ring />
           ) : (
             <ShimmerCircle className="h-16 w-16" />
           )}

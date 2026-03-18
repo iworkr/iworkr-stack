@@ -67,6 +67,7 @@ import { roleDefinitions, type RoleId, type PermissionModule } from "@/lib/team-
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useBrandingStore } from "@/lib/stores/branding-store";
 import { WorkspaceSwitcher as WorkspaceSwitcherNew } from "@/components/shell/workspace-switcher";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Project Yggdrasil — Nested Accordion Sidebar (Information Architecture v2)
@@ -815,9 +816,7 @@ function ProfileFooter({ collapsed, toggleSidebar }: { collapsed: boolean; toggl
   const displayName = profile?.full_name || "";
   const displayEmail = profile?.email || "";
   const avatarUrl = profile?.avatar_url;
-  const initials = displayName
-    ? displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-    : displayEmail?.[0]?.toUpperCase() || "?";
+  const avatarName = displayName || displayEmail || "?";
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
@@ -825,11 +824,7 @@ function ProfileFooter({ collapsed, toggleSidebar }: { collapsed: boolean; toggl
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  const avatar = (
-    <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400 ring-1 ring-white/[0.08]">
-      {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : initials}
-    </div>
-  );
+  const avatar = <LetterAvatar name={avatarName} src={avatarUrl} size={24} ring />;
 
   if (collapsed) {
     return (

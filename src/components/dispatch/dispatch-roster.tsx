@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useDispatchMap } from "./dispatch-map-context";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 import type { DispatchPin } from "@/app/actions/dashboard";
 
 interface DispatchRosterProps {
@@ -121,9 +122,7 @@ export function DispatchRoster({
                 isHovered ? "bg-white/[0.06]" : "hover:bg-white/[0.02]"
               }`}
             >
-              <div className="h-8 w-8 shrink-0 rounded-full bg-zinc-700 flex items-center justify-center text-[11px] font-medium text-zinc-300">
-                {(pin.name ?? "?").slice(0, 2).toUpperCase()}
-              </div>
+              <LetterAvatar name={pin.name ?? "?"} size={32} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-[13px] font-medium text-white">{pin.name ?? "Technician"}</span>

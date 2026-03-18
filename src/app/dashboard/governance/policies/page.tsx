@@ -17,6 +17,7 @@ import {
   type PolicyRow,
   type GovernanceTelemetry,
 } from "@/app/actions/governance-policies";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ═══════════════════════════════════════════════════════════════════
    Types
@@ -501,9 +502,7 @@ function ComplianceAuditSlideOver({
                   <p className="px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-amber-500/70">Pending ({pending.length})</p>
                   {pending.map((a: any) => (
                     <div key={a.id} className="flex items-center gap-3 px-6 py-3 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
-                      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-400 text-[10px] font-bold">
-                        {getInitials(a.profiles?.full_name || a.profiles?.email || "?")}
-                      </div>
+                      <LetterAvatar name={a.profiles?.full_name || a.profiles?.email || "?"} size={28} />
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] text-zinc-200 truncate">{a.profiles?.full_name || a.profiles?.email || "Unknown"}</p>
                         <p className="text-[11px] text-zinc-500 truncate">{a.profiles?.email || ""}</p>
@@ -522,9 +521,7 @@ function ComplianceAuditSlideOver({
                   <p className="px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-emerald-500/70">Acknowledged ({signed.length})</p>
                   {signed.map((a: any) => (
                     <div key={a.id} className="flex items-center gap-3 px-6 py-3 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
-                      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
-                        {getInitials(a.profiles?.full_name || a.profiles?.email || "?")}
-                      </div>
+                      <LetterAvatar name={a.profiles?.full_name || a.profiles?.email || "?"} size={28} />
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] text-zinc-200 truncate">{a.profiles?.full_name || a.profiles?.email || "Unknown"}</p>
                         {a.acknowledged_at && (

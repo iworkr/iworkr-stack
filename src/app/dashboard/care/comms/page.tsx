@@ -45,6 +45,7 @@ import {
   type ParticipantHub,
 } from "@/lib/stores/care-comms-store";
 import type { CareChannelType, CareMessageType } from "@/app/actions/care-comms";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ═══════════════════════════════════════════════════════════════════
    HELPERS
@@ -523,11 +524,7 @@ function ParticipantHubItem({
           <ChevronRight size={12} className="text-zinc-600" />
         </motion.div>
 
-        <div className={`flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(hub.groupName)}`}>
-          <span className="text-[8px] font-bold text-white">
-            {getInitials(hub.groupName)}
-          </span>
-        </div>
+        <LetterAvatar name={hub.groupName} size={24} />
 
         <div className="min-w-0 flex-1">
           <span className="text-[11px] font-medium text-zinc-300 truncate block">
@@ -610,11 +607,7 @@ function ChannelRow({
           <Hash size={12} className="text-zinc-500" />
         </div>
       ) : (
-        <div className={`flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(name)}`}>
-          <span className="text-[8px] font-bold text-white">
-            {getInitials(name)}
-          </span>
-        </div>
+        <LetterAvatar name={name} size={24} />
       )}
 
       <div className="min-w-0 flex-1">
@@ -721,9 +714,7 @@ function ActiveSignal({
             </div>
           )}
           {channel.channel_type === "direct_message" && (
-            <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(channelName)}`}>
-              <span className="text-[9px] font-bold text-white">{getInitials(channelName)}</span>
-            </div>
+            <LetterAvatar name={channelName} size={28} />
           )}
           {channel.channel_type === "team_channel" && (
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.04]">
@@ -842,11 +833,7 @@ function ActiveSignal({
                 <div key={msg.id} className={`group ${showHeader ? "mt-4" : "mt-0.5"}`}>
                   {showHeader && (
                     <div className="mb-1 flex items-center gap-2">
-                      <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b ${getGradient(senderName)}`}>
-                        <span className="text-[8px] font-bold text-white">
-                          {getInitials(senderName)}
-                        </span>
-                      </div>
+                      <LetterAvatar name={senderName} src={msg.profiles?.avatar_url} size={28} />
                       <span className="text-[11px] font-semibold text-zinc-300">
                         {senderName}
                       </span>

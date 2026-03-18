@@ -30,6 +30,7 @@ import {
   setPlanReviewStatusAction,
   listPlanReviewParticipantsAction,
 } from "@/app/actions/plan-reviews";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -294,11 +295,7 @@ export default function PlanReviewWorkspacePage() {
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center shrink-0">
-            <span className="text-xs text-zinc-400 font-medium">
-              {participantName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-            </span>
-          </div>
+          <LetterAvatar name={participantName} size={32} />
           <div className="min-w-0">
             <h1 className="text-base font-medium text-white truncate">
               {participantName}&apos;s Plan Review

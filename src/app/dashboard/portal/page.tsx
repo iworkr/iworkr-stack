@@ -25,6 +25,7 @@ import {
   inviteFamilyPortalMember,
   getPortalAdminOverview,
 } from "@/app/actions/portal-family";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -163,13 +164,7 @@ function WhoIsComingCard({ shift }: { shift: BudgetTelemetry["next_shift"] }) {
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] to-transparent" />
       <p className="text-[9px] uppercase tracking-widest text-zinc-600 mb-3">Next Scheduled Support</p>
       <div className="flex items-center gap-3">
-        {shift.worker_avatar ? (
-          <img src={shift.worker_avatar} alt={shift.worker_name} className="w-10 h-10 rounded-full object-cover border border-white/10" />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-zinc-800 border border-white/5 flex items-center justify-center text-[12px] font-semibold text-zinc-400">
-            {getInitials(shift.worker_name || "?")}
-          </div>
-        )}
+        <LetterAvatar name={shift.worker_name || "?"} src={shift.worker_avatar} size={40} />
         <div className="flex-1 min-w-0">
           <p className="text-[14px] font-medium text-zinc-100">{shift.worker_first_name || shift.worker_name}</p>
           <p className="text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: "#ffffff" }}>
@@ -361,9 +356,7 @@ function ParticipantPortalCard({
         onClick={() => setExpanded(e => !e)}
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/5 flex items-center justify-center text-[11px] font-semibold text-zinc-300">
-            {getInitials(participant.participant_name)}
-          </div>
+          <LetterAvatar name={participant.participant_name} size={36} />
           <div>
             <p className="text-[13px] font-medium text-zinc-200">{participant.participant_name}</p>
             <p className="text-[10px] text-zinc-600 mt-0.5">

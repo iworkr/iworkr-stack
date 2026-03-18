@@ -45,6 +45,7 @@ import { getClientDetails } from "@/app/actions/clients";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { ContextMenu, type ContextMenuItem } from "@/components/app/context-menu";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -389,11 +390,7 @@ export default function ClientDossierPage() {
         {/* Identity row */}
         <div className="flex items-center gap-4 px-6 pb-4">
           <div className="relative">
-            <div
-              className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-[18px] font-bold text-zinc-200 ${getGradient(client.initials)}`}
-            >
-              {client.initials}
-            </div>
+            <LetterAvatar name={client.name} size={56} variant="rounded" />
             {isVIP && (
               <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 ring-2 ring-[var(--background)]">
                 <span className="text-[8px] font-bold text-black">★</span>
@@ -550,9 +547,7 @@ export default function ClientDossierPage() {
                     transition={{ delay: i * 0.05 }}
                     className="group flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-white/[0.03]"
                   >
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[9px] font-medium text-zinc-300 ${getGradient(contact.initials)}`}>
-                      {contact.initials}
-                    </div>
+                    <LetterAvatar name={contact.name} size={28} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[12px] font-medium text-zinc-300">{contact.name}</div>
                       <div className="text-[10px] text-zinc-600">{contact.role}</div>

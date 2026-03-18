@@ -21,6 +21,7 @@ import {
   type PayCategory,
   type AllowanceType,
 } from "@/app/actions/schads-payroll";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -104,13 +105,7 @@ function WorkerBatchRow({
       </div>
 
       {/* Avatar */}
-      <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/5 flex items-center justify-center shrink-0">
-        {batch.workerAvatar ? (
-          <img src={batch.workerAvatar} alt={batch.workerName} className="w-8 h-8 rounded-full object-cover" />
-        ) : (
-          <span className="text-[10px] font-semibold text-zinc-400">{getInitials(batch.workerName)}</span>
-        )}
-      </div>
+      <LetterAvatar name={batch.workerName} src={batch.workerAvatar} size={32} />
 
       {/* Name + level */}
       <div className="flex-1 min-w-0">

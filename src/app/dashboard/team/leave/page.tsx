@@ -18,6 +18,7 @@ import {
   reviewLeaveRequestAction,
   calculateLeaveImpactAction,
 } from "@/app/actions/team-leave";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ═══════════════════════════════════════════════════════════════════
    Types & Constants
@@ -474,11 +475,7 @@ function TriageReviewSlideOver({
         {/* Header */}
         <div className="flex h-16 items-center justify-between border-b border-white/5 px-6">
           <div className="flex items-center gap-3">
-            {workerAvatar(entry) ? (
-              <img src={workerAvatar(entry)!} alt="" className="h-9 w-9 rounded-full object-cover" />
-            ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 text-[11px] font-semibold text-zinc-300">{getInitials(name)}</div>
-            )}
+            <LetterAvatar name={name} src={workerAvatar(entry)} size={36} />
             <div>
               <h3 className="text-[14px] font-medium text-white">{name}</h3>
               <p className="text-[11px] text-zinc-500">Leave Request Review</p>
@@ -914,13 +911,7 @@ export default function TeamLeavePage() {
                     {/* WORKER */}
                     <td className="py-3">
                       <div className="flex items-center gap-3">
-                        {avatar ? (
-                          <img src={avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
-                        ) : (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-medium text-zinc-400">
-                            {getInitials(name)}
-                          </div>
-                        )}
+                        <LetterAvatar name={name} src={avatar} size={32} />
                         <div>
                           <p className="text-[14px] font-medium text-zinc-100">{name}</p>
                           <p className="font-mono text-[10px] text-zinc-500 capitalize">{row.source === "emergency_sick" ? "Emergency" : row.source}</p>

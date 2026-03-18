@@ -17,6 +17,7 @@ import {
 import { RemediationSlideOver } from "@/components/governance/RemediationSlideOver";
 import { useAuthStore } from "@/lib/auth-store";
 import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
+import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ═══════════════════════════════════════════════════════════════════
    Types & Constants
@@ -373,13 +374,7 @@ export default function ComplianceReadinessPage() {
                   {/* AFFECTED ENTITY */}
                   <td className="py-3">
                     <div className="flex items-center gap-2">
-                      {gap.affected_entity_avatar ? (
-                        <img src={gap.affected_entity_avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
-                      ) : (
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-[9px] font-medium text-zinc-400">
-                          {getInitials(gap.affected_entity_name)}
-                        </div>
-                      )}
+                      <LetterAvatar name={gap.affected_entity_name} src={gap.affected_entity_avatar} size={24} />
                       <span className="text-[13px] text-zinc-300">{gap.affected_entity_name}</span>
                     </div>
                   </td>
