@@ -329,9 +329,21 @@ export async function updateParticipantIntake(
     }
 
     if (step === "step_3") {
-      // Clinical baseline
-      if (data.mobility_status) updatePayload.mobility_status = data.mobility_status;
-      if (data.communication_type) updatePayload.communication_type = data.communication_type;
+      // Clinical baseline — normalize display labels to DB enum values
+      const MOBILITY_MAP: Record<string, string> = {
+        "Independent": "independent", "independent": "independent",
+        "Mobility Aid": "mobility_aid", "mobility_aid": "mobility_aid",
+        "Wheelchair": "wheelchair", "wheelchair": "wheelchair",
+        "Hoist Required": "hoist_required", "hoist_required": "hoist_required",
+      };
+      const COMM_MAP: Record<string, string> = {
+        "Verbal": "verbal", "verbal": "verbal",
+        "Non-Verbal": "non_verbal", "non_verbal": "non_verbal",
+        "Uses AAC Device": "uses_aac_device", "uses_aac_device": "uses_aac_device",
+        "Limited Verbal": "limited_verbal", "limited_verbal": "limited_verbal",
+      };
+      if (data.mobility_status) updatePayload.mobility_status = MOBILITY_MAP[data.mobility_status] ?? data.mobility_status;
+      if (data.communication_type) updatePayload.communication_type = COMM_MAP[data.communication_type] ?? data.communication_type;
       if (data.critical_alerts) updatePayload.critical_alerts = data.critical_alerts;
       if (data.mobility_requirements) updatePayload.mobility_requirements = data.mobility_requirements;
       if (data.communication_preferences) updatePayload.communication_preferences = data.communication_preferences;
