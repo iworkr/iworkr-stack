@@ -663,7 +663,7 @@ export function Sidebar() {
             <img
               src="/logos/logo-dark-streamline.png"
               alt="iWorkr"
-              style={{ width: 20, height: 20 }}
+              style={{ width: 30, height: 30 }}
               draggable={false}
             />
           </div>
@@ -672,7 +672,7 @@ export function Sidebar() {
             <img
               src="/logos/logo-dark-full.png"
               alt="iWorkr"
-              style={{ height: 20, width: "auto" }}
+              style={{ height: 30, width: "auto" }}
               draggable={false}
             />
           </div>
