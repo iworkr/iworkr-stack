@@ -659,20 +659,20 @@ export function Sidebar() {
 
         {/* ── iWorkr Logo ── */}
         {sidebarCollapsed ? (
-          <div className="flex items-center justify-center px-3 pt-3.5 pb-0.5">
+          <div className="flex items-center justify-center px-3 pt-3 pb-0">
             <img
               src="/logos/logo-dark-streamline.png"
               alt="iWorkr"
-              className="h-[18px] w-[18px] object-contain"
+              className="h-3 w-3 object-contain"
               draggable={false}
             />
           </div>
         ) : (
-          <div className="flex items-center px-4 pt-3.5 pb-0.5">
+          <div className="flex items-center px-[18px] pt-3 pb-0">
             <img
               src="/logos/logo-dark-full.png"
               alt="iWorkr"
-              className="h-[18px] object-contain"
+              className="h-3 object-contain"
               draggable={false}
             />
           </div>
