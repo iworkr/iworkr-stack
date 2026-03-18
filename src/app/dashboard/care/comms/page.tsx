@@ -70,19 +70,16 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: true });
 }
 
-const AVATAR_GRADIENTS = [
-  "from-emerald-600/40 to-emerald-900/40",
-  "from-blue-600/40 to-blue-900/40",
-  "from-purple-600/40 to-purple-900/40",
-  "from-amber-600/40 to-amber-900/40",
-  "from-rose-600/40 to-rose-900/40",
-  "from-cyan-600/40 to-cyan-900/40",
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
 ];
 
-function getGradient(name: string): string {
+function getAvatarColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
-  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 /** Derive a display name for a channel */

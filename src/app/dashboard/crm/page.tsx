@@ -231,18 +231,15 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-const avatarGradients = [
-  "from-zinc-600/30 to-zinc-800/30",
-  "from-emerald-600/30 to-teal-800/30",
-  "from-amber-600/30 to-orange-800/30",
-  "from-rose-600/30 to-pink-800/30",
-  "from-sky-600/30 to-indigo-800/30",
-  "from-violet-600/30 to-purple-800/30",
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
 ];
 
-function getGradient(initials: string): string {
+function getAvatarColor(initials: string): string {
   const code = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
-  return avatarGradients[code % avatarGradients.length];
+  return AVATAR_COLORS[code % AVATAR_COLORS.length];
 }
 
 /* ── Page ─────────────────────────────────────────────────── */
@@ -715,7 +712,8 @@ function PipelineCard({
       {/* Top row: avatar + name + grip */}
       <div className="mb-2 flex items-start gap-2.5">
         <div
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[9px] font-semibold tracking-wide text-zinc-300 ${getGradient(initials)}`}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold tracking-wide text-white"
+          style={{ backgroundColor: getAvatarColor(initials) }}
         >
           {initials}
         </div>

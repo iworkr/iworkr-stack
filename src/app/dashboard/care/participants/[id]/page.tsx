@@ -129,6 +129,21 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
+];
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 function getBurnRateStatus(rate: number): { label: string; color: string } {
   if (rate >= 1.15) return { label: "Over-spending", color: "text-rose-400" };
   if (rate >= 0.85) return { label: "On Track", color: "text-emerald-400" };
@@ -323,8 +338,8 @@ function ClinicalHeroBox({ participant }: { participant: ParticipantWithBudget }
       <div className="flex items-start gap-5">
         {/* Avatar */}
         <div className="relative shrink-0">
-          <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500/20 via-blue-600/30 to-indigo-500/20 border border-blue-500/20 flex items-center justify-center">
-            <span className="text-2xl font-bold text-blue-400 tracking-tight">
+          <div className="h-20 w-20 rounded-full flex items-center justify-center" style={{ backgroundColor: getAvatarColor(participant.client_name || "?") }}>
+            <span className="text-2xl font-bold text-white tracking-tight">
               {getInitials(participant.client_name || "?")}
             </span>
           </div>

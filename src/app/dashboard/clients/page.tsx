@@ -60,18 +60,15 @@ const contextItemDefs = [
 
 /* ── Avatar gradient ──────────────────────────────────────── */
 
-const gradients = [
-  "from-zinc-600/30 to-zinc-800/30",
-  "from-emerald-600/30 to-teal-800/30",
-  "from-amber-600/30 to-orange-800/30",
-  "from-rose-600/30 to-pink-800/30",
-  "from-zinc-500/30 to-zinc-700/30",
-  "from-sky-600/30 to-indigo-800/30",
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
 ];
 
-function getGradient(initials: string): string {
+function getAvatarColor(initials: string): string {
   const charCode = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
-  return gradients[charCode % gradients.length];
+  return AVATAR_COLORS[charCode % AVATAR_COLORS.length];
 }
 
 /* ── LTV Count-Up Hook ────────────────────────────────────── */
@@ -613,7 +610,8 @@ export default function ClientsPage() {
                 <div className="flex w-64 items-center gap-3 px-2">
                   <div className="relative">
                     <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-semibold tracking-wide text-zinc-300 ${getGradient(client.initials)}`}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tracking-wide text-white"
+                      style={{ backgroundColor: getAvatarColor(client.initials) }}
                     >
                       {client.initials}
                     </div>

@@ -91,18 +91,15 @@ const activityColors: Record<string, string> = {
   contact_added: "text-zinc-400",
 };
 
-const gradients = [
-  "from-zinc-600/40 to-zinc-800/40",
-  "from-emerald-600/40 to-teal-800/40",
-  "from-amber-600/40 to-orange-800/40",
-  "from-rose-600/40 to-pink-800/40",
-  "from-zinc-500/40 to-zinc-700/40",
-  "from-sky-600/40 to-indigo-800/40",
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
 ];
 
-function getGradient(initials: string): string {
+function getAvatarColor(initials: string): string {
   const charCode = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
-  return gradients[charCode % gradients.length];
+  return AVATAR_COLORS[charCode % AVATAR_COLORS.length];
 }
 
 // headerContextItems are generated inside the component to access t()

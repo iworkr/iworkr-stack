@@ -11,16 +11,16 @@ import { successCheckAnimation } from "./lottie-data";
 import { Shimmer, ShimmerCircle } from "@/components/ui/shimmer";
 import type { WidgetSize } from "@/lib/dashboard-store";
 
-function getAvatarGrad(initials: string) {
-  const grads = [
-    "from-zinc-600 to-zinc-700",
-    "from-zinc-500 to-zinc-700",
-    "from-zinc-600 to-zinc-800",
-    "from-zinc-700 to-zinc-800",
-  ];
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
+];
+
+function getAvatarColor(initials: string) {
   let hash = 0;
   for (let i = 0; i < initials.length; i++) hash = initials.charCodeAt(i) + ((hash << 5) - hash);
-  return grads[Math.abs(hash) % grads.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 function ZenEmptyState() {
@@ -163,8 +163,8 @@ export function WidgetInbox({ size = "medium" }: { size?: WidgetSize }) {
                 className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full"
                 style={{ background: "var(--brand)" }}
               />
-              <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGrad(item.senderInitials)}`}>
-                <span className="text-[8px] font-semibold text-zinc-300">{item.senderInitials}</span>
+              <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: getAvatarColor(item.senderInitials) }}>
+                <span className="text-[8px] font-semibold text-white">{item.senderInitials}</span>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">

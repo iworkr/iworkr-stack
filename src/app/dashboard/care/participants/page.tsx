@@ -80,22 +80,19 @@ const STATUS_TABS: { key: StatusTab; label: string }[] = [
 
 /* ── Avatar Gradients ─────────────────────────────────── */
 
-const avatarGradients = [
-  "from-zinc-600/30 to-zinc-800/30",
-  "from-emerald-600/30 to-teal-800/30",
-  "from-amber-600/30 to-orange-800/30",
-  "from-rose-600/30 to-pink-800/30",
-  "from-zinc-500/30 to-zinc-700/30",
-  "from-sky-600/30 to-indigo-800/30",
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
 ];
 
-function getAvatarGradient(name: string): string {
+function getAvatarColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = (hash << 5) - hash + name.charCodeAt(i);
     hash |= 0;
   }
-  return avatarGradients[Math.abs(hash) % avatarGradients.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 function getInitials(name: string): string {
@@ -479,7 +476,7 @@ export default function ParticipantsPage() {
           {participants.map((participant, idx) => {
             const sc = statusConfig[participant.status] ?? statusConfig.active;
             const initials = getInitials(participant.client_name || "Unknown");
-            const gradient = getAvatarGradient(participant.client_name || participant.id);
+            const avatarBg = getAvatarColor(participant.client_name || participant.id);
             const budgetPct = getBudgetPercent(participant);
             const isFocused = idx === focusedIndex;
 
@@ -502,7 +499,7 @@ export default function ParticipantsPage() {
               >
                 {/* Participant name + avatar */}
                 <div className="w-64 px-2 flex items-center gap-3 min-w-0">
-                  <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}>
                     <span className="text-[10px] font-semibold text-white">{initials}</span>
                   </div>
                   <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">

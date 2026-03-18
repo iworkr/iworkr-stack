@@ -71,17 +71,15 @@ const catalogItems = [
   { name: "Emergency call-out surcharge", price: 110 },
 ];
 
-const gradients = [
-  "from-zinc-600/30 to-zinc-800/30",
-  "from-zinc-500/30 to-zinc-700/30",
-  "from-zinc-700/30 to-zinc-900/30",
-  "from-zinc-600/30 to-zinc-800/30",
-  "from-zinc-500/30 to-zinc-700/30",
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
 ];
 
-function getGrad(initials: string) {
+function getAvatarColor(initials: string) {
   const c = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
-  return gradients[c % gradients.length];
+  return AVATAR_COLORS[c % AVATAR_COLORS.length];
 }
 
 /* ── Component ────────────────────────────────────────────── */
@@ -176,7 +174,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
     value: t.name,
     label: t.name,
     icon: (
-      <div className={`flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br text-[6px] font-bold text-zinc-300 ${getGrad(t.initials)}`}>
+      <div className="flex h-4 w-4 items-center justify-center rounded-full text-[6px] font-bold text-white" style={{ backgroundColor: getAvatarColor(t.initials) }}>
         {t.initials}
       </div>
     ),
@@ -426,7 +424,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   /* Client pill + map */
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br text-[9px] font-semibold text-zinc-300 ${getGrad(selectedClient.initials)}`}>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full text-[9px] font-semibold text-white" style={{ backgroundColor: getAvatarColor(selectedClient.initials) }}>
                         {selectedClient.initials}
                       </div>
                       <span className="text-[14px] font-medium text-zinc-200">
@@ -543,7 +541,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                               onClick={() => selectClient(c)}
                               className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-zinc-800"
                             >
-                              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[8px] font-semibold text-zinc-300 ${getGrad(c.initials)}`}>
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[8px] font-semibold text-white" style={{ backgroundColor: getAvatarColor(c.initials) }}>
                                 {c.initials}
                               </div>
                               <div className="min-w-0 flex-1">

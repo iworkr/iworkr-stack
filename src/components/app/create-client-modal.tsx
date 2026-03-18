@@ -50,18 +50,15 @@ const clientTypes: { value: "residential" | "commercial"; label: string; icon: t
   { value: "commercial", label: "Business", icon: Building2, desc: "Company or organization" },
 ];
 
-const gradients = [
-  "from-zinc-600/40 to-zinc-800/40",
-  "from-zinc-500/40 to-zinc-700/40",
-  "from-zinc-700/40 to-zinc-900/40",
-  "from-zinc-600/40 to-zinc-800/40",
-  "from-zinc-500/40 to-zinc-700/40",
-  "from-zinc-600/40 to-zinc-800/40",
+const AVATAR_COLORS = [
+  "#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316",
+  "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6", "#A855F7",
+  "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
 ];
 
-function getGrad(initials: string) {
+function getAvatarColor(initials: string) {
   const c = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
-  return gradients[c % gradients.length];
+  return AVATAR_COLORS[c % AVATAR_COLORS.length];
 }
 
 function makeInitials(name: string): string {
@@ -348,7 +345,7 @@ export function CreateClientModal({
                 {isLocked ? (
                   /* Locked identity pill */
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-[12px] font-bold text-zinc-200 ${getGrad(initials)}`}>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ backgroundColor: getAvatarColor(initials) }}>
                       {initials}
                     </div>
                     <div className="min-w-0 flex-1">
