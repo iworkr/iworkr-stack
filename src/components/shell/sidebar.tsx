@@ -663,7 +663,9 @@ export function Sidebar() {
             <img
               src="/logos/logo-dark-streamline.png"
               alt="iWorkr"
-              className="h-3 w-3 object-contain"
+              width={14}
+              height={14}
+              style={{ width: 14, height: 14 }}
               draggable={false}
             />
           </div>
@@ -672,7 +674,8 @@ export function Sidebar() {
             <img
               src="/logos/logo-dark-full.png"
               alt="iWorkr"
-              className="h-3 object-contain"
+              height={14}
+              style={{ height: 14, width: "auto" }}
               draggable={false}
             />
           </div>
