@@ -11,6 +11,7 @@ interface ShellState {
   createClientModalOpen: boolean;
   createJobModalOpen: boolean;
   createInvoiceModalOpen: boolean;
+  createParticipantModalOpen: boolean;
 
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
@@ -22,6 +23,7 @@ interface ShellState {
   setCreateClientModalOpen: (open: boolean) => void;
   setCreateJobModalOpen: (open: boolean) => void;
   setCreateInvoiceModalOpen: (open: boolean) => void;
+  setCreateParticipantModalOpen: (open: boolean) => void;
 }
 
 export const useShellStore = create<ShellState>()(
@@ -36,6 +38,7 @@ export const useShellStore = create<ShellState>()(
       createClientModalOpen: false,
       createJobModalOpen: false,
       createInvoiceModalOpen: false,
+      createParticipantModalOpen: false,
 
       toggleSidebar: () =>
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -51,6 +54,7 @@ export const useShellStore = create<ShellState>()(
       setCreateClientModalOpen: (open) => set({ createClientModalOpen: open }),
       setCreateJobModalOpen: (open) => set({ createJobModalOpen: open }),
       setCreateInvoiceModalOpen: (open) => set({ createInvoiceModalOpen: open }),
+      setCreateParticipantModalOpen: (open) => set({ createParticipantModalOpen: open }),
     }),
     { name: "iworkr-shell" }
   )

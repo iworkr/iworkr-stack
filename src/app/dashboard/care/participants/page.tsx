@@ -21,7 +21,7 @@ import {
   type ExternalAgency,
 } from "@/app/actions/participants";
 import { formatNDISNumber } from "@/lib/ndis-utils";
-import { ParticipantIntakeWizard } from "@/components/care/participant-intake-wizard";
+import { NewParticipantOverlay } from "@/components/care/new-participant-overlay";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
 
@@ -624,19 +624,15 @@ export default function ParticipantsPage() {
         </div>
       )}
 
-      {/* ── Intake Wizard Modal ────────────────────────── */}
-      {wizardOpen && (
-        <ParticipantIntakeWizard
-          open={wizardOpen}
-          onClose={() => setWizardOpen(false)}
-          orgId={orgId ?? ""}
-          agencies={agencies}
-          onComplete={() => {
-            setWizardOpen(false);
-            loadParticipants();
-          }}
-        />
-      )}
+      {/* ── New Participant Overlay (Genesis-Client) ────── */}
+      <NewParticipantOverlay
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onComplete={() => {
+          setWizardOpen(false);
+          loadParticipants();
+        }}
+      />
     </div>
   );
 }
