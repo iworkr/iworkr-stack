@@ -84,9 +84,8 @@ export function NewWorkspaceModal({ open, onClose }: NewWorkspaceModalProps) {
 
   const handleComplete = useCallback(async (newOrgId: string) => {
     try {
-      // Refresh org list first
-      await refreshOrganizations();
-      // Switch to the new org
+      // refreshOrganizations was already called in StepComplete.handleEnter —
+      // we only need to switch to the newly created org
       await switchOrg(newOrgId);
       clearOrgCache();
 
@@ -112,7 +111,7 @@ export function NewWorkspaceModal({ open, onClose }: NewWorkspaceModalProps) {
       router.refresh();
       router.push("/dashboard");
     }
-  }, [refreshOrganizations, switchOrg, resetOnboarding, onClose, router]);
+  }, [switchOrg, resetOnboarding, onClose, router]);
 
   const handleClose = useCallback(() => {
     if (currentStep === "complete") return; // don't let them dismiss mid-completion

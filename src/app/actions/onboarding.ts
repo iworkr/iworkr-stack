@@ -46,6 +46,25 @@ export async function createOrganization(data: {
       return { error: "Not authenticated" };
     }
 
+    // Guard: prevent duplicate orgs with the same name for the same user
+    // Check if user already owns an org with this exact name
+    const { data: existingOrgs } = await (supabase as any)
+      .from("organization_members")
+      .select("organization_id, organizations(id, name)")
+      .eq("user_id", user.id)
+      .eq("role", "owner")
+      .eq("status", "active");
+
+    const normalizedName = data.name.trim().toLowerCase();
+    const alreadyExists = (existingOrgs || []).find(
+      (m: any) => m.organizations?.name?.trim().toLowerCase() === normalizedName
+    );
+
+    if (alreadyExists) {
+      // Return the existing org instead of creating a duplicate
+      return { organization: alreadyExists.organizations };
+    }
+
     let slug = slugify(data.name);
     if (!slug) slug = "workspace";
 

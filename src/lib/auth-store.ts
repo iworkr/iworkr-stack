@@ -65,34 +65,67 @@ export const useAuthStore = create<AuthState>()(
         .eq("user_id", user.id)
         .eq("status", "active");
 
-      const orgs = (memberships || [])
-        .map((m: any) => m.organizations as Organization)
-        .filter(Boolean);
+      // Deduplicate orgs by ID (prevents duplicate entries in switcher)
+      const orgMap = new Map<string, Organization>();
+      for (const m of (memberships || [])) {
+        const org = m.organizations as Organization;
+        if (org && org.id && !orgMap.has(org.id)) {
+          orgMap.set(org.id, org);
+        }
+      }
+      const orgs = Array.from(orgMap.values());
 
-      // Default to first org or null
-      const firstOrg = orgs[0] || null;
-      const firstMembership = (memberships || []).find(
-        (m: any) => m.organization_id === firstOrg?.id
+      // Determine which org to select:
+      // Priority: 1) HTTP-only cookie (server truth) → 2) Zustand persisted → 3) first org
+      const persistedOrg = get().currentOrg;
+      let targetOrgId: string | null = null;
+
+      // Try reading the active workspace cookie from the switch-context API
+      try {
+        const res = await fetch("/api/auth/switch-context", { cache: "no-store" });
+        if (res.ok) {
+          const cookie = await res.json();
+          if (cookie.workspaceId && orgs.find((o) => o.id === cookie.workspaceId)) {
+            targetOrgId = cookie.workspaceId;
+          }
+        }
+      } catch {
+        // Cookie read is non-fatal
+      }
+
+      // Fallback to persisted org if cookie didn't resolve
+      if (!targetOrgId && persistedOrg?.id && orgs.find((o) => o.id === persistedOrg.id)) {
+        targetOrgId = persistedOrg.id;
+      }
+
+      // Final fallback to first org
+      if (!targetOrgId) {
+        targetOrgId = orgs[0]?.id || null;
+      }
+
+      const selectedOrg = orgs.find((o) => o.id === targetOrgId) || orgs[0] || null;
+      const selectedMembership = (memberships || []).find(
+        (m: any) => m.organization_id === selectedOrg?.id
       ) as any;
 
       set({
         user,
         profile,
         organizations: orgs,
-        currentOrg: firstOrg,
-        currentMembership: firstMembership
+        currentOrg: selectedOrg,
+        currentMembership: selectedMembership
           ? {
-              organization_id: firstMembership.organization_id,
-              user_id: firstMembership.user_id,
-              role: firstMembership.role,
-              status: firstMembership.status,
-              branch: firstMembership.branch,
-              skills: firstMembership.skills,
-              hourly_rate: firstMembership.hourly_rate,
-              invited_by: firstMembership.invited_by,
-              joined_at: firstMembership.joined_at,
-              last_active_at: firstMembership.last_active_at ?? null,
-              role_id: firstMembership.role_id ?? null,
+              organization_id: selectedMembership.organization_id,
+              user_id: selectedMembership.user_id,
+              role: selectedMembership.role,
+              status: selectedMembership.status,
+              branch: selectedMembership.branch,
+              skills: selectedMembership.skills,
+              hourly_rate: selectedMembership.hourly_rate,
+              invited_by: selectedMembership.invited_by,
+              joined_at: selectedMembership.joined_at,
+              last_active_at: selectedMembership.last_active_at ?? null,
+              role_id: selectedMembership.role_id ?? null,
             }
           : null,
         loading: false,
@@ -196,9 +229,15 @@ export const useAuthStore = create<AuthState>()(
       .eq("user_id", user.id)
       .eq("status", "active");
 
-    const orgs = (memberships || [])
-      .map((m: any) => m.organizations as Organization)
-      .filter(Boolean);
+    // Deduplicate orgs by ID
+    const orgMap = new Map<string, Organization>();
+    for (const m of (memberships || [])) {
+      const org = m.organizations as Organization;
+      if (org && org.id && !orgMap.has(org.id)) {
+        orgMap.set(org.id, org);
+      }
+    }
+    const orgs = Array.from(orgMap.values());
 
     set({ organizations: orgs });
 
