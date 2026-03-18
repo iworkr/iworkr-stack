@@ -237,7 +237,7 @@ BEGIN
     COALESCE(te.total_hours,
       EXTRACT(EPOCH FROM (COALESCE(te.clock_out, now()) - te.clock_in)) / 3600.0
     ) * COALESCE(
-      (SELECT COALESCE(sp.hourly_rate, 45.00)
+      (SELECT COALESCE(sp.base_hourly_rate, 45.00)
        FROM public.staff_profiles sp WHERE sp.user_id = te.user_id LIMIT 1),
       45.00
     )
