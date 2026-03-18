@@ -171,7 +171,7 @@ const CARE_NAV: NavGroup[] = [
     label: "Workforce",
     icon: UsersRound,
     children: [
-      { id: "nav_team", label: "Team Directory", icon: UserCircle, href: "/dashboard/team", shortcut: "G T", module: "team" },
+      { id: "nav_team", label: "Team Directory", icon: UserCircle, href: "/dashboard/workforce/team", shortcut: "G T", module: "team" },
       { id: "nav_timesheets", label: "Timesheets", icon: Timer, href: "/dashboard/timesheets" },
       { id: "nav_payroll_export", label: "Payroll Export", icon: DollarSign, href: "/dashboard/workforce/payroll-export" },
       { id: "nav_leave", label: "Leave Engine", icon: CalendarClock, href: "/dashboard/team/leave", module: "team" },
