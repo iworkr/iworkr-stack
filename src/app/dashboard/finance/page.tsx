@@ -39,6 +39,7 @@ import { useShellStore } from "@/lib/shell-store";
 import { getQuotes, type Quote } from "@/app/actions/quotes";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { cachedFetch } from "@/lib/cache-utils";
 
 /* ── Status config ───────────────────────────────────────── */
 
@@ -209,8 +210,12 @@ export default function FinancePage() {
   useEffect(() => {
     if (activeTab === "quotes" && orgId && quotes.length === 0) {
       setQuotesLoading(true);
-      getQuotes(orgId).then((res) => {
-        if (res.data) setQuotes(res.data);
+      cachedFetch(
+        `finance-quotes:${orgId}`,
+        () => getQuotes(orgId).then((res) => res.data ?? []),
+        5 * 60 * 1000
+      ).then(({ data }) => {
+        if (data) setQuotes(data as Quote[]);
         setQuotesLoading(false);
       });
     }
@@ -1259,31 +1264,45 @@ function ConnectPaymentsTab() {
     if (!org?.orgId) return;
     setLoading(true);
     try {
+      const { cachedFetch } = await import("@/lib/cache-utils");
       const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("organizations")
-        .select("settings")
-        .eq("id", org.orgId)
-        .single();
-      if (data) {
-        const s = (data.settings as Record<string, unknown>) ?? {};
+
+      const { data: result } = await cachedFetch(
+        `connect-status:${org.orgId}`,
+        async () => {
+          const supabase = createClient();
+          const { data } = await supabase
+            .from("organizations")
+            .select("settings")
+            .eq("id", org.orgId!)
+            .single();
+          if (!data) return { settings: null, payments: [] };
+
+          const s = (data.settings as Record<string, unknown>) ?? {};
+          let payments: any[] = [];
+          if (s.charges_enabled) {
+            const { data: payData } = await (supabase as any)
+              .from("payments")
+              .select("id, amount_cents, currency, status, payment_method, client_name, created_at")
+              .eq("organization_id", org.orgId!)
+              .order("created_at", { ascending: false })
+              .limit(20);
+            payments = payData ?? [];
+          }
+          return { settings: s, payments };
+        },
+        5 * 60 * 1000
+      );
+
+      if (result?.settings) {
+        const s = result.settings as Record<string, unknown>;
         setConnectStatus({
           stripe_account_id: (s.stripe_account_id as string) || null,
           charges_enabled: (s.charges_enabled as boolean) || false,
           payouts_enabled: (s.payouts_enabled as boolean) || false,
           connect_onboarded_at: (s.connect_onboarded_at as string) || null,
         });
-
-        if (s.charges_enabled) {
-          const { data: payments } = await (supabase as any)
-            .from("payments")
-            .select("id, amount_cents, currency, status, payment_method, client_name, created_at")
-            .eq("organization_id", org.orgId)
-            .order("created_at", { ascending: false })
-            .limit(20);
-          if (payments) setRecentPayments(payments);
-        }
+        if (result.payments?.length) setRecentPayments(result.payments);
       }
     } catch { /* silent */ }
     setLoading(false);

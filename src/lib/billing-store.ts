@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { createClient } from "@/lib/supabase/client";
+import { isFresh } from "@/lib/cache-utils";
 import type { Database } from "@/lib/supabase/types";
 import { getPlanByKey, type PlanDefinition } from "@/lib/plans";
 
@@ -14,22 +16,31 @@ export interface BillingState {
   loading: boolean;
   /** The org currently loaded — used for refresh */
   _orgId: string | null;
+  _lastFetchedAt: number | null;
 
   loadBilling: (orgId: string) => Promise<void>;
   /** Re-fetch billing for the current org (call after checkout, webhook, etc.) */
   refreshBilling: () => Promise<void>;
 }
 
-export const useBillingStore = create<BillingState>((set, get) => ({
+export const useBillingStore = create<BillingState>()(
+  persist(
+    (set, get) => ({
   subscription: null,
   plan: getPlanByKey("free"),
   planTier: "free",
   memberCount: 0,
-  loading: true,
+  loading: false,
   _orgId: null,
+  _lastFetchedAt: null,
 
   loadBilling: async (orgId: string) => {
-    set({ loading: true, _orgId: orgId });
+    const state = get();
+    // SWR: skip if data is fresh and for the same org
+    if (state._orgId === orgId && isFresh(state._lastFetchedAt)) return;
+    // Don't show loading spinner if we already have cached data for this org
+    const hasCache = state._orgId === orgId && state.subscription !== null;
+    set({ loading: !hasCache, _orgId: orgId });
     const supabase = createClient();
 
     try {
@@ -65,6 +76,7 @@ export const useBillingStore = create<BillingState>((set, get) => ({
         planTier: tier,
         memberCount: count || 1,
         loading: false,
+        _lastFetchedAt: Date.now(),
       });
     } catch (error) {
       console.error("Billing store load failed:", error);
@@ -74,6 +86,21 @@ export const useBillingStore = create<BillingState>((set, get) => ({
 
   refreshBilling: async () => {
     const orgId = get()._orgId;
-    if (orgId) await get().loadBilling(orgId);
+    if (!orgId) return;
+    // Force refetch by clearing lastFetchedAt
+    set({ _lastFetchedAt: null });
+    await get().loadBilling(orgId);
   },
-}));
+    }),
+    {
+      name: "iworkr-billing",
+      partialize: (state) => ({
+        subscription: state.subscription,
+        planTier: state.planTier,
+        memberCount: state.memberCount,
+        _orgId: state._orgId,
+        _lastFetchedAt: state._lastFetchedAt,
+      }),
+    }
+  )
+);

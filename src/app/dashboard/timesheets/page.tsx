@@ -2,12 +2,13 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback, useEffect, useTransition } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import {
   Search, ChevronRight, Filter, Plus, Clock, MapPin,
   Loader2, AlertTriangle, CheckCircle2, X,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { cachedFetch, invalidateCachePrefix } from "@/lib/cache-utils";
 import {
   fetchTimesheetTriageAction,
   getTimesheetTelemetryAction,
@@ -486,23 +487,33 @@ export default function TimesheetsPage() {
   const [showLogTime, setShowLogTime] = useState(false);
   const [, startTransition] = useTransition();
 
-  // ── Load data ─────────────────────────────────────
-  const loadData = useCallback(async () => {
+  // ── Load data (with in-memory SWR cache) ────────────
+  const loadData = useCallback(async (forceRefresh = false) => {
     if (!orgId) return;
-    setLoading(true);
+    if (forceRefresh) invalidateCachePrefix(`timesheets:${orgId}`);
+    // Only show loading spinner if we have no cached data
+    if (rows.length === 0) setLoading(true);
     try {
-      const [triageData, telemetryData] = await Promise.all([
-        fetchTimesheetTriageAction(orgId, { tab: activeTab }),
-        getTimesheetTelemetryAction(orgId),
+      const [triageResult, telemetryResult] = await Promise.all([
+        cachedFetch(
+          `timesheets:triage:${orgId}:${activeTab}`,
+          () => fetchTimesheetTriageAction(orgId, { tab: activeTab }),
+          3 * 60 * 1000 // 3-minute cache
+        ),
+        cachedFetch(
+          `timesheets:telemetry:${orgId}`,
+          () => getTimesheetTelemetryAction(orgId),
+          3 * 60 * 1000
+        ),
       ]);
-      setRows(triageData);
-      setTelemetry(telemetryData);
+      setRows(triageResult.data);
+      setTelemetry(telemetryResult.data);
     } catch (e: any) {
       console.error("[timesheets] load failed:", e);
     } finally {
       setLoading(false);
     }
-  }, [orgId, activeTab]);
+  }, [orgId, activeTab, rows.length]);
 
   useEffect(() => {
     if (orgId) loadData();
@@ -558,7 +569,7 @@ export default function TimesheetsPage() {
           }));
         });
         // Re-fetch from DB to ensure UI/DB parity
-        loadData();
+        loadData(true);
       } catch (e: any) {
         console.error("[timesheets] approve failed:", e);
       } finally {
@@ -583,7 +594,7 @@ export default function TimesheetsPage() {
           }));
         });
         // Re-fetch from DB to ensure UI/DB parity
-        loadData();
+        loadData(true);
       } catch (e: any) {
         console.error("[timesheets] reject failed:", e);
       } finally {
@@ -611,7 +622,7 @@ export default function TimesheetsPage() {
         }));
         setSelectedIds(new Set());
       });
-      loadData();
+      loadData(true);
     } catch (e: any) {
       console.error("[timesheets] bulk approve failed:", e);
     } finally {
@@ -633,7 +644,7 @@ export default function TimesheetsPage() {
         }));
         setSelectedIds(new Set());
       });
-      loadData();
+      loadData(true);
     } catch (e: any) {
       console.error("[timesheets] bulk reject failed:", e);
     } finally {
@@ -922,7 +933,7 @@ export default function TimesheetsPage() {
       {/* ═══ LOG TIME SLIDE-OVER ═══ */}
       <AnimatePresence>
         {showLogTime && orgId && (
-          <LogTimeSlideOver orgId={orgId} onClose={() => setShowLogTime(false)} onSaved={loadData} />
+          <LogTimeSlideOver orgId={orgId} onClose={() => setShowLogTime(false)} onSaved={() => loadData(true)} />
         )}
       </AnimatePresence>
     </div>

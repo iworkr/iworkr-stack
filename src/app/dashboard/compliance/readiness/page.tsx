@@ -15,7 +15,8 @@ import {
   type ComplianceGapRow,
 } from "@/app/actions/care-ironclad";
 import { RemediationSlideOver } from "@/components/governance/RemediationSlideOver";
-import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/lib/auth-store";
+import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
 
 /* ═══════════════════════════════════════════════════════════════════
    Types & Constants
@@ -148,25 +149,32 @@ export default function ComplianceReadinessPage() {
   const [userId, setUserId] = useState<string>("");
   const [dispatchSending, setDispatchSending] = useState(false);
 
-  // Resolve current admin user id on mount
+  // Resolve current admin user id from auth store (no network call needed)
+  const authUser = useAuthStore((s) => s.user);
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.id) setUserId(data.user.id);
-    });
-  }, []);
+    if (authUser?.id) setUserId(authUser.id);
+  }, [authUser?.id]);
 
-  // ── Load data ─────────────────────────────────────
-  const loadData = useCallback(async () => {
+  // ── Load data (with SWR cache) ─────────────────────
+  const loadData = useCallback(async (forceRefresh = false) => {
     if (!orgId) return;
-    setLoading(true);
+    const cacheKey = `compliance-readiness:${orgId}`;
+    if (forceRefresh) invalidateCache(cacheKey);
+    if (!readiness) setLoading(true);
     try {
-      const [readinessData, gapData] = await Promise.all([
-        getComplianceReadinessAction(orgId),
-        listComplianceGapsAction(orgId),
-      ]);
-      setReadiness(readinessData as ReadinessState);
-      setGaps(gapData);
+      const { data: result } = await cachedFetch(
+        cacheKey,
+        async () => {
+          const [readinessData, gapData] = await Promise.all([
+            getComplianceReadinessAction(orgId),
+            listComplianceGapsAction(orgId),
+          ]);
+          return { readiness: readinessData, gaps: gapData };
+        },
+        3 * 60 * 1000
+      );
+      setReadiness(result.readiness as ReadinessState);
+      setGaps(result.gaps);
     } catch (e: any) {
       console.error("[ironclad] load failed:", e);
     } finally {

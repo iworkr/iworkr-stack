@@ -14,6 +14,7 @@ import {
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { createClient } from "@/lib/supabase/client";
+import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -98,29 +99,43 @@ export default function ObservationsPage() {
   const [selectedTab, setSelectedTab] = useState<TabKey>("all");
   const searchRef = useRef<HTMLInputElement>(null);
 
-  /* ── Data fetch ─────────────────────────────────────── */
-  const loadObservations = useCallback(async () => {
+  /* ── Data fetch (with SWR cache) ─────────────────────── */
+  const loadObservations = useCallback(async (forceRefresh = false) => {
     if (!orgId) return;
-    setLoading(true);
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("health_observations")
-      .select("*, profiles!worker_id ( full_name )")
-      .eq("organization_id", orgId)
-      .order("observed_at", { ascending: false })
-      .limit(200);
-    if (!error && data) {
+    const cacheKey = `care-observations:${orgId}`;
+    if (forceRefresh) invalidateCache(cacheKey);
+    if (observations.length === 0) setLoading(true);
+
+    try {
+      const { data: raw } = await cachedFetch(
+        cacheKey,
+        async () => {
+          const supabase = createClient();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data, error } = await (supabase as any)
+            .from("health_observations")
+            .select("*, profiles!worker_id ( full_name )")
+            .eq("organization_id", orgId)
+            .order("observed_at", { ascending: false })
+            .limit(200);
+          if (error) throw error;
+          return data ?? [];
+        },
+        3 * 60 * 1000
+      );
       setObservations(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (data as any[]).map((row: any) => ({
+        (raw as any[]).map((row: any) => ({
           ...row,
           worker_name: row.profiles?.full_name ?? null,
         })) as HealthObservation[]
       );
+    } catch (e) {
+      console.error("Failed to load observations:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [orgId]);
+  }, [orgId, observations.length]);
 
   useEffect(() => { loadObservations(); }, [loadObservations]);
 

@@ -5,7 +5,9 @@
  */
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { createClient } from "@/lib/supabase/client";
+import { isFresh } from "@/lib/cache-utils";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -99,7 +101,9 @@ interface MedicationsState {
   setSelectedParticipantId: (id: string | null) => void;
 }
 
-export const useMedicationsStore = create<MedicationsState>((set, get) => ({
+export const useMedicationsStore = create<MedicationsState>()(
+  persist(
+  (set, get) => ({
   medications: [],
   marEntries: [],
   loading: false,
@@ -108,7 +112,17 @@ export const useMedicationsStore = create<MedicationsState>((set, get) => ({
   selectedParticipantId: null,
 
   loadMedications: async (orgId, participantId) => {
-    set({ loading: true, error: null });
+    // SWR: skip if data is fresh for the same participant
+    const state = get();
+    if (
+      isFresh(state._lastFetchedAt) &&
+      state.selectedParticipantId === (participantId ?? null) &&
+      state.medications.length > 0
+    ) return;
+
+    // Don't show loading spinner if we have cached data
+    const hasCache = state.medications.length > 0;
+    set({ loading: !hasCache, error: null });
     try {
       const supabase = createClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -222,4 +236,14 @@ export const useMedicationsStore = create<MedicationsState>((set, get) => ({
   },
 
   setSelectedParticipantId: (id) => set({ selectedParticipantId: id }),
-}));
+  }),
+  {
+    name: "iworkr-medications",
+    partialize: (state) => ({
+      medications: state.medications,
+      _lastFetchedAt: state._lastFetchedAt,
+      selectedParticipantId: state.selectedParticipantId,
+    }),
+  }
+  )
+);

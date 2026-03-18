@@ -13,6 +13,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
+import { cachedFetch } from "@/lib/cache-utils";
 import { clearOrgCache } from "@/lib/hooks/use-org";
 import { NewWorkspaceModal } from "@/components/shell/new-workspace-modal";
 
@@ -57,25 +58,24 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
   const currentRole = currentMembership?.role as string | undefined;
   const isAdminOrOwner = currentRole === "owner" || currentRole === "admin";
 
-  // Load branches for current org
+  // Load branches for current org (cached — avoids refetch on every open)
   useEffect(() => {
     if (!currentOrg?.id || !open) return;
     let cancelled = false;
 
-    async function loadBranches() {
-      try {
+    cachedFetch(
+      `workspace-branches:${currentOrg.id}`,
+      async () => {
         const res = await fetch(`/api/user/organization?include=branches`);
-        if (!res.ok) return;
+        if (!res.ok) return [];
         const data = await res.json();
-        if (!cancelled) {
-          setBranches(data.branches ?? []);
-        }
-      } catch {
-        // ignore
-      }
-    }
+        return data.branches ?? [];
+      },
+      5 * 60 * 1000
+    ).then(({ data }) => {
+      if (!cancelled) setBranches(data as any[]);
+    });
 
-    loadBranches();
     return () => { cancelled = true; };
   }, [currentOrg?.id, open]);
 

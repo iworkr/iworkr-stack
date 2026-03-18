@@ -6,6 +6,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Search, Plus, ClipboardList, ChevronRight, AlertTriangle, Check, X, Loader2, Target, FileText, Clock } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { createClient } from "@/lib/supabase/client";
+import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -114,34 +115,54 @@ export default function ShiftNotesPage() {
 
   useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 300); return () => clearTimeout(t); }, [search]);
 
-  /* ── Load notes ─────────────────────────────────────── */
-  const loadNotes = useCallback(async () => {
+  /* ── Load notes (with SWR cache) ─────────────────────── */
+  const loadNotes = useCallback(async (forceRefresh = false) => {
     if (!orgId) return;
-    setLoading(true);
-    const supabase = createClient();
-    const { data, error } = await (supabase as any)
-      .from("progress_notes")
-      .select("*, profiles!worker_id ( full_name ), participant_profiles!participant_id ( client_name )")
-      .eq("organization_id", orgId)
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (!error && data) {
-      setNotes((data as any[]).map((row: any) => ({
+    const cacheKey = `care-progress-notes:${orgId}`;
+    if (forceRefresh) invalidateCache(cacheKey);
+    if (notes.length === 0) setLoading(true);
+
+    try {
+      const { data: raw } = await cachedFetch(
+        cacheKey,
+        async () => {
+          const supabase = createClient();
+          const { data, error } = await (supabase as any)
+            .from("progress_notes")
+            .select("*, profiles!worker_id ( full_name ), participant_profiles!participant_id ( client_name )")
+            .eq("organization_id", orgId)
+            .order("created_at", { ascending: false })
+            .limit(200);
+          if (error) throw error;
+          return data ?? [];
+        },
+        3 * 60 * 1000
+      );
+      setNotes((raw as any[]).map((row: any) => ({
         ...row,
         worker_name: row.profiles?.full_name ?? null,
         participant_name: row.participant_profiles?.client_name ?? null,
       })));
+    } catch (e) {
+      console.error("Failed to load progress notes:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [orgId]);
+  }, [orgId, notes.length]);
 
   useEffect(() => { loadNotes(); }, [loadNotes]);
 
   useEffect(() => {
     if (!orgId) return;
-    const supabase = createClient();
-    (supabase as any).from("participant_profiles").select("id, client_name").eq("organization_id", orgId).order("client_name")
-      .then(({ data }: any) => { if (data) setParticipants(data); });
+    cachedFetch(
+      `care-participants:${orgId}`,
+      async () => {
+        const supabase = createClient();
+        const { data } = await (supabase as any).from("participant_profiles").select("id, client_name").eq("organization_id", orgId).order("client_name");
+        return data ?? [];
+      },
+      5 * 60 * 1000
+    ).then(({ data }) => { if (data) setParticipants(data as any[]); });
   }, [orgId]);
 
   /* ── Filtered notes ─────────────────────────────────── */

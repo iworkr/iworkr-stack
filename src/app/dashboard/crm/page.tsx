@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { createClient } from "@/lib/supabase/client";
+import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
 import { useToastStore } from "@/components/app/action-toast";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
@@ -256,34 +257,48 @@ export default function CRMPipelinePage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  /* ── Fetch clients ─────────────────────────────────────── */
+  /* ── Fetch clients (with SWR cache) ───────────────────── */
 
-  const fetchClients = useCallback(async () => {
+  const fetchClients = useCallback(async (forceRefresh = false) => {
     if (!orgId) return;
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("clients")
-      .select(
-        "id, name, email, phone, type, status, pipeline_status, pipeline_updated_at, estimated_value, tags, notes, lead_source, created_at"
-      )
-      .eq("organization_id", orgId)
-      .is("deleted_at", null)
-      .order("pipeline_updated_at", { ascending: false, nullsFirst: false });
+    const cacheKey = `crm-pipeline:${orgId}`;
+    if (forceRefresh) invalidateCache(cacheKey);
+    // Only show loading spinner when no data exists yet
+    if (clients.length === 0) setLoading(true);
 
-    if (error) {
-      console.error("Failed to fetch pipeline clients:", error);
-      return;
+    try {
+      const { data: raw } = await cachedFetch(
+        cacheKey,
+        async () => {
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from("clients")
+            .select(
+              "id, name, email, phone, type, status, pipeline_status, pipeline_updated_at, estimated_value, tags, notes, lead_source, created_at"
+            )
+            .eq("organization_id", orgId)
+            .is("deleted_at", null)
+            .order("pipeline_updated_at", { ascending: false, nullsFirst: false });
+
+          if (error) throw error;
+          return data ?? [];
+        },
+        3 * 60 * 1000 // 3-minute cache
+      );
+      setClients(
+        (raw ?? []).map((c: any) => ({
+          ...(c as object),
+          pipeline_status: (c as { pipeline_status?: string }).pipeline_status || "new_lead",
+          tags: (c as { tags?: string[] | null }).tags || [],
+          type: (c as { type?: string | null }).type as "residential" | "commercial" | null,
+        })) as PipelineClient[]
+      );
+    } catch (e) {
+      console.error("Failed to fetch pipeline clients:", e);
+    } finally {
+      setLoading(false);
     }
-    setClients(
-      (data ?? []).map((c) => ({
-        ...(c as object),
-        pipeline_status: (c as { pipeline_status?: string }).pipeline_status || "new_lead",
-        tags: (c as { tags?: string[] | null }).tags || [],
-        type: (c as { type?: string | null }).type as "residential" | "commercial" | null,
-      })) as PipelineClient[]
-    );
-    setLoading(false);
-  }, [orgId]);
+  }, [orgId, clients.length]);
 
   useEffect(() => {
     fetchClients();
@@ -305,7 +320,7 @@ export default function CRMPipelinePage() {
           filter: `organization_id=eq.${orgId}`,
         },
         () => {
-          fetchClients();
+          fetchClients(true);
         }
       )
       .subscribe();

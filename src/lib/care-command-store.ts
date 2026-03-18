@@ -6,6 +6,7 @@
  */
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { createClient } from "@/lib/supabase/client";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -222,7 +223,9 @@ interface CareCommandState {
   setSelectedPlanId: (id: string | null) => void;
 }
 
-export const useCareCommandStore = create<CareCommandState>((set, get) => ({
+export const useCareCommandStore = create<CareCommandState>()(
+  persist(
+  (set, get) => ({
   snapshot: null,
   snapshotLoading: false,
   snapshotFetchedAt: null,
@@ -418,7 +421,19 @@ export const useCareCommandStore = create<CareCommandState>((set, get) => ({
 
   setTimelineParticipantFilter: (id) => set({ timelineParticipantFilter: id }),
   setSelectedPlanId: (id) => set({ selectedPlanId: id }),
-}));
+  }),
+  {
+    name: "iworkr-care-command",
+    partialize: (state) => ({
+      snapshot: state.snapshot,
+      snapshotFetchedAt: state.snapshotFetchedAt,
+      alerts: state.alerts,
+      plans: state.plans,
+      allocations: state.allocations,
+    }),
+  }
+  )
+);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Selectors

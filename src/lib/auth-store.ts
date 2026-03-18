@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { clearAllCaches } from "./cache-utils";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, setActiveWorkspace } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/types";
 import type { User } from "@supabase/supabase-js";
 
@@ -51,19 +51,28 @@ export const useAuthStore = create<AuthState>()(
         return;
       }
 
-      // Get profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
+      // ── PARALLEL BATCH: profile + memberships + cookie all at once ──
+      // Previously these were 3 sequential network calls (~1.5s waterfall).
+      // Now they fire simultaneously (~500ms total).
+      const [profileResult, membershipsResult, cookieResult] = await Promise.allSettled([
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle(),
+        (supabase as any)
+          .from("organization_members")
+          .select("*, organizations(*)")
+          .eq("user_id", user.id)
+          .eq("status", "active"),
+        fetch("/api/auth/switch-context", { cache: "no-store" })
+          .then((r) => r.ok ? r.json() : null)
+          .catch(() => null),
+      ]);
 
-      // Get organizations the user belongs to
-      const { data: memberships } = await (supabase as any)
-        .from("organization_members")
-        .select("*, organizations(*)")
-        .eq("user_id", user.id)
-        .eq("status", "active");
+      const profile = profileResult.status === "fulfilled" ? profileResult.value.data : null;
+      const memberships = membershipsResult.status === "fulfilled" ? membershipsResult.value.data : [];
+      const cookieData = cookieResult.status === "fulfilled" ? cookieResult.value : null;
 
       // Deduplicate orgs by ID (prevents duplicate entries in switcher)
       const orgMap = new Map<string, Organization>();
@@ -80,17 +89,9 @@ export const useAuthStore = create<AuthState>()(
       const persistedOrg = get().currentOrg;
       let targetOrgId: string | null = null;
 
-      // Try reading the active workspace cookie from the switch-context API
-      try {
-        const res = await fetch("/api/auth/switch-context", { cache: "no-store" });
-        if (res.ok) {
-          const cookie = await res.json();
-          if (cookie.workspaceId && orgs.find((o) => o.id === cookie.workspaceId)) {
-            targetOrgId = cookie.workspaceId;
-          }
-        }
-      } catch {
-        // Cookie read is non-fatal
+      // Try reading the active workspace cookie
+      if (cookieData?.workspaceId && orgs.find((o) => o.id === cookieData.workspaceId)) {
+        targetOrgId = cookieData.workspaceId;
       }
 
       // Fallback to persisted org if cookie didn't resolve
@@ -104,6 +105,8 @@ export const useAuthStore = create<AuthState>()(
       }
 
       const selectedOrg = orgs.find((o) => o.id === targetOrgId) || orgs[0] || null;
+      // Keep singleton client headers in sync with resolved org
+      if (selectedOrg?.id) setActiveWorkspace(selectedOrg.id);
       const selectedMembership = (memberships || []).find(
         (m: any) => m.organization_id === selectedOrg?.id
       ) as any;
@@ -138,6 +141,7 @@ export const useAuthStore = create<AuthState>()(
   },
 
   setCurrentOrg: (org) => {
+    setActiveWorkspace(org?.id);
     set({ currentOrg: org });
   },
 
@@ -174,7 +178,8 @@ export const useAuthStore = create<AuthState>()(
         .eq("status", "active")
         .maybeSingle();
 
-      // 4. Update store with new context
+      // 4. Update store with new context + invalidate singleton client
+      setActiveWorkspace(newOrgId);
       set({
         currentOrg: targetOrg,
         currentMembership: newMembership

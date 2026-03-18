@@ -1,14 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
 
 /**
  * Generic hook for fetching data from server actions.
- * Handles loading, error, and refetch states.
+ * Handles loading, error, refetch, and optional in-memory SWR caching.
+ *
+ * @param cacheKey — Optional cache key. When provided, results are cached
+ *                   in memory and subsequent mounts with the same key
+ *                   return cached data instantly (stale-while-revalidate).
+ *                   When omitted, behaves like before (fresh fetch on every mount).
  */
 export function useData<T>(
   fetcher: () => Promise<{ data: T | null; error: string | null }>,
-  deps: unknown[] = []
+  deps: unknown[] = [],
+  options?: { cacheKey?: string; ttlMs?: number }
 ) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,13 +26,29 @@ export function useData<T>(
     setLoading(true);
     setError(null);
     try {
-      const result = await fetcher();
-      if (!mountedRef.current) return;
-      if (result.error) {
-        setError(result.error);
-        setData(null);
+      if (options?.cacheKey) {
+        // Use in-memory SWR cache — returns cached data instantly if available
+        const { data: cached } = await cachedFetch(
+          options.cacheKey,
+          async () => {
+            const result = await fetcher();
+            if (result.error) throw new Error(result.error);
+            return result.data;
+          },
+          options.ttlMs
+        );
+        if (!mountedRef.current) return;
+        setData(cached);
       } else {
-        setData(result.data);
+        // No caching — direct fetch
+        const result = await fetcher();
+        if (!mountedRef.current) return;
+        if (result.error) {
+          setError(result.error);
+          setData(null);
+        } else {
+          setData(result.data);
+        }
       }
     } catch (err) {
       if (!mountedRef.current) return;
@@ -44,7 +67,13 @@ export function useData<T>(
     };
   }, [fetch]);
 
-  return { data, loading, error, refetch: fetch, setData };
+  const refetch = useCallback(async () => {
+    if (options?.cacheKey) invalidateCache(options.cacheKey);
+    return fetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetch, options?.cacheKey]);
+
+  return { data, loading, error, refetch, setData };
 }
 
 /**
