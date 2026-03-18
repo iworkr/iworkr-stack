@@ -20,14 +20,11 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  Shield,
   TrendingUp,
 } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-// NDIS validation used elsewhere — keeping import path reference
-// import { validateNDISNumber, formatNDISNumber } from "@/lib/ndis-utils";
 import { useToastStore } from "@/components/app/action-toast";
 import { useOrg } from "@/lib/hooks/use-org";
 import { createClient } from "@/lib/supabase/client";
@@ -43,10 +40,10 @@ interface NewParticipantOverlayProps {
 }
 
 const STEPS = [
-  { id: 0, label: "Identity", description: "Who are they?" },
-  { id: 1, label: "Care Profile", description: "What do they need?" },
-  { id: 2, label: "Service Agreement", description: "Allocate their funding" },
-  { id: 3, label: "Master Schedule", description: "When do they need support?" },
+  { id: 0, label: "Identity" },
+  { id: 1, label: "Care Profile" },
+  { id: 2, label: "Service Agreement" },
+  { id: 3, label: "Master Schedule" },
 ] as const;
 
 const FUNDING_TYPES = [
@@ -93,7 +90,7 @@ interface NDISItem {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ZOD SCHEMA — THE 4-STEP STATE MACHINE
+   ZOD SCHEMA
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const lineItemSchema = z.object({
@@ -113,7 +110,6 @@ const rosterEntrySchema = z.object({
 });
 
 const formSchema = z.object({
-  // Step 1: Identity
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   preferred_name: z.string().optional(),
@@ -122,54 +118,17 @@ const formSchema = z.object({
   date_of_birth: z.string().optional(),
   email: z.string().optional(),
   phone: z.string().optional(),
-
-  // Step 2: Care Profile
   primary_diagnosis: z.string().optional(),
   critical_alerts: z.string().optional(),
   mobility_status: z.string().optional(),
   communication_type: z.string().optional(),
-
-  // Step 3: Service Agreement
   sa_start_date: z.string().optional(),
   sa_end_date: z.string().optional(),
   sa_line_items: z.array(lineItemSchema),
-
-  // Step 4: Master Schedule
   roster_entries: z.array(rosterEntrySchema),
 });
 
 type FormData = z.infer<typeof formSchema>;
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   ANIMATION VARIANTS
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-const backdropVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-};
-
-const stageVariants = {
-  hidden: { opacity: 0, scale: 0.98 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.15, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
-  },
-  exit: { opacity: 0, scale: 0.96, transition: { duration: 0.1 } },
-};
-
-const slideVariants = {
-  enter: (dir: number) => ({
-    x: dir > 0 ? 60 : -60,
-    opacity: 0,
-  }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({
-    x: dir > 0 ? -60 : 60,
-    opacity: 0,
-  }),
-};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    COMPONENT
@@ -183,6 +142,7 @@ export function NewParticipantOverlay({
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [ndisItems, setNdisItems] = useState<NDISItem[]>([]);
   const [ndisSearch, setNdisSearch] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
@@ -214,9 +174,7 @@ export function NewParticipantOverlay({
       mobility_status: "",
       communication_type: "",
       sa_start_date: new Date().toISOString().split("T")[0],
-      sa_end_date: new Date(
-        Date.now() + 365 * 24 * 60 * 60 * 1000
-      ).toISOString().split("T")[0],
+      sa_end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       sa_line_items: [],
       roster_entries: [],
     },
@@ -237,17 +195,14 @@ export function NewParticipantOverlay({
 
   const watchedLineItems = watch("sa_line_items");
   const watchedRoster = watch("roster_entries");
-  // const watchedFunding = watch("funding_type"); // reserved for future conditional rendering
 
   // ── Load NDIS catalogue ──────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
     const supabase = createClient();
-    (supabase as any)
+    (supabase as ReturnType<typeof createClient> & { from: (t: string) => any })
       .from("ndis_support_items")
-      .select(
-        "support_item_number, support_item_name, support_category_name, unit, price_limit_national, support_purpose"
-      )
+      .select("support_item_number, support_item_name, support_category_name, unit, price_limit_national, support_purpose")
       .eq("is_active", true)
       .order("support_item_number")
       .then(({ data }: { data: NDISItem[] | null }) => {
@@ -262,12 +217,13 @@ export function NewParticipantOverlay({
       setStep(0);
       setDirection(1);
       setSaving(false);
+      setSaved(false);
       setNdisSearch("");
       setActiveSearchIndex(null);
     }
   }, [open, reset]);
 
-  // ── Keyboard: Escape ─────────────────────────────────────────────────────
+  // ── Keyboard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -278,17 +234,23 @@ export function NewParticipantOverlay({
           onClose();
         }
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (step === 3) {
+          handleSubmit(onSubmit)();
+        } else {
+          goNext();
+        }
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose, activeSearchIndex]);
+  }, [open, onClose, activeSearchIndex, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Step navigation ──────────────────────────────────────────────────────
   const goNext = useCallback(async () => {
     let valid = true;
-    if (step === 0) {
-      valid = await trigger(["first_name", "last_name", "funding_type"]);
-    }
+    if (step === 0) valid = await trigger(["first_name", "last_name", "funding_type"]);
     if (!valid) return;
     setDirection(1);
     setStep((s) => Math.min(s + 1, 3));
@@ -301,11 +263,7 @@ export function NewParticipantOverlay({
 
   // ── Total SA budget ──────────────────────────────────────────────────────
   const totalSABudget = useMemo(
-    () =>
-      (watchedLineItems || []).reduce(
-        (sum, li) => sum + (li.allocated_budget || 0),
-        0
-      ),
+    () => (watchedLineItems || []).reduce((sum, li) => sum + (li.allocated_budget || 0), 0),
     [watchedLineItems]
   );
 
@@ -319,16 +277,12 @@ export function NewParticipantOverlay({
 
     for (const entry of watchedRoster) {
       if (!entry.start_time || !entry.end_time || !entry.days?.length) continue;
-
       const [sh, sm] = entry.start_time.split(":").map(Number);
       const [eh, em] = entry.end_time.split(":").map(Number);
       const hoursPerShift = (eh + em / 60) - (sh + sm / 60);
       if (hoursPerShift <= 0) continue;
-
       const daysCount = entry.days.length;
       weeklyHours += hoursPerShift * daysCount;
-
-      // Find linked item rate
       if (entry.linked_item_index !== undefined && watchedLineItems?.[entry.linked_item_index]) {
         const rate = watchedLineItems[entry.linked_item_index].unit_rate || 0;
         weeklyCost += hoursPerShift * daysCount * rate;
@@ -346,16 +300,9 @@ export function NewParticipantOverlay({
   const budgetHealth = useMemo(() => {
     if (totalSABudget <= 0 || rosterMath.annualProjection <= 0)
       return { status: "neutral" as const, pct: 0, depleteMonth: 0 };
-
     const pct = Math.round((rosterMath.annualProjection / totalSABudget) * 100);
-    const depleteMonth =
-      rosterMath.weeklyCost > 0
-        ? Math.floor(totalSABudget / (rosterMath.weeklyCost * 4.33))
-        : 0;
-
-    if (rosterMath.annualProjection <= totalSABudget) {
-      return { status: "safe" as const, pct, depleteMonth: 12 };
-    }
+    const depleteMonth = rosterMath.weeklyCost > 0 ? Math.floor(totalSABudget / (rosterMath.weeklyCost * 4.33)) : 0;
+    if (rosterMath.annualProjection <= totalSABudget) return { status: "safe" as const, pct, depleteMonth: 12 };
     return { status: "danger" as const, pct, depleteMonth };
   }, [totalSABudget, rosterMath]);
 
@@ -363,14 +310,11 @@ export function NewParticipantOverlay({
   const filteredNDIS = useMemo(() => {
     if (!ndisSearch.trim()) return ndisItems.slice(0, 20);
     const q = ndisSearch.toLowerCase();
-    return ndisItems
-      .filter(
-        (item) =>
-          item.support_item_number.toLowerCase().includes(q) ||
-          item.support_item_name.toLowerCase().includes(q) ||
-          item.support_category_name.toLowerCase().includes(q)
-      )
-      .slice(0, 20);
+    return ndisItems.filter((item) =>
+      item.support_item_number.toLowerCase().includes(q) ||
+      item.support_item_name.toLowerCase().includes(q) ||
+      item.support_category_name.toLowerCase().includes(q)
+    ).slice(0, 20);
   }, [ndisSearch, ndisItems]);
 
   // ── Submit ───────────────────────────────────────────────────────────────
@@ -392,10 +336,7 @@ export function NewParticipantOverlay({
           phone: data.phone?.trim() || null,
           primary_diagnosis: data.primary_diagnosis?.trim() || null,
           critical_alerts: data.critical_alerts
-            ? data.critical_alerts
-                .split("\n")
-                .map((a) => a.trim())
-                .filter(Boolean)
+            ? data.critical_alerts.split("\n").map((a) => a.trim()).filter(Boolean)
             : [],
           mobility_status: data.mobility_status || null,
           communication_type: data.communication_type || null,
@@ -418,31 +359,27 @@ export function NewParticipantOverlay({
         };
 
         const supabase = createClient();
-        const { data: result, error } = await (supabase as any).rpc(
+        const { data: result, error } = await (supabase as ReturnType<typeof createClient> & { rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: Record<string, string> | null; error: { message: string } | null }> }).rpc(
           "create_participant_ecosystem",
           { p_payload: payload }
         );
 
         if (error) throw new Error(error.message);
 
-        const participantId = result?.participant_id;
+        const participantId = result?.participant_id ?? "";
+        setSaved(true);
         addToast(
-          `${data.first_name} ${data.last_name} activated${
-            data.sa_line_items.length > 0 ? " with Service Agreement" : ""
-          }${data.roster_entries.length > 0 ? " & Master Schedule" : ""}`,
+          `${data.first_name} ${data.last_name} activated${data.sa_line_items.length > 0 ? " with SA" : ""}${data.roster_entries.length > 0 ? " & Schedule" : ""}`,
           undefined,
           "success"
         );
 
         onComplete?.(participantId);
-        setTimeout(() => onClose(), 300);
-      } catch (e: any) {
+        setTimeout(() => onClose(), 400);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Something went wrong";
         console.error("[NewParticipantOverlay] submit failed:", e);
-        addToast(
-          e?.message || "Failed to create participant",
-          undefined,
-          "error"
-        );
+        addToast(msg, undefined, "error");
       } finally {
         setSaving(false);
       }
@@ -451,198 +388,161 @@ export function NewParticipantOverlay({
   );
 
   /* ═════════════════════════════════════════════════════════════════════════
-     RENDER HELPERS
+     SHARED INPUT CLASSES — mirrors Trade sector patterns exactly
      ═════════════════════════════════════════════════════════════════════════ */
 
-  const inputClass =
-    "w-full bg-transparent border-b-2 border-white/10 pb-3 text-[22px] font-light text-white outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500";
-
-  const inputSmClass =
-    "w-full bg-transparent border-b border-white/10 pb-2 text-[15px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500";
-
-  const labelClass = "block text-[11px] font-medium uppercase tracking-widest text-zinc-600 mb-2";
+  // Hero input — like job title / client name
+  const heroInput = "w-full bg-transparent text-[22px] font-medium tracking-tight text-zinc-100 outline-none placeholder:text-zinc-700";
+  // Field input — underline style like create-client-modal
+  const fieldInput = "w-full border-b border-[var(--border-base)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]";
+  // Tiny uppercase label
+  const labelCls = "block text-[9px] font-medium uppercase tracking-wider text-zinc-600 mb-1.5";
 
   /* ─── Step 1: Identity ──────────────────────────────────────────────────── */
   const renderStep1 = () => (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-[36px] font-light tracking-tight text-white leading-tight">
-          Let&apos;s set up a new participant.
-        </h2>
-        <p className="mt-2 text-[14px] text-zinc-500">
-          Enter their identity details and NDIS funding arrangement.
+    <div className="space-y-6 px-6 py-5">
+      {/* Hero name input — like Create Client's name input */}
+      <div className="grid grid-cols-2 gap-5">
+        <input
+          {...register("first_name")}
+          placeholder="First name"
+          className={heroInput}
+          autoComplete="off"
+          autoFocus
+        />
+        <input
+          {...register("last_name")}
+          placeholder="Last name"
+          className={heroInput}
+          autoComplete="off"
+        />
+      </div>
+      {(errors.first_name || errors.last_name) && (
+        <p className="text-[11px] text-red-400">
+          {errors.first_name?.message || errors.last_name?.message}
         </p>
-      </div>
+      )}
 
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className={labelClass}>First Name</label>
-          <input
-            {...register("first_name")}
-            placeholder="Jane"
-            className={inputClass}
-            autoComplete="off"
-            autoFocus
-          />
-          {errors.first_name && (
-            <p className="mt-1.5 text-[11px] text-red-400">{errors.first_name.message}</p>
-          )}
-        </div>
-        <div>
-          <label className={labelClass}>Last Name</label>
-          <input
-            {...register("last_name")}
-            placeholder="Mitchell"
-            className={inputClass}
-            autoComplete="off"
-          />
-          {errors.last_name && (
-            <p className="mt-1.5 text-[11px] text-red-400">{errors.last_name.message}</p>
-          )}
-        </div>
-      </div>
+      {/* Divider */}
+      <div className="h-px bg-[var(--border-base)]" />
 
-      <div className="grid grid-cols-2 gap-6">
+      {/* Detail fields — underline style */}
+      <div className="grid grid-cols-2 gap-x-5 gap-y-4">
         <div>
-          <label className={labelClass}>Preferred Name</label>
-          <input
-            {...register("preferred_name")}
-            placeholder="Optional"
-            className={inputSmClass}
-            autoComplete="off"
-          />
+          <label className={labelCls}>Preferred Name</label>
+          <input {...register("preferred_name")} placeholder="Optional" className={fieldInput} autoComplete="off" />
         </div>
         <div>
-          <label className={labelClass}>NDIS Number</label>
-          <input
-            {...register("ndis_number")}
-            placeholder="430 123 456"
-            className={inputSmClass}
-            autoComplete="off"
-            maxLength={11}
-          />
+          <label className={labelCls}>NDIS Number</label>
+          <input {...register("ndis_number")} placeholder="430 123 456" className={fieldInput} autoComplete="off" maxLength={11} />
+        </div>
+        <div>
+          <label className={labelCls}>Date of Birth</label>
+          <input type="date" {...register("date_of_birth")} className={`${fieldInput} [color-scheme:dark]`} />
+        </div>
+        <div>
+          <label className={labelCls}>Email</label>
+          <input {...register("email")} placeholder="jane@example.com" className={fieldInput} type="email" autoComplete="off" />
+        </div>
+        <div>
+          <label className={labelCls}>Phone</label>
+          <input {...register("phone")} placeholder="0412 345 678" className={fieldInput} autoComplete="off" />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className={labelClass}>Date of Birth</label>
-          <input
-            type="date"
-            {...register("date_of_birth")}
-            className={`${inputSmClass} [color-scheme:dark]`}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Email</label>
-          <input
-            {...register("email")}
-            placeholder="jane@example.com"
-            className={inputSmClass}
-            type="email"
-            autoComplete="off"
-          />
-        </div>
-      </div>
-
+      {/* Funding Type — card selector like Client Type selector */}
       <div>
-        <label className={labelClass}>Funding Type</label>
-        <div className="mt-2 grid grid-cols-3 gap-3">
+        <label className={labelCls}>Funding Type</label>
+        <div className="mt-2 grid grid-cols-3 gap-2.5">
           <Controller
             control={control}
             name="funding_type"
             render={({ field }) => (
               <>
-                {FUNDING_TYPES.map((ft) => (
-                  <motion.button
-                    key={ft.value}
-                    type="button"
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => field.onChange(ft.value)}
-                    className={`relative rounded-xl p-4 text-left transition-all ${
-                      field.value === ft.value
-                        ? "border-2 border-emerald-500/60 bg-emerald-500/[0.06]"
-                        : "border border-white/[0.06] bg-white/[0.02] hover:border-white/10"
-                    }`}
-                  >
-                    {field.value === ft.value && (
-                      <motion.div
-                        layoutId="funding-check"
-                        className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500"
-                      >
-                        <Check size={11} className="text-black" />
-                      </motion.div>
-                    )}
-                    <p className="text-[13px] font-medium text-white">{ft.label}</p>
-                    <p className="mt-1 text-[11px] text-zinc-500">{ft.desc}</p>
-                  </motion.button>
-                ))}
+                {FUNDING_TYPES.map((ft) => {
+                  const active = field.value === ft.value;
+                  return (
+                    <motion.button
+                      key={ft.value}
+                      type="button"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => field.onChange(ft.value)}
+                      className={`relative rounded-lg p-3 text-left transition-all ${
+                        active
+                          ? "border border-[var(--brand)] bg-[var(--brand)]/[0.06]"
+                          : "border border-[var(--card-border)] bg-white/[0.01] hover:border-[var(--card-border-hover)]"
+                      }`}
+                    >
+                      {active && (
+                        <motion.div
+                          layoutId="funding-check"
+                          className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand)]"
+                        >
+                          <Check size={9} className="text-black" />
+                        </motion.div>
+                      )}
+                      <p className={`text-[12px] font-medium ${active ? "text-white" : "text-zinc-400"}`}>{ft.label}</p>
+                      <p className="mt-0.5 text-[10px] text-zinc-600">{ft.desc}</p>
+                    </motion.button>
+                  );
+                })}
               </>
             )}
           />
         </div>
-        {errors.funding_type && (
-          <p className="mt-2 text-[11px] text-red-400">{errors.funding_type.message}</p>
-        )}
+        {errors.funding_type && <p className="mt-1.5 text-[11px] text-red-400">{errors.funding_type.message}</p>}
       </div>
     </div>
   );
 
   /* ─── Step 2: Care Profile ──────────────────────────────────────────────── */
   const renderStep2 = () => (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-[36px] font-light tracking-tight text-white leading-tight">
-          What are their critical care needs?
-        </h2>
-        <p className="mt-2 text-[14px] text-zinc-500">
-          Capture clinical baseline data — this drives safety alerts across all shifts.
-        </p>
-      </div>
+    <div className="space-y-5 px-6 py-5">
+      {/* Hero diagnosis input */}
+      <input
+        {...register("primary_diagnosis")}
+        placeholder="Primary diagnosis..."
+        className={heroInput}
+        autoComplete="off"
+        autoFocus
+      />
 
-      <div>
-        <label className={labelClass}>Primary Diagnosis</label>
-        <input
-          {...register("primary_diagnosis")}
-          placeholder="e.g. Cerebral Palsy, Autism Spectrum Disorder"
-          className={inputClass}
-          autoComplete="off"
-        />
-      </div>
+      <div className="h-px bg-[var(--border-base)]" />
 
+      {/* Critical alerts */}
       <div>
-        <label className={labelClass}>Critical Medical Alerts</label>
+        <label className={labelCls}>Critical Medical Alerts</label>
         <textarea
           {...register("critical_alerts")}
-          placeholder={"Seizure risk — administer midazolam if >5min\nNPO after 8pm\nAllergy: Penicillin"}
-          rows={4}
-          className={`${inputSmClass} resize-none border-b-0 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-[14px] leading-relaxed`}
+          placeholder={"Seizure risk — administer midazolam if >5min\nAllergy: Penicillin"}
+          rows={3}
+          className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-zinc-400 outline-none placeholder:text-zinc-700"
         />
-        <p className="mt-1.5 text-[10px] text-zinc-600">One alert per line. These appear on every shift card.</p>
+        <p className="mt-1 text-[9px] text-zinc-700">One alert per line. These appear on every shift card.</p>
       </div>
 
+      {/* Mobility — pill buttons like property pills */}
       <div>
-        <label className={labelClass}>Mobility</label>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <label className={labelCls}>Mobility</label>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
           <Controller
             control={control}
             name="mobility_status"
             render={({ field }) => (
               <>
                 {MOBILITY_OPTIONS.map((opt) => (
-                  <motion.button
+                  <button
                     key={opt.value}
                     type="button"
-                    whileTap={{ scale: 0.97 }}
                     onClick={() => field.onChange(field.value === opt.value ? "" : opt.value)}
-                    className={`rounded-full px-4 py-2 text-[12px] font-medium transition-all ${
+                    className={`rounded-md border px-2.5 py-1 text-[12px] transition-colors ${
                       field.value === opt.value
-                        ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40"
-                        : "bg-white/[0.04] text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-300"
+                        ? "border-[var(--brand)] bg-[var(--brand)]/10 text-[var(--brand)]"
+                        : "border-[var(--card-border)] text-zinc-500 hover:border-[var(--card-border-hover)] hover:text-zinc-300"
                     }`}
                   >
                     {opt.label}
-                  </motion.button>
+                  </button>
                 ))}
               </>
             )}
@@ -650,28 +550,28 @@ export function NewParticipantOverlay({
         </div>
       </div>
 
+      {/* Communication */}
       <div>
-        <label className={labelClass}>Communication</label>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <label className={labelCls}>Communication</label>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
           <Controller
             control={control}
             name="communication_type"
             render={({ field }) => (
               <>
                 {COMMUNICATION_OPTIONS.map((opt) => (
-                  <motion.button
+                  <button
                     key={opt.value}
                     type="button"
-                    whileTap={{ scale: 0.97 }}
                     onClick={() => field.onChange(field.value === opt.value ? "" : opt.value)}
-                    className={`rounded-full px-4 py-2 text-[12px] font-medium transition-all ${
+                    className={`rounded-md border px-2.5 py-1 text-[12px] transition-colors ${
                       field.value === opt.value
-                        ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40"
-                        : "bg-white/[0.04] text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-300"
+                        ? "border-[var(--brand)] bg-[var(--brand)]/10 text-[var(--brand)]"
+                        : "border-[var(--card-border)] text-zinc-500 hover:border-[var(--card-border-hover)] hover:text-zinc-300"
                     }`}
                   >
                     {opt.label}
-                  </motion.button>
+                  </button>
                 ))}
               </>
             )}
@@ -683,66 +583,46 @@ export function NewParticipantOverlay({
 
   /* ─── Step 3: Service Agreement ─────────────────────────────────────────── */
   const renderStep3 = () => (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-[36px] font-light tracking-tight text-white leading-tight">
-          Let&apos;s allocate their funding.
-        </h2>
-        <p className="mt-2 text-[14px] text-zinc-500">
-          Build the Service Agreement — add NDIS line items and allocate budgets.
-        </p>
+    <div className="space-y-5 px-6 py-5">
+      {/* Date Range */}
+      <div className="grid grid-cols-2 gap-5">
+        <div>
+          <label className={labelCls}>
+            <Calendar size={9} className="mr-1 inline" />SA Start Date
+          </label>
+          <input type="date" {...register("sa_start_date")} className={`${fieldInput} [color-scheme:dark]`} />
+        </div>
+        <div>
+          <label className={labelCls}>
+            <Calendar size={9} className="mr-1 inline" />SA End Date
+          </label>
+          <input type="date" {...register("sa_end_date")} className={`${fieldInput} [color-scheme:dark]`} />
+        </div>
       </div>
 
-      {/* Date Range */}
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className={labelClass}>
-            <Calendar size={10} className="mr-1 inline" />
-            SA Start Date
-          </label>
-          <input
-            type="date"
-            {...register("sa_start_date")}
-            className={`${inputSmClass} [color-scheme:dark]`}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>
-            <Calendar size={10} className="mr-1 inline" />
-            SA End Date
-          </label>
-          <input
-            type="date"
-            {...register("sa_end_date")}
-            className={`${inputSmClass} [color-scheme:dark]`}
-          />
-        </div>
-      </div>
+      <div className="h-px bg-[var(--border-base)]" />
 
       {/* Line Items */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
+        <label className={labelCls}>NDIS Line Items</label>
+
         {lineItems.map((field, idx) => (
           <motion.div
             key={field.id}
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5"
+            exit={{ opacity: 0, y: -4 }}
+            className="group rounded-lg border border-[var(--card-border)] bg-white/[0.01] p-4"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 space-y-3">
                 {/* NDIS Item Search */}
                 <div className="relative">
-                  <label className={labelClass}>NDIS Support Item</label>
                   {watchedLineItems?.[idx]?.ndis_code ? (
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <p className="font-mono text-[12px] text-emerald-400">
-                          {watchedLineItems[idx].ndis_code}
-                        </p>
-                        <p className="text-[13px] text-zinc-300">
-                          {watchedLineItems[idx].ndis_name}
-                        </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-mono text-[11px] text-[var(--brand)]">{watchedLineItems[idx].ndis_code}</span>
+                        <p className="text-[12px] text-zinc-400">{watchedLineItems[idx].ndis_name}</p>
                       </div>
                       <button
                         type="button"
@@ -753,15 +633,15 @@ export function NewParticipantOverlay({
                           setValue(`sa_line_items.${idx}.support_purpose`, "");
                           setActiveSearchIndex(idx);
                         }}
-                        className="text-[11px] text-zinc-600 hover:text-zinc-400"
+                        className="text-[10px] text-zinc-700 hover:text-zinc-400"
                       >
                         Change
                       </button>
                     </div>
                   ) : (
                     <div>
-                      <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-                        <Search size={14} className="text-zinc-600" />
+                      <div className="flex items-center gap-2 border-b border-[var(--border-base)] pb-1.5">
+                        <Search size={12} className="text-zinc-700" />
                         <input
                           type="text"
                           value={activeSearchIndex === idx ? ndisSearch : ""}
@@ -770,8 +650,8 @@ export function NewParticipantOverlay({
                             setActiveSearchIndex(idx);
                             setNdisSearch(e.target.value);
                           }}
-                          placeholder="Search NDIS items by code or name..."
-                          className="flex-1 bg-transparent text-[13px] text-zinc-300 outline-none placeholder:text-zinc-700"
+                          placeholder="Search NDIS items..."
+                          className="flex-1 bg-transparent text-[12px] text-zinc-300 outline-none placeholder:text-zinc-700"
                         />
                       </div>
                       <AnimatePresence>
@@ -780,48 +660,30 @@ export function NewParticipantOverlay({
                             initial={{ opacity: 0, y: -4 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
-                            className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-[#0A0A0A] shadow-xl"
+                            className="absolute left-0 right-0 top-full z-20 mt-1 max-h-44 overflow-y-auto rounded-lg border border-[var(--border-active)] bg-[var(--surface-1)] shadow-xl"
                           >
                             {filteredNDIS.length === 0 ? (
-                              <p className="p-3 text-[12px] text-zinc-600">No items found</p>
+                              <p className="px-3 py-2 text-[11px] text-zinc-700">No items found</p>
                             ) : (
                               filteredNDIS.map((item) => (
                                 <button
                                   key={item.support_item_number}
                                   type="button"
                                   onClick={() => {
-                                    setValue(
-                                      `sa_line_items.${idx}.ndis_code`,
-                                      item.support_item_number
-                                    );
-                                    setValue(
-                                      `sa_line_items.${idx}.ndis_name`,
-                                      item.support_item_name
-                                    );
-                                    setValue(
-                                      `sa_line_items.${idx}.unit_rate`,
-                                      item.price_limit_national
-                                    );
-                                    setValue(
-                                      `sa_line_items.${idx}.support_purpose`,
-                                      item.support_purpose
-                                    );
+                                    setValue(`sa_line_items.${idx}.ndis_code`, item.support_item_number);
+                                    setValue(`sa_line_items.${idx}.ndis_name`, item.support_item_name);
+                                    setValue(`sa_line_items.${idx}.unit_rate`, item.price_limit_national);
+                                    setValue(`sa_line_items.${idx}.support_purpose`, item.support_purpose);
                                     setActiveSearchIndex(null);
                                     setNdisSearch("");
                                   }}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
+                                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/[0.03]"
                                 >
                                   <div className="flex-1">
-                                    <span className="font-mono text-[11px] text-emerald-400/80">
-                                      {item.support_item_number}
-                                    </span>
-                                    <p className="text-[12px] text-zinc-300">
-                                      {item.support_item_name}
-                                    </p>
+                                    <span className="font-mono text-[10px] text-[var(--brand)]">{item.support_item_number}</span>
+                                    <p className="text-[11px] text-zinc-400">{item.support_item_name}</p>
                                   </div>
-                                  <span className="font-mono text-[12px] text-zinc-500">
-                                    ${item.price_limit_national.toFixed(2)}/hr
-                                  </span>
+                                  <span className="font-mono text-[11px] text-zinc-600">${item.price_limit_national.toFixed(2)}/hr</span>
                                 </button>
                               ))
                             )}
@@ -835,27 +697,20 @@ export function NewParticipantOverlay({
                 {/* Budget */}
                 <div className="flex items-end gap-4">
                   <div className="flex-1">
-                    <label className={labelClass}>Allocated Budget</label>
-                    <div className="flex items-center gap-1 border-b border-white/10 pb-2">
-                      <DollarSign size={16} className="text-zinc-600" />
+                    <label className={labelCls}>Budget</label>
+                    <div className="flex items-center gap-1 border-b border-[var(--border-base)] pb-1.5">
+                      <DollarSign size={13} className="text-zinc-700" />
                       <input
                         type="number"
                         step="0.01"
-                        {...register(`sa_line_items.${idx}.allocated_budget`, {
-                          valueAsNumber: true,
-                        })}
+                        {...register(`sa_line_items.${idx}.allocated_budget`, { valueAsNumber: true })}
                         placeholder="50,000"
-                        className="flex-1 bg-transparent text-[18px] font-mono font-light text-white outline-none placeholder:text-zinc-700"
+                        className="flex-1 bg-transparent font-mono text-[14px] text-white outline-none placeholder:text-zinc-700"
                       />
                     </div>
                   </div>
                   {watchedLineItems?.[idx]?.unit_rate > 0 && (
-                    <div className="pb-3 text-right">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-600">Hourly Rate</p>
-                      <p className="font-mono text-[14px] text-zinc-400">
-                        ${watchedLineItems[idx].unit_rate.toFixed(2)}
-                      </p>
-                    </div>
+                    <p className="pb-2 font-mono text-[11px] text-zinc-600">${watchedLineItems[idx].unit_rate.toFixed(2)}/hr</p>
                   )}
                 </div>
               </div>
@@ -863,31 +718,22 @@ export function NewParticipantOverlay({
               <button
                 type="button"
                 onClick={() => removeLineItem(idx)}
-                className="mt-6 rounded-lg p-2 text-zinc-700 transition-colors hover:bg-white/[0.04] hover:text-red-400"
+                className="rounded-lg p-1.5 text-zinc-800 opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
               >
-                <Trash2 size={14} />
+                <Trash2 size={13} />
               </button>
             </div>
           </motion.div>
         ))}
 
-        <motion.button
+        <button
           type="button"
-          whileTap={{ scale: 0.98 }}
-          onClick={() =>
-            appendLineItem({
-              ndis_code: "",
-              ndis_name: "",
-              unit_rate: 0,
-              support_purpose: "",
-              allocated_budget: 0,
-            })
-          }
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.08] py-4 text-[13px] text-zinc-600 transition-colors hover:border-white/15 hover:text-zinc-400"
+          onClick={() => appendLineItem({ ndis_code: "", ndis_name: "", unit_rate: 0, support_purpose: "", allocated_budget: 0 })}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--card-border)] py-3 text-[12px] text-zinc-600 transition-colors hover:border-[var(--card-border-hover)] hover:text-zinc-400"
         >
-          <Plus size={14} />
+          <Plus size={12} />
           Add Line Item
-        </motion.button>
+        </button>
       </div>
 
       {/* Total */}
@@ -895,10 +741,10 @@ export function NewParticipantOverlay({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex items-center justify-between rounded-xl bg-white/[0.02] px-5 py-4"
+          className="flex items-center justify-between pt-2"
         >
-          <span className="text-[13px] text-zinc-500">Total Agreement Value</span>
-          <span className="font-mono text-[22px] font-light text-emerald-400">
+          <span className="text-[12px] text-zinc-600">Total Agreement Value</span>
+          <span className="font-mono text-[16px] text-[var(--brand)]">
             ${totalSABudget.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
           </span>
         </motion.div>
@@ -908,18 +754,9 @@ export function NewParticipantOverlay({
 
   /* ─── Step 4: Master Schedule ───────────────────────────────────────────── */
   const renderStep4 = () => (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-[36px] font-light tracking-tight text-white leading-tight">
-          When do they need support?
-        </h2>
-        <p className="mt-2 text-[14px] text-zinc-500">
-          Build their weekly recurring schedule — this becomes the Master Roster blueprint.
-        </p>
-      </div>
-
+    <div className="space-y-5 px-6 py-5">
       {/* Roster Entries */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <AnimatePresence mode="popLayout">
           {rosterEntries.map((field, idx) => {
             const entry = watchedRoster?.[idx];
@@ -928,22 +765,22 @@ export function NewParticipantOverlay({
             return (
               <motion.div
                 key={field.id}
-                initial={{ opacity: 0, y: -8 }}
+                initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, height: 0 }}
-                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-5"
+                className="group space-y-4 rounded-lg border border-[var(--card-border)] bg-white/[0.01] p-4"
               >
                 {/* Day Selector */}
                 <div>
-                  <label className={labelClass}>Support Days</label>
-                  <div className="mt-2 flex gap-2">
+                  <label className={labelCls}>Support Days</label>
+                  <div className="mt-1.5 flex gap-1.5">
                     {DAYS_OF_WEEK.map((day) => {
                       const isSelected = selectedDays.includes(day.key);
                       return (
                         <motion.button
                           key={day.key}
                           type="button"
-                          whileTap={{ scale: 0.9 }}
+                          whileTap={{ scale: 0.92 }}
                           onClick={() => {
                             const current = entry?.days || [];
                             const updated = isSelected
@@ -951,10 +788,10 @@ export function NewParticipantOverlay({
                               : [...current, day.key];
                             updateRoster(idx, { ...entry, days: updated });
                           }}
-                          className={`flex h-11 w-11 items-center justify-center rounded-full text-[13px] font-semibold transition-all ${
+                          className={`flex h-9 w-9 items-center justify-center rounded-md text-[12px] font-semibold transition-all ${
                             isSelected
-                              ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20"
-                              : "bg-white/[0.04] text-zinc-600 hover:bg-white/[0.08] hover:text-zinc-400"
+                              ? "bg-[var(--brand)] text-black"
+                              : "border border-[var(--card-border)] text-zinc-600 hover:border-[var(--card-border-hover)] hover:text-zinc-400"
                           }`}
                           title={day.full}
                         >
@@ -965,51 +802,38 @@ export function NewParticipantOverlay({
                   </div>
                 </div>
 
-                {/* Time Range */}
+                {/* Time Range — appears when days selected */}
                 {selectedDays.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
-                    className="space-y-4"
+                    className="space-y-3"
                   >
-                    <p className="text-[13px] text-zinc-500">
+                    <p className="text-[11px] text-zinc-600">
                       Every{" "}
-                      <span className="text-white">
-                        {selectedDays
-                          .map((d: string) => DAYS_OF_WEEK.find((dw) => dw.key === d)?.full)
-                          .filter(Boolean)
-                          .join(" and ")}
+                      <span className="text-zinc-300">
+                        {selectedDays.map((d: string) => DAYS_OF_WEEK.find((dw) => dw.key === d)?.full).filter(Boolean).join(", ")}
                       </span>
                     </p>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <div className="flex-1">
-                        <label className={labelClass}>
-                          <Clock size={10} className="mr-1 inline" />
-                          Start Time
-                        </label>
+                        <label className={labelCls}><Clock size={9} className="mr-1 inline" />Start</label>
                         <input
                           type="time"
                           value={entry?.start_time || ""}
-                          onChange={(e) =>
-                            updateRoster(idx, { ...entry, start_time: e.target.value })
-                          }
-                          className={`${inputSmClass} [color-scheme:dark]`}
+                          onChange={(e) => updateRoster(idx, { ...entry, start_time: e.target.value })}
+                          className={`${fieldInput} [color-scheme:dark]`}
                         />
                       </div>
-                      <span className="mt-5 text-zinc-600">to</span>
+                      <span className="mt-4 text-[11px] text-zinc-700">→</span>
                       <div className="flex-1">
-                        <label className={labelClass}>
-                          <Clock size={10} className="mr-1 inline" />
-                          End Time
-                        </label>
+                        <label className={labelCls}><Clock size={9} className="mr-1 inline" />End</label>
                         <input
                           type="time"
                           value={entry?.end_time || ""}
-                          onChange={(e) =>
-                            updateRoster(idx, { ...entry, end_time: e.target.value })
-                          }
-                          className={`${inputSmClass} [color-scheme:dark]`}
+                          onChange={(e) => updateRoster(idx, { ...entry, end_time: e.target.value })}
+                          className={`${fieldInput} [color-scheme:dark]`}
                         />
                       </div>
                     </div>
@@ -1017,31 +841,20 @@ export function NewParticipantOverlay({
                     {/* Link to SA Item */}
                     {(watchedLineItems?.length || 0) > 0 && (
                       <div>
-                        <label className={labelClass}>Link to SA Line Item</label>
+                        <label className={labelCls}>Link to SA Line Item</label>
                         <select
                           value={entry?.linked_item_index ?? ""}
                           onChange={(e) => {
                             const val = e.target.value;
                             const itemIdx = val === "" ? undefined : parseInt(val);
-                            const itemNumber =
-                              itemIdx !== undefined
-                                ? watchedLineItems?.[itemIdx]?.ndis_code
-                                : undefined;
-                            updateRoster(idx, {
-                              ...entry,
-                              linked_item_index: itemIdx,
-                              linked_item_number: itemNumber,
-                            });
+                            const itemNumber = itemIdx !== undefined ? watchedLineItems?.[itemIdx]?.ndis_code : undefined;
+                            updateRoster(idx, { ...entry, linked_item_index: itemIdx, linked_item_number: itemNumber });
                           }}
-                          className="w-full bg-transparent border-b border-white/10 pb-2 text-[13px] text-zinc-300 outline-none [color-scheme:dark]"
+                          className={`${fieldInput} [color-scheme:dark]`}
                         >
-                          <option value="" className="bg-[#0A0A0A]">
-                            No linkage
-                          </option>
+                          <option value="" className="bg-[var(--surface-1)]">No linkage</option>
                           {watchedLineItems?.map((li, liIdx) => (
-                            <option key={liIdx} value={liIdx} className="bg-[#0A0A0A]">
-                              {li.ndis_code} — ${li.allocated_budget.toLocaleString()}
-                            </option>
+                            <option key={liIdx} value={liIdx} className="bg-[var(--surface-1)]">{li.ndis_code} — ${li.allocated_budget.toLocaleString()}</option>
                           ))}
                         </select>
                       </div>
@@ -1054,9 +867,9 @@ export function NewParticipantOverlay({
                   <button
                     type="button"
                     onClick={() => removeRoster(idx)}
-                    className="text-[11px] text-zinc-700 transition-colors hover:text-red-400"
+                    className="text-[10px] text-zinc-800 opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
                   >
-                    Remove schedule
+                    Remove
                   </button>
                 </div>
               </motion.div>
@@ -1064,81 +877,54 @@ export function NewParticipantOverlay({
           })}
         </AnimatePresence>
 
-        <motion.button
+        <button
           type="button"
-          whileTap={{ scale: 0.98 }}
-          onClick={() =>
-            appendRoster({
-              days: [],
-              start_time: "07:00",
-              end_time: "15:00",
-              linked_item_index: undefined,
-              linked_item_number: undefined,
-            })
-          }
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.08] py-4 text-[13px] text-zinc-600 transition-colors hover:border-white/15 hover:text-zinc-400"
+          onClick={() => appendRoster({ days: [], start_time: "07:00", end_time: "15:00", linked_item_index: undefined, linked_item_number: undefined })}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--card-border)] py-3 text-[12px] text-zinc-600 transition-colors hover:border-[var(--card-border-hover)] hover:text-zinc-400"
         >
-          <Plus size={14} />
+          <Plus size={12} />
           Add Schedule Block
-        </motion.button>
+        </button>
       </div>
 
-      {/* ── Predictive Burn Rate ─────────────────────────────────────────────── */}
+      {/* ── Burn Rate Card ───────────────────────────────────────────────────── */}
       {rosterMath.weeklyHours > 0 && totalSABudget > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`rounded-2xl border p-5 ${
+          className={`rounded-lg border p-4 ${
             budgetHealth.status === "safe"
-              ? "border-emerald-500/20 bg-emerald-500/[0.04]"
+              ? "border-emerald-500/20 bg-emerald-500/[0.03]"
               : budgetHealth.status === "danger"
-              ? "border-red-500/20 bg-red-500/[0.04]"
-              : "border-white/[0.06] bg-white/[0.02]"
+              ? "border-red-500/20 bg-red-500/[0.03]"
+              : "border-[var(--card-border)] bg-white/[0.01]"
           }`}
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2.5">
             {budgetHealth.status === "safe" ? (
-              <TrendingUp size={18} className="mt-0.5 text-emerald-400" />
+              <TrendingUp size={14} className="mt-0.5 text-emerald-500" />
             ) : (
-              <AlertTriangle size={18} className="mt-0.5 text-red-400" />
+              <AlertTriangle size={14} className="mt-0.5 text-red-400" />
             )}
             <div className="flex-1">
-              <p
-                className={`text-[13px] font-medium ${
-                  budgetHealth.status === "safe" ? "text-emerald-400" : "text-red-400"
-                }`}
-              >
+              <p className={`text-[12px] font-medium ${budgetHealth.status === "safe" ? "text-emerald-400" : "text-red-400"}`}>
                 {budgetHealth.status === "safe"
-                  ? `This schedule utilizes ${budgetHealth.pct}% of the allocated budget. Safe to proceed.`
-                  : `Warning: This schedule will cost $${rosterMath.annualProjection.toLocaleString()} annually, but the SA only has $${totalSABudget.toLocaleString()} allocated. Budget depletes in Month ${budgetHealth.depleteMonth}.`}
+                  ? `Utilizes ${budgetHealth.pct}% of budget. Safe to proceed.`
+                  : `$${rosterMath.annualProjection.toLocaleString()}/yr exceeds $${totalSABudget.toLocaleString()} budget. Depletes Month ${budgetHealth.depleteMonth}.`}
               </p>
-
-              <div className="mt-4 grid grid-cols-3 gap-4">
+              <div className="mt-3 grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Weekly Hours</p>
-                  <p className="font-mono text-[18px] font-light text-white">
-                    {rosterMath.weeklyHours}h
-                  </p>
+                  <p className="text-[9px] uppercase tracking-wider text-zinc-700">Weekly Hours</p>
+                  <p className="font-mono text-[14px] text-zinc-300">{rosterMath.weeklyHours}h</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Weekly Cost</p>
-                  <p className="font-mono text-[18px] font-light text-white">
-                    ${rosterMath.weeklyCost.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
-                  </p>
+                  <p className="text-[9px] uppercase tracking-wider text-zinc-700">Weekly Cost</p>
+                  <p className="font-mono text-[14px] text-zinc-300">${rosterMath.weeklyCost.toLocaleString("en-AU", { minimumFractionDigits: 2 })}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">
-                    Annual Projection
-                  </p>
-                  <p
-                    className={`font-mono text-[18px] font-light ${
-                      budgetHealth.status === "safe" ? "text-emerald-400" : "text-red-400"
-                    }`}
-                  >
-                    $
-                    {rosterMath.annualProjection.toLocaleString("en-AU", {
-                      minimumFractionDigits: 2,
-                    })}
+                  <p className="text-[9px] uppercase tracking-wider text-zinc-700">Annual</p>
+                  <p className={`font-mono text-[14px] ${budgetHealth.status === "safe" ? "text-emerald-400" : "text-red-400"}`}>
+                    ${rosterMath.annualProjection.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -1147,24 +933,17 @@ export function NewParticipantOverlay({
         </motion.div>
       )}
 
-      {/* Hours summary even without budget */}
       {rosterMath.weeklyHours > 0 && totalSABudget === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex items-center justify-between rounded-xl bg-white/[0.02] px-5 py-4"
-        >
-          <span className="text-[13px] text-zinc-500">Total Weekly Hours</span>
-          <span className="font-mono text-[18px] font-light text-white">
-            {rosterMath.weeklyHours}h / week
-          </span>
-        </motion.div>
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[12px] text-zinc-600">Total Weekly Hours</span>
+          <span className="font-mono text-[14px] text-zinc-300">{rosterMath.weeklyHours}h / week</span>
+        </div>
       )}
     </div>
   );
 
   /* ═════════════════════════════════════════════════════════════════════════
-     MAIN RENDER
+     MAIN RENDER — mirrors create-client-modal / create-job-modal exactly
      ═════════════════════════════════════════════════════════════════════════ */
 
   const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4];
@@ -1173,153 +952,151 @@ export function NewParticipantOverlay({
     <AnimatePresence>
       {open && (
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* ── Backdrop ─────────────────────────────────────────────── */}
+          {/* ── Backdrop (sibling, not parent — matches Trade pattern) ─── */}
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md"
-            variants={backdropVariants}
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-            transition={{ duration: 0.15 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-50 bg-black/50"
             onClick={onClose}
-          >
-            {/* ── Stage ───────────────────────────────────────────────── */}
-            <motion.div
-              className="relative flex h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl"
-              variants={stageVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* ── Progress Bar ───────────────────────────────────────── */}
-              <div className="h-1 w-full bg-white/[0.06]">
-                <motion.div
-                  className="h-full bg-emerald-500"
-                  initial={false}
-                  animate={{ width: `${((step + 1) / 4) * 100}%` }}
-                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                />
-              </div>
+            aria-hidden
+          />
 
-              {/* ── Header ─────────────────────────────────────────────── */}
-              <div className="flex items-center justify-between px-8 pt-5 pb-2">
-                <div className="flex items-center gap-3">
-                  {STEPS.map((s, i) => (
-                    <React.Fragment key={s.id}>
-                      {i > 0 && (
-                        <ChevronRight size={12} className="text-zinc-800" />
-                      )}
-                      <span
-                        className={`text-[11px] font-medium tracking-wide ${
-                          i === step
-                            ? "text-white"
-                            : i < step
-                            ? "text-emerald-500/60"
-                            : "text-zinc-700"
-                        }`}
-                      >
-                        {s.label}
-                      </span>
-                    </React.Fragment>
-                  ))}
-                </div>
+          {/* ── Stage (centered, bordered, surfaced — Trade DNA) ───────── */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={saved ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            layout
+            className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-[var(--card-border)] bg-[var(--surface-2)] shadow-[var(--shadow-deep)]"
+            style={{ maxHeight: "85vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* ── Progress Bar ──────────────────────────────────────────── */}
+            <div className="h-[2px] w-full bg-white/[0.04]">
+              <motion.div
+                className="h-full bg-[var(--brand)]"
+                initial={false}
+                animate={{ width: `${((step + 1) / 4) * 100}%` }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              />
+            </div>
+
+            {/* ── Header (Trade breadcrumb style) ──────────────────────── */}
+            <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-4">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] text-zinc-500">Participants</span>
+                <span className="text-[12px] text-zinc-700">/</span>
+                <span className="text-[12px] text-zinc-600">New Participant</span>
+                <ChevronRight size={10} className="mx-1 text-zinc-800" />
+                {STEPS.map((s, i) => (
+                  <React.Fragment key={s.id}>
+                    {i > 0 && <span className="text-[10px] text-zinc-800">·</span>}
+                    <span
+                      className={`text-[10px] ${
+                        i === step ? "font-medium text-white" : i < step ? "text-[var(--brand)]" : "text-zinc-700"
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                  </React.Fragment>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">Esc</kbd>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-white"
+                  className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
+                  aria-label="Close"
                 >
-                  <X size={18} />
+                  <X size={14} />
                 </button>
               </div>
+            </div>
 
-              {/* ── Step Content (scrollable) ──────────────────────────── */}
-              <div className="flex-1 overflow-y-auto px-8 py-6">
-                <AnimatePresence mode="wait" custom={direction}>
-                  <motion.div
-                    key={step}
-                    custom={direction}
-                    variants={slideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{
-                      x: { type: "spring", stiffness: 300, damping: 30 },
-                      opacity: { duration: 0.15 },
-                    }}
+            {/* ── Scrollable Body ──────────────────────────────────────── */}
+            <div className="flex-1 overflow-y-auto">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={step}
+                  initial={{ x: direction > 0 ? 40 : -40, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: direction > 0 ? -40 : 40, opacity: 0 }}
+                  transition={{
+                    x: { type: "spring", stiffness: 400, damping: 35 },
+                    opacity: { duration: 0.12 },
+                  }}
+                >
+                  {stepContent[step]()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* ── Footer (Trade pattern — border-t, px-5 py-3) ─────────── */}
+            <div className="flex shrink-0 items-center justify-between border-t border-[var(--border-base)] px-5 py-3">
+              <div>
+                {step > 0 ? (
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-500 transition-colors hover:text-white"
                   >
-                    {stepContent[step]()}
-                  </motion.div>
-                </AnimatePresence>
+                    <ChevronLeft size={12} />
+                    Back
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-zinc-700">Step {step + 1} of 4</span>
+                )}
               </div>
 
-              {/* ── Footer ─────────────────────────────────────────────── */}
-              <div className="flex items-center justify-between border-t border-white/[0.04] px-8 py-4">
-                <div>
-                  {step > 0 && (
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.98 }}
-                      onClick={goBack}
-                      className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] text-zinc-500 transition-colors hover:text-white"
-                    >
-                      <ChevronLeft size={14} />
-                      Back
-                    </motion.button>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  {step < 3 ? (
-                    <>
-                      {step >= 2 && (
-                        <motion.button
-                          type="button"
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            // Skip remaining steps and submit
-                            handleSubmit(onSubmit)();
-                          }}
-                          className="rounded-lg px-4 py-2 text-[13px] text-zinc-500 transition-colors hover:text-white"
-                        >
-                          Skip & Create
-                        </motion.button>
-                      )}
-                      <motion.button
-                        type="button"
-                        whileTap={{ scale: 0.98 }}
-                        onClick={goNext}
-                        className="flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-medium text-black transition-colors hover:bg-zinc-200"
-                      >
-                        Next: {STEPS[step + 1]?.label}
-                        <ChevronRight size={14} />
-                      </motion.button>
-                    </>
-                  ) : (
-                    <motion.button
-                      type="submit"
-                      whileTap={{ scale: 0.98 }}
-                      disabled={saving}
-                      className="flex items-center gap-2 rounded-lg bg-emerald-500 px-6 py-2.5 text-[13px] font-semibold text-black transition-colors hover:bg-emerald-400 disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 size={14} className="animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Shield size={14} />
-                          Activate Participant & Roster
-                          <kbd className="ml-2 rounded bg-black/20 px-1.5 py-0.5 text-[10px] font-mono">
-                            ⌘↵
-                          </kbd>
-                        </>
-                      )}
-                    </motion.button>
-                  )}
-                </div>
+              <div className="flex items-center gap-2.5">
+                {/* Skip button on steps 2-3 */}
+                {step >= 1 && step < 3 && (
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    className="rounded-md px-3 py-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-300"
+                  >
+                    Skip
+                  </button>
+                )}
+
+                {step < 3 ? (
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.98 }}
+                    onClick={goNext}
+                    className="flex items-center gap-1.5 rounded-md bg-white px-4 py-2 text-[13px] font-medium text-black transition-colors hover:bg-zinc-200"
+                  >
+                    Next: {STEPS[step + 1]?.label}
+                    <ChevronRight size={12} />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="submit"
+                    whileTap={{ scale: 0.98 }}
+                    disabled={saving}
+                    className="flex items-center gap-2 rounded-md bg-[var(--brand)] px-4 py-2 text-[13px] font-medium text-black transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />
+                        Creating…
+                      </>
+                    ) : (
+                      <>
+                        <Check size={13} />
+                        Activate Participant
+                        <kbd className="ml-1.5 rounded bg-white/15 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
+                      </>
+                    )}
+                  </motion.button>
+                )}
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         </form>
       )}
