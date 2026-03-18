@@ -129,10 +129,11 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
         // non-fatal
       }
 
-      // Navigate to dashboard — router.push alone triggers both navigation
-      // and Server Component re-render. The old router.refresh() + router.push()
-      // double-fire caused wasted work and potential race conditions.
-      router.push("/dashboard");
+      // Navigate to the correct sector dashboard. After switchOrg(), the
+      // store's currentOrg is already the NEW org, so getDashboardPath() reads
+      // the correct industry_type.
+      const { getDashboardPath } = await import("@/lib/hooks/use-dashboard-path");
+      router.push(getDashboardPath());
     } catch (err) {
       console.error("[WorkspaceSwitcher] switch error:", err);
       setSwitchError("An unexpected error occurred");

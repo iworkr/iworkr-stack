@@ -37,6 +37,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import { useAuthStore } from "@/lib/auth-store";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { Particles } from "@/components/magicui/particles";
 import { Meteors } from "@/components/magicui/meteors";
@@ -135,6 +136,7 @@ function NdisNavbar() {
   const { theme } = useTheme();
   const { user, initialized, profile } = useAuthStore();
   const isAuthenticated = initialized && !!user;
+  const dashboardPath = useDashboardPath();
   const bgOpacity = useTransform(scrollY, [0, 100], [0, 0.8]);
   const borderOpacity = useTransform(scrollY, [0, 100], [0, 0.08]);
 
@@ -183,7 +185,7 @@ function NdisNavbar() {
                 {profile?.full_name && (
                   <span className="text-sm text-[var(--text-muted)]">{profile.full_name.split(" ")[0]}</span>
                 )}
-                <SpotlightButton size="sm" href="/dashboard">
+                <SpotlightButton size="sm" href={dashboardPath}>
                   <LayoutDashboard size={14} />
                   Dashboard
                 </SpotlightButton>
@@ -249,6 +251,7 @@ function NdisNavbar() {
 function NdisHero() {
   const { user, initialized } = useAuthStore();
   const isAuthenticated = initialized && !!user;
+  const dashboardPath = useDashboardPath();
   const words = "The operating system for care providers.".split(" ");
 
   /* ── Scroll-driven tilt for the roster mockup ── */
@@ -318,7 +321,7 @@ function NdisHero() {
           className="flex items-center gap-4"
         >
           {isAuthenticated ? (
-            <SpotlightButton size="lg" href="/dashboard" variant="primary">
+            <SpotlightButton size="lg" href={dashboardPath} variant="primary">
               <LayoutDashboard size={16} />
               Open Dashboard
             </SpotlightButton>
@@ -1416,6 +1419,7 @@ function NdisFAQItem({ faq, index }: { faq: (typeof ndisFaqs)[0]; index: number 
 function NdisCTA() {
   const { user, initialized } = useAuthStore();
   const isAuthenticated = initialized && !!user;
+  const dashboardPath = useDashboardPath();
   return (
     <section className="relative overflow-hidden py-32 md:py-40">
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -1445,7 +1449,7 @@ function NdisCTA() {
         <FadeIn delay={0.25}>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             {isAuthenticated ? (
-              <SpotlightButton size="lg" href="/dashboard">
+              <SpotlightButton size="lg" href={dashboardPath}>
                 <LayoutDashboard size={16} />
                 Open Dashboard
               </SpotlightButton>

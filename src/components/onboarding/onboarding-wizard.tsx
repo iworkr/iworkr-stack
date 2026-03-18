@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -361,7 +362,7 @@ export function OnboardingWizard({
       } else {
         setStep("success");
         // Redirect to dashboard after animation
-        setTimeout(() => router.push("/dashboard"), 2500);
+        setTimeout(() => router.push(getDashboardPath()), 2500);
       }
     } catch (err) {
       setError((err as Error).message);
@@ -742,7 +743,7 @@ export function OnboardingWizard({
 
                 {/* Ghost link to web dashboard */}
                 <button
-                  onClick={() => router.push("/dashboard")}
+                  onClick={() => router.push(getDashboardPath())}
                   className="mt-2 text-[11px] text-zinc-700 transition-colors hover:text-zinc-500"
                 >
                   Continue to Web Dashboard →

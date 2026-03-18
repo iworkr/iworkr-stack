@@ -27,6 +27,7 @@ import {
 import { useAuthStore } from "@/lib/auth-store";
 import { Shimmer } from "@/components/ui/shimmer";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 interface NavItem {
   id: string;
@@ -83,6 +84,7 @@ export function SettingsSidebar() {
   const pathname = usePathname();
   const { currentOrg } = useAuthStore();
   const { t } = useIndustryLexicon();
+  const dashboardPath = useDashboardPath();
   const teamName = currentOrg?.name || "";
 
   return (
@@ -90,7 +92,7 @@ export function SettingsSidebar() {
       {/* Back to app */}
       <div className="px-4 pt-4 pb-2">
         <Link
-          href="/dashboard"
+          href={dashboardPath}
           className="inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-[13px] text-zinc-500 transition-colors hover:text-zinc-300"
         >
           <ChevronLeft size={14} strokeWidth={1.5} />

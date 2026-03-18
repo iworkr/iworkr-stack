@@ -10,6 +10,7 @@ import { HydrationGate } from "@/components/app/hydration-gate";
 import { BrandProvider } from "@/components/providers/brand-provider";
 import { useAuthStore } from "@/lib/auth-store";
 import { useSettingsStore } from "@/lib/stores/settings-store";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 export default function SettingsLayout({
   children,
@@ -33,7 +34,7 @@ export default function SettingsLayout({
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.preventDefault();
-        router.push("/dashboard");
+        router.push(getDashboardPath());
       }
     }
     window.addEventListener("keydown", handleKey);

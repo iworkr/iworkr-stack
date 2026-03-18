@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { ArrowLeft, Ticket } from "lucide-react";
 import type { ReactNode } from "react";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 export default function HelpLayout({ children }: { children: ReactNode }) {
+  const dashboardPath = useDashboardPath();
+
   return (
     <div className="fixed inset-0 z-50 min-h-screen overflow-y-auto bg-[var(--background)] text-white selection:bg-white/10">
       {/* Atmospheric glow — neutral */}
@@ -18,7 +21,7 @@ export default function HelpLayout({ children }: { children: ReactNode }) {
       {/* Minimal Navigation Bar */}
       <header className="relative z-10 flex items-center justify-between px-6 py-5 md:px-8">
         <Link
-          href="/dashboard"
+          href={dashboardPath}
           className="flex items-center gap-2 text-[13px] text-zinc-500 transition-colors hover:text-white"
         >
           <ArrowLeft size={14} />

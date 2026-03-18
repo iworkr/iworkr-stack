@@ -83,7 +83,18 @@ export default function GlobalError({
                 Try Again
               </button>
               <a
-                href="/dashboard"
+                href={(() => {
+                  // Best-effort: read persisted auth store from localStorage to
+                  // determine sector. Falls back to /dashboard for trades.
+                  try {
+                    const raw = typeof window !== "undefined" ? localStorage.getItem("iworkr-auth") : null;
+                    if (raw) {
+                      const parsed = JSON.parse(raw);
+                      if (parsed?.state?.currentOrg?.industry_type === "care") return "/dashboard/care";
+                    }
+                  } catch { /* fallback */ }
+                  return "/dashboard";
+                })()}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   padding: "10px 20px", borderRadius: 12,

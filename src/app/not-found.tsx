@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Compass } from "lucide-react";
 import Link from "next/link";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 export default function NotFound() {
   return (
@@ -66,7 +67,7 @@ export default function NotFound() {
           className="mt-8 flex items-center justify-center gap-3"
         >
           <Link
-            href="/dashboard"
+            href={getDashboardPath()}
             className="btn-micro inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-medium text-black transition-all hover:bg-zinc-200"
           >
             <ArrowLeft size={14} />

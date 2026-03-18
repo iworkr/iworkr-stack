@@ -28,6 +28,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useShellStore } from "@/lib/shell-store";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 /* ── Commands ─────────────────────────────────────────── */
 
@@ -88,10 +89,18 @@ const commands = [
   { id: "nav-ai-agent", label: "Go to AI Agent", icon: Bot, group: "Navigation", href: "/dashboard/ai-agent" },
 ];
 
-/** Returns commands with labels translated through the industry lexicon. */
+/** Returns commands with labels translated through the industry lexicon and sector-aware dashboard path. */
 function useTranslatedCommands() {
   const { t } = useIndustryLexicon();
-  return commands.map((cmd) => ({ ...cmd, label: t(cmd.label) }));
+  const dashboardPath = useDashboardPath();
+  return commands.map((cmd) => {
+    const translated = { ...cmd, label: t(cmd.label) };
+    // Point "Go to Dashboard" at the correct sector home
+    if (cmd.id === "nav-dashboard") {
+      return { ...translated, href: dashboardPath };
+    }
+    return translated;
+  });
 }
 
 export function CommandMenu() {

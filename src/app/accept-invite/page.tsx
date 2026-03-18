@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, Suspense } from "react";
 import { Lock, CheckCircle, AlertTriangle, Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 // ═══════════════════════════════════════════════════════════
 // ── Accept Invite — Obsidian Onboarding Flow ─────────────
@@ -180,7 +181,7 @@ function AcceptInviteContent() {
       }
 
       setStep("success");
-      setTimeout(() => router.push("/dashboard"), 2500);
+      setTimeout(() => router.push(getDashboardPath()), 2500);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
       setSubmitting(false);
@@ -201,7 +202,7 @@ function AcceptInviteContent() {
       if (!res.ok) throw new Error(result.error || "Failed to accept invite");
 
       setStep("success");
-      setTimeout(() => router.push("/dashboard"), 2500);
+      setTimeout(() => router.push(getDashboardPath()), 2500);
     } catch (err: any) {
       setError(err.message || "Failed to accept invitation");
       setStep("error");

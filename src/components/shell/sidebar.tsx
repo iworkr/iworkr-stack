@@ -657,6 +657,27 @@ export function Sidebar() {
           <div className="h-[30px] w-full shrink-0" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
         )}
 
+        {/* ── iWorkr Logo ── */}
+        {sidebarCollapsed ? (
+          <div className="flex items-center justify-center px-3 pt-4 pb-1">
+            <img
+              src="/logos/logo-dark-streamline.png"
+              alt="iWorkr"
+              className="h-6 w-6 object-contain"
+              draggable={false}
+            />
+          </div>
+        ) : (
+          <div className="flex items-center px-4 pt-4 pb-1">
+            <img
+              src="/logos/logo-dark-full.png"
+              alt="iWorkr"
+              className="h-6 object-contain"
+              draggable={false}
+            />
+          </div>
+        )}
+
         {/* ── Workspace Switcher ── */}
         <WorkspaceSwitcherNew collapsed={sidebarCollapsed} />
 

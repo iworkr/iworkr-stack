@@ -8,6 +8,7 @@ import Link from "next/link";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import { useTheme } from "@/components/providers/theme-provider";
 import { useAuthStore } from "@/lib/auth-store";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -22,6 +23,7 @@ export function Navbar() {
   const { theme } = useTheme();
   const { user, initialized, profile } = useAuthStore();
   const isAuthenticated = initialized && !!user;
+  const dashboardPath = useDashboardPath();
   const bgOpacity = useTransform(scrollY, [0, 100], [0, 0.8]);
   const borderOpacity = useTransform(scrollY, [0, 100], [0, 0.08]);
 
@@ -83,7 +85,7 @@ export function Navbar() {
                     {profile.full_name.split(" ")[0]}
                   </span>
                 )}
-                <SpotlightButton size="sm" href="/dashboard">
+                <SpotlightButton size="sm" href={dashboardPath}>
                   <LayoutDashboard size={14} />
                   Dashboard
                 </SpotlightButton>
@@ -139,7 +141,7 @@ export function Navbar() {
             ))}
             <div className="mt-3 border-t border-[var(--overlay-border)] pt-3">
               {isAuthenticated ? (
-                <SpotlightButton size="md" className="w-full" href="/dashboard">
+                <SpotlightButton size="md" className="w-full" href={dashboardPath}>
                   <LayoutDashboard size={14} />
                   Go to Dashboard
                 </SpotlightButton>

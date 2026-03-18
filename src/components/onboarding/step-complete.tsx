@@ -42,10 +42,10 @@ export function StepComplete() {
       // Modal mode: switch to the new workspace instead of hard-navigating
       onComplete(organizationId);
     } else {
-      // Standalone /setup mode: clear store and navigate
+      // Standalone /setup mode: clear store and navigate to sector-correct dashboard
       reset();
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        window.location.href = isCare ? "/dashboard/care" : "/dashboard";
       }, 1200);
     }
   }, [entering, organizationId, teamInvites, refreshOrganizations, reset, isModal, onComplete]);

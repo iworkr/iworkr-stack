@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, RotateCcw, ArrowLeft } from "lucide-react";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 export default function DashboardError({
   error,
@@ -11,6 +12,8 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const dashboardPath = useDashboardPath();
+
   useEffect(() => {
     console.error("[Dashboard Error]", error);
   }, [error]);
@@ -60,7 +63,7 @@ export default function DashboardError({
             Retry
           </button>
           <a
-            href="/dashboard"
+            href={dashboardPath}
             className="btn-micro inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-[13px] font-medium text-zinc-300 transition-all hover:border-white/[0.12] hover:text-white"
           >
             <ArrowLeft size={13} />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useOnboardingStore } from "@/lib/onboarding-store";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 import { OnboardingLayout } from "@/components/onboarding/onboarding-layout";
 import { StepSector } from "@/components/onboarding/step-sector";
 import { StepIdentity } from "@/components/onboarding/step-identity";
@@ -53,7 +54,7 @@ export default function SetupPage() {
         if (membership) {
           // User already has an active org — reset onboarding store and hard-redirect
           reset();
-          window.location.href = "/dashboard";
+          window.location.href = getDashboardPath();
           return;
         }
       } catch {

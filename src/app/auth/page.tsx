@@ -9,6 +9,7 @@ import { useOnboardingStore } from "@/lib/onboarding-store";
 import { emailSchema } from "@/lib/validation";
 import { Spinner } from "@/components/onboarding/spinner";
 import { createClient } from "@/lib/supabase/client";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 type AuthMode = "choice" | "email" | "password" | "magic_link_sent" | "authenticating";
 
@@ -140,7 +141,7 @@ function AuthPageInner() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push(getDashboardPath());
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

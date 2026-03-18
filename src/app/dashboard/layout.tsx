@@ -16,6 +16,7 @@ import { BrandProvider } from "@/components/providers/brand-provider";
 import { useShellStore } from "@/lib/shell-store";
 import { PastDueBanner } from "@/components/app/feature-gate";
 import { useAuthStore } from "@/lib/auth-store";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 import { GlobalErrorBoundary } from "@/components/telemetry/global-error-boundary";
 import { TelemetryProvider } from "@/components/telemetry/telemetry-provider";
 
@@ -105,7 +106,7 @@ export default function DashboardLayout({
           o: "/dashboard/forms",
           t: "/dashboard/team",
           w: "/dashboard/automations",
-          d: "/dashboard",
+          d: getDashboardPath(),
         };
         const target = map[e.key.toLowerCase()];
         if (target) {

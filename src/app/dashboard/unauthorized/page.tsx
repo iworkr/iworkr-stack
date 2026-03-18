@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/lib/auth-store";
 import { ShieldX, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 // ═══════════════════════════════════════════════════════════════
 // ── Project Aegis — Unauthorized Page ────────────────────────
@@ -11,6 +12,7 @@ import Link from "next/link";
 
 export default function UnauthorizedPage() {
   const role = useAuthStore((s) => s.currentMembership?.role);
+  const dashboardPath = useDashboardPath();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505]">
@@ -38,7 +40,7 @@ export default function UnauthorizedPage() {
 
         {/* Back to dashboard */}
         <Link
-          href="/dashboard"
+          href={dashboardPath}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-emerald-400 bg-emerald-500/[0.08] border border-emerald-500/20 hover:bg-emerald-500/[0.14] hover:border-emerald-500/30 transition-all duration-200"
         >
           <ArrowLeft className="w-4 h-4" />

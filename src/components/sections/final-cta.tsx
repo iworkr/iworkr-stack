@@ -5,10 +5,12 @@ import { FadeIn } from "@/components/ui/fade-in";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import { Particles } from "@/components/magicui/particles";
 import { useAuthStore } from "@/lib/auth-store";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 export function FinalCTA() {
   const { user, initialized } = useAuthStore();
   const isAuthenticated = initialized && !!user;
+  const dashboardPath = useDashboardPath();
   return (
     <section className="relative overflow-hidden py-32 md:py-40">
       {/* Massive logo background */}
@@ -70,7 +72,7 @@ export function FinalCTA() {
         <FadeIn delay={0.25}>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             {isAuthenticated ? (
-              <SpotlightButton size="lg" href="/dashboard">
+              <SpotlightButton size="lg" href={dashboardPath}>
                 <LayoutDashboard size={16} />
                 Open Dashboard
               </SpotlightButton>

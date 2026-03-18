@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 /**
  * LetterAvatar — Deterministic letter-based avatar with persistent colour.
@@ -81,11 +81,12 @@ export function LetterAvatar({
 }: LetterAvatarProps) {
   const initials = useMemo(() => getInitials(name), [name]);
   const [bg, fg] = useMemo(() => PALETTE[hashName(name)], [name]);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const borderRadius = variant === "round" ? "50%" : `${Math.max(4, size * 0.2)}px`;
   const fontSize = Math.max(8, Math.round(size * 0.38));
 
-  if (src) {
+  if (src && !imgFailed) {
     return (
       <div
         className={`shrink-0 overflow-hidden ${ring ? "ring-1 ring-white/[0.08]" : ""} ${className}`}
@@ -96,6 +97,7 @@ export function LetterAvatar({
           alt={name}
           className="h-full w-full object-cover"
           referrerPolicy="no-referrer"
+          onError={() => setImgFailed(true)}
         />
       </div>
     );

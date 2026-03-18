@@ -26,6 +26,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import { useAuthStore } from "@/lib/auth-store";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Meteors } from "@/components/magicui/meteors";
@@ -133,6 +134,7 @@ const wordVariants = {
 export function Hero() {
   const { user, initialized } = useAuthStore();
   const isAuthenticated = initialized && !!user;
+  const dashboardPath = useDashboardPath();
   const words = "The operating system for service work.".split(" ");
   const detectedPlatform = useDetectPlatform();
 
@@ -219,7 +221,7 @@ export function Hero() {
           className="flex items-center gap-4"
         >
           {isAuthenticated ? (
-            <SpotlightButton size="lg" href="/dashboard" variant="primary">
+            <SpotlightButton size="lg" href={dashboardPath} variant="primary">
               <LayoutDashboard size={16} />
               Open Dashboard
             </SpotlightButton>

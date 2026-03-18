@@ -20,6 +20,7 @@ import {
   Radar,
   ShieldAlert,
 } from "lucide-react";
+import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 /* ── Nav Items ────────────────────────────────────────────────── */
 
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
 
 function OlympusSidebar() {
   const pathname = usePathname();
+  const dashboardPath = useDashboardPath();
 
   return (
     <div className="flex h-full w-[220px] min-w-[220px] flex-col border-r border-white/[0.06] bg-black">
@@ -94,7 +96,7 @@ function OlympusSidebar() {
       {/* ── Footer ── */}
       <div className="border-t border-white/[0.06] px-3 py-3">
         <Link
-          href="/dashboard"
+          href={dashboardPath}
           className="flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-medium text-zinc-600 transition-colors hover:text-zinc-300 hover:bg-white/[0.02]"
         >
           <LogOut size={13} />

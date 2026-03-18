@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { RotateCcw, Home, AlertTriangle } from "lucide-react";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 
 export default function Error({
   error,
@@ -91,7 +92,7 @@ export default function Error({
             Try Again
           </button>
           <a
-            href="/dashboard"
+            href={getDashboardPath()}
             className="btn-micro inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-2.5 text-[13px] font-medium text-zinc-300 transition-all hover:border-white/[0.12] hover:text-white"
           >
             <Home size={14} />

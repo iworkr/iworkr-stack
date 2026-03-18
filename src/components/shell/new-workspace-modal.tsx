@@ -103,13 +103,16 @@ export function NewWorkspaceModal({ open, onClose }: NewWorkspaceModalProps) {
       resetOnboarding();
       onClose();
       router.refresh();
-      router.push("/dashboard");
+      // Route to the correct sector dashboard for the new workspace
+      const { getDashboardPath } = await import("@/lib/hooks/use-dashboard-path");
+      router.push(getDashboardPath());
     } catch {
       // Graceful fallback
       resetOnboarding();
       onClose();
       router.refresh();
-      router.push("/dashboard");
+      const { getDashboardPath } = await import("@/lib/hooks/use-dashboard-path");
+      router.push(getDashboardPath());
     }
   }, [switchOrg, resetOnboarding, onClose, router]);
 
