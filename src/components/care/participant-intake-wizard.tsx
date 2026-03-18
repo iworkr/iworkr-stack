@@ -107,18 +107,32 @@ const DIAGNOSES = [
 ] as const;
 
 const MOBILITY_OPTIONS = [
-  "Independent",
-  "Mobility Aid",
-  "Wheelchair",
-  "Hoist Required",
+  "independent",
+  "mobility_aid",
+  "wheelchair",
+  "hoist_required",
 ] as const;
 
+const MOBILITY_LABELS: Record<string, string> = {
+  independent: "Independent",
+  mobility_aid: "Mobility Aid",
+  wheelchair: "Wheelchair",
+  hoist_required: "Hoist Required",
+};
+
 const COMMUNICATION_OPTIONS = [
-  "Verbal",
-  "Non-Verbal",
-  "Uses AAC Device",
-  "Limited Verbal",
+  "verbal",
+  "non_verbal",
+  "uses_aac_device",
+  "limited_verbal",
 ] as const;
+
+const COMMUNICATION_LABELS: Record<string, string> = {
+  verbal: "Verbal",
+  non_verbal: "Non-Verbal",
+  uses_aac_device: "Uses AAC Device",
+  limited_verbal: "Limited Verbal",
+};
 
 const SUGGESTED_ALERTS = [
   "Choking Risk",
@@ -174,6 +188,7 @@ function Combobox({
   placeholder = "Select...",
   searchValue,
   onSearchChange,
+  labelMap,
 }: {
   label: string;
   value: string;
@@ -182,16 +197,19 @@ function Combobox({
   placeholder?: string;
   searchValue?: string;
   onSearchChange?: (v: string) => void;
+  /** Optional map from option value → display label */
+  labelMap?: Record<string, string>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const getLabel = (opt: string) => labelMap?.[opt] ?? opt;
 
   const search = searchValue ?? "";
   const filteredOptions = useMemo(() => {
     if (!search) return [...options];
     const q = search.toLowerCase();
-    return options.filter((o) => o.toLowerCase().includes(q));
-  }, [options, search]);
+    return options.filter((o) => (labelMap?.[o] ?? o).toLowerCase().includes(q));
+  }, [options, search, labelMap]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -210,7 +228,7 @@ function Combobox({
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
         <input
           type="text"
-          value={isOpen ? search : value || ""}
+          value={isOpen ? search : (value ? getLabel(value) : "")}
           onChange={(e) => {
             if (onSearchChange) onSearchChange(e.target.value);
             if (!isOpen) setIsOpen(true);
@@ -242,7 +260,7 @@ function Combobox({
                   value === opt ? "text-blue-400 bg-blue-500/5" : "text-zinc-300"
                 }`}
               >
-                {opt}
+                {getLabel(opt)}
               </button>
             ))}
           </motion.div>
@@ -1234,10 +1252,11 @@ export function ParticipantIntakeWizard({
                           onChange={(v) => setStep3((p) => ({ ...p, mobilityStatus: v }))}
                           options={MOBILITY_OPTIONS}
                           placeholder="Select mobility level..."
+                          labelMap={MOBILITY_LABELS}
                         />
                         {/* Hoist warning */}
                         <AnimatePresence>
-                          {step3.mobilityStatus === "Hoist Required" && (
+                          {step3.mobilityStatus === "hoist_required" && (
                             <motion.div
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: "auto", opacity: 1 }}
@@ -1270,6 +1289,7 @@ export function ParticipantIntakeWizard({
                         onChange={(v) => setStep3((p) => ({ ...p, communicationType: v }))}
                         options={COMMUNICATION_OPTIONS}
                         placeholder="Select communication type..."
+                        labelMap={COMMUNICATION_LABELS}
                       />
 
                       {/* Critical Alerts */}

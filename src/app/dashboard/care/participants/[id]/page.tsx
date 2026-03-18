@@ -432,13 +432,13 @@ function ClinicalHeroBox({ participant }: { participant: ParticipantWithBudget }
           {participant.mobility_status && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white/[0.04] text-zinc-400 border border-white/[0.06]">
               <Activity size={12} className="text-zinc-500" />
-              {participant.mobility_status}
+              {participant.mobility_status.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
             </span>
           )}
           {participant.communication_type && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white/[0.04] text-zinc-400 border border-white/[0.06]">
               <Heart size={12} className="text-zinc-500" />
-              {participant.communication_type}
+              {participant.communication_type.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
             </span>
           )}
         </div>
