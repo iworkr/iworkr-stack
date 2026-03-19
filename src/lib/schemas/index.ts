@@ -26,3 +26,4 @@ export * from "./oracle-yield";
 export * from "./hermes-scribe";
 export * from "./outrider-autonomous";
 export * from "./solon-law";
+export * from "./panopticon-chat";
