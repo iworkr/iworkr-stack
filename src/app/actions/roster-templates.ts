@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -47,7 +47,7 @@ export interface RolloutConflict {
   conflict_type: "leave" | "compliance" | "budget" | "plan_expiry" | "public_holiday" | "fatigue";
   severity: "hard_block" | "warning" | "info";
   message: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   resolution?: {
     type: "backup_worker" | "unassigned" | "skip" | "flag";
     backup_worker_id?: string;
@@ -105,6 +105,63 @@ export interface StaffLeave {
   user_name?: string;
 }
 
+/* ── Internal row shapes (Supabase joins) ───────────────── */
+
+interface RosterTemplateRow {
+  participant_profiles?: { clients?: { name?: string } };
+  template_shifts?: { id: string }[];
+}
+
+interface TemplateShiftRow {
+  id: string;
+  day_of_cycle: number;
+  start_time: string;
+  end_time: string;
+  primary_worker_id: string | null;
+  backup_worker_id: string | null;
+  primary_worker?: { full_name?: string | null };
+  backup_worker?: { full_name?: string | null };
+  public_holiday_behavior?: string;
+  ndis_line_item?: string | null;
+  support_purpose?: string | null;
+  title?: string | null;
+}
+
+interface StaffLeaveRow {
+  profiles?: { full_name?: string | null };
+}
+
+interface PublicHolidayRow {
+  date: string;
+  name?: string;
+}
+
+interface WorkerCredentialRow {
+  user_id: string;
+  credential_type: string;
+  status: string;
+  expiry_date: string | null;
+}
+
+interface RolloutHistoryRow {
+  roster_templates?: { name?: string; participant_profiles?: { clients?: { name?: string } } };
+}
+
+export interface RolloutHistoryEntry {
+  id: string;
+  template_id: string;
+  rollout_start_date: string;
+  rollout_end_date: string;
+  total_projected: number;
+  total_committed: number;
+  total_conflicts: number;
+  status: string;
+  committed_at: string | null;
+  template_name?: string;
+  participant_name?: string;
+  [key: string]: unknown;
+}
+
 /* ── Roster Template CRUD ─────────────────────────────── */
 
 export async function fetchRosterTemplates(
@@ -114,7 +171,7 @@ export async function fetchRosterTemplates(
   try {
     const supabase = await createServerSupabaseClient();
 
-    let query = (supabase as any)
+    let query = (supabase as SupabaseClient)
       .from("roster_templates")
       .select(`
         *,
@@ -131,14 +188,14 @@ export async function fetchRosterTemplates(
     const { data, error } = await query;
     if (error) return [];
 
-    return (data || []).map((t: any) => ({
+    return (data || []).map((t: RosterTemplateRow & Record<string, unknown>) => ({
       ...t,
       participant_name: t.participant_profiles?.clients?.name || "Unknown",
       shift_count: t.template_shifts?.length || 0,
       participant_profiles: undefined,
       template_shifts: undefined,
-    }));
-  } catch (e: any) {
+    })) as unknown as RosterTemplate[];
+  } catch (e: unknown) {
     console.error("[roster-templates] fetchRosterTemplates failed:", e);
     return [];
   }
@@ -155,7 +212,7 @@ export async function createRosterTemplate(data: {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { data: template, error } = await (supabase as any)
+    const { data: template, error } = await (supabase as SupabaseClient)
       .from("roster_templates")
       .insert(data)
       .select("id")
@@ -164,9 +221,9 @@ export async function createRosterTemplate(data: {
     if (error) return { success: false, error: error.message };
     revalidatePath("/dashboard/roster/master");
     return { success: true, id: template.id };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] createRosterTemplate failed:", e);
-    return { success: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -177,7 +234,7 @@ export async function updateRosterTemplate(
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as SupabaseClient)
       .from("roster_templates")
       .update(updates)
       .eq("id", id);
@@ -185,9 +242,9 @@ export async function updateRosterTemplate(
     if (error) return { success: false, error: error.message };
     revalidatePath("/dashboard/roster/master");
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] updateRosterTemplate failed:", e);
-    return { success: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -197,7 +254,7 @@ export async function deleteRosterTemplate(
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as SupabaseClient)
       .from("roster_templates")
       .delete()
       .eq("id", id);
@@ -205,9 +262,9 @@ export async function deleteRosterTemplate(
     if (error) return { success: false, error: error.message };
     revalidatePath("/dashboard/roster/master");
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] deleteRosterTemplate failed:", e);
-    return { success: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -219,7 +276,7 @@ export async function fetchTemplateShifts(
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as SupabaseClient)
       .from("template_shifts")
       .select(`
         *,
@@ -232,14 +289,14 @@ export async function fetchTemplateShifts(
 
     if (error) return [];
 
-    return (data || []).map((s: any) => ({
+    return (data || []).map((s: TemplateShiftRow & Record<string, unknown>) => ({
       ...s,
       primary_worker_name: s.primary_worker?.full_name || null,
       backup_worker_name: s.backup_worker?.full_name || null,
       primary_worker: undefined,
       backup_worker: undefined,
-    }));
-  } catch (e: any) {
+    })) as unknown as TemplateShift[];
+  } catch (e: unknown) {
     console.error("[roster-templates] fetchTemplateShifts failed:", e);
     return [];
   }
@@ -262,7 +319,7 @@ export async function createTemplateShift(data: {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { data: shift, error } = await (supabase as any)
+    const { data: shift, error } = await (supabase as SupabaseClient)
       .from("template_shifts")
       .insert({
         ...data,
@@ -274,9 +331,9 @@ export async function createTemplateShift(data: {
     if (error) return { success: false, error: error.message };
     revalidatePath("/dashboard/roster/master");
     return { success: true, id: shift.id };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] createTemplateShift failed:", e);
-    return { success: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -287,7 +344,7 @@ export async function updateTemplateShift(
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as SupabaseClient)
       .from("template_shifts")
       .update(updates)
       .eq("id", id);
@@ -295,9 +352,9 @@ export async function updateTemplateShift(
     if (error) return { success: false, error: error.message };
     revalidatePath("/dashboard/roster/master");
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] updateTemplateShift failed:", e);
-    return { success: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -307,7 +364,7 @@ export async function deleteTemplateShift(
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as SupabaseClient)
       .from("template_shifts")
       .delete()
       .eq("id", id);
@@ -315,9 +372,9 @@ export async function deleteTemplateShift(
     if (error) return { success: false, error: error.message };
     revalidatePath("/dashboard/roster/master");
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] deleteTemplateShift failed:", e);
-    return { success: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -334,30 +391,32 @@ export async function bulkReplaceWorker(
     let updated = 0;
 
     if (scope === "primary" || scope === "both") {
-      const { count } = await (supabase as any)
+      const { count } = await (supabase as SupabaseClient)
         .from("template_shifts")
         .update({ primary_worker_id: newWorkerId })
         .eq("organization_id", orgId)
         .eq("primary_worker_id", oldWorkerId)
+        // @ts-expect-error - Supabase UpdateBuilder select accepts options as 2nd arg at runtime
         .select("id", { count: "exact", head: true });
       updated += count || 0;
     }
 
     if (scope === "backup" || scope === "both") {
-      const { count } = await (supabase as any)
+      const { count } = await (supabase as SupabaseClient)
         .from("template_shifts")
         .update({ backup_worker_id: newWorkerId })
         .eq("organization_id", orgId)
         .eq("backup_worker_id", oldWorkerId)
+        // @ts-expect-error - Supabase UpdateBuilder select accepts options as 2nd arg at runtime
         .select("id", { count: "exact", head: true });
       updated += count || 0;
     }
 
     revalidatePath("/dashboard/roster/master");
     return { success: true, updated };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] bulkReplaceWorker failed:", e);
-    return { success: false, updated: 0, error: e?.message || "An unexpected error occurred" };
+    return { success: false, updated: 0, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -370,7 +429,7 @@ export async function fetchStaffLeave(
   try {
     const supabase = await createServerSupabaseClient();
 
-    let query = (supabase as any)
+    let query = (supabase as SupabaseClient)
       .from("staff_leave")
       .select("*, profiles!staff_leave_user_id_fkey(full_name)")
       .eq("organization_id", orgId)
@@ -382,12 +441,12 @@ export async function fetchStaffLeave(
     if (options?.endDate) query = query.lte("start_date", options.endDate);
 
     const { data } = await query;
-    return (data || []).map((l: any) => ({
+    return (data || []).map((l: StaffLeaveRow & Record<string, unknown>) => ({
       ...l,
       user_name: l.profiles?.full_name || "Unknown",
       profiles: undefined,
-    }));
-  } catch (e: any) {
+    })) as unknown as StaffLeave[];
+  } catch (e: unknown) {
     console.error("[roster-templates] fetchStaffLeave failed:", e);
     return [];
   }
@@ -404,7 +463,7 @@ export async function createStaffLeave(data: {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { data: leave, error } = await (supabase as any)
+    const { data: leave, error } = await (supabase as SupabaseClient)
       .from("staff_leave")
       .insert({ ...data, status: "pending" })
       .select("id")
@@ -412,9 +471,9 @@ export async function createStaffLeave(data: {
 
     if (error) return { success: false, error: error.message };
     return { success: true, id: leave.id };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] createStaffLeave failed:", e);
-    return { success: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -425,7 +484,7 @@ export async function approveStaffLeave(
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as SupabaseClient)
       .from("staff_leave")
       .update({
         status: "approved",
@@ -436,9 +495,9 @@ export async function approveStaffLeave(
 
     if (error) return { success: false, error: error.message };
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] approveStaffLeave failed:", e);
-    return { success: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -454,7 +513,7 @@ export async function generateRolloutPreview(
     const supabase = await createServerSupabaseClient();
 
     // 1. Fetch template + shifts
-    const { data: template } = await (supabase as any)
+    const { data: template } = await (supabase as SupabaseClient)
       .from("roster_templates")
       .select("*, participant_profiles!inner(clients!inner(name))")
       .eq("id", templateId)
@@ -462,7 +521,7 @@ export async function generateRolloutPreview(
 
     if (!template) throw new Error("Template not found");
 
-    const { data: shifts } = await (supabase as any)
+    const { data: shifts } = await (supabase as SupabaseClient)
       .from("template_shifts")
       .select(`
         *,
@@ -473,7 +532,7 @@ export async function generateRolloutPreview(
       .order("day_of_cycle")
       .order("start_time");
 
-    const templateShifts: any[] = shifts || [];
+    const templateShifts: (TemplateShiftRow & Record<string, unknown>)[] = shifts || [];
     const cycleLength = template.cycle_length_days;
     const start = new Date(rolloutStartDate);
     const totalDays = rolloutWeeks * 7;
@@ -482,14 +541,14 @@ export async function generateRolloutPreview(
 
     // 2. Fetch approved leave for all involved workers in the range
     const workerIds = new Set<string>();
-    templateShifts.forEach((s: any) => {
+    templateShifts.forEach((s: TemplateShiftRow & Record<string, unknown>) => {
       if (s.primary_worker_id) workerIds.add(s.primary_worker_id);
       if (s.backup_worker_id) workerIds.add(s.backup_worker_id);
     });
 
     const leaveMap = new Map<string, { start_date: string; end_date: string }[]>();
     if (workerIds.size > 0) {
-      const { data: leaves } = await (supabase as any)
+      const { data: leaves } = await (supabase as SupabaseClient)
         .from("staff_leave")
         .select("user_id, start_date, end_date")
         .eq("organization_id", orgId)
@@ -505,20 +564,20 @@ export async function generateRolloutPreview(
     }
 
     // 3. Fetch public holidays
-    const { data: holidays } = await (supabase as any)
+    const { data: holidays } = await (supabase as SupabaseClient)
       .from("public_holidays")
       .select("date, name, state")
       .eq("organization_id", orgId)
       .gte("date", rolloutStartDate)
       .lte("date", endDate.toISOString().split("T")[0]);
 
-    const holidayDates = new Set<string>((holidays || []).map((h: any) => h.date));
+    const holidayDates = new Set<string>((holidays || []).map((h: PublicHolidayRow) => h.date));
     const holidayNames = new Map<string, string>(
-      (holidays || []).map((h: any) => [h.date, h.name])
+      (holidays || []).map((h: PublicHolidayRow) => [h.date, h.name ?? ""])
     );
 
     // 4. Fetch active service agreement for budget check
-    const { data: agreement } = await (supabase as any)
+    const { data: agreement } = await (supabase as SupabaseClient)
       .from("service_agreements")
       .select("id, end_date, total_budget, consumed_budget, quarantined_budget")
       .eq("participant_id", template.participant_id)
@@ -530,7 +589,7 @@ export async function generateRolloutPreview(
     // 5. Fetch worker credentials for compliance checks
     const credentialStatus = new Map<string, boolean>();
     if (workerIds.size > 0) {
-      const { data: creds } = await (supabase as any)
+      const { data: creds } = await (supabase as SupabaseClient)
         .from("worker_credentials")
         .select("user_id, credential_type, status, expiry_date")
         .in("user_id", Array.from(workerIds))
@@ -538,9 +597,9 @@ export async function generateRolloutPreview(
 
       const requiredTypes = ["NDIS_SCREENING", "WWCC", "FIRST_AID"];
       for (const wid of workerIds) {
-        const workerCreds = (creds || []).filter((c: any) => c.user_id === wid);
+        const workerCreds = (creds || []).filter((c: WorkerCredentialRow) => c.user_id === wid);
         const allValid = requiredTypes.every((t) => {
-          const cred = workerCreds.find((c: any) => c.credential_type === t);
+          const cred = workerCreds.find((c: WorkerCredentialRow) => c.credential_type === t);
           return cred && cred.status === "verified" && (!cred.expiry_date || new Date(cred.expiry_date) > endDate);
         });
         credentialStatus.set(wid, allValid);
@@ -558,7 +617,7 @@ export async function generateRolloutPreview(
       const dateStr = targetDate.toISOString().split("T")[0];
       const isHoliday = holidayDates.has(dateStr);
 
-      const dayShifts = templateShifts.filter((s: any) => s.day_of_cycle === dayOfCycle);
+      const dayShifts = templateShifts.filter((s: TemplateShiftRow & Record<string, unknown>) => s.day_of_cycle === dayOfCycle);
 
       for (const shift of dayShifts) {
         const startDT = `${dateStr}T${shift.start_time}`;
@@ -574,12 +633,12 @@ export async function generateRolloutPreview(
             assigned_worker_id: null,
             assigned_worker_name: null,
             participant_id: template.participant_id,
-            ndis_line_item: shift.ndis_line_item,
-            support_purpose: shift.support_purpose,
-            title: shift.title,
+            ndis_line_item: shift.ndis_line_item ?? null,
+            support_purpose: shift.support_purpose ?? null,
+            title: shift.title ?? null,
             status: "skipped",
             is_public_holiday: true,
-            public_holiday_behavior: shift.public_holiday_behavior,
+            public_holiday_behavior: shift.public_holiday_behavior ?? "flag",
           });
           continue;
         }
@@ -738,13 +797,13 @@ export async function generateRolloutPreview(
           assigned_worker_id: assignedWorkerId,
           assigned_worker_name: assignedWorkerName,
           participant_id: template.participant_id,
-          ndis_line_item: shift.ndis_line_item,
-          support_purpose: shift.support_purpose,
-          title: shift.title,
+          ndis_line_item: shift.ndis_line_item ?? null,
+          support_purpose: shift.support_purpose ?? null,
+          title: shift.title ?? null,
           status,
           conflict,
           is_public_holiday: isHoliday,
-          public_holiday_behavior: shift.public_holiday_behavior,
+          public_holiday_behavior: shift.public_holiday_behavior ?? "flag",
         });
       }
     }
@@ -759,14 +818,14 @@ export async function generateRolloutPreview(
 
     return {
       template_id: templateId,
-      template_name: template.name,
+      template_name: template.name ?? "",
       rollout_start: rolloutStartDate,
       rollout_end: endDate.toISOString().split("T")[0],
       projections,
       conflicts,
       summary,
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] generateRolloutPreview failed:", e);
     throw e;
   }
@@ -783,7 +842,7 @@ export async function commitRollout(
     const supabase = await createServerSupabaseClient();
 
     // Create rollout log entry
-    const { data: rolloutLog, error: logError } = await (supabase as any)
+    const { data: rolloutLog, error: logError } = await (supabase as SupabaseClient)
       .from("rollout_log")
       .insert({
         organization_id: orgId,
@@ -852,13 +911,13 @@ export async function commitRollout(
     const allBlocks = [...blocksToInsert, ...unassignedBlocks];
 
     if (allBlocks.length > 0) {
-      const { error: insertError } = await (supabase as any)
+      const { error: insertError } = await (supabase as SupabaseClient)
         .from("schedule_blocks")
         .insert(allBlocks);
 
       if (insertError) {
         // Update rollout log to failed
-        await (supabase as any)
+        await (supabase as SupabaseClient)
           .from("rollout_log")
           .update({ status: "failed" })
           .eq("id", rolloutLog.id);
@@ -873,9 +932,9 @@ export async function commitRollout(
       committed: allBlocks.length,
       rollout_id: rolloutLog.id,
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] commitRollout failed:", e);
-    return { success: false, committed: 0, error: e?.message || "An unexpected error occurred" };
+    return { success: false, committed: 0, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -896,7 +955,7 @@ export async function cancelShiftWithNDISLogic(
     const supabase = await createServerSupabaseClient();
 
     // Fetch the block
-    const { data: block } = await (supabase as any)
+    const { data: block } = await (supabase as SupabaseClient)
       .from("schedule_blocks")
       .select("id, start_time, end_time, technician_id, participant_id, metadata")
       .eq("id", blockId)
@@ -913,7 +972,7 @@ export async function cancelShiftWithNDISLogic(
     const cancellationType = (isShortNotice || forceShortNotice) ? "short_notice_billable" : "standard";
 
     // Update the block
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as SupabaseClient)
       .from("schedule_blocks")
       .update({
         status: "cancelled",
@@ -929,7 +988,7 @@ export async function cancelShiftWithNDISLogic(
     // If standard cancellation, release quarantined budget
     if (cancellationType === "standard" && block.participant_id) {
       // Release budget from quarantine ledger
-      await (supabase as any).rpc("release_shift_quarantine", { p_shift_id: blockId });
+      await (supabase as SupabaseClient).rpc("release_shift_quarantine", { p_shift_id: blockId });
     }
 
     // If short notice billable, keep the quarantine but flag for NDIS claim
@@ -944,9 +1003,9 @@ export async function cancelShiftWithNDISLogic(
       cancellation_type: cancellationType,
       is_short_notice: isShortNotice,
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] cancelShiftWithNDISLogic failed:", e);
-    return { success: false, cancellation_type: "standard", is_short_notice: false, error: e?.message || "An unexpected error occurred" };
+    return { success: false, cancellation_type: "standard", is_short_notice: false, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -963,10 +1022,10 @@ export async function applyShiftChange(
 
     if (scope === "this_only") {
       // Just update this single live block
-      const updatePayload: Record<string, any> = {};
+      const updatePayload: Record<string, string | null | undefined> = {};
       if (changes.worker_id !== undefined) updatePayload.technician_id = changes.worker_id;
 
-      const { error } = await (supabase as any)
+      const { error } = await (supabase as SupabaseClient)
         .from("schedule_blocks")
         .update(updatePayload)
         .eq("id", blockId);
@@ -978,7 +1037,7 @@ export async function applyShiftChange(
 
     if (scope === "all_future") {
       // Get the template shift ID from this block
-      const { data: block } = await (supabase as any)
+      const { data: block } = await (supabase as SupabaseClient)
         .from("schedule_blocks")
         .select("generated_from_template_id, technician_id")
         .eq("id", blockId)
@@ -992,20 +1051,21 @@ export async function applyShiftChange(
 
       // Update the template shift (primary worker)
       if (changes.worker_id !== undefined) {
-        await (supabase as any)
+        await (supabase as SupabaseClient)
           .from("template_shifts")
           .update({ primary_worker_id: changes.worker_id })
           .eq("id", block.generated_from_template_id);
       }
 
       // Update all future live blocks from this template shift
-      const { count } = await (supabase as any)
+      const { count } = await (supabase as SupabaseClient)
         .from("schedule_blocks")
         .update({ technician_id: changes.worker_id })
         .eq("generated_from_template_id", block.generated_from_template_id)
         .eq("organization_id", orgId)
         .gt("start_time", new Date().toISOString())
         .neq("status", "cancelled")
+        // @ts-expect-error - Supabase UpdateBuilder select accepts options as 2nd arg at runtime
         .select("id", { count: "exact", head: true });
 
       updated = (count || 0) + 1; // +1 for the template
@@ -1016,9 +1076,9 @@ export async function applyShiftChange(
     }
 
     return { success: false, updated: 0, error: "Invalid scope" };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[roster-templates] applyShiftChange failed:", e);
-    return { success: false, updated: 0, error: e?.message || "An unexpected error occurred" };
+    return { success: false, updated: 0, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -1027,23 +1087,23 @@ export async function applyShiftChange(
 export async function fetchRolloutHistory(
   orgId: string,
   limit: number = 20,
-): Promise<any[]> {
+): Promise<RolloutHistoryEntry[]> {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { data } = await (supabase as any)
+    const { data } = await (supabase as SupabaseClient)
       .from("rollout_log")
       .select("*, roster_templates(name, participant_profiles(clients(name)))")
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false })
       .limit(limit);
 
-    return (data || []).map((r: any) => ({
+    return (data || []).map((r: RolloutHistoryRow & Record<string, unknown>) => ({
       ...r,
       template_name: r.roster_templates?.name,
       participant_name: r.roster_templates?.participant_profiles?.clients?.name,
-    }));
-  } catch (e: any) {
+    })) as unknown as RolloutHistoryEntry[];
+  } catch (e: unknown) {
     console.error("[roster-templates] fetchRolloutHistory failed:", e);
     return [];
   }

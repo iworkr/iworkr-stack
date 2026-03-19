@@ -13,12 +13,25 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // ── Aegis-Zero: Early token validation gate ──
+  const { searchParams } = new URL(request.url);
+  const token = searchParams.get("token");
+
+  if (!token || token.length < 16) {
+    return NextResponse.json(
+      { error: "Unauthorized", message: "A valid secure token is required." },
+      { status: 401 }
+    );
+  }
+
+  if (!id || typeof id !== "string" || id.length < 10) {
+    return NextResponse.json({ error: "Invalid quote ID" }, { status: 400 });
+  }
+
   const supabaseAdmin = getSupabaseAdmin();
 
   try {
-    const { searchParams } = new URL(request.url);
-    const token = searchParams.get("token");
-
     const { data: quote, error: fetchErr } = await supabaseAdmin
       .from("quotes")
       .select("id, status, secure_token")
@@ -29,7 +42,7 @@ export async function POST(
       return NextResponse.json({ error: "Quote not found" }, { status: 404 });
     }
 
-    if (!token || !quote.secure_token || token !== quote.secure_token) {
+    if (!quote.secure_token || token !== quote.secure_token) {
       return NextResponse.json({ error: "Invalid or missing token" }, { status: 403 });
     }
 

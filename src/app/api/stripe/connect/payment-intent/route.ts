@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -9,12 +10,18 @@ function getStripe() {
   return new Stripe(key);
 }
 
-/**
- * Creates a PaymentIntent for invoice payments.
- * Supports both Stripe Connect (connected accounts) and direct charges.
- * Requires a valid invoice_id to verify the payment amount matches.
- */
 export async function POST(req: NextRequest) {
+  // ── Aegis-Zero: Session Gate ──
+  const supabaseAuth = await createServerSupabaseClient();
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: "Unauthorized", message: "Valid authentication session required." },
+      { status: 401 }
+    );
+  }
+
   const body = await req.json();
   const { invoiceId, orgId, amountCents, currency } = body as {
     invoiceId?: string;
@@ -27,13 +34,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing orgId, invoiceId, or amountCents" }, { status: 400 });
   }
 
+  // Verify the authenticated user belongs to this organization
+  const { data: membership } = await supabaseAuth
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!membership) {
+    return NextResponse.json(
+      { error: "Forbidden", message: "Not a member of this organization." },
+      { status: 403 }
+    );
+  }
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
   );
 
-  // Verify the invoice exists, belongs to the org, and amount matches
   const { data: invoice } = await (supabase as any)
     .from("invoices")
     .select("id, organization_id, total, status")

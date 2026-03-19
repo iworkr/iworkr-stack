@@ -1,9 +1,22 @@
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+/** Minimal schema for payroll tables not yet in generated Database types.
+ *  Uses index signature so Supabase client accepts these tables. */
+type PayrollSchema = {
+  public: {
+    Tables: Record<string, { Row: unknown; Insert: Record<string, unknown>; Update: Record<string, unknown> }>;
+  };
+};
+
+function payrollClient(supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>): SupabaseClient<PayrollSchema> {
+  return supabase as unknown as SupabaseClient<PayrollSchema>;
+}
 
 export type PayCategory =
   | "ORDINARY_HOURS"
@@ -120,8 +133,7 @@ export async function getTimesheetPayLines(
 ): Promise<{ lines: TimesheetPayLine[]; total: number; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await payrollClient(supabase)
       .from("timesheet_pay_lines")
       .select("*")
       .eq("timesheet_id", timesheetId)
@@ -220,8 +232,7 @@ export async function getWorkerPayProfiles(
 ): Promise<{ profiles: WorkerPayProfile[]; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = payrollClient(supabase)
       .from("worker_pay_profiles")
       .select("*")
       .eq("organization_id", orgId)
@@ -249,10 +260,10 @@ export async function upsertWorkerPayProfile(
 ): Promise<{ ok: boolean; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("worker_pay_profiles")
-      .insert({ ...data, organization_id: orgId });
+    const payload: Record<string, unknown> = { ...data, organization_id: orgId };
+    type Insertable = { insert: (data: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> };
+    const table = payrollClient(supabase).from("worker_pay_profiles") as unknown as Insertable;
+    const { error } = await table.insert(payload);
 
     if (error) throw error;
     revalidatePath("/dashboard/timesheets");
@@ -273,8 +284,7 @@ export async function getScHadsBaseRates(): Promise<{
 }> {
   try {
     const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await payrollClient(supabase)
       .from("schads_base_rates")
       .select("schads_level, schads_paypoint, hourly_rate, effective_from")
       .order("schads_level")
@@ -300,8 +310,7 @@ export async function getPayrollBatchSummary(
     const supabase = await createServerSupabaseClient();
 
     // Fetch all pay lines in the period
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: lines, error: linesErr } = await (supabase as any)
+    const { data: lines, error: linesErr } = await payrollClient(supabase)
       .from("timesheet_pay_lines")
       .select("*")
       .eq("organization_id", orgId)
@@ -322,7 +331,7 @@ export async function getPayrollBatchSummary(
 
     // Fetch worker display names
     const workerIds = Array.from(workerGroups.keys());
-    let workerMap = new Map<string, { name: string; avatar: string | null }>();
+    const workerMap = new Map<string, { name: string; avatar: string | null }>();
     if (workerIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
@@ -334,18 +343,18 @@ export async function getPayrollBatchSummary(
     }
 
     // Fetch pay profiles for employment type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: payProfiles } = await (supabase as any)
+    const { data: payProfiles } = await payrollClient(supabase)
       .from("worker_pay_profiles")
       .select("user_id, employment_type, schads_level, effective_from")
       .eq("organization_id", orgId)
       .in("user_id", workerIds);
 
+    type PayProfileRow = { user_id: string; employment_type: EmploymentType; schads_level: number };
     const payProfileMap = new Map<string, { employment_type: EmploymentType; schads_level: number }>();
-    for (const pp of (payProfiles || [])) {
+    for (const pp of (payProfiles || []) as PayProfileRow[]) {
       if (!payProfileMap.has(pp.user_id)) {
         payProfileMap.set(pp.user_id, {
-          employment_type: pp.employment_type as EmploymentType,
+          employment_type: pp.employment_type,
           schads_level: pp.schads_level,
         });
       }
@@ -410,13 +419,12 @@ export async function exportPayrunToXero(
     const supabase = await createServerSupabaseClient();
 
     // Get Xero OAuth tokens from integration settings
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: integration } = await (supabase as any)
+    const { data: integration } = await supabase
       .from("integrations")
       .select("settings, access_token, refresh_token, token_expires_at")
       .eq("organization_id", orgId)
       .eq("provider", "xero")
-      .eq("status", "active")
+      .eq("status", "connected")
       .maybeSingle();
 
     if (!integration) {
@@ -428,12 +436,14 @@ export async function exportPayrunToXero(
     const expiresAt = integration.token_expires_at ? new Date(integration.token_expires_at) : null;
     if (expiresAt && expiresAt <= new Date()) {
       // Refresh the token
+      const refreshToken = integration.refresh_token ?? "";
+      if (!refreshToken) throw new Error("Xero refresh token missing");
       const refreshRes = await fetch("https://identity.xero.com/connect/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
           grant_type: "refresh_token",
-          refresh_token: integration.refresh_token,
+          refresh_token: refreshToken,
           client_id: process.env.XERO_CLIENT_ID || "",
           client_secret: process.env.XERO_CLIENT_SECRET || "",
         }).toString(),
@@ -441,8 +451,7 @@ export async function exportPayrunToXero(
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json();
         accessToken = refreshData.access_token;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from("integrations").update({
+        await supabase.from("integrations").update({
           access_token: refreshData.access_token,
           refresh_token: refreshData.refresh_token || integration.refresh_token,
           token_expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
@@ -451,8 +460,7 @@ export async function exportPayrunToXero(
     }
 
     // Fetch all pay lines for the given timesheets
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: payLines } = await (supabase as any)
+    const { data: payLines } = await payrollClient(supabase)
       .from("timesheet_pay_lines")
       .select("*")
       .in("timesheet_id", timesheetIds)
@@ -486,15 +494,16 @@ export async function exportPayrunToXero(
     // Fetch worker Xero employee IDs from integration settings
     const xeroTimesheets = [];
     for (const [workerId, workerLines] of workerGroups) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: workerInt } = await (supabase as any)
+      const { data: workerInt } = await payrollClient(supabase)
         .from("worker_pay_profiles")
         .select("notes")
         .eq("user_id", workerId)
         .eq("organization_id", orgId)
         .maybeSingle();
 
-      const xeroEmployeeId = (workerInt?.notes as any)?.xero_employee_id || null;
+      type WorkerNotesRow = { notes?: Record<string, unknown> | null };
+      const notes = (workerInt as WorkerNotesRow | null)?.notes;
+      const xeroEmployeeId = (notes?.xero_employee_id as string | undefined) ?? null;
 
       const earningsLines = workerLines.map((l) => ({
         EarningsRateID: categoryToXeroRate[l.pay_category] || "",
@@ -539,16 +548,14 @@ export async function exportPayrunToXero(
     const xeroPayRunId = xeroBody?.Timesheets?.[0]?.TimesheetID || null;
 
     // Mark timesheets as exported
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
       .from("timesheets")
       .update({ status: "exported", exported_at: new Date().toISOString() })
       .in("id", timesheetIds)
       .eq("organization_id", orgId);
 
     // Record the export in payroll_exports
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
       .from("payroll_exports")
       .insert({
         organization_id: orgId,

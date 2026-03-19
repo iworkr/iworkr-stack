@@ -8,6 +8,7 @@
 import { create } from "zustand";
 import { isFresh } from "./cache-utils";
 import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/lib/supabase/types";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -137,9 +138,7 @@ export const useCredentialsStore = create<CredentialsState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const supabase = createClient();
-      // Use explicit any to avoid deep type instantiation with ungenerated types
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("worker_credentials")
         .select("*, profiles:user_id ( full_name, email, avatar_url )")
         .eq("organization_id", orgId)
@@ -179,10 +178,9 @@ export const useCredentialsStore = create<CredentialsState>((set, get) => ({
   createCredential: async (params: CreateCredentialParams) => {
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("worker_credentials")
-        .insert(params)
+        .insert(params as Database["public"]["Tables"]["worker_credentials"]["Insert"])
         .select()
         .single();
 
@@ -200,10 +198,13 @@ export const useCredentialsStore = create<CredentialsState>((set, get) => ({
   updateCredential: async (id: string, updates: Partial<WorkerCredential>) => {
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const tableColumns = ["worker_name", "worker_email", "worker_avatar"];
+      const tableUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([k]) => !tableColumns.includes(k))
+      ) as Database["public"]["Tables"]["worker_credentials"]["Update"];
+      const { error } = await supabase
         .from("worker_credentials")
-        .update(updates)
+        .update(tableUpdates)
         .eq("id", id);
 
       if (error) throw error;
@@ -223,8 +224,7 @@ export const useCredentialsStore = create<CredentialsState>((set, get) => ({
   deleteCredential: async (id: string) => {
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("worker_credentials")
         .delete()
         .eq("id", id);

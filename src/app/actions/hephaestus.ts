@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 
 // ============================================================================
 // Project Hephaestus — Server Actions
@@ -71,7 +72,7 @@ export async function getInventoryItems(
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    let query = (supabase as any)
+    let query = supabase
       .from("inventory_items")
       .select("*", { count: "exact" })
       .eq("organization_id", orgId)
@@ -84,7 +85,7 @@ export async function getInventoryItems(
       query = query.or(`category.eq.${options.category},trade_category.eq.${options.category}`);
     }
     if (options?.stockLevel) {
-      query = query.eq("stock_level", options.stockLevel);
+      query = query.eq("stock_level", options.stockLevel as "low" | "critical" | "ok");
     }
 
     const limit = options?.limit || 50;
@@ -94,8 +95,8 @@ export async function getInventoryItems(
     const { data, error, count } = await query;
     if (error) return { data: null, error: error.message, count: 0 };
     return { data, error: null, count: count || 0 };
-  } catch (err: any) {
-    return { data: null, error: err.message, count: 0 };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error", count: 0 };
   }
 }
 
@@ -106,29 +107,31 @@ export async function createInventoryItem(input: z.infer<typeof InventoryItemSch
 
     const { supabase } = await assertOrgMember(input.organization_id);
 
-    const { data, error } = await (supabase as any)
+    const insertPayload = {
+      ...parsed.data,
+      moving_average_cost: parsed.data.moving_average_cost || parsed.data.unit_cost || 0,
+      latest_cost: parsed.data.unit_cost || 0,
+      metadata: (parsed.data.metadata ?? null) as Record<string, string | number | boolean | null> | null,
+    };
+    const { data, error } = await supabase
       .from("inventory_items")
-      .insert({
-        ...parsed.data,
-        moving_average_cost: parsed.data.moving_average_cost || parsed.data.unit_cost || 0,
-        latest_cost: parsed.data.unit_cost || 0,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
     if (error) return { data: null, error: error.message };
     revalidatePath("/dashboard/ops/inventory");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
-export async function updateInventoryItem(orgId: string, itemId: string, updates: Record<string, any>) {
+export async function updateInventoryItem(orgId: string, itemId: string, updates: Record<string, unknown>) {
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("inventory_items")
       .update(updates)
       .eq("id", itemId)
@@ -139,8 +142,8 @@ export async function updateInventoryItem(orgId: string, itemId: string, updates
     if (error) return { data: null, error: error.message };
     revalidatePath("/dashboard/ops/inventory");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -148,36 +151,37 @@ export async function getInventoryOverview(orgId: string) {
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    const { data, error } = await (supabase as any).rpc("get_assets_overview", {
+    const { data, error } = await supabase.rpc("get_assets_overview", {
       p_org_id: orgId,
     });
 
     // Also get Hephaestus-specific stats
-    const { data: kitsBelow } = await (supabase as any)
+    const { data: kitsBelow } = await (supabase as SupabaseClient)
       .from("trade_kits")
       .select("id", { count: "exact" })
       .eq("organization_id", orgId)
       .eq("margin_warning", true)
       .is("archived_at", null);
 
-    const { data: pendingInvoices } = await (supabase as any)
+    const { data: pendingInvoices } = await (supabase as SupabaseClient)
       .from("supplier_invoices")
       .select("id", { count: "exact" })
       .eq("organization_id", orgId)
       .in("processing_status", ["PENDING_AI", "NEEDS_REVIEW"]);
 
-    if (error) return { data: null, error: error.message };
+    if (error || !data) return { data: null, error: error?.message ?? "No data returned" };
 
+    const base = data as Record<string, unknown>;
     return {
       data: {
-        ...data,
+        ...base,
         kits_below_margin: kitsBelow?.length || 0,
         pending_supplier_invoices: pendingInvoices?.length || 0,
       },
       error: null,
     };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -191,7 +195,7 @@ export async function bulkPriceAdjustment(
   try {
     const { supabase, user } = await assertOrgMember(orgId);
 
-    const { data, error } = await (supabase as any).rpc("bulk_price_adjustment", {
+    const { data, error } = await (supabase as SupabaseClient).rpc("bulk_price_adjustment", {
       p_org_id: orgId,
       p_category: category,
       p_adjustment_pct: adjustmentPct,
@@ -202,8 +206,8 @@ export async function bulkPriceAdjustment(
     revalidatePath("/dashboard/ops/inventory");
     revalidatePath("/dashboard/ops/kits");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -237,7 +241,7 @@ export async function getTradeKits(
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    let query = (supabase as any)
+    let query = (supabase as SupabaseClient)
       .from("trade_kits")
       .select("*, kit_components(*)", { count: "exact" })
       .eq("organization_id", orgId)
@@ -261,8 +265,8 @@ export async function getTradeKits(
     const { data, error, count } = await query;
     if (error) return { data: null, error: error.message, count: 0 };
     return { data, error: null, count: count || 0 };
-  } catch (err: any) {
-    return { data: null, error: err.message, count: 0 };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error", count: 0 };
   }
 }
 
@@ -270,7 +274,7 @@ export async function getTradeKit(orgId: string, kitId: string) {
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as SupabaseClient)
       .from("trade_kits")
       .select(`
         *,
@@ -285,8 +289,8 @@ export async function getTradeKit(orgId: string, kitId: string) {
 
     if (error) return { data: null, error: error.message };
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -297,7 +301,7 @@ export async function createTradeKit(input: z.infer<typeof KitSchema>) {
 
     const { supabase } = await assertOrgMember(input.organization_id);
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as SupabaseClient)
       .from("trade_kits")
       .insert(parsed.data)
       .select()
@@ -306,16 +310,16 @@ export async function createTradeKit(input: z.infer<typeof KitSchema>) {
     if (error) return { data: null, error: error.message };
     revalidatePath("/dashboard/ops/kits");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
-export async function updateTradeKit(orgId: string, kitId: string, updates: Record<string, any>) {
+export async function updateTradeKit(orgId: string, kitId: string, updates: Record<string, unknown>) {
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as SupabaseClient)
       .from("trade_kits")
       .update(updates)
       .eq("id", kitId)
@@ -326,8 +330,8 @@ export async function updateTradeKit(orgId: string, kitId: string, updates: Reco
     if (error) return { data: null, error: error.message };
     revalidatePath("/dashboard/ops/kits");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -346,7 +350,7 @@ export async function addKitComponent(
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as SupabaseClient)
       .from("kit_components")
       .insert({ kit_id: kitId, ...component })
       .select()
@@ -355,12 +359,12 @@ export async function addKitComponent(
     if (error) return { data: null, error: error.message };
 
     // Recalculate margins
-    await (supabase as any).rpc("recalculate_all_kit_margins", { p_org_id: orgId });
+    await (supabase as SupabaseClient).rpc("recalculate_all_kit_margins", { p_org_id: orgId });
 
     revalidatePath("/dashboard/ops/kits");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -369,13 +373,13 @@ export async function removeKitComponent(orgId: string, componentId: string) {
     const { supabase } = await assertOrgMember(orgId);
 
     // Get kit_id before deleting
-    const { data: comp } = await (supabase as any)
+    const { data: comp } = await (supabase as SupabaseClient)
       .from("kit_components")
       .select("kit_id")
       .eq("id", componentId)
       .single();
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as SupabaseClient)
       .from("kit_components")
       .delete()
       .eq("id", componentId);
@@ -383,12 +387,12 @@ export async function removeKitComponent(orgId: string, componentId: string) {
     if (error) return { error: error.message };
 
     // Recalculate margins
-    await (supabase as any).rpc("recalculate_all_kit_margins", { p_org_id: orgId });
+    await (supabase as SupabaseClient).rpc("recalculate_all_kit_margins", { p_org_id: orgId });
 
     revalidatePath("/dashboard/ops/kits");
     return { error: null };
-  } catch (err: any) {
-    return { error: err.message };
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -397,7 +401,7 @@ export async function recalculateKitPricesToTarget(orgId: string) {
     const { supabase } = await assertOrgMember(orgId);
 
     // Get all kits with margin warnings
-    const { data: warningKits } = await (supabase as any)
+    const { data: warningKits } = await (supabase as SupabaseClient)
       .from("trade_kits")
       .select("id, calculated_cost, target_margin_pct")
       .eq("organization_id", orgId)
@@ -405,12 +409,12 @@ export async function recalculateKitPricesToTarget(orgId: string) {
       .is("archived_at", null);
 
     let updated = 0;
-    for (const kit of warningKits || []) {
+    for (const kit of (warningKits || []) as Array<{ id: string; calculated_cost: number; target_margin_pct: number }>) {
       const newSell = Math.round(
         (kit.calculated_cost / (1 - kit.target_margin_pct / 100)) * 100
       ) / 100;
 
-      await (supabase as any)
+      await (supabase as SupabaseClient)
         .from("trade_kits")
         .update({
           fixed_sell_price: newSell,
@@ -424,8 +428,8 @@ export async function recalculateKitPricesToTarget(orgId: string) {
 
     revalidatePath("/dashboard/ops/kits");
     return { data: { kits_updated: updated }, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -444,7 +448,7 @@ export async function getSupplierInvoices(
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    let query = (supabase as any)
+    let query = (supabase as SupabaseClient)
       .from("supplier_invoices")
       .select("*", { count: "exact" })
       .eq("organization_id", orgId)
@@ -461,8 +465,8 @@ export async function getSupplierInvoices(
     const { data, error, count } = await query;
     if (error) return { data: null, error: error.message, count: 0 };
     return { data, error: null, count: count || 0 };
-  } catch (err: any) {
-    return { data: null, error: err.message, count: 0 };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error", count: 0 };
   }
 }
 
@@ -470,7 +474,7 @@ export async function getSupplierInvoiceDetail(orgId: string, invoiceId: string)
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    const { data: invoice, error } = await (supabase as any)
+    const { data: invoice, error } = await (supabase as SupabaseClient)
       .from("supplier_invoices")
       .select("*")
       .eq("id", invoiceId)
@@ -479,7 +483,7 @@ export async function getSupplierInvoiceDetail(orgId: string, invoiceId: string)
 
     if (error) return { data: null, error: error.message };
 
-    const { data: lines } = await (supabase as any)
+    const { data: lines } = await (supabase as SupabaseClient)
       .from("supplier_invoice_lines")
       .select(`
         *,
@@ -489,8 +493,8 @@ export async function getSupplierInvoiceDetail(orgId: string, invoiceId: string)
       .order("created_at");
 
     return { data: { ...invoice, lines: lines || [] }, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -505,7 +509,7 @@ export async function mapInvoiceLine(
     const { supabase } = await assertOrgMember(orgId);
 
     // Update the line
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as SupabaseClient)
       .from("supplier_invoice_lines")
       .update({
         matched_inventory_id: inventoryItemId,
@@ -521,13 +525,14 @@ export async function mapInvoiceLine(
 
     // Learn the mapping for future invoices
     if (supplierName && supplierSku) {
-      await (supabase as any)
+      const lineData = data as { raw_description?: string };
+      await (supabase as SupabaseClient)
         .from("supplier_item_mappings")
         .upsert({
           organization_id: orgId,
           supplier_name: supplierName,
           supplier_sku: supplierSku,
-          supplier_desc: data.raw_description,
+          supplier_desc: lineData.raw_description,
           inventory_item_id: inventoryItemId,
           confidence: 100,
         }, { onConflict: "organization_id,supplier_name,supplier_sku" });
@@ -535,8 +540,8 @@ export async function mapInvoiceLine(
 
     revalidatePath("/dashboard/finance/supplier-invoices");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -545,7 +550,7 @@ export async function approveSupplierInvoice(orgId: string, invoiceId: string) {
     const { supabase, user } = await assertOrgMember(orgId);
 
     // Get the invoice and its lines
-    const { data: invoice } = await (supabase as any)
+    const { data: invoice } = await (supabase as SupabaseClient)
       .from("supplier_invoices")
       .select("*")
       .eq("id", invoiceId)
@@ -554,7 +559,7 @@ export async function approveSupplierInvoice(orgId: string, invoiceId: string) {
 
     if (!invoice) return { error: "Invoice not found" };
 
-    const { data: lines } = await (supabase as any)
+    const { data: lines } = await (supabase as SupabaseClient)
       .from("supplier_invoice_lines")
       .select("*")
       .eq("invoice_id", invoiceId)
@@ -563,14 +568,14 @@ export async function approveSupplierInvoice(orgId: string, invoiceId: string) {
     // Update MAC for each matched line
     for (const line of lines || []) {
       if (line.matched_inventory_id && line.raw_quantity > 0) {
-        await (supabase as any).rpc("update_inventory_mac", {
+        await (supabase as SupabaseClient).rpc("update_inventory_mac", {
           p_item_id: line.matched_inventory_id,
           p_new_qty: line.raw_quantity,
           p_new_cost: line.raw_unit_cost,
         });
 
         // Mark line as synced
-        await (supabase as any)
+        await (supabase as SupabaseClient)
           .from("supplier_invoice_lines")
           .update({ synced_at: new Date().toISOString() })
           .eq("id", line.id);
@@ -578,7 +583,7 @@ export async function approveSupplierInvoice(orgId: string, invoiceId: string) {
     }
 
     // Update invoice status
-    await (supabase as any)
+    await (supabase as SupabaseClient)
       .from("supplier_invoices")
       .update({
         processing_status: "SYNCED",
@@ -588,7 +593,7 @@ export async function approveSupplierInvoice(orgId: string, invoiceId: string) {
       .eq("id", invoiceId);
 
     // Audit log
-    await (supabase as any).from("audit_log").insert({
+    await supabase.from("audit_log").insert({
       organization_id: orgId,
       user_id: user.id,
       action: "supplier_invoice.approved",
@@ -607,8 +612,8 @@ export async function approveSupplierInvoice(orgId: string, invoiceId: string) {
     revalidatePath("/dashboard/ops/inventory");
     revalidatePath("/dashboard/ops/kits");
     return { error: null };
-  } catch (err: any) {
-    return { error: err.message };
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -620,7 +625,7 @@ export async function rejectSupplierInvoice(
   try {
     const { supabase, user } = await assertOrgMember(orgId);
 
-    await (supabase as any)
+    await (supabase as SupabaseClient)
       .from("supplier_invoices")
       .update({
         processing_status: "REJECTED",
@@ -633,8 +638,8 @@ export async function rejectSupplierInvoice(
 
     revalidatePath("/dashboard/finance/supplier-invoices");
     return { error: null };
-  } catch (err: any) {
-    return { error: err.message };
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -648,7 +653,7 @@ const ProposalSchema = z.object({
   client_id: z.string().uuid().optional().nullable(),
   site_address: z.string().max(500).optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
-  options: z.array(z.object({
+    options: z.array(z.object({
     label: z.string(),
     kits: z.array(z.object({
       kit_id: z.string().uuid().optional(),
@@ -669,7 +674,7 @@ export async function getProposals(
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    let query = (supabase as any)
+    let query = (supabase as SupabaseClient)
       .from("proposals")
       .select("*, clients:client_id(name), profiles:created_by(full_name)", { count: "exact" })
       .eq("organization_id", orgId)
@@ -686,8 +691,8 @@ export async function getProposals(
     const { data, error, count } = await query;
     if (error) return { data: null, error: error.message, count: 0 };
     return { data, error: null, count: count || 0 };
-  } catch (err: any) {
-    return { data: null, error: err.message, count: 0 };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error", count: 0 };
   }
 }
 
@@ -698,7 +703,7 @@ export async function createProposal(input: z.infer<typeof ProposalSchema>) {
 
     const { supabase, user } = await assertOrgMember(input.organization_id);
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as SupabaseClient)
       .from("proposals")
       .insert({
         ...parsed.data,
@@ -710,8 +715,8 @@ export async function createProposal(input: z.infer<typeof ProposalSchema>) {
     if (error) return { data: null, error: error.message };
     revalidatePath("/dashboard/ops/proposals");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -725,7 +730,7 @@ export async function winProposal(
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    const { data, error } = await (supabase as any).rpc("win_proposal", {
+    const { data, error } = await (supabase as SupabaseClient).rpc("win_proposal", {
       p_proposal_id: proposalId,
       p_selected_option: selectedOption,
       p_signature_data: signatureData,
@@ -736,8 +741,8 @@ export async function winProposal(
     revalidatePath("/dashboard/ops/proposals");
     revalidatePath("/dashboard/jobs");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -749,7 +754,7 @@ export async function cloneIndustrySeed(orgId: string, trade: string) {
   try {
     const { supabase } = await assertOrgMember(orgId);
 
-    const { data, error } = await (supabase as any).rpc("clone_industry_seed", {
+    const { data, error } = await (supabase as SupabaseClient).rpc("clone_industry_seed", {
       p_org_id: orgId,
       p_trade: trade,
     });
@@ -761,8 +766,8 @@ export async function cloneIndustrySeed(orgId: string, trade: string) {
     revalidatePath("/dashboard/ops/inventory");
     revalidatePath("/dashboard/ops/kits");
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -770,7 +775,7 @@ export async function getGlobalSeedCatalog(trade: string) {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as SupabaseClient)
       .from("global_trade_seed")
       .select("*")
       .eq("trade_category", trade.toUpperCase())
@@ -780,8 +785,8 @@ export async function getGlobalSeedCatalog(trade: string) {
 
     if (error) return { data: null, error: error.message };
     return { data, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -817,7 +822,7 @@ export async function uploadSupplierInvoice(orgId: string, formData: FormData) {
 
     revalidatePath("/dashboard/finance/supplier-invoices");
     return { data: result, error: null };
-  } catch (err: any) {
-    return { data: null, error: err.message };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }

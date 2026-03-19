@@ -1,5 +1,6 @@
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -75,6 +76,61 @@ export interface BatchResult {
   shifts_billed: number;
 }
 
+/** Raw invoice row from Supabase select (with nested relations) */
+interface InvoiceRowRaw {
+  id: string;
+  display_id: string;
+  organization_id: string;
+  participant_id: string | null;
+  client_name?: string | null;
+  client_email: string | null;
+  funding_type: string;
+  status: string;
+  total: number | null;
+  subtotal: number | null;
+  issue_date: string | null;
+  due_date: string | null;
+  paid_date: string | null;
+  billing_period_start: string | null;
+  billing_period_end: string | null;
+  plan_manager_email: string | null;
+  plan_manager_name: string | null;
+  ndis_participant_number: string | null;
+  proda_export_status: string;
+  dispatch_attempted_at: string | null;
+  dispatch_error: string | null;
+  created_at: string;
+  clients?: { first_name?: string; last_name?: string; avatar_url?: string } | { first_name?: string; last_name?: string; avatar_url?: string }[] | null;
+  participant_profiles?: { full_name?: string; ndis_number?: string } | { full_name?: string; ndis_number?: string }[] | null;
+  invoice_line_items?: { id: string }[] | null;
+}
+
+/** Raw line item row from Supabase */
+interface LineItemRowRaw {
+  id: string;
+  invoice_id: string;
+  description: string;
+  quantity: number | null;
+  unit_price: number | null;
+  hours: number | null;
+  rate: number | null;
+  line_total: number | null;
+  ndis_support_item_number: string | null;
+  support_category: string | null;
+  shift_date: string | null;
+  shift_id: string | null;
+  worker_id: string | null;
+  is_override: boolean | null;
+  override_reason: string | null;
+  sort_order: number | null;
+}
+
+/** Raw org settings shape */
+interface OrgSettingsRaw {
+  abn?: string;
+  ndis_registration_number?: string;
+}
+
 // ─── Fetch invoices (the billing grid data) ───────────────────────────────────
 
 export async function getBillingInvoices(
@@ -85,8 +141,7 @@ export async function getBillingInvoices(
   try {
     const supabase = await createServerSupabaseClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = (supabase as SupabaseClient)
       .from("invoices")
       .select(
         `id, display_id, organization_id, participant_id, client_name, client_email,
@@ -120,8 +175,7 @@ export async function getBillingInvoices(
     const { data, error } = await query.limit(200);
     if (error) throw error;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const invoices: BillingInvoice[] = ((data || []) as any[]).map((row: any) => {
+    const invoices: BillingInvoice[] = ((data || []) as InvoiceRowRaw[]).map((row: InvoiceRowRaw) => {
       const client = Array.isArray(row.clients) ? row.clients[0] : row.clients;
       const profile = Array.isArray(row.participant_profiles)
         ? row.participant_profiles[0]
@@ -185,8 +239,7 @@ export async function getInvoiceDetail(
     const supabase = await createServerSupabaseClient();
 
     const [invoiceRes, orgRes] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
+      (supabase as SupabaseClient)
         .from("invoices")
         .select(
           `*, clients!invoices_participant_id_fkey(first_name, last_name, avatar_url, email),
@@ -247,8 +300,8 @@ export async function getInvoiceDetail(
     };
 
     const lineItems: InvoiceLineItem[] = (
-      (row.invoice_line_items as any[]) || []
-    ).map((li: any) => ({
+      (row.invoice_line_items as LineItemRowRaw[]) || []
+    ).map((li: LineItemRowRaw) => ({
       id: li.id,
       invoice_id: li.invoice_id,
       description: li.description,
@@ -267,7 +320,7 @@ export async function getInvoiceDetail(
       sort_order: Number(li.sort_order || 0),
     }));
 
-    const orgSettings = ((orgRes.data?.settings as any) || {});
+    const orgSettings: OrgSettingsRaw = (orgRes.data?.settings as OrgSettingsRaw) || {};
     const orgMeta = orgRes.data
       ? {
           name: orgRes.data.name || "",
@@ -295,8 +348,7 @@ export async function getBillingTelemetry(
 ): Promise<{ telemetry: BillingTelemetry | null; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc("get_billing_telemetry", {
+    const { data, error } = await (supabase as SupabaseClient).rpc("get_billing_telemetry", {
       p_org_id: orgId,
     });
     if (error) throw error;
@@ -314,8 +366,7 @@ export async function runBillingBatch(
 ): Promise<{ result: BatchResult | null; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc("generate_billing_batches", {
+    const { data, error } = await (supabase as SupabaseClient).rpc("generate_billing_batches", {
       p_org_id: orgId,
     });
     if (error) throw error;
@@ -342,8 +393,7 @@ export async function dispatchInvoice(
 
     // If override email provided, update plan_manager_email first
     if (overrideEmail) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      await (supabase as SupabaseClient)
         .from("invoices")
         .update({ plan_manager_email: overrideEmail })
         .eq("id", invoiceId);
@@ -439,7 +489,7 @@ export async function markInvoicesPaid(
 ): Promise<{ ok: boolean; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as SupabaseClient)
       .from("invoices")
       .update({
         status: "paid",
@@ -479,8 +529,7 @@ export async function overrideLineItem(
         ? Math.round(newHours * newRate * 100) / 100
         : null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateErr } = await (supabase as any)
+    const { error: updateErr } = await (supabase as SupabaseClient)
       .from("invoice_line_items")
       .update({
         ...(newHours != null && { hours: newHours, quantity: newHours }),
@@ -494,17 +543,16 @@ export async function overrideLineItem(
     if (updateErr) throw updateErr;
 
     // Recalculate invoice total
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: items } = await (supabase as any)
+    const { data: items } = await (supabase as SupabaseClient)
       .from("invoice_line_items")
       .select("line_total, quantity, unit_price")
       .eq("invoice_id", invoiceId);
 
-    const newTotal = (items || []).reduce((sum: number, li: any) => {
-      return sum + Number(li.line_total != null ? li.line_total : (li.quantity * li.unit_price) || 0);
+    const newTotal = (items || []).reduce((sum: number, li: Pick<LineItemRowRaw, "line_total" | "quantity" | "unit_price">) => {
+      return sum + Number(li.line_total != null ? li.line_total : ((li.quantity ?? 0) * (li.unit_price ?? 0)) || 0);
     }, 0);
 
-    await (supabase as any)
+    await (supabase as SupabaseClient)
       .from("invoices")
       .update({ total: newTotal, subtotal: newTotal, updated_at: new Date().toISOString() })
       .eq("id", invoiceId)
@@ -530,8 +578,7 @@ export async function exportProdaCsv(
   try {
     const supabase = await createServerSupabaseClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: invoices } = await (supabase as any)
+    const { data: invoices } = await (supabase as SupabaseClient)
       .from("invoices")
       .select(
         `display_id, ndis_participant_number, plan_manager_email, total,
@@ -549,7 +596,7 @@ export async function exportProdaCsv(
     ];
 
     for (const inv of invoices) {
-      const items = (inv.invoice_line_items as any[]) || [];
+      const items = (inv.invoice_line_items as LineItemRowRaw[]) || [];
       for (const li of items) {
         rows.push(
           [
@@ -565,10 +612,9 @@ export async function exportProdaCsv(
     }
 
     // Mark as exported
-    const ids = invoices.map((i: any) => i.id).filter(Boolean);
+    const ids = invoices.map((i: Record<string, unknown>) => i.id as string | undefined).filter(Boolean);
     if (ids.length) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      await (supabase as SupabaseClient)
         .from("invoices")
         .update({ proda_export_status: "exported", status: "sent" })
         .in("id", ids);

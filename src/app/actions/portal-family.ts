@@ -1,8 +1,7 @@
 "use server";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { headers } from "next/headers";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cancelShiftWithNDISLogic } from "@/app/actions/roster-templates";
 
@@ -23,6 +22,65 @@ type LinkedParticipantAccess = {
   share_observations_with_family: boolean;
 };
 
+type ParticipantNetworkMemberRow = {
+  participant_id: string;
+  relationship_type: string;
+  permissions: Record<string, unknown> | null;
+  participant_profiles: {
+    id: string;
+    organization_id: string;
+    preferred_name: string | null;
+    share_observations_with_family: boolean;
+    clients: { name: string } | null;
+  };
+};
+
+type ParticipantPermissions = {
+  can_cancel_shifts?: boolean;
+  can_sign_documents?: boolean;
+};
+
+type CareChatMessageRow = Record<string, unknown>;
+
+type ScheduleBlockRow = {
+  id: string;
+  start_time: string;
+  end_time: string;
+  title: string;
+  status: string;
+  technician_id: string | null;
+};
+
+type ProfileRow = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
+type WalletRow = {
+  id: string;
+  name?: string;
+  wallet_type?: string;
+  card_last_four?: string;
+  current_balance?: number;
+  updated_at?: string;
+};
+
+type WalletLedgerRow = Record<string, unknown>;
+
+type ParticipantProfileRow = {
+  id: string;
+  preferred_name: string | null;
+  clients?: { name: string } | null;
+};
+
+type NomineeRow = {
+  participant_id: string;
+  relationship_type: string;
+  permissions: Record<string, boolean> | null;
+  participant_profiles?: ParticipantProfileRow | null;
+};
+
 async function getAuthedUser() {
   const supabase = await createServerSupabaseClient();
   const {
@@ -34,7 +92,7 @@ async function getAuthedUser() {
 
 async function getLinkedParticipants(userId: string): Promise<LinkedParticipantAccess[]> {
   const supabase = await createServerSupabaseClient();
-  const { data } = await (supabase as any)
+  const { data } = await (supabase as SupabaseClient)
     .from("participant_network_members")
     .select(`
       participant_id,
@@ -50,18 +108,27 @@ async function getLinkedParticipants(userId: string): Promise<LinkedParticipantA
     `)
     .eq("user_id", userId);
 
-  return (data || []).map((row: any): LinkedParticipantAccess => ({
-    participant_id: row.participant_id as string,
-    relationship_type: row.relationship_type as PortalRelationship,
-    permissions: (row.permissions || {}) as Record<string, unknown>,
-    organization_id: row.participant_profiles.organization_id as string,
-    participant_name:
-      (row.participant_profiles.preferred_name as string | null) ||
-      (row.participant_profiles.clients?.name as string) ||
-      "Participant",
-    share_observations_with_family:
-      !!row.participant_profiles.share_observations_with_family,
-  }));
+  return (data || []).map((row: Record<string, unknown>): LinkedParticipantAccess => {
+    const profile = Array.isArray(row.participant_profiles)
+      ? (row.participant_profiles[0] as Record<string, unknown> | undefined)
+      : (row.participant_profiles as Record<string, unknown> | undefined);
+    const client = profile
+      ? Array.isArray(profile.clients)
+        ? (profile.clients[0] as Record<string, unknown> | undefined)
+        : (profile.clients as Record<string, unknown> | undefined)
+      : undefined;
+    return {
+      participant_id: row.participant_id as string,
+      relationship_type: row.relationship_type as PortalRelationship,
+      permissions: (row.permissions || {}) as Record<string, unknown>,
+      organization_id: (profile?.organization_id as string) ?? "",
+      participant_name:
+        (profile?.preferred_name as string | null) ||
+        (client?.name as string) ||
+        "Participant",
+      share_observations_with_family: !!(profile?.share_observations_with_family),
+    };
+  });
 }
 
 function safeFirstName(fullName: string | null | undefined) {
@@ -80,7 +147,7 @@ export async function getPortalDashboard(participantId?: string) {
 
   const nowIso = new Date().toISOString();
 
-  const { data: activeShift } = await (supabase as any)
+  const { data: activeShift } = await (supabase as SupabaseClient)
     .from("schedule_blocks")
     .select("id, start_time, end_time, title, status, technician_id")
     .eq("participant_id", active.participant_id)
@@ -89,7 +156,7 @@ export async function getPortalDashboard(participantId?: string) {
     .limit(1)
     .maybeSingle();
 
-  const { data: nextShift } = await (supabase as any)
+  const { data: nextShift } = await (supabase as SupabaseClient)
     .from("schedule_blocks")
     .select("id, start_time, end_time, title, status, technician_id")
     .eq("participant_id", active.participant_id)
@@ -108,13 +175,13 @@ export async function getPortalDashboard(participantId?: string) {
   } | null = null;
 
   if (displayShift?.technician_id) {
-    const { data: tech } = await (supabase as any)
+    const { data: tech } = await (supabase as SupabaseClient)
       .from("profiles")
       .select("full_name, avatar_url")
       .eq("id", displayShift.technician_id)
       .maybeSingle();
 
-    const { count: verifiedCount } = await (supabase as any)
+    const { count: verifiedCount } = await (supabase as SupabaseClient)
       .from("worker_credentials")
       .select("id", { count: "exact", head: true })
       .eq("user_id", displayShift.technician_id)
@@ -128,7 +195,7 @@ export async function getPortalDashboard(participantId?: string) {
     };
   }
 
-  const { data: agreement } = await (supabase as any)
+  const { data: agreement } = await (supabase as SupabaseClient)
     .from("service_agreements")
     .select("id, total_budget, consumed_budget, quarantined_budget, start_date, end_date, status")
     .eq("participant_id", active.participant_id)
@@ -164,9 +231,9 @@ export async function getPortalDashboard(participantId?: string) {
     }
   }
 
-  let messages: any[] = [];
+  let messages: CareChatMessageRow[] = [];
   let unreadCount = 0;
-  const { data: externalChannel } = await (supabase as any)
+  const { data: externalChannel } = await (supabase as SupabaseClient)
     .from("care_chat_channels")
     .select("id")
     .eq("participant_id", active.participant_id)
@@ -174,14 +241,14 @@ export async function getPortalDashboard(participantId?: string) {
     .maybeSingle();
 
   if (externalChannel?.id) {
-    const { data: membership } = await (supabase as any)
+    const { data: membership } = await (supabase as SupabaseClient)
       .from("care_chat_members")
       .select("last_read_at")
       .eq("channel_id", externalChannel.id)
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const { data: latest } = await (supabase as any)
+    const { data: latest } = await (supabase as SupabaseClient)
       .from("care_chat_messages")
       .select("id, content, sender_id, created_at, is_deleted")
       .eq("channel_id", externalChannel.id)
@@ -192,7 +259,7 @@ export async function getPortalDashboard(participantId?: string) {
     messages = latest || [];
 
     if (membership?.last_read_at) {
-      const { count } = await (supabase as any)
+      const { count } = await (supabase as SupabaseClient)
         .from("care_chat_messages")
         .select("id", { count: "exact", head: true })
         .eq("channel_id", externalChannel.id)
@@ -238,7 +305,7 @@ export async function getPortalRoster(participantId?: string) {
   const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 28);
 
-  const { data: shifts } = await (supabase as any)
+  const { data: shifts } = await (supabase as SupabaseClient)
     .from("schedule_blocks")
     .select("id, start_time, end_time, title, status, technician_id")
     .eq("participant_id", active.participant_id)
@@ -248,16 +315,16 @@ export async function getPortalRoster(participantId?: string) {
     .order("start_time", { ascending: true });
 
   const techIds = Array.from(
-    new Set((shifts || []).map((s: any) => s.technician_id).filter(Boolean))
+    new Set((shifts || []).map((s: ScheduleBlockRow) => s.technician_id).filter(Boolean))
   );
   let techMap: Record<string, { first_name: string; avatar_url: string | null }> = {};
   if (techIds.length > 0) {
-    const { data: techs } = await (supabase as any)
+    const { data: techs } = await (supabase as SupabaseClient)
       .from("profiles")
       .select("id, full_name, avatar_url")
       .in("id", techIds);
     techMap = Object.fromEntries(
-      (techs || []).map((t: any) => [
+      (techs || []).map((t: ProfileRow) => [
         t.id,
         { first_name: safeFirstName(t.full_name), avatar_url: t.avatar_url || null },
       ])
@@ -267,7 +334,7 @@ export async function getPortalRoster(participantId?: string) {
   return {
     linked_participants: linked,
     active_participant_id: active.participant_id,
-    roster: (shifts || []).map((s: any) => ({
+    roster: (shifts || []).map((s: ScheduleBlockRow) => ({
       ...s,
       is_short_notice:
         (new Date(s.start_time).getTime() - Date.now()) / (1000 * 60 * 60) <
@@ -285,7 +352,7 @@ export async function requestPortalShiftCancellation(input: {
   acknowledge_short_notice: boolean;
 }) {
   const { supabase, user } = await getAuthedUser();
-  const { data: block } = await (supabase as any)
+  const { data: block } = await (supabase as SupabaseClient)
     .from("schedule_blocks")
     .select("id, organization_id, participant_id, start_time, status")
     .eq("id", input.schedule_block_id)
@@ -295,7 +362,7 @@ export async function requestPortalShiftCancellation(input: {
     return { success: false, error: "Shift not found." };
   }
 
-  const { data: link } = await (supabase as any)
+  const { data: link } = await (supabase as SupabaseClient)
     .from("participant_network_members")
     .select("permissions")
     .eq("participant_id", block.participant_id)
@@ -303,7 +370,7 @@ export async function requestPortalShiftCancellation(input: {
     .maybeSingle();
 
   if (!link) return { success: false, error: "You do not have access to this participant." };
-  const canCancel = link.permissions?.can_cancel_shifts !== false;
+  const canCancel = (link.permissions as ParticipantPermissions)?.can_cancel_shifts !== false;
   if (!canCancel) return { success: false, error: "Shift cancellation is disabled for your profile." };
 
   const hoursUntilShift =
@@ -323,7 +390,7 @@ export async function requestPortalShiftCancellation(input: {
   const ip = forwarded.split(",")[0]?.trim() || null;
   const ua = reqHeaders.get("user-agent");
 
-  await (supabase as any).from("portal_shift_cancellations").insert({
+  await (supabase as SupabaseClient).from("portal_shift_cancellations").insert({
     organization_id: block.organization_id,
     participant_id: block.participant_id,
     schedule_block_id: block.id,
@@ -353,16 +420,16 @@ export async function getPortalCareTeam(participantId?: string) {
     ? linked.find((p: LinkedParticipantAccess) => p.participant_id === participantId) || linked[0]
     : linked[0];
 
-  const { data: channel } = await (supabase as any)
+  const { data: channel } = await (supabase as SupabaseClient)
     .from("care_chat_channels")
     .select("id, name")
     .eq("participant_id", active.participant_id)
     .eq("channel_type", "house_external")
     .maybeSingle();
 
-  let messages: any[] = [];
+  let messages: CareChatMessageRow[] = [];
   if (channel?.id) {
-    const { data } = await (supabase as any)
+    const { data } = await (supabase as SupabaseClient)
       .from("care_chat_messages")
       .select("id, sender_id, content, message_type, created_at, is_deleted")
       .eq("channel_id", channel.id)
@@ -372,16 +439,16 @@ export async function getPortalCareTeam(participantId?: string) {
     messages = data || [];
   }
 
-  const { data: familyNotes } = await (supabase as any)
+  const { data: familyNotes } = await (supabase as SupabaseClient)
     .from("family_progress_notes")
     .select("id, narrative, worker_id, created_at")
     .eq("participant_id", active.participant_id)
     .order("created_at", { ascending: false })
     .limit(30);
 
-  let observations: any[] = [];
+  let observations: Record<string, unknown>[] = [];
   if (active.share_observations_with_family) {
-    const { data } = await (supabase as any)
+    const { data } = await (supabase as SupabaseClient)
       .from("health_observations")
       .select("id, observation_type, value_numeric, value_text, value_systolic, value_diastolic, unit, observed_at")
       .eq("participant_id", active.participant_id)
@@ -408,7 +475,7 @@ export async function getPortalDocuments(participantId?: string) {
     ? linked.find((p: LinkedParticipantAccess) => p.participant_id === participantId) || linked[0]
     : linked[0];
 
-  const { data: docs } = await (supabase as any)
+  const { data: docs } = await (supabase as SupabaseClient)
     .from("participant_documents")
     .select("id, title, file_path, status, requires_signature, signed_at, signed_by_user_id, created_at")
     .eq("participant_id", active.participant_id)
@@ -430,7 +497,7 @@ export async function getPortalFunds(participantId?: string) {
     ? linked.find((p: LinkedParticipantAccess) => p.participant_id === participantId) || linked[0]
     : linked[0];
 
-  const { data: wallets } = await (supabase as any)
+  const { data: wallets } = await (supabase as SupabaseClient)
     .from("participant_wallets")
     .select("id, name, wallet_type, card_last_four, current_balance, updated_at")
     .eq("participant_id", active.participant_id)
@@ -438,10 +505,10 @@ export async function getPortalFunds(participantId?: string) {
     .order("created_at", { ascending: false })
     .limit(50);
 
-  const walletIds = (wallets || []).map((w: any) => w.id as string);
-  let ledger: any[] = [];
+  const walletIds = (wallets || []).map((w: WalletRow) => w.id as string);
+  let ledger: WalletLedgerRow[] = [];
   if (walletIds.length > 0) {
-    const { data } = await (supabase as any)
+    const { data } = await (supabase as SupabaseClient)
       .from("wallet_ledger_entries")
       .select("id, wallet_id, entry_type, amount, running_balance, category, description, receipt_image_url, created_at")
       .in("wallet_id", walletIds)
@@ -464,7 +531,7 @@ export async function signPortalDocument(input: {
 }) {
   const { supabase, user } = await getAuthedUser();
 
-  const { data: doc } = await (supabase as any)
+  const { data: doc } = await (supabase as SupabaseClient)
     .from("participant_documents")
     .select("id, organization_id, participant_id, title, requires_signature, status")
     .eq("id", input.document_id)
@@ -474,7 +541,7 @@ export async function signPortalDocument(input: {
   if (!doc) return { success: false, error: "Document not found." };
   if (!doc.requires_signature) return { success: false, error: "This document does not require signature." };
 
-  const { data: link } = await (supabase as any)
+  const { data: link } = await (supabase as SupabaseClient)
     .from("participant_network_members")
     .select("permissions")
     .eq("participant_id", doc.participant_id)
@@ -482,7 +549,7 @@ export async function signPortalDocument(input: {
     .maybeSingle();
 
   if (!link) return { success: false, error: "You do not have access to this participant." };
-  const canSign = link.permissions?.can_sign_documents !== false;
+  const canSign = (link.permissions as ParticipantPermissions)?.can_sign_documents !== false;
   if (!canSign) return { success: false, error: "Digital signing is disabled for your profile." };
 
   const reqHeaders = await headers();
@@ -491,7 +558,7 @@ export async function signPortalDocument(input: {
   const ua = reqHeaders.get("user-agent");
   const signedAt = new Date().toISOString();
 
-  const { error } = await (supabase as any)
+  const { error } = await (supabase as SupabaseClient)
     .from("participant_documents")
     .update({
       status: "signed",
@@ -510,7 +577,7 @@ export async function signPortalDocument(input: {
   if (error) return { success: false, error: error.message };
 
   // Unlock scheduling by moving pending agreement to active for this participant.
-  await (supabase as any)
+  await (supabase as SupabaseClient)
     .from("service_agreements")
     .update({ status: "active", signed_at: signedAt, signed_by: user.email || user.id })
     .eq("participant_id", doc.participant_id)
@@ -532,7 +599,7 @@ export async function inviteFamilyPortalMember(input: {
   const { supabase, user } = await getAuthedUser();
 
   // Require org admin-level caller.
-  const { data: member } = await (supabase as any)
+  const { data: member } = await (supabase as SupabaseClient)
     .from("organization_members")
     .select("role")
     .eq("organization_id", input.organization_id)
@@ -594,7 +661,7 @@ export async function getPortalAdminOverview(orgId?: string) {
   // Resolve org ID
   let resolvedOrgId = orgId;
   if (!resolvedOrgId) {
-    const { data: om } = await (supabase as any)
+    const { data: om } = await (supabase as SupabaseClient)
       .from("organization_members")
       .select("organization_id")
       .eq("user_id", user.id)
@@ -607,7 +674,7 @@ export async function getPortalAdminOverview(orgId?: string) {
   if (!resolvedOrgId) return { error: "No organization found" };
 
   // Verify admin
-  const { data: member } = await (supabase as any)
+  const { data: member } = await (supabase as SupabaseClient)
     .from("organization_members")
     .select("role")
     .eq("organization_id", resolvedOrgId)
@@ -618,7 +685,7 @@ export async function getPortalAdminOverview(orgId?: string) {
   if (!member) return { error: "Access denied" };
 
   // Fetch participants linked to nominees in this org
-  const { data: nominees } = await (supabase as any)
+  const { data: nominees } = await (supabase as SupabaseClient)
     .from("participant_network_members")
     .select(`
       participant_id,
@@ -637,35 +704,49 @@ export async function getPortalAdminOverview(orgId?: string) {
 
   if (!nominees || nominees.length === 0) {
     // Fallback: get all participant_profiles for this org and return them
-    const { data: allProfiles } = await (supabase as any)
+    const { data: allProfiles } = await (supabase as SupabaseClient)
       .from("participant_profiles")
       .select("id, preferred_name, clients!inner(name)")
       .eq("organization_id", resolvedOrgId)
       .limit(50);
 
-    const participants = (allProfiles || []).map((pp: any) => ({
-      participant_id: pp.id as string,
-      participant_name: (pp.preferred_name as string) ?? (pp.clients?.name as string) ?? "Participant",
-      relationship_type: "managed",
-      permissions: {},
-      organization_id: resolvedOrgId,
-    }));
+    const participants = (allProfiles || []).map((pp: Record<string, unknown>) => {
+      const client = Array.isArray(pp.clients)
+        ? (pp.clients[0] as Record<string, unknown> | undefined)
+        : (pp.clients as Record<string, unknown> | undefined);
+      return {
+        participant_id: pp.id as string,
+        participant_name: (pp.preferred_name as string) ?? (client?.name as string) ?? "Participant",
+        relationship_type: "managed",
+        permissions: {},
+        organization_id: resolvedOrgId,
+      };
+    });
 
     return { linked_participants: participants, organization_id: resolvedOrgId };
   }
 
   const seen = new Set<string>();
   const participants = nominees
-    .filter((n: any) => {
-      if (seen.has(n.participant_id)) return false;
-      seen.add(n.participant_id);
+    .filter((n: Record<string, unknown>) => {
+      const pid = n.participant_id as string;
+      if (seen.has(pid)) return false;
+      seen.add(pid);
       return true;
     })
-    .map((n: any) => {
-      const pp = n.participant_profiles as any;
+    .map((n: Record<string, unknown>) => {
+      const ppRaw = n.participant_profiles;
+      const pp = Array.isArray(ppRaw)
+        ? (ppRaw[0] as Record<string, unknown> | undefined)
+        : (ppRaw as Record<string, unknown> | undefined);
+      const client = pp
+        ? Array.isArray(pp.clients)
+          ? (pp.clients[0] as Record<string, unknown> | undefined)
+          : (pp.clients as Record<string, unknown> | undefined)
+        : undefined;
       return {
         participant_id: n.participant_id as string,
-        participant_name: (pp?.preferred_name as string) ?? (pp?.clients?.name as string) ?? "Participant",
+        participant_name: (pp?.preferred_name as string) ?? (client?.name as string) ?? "Participant",
         relationship_type: n.relationship_type as string,
         permissions: (n.permissions as Record<string, boolean>) ?? {},
         organization_id: resolvedOrgId,

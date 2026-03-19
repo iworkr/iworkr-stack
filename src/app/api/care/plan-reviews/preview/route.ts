@@ -4,11 +4,23 @@ import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { PlanReviewReportDocument } from "@/components/pdf/plan-review-report-document";
 import { getPlanReviewPdfPayloadAction } from "@/app/actions/plan-reviews";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
+  // ── Aegis-Zero: Session Gate ──
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: "Unauthorized", message: "Valid authentication session required." },
+      { status: 401 }
+    );
+  }
+
   try {
     const reportId = new URL(request.url).searchParams.get("report_id");
     if (!reportId) {

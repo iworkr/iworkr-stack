@@ -5,14 +5,11 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Exclude non-web-app directories from linting
     ".claude/**",
     "flutter/**",
     "electron/**",
@@ -21,13 +18,21 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "audit-reports/**",
   ]),
-  // Project Terminus: Strict type safety enforcement
-  // New code must not introduce `any` — existing violations tracked via lint baseline.
+  // ── Aegis-Refactor: Strict type safety + hook discipline ──
   {
     files: ["src/**/*.ts", "src/**/*.tsx"],
     rules: {
-      // Warn on new `any` usage — will be enforced as error once baseline is cleared
+      // Warn on explicit `any` (error once baseline is cleared)
       "@typescript-eslint/no-explicit-any": "warn",
+      // Prevent stale closures and infinite re-renders
+      "react-hooks/exhaustive-deps": "warn",
+    },
+  },
+  // New files created after Aegis-Refactor must be strictly clean
+  {
+    files: ["src/lib/schemas/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
 ]);

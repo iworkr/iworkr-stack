@@ -13,12 +13,27 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // ── Aegis-Zero: Early token validation gate ──
+  // These routes use secure_token auth (not session auth) because
+  // they are accessed by external clients via email links.
+  const { searchParams } = new URL(request.url);
+  const token = searchParams.get("token");
+
+  if (!token || token.length < 16) {
+    return NextResponse.json(
+      { error: "Unauthorized", message: "A valid secure token is required." },
+      { status: 401 }
+    );
+  }
+
+  if (!id || typeof id !== "string" || id.length < 10) {
+    return NextResponse.json({ error: "Invalid quote ID" }, { status: 400 });
+  }
+
   const supabaseAdmin = getSupabaseAdmin();
 
   try {
-    const { searchParams } = new URL(request.url);
-    const token = searchParams.get("token");
-
     const { data: quote, error: fetchErr } = await supabaseAdmin
       .from("quotes")
       .select("id, status, secure_token, organization_id")
@@ -29,7 +44,7 @@ export async function POST(
       return NextResponse.json({ error: "Quote not found" }, { status: 404 });
     }
 
-    if (!token || !quote.secure_token || token !== quote.secure_token) {
+    if (!quote.secure_token || token !== quote.secure_token) {
       return NextResponse.json({ error: "Invalid or missing token" }, { status: 403 });
     }
 
@@ -48,7 +63,6 @@ export async function POST(
     const signatureUrl = body.signature_url as string | undefined;
     const signedBy = body.signed_by as string | undefined;
 
-    // The DB trigger (migration 039) handles job + invoice creation on accept
     const { data: updated, error: updateErr } = await supabaseAdmin
       .from("quotes")
       .update({

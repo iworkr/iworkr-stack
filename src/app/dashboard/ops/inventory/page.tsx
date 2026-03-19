@@ -16,20 +16,24 @@ import {
 
 interface InventoryItem {
   id: string;
-  name: string;
+  name: string | null;
   sku: string | null;
   category: string | null;
-  trade_category: string | null;
-  quantity: number;
-  min_quantity: number;
-  unit_cost: number;
-  moving_average_cost: number;
-  latest_cost: number;
-  sell_price: number;
-  stock_level: string;
-  brand: string | null;
-  unit: string | null;
-  supplier: string | null;
+  trade_category?: string | null;
+  quantity: number | null;
+  min_quantity: number | null;
+  unit_cost: number | null;
+  moving_average_cost?: number | null;
+  latest_cost?: number | null;
+  sell_price?: number | null;
+  stock_level: string | null;
+  brand?: string | null;
+  unit?: string | null;
+  supplier?: string | null;
+  barcode?: string | null;
+  bin_location?: string | null;
+  location?: string | null;
+  max_quantity?: number | null;
 }
 
 interface Overview {
@@ -65,7 +69,7 @@ export default function InventoryPage() {
     ]);
 
     if (itemsRes.data) { setItems(itemsRes.data); setCount(itemsRes.count); }
-    if (overviewRes.data) setOverview(overviewRes.data);
+    if (overviewRes.data) setOverview(overviewRes.data as Overview);
 
     setLoading(false);
   }, [orgId, search, stockFilter]);
@@ -224,24 +228,24 @@ export default function InventoryPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right font-mono text-sm text-[var(--text-primary)]">
-                      {formatMoney(item.moving_average_cost)}
+                      {formatMoney(item.moving_average_cost ?? item.unit_cost ?? 0)}
                     </td>
                     <td className="px-3 py-3 text-right font-mono text-sm">
                       <span className={
-                        item.latest_cost > item.moving_average_cost
+                        (item.latest_cost ?? 0) > (item.moving_average_cost ?? 0)
                           ? "text-rose-400"
-                          : item.latest_cost < item.moving_average_cost
+                          : (item.latest_cost ?? 0) < (item.moving_average_cost ?? 0)
                           ? "text-emerald-400"
                           : "text-[var(--text-muted)]"
                       }>
-                        {formatMoney(item.latest_cost)}
+                        {formatMoney(item.latest_cost ?? item.unit_cost ?? 0)}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right font-mono text-sm text-[var(--text-primary)]">
-                      {formatMoney(item.sell_price)}
+                      {formatMoney(item.sell_price ?? 0)}
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <StockBadge level={item.stock_level} />
+                      <StockBadge level={item.stock_level ?? "ok"} />
                     </td>
                   </tr>
                 ))

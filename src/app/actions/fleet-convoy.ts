@@ -1,9 +1,12 @@
 "use server";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+// Fleet tables are not in the generated Database types — use untyped SupabaseClient.
+type SupabaseFleet = SupabaseClient;
 
 const VehicleSchema = z.object({
   organization_id: z.string().uuid(),
@@ -70,7 +73,7 @@ async function requireUser() {
 
 export async function listFleetVehiclesAction(organizationId: string) {
   const { supabase } = await requireUser();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (supabase as SupabaseFleet)
     .from("fleet_vehicles")
     .select("*, care_facilities(name)")
     .eq("organization_id", organizationId)
@@ -82,7 +85,7 @@ export async function listFleetVehiclesAction(organizationId: string) {
 export async function createFleetVehicleAction(input: z.infer<typeof VehicleSchema>) {
   const payload = VehicleSchema.parse(input);
   const { supabase } = await requireUser();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (supabase as SupabaseFleet)
     .from("fleet_vehicles")
     .insert({
       ...payload,
@@ -103,7 +106,7 @@ export async function updateFleetVehicleStatusAction(input: {
   status: "active" | "in_use" | "maintenance" | "out_of_service_defect" | "out_of_service_compliance";
 }) {
   const { supabase } = await requireUser();
-  const { error } = await (supabase as any)
+  const { error } = await (supabase as SupabaseFleet)
     .from("fleet_vehicles")
     .update({ status: input.status, updated_at: new Date().toISOString() })
     .eq("id", input.vehicle_id);
@@ -119,7 +122,7 @@ export async function listVehicleBookingsAction(input: {
   to_iso: string;
 }) {
   const { supabase } = await requireUser();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (supabase as SupabaseFleet)
     .from("vehicle_bookings")
     .select("*, fleet_vehicles(name, registration_number), schedule_blocks(title, participant_id)")
     .eq("organization_id", input.organization_id)
@@ -137,7 +140,7 @@ export async function getVehicleGpsReplayGeoJsonAction(input: {
   to_iso: string;
 }) {
   const { supabase } = await requireUser();
-  const { data: bookings, error: bookingErr } = await (supabase as any)
+  const { data: bookings, error: bookingErr } = await (supabase as SupabaseFleet)
     .from("vehicle_bookings")
     .select("shift_id, booked_start, booked_end")
     .eq("organization_id", input.organization_id)
@@ -147,12 +150,12 @@ export async function getVehicleGpsReplayGeoJsonAction(input: {
     .order("booked_start", { ascending: true });
   if (bookingErr) throw new Error(bookingErr.message);
 
-  const shiftIds = (bookings || []).map((b: any) => b.shift_id).filter(Boolean);
+  const shiftIds = (bookings || []).map((b: { shift_id: string }) => b.shift_id).filter(Boolean);
   if (shiftIds.length === 0) {
     return { type: "FeatureCollection", features: [] };
   }
 
-  const { data: logs, error: logErr } = await (supabase as any)
+  const { data: logs, error: logErr } = await (supabase as SupabaseFleet)
     .from("shift_travel_logs")
     .select("id, shift_id, raw_breadcrumbs, start_time, end_time")
     .eq("organization_id", input.organization_id)
@@ -161,10 +164,10 @@ export async function getVehicleGpsReplayGeoJsonAction(input: {
   if (logErr) throw new Error(logErr.message);
 
   const features = (logs || [])
-    .map((log: any) => {
+    .map((log: { id: string; shift_id: string; raw_breadcrumbs: unknown; start_time: string; end_time: string }) => {
       const points = Array.isArray(log.raw_breadcrumbs) ? log.raw_breadcrumbs : [];
       const coordinates = points
-        .map((p: any) => {
+        .map((p: Record<string, unknown>) => {
           const lat = Number(p.lat ?? p.latitude);
           const lng = Number(p.lng ?? p.longitude);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
@@ -199,12 +202,12 @@ export async function createVehicleBookingAction(input: z.infer<typeof BookingSc
   const { supabase } = await requireUser();
 
   const [{ data: shift, error: shiftErr }, { data: vehicle, error: vehicleErr }] = await Promise.all([
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("schedule_blocks")
       .select("id, organization_id, technician_id, participant_id, start_time, end_time")
       .eq("id", payload.shift_id)
       .single(),
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("fleet_vehicles")
       .select("id, organization_id, is_wav, wav_type, status")
       .eq("id", payload.vehicle_id)
@@ -220,7 +223,7 @@ export async function createVehicleBookingAction(input: z.infer<typeof BookingSc
   }
 
   if (shift.participant_id) {
-    const { data: p } = await (supabase as any)
+    const { data: p } = await (supabase as SupabaseFleet)
       .from("participant_profiles")
       .select("mobility_requirements, mobility_status, critical_alerts")
       .eq("id", shift.participant_id)
@@ -232,7 +235,7 @@ export async function createVehicleBookingAction(input: z.infer<typeof BookingSc
     }
   }
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (supabase as SupabaseFleet)
     .from("vehicle_bookings")
     .insert({
       organization_id: payload.organization_id,
@@ -254,7 +257,7 @@ export async function createVehicleBookingAction(input: z.infer<typeof BookingSc
 
 export async function getShiftVehicleBookingAction(shiftId: string) {
   const { supabase } = await requireUser();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (supabase as SupabaseFleet)
     .from("vehicle_bookings")
     .select("*, fleet_vehicles(name, registration_number, status, current_odometer)")
     .eq("shift_id", shiftId)
@@ -269,7 +272,7 @@ export async function getShiftVehicleBookingAction(shiftId: string) {
 export async function checkoutVehicleBookingAction(input: z.infer<typeof CheckoutSchema>) {
   const payload = CheckoutSchema.parse(input);
   const { supabase, user } = await requireUser();
-  const { data: booking, error: bookingErr } = await (supabase as any)
+  const { data: booking, error: bookingErr } = await (supabase as SupabaseFleet)
     .from("vehicle_bookings")
     .select("*, fleet_vehicles(id, current_odometer)")
     .eq("id", payload.booking_id)
@@ -282,7 +285,7 @@ export async function checkoutVehicleBookingAction(input: z.infer<typeof Checkou
 
   const nowIso = new Date().toISOString();
   const [{ error: bookingUpdateErr }, { error: inspectionErr }, { error: vehicleErr }] = await Promise.all([
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("vehicle_bookings")
       .update({
         status: "checked_out",
@@ -291,7 +294,7 @@ export async function checkoutVehicleBookingAction(input: z.infer<typeof Checkou
         worker_id: booking.worker_id || user.id,
       })
       .eq("id", payload.booking_id),
-    (supabase as any).from("vehicle_inspections").insert({
+    (supabase as SupabaseFleet).from("vehicle_inspections").insert({
       organization_id: booking.organization_id,
       vehicle_id: booking.vehicle_id,
       booking_id: booking.id,
@@ -301,7 +304,7 @@ export async function checkoutVehicleBookingAction(input: z.infer<typeof Checkou
       has_defects: payload.has_defects,
       fuel_level_percent: payload.fuel_level_percent ?? null,
     }),
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("fleet_vehicles")
       .update({
         status: payload.has_defects ? "out_of_service_defect" : "in_use",
@@ -321,7 +324,7 @@ export async function checkoutVehicleBookingAction(input: z.infer<typeof Checkou
 export async function checkinVehicleBookingAction(input: z.infer<typeof CheckinSchema>) {
   const payload = CheckinSchema.parse(input);
   const { supabase, user } = await requireUser();
-  const { data: booking, error: bookingErr } = await (supabase as any)
+  const { data: booking, error: bookingErr } = await (supabase as SupabaseFleet)
     .from("vehicle_bookings")
     .select("*")
     .eq("id", payload.booking_id)
@@ -334,7 +337,7 @@ export async function checkinVehicleBookingAction(input: z.infer<typeof CheckinS
 
   const nowIso = new Date().toISOString();
   const [{ error: bookingUpdateErr }, { error: inspectionErr }, { error: vehicleErr }] = await Promise.all([
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("vehicle_bookings")
       .update({
         status: "completed",
@@ -343,7 +346,7 @@ export async function checkinVehicleBookingAction(input: z.infer<typeof CheckinS
         fuel_level_percent: payload.fuel_level_percent ?? null,
       })
       .eq("id", payload.booking_id),
-    (supabase as any).from("vehicle_inspections").insert({
+    (supabase as SupabaseFleet).from("vehicle_inspections").insert({
       organization_id: booking.organization_id,
       vehicle_id: booking.vehicle_id,
       booking_id: booking.id,
@@ -353,7 +356,7 @@ export async function checkinVehicleBookingAction(input: z.infer<typeof CheckinS
       has_defects: payload.has_defects,
       fuel_level_percent: payload.fuel_level_percent ?? null,
     }),
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("fleet_vehicles")
       .update({
         status: payload.has_defects ? "out_of_service_defect" : "active",
@@ -372,14 +375,14 @@ export async function checkinVehicleBookingAction(input: z.infer<typeof CheckinS
 export async function reportVehicleDefectAction(input: z.infer<typeof DefectSchema>) {
   const payload = DefectSchema.parse(input);
   const { supabase } = await requireUser();
-  const { data: booking, error: bookingErr } = await (supabase as any)
+  const { data: booking, error: bookingErr } = await (supabase as SupabaseFleet)
     .from("vehicle_bookings")
     .select("id, organization_id, vehicle_id, shift_id, booked_start")
     .eq("id", payload.booking_id)
     .single();
   if (bookingErr) throw new Error(bookingErr.message);
 
-  const { data: defect, error: defectErr } = await (supabase as any)
+  const { data: defect, error: defectErr } = await (supabase as SupabaseFleet)
     .from("vehicle_defects")
     .insert({
       organization_id: booking.organization_id,
@@ -395,8 +398,8 @@ export async function reportVehicleDefectAction(input: z.infer<typeof DefectSche
   if (defectErr) throw new Error(defectErr.message);
 
   if (payload.severity === "critical_grounded" || payload.severity === "major") {
-    await (supabase as any).from("fleet_vehicles").update({ status: "out_of_service_defect" }).eq("id", booking.vehicle_id);
-    await (supabase as any)
+    await (supabase as SupabaseFleet).from("fleet_vehicles").update({ status: "out_of_service_defect" }).eq("id", booking.vehicle_id);
+    await (supabase as SupabaseFleet)
       .from("vehicle_bookings")
       .update({ status: "cancelled", metadata: { triage_queue: "drop_and_cover", reason: "vehicle_defect" } })
       .eq("vehicle_id", booking.vehicle_id)
@@ -421,21 +424,21 @@ export async function reportVehicleDefectAction(input: z.infer<typeof DefectSche
 export async function getFleetOverviewAction(organizationId: string) {
   const { supabase } = await requireUser();
   const [{ data: vehicles }, { data: upcoming }, { data: bookings }, { data: defects }] = await Promise.all([
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("fleet_vehicles")
       .select("id, status, assigned_facility_id, registration_expiry, insurance_expiry, hoist_service_expiry, current_odometer")
       .eq("organization_id", organizationId),
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("fleet_vehicles")
       .select("id, name, registration_number, registration_expiry, insurance_expiry, hoist_service_expiry")
       .eq("organization_id", organizationId)
       .or(`registration_expiry.lte.${new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)},insurance_expiry.lte.${new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)},hoist_service_expiry.lte.${new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}`),
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("vehicle_bookings")
       .select("id, status, booked_start, booked_end, vehicle_id")
       .eq("organization_id", organizationId)
       .gte("booked_start", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-    (supabase as any)
+    (supabase as SupabaseFleet)
       .from("vehicle_defects")
       .select("id, severity, status")
       .eq("organization_id", organizationId)
@@ -443,15 +446,15 @@ export async function getFleetOverviewAction(organizationId: string) {
   ]);
 
   const byStatus = {
-    active: (vehicles || []).filter((v: any) => v.status === "active").length,
-    in_use: (vehicles || []).filter((v: any) => v.status === "in_use").length,
-    maintenance: (vehicles || []).filter((v: any) => v.status === "maintenance").length,
-    out_of_service_defect: (vehicles || []).filter((v: any) => v.status === "out_of_service_defect").length,
-    out_of_service_compliance: (vehicles || []).filter((v: any) => v.status === "out_of_service_compliance").length,
+    active: (vehicles || []).filter((v: { status: string }) => v.status === "active").length,
+    in_use: (vehicles || []).filter((v: { status: string }) => v.status === "in_use").length,
+    maintenance: (vehicles || []).filter((v: { status: string }) => v.status === "maintenance").length,
+    out_of_service_defect: (vehicles || []).filter((v: { status: string }) => v.status === "out_of_service_defect").length,
+    out_of_service_compliance: (vehicles || []).filter((v: { status: string }) => v.status === "out_of_service_compliance").length,
   };
 
   const now = Date.now();
-  const minutesBooked = (bookings || []).reduce((sum: number, b: any) => {
+  const minutesBooked = (bookings || []).reduce((sum: number, b: { booked_start: string; booked_end: string }) => {
     const start = new Date(b.booked_start).getTime();
     const end = new Date(b.booked_end).getTime();
     return sum + Math.max(0, (end - start) / 60000);
@@ -461,18 +464,18 @@ export async function getFleetOverviewAction(organizationId: string) {
   const utilizationPercent = Number(((minutesBooked / minutesAvailable) * 100).toFixed(2));
 
   const vacancySignals: Array<{ facility_id: string; facility_name: string; capacity: number; active_count: number; waitlist_count: number }> = [];
-  const { data: facilities } = await (supabase as any)
+  const { data: facilities } = await (supabase as SupabaseFleet)
     .from("care_facilities")
     .select("id, name, max_capacity")
     .eq("organization_id", organizationId);
   for (const f of facilities || []) {
     const [{ count: activeCount }, { count: waitlistCount }] = await Promise.all([
-      (supabase as any)
+      (supabase as SupabaseFleet)
         .from("participant_profiles")
         .select("id", { count: "exact", head: true })
         .eq("organization_id", organizationId)
         .eq("facility_id", f.id),
-      (supabase as any)
+      (supabase as SupabaseFleet)
         .from("intake_waitlist_entries")
         .select("id", { count: "exact", head: true })
         .eq("target_facility_id", f.id),
@@ -501,7 +504,7 @@ export async function getFleetOverviewAction(organizationId: string) {
 
 export async function runConvoyDailyGroundingAction() {
   const { supabase } = await requireUser();
-  const { data, error } = await (supabase as any).rpc("convoy_ground_expired_vehicles");
+  const { data, error } = await (supabase as SupabaseFleet).rpc("convoy_ground_expired_vehicles");
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/fleet/overview");
   return { grounded_count: Number(data || 0) };

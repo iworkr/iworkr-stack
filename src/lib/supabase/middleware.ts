@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import type { Database } from "./types";
 
 // ═══════════════════════════════════════════════════════════════
 // ── Project Aegis — Edge RBAC Middleware ──────────────────────
@@ -37,7 +39,7 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+  const supabase = createServerClient<Database>(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -78,7 +80,7 @@ export async function updateSession(request: NextRequest) {
 
     // Fallback: check profile table (for when JWT claims aren't synced yet)
     try {
-      const { data: adminProfile, error: profileError } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      const { data: adminProfile, error: profileError } = await supabase
         .from("profiles")
         .select("is_super_admin, email")
         .eq("id", user.id)
@@ -126,7 +128,7 @@ export async function updateSession(request: NextRequest) {
 
       // If JWT doesn't have claims, fall back to DB queries
       if (!jwtRole && !jwtOrgId) {
-        const { data: activeMembership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        const { data: activeMembership } = await supabase
           .from("organization_members")
           .select("organization_id")
           .eq("user_id", user.id)
@@ -137,7 +139,7 @@ export async function updateSession(request: NextRequest) {
         hasOrg = !!activeMembership;
 
         if (!hasOrg) {
-          const { data: portalLink } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+          const { data: portalLink } = await (supabase as SupabaseClient)
             .from("participant_network_members")
             .select("participant_id")
             .eq("user_id", user.id)
@@ -188,7 +190,7 @@ export async function updateSession(request: NextRequest) {
 
     // If no JWT role, fall back to DB check
     if (!jwtRole) {
-      const { data: hasPortalLink } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      const { data: hasPortalLink } = await (supabase as SupabaseClient)
         .from("participant_network_members")
         .select("participant_id")
         .eq("user_id", user.id)
@@ -218,7 +220,7 @@ export async function updateSession(request: NextRequest) {
 
     if (!role) {
       // No JWT claims — query organization_members
-      const { data: membership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      const { data: membership } = await supabase
         .from("organization_members")
         .select("organization_id, role")
         .eq("user_id", user.id)
@@ -234,7 +236,7 @@ export async function updateSession(request: NextRequest) {
 
     // No active membership — check portal link or send to setup
     if (!hasActiveMembership) {
-      const { data: hasPortalLink } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      const { data: hasPortalLink } = await (supabase as SupabaseClient)
         .from("participant_network_members")
         .select("participant_id")
         .eq("user_id", user.id)
@@ -248,7 +250,7 @@ export async function updateSession(request: NextRequest) {
       }
 
       // Check for any membership (pending/invited)
-      const { data: anyMembership } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      const { data: anyMembership } = await supabase
         .from("organization_members")
         .select("organization_id, role, status")
         .eq("user_id", user.id)
@@ -261,7 +263,7 @@ export async function updateSession(request: NextRequest) {
       }
 
       // Check if onboarding was already marked complete (prevents infinite loop)
-      const { data: profile } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await supabase
         .from("profiles")
         .select("onboarding_completed")
         .eq("id", user.id)

@@ -123,7 +123,7 @@ export function WidgetSchedule({ size = "medium" }: { size?: WidgetSize }) {
   const myBlocks: DisplayBlock[] = useMemo(() => {
     if (serverBlocks.length > 0) {
       return serverBlocks.map(b => ({
-        id: b.id, jobId: b.job_id, title: b.title, location: b.location || "",
+        id: b.id, jobId: b.job_id ?? null, title: b.title, location: b.location || "",
         startHour: timeToDecimal(b.start_time), duration: durationHours(b.start_time, b.end_time), status: b.status,
       }));
     }

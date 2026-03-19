@@ -125,8 +125,7 @@ export const useMedicationsStore = create<MedicationsState>()(
     set({ loading: !hasCache, error: null });
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (supabase as any)
+      let query = supabase
         .from("participant_medications")
         .select("*")
         .eq("organization_id", orgId)
@@ -148,8 +147,7 @@ export const useMedicationsStore = create<MedicationsState>()(
   loadMAREntries: async (orgId, participantId, dateRange) => {
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (supabase as any)
+      let query = supabase
         .from("medication_administration_records")
         .select("*, participant_medications!medication_id ( medication_name ), profiles!worker_id ( full_name )")
         .eq("organization_id", orgId)
@@ -183,8 +181,7 @@ export const useMedicationsStore = create<MedicationsState>()(
   createMedication: async (params) => {
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("participant_medications")
         .insert(params)
         .select()
@@ -202,8 +199,7 @@ export const useMedicationsStore = create<MedicationsState>()(
   updateMedication: async (id, updates) => {
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("participant_medications")
         .update(updates)
         .eq("id", id);
@@ -219,8 +215,7 @@ export const useMedicationsStore = create<MedicationsState>()(
   recordAdministration: async (params) => {
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("medication_administration_records")
         .insert(params)
         .select()

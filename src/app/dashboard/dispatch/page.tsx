@@ -244,7 +244,24 @@ export default function DispatchPage() {
   }, []);
 
   const handleHoverTechDetail = useCallback((tech: FleetTech | null, anchor: { lat: number; lng: number } | null) => {
-    setHoverDialogTech(tech);
+    if (tech) {
+      const mapped: HoverDialogTech = {
+        id: tech.id,
+        technician_id: tech.technician_id ?? null,
+        name: tech.name ?? null,
+        task: tech.task ?? null,
+        dispatch_status: tech.dispatch_status,
+        location_lat: tech.location_lat ?? null,
+        location_lng: tech.location_lng ?? null,
+        speedKmh: tech.speedKmh,
+        speed: tech.speed ?? null,
+        battery: tech.battery ?? null,
+        position_updated_at: tech.position_updated_at ?? null,
+      };
+      setHoverDialogTech(mapped);
+    } else {
+      setHoverDialogTech(null);
+    }
     setHoverAnchor(anchor);
   }, []);
 

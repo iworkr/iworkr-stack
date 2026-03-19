@@ -1,93 +1,47 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
+import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import {
+  DashboardStatsSchema,
+  DailyRevenuePointSchema,
+  ScheduleItemSchema,
+  AIInsightSchema,
+  DispatchPinSchema,
+  DashboardSnapshotSchema,
+  DashboardLayoutSchema,
+  FootprintTrailRowSchema,
+} from "@/lib/schemas/dashboard";
 
-/* ── Types ───────────────────────────────────────────── */
+/* ── Re-export types from schema (single source of truth) ── */
+export type { DashboardStats, DailyRevenuePoint, ScheduleItem, AIInsight, DispatchPin, FootprintTrailRow } from "@/lib/schemas/dashboard";
+export type { DashboardSnapshot } from "@/lib/schemas/dashboard";
 
-export interface DashboardStats {
-  revenue_current: number;
-  revenue_previous: number;
-  revenue_growth_pct: number;
-  active_jobs_count: number;
-  unassigned_jobs_count: number;
-  total_jobs_count: number;
-}
+/* ── Auth guard helper ──────────────────────────────── */
 
-export interface DailyRevenuePoint {
-  date: string;
-  amount: number;
-  invoice_count: number;
-}
+async function requireOrgMember(orgId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { supabase, user: null, error: "Unauthorized" as const };
 
-export interface ScheduleItem {
-  id: string;
-  job_id: string | null;
-  title: string;
-  client_name: string | null;
-  location: string | null;
-  start_time: string;
-  end_time: string;
-  status: string;
-  travel_minutes: number;
-  notes: string | null;
-}
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) return { supabase, user: null, error: "Unauthorized" as const };
 
-export interface AIInsight {
-  type: "warning" | "alert" | "info" | "success";
-  title: string;
-  body: string;
-  action: string | null;
-  action_route: string | null;
-  priority: number;
-}
-
-export interface TeamMemberStatus {
-  user_id: string;
-  name: string;
-  initials: string;
-  avatar_url: string | null;
-  status: "on_job" | "en_route" | "idle";
-  current_task: string | null;
-}
-
-export interface DispatchPin {
-  id: string;
-  task: string | null;
-  status?: string;
-  job_status?: string | null;
-  location: string | null;
-  location_lat: number | null;
-  location_lng: number | null;
-  name: string | null;
-  technician_id: string | null;
-  dispatch_status: "on_job" | "en_route" | "idle" | "offline";
-  heading?: number | null;
-  speed?: number | null;
-  battery?: number | null;
-  accuracy?: number | null;
-  gps_status?: string | null;
-  position_updated_at?: string | null;
-  current_job_id?: string | null;
+  return { supabase, user, error: null };
 }
 
 /* ── Dashboard Stats ─────────────────────────────────── */
 
 export async function getDashboardStats(orgId: string, rangeStart?: string, rangeEnd?: string) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+    const { supabase, error: authErr } = await requireOrgMember(orgId);
+    if (authErr) return { data: null, error: authErr };
 
     const { data, error } = await supabase.rpc("get_dashboard_stats", {
       p_org_id: orgId,
@@ -100,10 +54,16 @@ export async function getDashboardStats(orgId: string, rangeStart?: string, rang
       return { data: null, error: error.message };
     }
 
-    return { data: data as unknown as DashboardStats, error: null };
-  } catch (error: any) {
-    logger.error("Dashboard stats error", "dashboard", error);
-    return { data: null, error: error.message || "Failed to fetch dashboard stats" };
+    const parsed = DashboardStatsSchema.safeParse(data);
+    if (!parsed.success) {
+      logger.error("Dashboard stats schema mismatch", "dashboard", undefined, { issues: parsed.error.issues });
+      return { data: null, error: "Data validation failed" };
+    }
+    return { data: parsed.data, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch dashboard stats";
+    logger.error("Dashboard stats error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: null, error: message };
   }
 }
 
@@ -111,18 +71,8 @@ export async function getDashboardStats(orgId: string, rangeStart?: string, rang
 
 export async function getDailyRevenueChart(orgId: string, days: number = 30) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+    const { supabase, error: authErr } = await requireOrgMember(orgId);
+    if (authErr) return { data: null, error: authErr };
 
     const { data, error } = await supabase.rpc("get_daily_revenue_chart", {
       p_org_id: orgId,
@@ -134,10 +84,12 @@ export async function getDailyRevenueChart(orgId: string, days: number = 30) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as unknown as DailyRevenuePoint[], error: null };
-  } catch (error: any) {
-    logger.error("Revenue chart error", "dashboard", error);
-    return { data: null, error: error.message || "Failed to fetch revenue chart" };
+    const parsed = z.array(DailyRevenuePointSchema).safeParse(data || []);
+    return { data: parsed.success ? parsed.data : [], error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch revenue chart";
+    logger.error("Revenue chart error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: null, error: message };
   }
 }
 
@@ -146,7 +98,6 @@ export async function getDailyRevenueChart(orgId: string, days: number = 30) {
 export async function getMySchedule(limit: number = 5) {
   try {
     const supabase = await createServerSupabaseClient();
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -160,10 +111,12 @@ export async function getMySchedule(limit: number = 5) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as unknown as ScheduleItem[], error: null };
-  } catch (error: any) {
-    logger.error("Schedule error", "dashboard", error);
-    return { data: null, error: error.message || "Failed to fetch schedule" };
+    const parsed = z.array(ScheduleItemSchema).safeParse(data || []);
+    return { data: parsed.success ? parsed.data : [], error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch schedule";
+    logger.error("Schedule error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: null, error: message };
   }
 }
 
@@ -171,18 +124,8 @@ export async function getMySchedule(limit: number = 5) {
 
 export async function getAIInsights(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+    const { supabase, error: authErr } = await requireOrgMember(orgId);
+    if (authErr) return { data: null, error: authErr };
 
     const { data, error } = await supabase.rpc("get_ai_insights", {
       p_org_id: orgId,
@@ -193,10 +136,12 @@ export async function getAIInsights(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as unknown as AIInsight[], error: null };
-  } catch (error: any) {
-    logger.error("Insights error", "dashboard", error);
-    return { data: null, error: error.message || "Failed to fetch insights" };
+    const parsed = z.array(AIInsightSchema).safeParse(data || []);
+    return { data: parsed.success ? parsed.data : [], error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch insights";
+    logger.error("Insights error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: null, error: message };
   }
 }
 
@@ -204,18 +149,8 @@ export async function getAIInsights(orgId: string) {
 
 export async function getTeamStatus(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+    const { supabase, error: authErr } = await requireOrgMember(orgId);
+    if (authErr) return { data: null, error: authErr };
 
     const { data, error } = await supabase.rpc("get_team_status", {
       p_org_id: orgId,
@@ -226,10 +161,19 @@ export async function getTeamStatus(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as unknown as TeamMemberStatus[], error: null };
-  } catch (error: any) {
-    logger.error("Team status error", "dashboard", error);
-    return { data: null, error: error.message || "Failed to fetch team status" };
+    const parsed = z.array(z.object({
+      user_id: z.string(),
+      name: z.string(),
+      initials: z.string(),
+      avatar_url: z.string().nullable().optional(),
+      status: z.enum(["on_job", "en_route", "idle"]).catch("idle"),
+      current_task: z.string().nullable().optional(),
+    })).safeParse(data || []);
+    return { data: parsed.success ? parsed.data : [], error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch team status";
+    logger.error("Team status error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: null, error: message };
   }
 }
 
@@ -237,18 +181,8 @@ export async function getTeamStatus(orgId: string) {
 
 export async function getDashboardSnapshot(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+    const { supabase, error: authErr } = await requireOrgMember(orgId);
+    if (authErr) return { data: null, error: authErr };
 
     const { data, error } = await supabase.rpc("get_dashboard_snapshot", {
       p_org_id: orgId,
@@ -259,24 +193,35 @@ export async function getDashboardSnapshot(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
-  } catch (error: any) {
-    logger.error("Dashboard snapshot error", "dashboard", error);
-    return { data: null, error: error.message || "Failed to fetch dashboard snapshot" };
+    type Snapshot = z.infer<typeof DashboardSnapshotSchema>;
+    const parsed = DashboardSnapshotSchema.safeParse(data);
+    if (!parsed.success) {
+      logger.error("Dashboard snapshot schema mismatch", "dashboard", undefined, { issues: parsed.error.issues });
+      return { data: data as Snapshot, error: null };
+    }
+    return { data: parsed.data as Snapshot, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch dashboard snapshot";
+    logger.error("Dashboard snapshot error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: null, error: message };
   }
 }
 
 /* ── Dashboard Layout Persistence ───────────────────── */
 
-export async function saveDashboardLayout(layout: any) {
+export async function saveDashboardLayout(layout: unknown) {
   try {
     const supabase = await createServerSupabaseClient();
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Unauthorized" };
 
+    const parsed = DashboardLayoutSchema.safeParse(layout);
+    if (!parsed.success) {
+      return { error: `Invalid layout: ${parsed.error.issues.map(i => i.message).join(", ")}` };
+    }
+
     const { error } = await supabase.rpc("save_dashboard_layout", {
-      p_layout: layout,
+      p_layout: parsed.data,
     });
 
     if (error) {
@@ -285,16 +230,16 @@ export async function saveDashboardLayout(layout: any) {
     }
 
     return { error: null };
-  } catch (error: any) {
-    logger.error("Save layout error", "dashboard", error);
-    return { error: error.message || "Failed to save dashboard layout" };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to save dashboard layout";
+    logger.error("Save layout error", "dashboard", err instanceof Error ? err : undefined);
+    return { error: message };
   }
 }
 
 export async function loadDashboardLayout() {
   try {
     const supabase = await createServerSupabaseClient();
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
@@ -305,10 +250,12 @@ export async function loadDashboardLayout() {
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
-  } catch (error: any) {
-    logger.error("Load layout error", "dashboard", error);
-    return { data: null, error: error.message || "Failed to load dashboard layout" };
+    const parsed = DashboardLayoutSchema.safeParse(data);
+    return { data: parsed.success ? parsed.data : null, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to load dashboard layout";
+    logger.error("Load layout error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: null, error: message };
   }
 }
 
@@ -316,18 +263,8 @@ export async function loadDashboardLayout() {
 
 export async function getLiveDispatch(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+    const { supabase, error: authErr } = await requireOrgMember(orgId);
+    if (authErr) return { data: null, error: authErr };
 
     const { data, error } = await supabase.rpc("get_live_dispatch", {
       p_org_id: orgId,
@@ -338,10 +275,12 @@ export async function getLiveDispatch(orgId: string) {
       return { data: null, error: error.message };
     }
 
-    return { data: (data || []) as unknown as DispatchPin[], error: null };
-  } catch (error: any) {
-    logger.error("Dispatch error", "dashboard", error);
-    return { data: null, error: error.message || "Failed to fetch dispatch data" };
+    const parsed = z.array(DispatchPinSchema).safeParse(data || []);
+    return { data: parsed.success ? parsed.data : [], error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch dispatch data";
+    logger.error("Dispatch error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: null, error: message };
   }
 }
 
@@ -360,20 +299,10 @@ export async function updateFleetPosition(
   }
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const { supabase, error: authErr } = await requireOrgMember(orgId);
+    if (authErr) return { success: false, error: authErr };
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { success: false, error: "Unauthorized" };
-
-    const { data, error } = await supabase.rpc("update_fleet_position" as any, {
+    const { error } = await supabase.rpc("update_fleet_position" as never, {
       p_org_id: orgId,
       p_lat: lat,
       p_lng: lng,
@@ -382,39 +311,25 @@ export async function updateFleetPosition(
       p_accuracy: opts?.accuracy ?? null,
       p_battery: opts?.battery ?? null,
       p_status: opts?.status ?? "idle",
-    });
+    } as never);
     if (error) {
       logger.error("Fleet position update failed", "dispatch", undefined, { error: error.message });
       return { success: false, error: error.message };
     }
     return { success: true, error: null };
-  } catch (error: any) {
-    logger.error("Fleet position error", "dispatch", error);
-    return { success: false, error: error.message || "Failed to update position" };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to update position";
+    logger.error("Fleet position error", "dispatch", err instanceof Error ? err : undefined);
+    return { success: false, error: message };
   }
 }
 
-/** Footprint trail for dispatch map: path + optional timestamps per tech */
-export interface FootprintTrailRow {
-  technician_id: string;
-  path: Array<{ lat: number; lng: number }>;
-  timestamps?: number[] | null;
-}
+/* ── Footprint Trails ───────────────────────────────── */
 
 export async function getFootprintTrails(orgId: string) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: [], error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: [], error: "Unauthorized" };
+    const { supabase, error: authErr } = await requireOrgMember(orgId);
+    if (authErr) return { data: [], error: authErr };
 
     const { data, error } = await supabase
       .from("footprint_trails")
@@ -422,7 +337,6 @@ export async function getFootprintTrails(orgId: string) {
       .eq("organization_id", orgId);
 
     if (error) {
-      // Gracefully handle table not existing (42P01 = undefined_table)
       if (error.code === "42P01" || error.message?.includes("relation") || error.message?.includes("does not exist")) {
         logger.warn("footprint_trails table not found — returning empty trails", "dashboard");
         return { data: [], error: null };
@@ -430,24 +344,26 @@ export async function getFootprintTrails(orgId: string) {
       logger.error("Failed to fetch footprint trails", "dashboard", undefined, { error: error.message });
       return { data: [], error: error.message };
     }
-    const rows = (data || []) as FootprintTrailRow[];
+
+    const parsed = z.array(FootprintTrailRowSchema).safeParse(data || []);
+    const rows = parsed.success ? parsed.data : [];
     const trails = rows
       .filter((r) => Array.isArray(r.path) && r.path.length >= 2)
       .map((r) => ({
         techId: r.technician_id,
-        path: r.path as { lat: number; lng: number }[],
+        path: r.path,
         timestamps: r.timestamps ?? undefined,
       }));
     return { data: trails, error: null };
-  } catch (error: any) {
-    logger.error("Footprint trails error", "dashboard", error);
-    return { data: [], error: error.message || "Failed to fetch footprint trails" };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch footprint trails";
+    logger.error("Footprint trails error", "dashboard", err instanceof Error ? err : undefined);
+    return { data: [], error: message };
   }
 }
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
 
-/** Snap raw GPS path to roads (Mapbox Map Matching API). Call on-demand when footprints are toggled; cache in frontend. */
 export async function snapFootprintToRoads(path: Array<{ lat: number; lng: number }>) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -456,7 +372,6 @@ export async function snapFootprintToRoads(path: Array<{ lat: number; lng: numbe
 
     if (path.length < 2) return { data: path, error: null };
 
-    // Mapbox Map Matching API: max 100 coordinates per request; sample if needed
     let coords = path.map((p) => `${p.lng},${p.lat}`);
     if (coords.length > 100) {
       const step = Math.ceil(coords.length / 100);
@@ -474,9 +389,10 @@ export async function snapFootprintToRoads(path: Array<{ lat: number; lng: numbe
     const matchedCoords = json?.matchings?.[0]?.geometry?.coordinates;
     if (!matchedCoords || matchedCoords.length < 2) return { data: path, error: null };
 
-    const snapped = matchedCoords.map((c: [number, number]) => ({ lat: c[1], lng: c[0] }));
+    const snapped = (matchedCoords as [number, number][]).map((c) => ({ lat: c[1], lng: c[0] }));
     return { data: snapped, error: null };
-  } catch (error: any) {
-    return { data: path, error: error?.message ?? "Snap to roads failed" };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Snap to roads failed";
+    return { data: path, error: message };
   }
 }
