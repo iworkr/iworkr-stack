@@ -1,0 +1,260 @@
+name: "Aegis-Chaos: Omniscient E2E Pipeline"
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: aegis-chaos-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  CI: true
+
+jobs:
+  # ── LAYER 1: Database Security Isolation (pgTAP) ──
+  database-vault:
+    name: "L1: Database Vault (pgTAP)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - name: Start local Supabase
+        run: supabase start
+      - name: Reset & apply all migrations
+        run: supabase db reset
+      - name: Install pgTAP
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+            -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
+      - name: Run Aegis-Chaos RLS Gauntlet
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+            -f supabase/tests/pgtap/aegis_chaos_rls_gauntlet.sql
+      - name: Run existing Panopticon RLS tests
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+            -f supabase/tests/pgtap/panopticon_rls.sql
+
+  # ── LAYER 2: Edge Function Annihilation (Vitest) ──
+  edge-function-chaos:
+    name: "L2: Edge Function Chaos (Vitest)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm }
+      - run: npm ci
+      - name: Run Edge Function chaos tests
+        run: npx vitest run --config tests/edge-functions/vitest.edge.config.ts --reporter=verbose
+
+  # ── LAYER 3: Web Matrix (Playwright - 3 browsers) ──
+  web-matrix-chromium:
+    name: "L3: Web Matrix (Chromium)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [database-vault]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Run Aegis Web tests
+        run: npx playwright test --project=aegis-cpq --project=aegis-rbac --project=aegis-billing
+      - name: Upload Playwright traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-playwright-chromium
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  web-matrix-firefox:
+    name: "L3: Web Matrix (Firefox)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [database-vault]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps firefox
+      - run: npm run build
+      - name: Run smoke on Firefox
+        run: npx playwright test --project=aegis-smoke-firefox
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-playwright-firefox
+          path: test-results/
+          retention-days: 14
+
+  web-matrix-webkit:
+    name: "L3: Web Matrix (WebKit)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [database-vault]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - run: npm run build
+      - name: Run smoke on WebKit
+        run: npx playwright test --project=aegis-smoke-webkit
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-playwright-webkit
+          path: test-results/
+          retention-days: 14
+
+  # ── LAYER 4: Mobile Edge (Patrol - Android) ──
+  mobile-patrol-android:
+    name: "L4: Mobile Edge (Patrol Android)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    needs: [database-vault]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: zulu, java-version: "17" }
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: "3.32.0", channel: stable, cache: true }
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install Flutter deps
+        working-directory: flutter
+        run: flutter pub get
+      - name: Build APK for testing
+        working-directory: flutter
+        run: flutter build apk --debug --target integration_test/test_bundle.dart
+      - name: Run Patrol tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: Nexus 6
+          script: |
+            cd flutter && patrol test --target integration_test/tests/aegis_offline_test.dart
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-patrol-android
+          path: flutter/screenshots/
+          retention-days: 14
+
+  # ── LAYER 4: Mobile Edge (Patrol - iOS) ──
+  mobile-patrol-ios:
+    name: "L4: Mobile Edge (Patrol iOS)"
+    runs-on: macos-latest
+    timeout-minutes: 55
+    needs: [database-vault]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: "3.32.0", channel: stable, cache: true }
+      - working-directory: flutter
+        run: flutter pub get
+      - name: Run Patrol tests
+        run: npm run test:mobile
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-patrol-ios
+          path: |
+            flutter/screenshots/
+            flutter/test_report.log
+          retention-days: 14
+
+  # ── LAYER 5: Golden Thread Cross-Platform ──
+  golden-threads:
+    name: "L5: Golden Threads (Cross-Platform)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [web-matrix-chromium, edge-function-chaos]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Run Golden Threads
+        run: npx playwright test --project=aegis-golden-threads
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-golden-threads
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  # ── Audit & Sentry Notification ──
+  aegis-audit:
+    name: "Aegis-Chaos Audit Briefing"
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [database-vault, edge-function-chaos, web-matrix-chromium, web-matrix-firefox, web-matrix-webkit, mobile-patrol-android, mobile-patrol-ios, golden-threads]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm }
+      - run: npm ci
+      - name: Generate audit report
+        run: node scripts/generate-aegis-audit.mjs
+      - name: Append CI outcomes
+        run: |
+          FILE=$(ls audit-reports/aegis-chaos-audit-*.md 2>/dev/null | head -1 || echo "")
+          if [ -n "$FILE" ]; then
+            {
+              echo ""
+              echo "## CI Execution Results"
+              echo ""
+              echo "| Layer | Job | Result |"
+              echo "|---|---|---|"
+              echo "| L1 | Database Vault | **${{ needs.database-vault.result }}** |"
+              echo "| L2 | Edge Function Chaos | **${{ needs.edge-function-chaos.result }}** |"
+              echo "| L3 | Web Chromium | **${{ needs.web-matrix-chromium.result }}** |"
+              echo "| L3 | Web Firefox | **${{ needs.web-matrix-firefox.result }}** |"
+              echo "| L3 | Web WebKit | **${{ needs.web-matrix-webkit.result }}** |"
+              echo "| L4 | Patrol Android | **${{ needs.mobile-patrol-android.result }}** |"
+              echo "| L4 | Patrol iOS | **${{ needs.mobile-patrol-ios.result }}** |"
+              echo "| L5 | Golden Threads | **${{ needs.golden-threads.result }}** |"
+            } >> "$FILE"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aegis-chaos-audit
+          path: audit-reports/aegis-chaos-audit-*.md
+          retention-days: 30
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "🛡️ Aegis-Chaos Pipeline FAILED on ${{ github.ref_name }}\nCommit: ${{ github.sha }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

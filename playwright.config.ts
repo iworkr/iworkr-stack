@@ -157,6 +157,44 @@ export default defineConfig({
       use: { ...devices["Desktop Safari"], storageState: AUTH_STATE },
       dependencies: ["setup"],
     },
+
+    // ── Aegis-Chaos: Layer 3 Web Matrix ─────────────────────────────────────
+    {
+      name: "aegis-cpq",
+      testMatch: /aegis\/cpq-engine\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "aegis-rbac",
+      testMatch: /aegis\/rbac-matrix\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "aegis-billing",
+      testMatch: /aegis\/billing-math\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "aegis-golden-threads",
+      testMatch: /aegis\/golden-thread-trade\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "aegis-smoke-firefox",
+      testMatch: /aegis\/cpq-engine\.spec\.ts/,
+      use: { ...devices["Desktop Firefox"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "aegis-smoke-webkit",
+      testMatch: /aegis\/cpq-engine\.spec\.ts/,
+      use: { ...devices["Desktop Safari"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
   ],
 
   webServer: {
