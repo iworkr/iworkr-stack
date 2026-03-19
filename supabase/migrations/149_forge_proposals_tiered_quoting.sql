@@ -350,7 +350,7 @@ BEGIN
     display_id,
     client_id, client_name, client_email, client_address,
     job_id, quote_id,
-    status, issue_date,
+    status, issue_date, due_date,
     subtotal, tax_rate, tax, total,
     notes,
     metadata
@@ -363,7 +363,7 @@ BEGIN
     v_quote.client_id, v_quote.client_name, v_quote.client_email, v_quote.client_address,
     v_job_id, p_quote_id,
     'draft',
-    CURRENT_DATE,
+    CURRENT_DATE, CURRENT_DATE + 14,
     v_tier.subtotal, 0.10, v_tier.tax, v_tier.total,
     'Auto-generated from proposal ' || v_quote.display_id,
     jsonb_build_object('source', 'proposal', 'tier_name', v_tier.tier_name)
@@ -382,6 +382,7 @@ BEGIN
     INSERT INTO public.purchase_orders (
       organization_id,
       display_id,
+      supplier, supplier_name,
       status,
       source_quote_id, source_job_id,
       subtotal, tax, total,
@@ -393,7 +394,8 @@ BEGIN
         (SELECT COUNT(*) + 1 FROM public.purchase_orders WHERE organization_id = v_quote.organization_id),
         1
       ))::text, 4, '0'),
-      'draft',
+      'REECE', 'Auto-generated Supplier PO',
+      'DRAFT',
       p_quote_id, v_job_id,
       v_line.quantity * v_line.unit_cost,
       ROUND(v_line.quantity * v_line.unit_cost * 0.10, 2),
