@@ -23,3 +23,4 @@ export * from "./organization";
 export * from "./care";
 export * from "./common";
 export * from "./oracle-yield";
+export * from "./hermes-scribe";
