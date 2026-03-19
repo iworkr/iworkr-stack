@@ -4,16 +4,14 @@
 -- ============================================================
 
 -- ── 1. ENUMs ────────────────────────────────────────────────
-DO $$ BEGIN
-  CREATE TYPE public.incident_severity AS ENUM ('LOW','MEDIUM','HIGH','CRITICAL');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-  CREATE TYPE public.incident_category AS ENUM (
-    'INJURY','ABUSE','NEGLECT','UNAUTHORIZED_RESTRICTIVE_PRACTICE',
-    'PROPERTY_DAMAGE','MEDICATION_ERROR','MISSING_PERSON','DEATH','OTHER'
-  );
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- NOTE: incident_severity and incident_category ENUMs already exist with lowercase values:
+-- incident_severity: 'low','medium','high','critical'
+-- incident_category: 'fall','medication_error','behavioral','environmental','injury',
+--   'near_miss','property_damage','abuse_allegation','restrictive_practice','other'
+-- We add missing SIRS-specific values:
+DO $$ BEGIN ALTER TYPE public.incident_category ADD VALUE IF NOT EXISTS 'neglect'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE public.incident_category ADD VALUE IF NOT EXISTS 'death'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE public.incident_category ADD VALUE IF NOT EXISTS 'missing_person'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
   CREATE TYPE public.sirs_priority AS ENUM ('P1_24HR','P2_5DAY');

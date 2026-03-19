@@ -1,75 +1,197 @@
+// ============================================================
 // Edge Function: accounting-webhook
-// Handles inbound events from Xero/MYOB
-// Security: Xero ITR (Intent-to-Receive) HMAC-SHA256 signature validation
+// Project Synapse-Prod — Production Accounting Webhook Handler
+// Handles: Xero ITR (Intent-to-Receive), Xero events, QBO events
+// Security: HMAC-SHA256 cryptographic signature validation
+// ============================================================
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-xero-signature, intuit-signature",
 };
 
-const XERO_WEBHOOK_KEY = Deno.env.get("XERO_WEBHOOK_KEY") ?? "";
-const APP_URL = Deno.env.get("NEXT_PUBLIC_APP_URL") ?? "https://www.iworkrapp.com";
-const REVALIDATE_SECRET = Deno.env.get("REVALIDATE_SECRET") ?? "";
 const XERO_API_BASE = "https://api.xero.com/api.xro/2.0";
 const XERO_TOKEN_URL = "https://identity.xero.com/connect/token";
+const APP_URL =
+  Deno.env.get("NEXT_PUBLIC_APP_URL") ?? "https://www.iworkrapp.com";
+const REVALIDATE_SECRET = Deno.env.get("REVALIDATE_SECRET") ?? "";
 
-// ── HMAC Signature Validation ────────────────────────────
-async function validateXeroSignature(body: string, signature: string): Promise<boolean> {
-  if (!XERO_WEBHOOK_KEY) return true; // Skip in dev if key not set
+// ── Crypto: HMAC-SHA256 computation using Web Crypto API ──────
+async function computeHmacSha256Base64(
+  key: string,
+  message: string
+): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    cryptoKey,
+    enc.encode(message)
+  );
+  // Convert ArrayBuffer to base64
+  const bytes = new Uint8Array(signature);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+// ── Xero ITR + Event signature validation ─────────────────────
+async function validateXeroSignature(
+  body: string,
+  signature: string,
+  webhookKey: string
+): Promise<boolean> {
+  if (!webhookKey) {
+    console.warn("[accounting-webhook] No XERO_WEBHOOK_KEY configured — skipping validation");
+    return true;
+  }
   try {
-    const computed = await hmac("sha256", XERO_WEBHOOK_KEY, body, "utf8", "base64");
-    return computed === signature;
+    const computed = await computeHmacSha256Base64(webhookKey, body);
+    // Constant-time comparison to prevent timing attacks
+    if (computed.length !== signature.length) return false;
+    let result = 0;
+    for (let i = 0; i < computed.length; i++) {
+      result |= computed.charCodeAt(i) ^ signature.charCodeAt(i);
+    }
+    return result === 0;
+  } catch (err) {
+    console.error("[accounting-webhook] HMAC computation failed:", err);
+    return false;
+  }
+}
+
+// ── QBO webhook signature validation ──────────────────────────
+async function validateQboSignature(
+  body: string,
+  signature: string,
+  verifierToken: string
+): Promise<boolean> {
+  if (!verifierToken) return true;
+  try {
+    const computed = await computeHmacSha256Base64(verifierToken, body);
+    if (computed.length !== signature.length) return false;
+    let result = 0;
+    for (let i = 0; i < computed.length; i++) {
+      result |= computed.charCodeAt(i) ^ signature.charCodeAt(i);
+    }
+    return result === 0;
   } catch {
     return false;
   }
 }
 
-// ── Token refresh helper ──────────────────────────────────
-async function getValidToken(supabase: any, workspaceId: string): Promise<{ token: string; tenantId: string }> {
-  const { data: tokenRow } = await supabase
-    .from("integration_tokens")
-    .select("access_token, refresh_token, expires_at, external_tenant_id")
-    .eq("workspace_id", workspaceId)
-    .eq("provider", "XERO")
-    .maybeSingle();
+// ── Token refresh with advisory lock via RPC ──────────────────
+async function getValidToken(
+  supabase: ReturnType<typeof createClient>,
+  workspaceId: string,
+  provider: string = "XERO"
+): Promise<{ token: string; tenantId: string; connectionId: string | null }> {
+  // Use advisory lock RPC to prevent concurrent refresh
+  const { data: tokenResult, error: rpcError } = await supabase.rpc(
+    "get_valid_integration_token",
+    { p_workspace_id: workspaceId, p_provider: provider }
+  );
 
-  if (!tokenRow) throw new Error("No Xero token");
+  if (rpcError) throw new Error(`Token RPC failed: ${rpcError.message}`);
+  const result = typeof tokenResult === "string" ? JSON.parse(tokenResult) : tokenResult;
 
-  const isExpired = new Date(tokenRow.expires_at) <= new Date(Date.now() + 60_000);
-  if (!isExpired) return { token: tokenRow.access_token, tenantId: tokenRow.external_tenant_id };
+  if (result.error) throw new Error(result.error);
 
-  const clientId = Deno.env.get("XERO_CLIENT_ID")!;
-  const clientSecret = Deno.env.get("XERO_CLIENT_SECRET")!;
+  // If token is valid, return it
+  if (!result.needs_refresh) {
+    return {
+      token: result.access_token,
+      tenantId: result.external_tenant_id,
+      connectionId: result.connection_id,
+    };
+  }
+
+  // If another thread is refreshing, wait and re-fetch
+  if (result.locked_by_other) {
+    await new Promise((r) => setTimeout(r, 1000));
+    return getValidToken(supabase, workspaceId, provider);
+  }
+
+  // We must refresh the token
+  const clientId = provider === "XERO"
+    ? Deno.env.get("XERO_CLIENT_ID")!
+    : Deno.env.get("QBO_CLIENT_ID")!;
+  const clientSecret = provider === "XERO"
+    ? Deno.env.get("XERO_CLIENT_SECRET")!
+    : Deno.env.get("QBO_CLIENT_SECRET")!;
+  const tokenUrl = provider === "XERO"
+    ? XERO_TOKEN_URL
+    : "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
+
   const creds = btoa(`${clientId}:${clientSecret}`);
 
-  const res = await fetch(XERO_TOKEN_URL, {
+  const res = await fetch(tokenUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: `Basic ${creds}` },
-    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: tokenRow.refresh_token }),
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${creds}`,
+    },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: result.refresh_token,
+    }),
   });
 
-  if (!res.ok) throw new Error(`Token refresh failed: ${res.status}`);
+  if (!res.ok) {
+    // Record failure
+    await supabase
+      .from("integration_tokens")
+      .update({
+        refresh_failure_count: (result.refresh_failure_count || 0) + 1,
+        token_refresh_lock_until: null,
+      })
+      .eq("workspace_id", workspaceId)
+      .eq("provider", provider);
+    throw new Error(`Token refresh failed: HTTP ${res.status}`);
+  }
+
   const refreshed = await res.json();
-  const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+  const expiresIn = refreshed.expires_in || 1800;
 
-  await supabase.rpc("upsert_integration_token", {
+  // Update token via RPC
+  await supabase.rpc("update_integration_token", {
     p_workspace_id: workspaceId,
-    p_provider: "XERO",
+    p_provider: provider,
     p_access_token: refreshed.access_token,
-    p_refresh_token: refreshed.refresh_token ?? tokenRow.refresh_token,
-    p_external_tenant_id: tokenRow.external_tenant_id,
-    p_external_org_name: null,
-    p_expires_at: newExpiresAt,
+    p_refresh_token: refreshed.refresh_token || result.refresh_token,
+    p_expires_in_seconds: expiresIn,
   });
 
-  return { token: refreshed.access_token, tenantId: tokenRow.external_tenant_id };
+  // Update health metrics
+  await supabase
+    .from("integration_health_metrics")
+    .upsert(
+      {
+        organization_id: workspaceId,
+        provider: provider.toLowerCase(),
+        metric_date: new Date().toISOString().split("T")[0],
+        token_refreshes: 1,
+      },
+      { onConflict: "organization_id,provider,metric_date" }
+    );
+
+  return {
+    token: refreshed.access_token,
+    tenantId: result.external_tenant_id,
+    connectionId: result.connection_id,
+  };
 }
 
-// ── Revalidate Next.js cache ──────────────────────────────
+// ── Revalidate Next.js cache ──────────────────────────────────
 async function triggerRevalidation(path: string) {
   try {
     await fetch(`${APP_URL}/api/revalidate`, {
@@ -82,44 +204,11 @@ async function triggerRevalidation(path: string) {
   }
 }
 
-// ── Main Handler ──────────────────────────────────────────
-serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false } }
-  );
-
-  // Read raw body for signature validation
-  const rawBody = await req.text();
-
-  // ── Xero ITR (Intent-to-Receive) validation ───────────
-  // Xero sends a POST with x-xero-signature header
-  const xeroSignature = req.headers.get("x-xero-signature") ?? "";
-
-  if (XERO_WEBHOOK_KEY) {
-    const isValid = await validateXeroSignature(rawBody, xeroSignature);
-    if (!isValid) {
-      // Return 401 — Xero will retry and eventually disable the webhook if we keep returning 401
-      return new Response("Signature mismatch", { status: 401, headers: CORS });
-    }
-  }
-
-  // ── ITR Handshake: If body is empty, just return 200 ─
-  if (!rawBody || rawBody.trim() === "") {
-    return new Response("ok", { status: 200, headers: CORS });
-  }
-
-  let events: any[] = [];
-  try {
-    const parsed = JSON.parse(rawBody);
-    events = parsed?.events ?? [];
-  } catch {
-    return new Response("ok", { status: 200, headers: CORS });
-  }
-
+// ── Process Xero webhook events ───────────────────────────────
+async function processXeroEvents(
+  supabase: ReturnType<typeof createClient>,
+  events: any[]
+): Promise<{ processed: string[]; errors: string[] }> {
   const processed: string[] = [];
   const errors: string[] = [];
 
@@ -127,9 +216,19 @@ serve(async (req: Request) => {
     try {
       const { resourceId, eventType, eventCategory, tenantId } = event;
 
-      if (eventType !== "UPDATE" || eventCategory !== "INVOICE") continue;
+      // Log webhook event
+      await supabase.from("integration_webhooks").insert({
+        provider: "xero",
+        event_type: `${eventCategory}.${eventType}`,
+        payload: event,
+        processed: false,
+        direction: "inbound",
+      });
 
-      // Find the workspace associated with this Xero tenant
+      // Only handle INVOICE events for now
+      if (eventCategory !== "INVOICE") continue;
+
+      // Find workspace for this tenant
       const { data: tokenRow } = await supabase
         .from("integration_tokens")
         .select("workspace_id")
@@ -137,7 +236,11 @@ serve(async (req: Request) => {
         .eq("provider", "XERO")
         .maybeSingle();
 
-      if (!tokenRow) continue;
+      if (!tokenRow) {
+        errors.push(`No workspace for tenant ${tenantId}`);
+        continue;
+      }
+
       const workspaceId = tokenRow.workspace_id;
 
       // Find the iWorkr invoice by Xero external_id
@@ -149,63 +252,58 @@ serve(async (req: Request) => {
 
       if (!iworkrInvoice) continue;
 
-      // Fetch latest status from Xero (webhooks don't carry full data)
-      const { token: accessToken } = await getValidToken(supabase, workspaceId);
+      // Fetch latest status from Xero
+      const { token: accessToken, tenantId: tid } = await getValidToken(
+        supabase,
+        workspaceId,
+        "XERO"
+      );
 
-      const xeroRes = await fetch(`${XERO_API_BASE}/Invoices/${resourceId}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "xero-tenant-id": tenantId,
-          Accept: "application/json",
-        },
-      });
+      const xeroRes = await fetch(
+        `${XERO_API_BASE}/Invoices/${resourceId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "xero-tenant-id": tid,
+            Accept: "application/json",
+          },
+        }
+      );
 
-      if (!xeroRes.ok) continue;
+      if (!xeroRes.ok) {
+        errors.push(`Xero API ${xeroRes.status} for ${resourceId}`);
+        continue;
+      }
+
       const xeroData = await xeroRes.json();
       const xeroInvoice = xeroData?.Invoices?.[0];
-
       if (!xeroInvoice) continue;
 
       // Write sync log
-      await supabase.from("integration_sync_logs").insert({
-        workspace_id: workspaceId,
-        provider: "XERO",
-        direction: "INBOUND_WEBHOOK",
-        entity_type: "INVOICE",
+      await supabase.from("integration_sync_log").insert({
+        organization_id: workspaceId,
+        direction: "inbound",
+        entity_type: "invoice",
         entity_id: iworkrInvoice.id,
-        entity_label: iworkrInvoice.display_id,
-        status: "PENDING",
-        payload: event,
-        response: xeroInvoice,
+        provider_entity_id: resourceId,
+        status: "success",
+        metadata: { xero_status: xeroInvoice.Status, event_type: eventType },
       });
 
-      // Reconciliation: if Xero marks as PAID → update iWorkr
+      // Reconciliation
       if (xeroInvoice.Status === "PAID") {
-        const amountPaid = xeroInvoice.AmountPaid ?? xeroInvoice.Total ?? 0;
-
         await supabase
           .from("invoices")
           .update({
             status: "paid",
-            paid_date: new Date().toISOString().split("T")[0],
+            paid_date: xeroInvoice.FullyPaidOnDate ||
+              new Date().toISOString().split("T")[0],
             sync_status: "SUCCESS",
             synced_at: new Date().toISOString(),
           })
           .eq("id", iworkrInvoice.id);
 
-        // Update sync log
-        await supabase
-          .from("integration_sync_logs")
-          .update({ status: "SUCCESS" })
-          .eq("entity_id", iworkrInvoice.id)
-          .eq("direction", "INBOUND_WEBHOOK")
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        // Invalidate Next.js dashboard cache
         await triggerRevalidation("/dashboard/finance/invoicing");
-        await triggerRevalidation("/dashboard/finance/invoicing");
-
         processed.push(`Invoice ${iworkrInvoice.display_id} marked PAID`);
       } else if (xeroInvoice.Status === "VOIDED") {
         await supabase
@@ -214,13 +312,216 @@ serve(async (req: Request) => {
           .eq("id", iworkrInvoice.id);
         processed.push(`Invoice ${iworkrInvoice.display_id} voided`);
       }
+
+      // Mark webhook as processed
+      await supabase
+        .from("integration_webhooks")
+        .update({ processed: true, processed_at: new Date().toISOString() })
+        .eq("payload->>resourceId", resourceId)
+        .eq("provider", "xero")
+        .eq("processed", false);
+
+      // Update health metrics
+      await supabase
+        .from("integration_health_metrics")
+        .upsert(
+          {
+            organization_id: workspaceId,
+            provider: "xero",
+            metric_date: new Date().toISOString().split("T")[0],
+            webhook_events: 1,
+          },
+          { onConflict: "organization_id,provider,metric_date" }
+        );
     } catch (err: any) {
       errors.push(err.message);
     }
   }
 
+  return { processed, errors };
+}
+
+// ── Main Handler ──────────────────────────────────────────────
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS });
+  }
+
+  const startTime = Date.now();
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } }
+  );
+
+  // Read raw body for signature validation (MUST happen before JSON parse)
+  const rawBody = await req.text();
+
+  // ── Detect provider from headers ────────────────────────────
+  const xeroSignature = req.headers.get("x-xero-signature");
+  const intuitSignature = req.headers.get("intuit-signature");
+
+  // ──────────────────────────────────────────────────────────────
+  // XERO WEBHOOK HANDLING
+  // ──────────────────────────────────────────────────────────────
+  if (xeroSignature !== null) {
+    // Fetch the global webhook key from env or DB
+    const webhookKey =
+      Deno.env.get("XERO_WEBHOOK_KEY") ?? "";
+
+    // Validate HMAC-SHA256 signature
+    const isValid = await validateXeroSignature(
+      rawBody,
+      xeroSignature,
+      webhookKey
+    );
+
+    if (!isValid) {
+      console.error(
+        "[accounting-webhook] Xero HMAC-SHA256 signature mismatch — returning 401"
+      );
+      return new Response("Signature mismatch", {
+        status: 401,
+        headers: CORS,
+      });
+    }
+
+    // ── ITR (Intent-to-Receive) Handshake ─────────────────────
+    // Xero sends a POST with an empty events array for ITR validation.
+    // We MUST respond HTTP 200 within 5 seconds.
+    if (!rawBody || rawBody.trim() === "" || rawBody.trim() === "{}") {
+      console.log("[accounting-webhook] Xero ITR handshake — responding 200 OK");
+      return new Response("OK", { status: 200, headers: CORS });
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      return new Response("OK", { status: 200, headers: CORS });
+    }
+
+    const events = parsed?.events ?? [];
+
+    // ITR validation: empty events array = respond 200 immediately
+    if (events.length === 0) {
+      console.log(
+        "[accounting-webhook] Xero ITR validation (empty events) — responding 200 OK"
+      );
+      return new Response("OK", { status: 200, headers: CORS });
+    }
+
+    // Process actual events
+    const { processed, errors } = await processXeroEvents(supabase, events);
+
+    const elapsed = Date.now() - startTime;
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        provider: "xero",
+        processed,
+        errors,
+        elapsed_ms: elapsed,
+      }),
+      {
+        status: 200,
+        headers: { ...CORS, "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // QBO (INTUIT) WEBHOOK HANDLING
+  // ──────────────────────────────────────────────────────────────
+  if (intuitSignature !== null) {
+    const verifierToken = Deno.env.get("QBO_WEBHOOK_VERIFIER_TOKEN") ?? "";
+
+    const isValid = await validateQboSignature(
+      rawBody,
+      intuitSignature,
+      verifierToken
+    );
+
+    if (!isValid) {
+      console.error(
+        "[accounting-webhook] QBO HMAC signature mismatch — returning 401"
+      );
+      return new Response("Signature mismatch", {
+        status: 401,
+        headers: CORS,
+      });
+    }
+
+    // QBO Verifier Challenge
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      return new Response("OK", { status: 200, headers: CORS });
+    }
+
+    // Log webhook event
+    await supabase.from("integration_webhooks").insert({
+      provider: "qbo",
+      event_type: "qbo_webhook",
+      payload: parsed,
+      processed: false,
+      direction: "inbound",
+    });
+
+    // Process QBO event notifications
+    const eventNotifications = parsed?.eventNotifications ?? [];
+    const processed: string[] = [];
+
+    for (const notification of eventNotifications) {
+      const realmId = notification?.realmId;
+      const entities = notification?.dataChangeEvent?.entities ?? [];
+
+      for (const entity of entities) {
+        try {
+          if (entity.name === "Invoice") {
+            // Find workspace by QBO realm ID
+            const { data: tokenRow } = await supabase
+              .from("integration_tokens")
+              .select("workspace_id")
+              .eq("external_tenant_id", realmId)
+              .eq("provider", "QBO")
+              .maybeSingle();
+
+            if (!tokenRow) continue;
+
+            await supabase.from("integration_sync_log").insert({
+              organization_id: tokenRow.workspace_id,
+              direction: "inbound",
+              entity_type: "invoice",
+              entity_id: entity.id,
+              status: "success",
+              metadata: {
+                operation: entity.operation,
+                realm_id: realmId,
+              },
+            });
+
+            processed.push(`QBO Invoice ${entity.id} (${entity.operation})`);
+          }
+        } catch (err: any) {
+          console.error("[accounting-webhook] QBO event error:", err.message);
+        }
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ ok: true, provider: "qbo", processed }),
+      {
+        status: 200,
+        headers: { ...CORS, "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  // ── Unknown provider or no signature ────────────────────────
   return new Response(
-    JSON.stringify({ ok: true, processed, errors }),
-    { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
+    JSON.stringify({ error: "Unknown webhook provider" }),
+    { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
   );
 });
