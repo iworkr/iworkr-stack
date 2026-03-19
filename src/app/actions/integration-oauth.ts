@@ -1,10 +1,10 @@
 "use server";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { encrypt, decrypt } from "@/lib/encryption";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /* ── Schemas ──────────────────────────────────────────── */
 
@@ -24,13 +24,17 @@ const UpdateProviderSettingsSchema = z.record(z.string(), z.unknown());
 
 /* ── OAuth Provider Config ────────────────────────────── */
 
-const PROVIDERS: Record<string, {
+interface ProviderConfig {
   authUrl: string;
   tokenUrl: string;
+  revokeUrl?: string;
   scopes: string[];
   clientIdEnv: string;
   clientSecretEnv: string;
-}> = {
+  useBasicAuth?: boolean;
+}
+
+const PROVIDERS: Record<string, ProviderConfig> = {
   xero: {
     authUrl: "https://login.xero.com/identity/connect/authorize",
     tokenUrl: "https://identity.xero.com/connect/token",
@@ -41,16 +45,30 @@ const PROVIDERS: Record<string, {
   quickbooks: {
     authUrl: "https://appcenter.intuit.com/connect/oauth2",
     tokenUrl: "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+    revokeUrl: "https://developer.api.intuit.com/v2/oauth2/tokens/revoke",
     scopes: ["com.intuit.quickbooks.accounting", "openid", "profile", "email"],
     clientIdEnv: "QUICKBOOKS_CLIENT_ID",
     clientSecretEnv: "QUICKBOOKS_CLIENT_SECRET",
+    useBasicAuth: true,
   },
-  gmail: {
+  google_calendar: {
     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
     tokenUrl: "https://oauth2.googleapis.com/token",
-    scopes: ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/userinfo.email"],
+    revokeUrl: "https://oauth2.googleapis.com/revoke",
+    scopes: [
+      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/calendar.readonly",
+      "https://www.googleapis.com/auth/userinfo.email",
+    ],
     clientIdEnv: "GOOGLE_CLIENT_ID",
     clientSecretEnv: "GOOGLE_CLIENT_SECRET",
+  },
+  gohighlevel: {
+    authUrl: "https://marketplace.gohighlevel.com/oauth/chooselocation",
+    tokenUrl: "https://services.leadconnectorhq.com/oauth/token",
+    scopes: ["contacts.readonly", "contacts.write", "opportunities.readonly", "locations.readonly"],
+    clientIdEnv: "GHL_CLIENT_ID",
+    clientSecretEnv: "GHL_CLIENT_SECRET",
   },
   outlook: {
     authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
@@ -58,13 +76,6 @@ const PROVIDERS: Record<string, {
     scopes: ["Mail.Send", "Mail.Read", "User.Read", "offline_access"],
     clientIdEnv: "MICROSOFT_CLIENT_ID",
     clientSecretEnv: "MICROSOFT_CLIENT_SECRET",
-  },
-  google_calendar: {
-    authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-    tokenUrl: "https://oauth2.googleapis.com/token",
-    scopes: ["https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/userinfo.email"],
-    clientIdEnv: "GOOGLE_CLIENT_ID",
-    clientSecretEnv: "GOOGLE_CLIENT_SECRET",
   },
   outlook_calendar: {
     authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
@@ -76,6 +87,7 @@ const PROVIDERS: Record<string, {
   google_drive: {
     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
     tokenUrl: "https://oauth2.googleapis.com/token",
+    revokeUrl: "https://oauth2.googleapis.com/revoke",
     scopes: ["https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/userinfo.email"],
     clientIdEnv: "GOOGLE_CLIENT_ID",
     clientSecretEnv: "GOOGLE_CLIENT_SECRET",
@@ -134,8 +146,12 @@ export async function getOAuthUrl(integrationId: string, provider: string): Prom
 
 /* ── Exchange Code for Tokens ─────────────────────────── */
 
-export async function exchangeOAuthCode(code: string, provider: string, integrationId: string): Promise<{ error?: string }> {
-  // Validate input
+export async function exchangeOAuthCode(
+  code: string,
+  provider: string,
+  integrationId: string,
+  extraParams?: Record<string, string>
+): Promise<{ error?: string }> {
   const parsed = ExchangeOAuthCodeSchema.safeParse({ code, provider, integrationId });
   if (!parsed.success) {
     return { error: parsed.error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join("; ") };
@@ -151,7 +167,6 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
   const redirectUri = `${APP_URL}/api/integrations/callback`;
 
   try {
-    // Verify the caller owns this integration
     const supabaseAuth = await createServerSupabaseClient();
     const { data: { user } } = await supabaseAuth.auth.getUser();
     if (!user) return { error: "Unauthorized" };
@@ -170,20 +185,32 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
       .eq("user_id", user.id)
       .maybeSingle();
     if (!membership) return { error: "Unauthorized" };
+
+    const orgId = integration.organization_id;
+
+    // Build token request — some providers (Intuit) require Basic auth
+    const tokenBody = new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: redirectUri,
+      ...(config.useBasicAuth ? {} : { client_id: clientId, client_secret: clientSecret }),
+    });
+
+    const tokenHeaders: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    };
+    if (config.useBasicAuth) {
+      tokenHeaders.Authorization = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`;
+    }
+
     const tokenRes = await fetch(config.tokenUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-        client_id: clientId,
-        client_secret: clientSecret,
-      }),
+      headers: tokenHeaders,
+      body: tokenBody,
     });
 
     const tokens = await tokenRes.json();
-
     if (tokens.error) {
       return { error: tokens.error_description || tokens.error };
     }
@@ -193,19 +220,29 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
       ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
       : null;
 
-    // Fetch user info for connected_as/email
     let connectedEmail = "";
     let connectedAs = "";
+    let externalTenantId: string | null = null;
 
-    if (provider.startsWith("google") || provider === "gmail") {
-      try {
-        const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-          headers: { Authorization: `Bearer ${tokens.access_token}` },
-        });
-        const user = await userRes.json();
-        connectedEmail = user.email || "";
-        connectedAs = user.email || "";
-      } catch { /* non-critical */ }
+    // ── Provider-specific post-exchange logic ──
+
+    if (provider === "quickbooks") {
+      const realmId = extraParams?.realmId ?? null;
+      externalTenantId = realmId;
+      connectedAs = "QuickBooks Company";
+
+      if (realmId && tokens.access_token) {
+        try {
+          const companyRes = await fetch(
+            `https://quickbooks.api.intuit.com/v3/company/${realmId}/companyinfo/${realmId}`,
+            { headers: { Authorization: `Bearer ${tokens.access_token}`, Accept: "application/json" } }
+          );
+          if (companyRes.ok) {
+            const info = await companyRes.json();
+            connectedAs = info?.CompanyInfo?.CompanyName ?? "QuickBooks Company";
+          }
+        } catch { /* non-critical */ }
+      }
     } else if (provider === "xero") {
       connectedAs = "Xero Organization";
       try {
@@ -216,11 +253,12 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
           const connections = await connRes.json();
           const first = Array.isArray(connections) ? connections[0] : null;
           const tenantId = first?.tenantId || first?.tenant_id;
-          connectedEmail = first?.email || connectedEmail;
+          externalTenantId = tenantId ?? null;
+          connectedEmail = first?.email || "";
           connectedAs = first?.tenantName || connectedAs;
           if (tenantId) {
-            await (supabase as any).rpc("upsert_tenant_integration_secret", {
-              p_organization_id: integration.organization_id,
+            await (supabase as SupabaseClient).rpc("upsert_tenant_integration_secret", {
+              p_organization_id: orgId,
               p_integration_type: "xero",
               p_xero_tenant_id: tenantId,
               p_access_token: tokens.access_token,
@@ -234,14 +272,62 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
             });
           }
         }
-      } catch {
-        // Non-fatal: integration remains connected, but tenant routing may need manual reconnect.
+      } catch { /* non-fatal */ }
+    } else if (provider === "gohighlevel") {
+      const locationId = tokens.locationId ?? extraParams?.locationId ?? null;
+      externalTenantId = locationId;
+      connectedAs = "GoHighLevel Location";
+
+      if (locationId && tokens.access_token) {
+        try {
+          const locRes = await fetch(
+            `https://services.leadconnectorhq.com/locations/${locationId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${tokens.access_token}`,
+                Version: "2021-07-28",
+                Accept: "application/json",
+              },
+            }
+          );
+          if (locRes.ok) {
+            const locData = await locRes.json();
+            connectedAs = locData?.location?.name ?? connectedAs;
+          }
+        } catch { /* non-critical */ }
+
+        // Store GHL location mapping
+        await (supabase as SupabaseClient)
+          .from("ghl_location_mappings")
+          .upsert({
+            organization_id: orgId,
+            integration_id: integrationId,
+            ghl_location_id: locationId,
+            ghl_location_name: connectedAs,
+            ghl_agency_id: tokens.companyId ?? null,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "organization_id,ghl_location_id" });
+
+        // Subscribe to ContactCreate/ContactUpdate webhooks
+        await subscribeGhlWebhooks(tokens.access_token, locationId, orgId);
       }
-    } else if (provider === "quickbooks") {
-      connectedAs = "QuickBooks Company";
+    } else if (provider.startsWith("google") || provider === "gmail") {
+      try {
+        const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+          headers: { Authorization: `Bearer ${tokens.access_token}` },
+        });
+        const gUser = await userRes.json();
+        connectedEmail = gUser.email || "";
+        connectedAs = gUser.email || "";
+      } catch { /* non-critical */ }
+
+      // For Google Calendar: set up Pub/Sub watch channel
+      if (provider === "google_calendar" && tokens.access_token) {
+        await setupGoogleCalendarWatch(supabase, tokens.access_token, integrationId, orgId);
+      }
     }
 
-    // Tokens encrypted at rest via AES-256-GCM
+    // Encrypt tokens at rest via AES-256-GCM and store
     await supabase
       .from("integrations")
       .update({
@@ -250,18 +336,94 @@ export async function exchangeOAuthCode(code: string, provider: string, integrat
         refresh_token: tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
         token_expires_at: expiresAt,
         connected_as: connectedAs,
-        connected_email: connectedEmail,
+        connected_email: connectedEmail || null,
+        external_tenant_id: externalTenantId,
         scopes: config.scopes,
         last_sync: new Date().toISOString(),
         error_message: null,
         updated_at: new Date().toISOString(),
-      })
+      } as Record<string, unknown>)
       .eq("id", integrationId);
 
     revalidatePath("/dashboard/integrations");
     return {};
-  } catch (err: any) {
-    return { error: err.message || "Token exchange failed" };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Token exchange failed";
+    return { error: message };
+  }
+}
+
+/* ── Google Calendar Watch Setup ─────────────────────── */
+
+async function setupGoogleCalendarWatch(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  accessToken: string,
+  integrationId: string,
+  orgId: string
+) {
+  try {
+    const channelId = crypto.randomUUID();
+    const webhookUrl = `${APP_URL}/api/webhooks/google-calendar`;
+    const expiration = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    const watchRes = await fetch(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events/watch",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: channelId,
+          type: "web_hook",
+          address: webhookUrl,
+          expiration,
+        }),
+      }
+    );
+
+    if (watchRes.ok) {
+      const watchData = await watchRes.json();
+      await (supabase as SupabaseClient)
+        .from("google_calendar_channels")
+        .upsert({
+          organization_id: orgId,
+          integration_id: integrationId,
+          channel_id: channelId,
+          resource_id: watchData.resourceId ?? "",
+          calendar_id: "primary",
+          expiration: new Date(expiration).toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "organization_id,calendar_id" });
+    }
+  } catch {
+    // Watch setup failure is non-fatal; can be retried via cron
+  }
+}
+
+/* ── GHL Webhook Subscriptions ───────────────────────── */
+
+async function subscribeGhlWebhooks(accessToken: string, locationId: string, _orgId: string) {
+  const webhookUrl = `${APP_URL}/api/webhooks/gohighlevel`;
+  const events = ["ContactCreate", "ContactUpdate", "OpportunityStatusUpdate"];
+
+  for (const eventName of events) {
+    try {
+      await fetch("https://services.leadconnectorhq.com/webhooks/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Version: "2021-07-28",
+        },
+        body: JSON.stringify({
+          url: webhookUrl,
+          locationId,
+          events: [eventName],
+        }),
+      });
+    } catch { /* non-fatal — webhooks can be subscribed later */ }
   }
 }
 
@@ -333,17 +495,17 @@ export async function refreshIntegrationToken(integrationId: string): Promise<{ 
       .eq("id", integrationId);
 
     return {};
-  } catch (err: any) {
-    return { error: err.message };
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : "Refresh failed" };
   }
 }
 
-/* ── Connect via API Key (Twilio, GHL, Google Maps) ──── */
+/* ── Connect via API Key (Twilio, Google Maps, etc.) ──── */
 
 export async function connectWithApiKey(
   integrationId: string,
   apiKey: string,
-  extraConfig?: Record<string, any>
+  extraConfig?: Record<string, unknown>
 ): Promise<{ error?: string }> {
   // Validate input
   const parsed = ConnectWithApiKeySchema.safeParse({ integrationId, apiKey, extraConfig });
@@ -376,8 +538,8 @@ export async function connectWithApiKey(
     .update({
       status: "connected",
       access_token: encrypt(apiKey),
-      connected_as: extraConfig?.connectedAs || "API Key",
-      settings: extraConfig?.settings,
+      connected_as: (extraConfig as Record<string, string> | undefined)?.connectedAs || "API Key",
+      settings: ((extraConfig as Record<string, unknown> | undefined)?.settings ?? null) as Record<string, string | number | boolean | null> | null,
       last_sync: new Date().toISOString(),
       error_message: null,
       updated_at: new Date().toISOString(),
@@ -392,7 +554,7 @@ export async function connectWithApiKey(
 
 export async function updateProviderSettings(
   integrationId: string,
-  settings: Record<string, any>
+  settings: Record<string, unknown>
 ): Promise<{ error?: string }> {
   // Validate input
   const parsed = UpdateProviderSettingsSchema.safeParse(settings);
@@ -421,11 +583,11 @@ export async function updateProviderSettings(
     .maybeSingle();
   if (!membership) return { error: "Unauthorized" };
 
-  const merged = { ...((current?.settings || {}) as Record<string, unknown>), ...settings };
+  const merged = { ...((current?.settings || {}) as Record<string, unknown>), ...settings } as Record<string, string | number | boolean | null>;
 
   const { error } = await supabase
     .from("integrations")
-    .update({ settings: merged, updated_at: new Date().toISOString() })
+    .update({ settings: merged as unknown as Record<string, string | number | boolean | null>, updated_at: new Date().toISOString() })
     .eq("id", integrationId);
 
   if (error) return { error: error.message };
@@ -433,7 +595,7 @@ export async function updateProviderSettings(
   return {};
 }
 
-/* ── Disconnect ───────────────────────────────────────── */
+/* ── Disconnect (with provider token revocation) ─────── */
 
 export async function disconnectProvider(integrationId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient();
@@ -443,7 +605,7 @@ export async function disconnectProvider(integrationId: string): Promise<{ error
 
   const { data: integration } = await supabase
     .from("integrations")
-    .select("organization_id")
+    .select("organization_id, provider, access_token, refresh_token")
     .eq("id", integrationId)
     .maybeSingle();
   if (!integration) return { error: "Integration not found" };
@@ -456,6 +618,31 @@ export async function disconnectProvider(integrationId: string): Promise<{ error
     .maybeSingle();
   if (!membership) return { error: "Unauthorized" };
 
+  // Revoke tokens at the provider before clearing locally
+  const provider = integration.provider as string;
+  const config = PROVIDERS[provider];
+  if (config?.revokeUrl && integration.refresh_token) {
+    try {
+      const token = decrypt(integration.refresh_token);
+      if (provider === "quickbooks") {
+        const clientId = process.env[config.clientIdEnv] ?? "";
+        const clientSecret = process.env[config.clientSecretEnv] ?? "";
+        await fetch(config.revokeUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+          },
+          body: JSON.stringify({ token }),
+        });
+      } else if (provider.startsWith("google")) {
+        await fetch(`${config.revokeUrl}?token=${encodeURIComponent(token)}`, { method: "POST" });
+      }
+    } catch {
+      // Revocation failure is non-fatal; we still clear local tokens
+    }
+  }
+
   const { error } = await supabase
     .from("integrations")
     .update({
@@ -465,10 +652,11 @@ export async function disconnectProvider(integrationId: string): Promise<{ error
       token_expires_at: null,
       connected_as: null,
       connected_email: null,
+      external_tenant_id: null,
       error_message: null,
       last_sync: null,
       updated_at: new Date().toISOString(),
-    })
+    } as Record<string, unknown>)
     .eq("id", integrationId);
 
   if (error) return { error: error.message };
@@ -478,7 +666,7 @@ export async function disconnectProvider(integrationId: string): Promise<{ error
 
 /* ── Get Sync Log ─────────────────────────────────────── */
 
-export async function getSyncLog(integrationId: string, limit = 20): Promise<{ data: any[]; error?: string }> {
+export async function getSyncLog(integrationId: string, limit = 20): Promise<{ data: { id: string; direction: string; entity_type: string; entity_id?: string | null; provider_entity_id?: string | null; status: string; error_message?: string | null; created_at: string; metadata?: Record<string, unknown> | null }[]; error?: string }> {
   const supabase = await createServerSupabaseClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -507,7 +695,8 @@ export async function getSyncLog(integrationId: string, limit = 20): Promise<{ d
     .limit(limit);
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [] };
+  type SyncEntry = { id: string; direction: string; entity_type: string; entity_id?: string | null; provider_entity_id?: string | null; status: string; error_message?: string | null; created_at: string; metadata?: Record<string, unknown> | null };
+  return { data: (data || []) as SyncEntry[] };
 }
 
 /* ── Log Sync Event ───────────────────────────────────── */
@@ -521,11 +710,14 @@ export async function logSyncEvent(params: {
   provider_entity_id?: string;
   status: "success" | "error" | "skipped";
   error_message?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }): Promise<void> {
   const supabase = await createServerSupabaseClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from("integration_sync_log").insert(params);
+  await supabase.from("integration_sync_log").insert({
+    ...params,
+    metadata: (params.metadata ?? null) as Record<string, string | number | boolean | null> | null,
+  });
 }

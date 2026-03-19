@@ -11,7 +11,6 @@ function verifyStateSignature(state: string): { integrationId?: string; provider
     const { integrationId, provider, sig } = decoded;
     if (!integrationId || !provider) return null;
 
-    // Verify HMAC signature if a signing secret is configured
     const secret = process.env.OAUTH_STATE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (secret && sig) {
       const payload = `${integrationId}:${provider}`;
@@ -32,6 +31,9 @@ export async function GET(req: NextRequest) {
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
+
+  // QuickBooks sends realmId (Company ID) as a query param
+  const realmId = searchParams.get("realmId");
 
   if (error) {
     return NextResponse.redirect(
@@ -54,7 +56,11 @@ export async function GET(req: NextRequest) {
     }
     const { integrationId, provider } = stateData;
 
-    const result = await exchangeOAuthCode(code, provider, integrationId);
+    // Pass provider-specific extra params (QBO realmId, GHL locationId, etc.)
+    const extraParams: Record<string, string> = {};
+    if (realmId) extraParams.realmId = realmId;
+
+    const result = await exchangeOAuthCode(code, provider, integrationId, extraParams);
 
     if (result.error) {
       return NextResponse.redirect(

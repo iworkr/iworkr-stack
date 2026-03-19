@@ -63,7 +63,7 @@ export function ConfigPanel() {
   useEffect(() => {
     if (integration?.id && isConnected) {
       getSyncLog(integration.id).then((res) => {
-        if (res.data) setSyncLog(res.data);
+        if (res.data) setSyncLog(res.data as SyncLogEntry[]);
       });
     }
     return () => {
@@ -86,7 +86,7 @@ export function ConfigPanel() {
       addToast(`${integration.name} synced — ${result.synced || 0} items`);
       // Refresh sync log
       const logRes = await getSyncLog(integration.id);
-      if (logRes.data) setSyncLog(logRes.data);
+      if (logRes.data) setSyncLog(logRes.data as SyncLogEntry[]);
     }
 
     // Also call the store's sync for local state

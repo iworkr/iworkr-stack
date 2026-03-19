@@ -38,7 +38,7 @@ export default function PrivacyPage() {
         <h1 className="mb-2 text-3xl font-medium tracking-tight text-[var(--text-heading)]">
           Privacy Policy
         </h1>
-        <LastUpdated date="February 16, 2026" />
+        <LastUpdated date="March 19, 2026" />
 
         <div className="space-y-10 text-[15px] leading-relaxed text-[var(--text-body)]">
           {/* Intro */}
@@ -159,9 +159,46 @@ export default function PrivacyPage() {
                     <td className="px-4 py-2.5">Product Analytics</td>
                     <td className="px-4 py-2.5">Anonymized usage events</td>
                   </tr>
+                  <tr>
+                    <td className="px-4 py-2.5 text-[var(--text-primary)]">Google (Calendar API)</td>
+                    <td className="px-4 py-2.5">Calendar Sync</td>
+                    <td className="px-4 py-2.5">Calendar events (read/write), user email</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2.5 text-[var(--text-primary)]">Intuit (QuickBooks)</td>
+                    <td className="px-4 py-2.5">Accounting Sync</td>
+                    <td className="px-4 py-2.5">Invoices, contacts, tax codes</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2.5 text-[var(--text-primary)]">Xero</td>
+                    <td className="px-4 py-2.5">Accounting Sync</td>
+                    <td className="px-4 py-2.5">Invoices, contacts, chart of accounts</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
+          </section>
+
+          {/* 3a — Google User Data Disclosure */}
+          <section>
+            <h2 className="mb-3 text-lg font-medium text-[var(--text-heading)]">
+              3a. Google API Services User Data Policy
+            </h2>
+            <p>
+              iWorkr&apos;s use and transfer to any other app of information received from Google APIs
+              will adhere to the{" "}
+              <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="text-[var(--brand)] hover:underline">
+                Google API Services User Data Policy
+              </a>
+              , including the Limited Use requirements.
+            </p>
+            <ul className="mt-3 list-disc space-y-1.5 pl-6">
+              <li>We only request the minimum scopes necessary (Google Calendar events read/write).</li>
+              <li>Google user data (calendar events, email address) is used solely to synchronize your schedule with the iWorkr Master Roster.</li>
+              <li>We do <strong className="text-[var(--text-primary)]">not</strong> sell, share, or transfer Google user data to third-party data brokers or advertising networks.</li>
+              <li>Google user data is encrypted at rest using AES-256-GCM and in transit via TLS 1.3.</li>
+              <li>Users can disconnect Google Calendar at any time from the Integrations page, which immediately revokes our access and deletes stored tokens.</li>
+            </ul>
           </section>
 
           {/* 4 */}
