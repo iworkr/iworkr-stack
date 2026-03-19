@@ -24,3 +24,4 @@ export * from "./care";
 export * from "./common";
 export * from "./oracle-yield";
 export * from "./hermes-scribe";
+export * from "./outrider-autonomous";
