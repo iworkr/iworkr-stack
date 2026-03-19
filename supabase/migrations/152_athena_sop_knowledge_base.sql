@@ -187,8 +187,8 @@ RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   RETURN (
-    SELECT COALESCE(json_agg(DISTINCT row_to_json(t)), '[]'::json) FROM (
-      SELECT
+    SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json) FROM (
+      SELECT DISTINCT ON (ka.id)
         ka.id, ka.title, ka.description, ka.video_hls_url,
         ka.is_mandatory_read, ka.estimated_read_minutes,
         ka.video_duration_seconds
@@ -198,6 +198,7 @@ BEGIN
       WHERE ka.organization_id = p_workspace_id
         AND ka.status = 'published'
         AND LOWER(kt.tag_name) = ANY(SELECT LOWER(unnest(p_tag_names)))
+      ORDER BY ka.id
       LIMIT 10
     ) t
   );
