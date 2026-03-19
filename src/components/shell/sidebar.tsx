@@ -48,6 +48,7 @@ import {
   Eye,
   Send,
   RefreshCw,
+  Phone,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -245,6 +246,7 @@ const TRADES_NAV: NavGroup[] = [
     ],
   },
   { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
+  { id: "nav_comms", label: "Communications", icon: Phone, href: "/dashboard/communications", shortcut: "G C" },
   {
     id: "grp_ops",
     label: "Operations",
