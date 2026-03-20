@@ -2,13 +2,15 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Download, RefreshCw, Zap, ChevronRight, Check, AlertTriangle,
   FileText, Users, DollarSign, Clock, Loader2, BarChart3, X,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useToastStore } from "@/components/app/action-toast";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getPayrollBatchSummary,
   exportPayrunCsv,
@@ -300,8 +302,7 @@ function PayLineDrawer({
 export default function PayrollExportPage() {
   const { orgId } = useOrg();
   const { addToast } = useToastStore();
-  const [batches, setBatches] = useState<PayrollBatchSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedWorker, setExpandedWorker] = useState<PayrollBatchSummary | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -312,24 +313,23 @@ export default function PayrollExportPage() {
   const fortnight = getFortnightDates();
   const [period, setPeriod] = useState(fortnight);
 
+  const { data: batches = [], isLoading: loading } = useQuery<PayrollBatchSummary[]>({
+    queryKey: [...queryKeys.workforce.payrollExport(orgId!), period.start, period.end],
+    queryFn: async () => {
+      const { batches: data, error } = await getPayrollBatchSummary(orgId!, period.start, period.end);
+      if (error) {
+        addToast(error, undefined, "error");
+        return [];
+      }
+      return data;
+    },
+    enabled: !!orgId,
+  });
+
   const totalGross = batches.reduce((s, b) => s + b.totalGross, 0);
   const totalWorkers = batches.length;
   const totalOT = batches.reduce((s, b) => s + b.totalOvertime, 0);
   const selectedBatches = batches.filter((b) => selectedIds.has(b.workerId));
-
-  const loadBatches = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    const { batches: data, error } = await getPayrollBatchSummary(orgId, period.start, period.end);
-    setLoading(false);
-    if (error) {
-      addToast(error, undefined, "error");
-      return;
-    }
-    setBatches(data);
-  }, [orgId, period.start, period.end, addToast]);
-
-  useEffect(() => { loadBatches(); }, [loadBatches]);
 
   function toggleAll() {
     if (selectedIds.size === batches.length) {
@@ -378,7 +378,7 @@ export default function PayrollExportPage() {
       return;
     }
     addToast(`Synced to Xero${xeroPayRunId ? ` (Run ID: ${xeroPayRunId.slice(0, 8)}...)` : ""}`);
-    loadBatches();
+    queryClient.invalidateQueries({ queryKey: queryKeys.workforce.payrollExport(orgId!) });
   }
 
   async function handleProcessAll() {
@@ -397,7 +397,7 @@ export default function PayrollExportPage() {
         }
       }
       addToast(`SCHADS engine processed ${count} timesheet(s)`);
-      loadBatches();
+      queryClient.invalidateQueries({ queryKey: queryKeys.workforce.payrollExport(orgId!) });
     });
   }
 

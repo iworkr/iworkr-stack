@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -97,15 +99,10 @@ export default function MasterRosterBlueprintPage() {
   const { orgId, userId } = useOrg();
   const router = useRouter();
 
-  /* ── State ── */
-  const [templates, setTemplates] = useState<RosterTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<RosterTemplate | null>(null);
-  const [shifts, setShifts] = useState<TemplateShift[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
-  const [loadingShifts, setLoadingShifts] = useState(false);
+  /* ── State ── */
+  const [selectedTemplate, setSelectedTemplate] = useState<RosterTemplate | null>(null);
   const [saving, setSaving] = useState(false);
 
   // New template modal
@@ -134,50 +131,47 @@ export default function MasterRosterBlueprintPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   /* ── Load initial data ── */
-  useEffect(() => {
-    if (!orgId) return;
-    async function load() {
-      setLoading(true);
+  interface RosterBaseData {
+    templates: RosterTemplate[];
+    workers: Worker[];
+    participants: Participant[];
+  }
+
+  const { data: baseData, isLoading: loading } = useQuery<RosterBaseData>({
+    queryKey: queryKeys.roster.master(orgId!),
+    queryFn: async () => {
       const [tpls, techResult, pList] = await Promise.all([
         fetchRosterTemplates(orgId!),
         getOrgTechnicians(orgId!),
         fetchParticipants(orgId!, { limit: 500 }),
       ]);
-      setTemplates(tpls);
-      setWorkers(
-        (techResult.data || []).map((t: any) => ({
+      return {
+        templates: tpls,
+        workers: (techResult.data || []).map((t: any) => ({
           id: t.id,
           full_name: t.full_name || t.email || "Unknown",
           email: t.email,
-        }))
-      );
-      setParticipants(
-        (pList.data || []).map((p: any) => ({
+        })),
+        participants: (pList.data || []).map((p: any) => ({
           id: p.id,
           client_name: p.client_name || p.clients?.name || "Unknown",
           ndis_number: p.ndis_number,
-        }))
-      );
-      setLoading(false);
-    }
-    load();
-  }, [orgId]);
+        })),
+      };
+    },
+    enabled: !!orgId,
+  });
+
+  const templates = baseData?.templates ?? [];
+  const workers = baseData?.workers ?? [];
+  const participants = baseData?.participants ?? [];
 
   /* ── Load shifts when template selected ── */
-  const loadShifts = useCallback(async (tmpl: RosterTemplate | null) => {
-    if (!tmpl) {
-      setShifts([]);
-      return;
-    }
-    setLoadingShifts(true);
-    const s = await fetchTemplateShifts(tmpl.id);
-    setShifts(s);
-    setLoadingShifts(false);
-  }, []);
-
-  useEffect(() => {
-    loadShifts(selectedTemplate);
-  }, [selectedTemplate, loadShifts]);
+  const { data: shifts = [], isLoading: loadingShifts } = useQuery<TemplateShift[]>({
+    queryKey: ["roster", "shifts", selectedTemplate?.id],
+    queryFn: () => fetchTemplateShifts(selectedTemplate!.id),
+    enabled: !!selectedTemplate,
+  });
 
   /* ── Derived ── */
   const cycleDays = selectedTemplate ? selectedTemplate.cycle_length_days : 14;
@@ -203,13 +197,28 @@ export default function MasterRosterBlueprintPage() {
     }
   }, [newTemplateParticipant, newTemplateCycle, participants]);
 
+  const invalidateRoster = async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.roster.master(orgId!) });
+  };
+  const invalidateShifts = async () => {
+    if (selectedTemplate) {
+      await queryClient.invalidateQueries({ queryKey: ["roster", "shifts", selectedTemplate.id] });
+    }
+  };
+  const refreshAndReselect = async (templateId: string) => {
+    await invalidateRoster();
+    const refreshed = queryClient.getQueryData<RosterBaseData>(queryKeys.roster.master(orgId!));
+    const found = refreshed?.templates.find((t) => t.id === templateId) || null;
+    setSelectedTemplate(found);
+  };
+
   /* ── Handlers ── */
-  const handleSelectTemplate = useCallback((t: RosterTemplate) => {
+  const handleSelectTemplate = (t: RosterTemplate) => {
     setSelectedTemplate(t);
     setConfirmDelete(null);
-  }, []);
+  };
 
-  const handleCreateTemplate = useCallback(async () => {
+  const handleCreateTemplate = async () => {
     if (!orgId || !newTemplateParticipant || !newTemplateName) return;
     setSaving(true);
     const result = await createRosterTemplate({
@@ -220,9 +229,12 @@ export default function MasterRosterBlueprintPage() {
       created_by: userId || undefined,
     });
     if (result.success && result.id) {
-      const refreshed = await fetchRosterTemplates(orgId);
-      setTemplates(refreshed);
-      const newT = refreshed.find((t) => t.id === result.id) || null;
+      await invalidateRoster();
+      const refreshed = await queryClient.fetchQuery<RosterBaseData>({
+        queryKey: queryKeys.roster.master(orgId),
+        staleTime: 0,
+      });
+      const newT = refreshed.templates.find((t) => t.id === result.id) || null;
       setSelectedTemplate(newT);
       setShowNewTemplateModal(false);
       setNewTemplateName("");
@@ -231,65 +243,51 @@ export default function MasterRosterBlueprintPage() {
       setParticipantSearch("");
     }
     setSaving(false);
-  }, [orgId, userId, newTemplateParticipant, newTemplateName, newTemplateCycle]);
+  };
 
-  const handleToggleActive = useCallback(async () => {
+  const handleToggleActive = async () => {
     if (!selectedTemplate) return;
     setSaving(true);
     await updateRosterTemplate(selectedTemplate.id, { is_active: !selectedTemplate.is_active });
-    const refreshed = await fetchRosterTemplates(orgId!);
-    setTemplates(refreshed);
-    const updated = refreshed.find((t) => t.id === selectedTemplate.id) || null;
-    setSelectedTemplate(updated);
+    await refreshAndReselect(selectedTemplate.id);
     setSaving(false);
-  }, [selectedTemplate, orgId]);
+  };
 
-  const handleDeleteTemplate = useCallback(async () => {
+  const handleDeleteTemplate = async () => {
     if (!selectedTemplate || !orgId) return;
     setSaving(true);
     await deleteRosterTemplate(selectedTemplate.id);
-    const refreshed = await fetchRosterTemplates(orgId);
-    setTemplates(refreshed);
     setSelectedTemplate(null);
-    setShifts([]);
     setConfirmDelete(null);
+    await invalidateRoster();
     setSaving(false);
-  }, [selectedTemplate, orgId]);
+  };
 
-  const handleUpdateCycleLength = useCallback(
-    async (days: number) => {
-      if (!selectedTemplate || !orgId) return;
-      setSaving(true);
-      await updateRosterTemplate(selectedTemplate.id, { cycle_length_days: days });
-      const refreshed = await fetchRosterTemplates(orgId);
-      setTemplates(refreshed);
-      const updated = refreshed.find((t) => t.id === selectedTemplate.id) || null;
-      setSelectedTemplate(updated);
-      setSaving(false);
-    },
-    [selectedTemplate, orgId]
-  );
+  const handleUpdateCycleLength = async (days: number) => {
+    if (!selectedTemplate || !orgId) return;
+    setSaving(true);
+    await updateRosterTemplate(selectedTemplate.id, { cycle_length_days: days });
+    await refreshAndReselect(selectedTemplate.id);
+    setSaving(false);
+  };
 
-  const openNewShiftModal = useCallback(
-    (dayOfCycle: number) => {
-      setEditingShift(null);
-      setShiftForm({
-        day_of_cycle: dayOfCycle,
-        start_time: "09:00",
-        end_time: "13:00",
-        support_purpose: "",
-        ndis_line_item: "",
-        primary_worker_id: "",
-        backup_worker_id: "",
-        public_holiday_behavior: "flag",
-        notes: "",
-      });
-      setShowShiftModal(true);
-    },
-    []
-  );
+  const openNewShiftModal = (dayOfCycle: number) => {
+    setEditingShift(null);
+    setShiftForm({
+      day_of_cycle: dayOfCycle,
+      start_time: "09:00",
+      end_time: "13:00",
+      support_purpose: "",
+      ndis_line_item: "",
+      primary_worker_id: "",
+      backup_worker_id: "",
+      public_holiday_behavior: "flag",
+      notes: "",
+    });
+    setShowShiftModal(true);
+  };
 
-  const openEditShiftModal = useCallback((shift: TemplateShift) => {
+  const openEditShiftModal = (shift: TemplateShift) => {
     setEditingShift(shift);
     setShiftForm({
       day_of_cycle: shift.day_of_cycle,
@@ -303,9 +301,9 @@ export default function MasterRosterBlueprintPage() {
       notes: shift.notes || "",
     });
     setShowShiftModal(true);
-  }, []);
+  };
 
-  const handleSaveShift = useCallback(async () => {
+  const handleSaveShift = async () => {
     if (!selectedTemplate || !orgId) return;
     setSaving(true);
     if (editingShift) {
@@ -335,34 +333,23 @@ export default function MasterRosterBlueprintPage() {
         notes: shiftForm.notes || undefined,
       });
     }
-    const refreshedShifts = await fetchTemplateShifts(selectedTemplate.id);
-    setShifts(refreshedShifts);
+    await invalidateShifts();
     setShowShiftModal(false);
     setEditingShift(null);
     setSaving(false);
+    await refreshAndReselect(selectedTemplate.id);
+  };
 
-    // Refresh template list for shift counts
-    const refreshedTemplates = await fetchRosterTemplates(orgId);
-    setTemplates(refreshedTemplates);
-    const upd = refreshedTemplates.find((t) => t.id === selectedTemplate.id) || null;
-    setSelectedTemplate(upd);
-  }, [selectedTemplate, orgId, editingShift, shiftForm]);
-
-  const handleDeleteShift = useCallback(async () => {
+  const handleDeleteShift = async () => {
     if (!editingShift || !selectedTemplate || !orgId) return;
     setSaving(true);
     await deleteTemplateShift(editingShift.id);
-    const refreshedShifts = await fetchTemplateShifts(selectedTemplate.id);
-    setShifts(refreshedShifts);
+    await invalidateShifts();
     setShowShiftModal(false);
     setEditingShift(null);
     setSaving(false);
-
-    const refreshedTemplates = await fetchRosterTemplates(orgId);
-    setTemplates(refreshedTemplates);
-    const upd = refreshedTemplates.find((t) => t.id === selectedTemplate.id) || null;
-    setSelectedTemplate(upd);
-  }, [editingShift, selectedTemplate, orgId]);
+    await refreshAndReselect(selectedTemplate.id);
+  };
 
   /* ═══════════════════════════════════════════════════════════════════════════
      Render

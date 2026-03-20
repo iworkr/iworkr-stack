@@ -21,8 +21,10 @@ import {
   Calendar,
   FileWarning,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useState, useCallback, useMemo } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getQuarantinedClaims,
   applyClaimFix,
@@ -67,6 +69,8 @@ interface TriageStats {
 
 type FilterTab = "intercepted" | "fixed" | "overridden" | "all";
 
+const EMPTY_CLAIMS: ClaimPrediction[] = [];
+
 /* ── Error Code Translations ──────────────────────────── */
 
 const ERROR_TRANSLATIONS: Record<string, { title: string; severity: "critical" | "high" | "medium" }> = {
@@ -96,38 +100,43 @@ function confidenceBar(reject: number) {
 
 /* ── Main Component ──────────────────────────────────── */
 
+type OracleTriageCache = {
+  claims: ClaimPrediction[];
+  stats: TriageStats | null;
+};
+
 export default function OracleTriagePage() {
   const { orgId } = useOrg();
-  const [claims, setClaims] = useState<ClaimPrediction[]>([]);
-  const [stats, setStats] = useState<TriageStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [actioning, setActioning] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<FilterTab>("intercepted");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
+  const statusMap: Record<FilterTab, string | undefined> = {
+    intercepted: "INTERCEPTED",
+    fixed: "FIXED_AND_RESUBMITTED",
+    overridden: "OVERRIDDEN_BY_HUMAN",
+    all: undefined,
+  };
+  const queryClient = useQueryClient();
 
-    const statusMap: Record<FilterTab, string | undefined> = {
-      intercepted: "INTERCEPTED",
-      fixed: "FIXED_AND_RESUBMITTED",
-      overridden: "OVERRIDDEN_BY_HUMAN",
-      all: undefined,
-    };
+  const { data: triageData, isLoading: loading, refetch, isFetching } = useQuery({
+    queryKey: queryKeys.finance.oracleTriage(orgId ?? "", statusMap[tab]),
+    queryFn: async () => {
+      const [claimsRes, statsRes] = await Promise.all([
+        getQuarantinedClaims(orgId!, { status: statusMap[tab] }),
+        getTriageStats(orgId!),
+      ]);
+      return {
+        claims: (claimsRes.data ?? []) as unknown as ClaimPrediction[],
+        stats: statsRes.data as TriageStats | null,
+      };
+    },
+    enabled: !!orgId,
+    staleTime: 30_000,
+  });
 
-    const [claimsRes, statsRes] = await Promise.all([
-      getQuarantinedClaims(orgId, { status: statusMap[tab] }),
-      getTriageStats(orgId),
-    ]);
-
-    setClaims((claimsRes.data ?? []) as unknown as ClaimPrediction[]);
-    setStats(statsRes.data as TriageStats | null);
-    setLoading(false);
-  }, [orgId, tab]);
-
-  useEffect(() => { loadData(); }, [loadData]);
+  const claims = triageData?.claims ?? EMPTY_CLAIMS;
+  const stats = triageData?.stats ?? null;
 
   const filtered = useMemo(() => {
     if (!search) return claims;
@@ -144,14 +153,90 @@ export default function OracleTriagePage() {
     });
   }, [claims, search]);
 
-  const handleAction = useCallback(async (id: string, action: "downgrade" | "override") => {
-    if (!orgId) return;
-    setActioning(id);
-    await applyClaimFix(orgId, id, action);
-    await loadData();
-    setActioning(null);
-    setExpanded(null);
-  }, [orgId, loadData]);
+  const claimFixMutation = useMutation({
+    mutationFn: async (vars: { id: string; action: "downgrade" | "override" }) => {
+      if (!orgId) throw new Error("No organization");
+      const res = await applyClaimFix(orgId, vars.id, vars.action);
+      if (res.error) throw new Error(res.error);
+    },
+    onMutate: async (variables) => {
+      if (!orgId) return {};
+      await queryClient.cancelQueries({ queryKey: ["finance", "oracleTriage", orgId] });
+      const previous = queryClient.getQueriesData<OracleTriageCache>({
+        queryKey: ["finance", "oracleTriage", orgId],
+      });
+      const now = new Date().toISOString();
+      queryClient.setQueriesData<OracleTriageCache>(
+        { queryKey: ["finance", "oracleTriage", orgId] },
+        (old) => {
+          if (!old) return old;
+          const claim = old.claims.find((c) => c.id === variables.id);
+          if (!claim || claim.status !== "INTERCEPTED") return old;
+          const newStatus =
+            variables.action === "downgrade"
+              ? "FIXED_AND_RESUBMITTED"
+              : "OVERRIDDEN_BY_HUMAN";
+          const resolution_action =
+            variables.action === "downgrade" && claim.ai_suggested_code
+              ? `Downgraded from ${claim.support_item_code} to ${claim.ai_suggested_code}`
+              : "Human override — submitted despite AI warning";
+          const support_item_code =
+            variables.action === "downgrade" && claim.ai_suggested_code
+              ? claim.ai_suggested_code
+              : claim.support_item_code;
+          const nextClaims = old.claims.map((c) =>
+            c.id === variables.id
+              ? {
+                  ...c,
+                  status: newStatus,
+                  support_item_code,
+                  resolution_action,
+                  resolved_at: now,
+                }
+              : c
+          );
+          let stats = old.stats;
+          if (stats) {
+            stats = {
+              ...stats,
+              quarantined: Math.max(0, stats.quarantined - 1),
+              fixed:
+                variables.action === "downgrade" ? stats.fixed + 1 : stats.fixed,
+              overridden:
+                variables.action === "override" ? stats.overridden + 1 : stats.overridden,
+              total_saved_amount:
+                variables.action === "downgrade"
+                  ? stats.total_saved_amount + (claim.claim_amount ?? 0)
+                  : stats.total_saved_amount,
+            };
+          }
+          return { ...old, claims: nextClaims, stats };
+        }
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      context?.previous?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
+      setExpanded(null);
+      void queryClient.invalidateQueries({ queryKey: ["finance", "oracleTriage"] });
+    },
+  });
+
+  const handleAction = useCallback(
+    (id: string, action: "downgrade" | "override") => {
+      claimFixMutation.mutate({ id, action });
+    },
+    [claimFixMutation]
+  );
+
+  const actioningId =
+    claimFixMutation.isPending && claimFixMutation.variables
+      ? claimFixMutation.variables.id
+      : null;
 
   const tabs: { id: FilterTab; label: string; count?: number }[] = [
     { id: "intercepted", label: "Quarantined", count: stats?.quarantined },
@@ -179,11 +264,11 @@ export default function OracleTriagePage() {
             </div>
           </div>
           <button
-            onClick={loadData}
-            disabled={loading}
+            onClick={() => void refetch()}
+            disabled={isFetching}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
             Refresh
           </button>
         </div>
@@ -283,7 +368,7 @@ export default function OracleTriagePage() {
                     setExpanded(expanded === claim.id ? null : claim.id)
                   }
                   onAction={handleAction}
-                  actioning={actioning === claim.id}
+                  actioning={actioningId === claim.id}
                 />
               ))}
             </AnimatePresence>

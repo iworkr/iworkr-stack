@@ -17,7 +17,9 @@ import {
   Lock,
   ExternalLink,
 } from "lucide-react";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import {
@@ -147,9 +149,16 @@ function SkeletonRow() {
 export default function AuditCommandCenterPage() {
   const { orgId } = useOrg();
   const { t } = useIndustryLexicon();
+  const queryClient = useQueryClient();
 
-  const [sessions, setSessions] = useState<AuditSession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: sessions = [], isLoading: loading } = useQuery<AuditSession[]>({
+    queryKey: queryKeys.admin.audit(orgId!),
+    queryFn: async () => {
+      const data = await fetchAuditSessionsAction(orgId!);
+      return (data as AuditSession[]) ?? [];
+    },
+    enabled: !!orgId,
+  });
 
   // Dossier form state
   const [dossierParticipant, setDossierParticipant] = useState("");
@@ -170,22 +179,7 @@ export default function AuditCommandCenterPage() {
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [linkGenerating, setLinkGenerating] = useState(false);
 
-  const loadSessions = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const data = await fetchAuditSessionsAction(orgId);
-      setSessions((data as AuditSession[]) ?? []);
-    } catch (err) {
-      console.error("Failed to load audit sessions:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
-
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
+  const invalidateAudit = () => queryClient.invalidateQueries({ queryKey: queryKeys.admin.audit(orgId!) });
 
   /* ── Handlers ─── */
 
@@ -201,7 +195,7 @@ export default function AuditCommandCenterPage() {
         scope_date_to: dossierDateTo || undefined,
         title: `Participant Dossier — ${dossierParticipant.slice(0, 8)}`,
       });
-      await loadSessions();
+      await invalidateAudit();
       setDossierParticipant("");
       setDossierDateFrom("");
       setDossierDateTo("");
@@ -223,7 +217,7 @@ export default function AuditCommandCenterPage() {
         scope_date_to: packDateTo || undefined,
         title: "Organization Audit Pack",
       });
-      await loadSessions();
+      await invalidateAudit();
       setPackDateFrom("");
       setPackDateTo("");
     } catch (err) {
@@ -248,7 +242,7 @@ export default function AuditCommandCenterPage() {
       const token = (session as AuditSession).magic_link_token;
       const url = `${window.location.origin}/audit/${token}`;
       setGeneratedLink(url);
-      await loadSessions();
+      await invalidateAudit();
     } catch (err) {
       console.error("Failed to create magic link:", err);
     } finally {

@@ -2,7 +2,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   Search,
   Plus,
@@ -66,6 +68,10 @@ interface GovernanceEntry {
 }
 
 type TabKey = "ci_actions" | "policy_register" | "governance_log";
+
+const EMPTY_CI_ACTIONS: CIAction[] = [];
+const EMPTY_POLICIES: Policy[] = [];
+const EMPTY_GOVERNANCE: GovernanceEntry[] = [];
 
 /* ── Config ────────────────────────────────────────────── */
 
@@ -168,17 +174,38 @@ function mapGovernance(row: any): GovernanceEntry {
 
 export default function QualityPage() {
   const { orgId } = useOrg();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>("ci_actions");
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
-  /* ── Data State ───────────────────────────────────────── */
-  const [ciActions, setCIActions] = useState<CIAction[]>([]);
-  const [policies, setPolicies] = useState<Policy[]>([]);
-  const [governance, setGovernance] = useState<GovernanceEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: qualityData, isLoading: loading, isError, refetch } = useQuery<{
+    ciActions: CIAction[];
+    policies: Policy[];
+    governance: GovernanceEntry[];
+  }>({
+    queryKey: queryKeys.care.quality(orgId ?? ""),
+    queryFn: async () => {
+      const [ciRes, polRes, govRes] = await Promise.all([
+        fetchCIActionsAction(orgId!),
+        fetchPoliciesAction(orgId!),
+        fetchGovernanceMeetingsAction(orgId!),
+      ]);
+      return {
+        ciActions: (ciRes ?? []).map(mapCIAction),
+        policies: (polRes ?? []).map(mapPolicy),
+        governance: (govRes ?? []).map(mapGovernance),
+      };
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const ciActions = qualityData?.ciActions ?? EMPTY_CI_ACTIONS;
+  const policies = qualityData?.policies ?? EMPTY_POLICIES;
+  const governance = qualityData?.governance ?? EMPTY_GOVERNANCE;
+  const error = isError ? "Failed to load data. Please try again." : null;
 
   /* ── CI Action Create Form State ─────────────────────── */
   const [newAction, setNewAction] = useState({
@@ -190,32 +217,6 @@ export default function QualityPage() {
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-
-  /* ── Data Loading ─────────────────────────────────────── */
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [ciData, policyData, govData] = await Promise.all([
-        fetchCIActionsAction(orgId),
-        fetchPoliciesAction(orgId),
-        fetchGovernanceMeetingsAction(orgId),
-      ]);
-
-      setCIActions((ciData || []).map(mapCIAction));
-      setPolicies((policyData || []).map(mapPolicy));
-      setGovernance((govData || []).map(mapGovernance));
-    } catch (e: any) {
-      console.error("[quality] Failed to load data:", e);
-      setError("Failed to load data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   /* ── Filtered Data ───────────────────────────────────── */
   const filteredCI = useMemo(() => {
@@ -256,14 +257,14 @@ export default function QualityPage() {
       });
       setCreateOpen(false);
       setNewAction({ title: "", source_type: "incident", description: "", owner: "", due_date: "" });
-      loadData();
+      queryClient.invalidateQueries({ queryKey: queryKeys.care.quality(orgId!) });
     } catch (e: any) {
       console.error("[quality] createCIAction failed:", e);
       setSaveError(e.message || "Failed to create CI action. Please try again.");
     } finally {
       setSaving(false);
     }
-  }, [orgId, newAction, loadData]);
+  }, [orgId, newAction, queryClient]);
 
   /* ── Render ──────────────────────────────────────────── */
   return (
@@ -365,7 +366,7 @@ export default function QualityPage() {
               <AlertTriangle size={20} className="text-rose-400" />
             </div>
             <h3 className="text-[15px] font-medium text-zinc-200">{error}</h3>
-            <button onClick={loadData} className="mt-2 rounded-lg px-4 py-1.5 text-[12px] font-medium text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors">
+            <button onClick={() => void refetch()} className="mt-2 rounded-lg px-4 py-1.5 text-[12px] font-medium text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors">
               Retry
             </button>
           </div>

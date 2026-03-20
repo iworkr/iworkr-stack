@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { Plus, GitMerge } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
@@ -11,10 +13,12 @@ import {
 
 export default function ShiftNoteRulesPage() {
   const { orgId } = useOrg();
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
-  const [templates, setTemplates] = useState<Array<{ id: string; name: string; version: number }>>([]);
-  const [rules, setRules] = useState<
-    Array<{
+
+  interface TemplateRulesData {
+    templates: Array<{ id: string; name: string; version: number }>;
+    rules: Array<{
       id: string;
       priority: number;
       target_type: string;
@@ -23,8 +27,25 @@ export default function ShiftNoteRulesPage() {
       max_duration_minutes?: number | null;
       merge_strategy: string;
       shift_note_templates?: { name?: string; version?: number };
-    }>
-  >([]);
+    }>;
+  }
+
+  const { data } = useQuery<TemplateRulesData>({
+    queryKey: queryKeys.care.templateRules(orgId!),
+    queryFn: async () => {
+      const [tpls, assignedRules] = await Promise.all([
+        listShiftNoteTemplatesAction(orgId!),
+        listTemplateAssignmentRulesAction(orgId!),
+      ]);
+      return { templates: tpls, rules: assignedRules };
+    },
+    enabled: !!orgId,
+  });
+
+  const templates = data?.templates ?? [];
+  const rules = data?.rules ?? [];
+
+  const defaultTemplateId = templates[0]?.id ?? "";
   const [form, setForm] = useState({
     template_id: "",
     target_type: "participant",
@@ -34,24 +55,6 @@ export default function ShiftNoteRulesPage() {
     max_duration_minutes: "",
     merge_strategy: "override",
   });
-
-  const load = async () => {
-    if (!orgId) return;
-    const [tpls, assignedRules] = await Promise.all([
-      listShiftNoteTemplatesAction(orgId),
-      listTemplateAssignmentRulesAction(orgId),
-    ]);
-    setTemplates(tpls);
-    setRules(assignedRules);
-    if (!form.template_id && tpls[0]?.id) {
-      setForm((prev) => ({ ...prev, template_id: tpls[0].id }));
-    }
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
-    void load();
-  }, [orgId]);
 
   return (
     <div className="p-6 space-y-6">
@@ -66,7 +69,7 @@ export default function ShiftNoteRulesPage() {
       <section className="grid lg:grid-cols-12 gap-4">
         <div className="lg:col-span-5 rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-3">
           <select
-            value={form.template_id}
+            value={form.template_id || defaultTemplateId}
             onChange={(e) => setForm((p) => ({ ...p, template_id: e.target.value }))}
             className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
           >
@@ -140,13 +143,13 @@ export default function ShiftNoteRulesPage() {
           </div>
 
           <button
-            disabled={!orgId || !form.template_id || isPending}
+            disabled={!orgId || !(form.template_id || defaultTemplateId) || isPending}
             onClick={() =>
               startTransition(async () => {
                 if (!orgId) return;
                 await createTemplateAssignmentRuleAction({
                   organization_id: orgId,
-                  template_id: form.template_id,
+                  template_id: form.template_id || defaultTemplateId,
                   target_type: form.target_type as
                     | "participant"
                     | "ndis_line_item"
@@ -165,7 +168,7 @@ export default function ShiftNoteRulesPage() {
                   priority: form.priority,
                   merge_strategy: form.merge_strategy as "override" | "merge",
                 });
-                await load();
+                await queryClient.invalidateQueries({ queryKey: queryKeys.care.templateRules(orgId!) });
               })
             }
             className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"

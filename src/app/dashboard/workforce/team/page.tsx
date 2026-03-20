@@ -17,14 +17,18 @@ import {
   Loader2,
   XCircle,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useOrg } from "@/lib/hooks/use-org";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getWorkforceDirectory,
+  getWorkerDossier,
   type WorkforceMember,
   type WorkforceTelemetry,
 } from "@/app/actions/workforce-dossier";
+import { getSchadsRates } from "@/app/actions/staff-profiles";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ── Constants ────────────────────────────────────────── */
@@ -112,31 +116,45 @@ function TelemetryCard({
 
 export default function WorkforceTeamPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { orgId, loading: orgLoading } = useOrg();
 
-  const [members, setMembers] = useState<WorkforceMember[]>([]);
-  const [telemetry, setTelemetry] = useState<WorkforceTelemetry>({ total_headcount: 0, active_on_shift: 0, compliance_rate: 0, avg_utilization: 0 });
-  const [loading, setLoading] = useState(true);
+  const { data: directoryData, isLoading: loading } = useQuery<{
+    members: WorkforceMember[];
+    telemetry: WorkforceTelemetry;
+  }>({
+    queryKey: queryKeys.workforce.directory(orgId ?? ""),
+    queryFn: async () => {
+      try {
+        return await getWorkforceDirectory(orgId!);
+      } catch (err) {
+        console.error("Failed to load workforce directory:", err);
+        throw err;
+      }
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const members = useMemo(
+    () => directoryData?.members ?? [],
+    [directoryData],
+  );
+  const telemetry = useMemo<WorkforceTelemetry>(
+    () =>
+      directoryData?.telemetry ?? {
+        total_headcount: 0,
+        active_on_shift: 0,
+        compliance_rate: 0,
+        avg_utilization: 0,
+      },
+    [directoryData],
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const result = await getWorkforceDirectory(orgId);
-      setMembers(result.members);
-      setTelemetry(result.telemetry);
-    } catch (err) {
-      console.error("Failed to load workforce directory:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   // Filter members
   const filteredMembers = useMemo(() => {
@@ -359,6 +377,20 @@ export default function WorkforceTeamPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.02 * i, duration: 0.3, ease }}
                     onClick={() => router.push(`/dashboard/workforce/team/${member.user_id}`)}
+                    onMouseEnter={() => {
+                      if (!orgId) return;
+                      queryClient.prefetchQuery({
+                        queryKey: queryKeys.workforce.dossier(orgId, member.user_id),
+                        queryFn: async () => {
+                          const [dossier, rates] = await Promise.all([
+                            getWorkerDossier(member.user_id, orgId),
+                            getSchadsRates(),
+                          ]);
+                          return { dossier, rates };
+                        },
+                        staleTime: 60_000,
+                      });
+                    }}
                     className="grid w-full grid-cols-12 items-center gap-4 rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-3 text-left transition-all hover:bg-white/[0.025] hover:border-white/[0.08] cursor-pointer group"
                   >
                     {/* Worker */}

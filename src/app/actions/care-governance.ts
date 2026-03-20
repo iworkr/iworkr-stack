@@ -667,23 +667,37 @@ export async function applyClaimResolutionsAction(input: {
   try {
     const supabase = await createServerSupabaseClient();
 
+    const resolvedAt = new Date().toISOString();
     const updates = Object.entries(input.resolutions).map(([lineItemId, resolution]) => ({
       id: lineItemId,
-      organization_id: input.organization_id,
       resolution_action: resolution,
-      status: resolution === "write_off" ? "written_off" : "resolved",
-      resolved_at: new Date().toISOString(),
+      status: resolution === "write_off" ? ("written_off" as const) : ("resolved" as const),
     }));
 
+    const batchKey = (u: (typeof updates)[number]) => `${u.resolution_action}\0${u.status}`;
+    const batches = new Map<
+      string,
+      { ids: string[]; resolution_action: (typeof updates)[number]["resolution_action"]; status: (typeof updates)[number]["status"] }
+    >();
     for (const update of updates) {
+      const key = batchKey(update);
+      let batch = batches.get(key);
+      if (!batch) {
+        batch = { ids: [], resolution_action: update.resolution_action, status: update.status };
+        batches.set(key, batch);
+      }
+      batch.ids.push(update.id);
+    }
+
+    for (const batch of batches.values()) {
       const { error } = await (supabase as any)
         .from("claim_line_items")
         .update({
-          resolution_action: update.resolution_action,
-          status: update.status,
-          resolved_at: update.resolved_at,
+          resolution_action: batch.resolution_action,
+          status: batch.status,
+          resolved_at: resolvedAt,
         })
-        .eq("id", update.id)
+        .in("id", batch.ids)
         .eq("organization_id", input.organization_id);
       if (error) throw new Error(error.message);
     }

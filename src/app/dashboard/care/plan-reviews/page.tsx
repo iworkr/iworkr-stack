@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -200,26 +202,19 @@ function EmptyState({ hasFilters, onClear }: { hasFilters: boolean; onClear: () 
 export default function PlanReviewsDirectoryPage() {
   const { orgId } = useOrg();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [entries, setEntries] = useState<DirectoryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: entries = [], isLoading: loading } = useQuery<DirectoryEntry[]>({
+    queryKey: queryKeys.care.planReviews(orgId!),
+    queryFn: async () => {
+      const data = await listPlanReviewDirectoryAction(orgId!);
+      return (data as DirectoryEntry[]) ?? [];
+    },
+    enabled: !!orgId,
+  });
+
   const [tab, setTab] = useState<TabKey>("all");
   const [search, setSearch] = useState("");
-
-  const loadDirectory = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const data = await listPlanReviewDirectoryAction(orgId);
-      setEntries((data as DirectoryEntry[]) ?? []);
-    } catch (err) {
-      console.error("Failed to load plan review directory:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
-
-  useEffect(() => { loadDirectory(); }, [loadDirectory]);
 
   /* ── Tab counts ──────────────────────────────────────── */
   const tabCounts = useMemo(() => {

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
@@ -23,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useToastStore } from "@/components/app/action-toast";
 import {
   getFrameworks,
@@ -71,6 +73,13 @@ interface LogEntry {
   created_at: string;
 }
 
+interface ComplianceEngineQueryData {
+  frameworks: Framework[];
+  stats: Stats | null;
+  logs: LogEntry[];
+  settings: { compliance_mode: string; compliance_enabled: boolean } | null;
+}
+
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) {
   return (
     <div className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/[0.06] rounded-xl">
@@ -88,41 +97,48 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: n
 export default function ComplianceEnginePage() {
   const { orgId } = useOrg();
   const toast = useToastStore();
+  const queryClient = useQueryClient();
 
-  const [frameworks, setFrameworks] = useState<Framework[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [settings, setSettings] = useState<{ compliance_mode: string; compliance_enabled: boolean } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: engineData, isLoading: loading } = useQuery<ComplianceEngineQueryData>({
+    queryKey: queryKeys.settings.complianceEngine(orgId ?? ""),
+    queryFn: async () => {
+      const [fwRes, stRes, logRes, settRes] = await Promise.all([
+        getFrameworks(orgId!),
+        getComplianceStats(orgId!),
+        getComplianceLogs(orgId!, { limit: 20 }),
+        getComplianceSettings(orgId!),
+      ]);
+      return {
+        frameworks: (fwRes.data ?? []) as unknown as Framework[],
+        stats: stRes.data as unknown as Stats | null,
+        logs: (logRes.data ?? []) as unknown as LogEntry[],
+        settings: settRes.data as unknown as { compliance_mode: string; compliance_enabled: boolean } | null,
+      };
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const frameworks = engineData?.frameworks ?? [];
+  const stats = engineData?.stats ?? null;
+  const logs = engineData?.logs ?? [];
+  const settings = engineData?.settings ?? null;
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    const [fwRes, stRes, logRes, settRes] = await Promise.all([
-      getFrameworks(orgId),
-      getComplianceStats(orgId),
-      getComplianceLogs(orgId, { limit: 20 }),
-      getComplianceSettings(orgId),
-    ]);
-    setFrameworks((fwRes.data ?? []) as unknown as Framework[]);
-    setStats(stRes.data as unknown as Stats | null);
-    setLogs((logRes.data ?? []) as unknown as LogEntry[]);
-    setSettings(settRes.data as unknown as { compliance_mode: string; compliance_enabled: boolean } | null);
-    setLoading(false);
-  }, [orgId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const invalidateEngine = () => {
+    if (orgId) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.complianceEngine(orgId) });
+    }
+  };
 
   const handleToggleEnabled = async () => {
     if (!orgId || !settings) return;
     const next = !settings.compliance_enabled;
     await updateComplianceSettings(orgId, { compliance_enabled: next });
-    setSettings({ ...settings, compliance_enabled: next });
+    invalidateEngine();
     toast.addToast(next ? "Compliance engine enabled" : "Compliance engine disabled");
   };
 
@@ -130,7 +146,7 @@ export default function ComplianceEnginePage() {
     if (!orgId || !settings) return;
     const next = settings.compliance_mode === "ADVISORY" ? "HARD_STOP" : "ADVISORY";
     await updateComplianceSettings(orgId, { compliance_mode: next });
-    setSettings({ ...settings, compliance_mode: next });
+    invalidateEngine();
     toast.addToast(`Compliance mode set to ${next === "HARD_STOP" ? "Hard Stop" : "Advisory"}`);
   };
 
@@ -165,7 +181,7 @@ export default function ComplianceEnginePage() {
       }
 
       setUploading(null);
-      setTimeout(loadData, 3000);
+      setTimeout(invalidateEngine, 3000);
     };
     input.click();
   };
@@ -173,7 +189,7 @@ export default function ComplianceEnginePage() {
   const handleDeleteFramework = async (id: string) => {
     if (!orgId) return;
     await deleteFramework(orgId, id);
-    setFrameworks((prev) => prev.filter((f) => f.id !== id));
+    invalidateEngine();
     toast.addToast("Framework deleted");
   };
 
@@ -272,8 +288,8 @@ export default function ComplianceEnginePage() {
                 fw={fw}
                 uploading={uploading === fw.id}
                 onUpload={() => handleUploadPdf(fw.id)}
-                onActivate={() => updateFrameworkStatus(orgId!, fw.id, "ACTIVE").then(loadData)}
-                onDeprecate={() => updateFrameworkStatus(orgId!, fw.id, "DEPRECATED").then(loadData)}
+                onActivate={() => updateFrameworkStatus(orgId!, fw.id, "ACTIVE").then(invalidateEngine)}
+                onDeprecate={() => updateFrameworkStatus(orgId!, fw.id, "DEPRECATED").then(invalidateEngine)}
                 onDelete={() => handleDeleteFramework(fw.id)}
               />
             ))}
@@ -336,7 +352,7 @@ export default function ComplianceEnginePage() {
           <CreateFrameworkModal
             orgId={orgId}
             onClose={() => setShowCreateModal(false)}
-            onCreated={() => { setShowCreateModal(false); loadData(); }}
+            onCreated={() => { setShowCreateModal(false); invalidateEngine(); }}
           />
         )}
       </AnimatePresence>

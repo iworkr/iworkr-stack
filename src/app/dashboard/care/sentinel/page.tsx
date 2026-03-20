@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Search,
@@ -16,6 +17,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   fetchSentinelAlertsAction,
   acknowledgeSentinelAlertAction,
@@ -88,52 +90,86 @@ const TABS: { key: FilterTab; label: string }[] = [
   { key: "all", label: "All" },
 ];
 
+function resolutionStatusForAction(action: string): SentinelStatus {
+  if (action === "dismissed_false_positive") return "dismissed";
+  if (action === "incident_created") return "resolved";
+  if (action === "escalated_to_clinical") return "escalated";
+  return "acknowledged";
+}
+
 /* ── Main Page ──────────────────────────────────────────── */
 
 export default function SentinelAlertsPage() {
   const { orgId } = useOrg();
-  const [alerts, setAlerts] = useState<SentinelAlert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<FilterTab>("active");
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 250); return () => clearTimeout(t); }, [search]);
 
-  /* ── Load ──────────────────────────────────────────── */
-  const loadAlerts = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const status = activeTab === "all" ? undefined : activeTab;
-      const data = await fetchSentinelAlertsAction(orgId, status);
-      setAlerts((data as SentinelAlert[]) ?? []);
-    } catch (err) {
-      console.error("Failed to load sentinel alerts:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, activeTab]);
-
-  useEffect(() => { loadAlerts(); }, [loadAlerts]);
+  const statusFilter = activeTab === "all" ? undefined : activeTab;
+  const { data: alerts = [], isLoading: loading } = useQuery<SentinelAlert[]>({
+    queryKey: queryKeys.care.sentinel(orgId ?? "", statusFilter),
+    queryFn: () => fetchSentinelAlertsAction(orgId!, statusFilter),
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
 
   /* ── Actions ───────────────────────────────────────── */
-  const handleAction = useCallback(async (id: string, action: string, notes?: string) => {
-    setActionLoading(`${id}-${action}`);
-    try {
-      await acknowledgeSentinelAlertAction(id, action, notes);
-      await loadAlerts();
-    } catch (err) {
-      console.error(`Failed to ${action} alert:`, err);
-    } finally {
-      setActionLoading(null);
+  type AckVariables = { id: string; action: string; notes?: string };
+  const acknowledgeMutation = useMutation({
+    mutationFn: (v: AckVariables) => acknowledgeSentinelAlertAction(v.id, v.action, v.notes),
+    onMutate: async (variables) => {
+      if (!orgId) return {};
+      await queryClient.cancelQueries({ queryKey: ["care", "sentinel", orgId] });
+      const previous = queryClient.getQueriesData<SentinelAlert[]>({ queryKey: ["care", "sentinel", orgId] });
+      const status = resolutionStatusForAction(variables.action);
+      const now = new Date().toISOString();
+      queryClient.setQueriesData<SentinelAlert[]>({ queryKey: ["care", "sentinel", orgId] }, (old) => {
+        if (!old) return old;
+        return old.map((a) =>
+          a.id === variables.id
+            ? {
+                ...a,
+                status,
+                resolution_action: variables.action,
+                acknowledged_at: now,
+                resolution_notes: variables.notes ?? a.resolution_notes,
+                resolved_at:
+                  status === "dismissed" || status === "resolved" ? now : a.resolved_at,
+              }
+            : a
+        );
+      });
+      return { previous };
+    },
+    onError: (err, variables, context) => {
+      console.error(`Failed to ${variables.action} alert:`, err);
+      context?.previous?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
       setExpandedId(null);
-    }
-  }, [loadAlerts]);
+      void queryClient.invalidateQueries({ queryKey: ["care", "sentinel"] });
+    },
+  });
+
+  const handleAction = useCallback(
+    (id: string, action: string, notes?: string) => {
+      acknowledgeMutation.mutate({ id, action, notes });
+    },
+    [acknowledgeMutation]
+  );
+
+  const actionLoadingKey =
+    acknowledgeMutation.isPending && acknowledgeMutation.variables
+      ? `${acknowledgeMutation.variables.id}-${acknowledgeMutation.variables.action}`
+      : null;
 
   /* ── Stats ─────────────────────────────────────────── */
   const stats = useMemo(() => {
@@ -388,35 +424,35 @@ export default function SentinelAlertsPage() {
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => handleAction(alert.id, "acknowledged")}
-                            disabled={actionLoading !== null}
+                            disabled={actionLoadingKey !== null}
                             className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-40"
                           >
                             <Check size={12} />
-                            {actionLoading === `${alert.id}-acknowledged` ? "Saving…" : "Acknowledge"}
+                            {actionLoadingKey === `${alert.id}-acknowledged` ? "Saving…" : "Acknowledge"}
                           </button>
                           <button
                             onClick={() => handleAction(alert.id, "escalated_to_clinical")}
-                            disabled={actionLoading !== null}
+                            disabled={actionLoadingKey !== null}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-1.5 text-[12px] font-medium text-zinc-300 transition-colors hover:bg-white/[0.06] hover:border-white/[0.12] disabled:opacity-40"
                           >
                             <ArrowUpRight size={12} />
-                            {actionLoading === `${alert.id}-escalated_to_clinical` ? "Escalating…" : "Escalate to Clinical"}
+                            {actionLoadingKey === `${alert.id}-escalated_to_clinical` ? "Escalating…" : "Escalate to Clinical"}
                           </button>
                           <button
                             onClick={() => handleAction(alert.id, "incident_created", "Incident created from Sentinel alert")}
-                            disabled={actionLoading !== null}
+                            disabled={actionLoadingKey !== null}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-1.5 text-[12px] font-medium text-zinc-300 transition-colors hover:bg-white/[0.06] hover:border-white/[0.12] disabled:opacity-40"
                           >
                             <ShieldAlert size={12} />
-                            {actionLoading === `${alert.id}-incident_created` ? "Creating…" : "Create Incident"}
+                            {actionLoadingKey === `${alert.id}-incident_created` ? "Creating…" : "Create Incident"}
                           </button>
                           <button
                             onClick={() => handleAction(alert.id, "dismissed_false_positive", "Dismissed as false positive")}
-                            disabled={actionLoading !== null}
+                            disabled={actionLoadingKey !== null}
                             className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300 disabled:opacity-40"
                           >
                             <X size={12} />
-                            {actionLoading === `${alert.id}-dismissed_false_positive` ? "Dismissing…" : "Dismiss as False Positive"}
+                            {actionLoadingKey === `${alert.id}-dismissed_false_positive` ? "Dismissing…" : "Dismiss as False Positive"}
                           </button>
                         </div>
                       </div>

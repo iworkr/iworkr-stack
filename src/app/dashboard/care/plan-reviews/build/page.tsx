@@ -3,6 +3,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { Loader2, Sparkles, RefreshCw, FileCheck2, Download, AlertCircle } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
@@ -22,8 +24,7 @@ type ParticipantOption = { id: string; name: string };
 
 export default function PlanReviewsBuildPage() {
   const { orgId } = useOrg();
-  const [participants, setParticipants] = useState<ParticipantOption[]>([]);
-  const [reports, setReports] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   const [selectedParticipant, setSelectedParticipant] = useState("");
   const [reportId, setReportId] = useState("");
   const [report, setReport] = useState<any | null>(null);
@@ -36,43 +37,48 @@ export default function PlanReviewsBuildPage() {
   const activeStatus = report?.status || "draft";
   const isEditable = !["finalized", "archived"].includes(activeStatus);
 
-  const loadBase = async () => {
-    if (!orgId) return;
-    const [p, r] = await Promise.all([
-      listPlanReviewParticipantsAction(orgId),
-      listPlanReviewReportsAction(orgId),
-    ]);
-    setParticipants(p);
-    setReports(r);
-    if (!reportId && r.length > 0) setReportId(r[0].id);
-  };
+  interface BuildBaseData {
+    participants: ParticipantOption[];
+    reports: any[];
+  }
 
-  const loadReport = async (id: string) => {
-    if (!id) return;
-    const data = await getPlanReviewReportAction(id);
-    setReport(data.report);
-    setSnapshot(data.snapshot);
-    const nextDraft = data.report?.draft_json_payload || {};
-    setDraft(nextDraft);
-    setPreviewVersion((v) => v + 1);
-  };
+  const { data: baseData } = useQuery<BuildBaseData>({
+    queryKey: queryKeys.care.planReviewBuild(orgId!),
+    queryFn: async () => {
+      const [p, r] = await Promise.all([
+        listPlanReviewParticipantsAction(orgId!),
+        listPlanReviewReportsAction(orgId!),
+      ]);
+      return { participants: p, reports: r };
+    },
+    enabled: !!orgId,
+  });
 
+  const participants = baseData?.participants ?? [];
+  const reports = baseData?.reports ?? [];
+
+  // Auto-select first report
   useEffect(() => {
-    loadBase();
-  }, [orgId]);
+    if (!reportId && reports.length > 0) setReportId(reports[0].id);
+  }, [reports, reportId]);
 
-  useEffect(() => {
-    if (!reportId) return;
-    loadReport(reportId);
-  }, [reportId]);
+  // Load report detail
+  const { data: reportDetailData } = useQuery<{ report: any; snapshot: any }>({
+    queryKey: queryKeys.care.planReviewReport(reportId),
+    queryFn: () => getPlanReviewReportAction(reportId),
+    enabled: !!reportId,
+    refetchInterval: reportId && ["aggregating", "draft"].includes(activeStatus) ? 3000 : false,
+  });
 
+  // Sync report detail to local state
   useEffect(() => {
-    if (!reportId || !["aggregating", "draft"].includes(activeStatus)) return;
-    const t = setInterval(async () => {
-      await loadReport(reportId);
-    }, 3000);
-    return () => clearInterval(t);
-  }, [reportId, activeStatus]);
+    if (reportDetailData) {
+      setReport(reportDetailData.report);
+      setSnapshot(reportDetailData.snapshot);
+      setDraft(reportDetailData.report?.draft_json_payload || {});
+      setPreviewVersion((v) => v + 1);
+    }
+  }, [reportDetailData]);
 
   useEffect(() => {
     if (!reportId || !isEditable) return;
@@ -109,7 +115,7 @@ export default function PlanReviewsBuildPage() {
         participant_id: selectedParticipant,
       });
       setReportId(created.id);
-      await loadBase();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewBuild(orgId!) });
     } finally {
       setCreating(false);
     }
@@ -162,7 +168,7 @@ export default function PlanReviewsBuildPage() {
               disabled={!reportId || isPending}
               onClick={() => startTransition(async () => {
                 await startPlanReviewAggregationAction(reportId);
-                await loadReport(reportId);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewReport(reportId) });
               })}
               className="inline-flex items-center gap-1 rounded-md border border-white/[0.1] px-3 py-1 text-[12px] text-zinc-200 disabled:opacity-50"
             >
@@ -183,7 +189,7 @@ export default function PlanReviewsBuildPage() {
               disabled={!reportId || !isEditable}
               onClick={() => startTransition(async () => {
                 await finalizePlanReviewAction(reportId);
-                await loadReport(reportId);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewReport(reportId) });
               })}
               className="rounded-md bg-emerald-500/10 px-3 py-1 text-[12px] font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
             >
@@ -237,7 +243,7 @@ export default function PlanReviewsBuildPage() {
                             goal_id: g.goal_id,
                             steering_instructions: steer || undefined,
                           });
-                          await loadReport(reportId);
+                          await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewReport(reportId) });
                         }}
                         className="inline-flex items-center gap-1 rounded border border-white/[0.1] px-2 py-1 text-[11px] text-zinc-300 disabled:opacity-50"
                       >

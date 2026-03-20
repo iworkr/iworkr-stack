@@ -18,9 +18,11 @@ import {
   TrendingUp,
   Info,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useToastStore } from "@/components/app/action-toast";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getYieldProfiles,
   upsertYieldProfile,
@@ -67,25 +69,30 @@ const EMPTY_PROFILE: YieldProfile = {
 export default function YieldProfilesPage() {
   const { orgId } = useOrg();
   const toast = useToastStore();
-  const [profiles, setProfiles] = useState<YieldProfile[]>([]);
-  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: yieldData, isLoading: loading } = useQuery<{
+    profiles: YieldProfile[];
+    analytics: Analytics | null;
+  }>({
+    queryKey: queryKeys.settings.yieldProfiles(orgId!),
+    queryFn: async () => {
+      const [profRes, analyticsRes] = await Promise.all([
+        getYieldProfiles(orgId!),
+        getYieldAnalytics(orgId!),
+      ]);
+      return {
+        profiles: (profRes.data ?? []) as YieldProfile[],
+        analytics: analyticsRes.data as Analytics | null,
+      };
+    },
+    enabled: !!orgId,
+  });
+
+  const profiles = yieldData?.profiles ?? [];
+  const analytics = yieldData?.analytics ?? null;
   const [editing, setEditing] = useState<YieldProfile | null>(null);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    const [profRes, analyticsRes] = await Promise.all([
-      getYieldProfiles(orgId),
-      getYieldAnalytics(orgId),
-    ]);
-    setProfiles((profRes.data ?? []) as YieldProfile[]);
-    setAnalytics(analyticsRes.data as Analytics | null);
-    setLoading(false);
-  }, [orgId]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = useCallback(async () => {
     if (!orgId || !editing) return;
@@ -96,10 +103,10 @@ export default function YieldProfilesPage() {
     } else {
       toast.addToast("Yield profile saved successfully");
       setEditing(null);
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.settings.yieldProfiles(orgId) });
     }
     setSaving(false);
-  }, [orgId, editing, toast, load]);
+  }, [orgId, editing, toast, queryClient]);
 
   return (
     <div className="flex flex-col h-full bg-[#050505]">

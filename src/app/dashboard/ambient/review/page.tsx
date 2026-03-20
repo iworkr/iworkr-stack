@@ -18,7 +18,9 @@ import {
   XCircle,
   Check,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
@@ -91,26 +93,28 @@ export default function DebriefReviewPage() {
   const searchParams = useSearchParams();
   const debriefId = searchParams.get("id");
   const toast = useToastStore();
+  const queryClient = useQueryClient();
 
-  const [debrief, setDebrief] = useState<DebriefData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: debrief = null, isLoading: loading } = useQuery<DebriefData | null>({
+    queryKey: queryKeys.ambient.debrief(orgId!, debriefId!),
+    queryFn: async () => {
+      const { data } = await getDebriefDetail(orgId!, debriefId!);
+      if (data) {
+        return {
+          ...data,
+          proposed_actions: (data.proposed_actions ?? []) as ProposedAction[],
+        } as unknown as DebriefData;
+      }
+      return null;
+    },
+    enabled: !!orgId && !!debriefId,
+  });
+
   const [committing, setCommitting] = useState(false);
   const [removingIdx, setRemovingIdx] = useState<number | null>(null);
 
-  const load = useCallback(async () => {
-    if (!orgId || !debriefId) return;
-    setLoading(true);
-    const { data } = await getDebriefDetail(orgId, debriefId);
-    if (data) {
-      setDebrief({
-        ...data,
-        proposed_actions: (data.proposed_actions ?? []) as ProposedAction[],
-      } as unknown as DebriefData);
-    }
-    setLoading(false);
-  }, [orgId, debriefId]);
-
-  useEffect(() => { load(); }, [load]);
+  const invalidateDebrief = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.ambient.debrief(orgId!, debriefId!) });
 
   const handleCommit = useCallback(async () => {
     if (!orgId || !debriefId || !debrief) return;
@@ -132,9 +136,9 @@ export default function DebriefReviewPage() {
     if (!orgId || !debriefId) return;
     setRemovingIdx(idx);
     await removeProposedAction(orgId, debriefId, idx);
-    await load();
+    await invalidateDebrief();
     setRemovingIdx(null);
-  }, [orgId, debriefId, load]);
+  }, [orgId, debriefId, invalidateDebrief]);
 
   const handleReject = useCallback(async () => {
     if (!orgId || !debriefId) return;

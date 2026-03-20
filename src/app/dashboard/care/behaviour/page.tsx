@@ -2,7 +2,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   Search,
   Plus,
@@ -66,6 +68,10 @@ interface RestrictivePractice {
   reportable: boolean;
   debrief_completed: boolean;
 }
+
+const EMPTY_BSPS: BSP[] = [];
+const EMPTY_EVENTS: BehaviourEvent[] = [];
+const EMPTY_RESTRICTIVE: RestrictivePractice[] = [];
 
 /* ── Config ────────────────────────────────────────────── */
 
@@ -156,17 +162,38 @@ function mapRP(row: any): RestrictivePractice {
 
 export default function BehaviourPage() {
   const { orgId } = useOrg();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>("bsp");
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
-  /* ── Data State ───────────────────────────────────────── */
-  const [bsps, setBsps] = useState<BSP[]>([]);
-  const [events, setEvents] = useState<BehaviourEvent[]>([]);
-  const [restrictive, setRestrictive] = useState<RestrictivePractice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: behaviourData, isLoading: loading, isError, refetch } = useQuery<{
+    bsps: BSP[];
+    events: BehaviourEvent[];
+    restrictive: RestrictivePractice[];
+  }>({
+    queryKey: queryKeys.care.behaviour(orgId ?? ""),
+    queryFn: async () => {
+      const [bspRes, evtRes, rpRes] = await Promise.all([
+        fetchBSPsAction(orgId!),
+        fetchBehaviourEventsAction(orgId!),
+        fetchRestrictivePracticesAction(orgId!),
+      ]);
+      return {
+        bsps: (bspRes ?? []).map(mapBSP),
+        events: (evtRes ?? []).map(mapEvent),
+        restrictive: (rpRes ?? []).map(mapRP),
+      };
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const error = isError ? "Failed to load data. Please try again." : null;
+  const bsps = behaviourData?.bsps ?? EMPTY_BSPS;
+  const events = behaviourData?.events ?? EMPTY_EVENTS;
+  const restrictive = behaviourData?.restrictive ?? EMPTY_RESTRICTIVE;
 
   /* ── BSP Create Form State ──────────────────────────── */
   const [form, setForm] = useState({
@@ -175,32 +202,6 @@ export default function BehaviourPage() {
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-
-  /* ── Data Loading ─────────────────────────────────────── */
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [bspData, eventData, rpData] = await Promise.all([
-        fetchBSPsAction(orgId),
-        fetchBehaviourEventsAction(orgId),
-        fetchRestrictivePracticesAction(orgId),
-      ]);
-
-      setBsps((bspData || []).map(mapBSP));
-      setEvents((eventData || []).map(mapEvent));
-      setRestrictive((rpData || []).map(mapRP));
-    } catch (e: any) {
-      console.error("[behaviour] Failed to load data:", e);
-      setError("Failed to load data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   /* ── Filtered Data ──────────────────────────────────── */
   const filteredBSPs = useMemo(() => {
@@ -259,15 +260,14 @@ export default function BehaviourPage() {
       });
       setCreateOpen(false);
       setForm({ title: "", participant: "", author_name: "", author_role: "", start_date: "", review_date: "", notes: "", consent: false });
-      // Reload data to pick up the new BSP
-      loadData();
+      queryClient.invalidateQueries({ queryKey: queryKeys.care.behaviour(orgId!) });
     } catch (e: any) {
       console.error("[behaviour] createBSP failed:", e);
       setSaveError(e.message || "Failed to create BSP. Please try again.");
     } finally {
       setSaving(false);
     }
-  }, [orgId, form, loadData]);
+  }, [orgId, form, queryClient]);
 
   /* ── Render ──────────────────────────────────────────── */
   return (
@@ -369,7 +369,7 @@ export default function BehaviourPage() {
               <AlertTriangle size={20} className="text-rose-400" />
             </div>
             <h3 className="text-[15px] font-medium text-zinc-200">{error}</h3>
-            <button onClick={loadData} className="mt-2 rounded-lg px-4 py-1.5 text-[12px] font-medium text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors">
+            <button onClick={() => void refetch()} className="mt-2 rounded-lg px-4 py-1.5 text-[12px] font-medium text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors">
               Retry
             </button>
           </div>

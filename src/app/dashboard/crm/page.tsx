@@ -2,6 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   DragDropContext,
   Droppable,
@@ -25,6 +28,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { getClientDetails } from "@/app/actions/clients";
 import { createClient } from "@/lib/supabase/client";
 import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
 import { useToastStore } from "@/components/app/action-toast";
@@ -249,57 +253,41 @@ export default function CRMPipelinePage() {
   const { addToast } = useToastStore();
   const { t, isCare } = useIndustryLexicon();
 
+  const queryClient = useQueryClient();
   const [clients, setClients] = useState<PipelineClient[]>([]);
-  const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  /* ── Fetch clients (with SWR cache) ───────────────────── */
+  /* ── Fetch clients (TanStack Query) ───────────────────── */
 
-  const fetchClients = useCallback(async (forceRefresh = false) => {
-    if (!orgId) return;
-    const cacheKey = `crm-pipeline:${orgId}`;
-    if (forceRefresh) invalidateCache(cacheKey);
-    // Only show loading spinner when no data exists yet
-    if (clients.length === 0) setLoading(true);
+  const { data: fetchedClients, isLoading: loading } = useQuery<PipelineClient[]>({
+    queryKey: queryKeys.crm.pipeline(orgId!),
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("clients")
+        .select(
+          "id, name, email, phone, type, status, pipeline_status, pipeline_updated_at, estimated_value, tags, notes, lead_source, created_at"
+        )
+        .eq("organization_id", orgId!)
+        .is("deleted_at", null)
+        .order("pipeline_updated_at", { ascending: false, nullsFirst: false });
 
-    try {
-      const { data: raw } = await cachedFetch(
-        cacheKey,
-        async () => {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from("clients")
-            .select(
-              "id, name, email, phone, type, status, pipeline_status, pipeline_updated_at, estimated_value, tags, notes, lead_source, created_at"
-            )
-            .eq("organization_id", orgId)
-            .is("deleted_at", null)
-            .order("pipeline_updated_at", { ascending: false, nullsFirst: false });
-
-          if (error) throw error;
-          return data ?? [];
-        },
-        3 * 60 * 1000 // 3-minute cache
-      );
-      setClients(
-        (raw ?? []).map((c: any) => ({
-          ...(c as object),
-          pipeline_status: (c as { pipeline_status?: string }).pipeline_status || "new_lead",
-          tags: (c as { tags?: string[] | null }).tags || [],
-          type: (c as { type?: string | null }).type as "residential" | "commercial" | null,
-        })) as PipelineClient[]
-      );
-    } catch (e) {
-      console.error("Failed to fetch pipeline clients:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, clients.length]);
+      if (error) throw error;
+      return (data ?? []).map((c: any) => ({
+        ...(c as object),
+        pipeline_status: (c as { pipeline_status?: string }).pipeline_status || "new_lead",
+        tags: (c as { tags?: string[] | null }).tags || [],
+        type: (c as { type?: string | null }).type as "residential" | "commercial" | null,
+      })) as PipelineClient[];
+    },
+    enabled: !!orgId,
+    staleTime: 3 * 60 * 1000,
+  });
 
   useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
+    if (fetchedClients) setClients(fetchedClients);
+  }, [fetchedClients]);
 
   /* ── Realtime subscription ─────────────────────────────── */
 
@@ -317,7 +305,7 @@ export default function CRMPipelinePage() {
           filter: `organization_id=eq.${orgId}`,
         },
         () => {
-          fetchClients(true);
+          queryClient.invalidateQueries({ queryKey: queryKeys.crm.pipeline(orgId) });
         }
       )
       .subscribe();
@@ -325,7 +313,7 @@ export default function CRMPipelinePage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orgId, fetchClients]);
+  }, [orgId, queryClient]);
 
   /* ── Active columns (trades vs care) ──────────────────── */
 
@@ -695,14 +683,28 @@ function PipelineCard({
   isDragging: boolean;
   isCare?: boolean;
 }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { orgId } = useOrg();
   const initials = getInitials(client.name);
-  const typeCfg = COLUMN_MAP[client.type === "commercial" ? "quoting" : "new_lead"];
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
+      onMouseEnter={() => {
+        if (!orgId) return;
+        queryClient.prefetchQuery({
+          queryKey: queryKeys.clients.detail(client.id),
+          queryFn: async () => {
+            const { data, error } = await getClientDetails(client.id, orgId);
+            if (error) throw new Error(typeof error === "string" ? error : "Failed to load client");
+            return data;
+          },
+          staleTime: 60_000,
+        });
+      }}
       className={`group cursor-grab rounded-xl border bg-zinc-950/80 p-3 transition-all duration-150 active:cursor-grabbing ${
         isDragging
           ? "border-white/[0.12] shadow-2xl shadow-black/50 ring-1 ring-white/[0.06] scale-[1.02]"
@@ -813,6 +815,20 @@ function PipelineCard({
           )}
         </div>
       )}
+
+      <div className="mt-2 flex justify-end">
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/dashboard/clients/${client.id}`);
+          }}
+          className="text-[10px] font-medium text-zinc-600 transition-colors hover:text-emerald-400"
+        >
+          Open dossier →
+        </button>
+      </div>
     </motion.div>
   );
 }

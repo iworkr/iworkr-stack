@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/lib/auth-store";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getWorkspaceSuppliers,
   createWorkspaceSupplier,
@@ -123,32 +125,33 @@ export default function SuppliersPage() {
   const org = useAuthStore((s) => s.currentOrg);
   const orgId = org?.id;
 
-  const [suppliers, setSuppliers] = useState<WorkspaceSupplier[]>([]);
-  const [catalogStats, setCatalogStats] = useState<CatalogStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  /* ── Data loading ─────────────────────────────────── */
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
+  const { data: suppliersData, isLoading: loading } = useQuery<{
+    suppliers: WorkspaceSupplier[];
+    catalogStats: CatalogStats | null;
+  }>({
+    queryKey: queryKeys.ops.suppliers(orgId!),
+    queryFn: async () => {
+      const [suppliersRes, statsRes] = await Promise.all([
+        getWorkspaceSuppliers(orgId!),
+        getCatalogStats(orgId!),
+      ]);
+      return {
+        suppliers: suppliersRes.data ?? [],
+        catalogStats: statsRes.data ?? null,
+      };
+    },
+    enabled: !!orgId,
+  });
 
-    const [suppliersRes, statsRes] = await Promise.all([
-      getWorkspaceSuppliers(orgId),
-      getCatalogStats(orgId),
-    ]);
-
-    if (suppliersRes.data) setSuppliers(suppliersRes.data);
-    if (statsRes.data) setCatalogStats(statsRes.data);
-
-    setLoading(false);
-  }, [orgId]);
-
-  useEffect(() => { load(); }, [load]);
+  const suppliers = suppliersData?.suppliers ?? [];
+  const catalogStats = suppliersData?.catalogStats ?? null;
 
   /* ── Derived stats ────────────────────────────────── */
 
@@ -172,9 +175,8 @@ export default function SuppliersPage() {
 
     await triggerCatalogSync(orgId, supplierId);
 
-    // Brief delay then refresh
     setTimeout(async () => {
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.ops.suppliers(orgId) });
       setSyncingIds((prev) => {
         const next = new Set(prev);
         next.delete(supplierId);
@@ -192,7 +194,7 @@ export default function SuppliersPage() {
     setDeletingId(null);
 
     if (!result.error) {
-      setSuppliers((prev) => prev.filter((s) => s.id !== supplierId));
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.suppliers(orgId!) });
     }
   };
 
@@ -246,7 +248,7 @@ export default function SuppliersPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => orgId && triggerCatalogSync(orgId).then(() => load())}
+            onClick={() => orgId && triggerCatalogSync(orgId).then(() => queryClient.invalidateQueries({ queryKey: queryKeys.ops.suppliers(orgId) }))}
             className="stealth-btn-ghost text-xs flex items-center gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -304,7 +306,7 @@ export default function SuppliersPage() {
             className="w-full pl-10 pr-4 py-2 text-sm bg-[var(--surface-1)] border border-[var(--border-base)] r-input text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-ring"
           />
         </div>
-        <button onClick={load} className="stealth-btn-ghost text-xs p-2">
+        <button onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.ops.suppliers(orgId!) })} className="stealth-btn-ghost text-xs p-2">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -485,7 +487,7 @@ export default function SuppliersPage() {
           <AddSupplierModal
             orgId={orgId}
             onClose={() => setShowAddModal(false)}
-            onComplete={() => { setShowAddModal(false); load(); }}
+            onComplete={() => { setShowAddModal(false); queryClient.invalidateQueries({ queryKey: queryKeys.ops.suppliers(orgId!) }); }}
           />
         )}
       </AnimatePresence>

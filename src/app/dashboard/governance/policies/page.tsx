@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useCallback, useEffect, useTransition } from "react";
+import { useState, useCallback, useTransition } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDropzone } from "react-dropzone";
 import {
@@ -9,13 +10,13 @@ import {
   Loader2, AlertTriangle, Download, Bell, FileCheck,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getGovernanceDashboardAction,
   publishPolicyWithFileAction,
   nudgeUnreadStaffAction,
   getAuditTrackerAction,
   type PolicyRow,
-  type GovernanceTelemetry,
 } from "@/app/actions/governance-policies";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
 
@@ -392,6 +393,15 @@ function PublishPolicySlideOver({
    Compliance Audit Slide-Over
    ═══════════════════════════════════════════════════════════════════ */
 
+type AuditAckRow = {
+  id: string;
+  status: string;
+  acknowledged_at?: string;
+  ip_address?: string;
+  profiles?: { full_name?: string; email?: string };
+  _optimisticNudged?: boolean;
+};
+
 function ComplianceAuditSlideOver({
   orgId,
   policy,
@@ -401,37 +411,57 @@ function ComplianceAuditSlideOver({
   policy: PolicyRow;
   onClose: () => void;
 }) {
-  const [loading, setLoading] = useState(true);
-  const [acks, setAcks] = useState<any[]>([]);
-  const [nudging, setNudging] = useState(false);
+  const queryClient = useQueryClient();
+  const auditQueryKey = ["governance", "auditTracker", orgId, policy.id] as const;
+
+  const { data: acks = [], isLoading: loading } = useQuery<AuditAckRow[]>({
+    queryKey: auditQueryKey,
+    queryFn: async () => {
+      try {
+        return await getAuditTrackerAction({ organization_id: orgId, policy_id: policy.id });
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 30_000,
+  });
   const [nudgeResult, setNudgeResult] = useState<string | null>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    getAuditTrackerAction({ organization_id: orgId, policy_id: policy.id })
-      .then(setAcks)
-      .catch(() => setAcks([]))
-      .finally(() => setLoading(false));
-  }, [orgId, policy.id]);
-
-  const pending = acks.filter((a) => a.status !== "signed");
-  const signed  = acks.filter((a) => a.status === "signed");
-
-  async function handleNudge() {
-    setNudging(true);
-    try {
-      const { nudged } = await nudgeUnreadStaffAction({
+  const nudgeMutation = useMutation({
+    mutationFn: () =>
+      nudgeUnreadStaffAction({
         organization_id: orgId,
         policy_id: policy.id,
         policy_title: policy.title,
+      }),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: auditQueryKey });
+      const previous = queryClient.getQueryData<AuditAckRow[]>(auditQueryKey);
+      queryClient.setQueryData<AuditAckRow[]>(auditQueryKey, (old) => {
+        if (!old) return old;
+        return old.map((a) =>
+          a.status !== "signed" ? { ...a, _optimisticNudged: true } : a
+        );
       });
-      setNudgeResult(`${nudged} staff member${nudged !== 1 ? "s" : ""} nudged successfully.`);
-    } catch (e) {
-      setNudgeResult(`Error: ${(e as Error).message}`);
-    } finally {
-      setNudging(false);
-    }
-  }
+      return { previous };
+    },
+    onSuccess: (data) => {
+      const n = data.nudged;
+      setNudgeResult(`${n} staff member${n !== 1 ? "s" : ""} nudged successfully.`);
+    },
+    onError: (e: Error, _v, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(auditQueryKey, context.previous);
+      }
+      setNudgeResult(`Error: ${e.message}`);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: auditQueryKey });
+    },
+  });
+
+  const pending = acks.filter((a) => a.status !== "signed");
+  const signed  = acks.filter((a) => a.status === "signed");
 
   return (
     <AnimatePresence>
@@ -500,15 +530,21 @@ function ComplianceAuditSlideOver({
               {pending.length > 0 && (
                 <div>
                   <p className="px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-amber-500/70">Pending ({pending.length})</p>
-                  {pending.map((a: any) => (
+                  {pending.map((a: AuditAckRow) => (
                     <div key={a.id} className="flex items-center gap-3 px-6 py-3 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
                       <LetterAvatar name={a.profiles?.full_name || a.profiles?.email || "?"} size={28} />
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] text-zinc-200 truncate">{a.profiles?.full_name || a.profiles?.email || "Unknown"}</p>
                         <p className="text-[11px] text-zinc-500 truncate">{a.profiles?.email || ""}</p>
                       </div>
-                      <span className="inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-400">
-                        Pending
+                      <span
+                        className={
+                          a._optimisticNudged
+                            ? "inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-400"
+                            : "inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-400"
+                        }
+                      >
+                        {a._optimisticNudged ? "Nudged" : "Pending"}
                       </span>
                     </div>
                   ))}
@@ -549,11 +585,11 @@ function ComplianceAuditSlideOver({
             </p>
           )}
           <button
-            onClick={handleNudge}
-            disabled={nudging || pending.length === 0}
+            onClick={() => nudgeMutation.mutate()}
+            disabled={nudgeMutation.isPending || pending.length === 0}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 py-2.5 text-[13px] font-semibold text-amber-400 transition-all hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {nudging ? (
+            {nudgeMutation.isPending ? (
               <><Loader2 size={14} className="animate-spin" /> Sending…</>
             ) : (
               <><Bell size={14} /> Nudge Unread Staff ({pending.length})</>
@@ -593,33 +629,24 @@ function EmptyState({ onPublish }: { onPublish: () => void }) {
 
 export default function GovernancePoliciesPage() {
   const { orgId, loading: orgLoading } = useOrg();
-  const [, startTransition] = useTransition();
+  const queryClient = useQueryClient();
+
+  const { data: dashboardData, isLoading: dataLoading } = useQuery({
+    queryKey: queryKeys.governance.policies(orgId ?? ""),
+    queryFn: async () => {
+      return getGovernanceDashboardAction(orgId!);
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const policies = dashboardData?.policies ?? [];
+  const telemetry = dashboardData?.telemetry ?? null;
 
   const [activeTab, setActiveTab]       = useState<TabId>("active");
   const [search, setSearch]             = useState("");
-  const [policies, setPolicies]         = useState<PolicyRow[]>([]);
-  const [telemetry, setTelemetry]       = useState<GovernanceTelemetry | null>(null);
-  const [dataLoading, setDataLoading]   = useState(true);
   const [showPublish, setShowPublish]   = useState(false);
   const [auditPolicy, setAuditPolicy]   = useState<PolicyRow | null>(null);
-
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setDataLoading(true);
-    try {
-      const { policies: p, telemetry: t } = await getGovernanceDashboardAction(orgId);
-      setPolicies(p);
-      setTelemetry(t);
-    } catch {
-      // non-fatal
-    } finally {
-      setDataLoading(false);
-    }
-  }, [orgId]);
-
-  useEffect(() => {
-    startTransition(() => { loadData(); });
-  }, [loadData]);
 
   // Filter
   const filtered = policies
@@ -771,6 +798,18 @@ export default function GovernancePoliciesPage() {
                     key={policy.id}
                     className="group border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer h-16"
                     onClick={() => setAuditPolicy(policy)}
+                    onMouseEnter={() => {
+                      if (!orgId) return;
+                      queryClient.prefetchQuery({
+                        queryKey: ["governance", "auditTracker", orgId, policy.id] as const,
+                        queryFn: () =>
+                          getAuditTrackerAction({
+                            organization_id: orgId,
+                            policy_id: policy.id,
+                          }),
+                        staleTime: 60_000,
+                      });
+                    }}
                   >
                     {/* Col 1: Name + Version */}
                     <td className="px-8 py-3">
@@ -838,7 +877,9 @@ export default function GovernancePoliciesPage() {
           <PublishPolicySlideOver
             orgId={orgId!}
             onClose={() => setShowPublish(false)}
-            onSuccess={loadData}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: queryKeys.governance.policies(orgId!) });
+            }}
           />
         )}
       </AnimatePresence>

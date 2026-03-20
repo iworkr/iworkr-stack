@@ -36,29 +36,26 @@ import {
   Users,
   Ban,
   Plus,
-  Trash2,
   Check,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrg } from "@/lib/hooks/use-org";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getWorkerDossier,
   getWorkerCredentials,
   getWorkerActivity,
+  type WorkerActivity,
+  type WorkerCredential,
   updateStaffBanking,
   updateWorkerAvailability,
   updateWorkerSkills,
   updateWorkerRole,
   toggleWorkerSuspension,
-  type WorkerCredential,
-  type WorkerActivity as WorkerActivityType,
 } from "@/app/actions/workforce-dossier";
-import {
-  upsertStaffProfile,
-  getSchadsRates,
-  type SchadsRate,
-} from "@/app/actions/staff-profiles";
+import { upsertStaffProfile, getSchadsRates, type SchadsRate } from "@/app/actions/staff-profiles";
 import { careSkillDefinitions, skillDefinitions } from "@/lib/team-data";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
@@ -129,6 +126,11 @@ const CREDENTIAL_ICONS: Record<string, React.ComponentType<{ size?: number; clas
 };
 
 const ease = [0.16, 1, 0.3, 1] as const;
+
+type WorkerDossierQueryData = {
+  dossier: Awaited<ReturnType<typeof getWorkerDossier>>;
+  rates: SchadsRate[];
+};
 
 const fmtCurrency = (n: number) =>
   new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(n);
@@ -201,19 +203,51 @@ export default function WorkerDossierPage() {
   const userId = params.id as string;
   const { orgId, loading: orgLoading } = useOrg();
   const { isCare } = useIndustryLexicon();
+  const queryClient = useQueryClient();
 
-  // Core state
-  const [dossier, setDossier] = useState<any>(null);
-  const [schadsRates, setSchadsRates] = useState<SchadsRate[]>([]);
-  const [credentials, setCredentials] = useState<WorkerCredential[]>([]);
-  const [activities, setActivities] = useState<WorkerActivityType[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DossierTab>("employment");
   const [saving, setSaving] = useState(false);
 
-  // Loaded flags (prevent re-fetch loops for truly empty data)
-  const [credentialsLoaded, setCredentialsLoaded] = useState(false);
-  const [activitiesLoaded, setActivitiesLoaded] = useState(false);
+  const { data: dossierQueryData, isLoading: loading } = useQuery<WorkerDossierQueryData>({
+    queryKey: queryKeys.workforce.dossier(orgId ?? "", userId),
+    queryFn: async () => {
+      const [dossier, rates] = await Promise.all([
+        getWorkerDossier(userId, orgId!),
+        getSchadsRates(),
+      ]);
+      return { dossier, rates };
+    },
+    enabled: !!orgId && !!userId,
+    staleTime: 60_000,
+  });
+
+  const dossier = dossierQueryData?.dossier ?? null;
+  const schadsRates = useMemo(
+    () => dossierQueryData?.rates ?? [],
+    [dossierQueryData],
+  );
+
+  const {
+    data: credentials = [],
+    isPending: credentialsPending,
+  } = useQuery<WorkerCredential[]>({
+    queryKey: queryKeys.workforce.workerCredentials(orgId ?? "", userId),
+    queryFn: () => getWorkerCredentials(userId, orgId!),
+    enabled: !!orgId && !!userId && activeTab === "compliance",
+    staleTime: 60_000,
+  });
+
+  const activitiesQuery = useQuery<WorkerActivity[]>({
+    queryKey: queryKeys.workforce.workerActivity(orgId ?? "", userId),
+    queryFn: () => getWorkerActivity(userId, orgId!),
+    enabled: !!orgId && !!userId && activeTab === "activity",
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const activities = activitiesQuery.data ?? [];
+  const activitiesPending = activitiesQuery.isPending;
+  const activitiesBlocking = activitiesPending || activitiesQuery.isFetching;
+  const { refetch: refetchActivities } = activitiesQuery;
 
   // Toast
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -258,76 +292,46 @@ export default function WorkerDossierPage() {
   const [showRoleConfirm, setShowRoleConfirm] = useState(false);
   const [changingRole, setChangingRole] = useState(false);
 
-  /* ── Data Loading ── */
+  /* ── Sync dossier into local form state (server → form) ── */
 
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const [dossierData, ratesData] = await Promise.all([
-        getWorkerDossier(userId, orgId),
-        getSchadsRates(),
-      ]);
-
-      setDossier(dossierData);
-      setSchadsRates(ratesData);
-
-      if (dossierData) {
-        // Populate employment form
-        setEmpType(dossierData.employment_type || "casual");
-        setAward(dossierData.award_type || "SCHADS");
-        const levelCode = dossierData.schads_level || "";
-        setSchadsLevel(levelCode.includes(".") ? levelCode.split(".")[0] : levelCode);
-        setSchadsPaypoint(levelCode.includes(".") ? levelCode.split(".")[1] : "1");
-        setBankAccountName(dossierData.bank_account_name || "");
-        setBankBsb(dossierData.bank_bsb || "");
-        setBankAccountNumber(dossierData.bank_account_number || "");
-        setSuperFund(dossierData.super_fund_name || dossierData.superannuation_fund || "");
-        setSuperUsi(dossierData.super_usi || "");
-        setSuperMember(dossierData.super_member_number || dossierData.superannuation_number || "");
-        setTfnMask(dossierData.tfn_hash ? "••• ••• " + (dossierData.tfn_hash.slice(-3) || "***") : "");
-        setMaxHours(dossierData.max_weekly_hours || 38);
-        setEditSkills(dossierData.qualifications || []);
-        setEditRegions(dossierData.skills || []);
-        setRoleChangeTarget(dossierData.role || "technician");
-
-        // Build availability state
-        const avail: Record<string, { available: boolean; start: string; end: string }> = {};
-        for (const day of DAYS) {
-          const slots = (dossierData.availability || {})[day];
-          if (slots && slots.length > 0) {
-            avail[day] = { available: true, start: slots[0].start || "06:00", end: slots[0].end || "18:00" };
-          } else {
-            avail[day] = { available: false, start: "06:00", end: "18:00" };
-          }
-        }
-        setAvailabilityDays(avail);
-      }
-    } catch (err) {
-      console.error("Failed to load dossier:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, orgId]);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  // Lazy load tab data (with loaded flags to prevent re-fetch loops)
   useEffect(() => {
+    if (!dossier) return;
+
+    setEmpType(dossier.employment_type || "casual");
+    setAward(dossier.award_type || "SCHADS");
+    const levelCode = dossier.schads_level || "";
+    setSchadsLevel(levelCode.includes(".") ? levelCode.split(".")[0] : levelCode);
+    setSchadsPaypoint(levelCode.includes(".") ? levelCode.split(".")[1] : "1");
+    setBankAccountName(dossier.bank_account_name || "");
+    setBankBsb(dossier.bank_bsb || "");
+    setBankAccountNumber(dossier.bank_account_number || "");
+    setSuperFund(dossier.super_fund_name || dossier.superannuation_fund || "");
+    setSuperUsi(dossier.super_usi || "");
+    setSuperMember(dossier.super_member_number || dossier.superannuation_number || "");
+    setTfnMask(dossier.tfn_hash ? "••• ••• " + (dossier.tfn_hash.slice(-3) || "***") : "");
+    setMaxHours(dossier.max_weekly_hours || 38);
+    setEditSkills(dossier.qualifications || []);
+    setEditRegions(dossier.skills || []);
+    setRoleChangeTarget(dossier.role || "technician");
+
+    const avail: Record<string, { available: boolean; start: string; end: string }> = {};
+    for (const day of DAYS) {
+      const slots = (dossier.availability || {})[day];
+      if (slots && slots.length > 0) {
+        avail[day] = { available: true, start: slots[0].start || "06:00", end: slots[0].end || "18:00" };
+      } else {
+        avail[day] = { available: false, start: "06:00", end: "18:00" };
+      }
+    }
+    setAvailabilityDays(avail);
+  }, [dossier]);
+
+  async function refreshDossier() {
     if (!orgId) return;
-    if (activeTab === "compliance" && !credentialsLoaded) {
-      getWorkerCredentials(userId, orgId).then((data) => {
-        setCredentials(data);
-        setCredentialsLoaded(true);
-      });
-    }
-    if (activeTab === "activity" && !activitiesLoaded) {
-      getWorkerActivity(userId, orgId).then((data) => {
-        setActivities(data);
-        setActivitiesLoaded(true);
-      });
-    }
-  }, [activeTab, orgId, userId, credentialsLoaded, activitiesLoaded]);
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.workforce.dossier(orgId, userId),
+    });
+  }
 
   /* ── SCHADS Rate Calculation ── */
 
@@ -422,7 +426,7 @@ export default function WorkerDossierPage() {
 
       setEditingEmployment(false);
       addToast("success", "Employment & banking details saved successfully");
-      await loadData();
+      await refreshDossier();
     } catch (err) {
       console.error("Failed to save employment:", err);
       addToast("error", "An unexpected error occurred while saving");
@@ -466,7 +470,7 @@ export default function WorkerDossierPage() {
 
       setEditingRostering(false);
       addToast("success", "Rostering constraints saved successfully");
-      await loadData();
+      await refreshDossier();
     } catch (err) {
       console.error("Failed to save rostering:", err);
       addToast("error", "An unexpected error occurred while saving");
@@ -492,7 +496,7 @@ export default function WorkerDossierPage() {
         setShowRoleConfirm(false);
         setRoleConfirmation("");
         addToast("success", `Role updated to ${targetRole.replace(/_/g, " ")}`);
-        await loadData();
+        await refreshDossier();
       }
     } catch (err) {
       console.error("Failed to update role:", err);
@@ -516,7 +520,7 @@ export default function WorkerDossierPage() {
         addToast("error", result.error || "Failed to update access");
       } else {
         addToast("success", action === "suspend" ? "Worker suspended" : "Worker reactivated");
-        await loadData();
+        await refreshDossier();
       }
     } catch (err) {
       console.error("Failed to toggle suspension:", err);
@@ -694,7 +698,7 @@ export default function WorkerDossierPage() {
                 <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600">Financial Classification</h2>
                 {editingEmployment ? (
                   <div className="flex items-center gap-2">
-                    <button onClick={() => { setEditingEmployment(false); loadData(); }} className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 py-1.5 text-[12px] text-zinc-400 hover:text-zinc-200">
+                    <button onClick={() => { setEditingEmployment(false); void refreshDossier(); }} className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 py-1.5 text-[12px] text-zinc-400 hover:text-zinc-200">
                       <X size={14} /> Cancel
                     </button>
                     <button onClick={handleSaveEmployment} disabled={saving} className="flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2 text-[12px] font-semibold text-black hover:brightness-110 disabled:opacity-40">
@@ -888,7 +892,7 @@ export default function WorkerDossierPage() {
 
               {/* Credentials Grid */}
               <div className="space-y-3">
-                {!credentialsLoaded ? (
+                {credentialsPending ? (
                   <div className="flex h-40 items-center justify-center">
                     <Loader2 size={20} className="animate-spin text-zinc-600" />
                   </div>
@@ -991,7 +995,7 @@ export default function WorkerDossierPage() {
                 <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600">Scheduling Constraints</h2>
                 {editingRostering ? (
                   <div className="flex items-center gap-2">
-                    <button onClick={() => { setEditingRostering(false); loadData(); }} className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 py-1.5 text-[12px] text-zinc-400 hover:text-zinc-200">
+                    <button onClick={() => { setEditingRostering(false); void refreshDossier(); }} className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 py-1.5 text-[12px] text-zinc-400 hover:text-zinc-200">
                       <X size={14} /> Cancel
                     </button>
                     <button onClick={handleSaveRostering} disabled={saving} className="flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2 text-[12px] font-semibold text-black hover:brightness-110 disabled:opacity-40">
@@ -1181,14 +1185,14 @@ export default function WorkerDossierPage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600">Chronological Audit Trail</h2>
                 <button
-                  onClick={() => { setActivitiesLoaded(false); }}
+                  onClick={() => { void refetchActivities(); }}
                   className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300"
                 >
                   <RefreshCw size={12} /> Refresh
                 </button>
               </div>
 
-              {!activitiesLoaded ? (
+              {activitiesBlocking ? (
                 <div className="flex h-40 items-center justify-center">
                   <Loader2 size={20} className="animate-spin text-zinc-600" />
                 </div>

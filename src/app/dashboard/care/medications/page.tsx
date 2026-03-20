@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -670,20 +672,25 @@ function AddMedicationSlideOver({
 
 export default function MedicationsPage() {
   const { orgId } = useOrg();
+  const queryClient = useQueryClient();
   const medications = useMedicationsStore((s) => s.medications);
   const marEntries = useMedicationsStore((s) => s.marEntries);
-  const loading = useMedicationsStore((s) => s.loading);
+  const storeLoading = useMedicationsStore((s) => s.loading);
   const loadMedications = useMedicationsStore((s) => s.loadMedications);
+
+  const { isLoading: queryLoading } = useQuery<void>({
+    queryKey: queryKeys.care.medications(orgId!),
+    queryFn: async () => { await loadMedications(orgId!); },
+    enabled: !!orgId,
+  });
+
+  const loading = storeLoading || queryLoading;
 
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<TabFilter>("chart");
   const [selectedMed, setSelectedMed] = useState<ParticipantMedication | null>(null);
   const [logAdmin, setLogAdmin] = useState<ParticipantMedication | null>(null);
   const [showAddMed, setShowAddMed] = useState(false);
-
-  useEffect(() => {
-    if (orgId) loadMedications(orgId);
-  }, [orgId, loadMedications]);
 
   /* ── Computed metrics ────────────────────────────────── */
   const metrics = useMemo(() => {
@@ -953,7 +960,7 @@ export default function MedicationsPage() {
         med={logAdmin}
         orgId={orgId || ""}
         onClose={() => setLogAdmin(null)}
-        onSaved={() => { if (orgId) loadMedications(orgId); }}
+        onSaved={() => { queryClient.invalidateQueries({ queryKey: queryKeys.care.medications(orgId!) }); }}
       />
 
       {/* ─── Add Medication Slide-Over ─────────────────────── */}
@@ -962,7 +969,7 @@ export default function MedicationsPage() {
           <AddMedicationSlideOver
             orgId={orgId || ""}
             onClose={() => setShowAddMed(false)}
-            onSaved={() => { if (orgId) loadMedications(orgId); setShowAddMed(false); }}
+            onSaved={() => { queryClient.invalidateQueries({ queryKey: queryKeys.care.medications(orgId!) }); setShowAddMed(false); }}
           />
         )}
       </AnimatePresence>

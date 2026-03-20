@@ -2,7 +2,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   Scale, Plus, ArrowLeft, Play, Trash2, Loader2,
   FileText, Shield, Zap, AlertTriangle, Archive, CheckCircle2,
@@ -1296,22 +1298,20 @@ function RuleBuilderView({
   onBack: () => void;
   onRefresh: () => void;
 }) {
-  const [rules, setRules] = useState<PayrollRule[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingRule, setEditingRule] = useState<PayrollRule | null>(null);
   const [creatingRule, setCreatingRule] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showSimulator, setShowSimulator] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const rulesQueryClient = useQueryClient();
 
-  const loadRules = useCallback(async () => {
-    setLoading(true);
-    const { rules: data } = await getRulesForAgreement(agreement.id);
-    setRules(data);
-    setLoading(false);
-  }, [agreement.id]);
-
-  useEffect(() => { loadRules(); }, [loadRules]);
+  const { data: rules = [], isLoading: loading } = useQuery<PayrollRule[]>({
+    queryKey: [...queryKeys.workforce.payrollRules(orgId), "rules", agreement.id],
+    queryFn: async () => {
+      const { rules: data } = await getRulesForAgreement(agreement.id);
+      return data;
+    },
+  });
 
   const highestPriority = useMemo(
     () => Math.max(...rules.map((r) => r.priority_weight), 1),
@@ -1335,7 +1335,7 @@ function RuleBuilderView({
       });
       if (!error) {
         setEditingRule(null);
-        await loadRules();
+        await rulesQueryClient.invalidateQueries({ queryKey: [...queryKeys.workforce.payrollRules(orgId), "rules", agreement.id] });
       }
     } else {
       const { error } = await createRule(orgId, agreement.id, {
@@ -1349,7 +1349,7 @@ function RuleBuilderView({
       });
       if (!error) {
         setCreatingRule(false);
-        await loadRules();
+        await rulesQueryClient.invalidateQueries({ queryKey: [...queryKeys.workforce.payrollRules(orgId), "rules", agreement.id] });
       }
     }
     setSaving(false);
@@ -1360,14 +1360,14 @@ function RuleBuilderView({
     const { error } = await deleteRule(ruleId);
     if (!error) {
       if (editingRule?.id === ruleId) setEditingRule(null);
-      await loadRules();
+      await rulesQueryClient.invalidateQueries({ queryKey: [...queryKeys.workforce.payrollRules(orgId), "rules", agreement.id] });
     }
   }
 
   async function handleToggleRule(rule: PayrollRule) {
     startTransition(async () => {
       await updateRule(rule.id, { is_active: !rule.is_active });
-      await loadRules();
+      await rulesQueryClient.invalidateQueries({ queryKey: [...queryKeys.workforce.payrollRules(orgId), "rules", agreement.id] });
     });
   }
 
@@ -1595,28 +1595,33 @@ export default function PayrollRulesPage() {
 
   // ── State ──
   const [view, setView] = useState<"library" | "builder">("library");
-  const [agreements, setAgreements] = useState<PayrollAgreement[]>([]);
-  const [stats, setStats] = useState<EbaDashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showNewModal, setShowNewModal] = useState(false);
   const [creatingAgreement, setCreatingAgreement] = useState(false);
   const [selectedAgreement, setSelectedAgreement] = useState<PayrollAgreement | null>(null);
   const [isPending, startTransition] = useTransition();
+  const queryClient = useQueryClient();
 
   // ── Data Loading ──
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    const [agreementsResult, statsResult] = await Promise.all([
-      getAgreements(orgId),
-      getEbaDashboardStats(orgId),
-    ]);
-    setAgreements(agreementsResult.agreements);
-    setStats(statsResult.stats);
-    setLoading(false);
-  }, [orgId]);
+  const { data: pageData, isLoading: loading } = useQuery<{
+    agreements: PayrollAgreement[];
+    stats: EbaDashboardStats | null;
+  }>({
+    queryKey: queryKeys.workforce.payrollRules(orgId!),
+    queryFn: async () => {
+      const [agreementsResult, statsResult] = await Promise.all([
+        getAgreements(orgId!),
+        getEbaDashboardStats(orgId!),
+      ]);
+      return {
+        agreements: agreementsResult.agreements,
+        stats: statsResult.stats,
+      };
+    },
+    enabled: !!orgId,
+  });
 
-  useEffect(() => { loadData(); }, [loadData]);
+  const agreements = pageData?.agreements ?? [];
+  const stats = pageData?.stats ?? null;
 
   // ── Actions ──
   async function handleCreateAgreement(data: {
@@ -1631,21 +1636,21 @@ export default function PayrollRulesPage() {
     setCreatingAgreement(false);
     if (!error) {
       setShowNewModal(false);
-      await loadData();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.workforce.payrollRules(orgId!) });
     }
   }
 
   async function handleActivate(id: string) {
     startTransition(async () => {
       await activateAgreement(id);
-      await loadData();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.workforce.payrollRules(orgId!) });
     });
   }
 
   async function handleArchive(id: string) {
     startTransition(async () => {
       await archiveAgreement(id);
-      await loadData();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.workforce.payrollRules(orgId!) });
     });
   }
 
@@ -1813,11 +1818,11 @@ export default function PayrollRulesPage() {
           <RuleBuilderView
             agreement={selectedAgreement}
             orgId={orgId}
-            onBack={() => { setView("library"); setSelectedAgreement(null); loadData(); }}
+            onBack={() => { setView("library"); setSelectedAgreement(null); queryClient.invalidateQueries({ queryKey: queryKeys.workforce.payrollRules(orgId!) }); }}
             onRefresh={async () => {
               const { agreement } = await getAgreementDetail(selectedAgreement.id);
               if (agreement) setSelectedAgreement(agreement);
-              await loadData();
+              await queryClient.invalidateQueries({ queryKey: queryKeys.workforce.payrollRules(orgId!) });
             }}
           />
         )}

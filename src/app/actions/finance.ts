@@ -847,7 +847,7 @@ export async function getPayouts(orgId: string) {
 
     const { data: payouts, error } = await supabase
       .from("payouts")
-      .select("*")
+      .select("id, organization_id, amount, payout_date, bank, invoice_ids, status, created_at")
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false });
 

@@ -3,7 +3,9 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   BarChart3,
   TrendingUp,
@@ -767,26 +769,18 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<MainTab>("dashboard");
   const [dateRange, setDateRange] = useState<DateRange>("6M");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Dashboard state
-  const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
-  const [profitability, setProfitability] = useState<CategoryMetric[]>([]);
-  const [revenueTrend, setRevenueTrend] = useState<RevenueTrend[]>([]);
-  const [leaderboard, setLeaderboard] = useState<WorkerLeaderboardEntry[]>([]);
-  const [dashLoading, setDashLoading] = useState(true);
 
   // Pivot state
   const [pivotSource, setPivotSource] = useState<PivotSource>("job_profitability");
   const [pivotGroupBy, setPivotGroupBy] = useState<GroupDimension | null>(null);
-  const [pivotData, setPivotData] = useState<PivotRow[]>([]);
-  const [pivotLoading, setPivotLoading] = useState(false);
   const [pivotSourceOpen, setPivotSourceOpen] = useState(false);
 
   // Drill-down state
   const [drillDown, setDrillDown] = useState<DrillDownData | null>(null);
   const [drillLoading, setDrillLoading] = useState(false);
+
+  const queryClient = useQueryClient();
 
   /* ── Helpers ────────────────────────────────────────────── */
   const monthsFromRange = useCallback((range: DateRange): number => {
@@ -798,64 +792,51 @@ export default function AnalyticsPage() {
     }
   }, []);
 
-  /* ── Data fetching: Dashboard ───────────────────────────── */
-  const loadDashboard = useCallback(async () => {
-    if (!orgId) return;
-    setDashLoading(true);
-    setError(null);
-    const months = monthsFromRange(dateRange);
+  const months = monthsFromRange(dateRange);
 
-    try {
+  /* ── Data fetching: Dashboard ───────────────────────────── */
+  const { data: dashData, isLoading: dashLoading } = useQuery<{
+    summary: AnalyticsSummary | null;
+    profitability: CategoryMetric[];
+    revenueTrend: RevenueTrend[];
+    leaderboard: WorkerLeaderboardEntry[];
+    lastRefresh: string | null;
+  }>({
+    queryKey: [...queryKeys.analytics.dashboard(orgId!), dateRange],
+    queryFn: async () => {
       const [summaryRes, profitRes, trendRes, leaderRes, refreshRes] = await Promise.all([
-        getAnalyticsSummary(orgId, months),
-        getProfitabilityByCategory(orgId, months),
-        getRevenueTrend(orgId, months),
-        getWorkerLeaderboard(orgId, months),
+        getAnalyticsSummary(orgId!, months),
+        getProfitabilityByCategory(orgId!, months),
+        getRevenueTrend(orgId!, months),
+        getWorkerLeaderboard(orgId!, months),
         getLastRefreshTime(),
       ]);
+      return {
+        summary: (summaryRes as any)?.data ?? null,
+        profitability: (profitRes as any)?.data ?? [],
+        revenueTrend: (trendRes as any)?.data ?? [],
+        leaderboard: (leaderRes as any)?.data ?? [],
+        lastRefresh: (refreshRes as any)?.data?.last_refresh ?? null,
+      };
+    },
+    enabled: !!orgId && activeTab === "dashboard",
+  });
 
-      setSummary((summaryRes as any)?.data ?? null);
-      setProfitability((profitRes as any)?.data ?? []);
-      setRevenueTrend((trendRes as any)?.data ?? []);
-      setLeaderboard((leaderRes as any)?.data ?? []);
-      setLastRefresh((refreshRes as any)?.data?.last_refresh ?? null);
-    } catch (err: any) {
-      console.error("Analytics load failed:", err);
-      setError(err?.message ?? "Failed to load analytics data");
-    } finally {
-      setDashLoading(false);
-    }
-  }, [orgId, dateRange, monthsFromRange]);
-
-  useEffect(() => {
-    if (orgId && activeTab === "dashboard") {
-      loadDashboard();
-    }
-  }, [orgId, activeTab, loadDashboard]);
+  const summary = dashData?.summary ?? null;
+  const profitability = dashData?.profitability ?? [];
+  const revenueTrend = dashData?.revenueTrend ?? [];
+  const leaderboard = dashData?.leaderboard ?? [];
+  const lastRefresh = dashData?.lastRefresh ?? null;
 
   /* ── Data fetching: Pivot ───────────────────────────────── */
-  const loadPivot = useCallback(async () => {
-    if (!orgId) return;
-    setPivotLoading(true);
-    setError(null);
-    const months = monthsFromRange(dateRange);
-
-    try {
-      const res = await getPivotData(orgId, pivotSource, months);
-      setPivotData((res as any)?.data ?? []);
-    } catch (err: any) {
-      console.error("Pivot load failed:", err);
-      setError(err?.message ?? "Failed to load pivot data");
-    } finally {
-      setPivotLoading(false);
-    }
-  }, [orgId, pivotSource, pivotGroupBy, dateRange, monthsFromRange]);
-
-  useEffect(() => {
-    if (orgId && activeTab === "pivot") {
-      loadPivot();
-    }
-  }, [orgId, activeTab, loadPivot]);
+  const { data: pivotData = [], isLoading: pivotLoading } = useQuery<PivotRow[]>({
+    queryKey: [...queryKeys.analytics.dashboard(orgId!), "pivot", pivotSource, dateRange],
+    queryFn: async () => {
+      const res = await getPivotData(orgId!, pivotSource, months);
+      return (res as any)?.data ?? [];
+    },
+    enabled: !!orgId && activeTab === "pivot",
+  });
 
   /* ── Refresh handler ────────────────────────────────────── */
   const handleRefresh = useCallback(async () => {
@@ -863,15 +844,13 @@ export default function AnalyticsPage() {
     setIsRefreshing(true);
     try {
       await refreshAnalyticsViews(orgId);
-      setLastRefresh(new Date().toISOString());
-      if (activeTab === "dashboard") await loadDashboard();
-      if (activeTab === "pivot") await loadPivot();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.analytics.dashboard(orgId) });
     } catch (err: any) {
       setError(err?.message ?? "Refresh failed");
     } finally {
       setIsRefreshing(false);
     }
-  }, [orgId, isRefreshing, activeTab, loadDashboard, loadPivot]);
+  }, [orgId, isRefreshing, queryClient]);
 
   /* ── Drill-down handler ─────────────────────────────────── */
   const handleDrillDown = useCallback(

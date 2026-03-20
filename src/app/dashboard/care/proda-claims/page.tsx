@@ -27,7 +27,9 @@ import {
   Filter,
   ArrowUpDown,
 } from "lucide-react";
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
   aggregateApprovedTimesheets,
@@ -100,20 +102,18 @@ function fmtDateTime(d: string | null | undefined): string {
 
 export default function ProdaClaimsPage() {
   const { orgId } = useOrg();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<"pipeline" | "batches" | "reconciliation" | "history">("pipeline");
-  const [stats, setStats] = useState<Awaited<ReturnType<typeof fetchSynapseStats>> | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!orgId) return;
-    setLoading(true);
-    fetchSynapseStats(orgId).then(setStats).finally(() => setLoading(false));
-  }, [orgId]);
+  const { data: stats = null, isLoading: loading } = useQuery<Awaited<ReturnType<typeof fetchSynapseStats>>>({
+    queryKey: queryKeys.care.prodaClaims(orgId ?? ""),
+    queryFn: () => fetchSynapseStats(orgId!),
+    enabled: !!orgId,
+  });
 
   const refreshStats = useCallback(() => {
-    if (!orgId) return;
-    fetchSynapseStats(orgId).then(setStats);
-  }, [orgId]);
+    queryClient.invalidateQueries({ queryKey: queryKeys.care.prodaClaims(orgId ?? "") });
+  }, [orgId, queryClient]);
 
   const tabs = [
     { id: "pipeline" as const, label: "Claim Pipeline", icon: Zap },
@@ -187,8 +187,7 @@ export default function ProdaClaimsPage() {
 /* ── Pipeline Tab: Aggregate + Approve + Generate CSV ──── */
 
 function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats: () => void }) {
-  const [lines, setLines] = useState<ClaimLineItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [aggregating, setAggregating] = useState(false);
   const [approving, setApproving] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -196,7 +195,6 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [aggregationResult, setAggregationResult] = useState<any>(null);
 
-  // Date range for aggregation
   const [periodStart, setPeriodStart] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 7);
@@ -204,17 +202,15 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
   });
   const [periodEnd, setPeriodEnd] = useState(() => new Date().toISOString().split("T")[0]);
 
-  const loadLines = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchSynapseClaimLines(orgId, statusFilter !== "all" ? { status: statusFilter } : undefined);
-      setLines(data);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, statusFilter]);
+  const pipelineKey = ["care", "prodaPipeline", orgId, statusFilter] as const;
 
-  useEffect(() => { loadLines(); }, [loadLines]);
+  const { data: lines = [], isLoading: loading } = useQuery<ClaimLineItem[]>({
+    queryKey: pipelineKey,
+    queryFn: () => fetchSynapseClaimLines(orgId, statusFilter !== "all" ? { status: statusFilter } : undefined),
+    enabled: !!orgId,
+  });
+
+  const invalidateLines = () => queryClient.invalidateQueries({ queryKey: ["care", "prodaPipeline", orgId] });
 
   const draftLines = useMemo(() => lines.filter((l) => l.status === "draft"), [lines]);
   const approvedLines = useMemo(() => lines.filter((l) => l.status === "approved"), [lines]);
@@ -243,7 +239,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
     try {
       const result = await aggregateApprovedTimesheets(orgId, periodStart, periodEnd);
       setAggregationResult(result);
-      await loadLines();
+      invalidateLines();
       onRefreshStats();
     } catch (e: any) {
       alert(`Aggregation failed: ${e.message}`);
@@ -259,7 +255,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
     try {
       await approveClaimLines(orgId, ids);
       clearSelection();
-      await loadLines();
+      invalidateLines();
       onRefreshStats();
     } catch (e: any) {
       alert(`Approval failed: ${e.message}`);
@@ -279,7 +275,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
         const { csv, batch_number } = await generateProdaCSV(orgId, allApproved);
         downloadCSV(csv, `${batch_number}.csv`);
         clearSelection();
-        await loadLines();
+        invalidateLines();
         onRefreshStats();
       } catch (e: any) {
         alert(`CSV generation failed: ${e.message}`);
@@ -294,7 +290,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
       const { csv, batch_number } = await generateProdaCSV(orgId, ids);
       downloadCSV(csv, `${batch_number}.csv`);
       clearSelection();
-      await loadLines();
+      invalidateLines();
       onRefreshStats();
     } catch (e: any) {
       alert(`CSV generation failed: ${e.message}`);
@@ -517,23 +513,24 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
 /* ── Batches Tab ─────────────────────────────────────────── */
 
 function BatchesTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats: () => void }) {
-  const [batches, setBatches] = useState<ProdaBatch[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [markingId, setMarkingId] = useState<string | null>(null);
   const [prodaRef, setProdaRef] = useState("");
 
-  useEffect(() => {
-    setLoading(true);
-    fetchSynapseBatches(orgId).then(setBatches).finally(() => setLoading(false));
-  }, [orgId]);
+  const batchesKey = ["care", "prodaBatches", orgId] as const;
+
+  const { data: batches = [], isLoading: loading } = useQuery<ProdaBatch[]>({
+    queryKey: batchesKey,
+    queryFn: () => fetchSynapseBatches(orgId),
+    enabled: !!orgId,
+  });
 
   const handleMarkSubmitted = async (batchId: string) => {
     setMarkingId(batchId);
     try {
       await markBatchSubmitted(batchId, prodaRef || undefined);
       setProdaRef("");
-      const updated = await fetchSynapseBatches(orgId);
-      setBatches(updated);
+      queryClient.invalidateQueries({ queryKey: batchesKey });
       onRefreshStats();
     } finally {
       setMarkingId(null);
@@ -608,21 +605,23 @@ function BatchesTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats: 
 /* ── Reconciliation Tab ──────────────────────────────────── */
 
 function ReconciliationTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats: () => void }) {
-  const [batches, setBatches] = useState<ProdaBatch[]>([]);
+  const queryClient = useQueryClient();
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
   const [returns, setReturns] = useState<ReturnEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<any>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchSynapseBatches(orgId).then((b) => {
-      // Only show batches that can be reconciled
-      setBatches(b.filter((batch) => ["submitted", "processing", "partially_reconciled"].includes(batch.status)));
-    }).finally(() => setLoading(false));
-  }, [orgId]);
+  const reconBatchesKey = ["care", "prodaReconBatches", orgId] as const;
+
+  const { data: batches = [], isLoading: loading } = useQuery<ProdaBatch[]>({
+    queryKey: reconBatchesKey,
+    queryFn: async () => {
+      const b = await fetchSynapseBatches(orgId);
+      return b.filter((batch) => ["submitted", "processing", "partially_reconciled"].includes(batch.status));
+    },
+    enabled: !!orgId,
+  });
 
   const loadReturns = useCallback(async (batchId: string) => {
     const data = await fetchSynapseReturnEntries(orgId, batchId);
@@ -776,13 +775,11 @@ function ReconciliationTab({ orgId, onRefreshStats }: { orgId: string; onRefresh
 /* ── History Tab ─────────────────────────────────────────── */
 
 function HistoryTab({ orgId }: { orgId: string }) {
-  const [runs, setRuns] = useState<AggregationRun[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchSynapseAggregationRuns(orgId).then(setRuns).finally(() => setLoading(false));
-  }, [orgId]);
+  const { data: runs = [], isLoading: loading } = useQuery<AggregationRun[]>({
+    queryKey: ["care", "prodaHistory", orgId],
+    queryFn: () => fetchSynapseAggregationRuns(orgId),
+    enabled: !!orgId,
+  });
 
   return (
     <div className="space-y-4">

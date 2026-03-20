@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Boxes, Search, Plus, AlertTriangle, RefreshCw,
   ChevronRight, Wrench, Clock, DollarSign,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { getTradeKits, recalculateKitPricesToTarget } from "@/app/actions/hephaestus";
 
 /* ── Types ────────────────────────────────────────── */
@@ -37,34 +39,37 @@ interface Kit {
 
 export default function KitsPage() {
   const org = useAuthStore((s) => s.currentOrg);
-  const [kits, setKits] = useState<Kit[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showWarningsOnly, setShowWarningsOnly] = useState(false);
-  const [count, setCount] = useState(0);
   const [recalculating, setRecalculating] = useState(false);
 
   const orgId = org?.id;
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    const result = await getTradeKits(orgId, {
-      search: search || undefined,
-      marginWarning: showWarningsOnly || undefined,
-    });
-    if (result.data) { setKits(result.data); setCount(result.count); }
-    setLoading(false);
-  }, [orgId, search, showWarningsOnly]);
+  const { data: kitsData, isLoading: loading } = useQuery<{
+    kits: Kit[];
+    count: number;
+  }>({
+    queryKey: [...queryKeys.ops.kits(orgId!), { search, showWarningsOnly }],
+    queryFn: async () => {
+      const result = await getTradeKits(orgId!, {
+        search: search || undefined,
+        marginWarning: showWarningsOnly || undefined,
+      });
+      return { kits: result.data ?? [], count: result.count };
+    },
+    enabled: !!orgId,
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const kits = kitsData?.kits ?? [];
+  const count = kitsData?.count ?? 0;
 
   const handleRecalcAll = async () => {
     if (!orgId) return;
     setRecalculating(true);
     await recalculateKitPricesToTarget(orgId);
     setRecalculating(false);
-    load();
+    queryClient.invalidateQueries({ queryKey: queryKeys.ops.kits(orgId) });
   };
 
   const formatMoney = (v: number) =>
@@ -128,7 +133,7 @@ export default function KitsPage() {
           Margin Warnings
         </button>
 
-        <button onClick={load} className="stealth-btn-ghost text-xs p-2">
+        <button onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.ops.kits(orgId!) })} className="stealth-btn-ghost text-xs p-2">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>

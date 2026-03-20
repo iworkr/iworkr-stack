@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useRouter } from "next/navigation";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   listFleetVehiclesAction,
   createFleetVehicleAction,
@@ -438,31 +440,34 @@ export default function FleetOverviewPage() {
   const router = useRouter();
   const [healthCheckPending, startHealthCheck] = useTransition();
 
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<StatusFilter>("all");
   const [createOpen, setCreateOpen] = useState(false);
 
-  const refresh = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const [v, o] = await Promise.all([
-        listFleetVehiclesAction(orgId),
-        getFleetOverviewAction(orgId),
-      ]);
-      setVehicles((v || []) as Vehicle[]);
-      setOverview(o as OverviewData);
-    } catch (err) {
-      console.error("Fleet data load failed:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
+  const queryClient = useQueryClient();
 
-  useEffect(() => { refresh(); }, [refresh]);
+  const { data: fleetOverviewData, isLoading: loading } = useQuery<{
+    vehicles: Vehicle[];
+    overview: OverviewData | null;
+  }>({
+    queryKey: queryKeys.fleet.overview(orgId!),
+    queryFn: async () => {
+      const [v, o] = await Promise.all([
+        listFleetVehiclesAction(orgId!),
+        getFleetOverviewAction(orgId!),
+      ]);
+      return {
+        vehicles: ((v || []) as Vehicle[]),
+        overview: (o as OverviewData) ?? null,
+      };
+    },
+    enabled: !!orgId,
+  });
+
+  const vehicles = fleetOverviewData?.vehicles ?? [];
+  const overview = fleetOverviewData?.overview ?? null;
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.fleet.overview(orgId!) });
 
   /* ── Derived data ────────────────────────────────────── */
   const statusCounts = useMemo(() => {

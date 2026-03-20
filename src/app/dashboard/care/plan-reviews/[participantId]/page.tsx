@@ -2,6 +2,8 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -149,8 +151,8 @@ export default function PlanReviewWorkspacePage() {
   const params = useParams();
   const participantId = params.participantId as string;
 
-  const [participantName, setParticipantName] = useState("Participant");
-  const [reports, setReports] = useState<any[]>([]);
+  const queryClient = useQueryClient();
+
   const [reportId, setReportId] = useState("");
   const [report, setReport] = useState<any | null>(null);
   const [snapshot, setSnapshot] = useState<any | null>(null);
@@ -166,41 +168,48 @@ export default function PlanReviewWorkspacePage() {
   const isEditable = !["finalized", "archived"].includes(activeStatus);
 
   // Resolve participant name
-  useEffect(() => {
-    if (!orgId || !participantId) return;
-    listPlanReviewParticipantsAction(orgId).then((list) => {
+  const { data: participantName = "Participant" } = useQuery<string>({
+    queryKey: ["care", "planReviewParticipantName", orgId, participantId],
+    queryFn: async () => {
+      const list = await listPlanReviewParticipantsAction(orgId!);
       const match = list.find((p: any) => p.id === participantId);
-      if (match) setParticipantName(match.name);
-    });
-  }, [orgId, participantId]);
+      return match?.name ?? "Participant";
+    },
+    enabled: !!orgId && !!participantId,
+  });
 
   // Load reports for this participant
-  const loadReports = async () => {
-    if (!orgId) return;
-    const all = await listPlanReviewReportsAction(orgId);
-    const filtered = (all || []).filter((r: any) => r.participant_id === participantId);
-    setReports(filtered);
-    if (!reportId && filtered.length > 0) setReportId(filtered[0].id);
-  };
+  const { data: reports = [] } = useQuery<any[]>({
+    queryKey: queryKeys.care.planReviewDetail(orgId!, participantId),
+    queryFn: async () => {
+      const all = await listPlanReviewReportsAction(orgId!);
+      return (all || []).filter((r: any) => r.participant_id === participantId);
+    },
+    enabled: !!orgId && !!participantId,
+  });
 
-  const loadReport = async (id: string) => {
-    if (!id) return;
-    const data = await getPlanReviewReportAction(id);
-    setReport(data.report);
-    setSnapshot(data.snapshot);
-    setDraft(data.report?.draft_json_payload || {});
-    setPreviewVersion((v) => v + 1);
-  };
-
-  useEffect(() => { loadReports(); }, [orgId, participantId]);
-  useEffect(() => { if (reportId) loadReport(reportId); }, [reportId]);
-
-  // Auto-refresh during aggregation
+  // Auto-select first report
   useEffect(() => {
-    if (!reportId || !["aggregating", "draft"].includes(activeStatus)) return;
-    const t = setInterval(() => loadReport(reportId), 3000);
-    return () => clearInterval(t);
-  }, [reportId, activeStatus]);
+    if (!reportId && reports.length > 0) setReportId(reports[0].id);
+  }, [reports, reportId]);
+
+  // Load report detail
+  const { data: reportDetailData } = useQuery<{ report: any; snapshot: any }>({
+    queryKey: queryKeys.care.planReviewReport(reportId),
+    queryFn: () => getPlanReviewReportAction(reportId),
+    enabled: !!reportId,
+    refetchInterval: reportId && ["aggregating", "draft"].includes(activeStatus) ? 3000 : false,
+  });
+
+  // Sync report detail to local state
+  useEffect(() => {
+    if (reportDetailData) {
+      setReport(reportDetailData.report);
+      setSnapshot(reportDetailData.snapshot);
+      setDraft(reportDetailData.report?.draft_json_payload || {});
+      setPreviewVersion((v) => v + 1);
+    }
+  }, [reportDetailData]);
 
   // Auto-save draft
   useEffect(() => {
@@ -235,7 +244,7 @@ export default function PlanReviewWorkspacePage() {
         participant_id: participantId,
       });
       setReportId(created.id);
-      await loadReports();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewDetail(orgId, participantId) });
     } finally {
       setCreating(false);
     }
@@ -255,7 +264,7 @@ export default function PlanReviewWorkspacePage() {
     }, 1200);
     try {
       await startPlanReviewAggregationAction(reportId);
-      await loadReport(reportId);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewReport(reportId) });
     } finally {
       clearInterval(stepInterval);
       setAggregating(false);
@@ -265,7 +274,7 @@ export default function PlanReviewWorkspacePage() {
   const handleFinalize = async () => {
     startTransition(async () => {
       await finalizePlanReviewAction(reportId);
-      await loadReport(reportId);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewReport(reportId) });
     });
   };
 
@@ -277,7 +286,7 @@ export default function PlanReviewWorkspacePage() {
   const handleStatusChange = async (status: "draft" | "pending_manager_review" | "archived") => {
     await setPlanReviewStatusAction({ report_id: reportId, status });
     setStatusDropdownOpen(false);
-    await loadReport(reportId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewReport(reportId) });
   };
 
   const lastSaved = report?.updated_at
@@ -471,7 +480,7 @@ export default function PlanReviewWorkspacePage() {
                             goal_id: g.goal_id,
                             steering_instructions: steer || undefined,
                           });
-                          await loadReport(reportId);
+                          await queryClient.invalidateQueries({ queryKey: queryKeys.care.planReviewReport(reportId) });
                         }}
                         className="inline-flex items-center gap-1 rounded border border-white/[0.08] px-2 py-1 text-[10px] text-zinc-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-40 shrink-0"
                       >

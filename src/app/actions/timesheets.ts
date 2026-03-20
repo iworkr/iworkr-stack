@@ -235,7 +235,17 @@ export async function fetchTimeEntriesAction(
     const supabase = await createServerSupabaseClient();
     let query = (supabase as any)
       .from("time_entries")
-      .select("*, profiles!time_entries_worker_id_fkey(full_name)")
+      .select(`
+        id, organization_id, timesheet_id, shift_id, worker_id,
+        clock_in, clock_out, clock_in_location, clock_out_location,
+        total_hours, break_minutes, travel_minutes, travel_km,
+        status, is_geofence_override, geofence_override_reason,
+        is_manual_entry, is_auto_clock_out,
+        scheduled_start, scheduled_end, variance_minutes,
+        exception_type, exception_resolved, exception_resolved_by, exception_notes,
+        is_leave_entry, leave_type, created_at, updated_at,
+        profiles!time_entries_worker_id_fkey(full_name)
+      `)
       .eq("organization_id", organizationId)
       .order("clock_in", { ascending: false })
       .limit(500);
@@ -497,7 +507,7 @@ export async function fetchPayrollExportsAction(organizationId: string) {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await (supabase as any)
       .from("payroll_exports")
-      .select("*")
+      .select("id, organization_id, timesheet_ids, target_platform, batch_status, period_start, period_end, worker_count, total_hours, total_cost, exported_by, created_at")
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -610,7 +620,7 @@ export async function fetchTimesheetAdjustmentsAction(organizationId: string, en
     const supabase = await createServerSupabaseClient();
     let query = (supabase as any)
       .from("timesheet_adjustments")
-      .select("*")
+      .select("id, organization_id, original_entry_id, adjustment_type, reason, old_values, new_values, created_by, created_at")
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: false });
 

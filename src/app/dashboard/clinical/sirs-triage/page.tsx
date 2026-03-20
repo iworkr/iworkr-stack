@@ -8,6 +8,8 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
@@ -1405,74 +1407,52 @@ function AllIncidentRow({
 
 export default function SirsTriagePage() {
   const orgId = useAuthStore((s) => s.currentOrg?.id) ?? null;
-  const [stats, setStats] = useState<TriageStats | null>(null);
-  const [incidents, setIncidents] = useState<SirsIncident[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>("active");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedIncident, setSelectedIncident] =
     useState<SirsIncident | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 250);
     return () => clearTimeout(t);
   }, [search]);
 
-  /* ── Data Loading ──────────────────────────────────────── */
+  /* ── Data Loading via useQuery ─────────────────────────── */
+
+  const { data: sirsData, isLoading: loading, isFetching: refreshing } = useQuery<{ stats: TriageStats | null; incidents: SirsIncident[] }>({
+    queryKey: queryKeys.clinical.sirsTriage(orgId ?? ""),
+    queryFn: async () => {
+      const [triageResult, incidentsResult] = await Promise.allSettled([
+        getSirsTriageData(orgId!),
+        getSirsIncidents(orgId!),
+      ]);
+
+      const stats = triageResult.status === "fulfilled" && triageResult.value.data
+        ? (triageResult.value.data as TriageStats)
+        : null;
+
+      const incidents = incidentsResult.status === "fulfilled" && incidentsResult.value.data
+        ? (incidentsResult.value.data as SirsIncident[])
+        : [];
+
+      return { stats, incidents };
+    },
+    enabled: !!orgId,
+    refetchInterval: 30_000,
+  });
+
+  const stats = sirsData?.stats ?? null;
+  const incidents = sirsData?.incidents ?? [];
 
   const loadData = useCallback(
-    async (silent = false) => {
-      if (!orgId) return;
-      if (!silent) setLoading(true);
-      else setRefreshing(true);
-
-      try {
-        const [triageResult, incidentsResult] = await Promise.allSettled([
-          getSirsTriageData(orgId),
-          getSirsIncidents(orgId),
-        ]);
-
-        if (
-          triageResult.status === "fulfilled" &&
-          triageResult.value.data
-        ) {
-          setStats(triageResult.value.data as TriageStats);
-        }
-
-        if (
-          incidentsResult.status === "fulfilled" &&
-          incidentsResult.value.data
-        ) {
-          setIncidents(incidentsResult.value.data as SirsIncident[]);
-        }
-      } catch (err) {
-        console.error("SIRS data load failed:", err);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
+    (silent = false) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.clinical.sirsTriage(orgId ?? "") });
     },
-    [orgId]
+    [orgId, queryClient]
   );
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Auto-refresh every 30 seconds (statutory compliance — clocks are ticking)
-  useEffect(() => {
-    pollingRef.current = setInterval(() => {
-      loadData(true);
-    }, 30_000);
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [loadData]);
 
   /* ── Filtering ─────────────────────────────────────────── */
 

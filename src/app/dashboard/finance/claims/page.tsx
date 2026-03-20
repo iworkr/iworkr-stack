@@ -28,8 +28,10 @@ import {
   Server,
   Activity,
 } from "lucide-react";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useCallback } from "react";
 import { useAuthStore } from "@/lib/auth-store";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getPaceDashboardStats,
   getPaceClaims,
@@ -107,6 +109,16 @@ interface DashboardStats {
   unlinked_participants: number;
   pending_endorsement: number;
 }
+
+interface PaceDashboardQueryData {
+  stats: DashboardStats | null;
+  claims: PaceClaim[];
+  linkages: PaceLinkage[];
+  prodaDevice: ProdaDeviceInfo | null;
+}
+
+const EMPTY_PACE_CLAIMS: PaceClaim[] = [];
+const EMPTY_PACE_LINKAGES: PaceLinkage[] = [];
 
 /* ── Status Config ─────────────────────────────────────── */
 
@@ -367,14 +379,35 @@ function LinkParticipantModal({
 
 export default function PACEClaimsPage() {
   const orgId = useAuthStore((s) => s.currentOrg?.id);
+  const queryClient = useQueryClient();
+
+  const { data: paceData, isLoading: loading } = useQuery<PaceDashboardQueryData>({
+    queryKey: queryKeys.care.prodaClaims(orgId ?? ""),
+    queryFn: async () => {
+      const [statsRes, claimsRes, linkageRes, deviceRes] = await Promise.all([
+        getPaceDashboardStats(orgId!),
+        getPaceClaims(orgId!),
+        getAllPaceLinkages(orgId!),
+        getProdaDevice(orgId!),
+      ]);
+      return {
+        stats: (statsRes.data as DashboardStats) ?? null,
+        claims: (claimsRes.data as PaceClaim[]) ?? [],
+        linkages: (linkageRes.data as PaceLinkage[]) ?? [],
+        prodaDevice: (deviceRes.data as ProdaDeviceInfo) ?? null,
+      };
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const stats = paceData?.stats ?? null;
+  const claims = paceData?.claims ?? EMPTY_PACE_CLAIMS;
+  const linkages = paceData?.linkages ?? EMPTY_PACE_LINKAGES;
+  const prodaDevice = paceData?.prodaDevice ?? null;
 
   /* ── State ─── */
   const [tab, setTab] = useState<Tab>("claims");
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [claims, setClaims] = useState<PaceClaim[]>([]);
-  const [linkages, setLinkages] = useState<PaceLinkage[]>([]);
-  const [prodaDevice, setProdaDevice] = useState<ProdaDeviceInfo | null>(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<ClaimStatus | "ALL">("ALL");
@@ -396,31 +429,11 @@ export default function PACEClaimsPage() {
   const [prodaRefreshing, setProdaRefreshing] = useState(false);
   const [prodaMessage, setProdaMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  /* ── Data fetching ─── */
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const [statsRes, claimsRes, linkageRes, deviceRes] = await Promise.all([
-        getPaceDashboardStats(orgId),
-        getPaceClaims(orgId),
-        getAllPaceLinkages(orgId),
-        getProdaDevice(orgId),
-      ]);
-      if (statsRes.data) setStats(statsRes.data as DashboardStats);
-      setClaims((claimsRes.data as PaceClaim[]) ?? []);
-      setLinkages((linkageRes.data as PaceLinkage[]) ?? []);
-      setProdaDevice((deviceRes.data as ProdaDeviceInfo) ?? null);
-    } catch (err) {
-      console.error("Failed to load PACE data:", err);
-    } finally {
-      setLoading(false);
+  const invalidatePaceData = useCallback(() => {
+    if (orgId) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.care.prodaClaims(orgId) });
     }
-  }, [orgId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  }, [orgId, queryClient]);
 
   /* ── Filtered claims ─── */
   const filteredClaims = useMemo(() => {
@@ -447,14 +460,14 @@ export default function PACEClaimsPage() {
       setSubmittingId(claimId);
       try {
         await submitClaimToPace(orgId, claimId);
-        await loadData();
+        invalidatePaceData();
       } catch (err) {
         console.error("Submit failed:", err);
       } finally {
         setSubmittingId(null);
       }
     },
-    [orgId, loadData]
+    [orgId, invalidatePaceData]
   );
 
   const handleRetryClaim = useCallback(
@@ -463,14 +476,14 @@ export default function PACEClaimsPage() {
       setRetryingId(claimId);
       try {
         await retryFailedClaim(orgId, claimId);
-        await loadData();
+        invalidatePaceData();
       } catch (err) {
         console.error("Retry failed:", err);
       } finally {
         setRetryingId(null);
       }
     },
-    [orgId, loadData]
+    [orgId, invalidatePaceData]
   );
 
   const handleSubmitAll = useCallback(async () => {
@@ -478,13 +491,13 @@ export default function PACEClaimsPage() {
     setSubmitAllLoading(true);
     try {
       await submitAllReadyClaims(orgId);
-      await loadData();
+      invalidatePaceData();
     } catch (err) {
       console.error("Submit all failed:", err);
     } finally {
       setSubmitAllLoading(false);
     }
-  }, [orgId, loadData]);
+  }, [orgId, invalidatePaceData]);
 
   const handleCheckEndorsement = useCallback(
     async (linkageId: string) => {
@@ -496,14 +509,14 @@ export default function PACEClaimsPage() {
         if (linkage) {
           await checkEndorsementStatus(orgId, linkage.participant_profile_id);
         }
-        await loadData();
+        invalidatePaceData();
       } catch (err) {
         console.error("Check endorsement failed:", err);
       } finally {
         setCheckingEndorsement(null);
       }
     },
-    [orgId, loadData]
+    [orgId, invalidatePaceData, linkages]
   );
 
   /* ── PRODA actions ─── */
@@ -518,13 +531,13 @@ export default function PACEClaimsPage() {
         device_id: prodaFormDeviceId.trim(),
       });
       setProdaMessage({ type: "success", text: "PRODA device registered successfully" });
-      await loadData();
+      invalidatePaceData();
     } catch (err) {
       setProdaMessage({ type: "error", text: err instanceof Error ? err.message : "Registration failed" });
     } finally {
       setProdaRegistering(false);
     }
-  }, [orgId, prodaFormOrgId, prodaFormDeviceName, prodaFormDeviceId, loadData]);
+  }, [orgId, prodaFormOrgId, prodaFormDeviceName, prodaFormDeviceId, invalidatePaceData]);
 
   const handleTestAuth = useCallback(async () => {
     if (!orgId) return;
@@ -547,13 +560,13 @@ export default function PACEClaimsPage() {
     try {
       await refreshProdaToken(orgId);
       setProdaMessage({ type: "success", text: "PRODA token refreshed successfully" });
-      await loadData();
+      invalidatePaceData();
     } catch (err) {
       setProdaMessage({ type: "error", text: err instanceof Error ? err.message : "Token refresh failed" });
     } finally {
       setProdaRefreshing(false);
     }
-  }, [orgId, loadData]);
+  }, [orgId, invalidatePaceData]);
 
   /* ── Computed ─── */
   const readyCount = useMemo(() => claims.filter((c) => c.pace_status === "READY").length, [claims]);
@@ -615,7 +628,7 @@ export default function PACEClaimsPage() {
                 ⚠ PACE API — {stats.queued} claim{stats.queued !== 1 ? "s" : ""} queued for retry
               </span>
               <button
-                onClick={loadData}
+                onClick={invalidatePaceData}
                 className="ml-auto rounded-md p-1 text-amber-400 transition-colors hover:bg-amber-500/10"
               >
                 <RefreshCw size={14} />
@@ -762,7 +775,7 @@ export default function PACEClaimsPage() {
                 </div>
 
                 <button
-                  onClick={loadData}
+                  onClick={invalidatePaceData}
                   className="ml-auto flex items-center gap-1.5 rounded-lg border border-zinc-800/50 bg-zinc-950/40 px-3 py-2 text-[12px] font-medium text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200"
                 >
                   <RefreshCw size={12} />
@@ -1247,7 +1260,7 @@ export default function PACEClaimsPage() {
             open={linkModalOpen}
             onClose={() => setLinkModalOpen(false)}
             orgId={orgId ?? ""}
-            onCreated={loadData}
+            onCreated={invalidatePaceData}
           />
         )}
       </AnimatePresence>

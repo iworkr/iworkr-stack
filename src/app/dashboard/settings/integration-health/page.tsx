@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
@@ -361,24 +363,10 @@ export default function IntegrationHealthPage() {
   /* ── Tab state ───────────────────────────────────────────────────── */
   const [activeTab, setActiveTab] = useState<TabId>("health");
 
-  /* ── Health stats ────────────────────────────────────────────────── */
-  const [stats, setStats] = useState<HealthStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [statsError, setStatsError] = useState<string | null>(null);
-  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   /* ── Queue ───────────────────────────────────────────────────────── */
-  const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
-  const [queueLoading, setQueueLoading] = useState(true);
   const [queueFilter, setQueueFilter] = useState<string>("all");
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-
-  /* ── Providers ───────────────────────────────────────────────────── */
-  const [providers, setProviders] = useState<any[]>([]);
-
-  /* ── Sync history ────────────────────────────────────────────────── */
-  const [syncHistory, setSyncHistory] = useState<any[]>([]);
 
   /* ── Modals ──────────────────────────────────────────────────────── */
   const [confirmModal, setConfirmModal] = useState<{
@@ -388,12 +376,7 @@ export default function IntegrationHealthPage() {
     onConfirm: () => void;
   } | null>(null);
 
-  /* ── Tax & Account mapping state ─────────────────────────────────── */
-  const [mappings, setMappings] = useState<IntegrationMapping[]>([]);
-  const [taxCodes, setTaxCodes] = useState<TaxCode[]>([]);
-  const [accountCodes, setAccountCodes] = useState<AccountCode[]>([]);
-  const [trackingCategories, setTrackingCategories] = useState<TrackingCategory[]>([]);
-  const [mappingLoading, setMappingLoading] = useState(false);
+  /* ── Tax & Account mapping local state ──────────────────────────── */
   const [taxMappingValues, setTaxMappingValues] = useState<Record<string, string>>({});
   const [accountMappingValues, setAccountMappingValues] = useState<Record<string, string>>({});
   const [savingMapping, setSavingMapping] = useState<string | null>(null);
@@ -409,122 +392,126 @@ export default function IntegrationHealthPage() {
     created_at: string;
     error_message: string | null;
   }>>([]);
-  const [healthMetrics, setHealthMetrics] = useState<any[]>([]);
 
-  /* ── Fetch health stats ──────────────────────────────────────────── */
-  const fetchStats = useCallback(async () => {
-    if (!orgId) return;
-    setStatsLoading(true);
-    const { data, error } = await getIntegrationHealthStats(orgId);
-    if (error) setStatsError(error);
-    else {
-      setStats(data);
-      setStatsError(null);
-    }
-    setStatsLoading(false);
-  }, [orgId]);
+  const queryClient = useQueryClient();
+  const healthKey = queryKeys.settings.integrationHealth(orgId!);
 
-  /* ── Fetch queue ─────────────────────────────────────────────────── */
-  const fetchQueue = useCallback(async () => {
-    if (!orgId) return;
-    setQueueLoading(true);
-    const { data } = await getQueueItems(orgId, queueFilter);
-    setQueueItems(data ?? []);
-    setQueueLoading(false);
-  }, [orgId, queueFilter]);
+  /* ── Health stats ────────────────────────────────────────────────── */
+  const { data: statsData, isLoading: statsLoading } = useQuery<{
+    stats: HealthStats | null;
+    error: string | null;
+  }>({
+    queryKey: [...healthKey, "stats"],
+    queryFn: async () => {
+      const { data, error } = await getIntegrationHealthStats(orgId!);
+      return { stats: data, error: error ?? null };
+    },
+    enabled: !!orgId,
+    refetchInterval: 30000,
+  });
 
-  /* ── Fetch providers ─────────────────────────────────────────────── */
-  const fetchProviders = useCallback(async () => {
-    if (!orgId) return;
-    const { data } = await getConnectedProviders(orgId);
-    setProviders(data ?? []);
-  }, [orgId]);
+  const stats = statsData?.stats ?? null;
+  const statsError = statsData?.error ?? null;
 
-  /* ── Fetch sync history ──────────────────────────────────────────── */
-  const fetchHistory = useCallback(async () => {
-    if (!orgId) return;
-    const { data } = await getSyncHistory(orgId, 20);
-    setSyncHistory(data ?? []);
-  }, [orgId]);
+  /* ── Queue ───────────────────────────────────────────────────────── */
+  const { data: queueItems = [], isLoading: queueLoading } = useQuery<QueueItem[]>({
+    queryKey: [...healthKey, "queue", queueFilter],
+    queryFn: async () => {
+      const { data } = await getQueueItems(orgId!, queueFilter);
+      return data ?? [];
+    },
+    enabled: !!orgId,
+    refetchInterval: 30000,
+  });
 
-  /* ── Fetch mapping data ──────────────────────────────────────────── */
-  const fetchMappingData = useCallback(async () => {
-    if (!orgId) return;
-    setMappingLoading(true);
-    const activeProvider = (providers ?? []).find((p: any) => p.connected)?.provider ?? "xero";
-    const [mapRes, taxRes, acctRes, trackRes] = await Promise.all([
-      getIntegrationMappings(orgId),
-      getTaxCodes(orgId, activeProvider),
-      getAccountCodes(orgId, activeProvider),
-      getTrackingCategories(orgId, activeProvider),
-    ]);
-    setMappings(mapRes.data ?? []);
-    setTaxCodes(taxRes.data ?? []);
-    setAccountCodes(acctRes.data ?? []);
-    setTrackingCategories(trackRes.data ?? []);
+  /* ── Providers ───────────────────────────────────────────────────── */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: providers = [] } = useQuery<any[]>({
+    queryKey: [...healthKey, "providers"],
+    queryFn: async () => {
+      const { data } = await getConnectedProviders(orgId!);
+      return data ?? [];
+    },
+    enabled: !!orgId,
+  });
 
-    // Pre-fill mapping values from existing mappings
-    const taxVals: Record<string, string> = {};
-    const acctVals: Record<string, string> = {};
-    for (const m of (mapRes.data ?? [])) {
-      if (m.iworkr_entity_type === "TAX_CODE") {
-        taxVals[m.iworkr_entity_id] = m.external_account_code;
-      } else if (m.iworkr_entity_type === "ACCOUNT_CODE") {
-        acctVals[m.iworkr_entity_id] = m.external_account_code;
+  /* ── Sync history ────────────────────────────────────────────────── */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: syncHistory = [] } = useQuery<any[]>({
+    queryKey: [...healthKey, "history"],
+    queryFn: async () => {
+      const { data } = await getSyncHistory(orgId!, 20);
+      return data ?? [];
+    },
+    enabled: !!orgId,
+  });
+
+  /* ── Mapping data ────────────────────────────────────────────────── */
+  const { data: mappingData, isLoading: mappingLoading } = useQuery<{
+    mappings: IntegrationMapping[];
+    taxCodes: TaxCode[];
+    accountCodes: AccountCode[];
+    trackingCategories: TrackingCategory[];
+  }>({
+    queryKey: [...healthKey, "mapping"],
+    queryFn: async () => {
+      const activeProvider = (providers ?? []).find((p: any) => p.connected)?.provider ?? "xero";
+      const [mapRes, taxRes, acctRes, trackRes] = await Promise.all([
+        getIntegrationMappings(orgId!),
+        getTaxCodes(orgId!, activeProvider),
+        getAccountCodes(orgId!, activeProvider),
+        getTrackingCategories(orgId!, activeProvider),
+      ]);
+
+      const mappingsArr = mapRes.data ?? [];
+      const taxVals: Record<string, string> = {};
+      const acctVals: Record<string, string> = {};
+      for (const m of mappingsArr) {
+        if (m.iworkr_entity_type === "TAX_CODE") {
+          taxVals[m.iworkr_entity_id] = m.external_account_code;
+        } else if (m.iworkr_entity_type === "ACCOUNT_CODE") {
+          acctVals[m.iworkr_entity_id] = m.external_account_code;
+        }
       }
-    }
-    setTaxMappingValues(taxVals);
-    setAccountMappingValues(acctVals);
-    setMappingLoading(false);
-  }, [orgId]);
+      setTaxMappingValues(taxVals);
+      setAccountMappingValues(acctVals);
 
-  /* ── Fetch security data ─────────────────────────────────────────── */
-  const fetchSecurityData = useCallback(async () => {
-    if (!orgId) return;
-    const { data: metrics } = await getHealthMetrics(orgId, "xero", 7);
-    setHealthMetrics(metrics ?? []);
-  }, [orgId]);
+      return {
+        mappings: mappingsArr,
+        taxCodes: taxRes.data ?? [],
+        accountCodes: acctRes.data ?? [],
+        trackingCategories: trackRes.data ?? [],
+      };
+    },
+    enabled: !!orgId && activeTab === "mapping",
+  });
 
-  /* ── Initial load ────────────────────────────────────────────────── */
-  useEffect(() => {
-    if (!orgId) return;
-    fetchStats();
-    fetchQueue();
-    fetchProviders();
-    fetchHistory();
-  }, [orgId, fetchStats, fetchQueue, fetchProviders, fetchHistory]);
+  const mappings = mappingData?.mappings ?? [];
+  const taxCodes = mappingData?.taxCodes ?? [];
+  const accountCodes = mappingData?.accountCodes ?? [];
+  const trackingCategories = mappingData?.trackingCategories ?? [];
 
-  /* ── Tab-specific data loading ───────────────────────────────────── */
-  useEffect(() => {
-    if (!orgId) return;
-    if (activeTab === "mapping") fetchMappingData();
-    if (activeTab === "security") fetchSecurityData();
-  }, [activeTab, orgId, fetchMappingData, fetchSecurityData]);
-
-  /* ── Auto-refresh (30s) ──────────────────────────────────────────── */
-  useEffect(() => {
-    if (!orgId) return;
-    refreshTimerRef.current = setInterval(() => {
-      fetchStats();
-      fetchQueue();
-    }, 30000);
-    return () => {
-      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-    };
-  }, [orgId, fetchStats, fetchQueue]);
-
-  /* ── Queue filter change ─────────────────────────────────────────── */
-  useEffect(() => {
-    fetchQueue();
-  }, [queueFilter, fetchQueue]);
+  /* ── Security data ───────────────────────────────────────────────── */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: healthMetrics = [] } = useQuery<any[]>({
+    queryKey: [...healthKey, "security"],
+    queryFn: async () => {
+      const { data: metrics } = await getHealthMetrics(orgId!, "xero", 7);
+      return metrics ?? [];
+    },
+    enabled: !!orgId && activeTab === "security",
+  });
 
   /* ── Action handlers ─────────────────────────────────────────────── */
+  const invalidateHealth = useCallback(() => {
+    return queryClient.invalidateQueries({ queryKey: healthKey });
+  }, [queryClient, healthKey]);
+
   async function handleRetry(itemId: string) {
     if (!orgId) return;
     setRetryingId(itemId);
     await retryQueueItem(orgId, itemId);
-    await fetchQueue();
-    await fetchStats();
+    await invalidateHealth();
     setRetryingId(null);
   }
 
@@ -532,8 +519,7 @@ export default function IntegrationHealthPage() {
     if (!orgId) return;
     setCancellingId(itemId);
     await cancelQueueItem(orgId, itemId);
-    await fetchQueue();
-    await fetchStats();
+    await invalidateHealth();
     setCancellingId(null);
   }
 
@@ -546,8 +532,7 @@ export default function IntegrationHealthPage() {
       onConfirm: async () => {
         if (!orgId) return;
         await purgeFailedItems(orgId);
-        await fetchQueue();
-        await fetchStats();
+        await invalidateHealth();
         setConfirmModal(null);
       },
     });
@@ -561,8 +546,7 @@ export default function IntegrationHealthPage() {
       onConfirm: async () => {
         if (!orgId) return;
         await disconnectProvider(orgId, provider);
-        await fetchProviders();
-        await fetchStats();
+        await invalidateHealth();
         setConfirmModal(null);
       },
     });
@@ -625,7 +609,7 @@ export default function IntegrationHealthPage() {
         return n;
       });
     }
-    await fetchMappingData();
+    await queryClient.invalidateQueries({ queryKey: [...healthKey, "mapping"] });
     setSavingMapping(null);
   }
 
@@ -644,8 +628,7 @@ export default function IntegrationHealthPage() {
       { tax_type: "INPUTTAXED", tax_name: "Input Taxed", tax_rate: 0, is_active: true },
       { tax_type: "CAPEXINPUT", tax_name: "GST on Capital", tax_rate: 10, is_active: true },
     ]);
-    const { data } = await getTaxCodes(orgId, "XERO");
-    setTaxCodes(data ?? []);
+    await queryClient.invalidateQueries({ queryKey: [...healthKey, "mapping"] });
     setFetchingTax(false);
   }
 
@@ -667,8 +650,7 @@ export default function IntegrationHealthPage() {
       { account_code: "489", account_name: "Materials Purchased", account_type: "EXPENSE", is_active: true },
       { account_code: "490", account_name: "Utilities", account_type: "EXPENSE", is_active: true },
     ]);
-    const { data } = await getAccountCodes(orgId, "XERO");
-    setAccountCodes(data ?? []);
+    await queryClient.invalidateQueries({ queryKey: [...healthKey, "mapping"] });
     setFetchingAccounts(false);
   }
 
@@ -697,12 +679,7 @@ export default function IntegrationHealthPage() {
             </p>
           </div>
           <button
-            onClick={() => {
-              fetchStats();
-              fetchQueue();
-              fetchProviders();
-              fetchHistory();
-            }}
+            onClick={() => invalidateHealth()}
             className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-colors"
           >
             <RefreshCw size={12} className={statsLoading ? "animate-spin" : ""} />

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
@@ -541,42 +543,46 @@ function PdfReportModal({
 }
 
 // ── Main Page ─────────────────────────────────────────────
+type GoalMatrixData = {
+  telemetry: GoalTelemetry;
+  goals: GoalMatrixRow[];
+};
+
 export default function GoalMatrixPage() {
   const { orgId } = useOrg();
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
-
-  const [telemetry, setTelemetry] = useState<GoalTelemetry>({
-    active_goals: 0,
-    observations_30d: 0,
-    stagnant_goals: 0,
-    upcoming_reviews: 0,
-  });
-  const [goals, setGoals] = useState<GoalMatrixRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<"active" | "expiring" | "achieved">("active");
   const [selectedGoal, setSelectedGoal] = useState<GoalMatrixRow | null>(null);
   const [pdfTarget, setPdfTarget] = useState<GoalMatrixRow | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    setError(null);
-    const { data, error: err } = await getGoalMatrix(orgId);
-    if (err) {
-      setError(err);
-    } else if (data) {
-      setTelemetry(data.telemetry);
-      setGoals(data.goals);
-    }
-    setLoading(false);
-  }, [orgId]);
+  const { data: matrixData, isLoading: loading, error: queryError } = useQuery<GoalMatrixData, Error>({
+    queryKey: queryKeys.clinical.goals(orgId ?? ""),
+    queryFn: async () => {
+      const { data, error: err } = await getGoalMatrix(orgId!);
+      if (err) throw new Error(err);
+      return {
+        telemetry: data!.telemetry,
+        goals: data!.goals,
+      };
+    },
+    enabled: !!orgId,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const telemetry: GoalTelemetry = matrixData?.telemetry ?? {
+    active_goals: 0,
+    observations_30d: 0,
+    stagnant_goals: 0,
+    upcoming_reviews: 0,
+  };
+  const goals = matrixData?.goals ?? [];
+  const error = queryError?.message ?? null;
+
+  const fetchData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.clinical.goals(orgId ?? "") });
+  }, [orgId, queryClient]);
 
   const filteredGoals = goals.filter((g) => {
     const matchesSearch =
@@ -600,7 +606,7 @@ export default function GoalMatrixPage() {
     if (!orgId) return;
     startTransition(async () => {
       await updateGoalStatus(orgId, goalId, status);
-      await fetchData();
+      fetchData();
     });
   }
 

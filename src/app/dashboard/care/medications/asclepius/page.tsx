@@ -6,7 +6,9 @@
    Pharmacy Reorder Tracking, and Low-Stock Alerts.
    ═══════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   Pill,
   AlertTriangle,
@@ -39,35 +41,37 @@ type Tab = "overview" | "s8_ledger" | "inventory" | "pharmacy";
 
 export default function AsclepiusPage() {
   const { orgId } = useOrg();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>("overview");
-  const [medications, setMedications] = useState<MedicationProfile[]>([]);
-  const [lowStock, setLowStock] = useState<any[]>([]);
-  const [s8Ledger, setS8Ledger] = useState<S8AuditEntry[]>([]);
-  const [orders, setOrders] = useState<PharmacyOrder[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingMed, setEditingMed] = useState<MedicationProfile | null>(null);
 
-  const load = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const [meds, alerts, ledger, pharmacyOrders] = await Promise.all([
-        fetchMedicationProfiles(orgId),
-        fetchLowStockAlerts(orgId),
-        fetchS8AuditLedger(orgId),
-        fetchPharmacyOrders(orgId),
-      ]);
-      setMedications(meds);
-      setLowStock(alerts);
-      setS8Ledger(ledger);
-      setOrders(pharmacyOrders);
-    } catch {
-      // Silent fallback
-    }
-    setLoading(false);
-  }, [orgId]);
+  interface AsclepiusData {
+    medications: MedicationProfile[];
+    lowStock: any[];
+    s8Ledger: S8AuditEntry[];
+    orders: PharmacyOrder[];
+  }
 
-  useEffect(() => { load(); }, [load]);
+  const { data, isLoading: loading } = useQuery<AsclepiusData>({
+    queryKey: queryKeys.care.asclepius(orgId!),
+    queryFn: async () => {
+      const [meds, alerts, ledger, pharmacyOrders] = await Promise.all([
+        fetchMedicationProfiles(orgId!),
+        fetchLowStockAlerts(orgId!),
+        fetchS8AuditLedger(orgId!),
+        fetchPharmacyOrders(orgId!),
+      ]);
+      return { medications: meds, lowStock: alerts, s8Ledger: ledger, orders: pharmacyOrders };
+    },
+    enabled: !!orgId,
+  });
+
+  const medications = data?.medications ?? [];
+  const lowStock = data?.lowStock ?? [];
+  const s8Ledger = data?.s8Ledger ?? [];
+  const orders = data?.orders ?? [];
+
+  const reload = () => queryClient.invalidateQueries({ queryKey: queryKeys.care.asclepius(orgId!) });
 
   const s8Count = medications.filter((m) => m.is_s8_controlled).length;
   const prnCount = medications.filter((m) => m.is_prn).length;
@@ -97,7 +101,7 @@ export default function AsclepiusPage() {
           </div>
         </div>
         <button
-          onClick={load}
+          onClick={reload}
           className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[11px] text-zinc-400 hover:text-white"
         >
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
@@ -142,7 +146,7 @@ export default function AsclepiusPage() {
           lowStock={lowStock}
           orgId={orgId || ""}
           onEdit={setEditingMed}
-          onReload={load}
+          onReload={reload}
         />
       )}
       {tab === "s8_ledger" && <S8LedgerTab ledger={s8Ledger} />}
@@ -151,10 +155,10 @@ export default function AsclepiusPage() {
           medications={medications}
           lowStock={lowStock}
           orgId={orgId || ""}
-          onReload={load}
+          onReload={reload}
         />
       )}
-      {tab === "pharmacy" && <PharmacyTab orders={orders} onReload={load} />}
+      {tab === "pharmacy" && <PharmacyTab orders={orders} onReload={reload} />}
 
       {/* Medication Config Drawer */}
       {editingMed && (
@@ -162,7 +166,7 @@ export default function AsclepiusPage() {
           med={editingMed}
           orgId={orgId || ""}
           onClose={() => setEditingMed(null)}
-          onSave={load}
+          onSave={reload}
         />
       )}
     </div>

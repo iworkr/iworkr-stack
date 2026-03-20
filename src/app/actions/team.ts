@@ -274,7 +274,7 @@ export async function getRoles(orgId: string) {
 
     const { data, error } = await supabase
       .from("organization_roles")
-      .select("*")
+      .select("id, organization_id, name, color, permissions, scopes, is_system_role")
       .eq("organization_id", orgId)
       .order("is_system_role", { ascending: false })
       .order("name");
@@ -487,7 +487,7 @@ export async function getTeamInvites(orgId: string) {
 
     const { data, error } = await supabase
       .from("organization_invites")
-      .select("*")
+      .select("id, organization_id, email, role, role_id, status, expires_at, created_at")
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false });
 

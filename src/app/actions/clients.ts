@@ -144,7 +144,7 @@ export async function getClients(orgId: string) {
     // Get all clients
     const { data: clients, error: clientsError } = await supabase
       .from("clients")
-      .select("*")
+      .select("id, organization_id, name, email, phone, status, type, address, tags, since, created_at")
       .eq("organization_id", orgId)
       .is("deleted_at", null)
       .order("name", { ascending: true });
@@ -257,7 +257,7 @@ export async function getClient(clientId: string, orgId?: string) {
     // Get contacts
     const { data: contacts, error: contactsError } = await supabase
       .from("client_contacts")
-      .select("*")
+      .select("id, client_id, name, email, phone, role, is_primary, created_at")
       .eq("client_id", clientId)
       .order("is_primary", { ascending: false })
       .order("created_at", { ascending: true });
@@ -304,7 +304,7 @@ export async function getClient(clientId: string, orgId?: string) {
     // Get spend history from invoices
     const { data: invoices, error: invoicesError } = await supabase
       .from("invoices")
-      .select("*")
+      .select("id, display_id, total, status, created_at, due_date")
       .eq("client_id", clientId)
       .order("created_at", { ascending: false })
       .limit(50);

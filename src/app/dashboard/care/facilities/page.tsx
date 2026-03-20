@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -10,6 +10,8 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useRouter } from "next/navigation";
 import {
@@ -318,31 +320,30 @@ function CreateFacilitySlideOver({
 export default function CareFacilitiesPage() {
   const { orgId } = useOrg();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [facilities, setFacilities] = useState<Facility[]>([]);
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
 
-  const refresh = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
+  const { data: facilitiesData, isLoading: loading } = useQuery<{ facilities: Facility[]; participants: Participant[] }>({
+    queryKey: queryKeys.care.facilities(orgId ?? ""),
+    queryFn: async () => {
       const [f, p] = await Promise.all([
-        listCareFacilitiesAction(orgId),
-        listFacilityParticipantsAction(orgId),
+        listCareFacilitiesAction(orgId!),
+        listFacilityParticipantsAction(orgId!),
       ]);
-      setFacilities((f || []) as Facility[]);
-      setParticipants((p || []) as Participant[]);
-    } catch (err) {
-      console.error("Failed to load facilities:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
+      return {
+        facilities: (f || []) as Facility[],
+        participants: (p || []) as Participant[],
+      };
+    },
+    enabled: !!orgId,
+  });
 
-  useEffect(() => { refresh(); }, [refresh]);
+  const facilities = facilitiesData?.facilities ?? [];
+  const participants = facilitiesData?.participants ?? [];
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.care.facilities(orgId ?? "") });
 
   /* ── Participant map by facility ─────────────────────── */
   const participantsByFacility = useMemo(() => {

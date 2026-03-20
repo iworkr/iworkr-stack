@@ -193,21 +193,24 @@ export async function sendTeamInvites(
 
     const results: { email: string; success: boolean; emailSent?: boolean; error?: string }[] = [];
 
+    const emailPayloads = emails.map((email) => ({
+      organization_id: orgId,
+      email,
+      role: "technician" as const,
+      status: "pending" as const,
+      invited_by: user.id,
+    }));
+
+    const { data: invites, error: upsertError } = await supabase
+      .from("organization_invites")
+      .upsert(emailPayloads, { onConflict: "organization_id,email" })
+      .select();
+
+    const inviteByEmail = new Map((invites ?? []).map((inv) => [inv.email as string, inv]));
+
     for (const email of emails) {
-      const { data: invite, error } = await supabase
-        .from("organization_invites")
-        .upsert(
-          {
-            organization_id: orgId,
-            email,
-            role: "technician",
-            status: "pending",
-            invited_by: user.id,
-          },
-          { onConflict: "organization_id,email" }
-        )
-        .select()
-        .single();
+      const invite = inviteByEmail.get(email);
+      const error = upsertError;
 
       let emailSent = true;
       if (!error && invite) {
@@ -232,9 +235,12 @@ export async function sendTeamInvites(
 
       results.push({
         email,
-        success: !error,
+        success: !error && !!invite,
         emailSent,
-        error: error?.message || (!emailSent ? "Invite created but email delivery failed" : undefined),
+        error:
+          error?.message ||
+          (!invite && !error ? "Invite could not be created" : undefined) ||
+          (invite && !emailSent ? "Invite created but email delivery failed" : undefined),
       });
     }
 

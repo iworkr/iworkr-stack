@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { CalendarCheck2, PlusCircle, RefreshCw } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
   createRoutineTemplateAction,
@@ -27,10 +29,9 @@ type TemplateRow = {
 
 export default function CareRoutinesPage() {
   const { orgId } = useOrg();
+  const queryClient = useQueryClient();
   const [busy, startBusy] = useTransition();
   const [msg, setMsg] = useState("");
-  const [templates, setTemplates] = useState<TemplateRow[]>([]);
-  const [facilities, setFacilities] = useState<Facility[]>([]);
 
   const [title, setTitle] = useState("");
   const [targetType, setTargetType] = useState<"participant" | "facility" | "global">("facility");
@@ -43,16 +44,24 @@ export default function CareRoutinesPage() {
   const [mandatory, setMandatory] = useState(true);
   const [critical, setCritical] = useState(false);
 
-  async function refresh() {
-    if (!orgId) return;
-    const [t, f] = await Promise.all([listRoutineTemplatesAction(orgId), listCareFacilitiesAction(orgId)]);
-    setTemplates((t || []) as TemplateRow[]);
-    setFacilities((f || []).map((x: any) => ({ id: x.id as string, name: x.name as string })));
-  }
+  const { data: routinesData } = useQuery<{ templates: TemplateRow[]; facilities: Facility[] }>({
+    queryKey: queryKeys.care.routines(orgId ?? ""),
+    queryFn: async () => {
+      const [t, f] = await Promise.all([listRoutineTemplatesAction(orgId!), listCareFacilitiesAction(orgId!)]);
+      return {
+        templates: (t || []) as TemplateRow[],
+        facilities: (f || []).map((x: any) => ({ id: x.id as string, name: x.name as string })),
+      };
+    },
+    enabled: !!orgId,
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [orgId]);
+  const templates = routinesData?.templates ?? [];
+  const facilities = routinesData?.facilities ?? [];
+
+  function refresh() {
+    queryClient.invalidateQueries({ queryKey: queryKeys.care.routines(orgId ?? "") });
+  }
 
   const byType = useMemo(() => {
     const facility = templates.filter((x) => x.target_type === "facility").length;
@@ -79,7 +88,7 @@ export default function CareRoutinesPage() {
         });
         setTitle("");
         setMsg("Routine template created.");
-        await refresh();
+        refresh();
       } catch (error: any) {
         setMsg(error?.message || "Failed to create template.");
       }

@@ -1,7 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   Bot,
   Phone,
@@ -127,10 +129,8 @@ type AgentTab = "config" | "knowledge" | "calls";
 export default function PhoneAgentPage() {
   const { currentOrg } = useAuthStore();
   const org = currentOrg;
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<AgentTab>("config");
-  const [config, setConfig] = useState<AIAgentConfig | null>(null);
-  const [calls, setCalls] = useState<AIAgentCall[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
@@ -149,26 +149,34 @@ export default function PhoneAgentPage() {
   const [newKnowledgeTitle, setNewKnowledgeTitle] = useState("");
   const [newKnowledgeContent, setNewKnowledgeContent] = useState("");
 
-  const loadData = useCallback(async () => {
-    if (!org?.id) return;
-    setLoading(true);
-    const [configRes, callsRes] = await Promise.all([getAgentConfig(org.id), getAgentCalls(org.id)]);
-    if (configRes.data) {
-      const c = configRes.data;
-      setConfig(c);
-      setEnabled(c.enabled);
-      setVoiceId(c.voice_id);
-      setHoursMode(c.business_hours_mode);
-      setKnowledgeBase(c.knowledge_base);
-      setGreeting(c.greeting_message);
-      setEscalationNumber(c.escalation_number || "");
-      setBookingEnabled(c.booking_enabled);
-    }
-    setCalls(callsRes.data || []);
-    setLoading(false);
-  }, [org?.id]);
+  interface AgentPageData {
+    config: AIAgentConfig | null;
+    calls: AIAgentCall[];
+  }
 
-  useEffect(() => { loadData(); }, [loadData]);
+  const { data: agentData, isLoading: loading } = useQuery<AgentPageData>({
+    queryKey: queryKeys.aiAgent.config(org?.id ?? ""),
+    queryFn: async () => {
+      const [configRes, callsRes] = await Promise.all([getAgentConfig(org!.id), getAgentCalls(org!.id)]);
+      return { config: configRes.data ?? null, calls: callsRes.data ?? [] };
+    },
+    enabled: !!org?.id,
+  });
+
+  const config = agentData?.config ?? null;
+  const calls = agentData?.calls ?? [];
+
+  useEffect(() => {
+    if (config) {
+      setEnabled(config.enabled);
+      setVoiceId(config.voice_id);
+      setHoursMode(config.business_hours_mode);
+      setKnowledgeBase(config.knowledge_base);
+      setGreeting(config.greeting_message);
+      setEscalationNumber(config.escalation_number || "");
+      setBookingEnabled(config.booking_enabled);
+    }
+  }, [config]);
 
   const markDirty = () => setDirty(true);
 

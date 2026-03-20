@@ -2,13 +2,14 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
+import { useState, useMemo, useCallback, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search, ChevronRight, Filter, Plus, Clock, MapPin,
   Loader2, AlertTriangle, CheckCircle2, X,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
-import { cachedFetch, invalidateCachePrefix } from "@/lib/cache-utils";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   fetchTimesheetTriageAction,
   getTimesheetTelemetryAction,
@@ -37,6 +38,20 @@ interface Telemetry {
   total_exceptions: number;
   hours_this_period: number;
 }
+
+const EMPTY_TELEMETRY: Telemetry = {
+  pending_review: 0,
+  auto_approved: 0,
+  total_exceptions: 0,
+  hours_this_period: 0,
+};
+
+interface TimesheetQueryData {
+  rows: TriageRow[];
+  telemetry: Telemetry | null;
+}
+
+const EMPTY_TRIAGE_ROWS: TriageRow[] = [];
 
 /* ═══════════════════════════════════════════════════════════════════
    Helpers
@@ -470,54 +485,36 @@ function LogTimeSlideOver({ orgId, onClose, onSaved }: { orgId: string; onClose:
 
 export default function TimesheetsPage() {
   const { orgId, loading: orgLoading } = useOrg();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<PillTab>("triage");
   const [search, setSearch] = useState("");
-  const [rows, setRows] = useState<TriageRow[]>([]);
-  const [telemetry, setTelemetry] = useState<Telemetry>({
-    pending_review: 0,
-    auto_approved: 0,
-    total_exceptions: 0,
-    hours_this_period: 0,
-  });
-  const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [slideOverEntry, setSlideOverEntry] = useState<TriageRow | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showLogTime, setShowLogTime] = useState(false);
   const [, startTransition] = useTransition();
 
-  // ── Load data (with in-memory SWR cache) ────────────
-  const loadData = useCallback(async (forceRefresh = false) => {
-    if (!orgId) return;
-    if (forceRefresh) invalidateCachePrefix(`timesheets:${orgId}`);
-    // Only show loading spinner if we have no cached data
-    if (rows.length === 0) setLoading(true);
-    try {
-      const [triageResult, telemetryResult] = await Promise.all([
-        cachedFetch(
-          `timesheets:triage:${orgId}:${activeTab}`,
-          () => fetchTimesheetTriageAction(orgId, { tab: activeTab }),
-          3 * 60 * 1000 // 3-minute cache
-        ),
-        cachedFetch(
-          `timesheets:telemetry:${orgId}`,
-          () => getTimesheetTelemetryAction(orgId),
-          3 * 60 * 1000
-        ),
-      ]);
-      setRows(triageResult.data);
-      setTelemetry(telemetryResult.data);
-    } catch (e: any) {
-      console.error("[timesheets] load failed:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, activeTab, rows.length]);
+  const timesheetQueryKey = useMemo(
+    () => [...queryKeys.timesheets.triage(orgId ?? ""), activeTab] as const,
+    [orgId, activeTab]
+  );
 
-  useEffect(() => {
-    if (orgId) loadData();
-  }, [orgId, loadData]);
+  const { data: timesheetData, isLoading: loading } = useQuery<TimesheetQueryData>({
+    queryKey: timesheetQueryKey,
+    queryFn: async () => {
+      const [rowsRes, telRes] = await Promise.all([
+        fetchTimesheetTriageAction(orgId!, { tab: activeTab }),
+        getTimesheetTelemetryAction(orgId!),
+      ]);
+      return { rows: (rowsRes ?? []) as TriageRow[], telemetry: (telRes as Telemetry | null) ?? null };
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const rows = timesheetData?.rows ?? EMPTY_TRIAGE_ROWS;
+  const telemetry: Telemetry = timesheetData?.telemetry ?? EMPTY_TELEMETRY;
 
   // ── Filtered rows ─────────────────────────────────
   const filteredRows = useMemo(() => {
@@ -556,27 +553,30 @@ export default function TimesheetsPage() {
       try {
         await resolveExceptionAction(id, "approve", "Approved via triage");
         startTransition(() => {
-          setRows((prev) =>
-            prev.map((r) =>
-              r.id === id ? { ...r, status: "manually_approved", exception_resolved: true } : r
-            )
-          );
+          queryClient.setQueryData<TimesheetQueryData>(timesheetQueryKey, (prev) => {
+            if (!prev) return prev;
+            const t = prev.telemetry ?? EMPTY_TELEMETRY;
+            return {
+              rows: prev.rows.map((r) =>
+                r.id === id ? { ...r, status: "manually_approved" as const, exception_resolved: true } : r
+              ),
+              telemetry: {
+                ...t,
+                pending_review: Math.max(0, t.pending_review - 1),
+                total_exceptions: Math.max(0, t.total_exceptions - 1),
+              },
+            };
+          });
           setSlideOverEntry(null);
-          setTelemetry((t) => ({
-            ...t,
-            pending_review: Math.max(0, t.pending_review - 1),
-            total_exceptions: Math.max(0, t.total_exceptions - 1),
-          }));
         });
-        // Re-fetch from DB to ensure UI/DB parity
-        loadData(true);
+        queryClient.invalidateQueries({ queryKey: queryKeys.timesheets.triage(orgId!) });
       } catch (e: any) {
         console.error("[timesheets] approve failed:", e);
       } finally {
         setActionLoading(false);
       }
     },
-    [startTransition, loadData]
+    [startTransition, queryClient, timesheetQueryKey, orgId]
   );
 
   const handleReject = useCallback(
@@ -585,23 +585,28 @@ export default function TimesheetsPage() {
       try {
         await resolveExceptionAction(id, "dispute", "Rejected via triage");
         startTransition(() => {
-          setRows((prev) => prev.filter((r) => r.id !== id));
+          queryClient.setQueryData<TimesheetQueryData>(timesheetQueryKey, (prev) => {
+            if (!prev) return prev;
+            const t = prev.telemetry ?? EMPTY_TELEMETRY;
+            return {
+              rows: prev.rows.filter((r) => r.id !== id),
+              telemetry: {
+                ...t,
+                pending_review: Math.max(0, t.pending_review - 1),
+                total_exceptions: Math.max(0, t.total_exceptions - 1),
+              },
+            };
+          });
           setSlideOverEntry(null);
-          setTelemetry((t) => ({
-            ...t,
-            pending_review: Math.max(0, t.pending_review - 1),
-            total_exceptions: Math.max(0, t.total_exceptions - 1),
-          }));
         });
-        // Re-fetch from DB to ensure UI/DB parity
-        loadData(true);
+        queryClient.invalidateQueries({ queryKey: queryKeys.timesheets.triage(orgId!) });
       } catch (e: any) {
         console.error("[timesheets] reject failed:", e);
       } finally {
         setActionLoading(false);
       }
     },
-    [startTransition, loadData]
+    [startTransition, queryClient, timesheetQueryKey, orgId]
   );
 
   const handleBulkApprove = useCallback(async () => {
@@ -609,48 +614,60 @@ export default function TimesheetsPage() {
     setActionLoading(true);
     try {
       await bulkResolveTimeEntriesAction(Array.from(selectedIds), "approve");
+      const n = selectedIds.size;
       startTransition(() => {
-        setRows((prev) =>
-          prev.map((r) =>
-            selectedIds.has(r.id) ? { ...r, status: "manually_approved", exception_resolved: true } : r
-          )
-        );
-        setTelemetry((t) => ({
-          ...t,
-          pending_review: Math.max(0, t.pending_review - selectedIds.size),
-          total_exceptions: Math.max(0, t.total_exceptions - selectedIds.size),
-        }));
+        queryClient.setQueryData<TimesheetQueryData>(timesheetQueryKey, (prev) => {
+          if (!prev) return prev;
+          const t = prev.telemetry ?? EMPTY_TELEMETRY;
+          return {
+            rows: prev.rows.map((r) =>
+              selectedIds.has(r.id) ? { ...r, status: "manually_approved" as const, exception_resolved: true } : r
+            ),
+            telemetry: {
+              ...t,
+              pending_review: Math.max(0, t.pending_review - n),
+              total_exceptions: Math.max(0, t.total_exceptions - n),
+            },
+          };
+        });
         setSelectedIds(new Set());
       });
-      loadData(true);
+      queryClient.invalidateQueries({ queryKey: queryKeys.timesheets.triage(orgId!) });
     } catch (e: any) {
       console.error("[timesheets] bulk approve failed:", e);
     } finally {
       setActionLoading(false);
     }
-  }, [selectedIds, startTransition, loadData]);
+  }, [selectedIds, startTransition, queryClient, timesheetQueryKey, orgId]);
 
   const handleBulkReject = useCallback(async () => {
     if (selectedIds.size === 0) return;
     setActionLoading(true);
     try {
       await bulkResolveTimeEntriesAction(Array.from(selectedIds), "reject");
+      const n = selectedIds.size;
       startTransition(() => {
-        setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));
-        setTelemetry((t) => ({
-          ...t,
-          pending_review: Math.max(0, t.pending_review - selectedIds.size),
-          total_exceptions: Math.max(0, t.total_exceptions - selectedIds.size),
-        }));
+        queryClient.setQueryData<TimesheetQueryData>(timesheetQueryKey, (prev) => {
+          if (!prev) return prev;
+          const t = prev.telemetry ?? EMPTY_TELEMETRY;
+          return {
+            rows: prev.rows.filter((r) => !selectedIds.has(r.id)),
+            telemetry: {
+              ...t,
+              pending_review: Math.max(0, t.pending_review - n),
+              total_exceptions: Math.max(0, t.total_exceptions - n),
+            },
+          };
+        });
         setSelectedIds(new Set());
       });
-      loadData(true);
+      queryClient.invalidateQueries({ queryKey: queryKeys.timesheets.triage(orgId!) });
     } catch (e: any) {
       console.error("[timesheets] bulk reject failed:", e);
     } finally {
       setActionLoading(false);
     }
-  }, [selectedIds, startTransition, loadData]);
+  }, [selectedIds, startTransition, queryClient, timesheetQueryKey, orgId]);
 
   // ── Loading ───────────────────────────────────────
   if (orgLoading) {
@@ -933,7 +950,11 @@ export default function TimesheetsPage() {
       {/* ═══ LOG TIME SLIDE-OVER ═══ */}
       <AnimatePresence>
         {showLogTime && orgId && (
-          <LogTimeSlideOver orgId={orgId} onClose={() => setShowLogTime(false)} onSaved={() => loadData(true)} />
+          <LogTimeSlideOver
+            orgId={orgId}
+            onClose={() => setShowLogTime(false)}
+            onSaved={() => queryClient.invalidateQueries({ queryKey: queryKeys.timesheets.triage(orgId!) })}
+          />
         )}
       </AnimatePresence>
     </div>

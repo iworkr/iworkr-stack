@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -11,6 +11,7 @@ import {
   FileText,
   Calendar,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
   createSilQuoteAction,
@@ -363,41 +364,43 @@ function CreateQuoteSlideOver({
 
 /* ── Main Page ────────────────────────────────────────── */
 
+type SilQuotingData = {
+  quotes: QuoteSummary[];
+  facilities: { id: string; name: string }[];
+  participants: { id: string; preferred_name?: string; full_name?: string }[];
+};
+
 export default function SilQuotingPage() {
   const { orgId } = useOrg();
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [quotes, setQuotes] = useState<QuoteSummary[]>([]);
-  const [facilities, setFacilities] = useState<{ id: string; name: string }[]>([]);
-  const [participants, setParticipants] = useState<{ id: string; preferred_name?: string; full_name?: string }[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<TabFilter>("all");
   const [slideOpen, setSlideOpen] = useState(false);
 
-  useEffect(() => {
-    if (!orgId) return;
-    setLoading(true);
-    startTransition(async () => {
+  const { data: silData, isLoading: loading } = useQuery<SilQuotingData>({
+    queryKey: ["care", "silQuoting", orgId],
+    queryFn: async () => {
       const [q, f, p] = await Promise.all([
-        listSilQuotesAction(orgId),
-        listCareFacilitiesAction(orgId),
-        listFacilityParticipantsAction(orgId),
+        listSilQuotesAction(orgId!),
+        listCareFacilitiesAction(orgId!),
+        listFacilityParticipantsAction(orgId!),
       ]);
-      setQuotes((q || []) as QuoteSummary[]);
-      setFacilities(
-        (f || []).map((x: any) => ({ id: x.id, name: x.name || "Unnamed" }))
-      );
-      setParticipants(
-        (p || []).map((x: any) => ({
+      return {
+        quotes: (q || []) as QuoteSummary[],
+        facilities: (f || []).map((x: any) => ({ id: x.id, name: x.name || "Unnamed" })),
+        participants: (p || []).map((x: any) => ({
           id: x.id,
           preferred_name: x.preferred_name,
           full_name: x.full_name,
-        }))
-      );
-      setLoading(false);
-    });
-  }, [orgId]);
+        })),
+      };
+    },
+    enabled: !!orgId,
+  });
+
+  const quotes = silData?.quotes ?? [];
+  const facilities = silData?.facilities ?? [];
+  const participants = silData?.participants ?? [];
 
   /* ── Computed Metrics ────────────────────────────────── */
   const metrics = useMemo(() => {

@@ -176,7 +176,9 @@ export async function getScheduleBlocks(orgId: string, date: string) {
     const { data: blocks, error } = await supabase
       .from("schedule_blocks")
       .select(`
-        *,
+        id, organization_id, job_id, technician_id, title, client_name, location,
+        start_time, end_time, status, travel_minutes, is_conflict, notes, metadata,
+        requires_transport, estimated_transport_km,
         profiles:technician_id (
           full_name
         )

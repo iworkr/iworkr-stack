@@ -16,7 +16,9 @@ import {
   ArrowDownRight,
   PieChart,
 } from "lucide-react";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useOrg } from "@/lib/hooks/use-org";
 import {
   useCareCommandStore,
@@ -605,32 +607,26 @@ function BudgetOverviewTab({ orgId }: { orgId: string }) {
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 function ClaimsBillingTab({ orgId }: { orgId: string }) {
-  const [claimLines, setClaimLines] = useState<ClaimLineItem[]>([]);
-  const [batches, setBatches] = useState<ClaimBatch[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
+  const { data: claimsData, isLoading: loading } = useQuery<{ lines: ClaimLineItem[]; batches: ClaimBatch[] }>({
+    queryKey: queryKeys.care.fundingClaims(orgId),
+    queryFn: async () => {
       const [linesData, batchesData] = await Promise.all([
         fetchClaimLineItemsAction(orgId),
         fetchClaimBatchesAction(orgId),
       ]);
-      setClaimLines((linesData ?? []) as ClaimLineItem[]);
-      setBatches((batchesData ?? []) as ClaimBatch[]);
-    } catch (err) {
-      console.error("Failed to load claims data:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
+      return {
+        lines: (linesData ?? []) as ClaimLineItem[],
+        batches: (batchesData ?? []) as ClaimBatch[],
+      };
+    },
+    enabled: !!orgId,
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const claimLines = claimsData?.lines ?? [];
+  const batches = claimsData?.batches ?? [];
 
   /* ── Stats ───── */
   const stats = useMemo(() => {
@@ -899,40 +895,34 @@ function ClaimsBillingTab({ orgId }: { orgId: string }) {
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 function NDISPricingTab({ orgId }: { orgId: string }) {
-  const [catalogue, setCatalogue] = useState<NDISCatalogueItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
-
-  const fetchCatalogue = useCallback(async () => {
-    setLoading(true);
-    try {
-      const search = searchQuery.trim() || undefined;
-      const category = categoryFilter === "all" ? undefined : categoryFilter;
-      const data = await fetchNDISCatalogueAction(search, category);
-      setCatalogue((data ?? []) as NDISCatalogueItem[]);
-      if (!lastSynced) setLastSynced(new Date().toISOString());
-    } catch (err) {
-      console.error("Failed to load NDIS catalogue:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, categoryFilter, lastSynced]);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
-    const debounce = setTimeout(() => {
-      fetchCatalogue();
-    }, 300);
+    const debounce = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(debounce);
-  }, [fetchCatalogue]);
+  }, [searchQuery]);
+
+  const search = debouncedSearch.trim() || undefined;
+  const category = categoryFilter === "all" ? undefined : categoryFilter;
+
+  const { data: catalogue = [], isLoading: loading } = useQuery<NDISCatalogueItem[]>({
+    queryKey: queryKeys.care.ndisCatalogue(search, category),
+    queryFn: async () => {
+      const data = await fetchNDISCatalogueAction(search, category);
+      if (!lastSynced) setLastSynced(new Date().toISOString());
+      return (data ?? []) as NDISCatalogueItem[];
+    },
+  });
 
   const handleSync = async () => {
     setSyncing(true);
     try {
-      // Re-fetch the full NDIS catalogue from the database
-      await fetchCatalogue();
+      await queryClient.invalidateQueries({ queryKey: ["care", "ndisCatalogue"] });
       setLastSynced(new Date().toISOString());
     } catch (err) {
       console.error("[funding-engine] sync failed:", err);

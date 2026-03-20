@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrg } from "@/lib/hooks/use-org";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   createFleetVehicleAction,
   createVehicleBookingAction,
@@ -13,8 +15,7 @@ import {
 
 export default function FleetVehiclesPage() {
   const { orgId } = useOrg();
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [bookings, setBookings] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   const [form, setForm] = useState({
@@ -27,23 +28,25 @@ export default function FleetVehiclesPage() {
     wav_type: "none",
   });
 
-  const load = async () => {
-    if (!orgId) return;
-    const [v, b] = await Promise.all([
-      listFleetVehiclesAction(orgId),
-      listVehicleBookingsAction({
-        organization_id: orgId,
-        from_iso: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        to_iso: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      }),
-    ]);
-    setVehicles(v);
-    setBookings(b);
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: fleetData } = useQuery<{ vehicles: any[]; bookings: any[] }>({
+    queryKey: queryKeys.fleet.vehicles(orgId!),
+    queryFn: async () => {
+      const [v, b] = await Promise.all([
+        listFleetVehiclesAction(orgId!),
+        listVehicleBookingsAction({
+          organization_id: orgId!,
+          from_iso: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          to_iso: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        }),
+      ]);
+      return { vehicles: v, bookings: b };
+    },
+    enabled: !!orgId,
+  });
 
-  useEffect(() => {
-    load();
-  }, [orgId]);
+  const vehicles = fleetData?.vehicles ?? [];
+  const bookings = fleetData?.bookings ?? [];
 
   return (
     <div className="p-5">
@@ -88,7 +91,7 @@ export default function FleetVehiclesPage() {
                     wheelchair_capacity: form.is_wav ? 1 : 0,
                   });
                   setForm({ name: "", registration_number: "", make: "", model: "", seating_capacity: 4, is_wav: false, wav_type: "none" });
-                  await load();
+                  await queryClient.invalidateQueries({ queryKey: queryKeys.fleet.vehicles(orgId!) });
                 } catch (e) {
                   setError((e as Error).message);
                 }
@@ -122,7 +125,7 @@ export default function FleetVehiclesPage() {
                         vehicle_id: v.id,
                         status: e.target.value as any,
                       });
-                      await load();
+                      await queryClient.invalidateQueries({ queryKey: queryKeys.fleet.vehicles(orgId!) });
                     }}
                   >
                     <option value="active">active</option>
@@ -146,7 +149,7 @@ export default function FleetVehiclesPage() {
               setError("");
               try {
                 await createVehicleBookingAction(payload as any);
-                await load();
+                await queryClient.invalidateQueries({ queryKey: queryKeys.fleet.vehicles(orgId!) });
               } catch (e) {
                 setError((e as Error).message);
               }
@@ -166,7 +169,7 @@ export default function FleetVehiclesPage() {
                         description: "Manual defect escalation from dashboard triage",
                         photo_urls: [],
                       });
-                      await load();
+                      await queryClient.invalidateQueries({ queryKey: queryKeys.fleet.vehicles(orgId!) });
                     }}
                   >
                     Escalate Defect

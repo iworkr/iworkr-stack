@@ -2,7 +2,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search, Filter, ShieldCheck, X, Copy,
   Loader2, Lock, Smartphone, ExternalLink,
@@ -16,6 +17,7 @@ import {
   getAuditorPortalTelemetryAction,
   getAuditTrailAction,
 } from "@/app/actions/care-ironclad";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 
 /* ═══════════════════════════════════════════════════════════════════
    Types & Constants
@@ -50,10 +52,27 @@ interface Telemetry {
   security_exceptions: number;
 }
 
+interface AuditsQueryData {
+  portals: Portal[];
+  participants: Option[];
+  staff: Option[];
+  telemetry: Telemetry;
+}
+
 const PILL_TABS: { id: PillTab; label: string }[] = [
   { id: "active", label: "Active Data Rooms" },
   { id: "historical", label: "Historical / Revoked" },
 ];
+
+const EMPTY_PORTALS: Portal[] = [];
+const EMPTY_SCOPE_OPTIONS: Option[] = [];
+
+const DEFAULT_TELEMETRY: Telemetry = {
+  active_data_rooms: 0,
+  evidence_files_linked: 0,
+  last_auditor_login: "—",
+  security_exceptions: 0,
+};
 
 /* ═══════════════════════════════════════════════════════════════════
    Helpers
@@ -328,7 +347,6 @@ function AuditTrailSlideOver({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
     getAuditTrailAction(portal.id)
       .then((res) => setLogs(res as AuditLog[]))
       .catch(() => setLogs([]))
@@ -420,47 +438,46 @@ function AuditTrailSlideOver({
 
 export default function ComplianceAuditsPage() {
   const { orgId, loading: orgLoading } = useOrg();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<PillTab>("active");
   const [search, setSearch] = useState("");
-  const [portals, setPortals] = useState<Portal[]>([]);
-  const [participants, setParticipants] = useState<Option[]>([]);
-  const [staff, setStaff] = useState<Option[]>([]);
-  const [telemetry, setTelemetry] = useState<Telemetry>({
-    active_data_rooms: 0,
-    evidence_files_linked: 0,
-    last_auditor_login: "—",
-    security_exceptions: 0,
-  });
-  const [loading, setLoading] = useState(true);
   const [showProvisionSlideOver, setShowProvisionSlideOver] = useState(false);
   const [trailPortal, setTrailPortal] = useState<Portal | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [copyMsg, setCopyMsg] = useState("");
 
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
+  const { data: auditData, isLoading: loading } = useQuery<AuditsQueryData>({
+    queryKey: queryKeys.compliance.audits(orgId ?? ""),
+    queryFn: async () => {
       const [portalData, scopeOpts, telemetryData] = await Promise.all([
-        listAuditorPortalsAction(orgId),
-        listIroncladScopeOptionsAction(orgId),
-        getAuditorPortalTelemetryAction(orgId),
+        listAuditorPortalsAction(orgId!),
+        listIroncladScopeOptionsAction(orgId!),
+        getAuditorPortalTelemetryAction(orgId!),
       ]);
-      setPortals(portalData as Portal[]);
-      setParticipants(scopeOpts.participants);
-      setStaff(scopeOpts.staff);
-      setTelemetry(telemetryData);
-    } catch (e: any) {
-      console.error("[overseer] load failed:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
+      return {
+        portals: portalData as Portal[],
+        participants: scopeOpts.participants,
+        staff: scopeOpts.staff,
+        telemetry: telemetryData,
+      };
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
 
-  useEffect(() => {
-    if (orgId) loadData();
-  }, [orgId, loadData]);
+  const portals = auditData?.portals ?? EMPTY_PORTALS;
+  const participants = auditData?.participants ?? EMPTY_SCOPE_OPTIONS;
+  const staff = auditData?.staff ?? EMPTY_SCOPE_OPTIONS;
+  const telemetry: Telemetry = auditData?.telemetry ?? DEFAULT_TELEMETRY;
+
+  const invalidateAudits = () => {
+    if (orgId) {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.compliance.audits(orgId),
+      });
+    }
+  };
 
   // Filter portals by tab + search
   const filteredPortals = useMemo(() => {
@@ -491,7 +508,7 @@ export default function ComplianceAuditsPage() {
     setRevoking(portalId);
     try {
       await revokeAuditorPortalAction({ portal_id: portalId, organization_id: orgId });
-      loadData();
+      invalidateAudits();
     } catch (e: any) {
       console.error("[overseer] revoke failed:", e);
     } finally {
@@ -673,12 +690,16 @@ export default function ComplianceAuditsPage() {
       {/* ═══ SLIDE-OVERS ═══ */}
       <AnimatePresence>
         {showProvisionSlideOver && orgId && (
-          <ProvisionPortalSlideOver orgId={orgId} participants={participants} staff={staff} onClose={() => setShowProvisionSlideOver(false)} onCreated={loadData} />
+          <ProvisionPortalSlideOver orgId={orgId} participants={participants} staff={staff} onClose={() => setShowProvisionSlideOver(false)} onCreated={invalidateAudits} />
         )}
       </AnimatePresence>
       <AnimatePresence>
         {trailPortal && (
-          <AuditTrailSlideOver portal={trailPortal} onClose={() => setTrailPortal(null)} />
+          <AuditTrailSlideOver
+            key={trailPortal.id}
+            portal={trailPortal}
+            onClose={() => setTrailPortal(null)}
+          />
         )}
       </AnimatePresence>
     </div>

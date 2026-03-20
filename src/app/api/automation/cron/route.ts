@@ -51,35 +51,47 @@ export async function GET(request: NextRequest) {
       .order("execute_at", { ascending: true })
       .limit(20);
 
-    for (const item of pendingItems || []) {
-      try {
-        // Mark as processing
+    const queueItems = pendingItems || [];
+    if (queueItems.length > 0) {
+      const idsByNextAttempts = new Map<number, string[]>();
+      for (const item of queueItems) {
+        const nextAttempts = item.attempts + 1;
+        const list = idsByNextAttempts.get(nextAttempts) ?? [];
+        list.push(item.id);
+        idsByNextAttempts.set(nextAttempts, list);
+      }
+      for (const [nextAttempts, ids] of idsByNextAttempts) {
         await supabase
           .from("automation_queue")
-          .update({ status: "processing", attempts: item.attempts + 1 })
-          .eq("id", item.id);
+          .update({ status: "processing", attempts: nextAttempts })
+          .in("id", ids);
+      }
 
-        // Re-dispatch the event
-        const event = item.event_data;
-        await dispatchAndWait(event);
+      const completedIds: string[] = [];
+      for (const item of queueItems) {
+        try {
+          const event = item.event_data;
+          await dispatchAndWait(event);
+          completedIds.push(item.id);
+          results.queue_processed++;
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          const newStatus = item.attempts + 1 >= item.max_attempts ? "failed" : "pending";
 
-        // Mark as completed
+          await supabase
+            .from("automation_queue")
+            .update({ status: newStatus, error: errorMsg })
+            .eq("id", item.id);
+
+          results.errors.push(`Queue item ${item.id}: ${errorMsg}`);
+        }
+      }
+
+      if (completedIds.length > 0) {
         await supabase
           .from("automation_queue")
           .update({ status: "completed", completed_at: new Date().toISOString() })
-          .eq("id", item.id);
-
-        results.queue_processed++;
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        const newStatus = item.attempts + 1 >= item.max_attempts ? "failed" : "pending";
-
-        await supabase
-          .from("automation_queue")
-          .update({ status: newStatus, error: errorMsg })
-          .eq("id", item.id);
-
-        results.errors.push(`Queue item ${item.id}: ${errorMsg}`);
+          .in("id", completedIds);
       }
     }
   } catch (err) {
@@ -95,26 +107,30 @@ export async function GET(request: NextRequest) {
       .lt("due_date", new Date().toISOString().split("T")[0])
       .is("deleted_at", null);
 
-    for (const invoice of overdueInvoices || []) {
-      // Update status to overdue
+    const overdueList = overdueInvoices || [];
+    if (overdueList.length > 0) {
       await supabase
         .from("invoices")
         .update({ status: "overdue" })
-        .eq("id", invoice.id);
+        .in(
+          "id",
+          overdueList.map((inv) => inv.id)
+        );
 
-      // Dispatch overdue event
-      await dispatchAndWait(
-        Events.invoiceOverdue(invoice.organization_id, invoice.id, {
-          display_id: invoice.display_id,
-          client_id: invoice.client_id,
-          client_name: invoice.client_name,
-          client_email: invoice.client_email,
-          total: invoice.total,
-          due_date: invoice.due_date,
-        })
-      );
+      for (const invoice of overdueList) {
+        await dispatchAndWait(
+          Events.invoiceOverdue(invoice.organization_id, invoice.id, {
+            display_id: invoice.display_id,
+            client_id: invoice.client_id,
+            client_name: invoice.client_name,
+            client_email: invoice.client_email,
+            total: invoice.total,
+            due_date: invoice.due_date,
+          })
+        );
 
-      results.overdue_invoices++;
+        results.overdue_invoices++;
+      }
     }
   } catch (err) {
     results.errors.push(`Overdue check: ${err instanceof Error ? err.message : String(err)}`);
@@ -132,17 +148,31 @@ export async function GET(request: NextRequest) {
       .gte("start_time", now)
       .lte("start_time", tomorrow);
 
-    // Only send reminders if we haven't already (check logs)
-    for (const block of upcomingBlocks || []) {
-      const { data: existingLog } = await supabase
+    const blocks = upcomingBlocks || [];
+    if (blocks.length > 0) {
+      const blockIds = new Set(blocks.map((b) => b.id));
+      const orgIds = [...new Set(blocks.map((b) => b.organization_id))];
+      const { data: reminderLogs } = await supabase
         .from("automation_logs")
-        .select("id")
-        .eq("organization_id", block.organization_id)
-        .contains("trigger_data", { entity_id: block.id, event_type: "schedule.reminder" })
-        .limit(1)
-        .maybeSingle();
+        .select("trigger_data")
+        .in("organization_id", orgIds)
+        .contains("trigger_data", { event_type: "schedule.reminder" });
 
-      if (!existingLog) {
+      const remindedBlockIds = new Set<string>();
+      for (const log of reminderLogs || []) {
+        const td = log.trigger_data as { entity_id?: string; event_type?: string } | null;
+        if (
+          td?.event_type === "schedule.reminder" &&
+          typeof td.entity_id === "string" &&
+          blockIds.has(td.entity_id)
+        ) {
+          remindedBlockIds.add(td.entity_id);
+        }
+      }
+
+      for (const block of blocks) {
+        if (remindedBlockIds.has(block.id)) continue;
+
         const event = {
           id: `cron_sched_${block.id}`,
           type: "schedule.reminder" as const,

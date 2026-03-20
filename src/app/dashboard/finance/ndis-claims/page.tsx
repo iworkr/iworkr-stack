@@ -18,8 +18,10 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useCallback } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import {
   fetchClaimBatchesAction,
@@ -63,6 +65,14 @@ interface ClaimLineItem {
   created_at: string;
   participant_profiles?: { id: string; ndis_number?: string } | null;
 }
+
+interface NdisClaimsQueryData {
+  batches: ClaimBatch[];
+  lineItems: ClaimLineItem[];
+}
+
+const EMPTY_CLAIM_BATCHES: ClaimBatch[] = [];
+const EMPTY_CLAIM_LINE_ITEMS: ClaimLineItem[] = [];
 
 /* ── Status Config ────────────────────────────────────── */
 
@@ -422,35 +432,37 @@ function SkeletonRow() {
 export default function NDISClaimsPage() {
   const { orgId } = useOrg();
   const { t } = useIndustryLexicon();
+  const queryClient = useQueryClient();
 
-  const [batches, setBatches] = useState<ClaimBatch[]>([]);
-  const [lineItems, setLineItems] = useState<ClaimLineItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: claimsData, isLoading: loading } = useQuery<NdisClaimsQueryData>({
+    queryKey: queryKeys.finance.claims(orgId ?? ""),
+    queryFn: async () => {
+      const [batchesRes, lineItemsRes] = await Promise.all([
+        fetchClaimBatchesAction(orgId!),
+        fetchClaimLineItemsAction(orgId!),
+      ]);
+      return {
+        batches: (batchesRes as ClaimBatch[]) ?? [],
+        lineItems: (lineItemsRes as ClaimLineItem[]) ?? [],
+      };
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const batches = claimsData?.batches ?? EMPTY_CLAIM_BATCHES;
+  const lineItems = claimsData?.lineItems ?? EMPTY_CLAIM_LINE_ITEMS;
+
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
   const [batchLineItems, setBatchLineItems] = useState<Record<string, ClaimLineItem[]>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const [batchData, lineData] = await Promise.all([
-        fetchClaimBatchesAction(orgId),
-        fetchClaimLineItemsAction(orgId),
-      ]);
-      setBatches((batchData as ClaimBatch[]) ?? []);
-      setLineItems((lineData as ClaimLineItem[]) ?? []);
-    } catch (err) {
-      console.error("Failed to load claims data:", err);
-    } finally {
-      setLoading(false);
+  const invalidateClaims = useCallback(() => {
+    if (orgId) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.finance.claims(orgId) });
     }
-  }, [orgId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  }, [orgId, queryClient]);
 
   const handleExpandBatch = useCallback(async (batchId: string) => {
     if (expandedBatch === batchId) {
@@ -619,7 +631,7 @@ export default function NDISClaimsPage() {
                       lineItems={batchLineItems[batch.id] ?? []}
                       orgId={orgId || ""}
                       onClose={() => setExpandedBatch(null)}
-                      onResolved={loadData}
+                      onResolved={invalidateClaims}
                     />
                   )}
                 </AnimatePresence>
@@ -636,7 +648,7 @@ export default function NDISClaimsPage() {
             onClose={() => setCreateOpen(false)}
             orgId={orgId || ""}
             approvedLines={approvedLines}
-            onCreated={loadData}
+            onCreated={invalidateClaims}
           />
         )}
       </AnimatePresence>

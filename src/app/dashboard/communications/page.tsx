@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useState, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone,
@@ -114,10 +116,9 @@ export default function CommunicationsPage() {
   const org = useOrg();
   const orgId = org?.orgId;
 
+  const queryClient = useQueryClient();
+
   // ── State ──
-  const [feed, setFeed] = useState<CommunicationLog[]>([]);
-  const [stats, setStats] = useState<InboxStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [showUnlinkedOnly, setShowUnlinkedOnly] = useState(false);
@@ -134,47 +135,54 @@ export default function CommunicationsPage() {
   const [linkJobId, setLinkJobId] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // ── Load Feed & Stats ──
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const [feedRes, statsRes] = await Promise.all([
-        getInboxFeed(orgId, {
-          channel: channelFilter === "all" ? undefined : channelFilter,
-          unreadOnly: showUnreadOnly,
-          unlinkedOnly: showUnlinkedOnly,
-        }),
-        getInboxStats(orgId),
-      ]);
-      if (feedRes.data) setFeed(feedRes.data);
-      if (statsRes.data) setStats(statsRes.data);
-    } catch (err) {
-      console.error("Failed to load inbox:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, channelFilter, showUnreadOnly, showUnlinkedOnly]);
+  // ── Load Feed & Stats via useQuery ──
+  const feedFilters = { channel: channelFilter === "all" ? undefined : channelFilter, unreadOnly: showUnreadOnly, unlinkedOnly: showUnlinkedOnly };
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const { data: feedData, isLoading: feedLoading } = useQuery<CommunicationLog[]>({
+    queryKey: queryKeys.communications.feed(orgId!, feedFilters),
+    queryFn: async () => {
+      const res = await getInboxFeed(orgId!, feedFilters);
+      return res.data ?? [];
+    },
+    enabled: !!orgId,
+  });
+
+  const { data: stats = null } = useQuery<InboxStats>({
+    queryKey: queryKeys.communications.stats(orgId!),
+    queryFn: async () => {
+      const res = await getInboxStats(orgId!);
+      return res.data!;
+    },
+    enabled: !!orgId,
+  });
+
+  const feed = feedData ?? [];
+  const loading = feedLoading;
+
+  const loadData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["communications"] });
+  }, [queryClient]);
+
+  const updateFeedItem = (id: string, patch: Partial<CommunicationLog>) => {
+    const feedKey = queryKeys.communications.feed(orgId!, feedFilters);
+    queryClient.setQueryData<CommunicationLog[]>(feedKey, (old) =>
+      old?.map((l) => (l.id === id ? { ...l, ...patch } : l))
+    );
+  };
 
   // ── Detail Load ──
-  const openDetail = useCallback(async (log: CommunicationLog) => {
+  const openDetail = async (log: CommunicationLog) => {
     setSelectedLog(log);
     setDetailVoip(null);
     setDetailEmail(null);
     setReplyMode(false);
     setShowTranscript(false);
 
-    // Mark as read
     if (!log.is_read) {
       await markAsRead(log.id);
-      setFeed((prev) => prev.map((l) => (l.id === log.id ? { ...l, is_read: true } : l)));
+      updateFeedItem(log.id, { is_read: true });
     }
 
-    // Load sub-record
     if (log.channel === "voice_call") {
       const res = await getVoipRecord(log.id);
       if (res.data) setDetailVoip(res.data);
@@ -182,19 +190,19 @@ export default function CommunicationsPage() {
       const res = await getEmailThread(log.id);
       if (res.data) setDetailEmail(res.data);
     }
-  }, []);
+  };
 
   // ── Toggle Star ──
   const toggleStar = async (logId: string, current: boolean) => {
     await markAsStarred(logId, !current);
-    setFeed((prev) => prev.map((l) => (l.id === logId ? { ...l, is_starred: !current } : l)));
+    updateFeedItem(logId, { is_starred: !current });
   };
 
   // ── Link to Job ──
   const handleLinkJob = async () => {
     if (!linkJobModal || !linkJobId) return;
     await linkToJob(linkJobModal, linkJobId);
-    setFeed((prev) => prev.map((l) => (l.id === linkJobModal ? { ...l, is_linked: true, job_id: linkJobId } : l)));
+    updateFeedItem(linkJobModal, { is_linked: true, job_id: linkJobId });
     setLinkJobModal(null);
     setLinkJobId("");
     loadData();

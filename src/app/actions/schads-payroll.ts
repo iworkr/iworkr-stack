@@ -491,18 +491,24 @@ export async function exportPayrunToXero(
       workerGroups.get(line.worker_id)!.push(line);
     }
 
+    type WorkerNotesRow = { user_id: string; notes?: Record<string, unknown> | null };
+    const workerIds = [...workerGroups.keys()];
+    const notesByWorkerId = new Map<string, Record<string, unknown> | null | undefined>();
+    if (workerIds.length > 0) {
+      const { data: profiles } = await payrollClient(supabase)
+        .from("worker_pay_profiles")
+        .select("user_id, notes")
+        .in("user_id", workerIds)
+        .eq("organization_id", orgId);
+      for (const row of (profiles || []) as WorkerNotesRow[]) {
+        notesByWorkerId.set(row.user_id, row.notes);
+      }
+    }
+
     // Fetch worker Xero employee IDs from integration settings
     const xeroTimesheets = [];
     for (const [workerId, workerLines] of workerGroups) {
-      const { data: workerInt } = await payrollClient(supabase)
-        .from("worker_pay_profiles")
-        .select("notes")
-        .eq("user_id", workerId)
-        .eq("organization_id", orgId)
-        .maybeSingle();
-
-      type WorkerNotesRow = { notes?: Record<string, unknown> | null };
-      const notes = (workerInt as WorkerNotesRow | null)?.notes;
+      const notes = notesByWorkerId.get(workerId);
       const xeroEmployeeId = (notes?.xero_employee_id as string | undefined) ?? null;
 
       const earningsLines = workerLines.map((l) => ({

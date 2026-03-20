@@ -2,7 +2,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   Search, Filter, Upload,
   Loader2, ShieldCheck,
@@ -16,7 +17,7 @@ import {
 } from "@/app/actions/care-ironclad";
 import { RemediationSlideOver } from "@/components/governance/RemediationSlideOver";
 import { useAuthStore } from "@/lib/auth-store";
-import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -42,6 +43,13 @@ interface ReadinessState {
   };
   computed_at: string;
 }
+
+interface ReadinessQueryData {
+  readiness: ReadinessState;
+  gaps: (ComplianceGapRow & { _optimisticRemediation?: "dispatched" })[];
+}
+
+const EMPTY_GAPS: ReadinessQueryData["gaps"] = [];
 
 /* ═══════════════════════════════════════════════════════════════════
    Helpers
@@ -140,52 +148,77 @@ function EmptyState() {
 
 export default function ComplianceReadinessPage() {
   const { orgId, loading: orgLoading } = useOrg();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<PillTab>("all");
   const [search, setSearch] = useState("");
-  const [readiness, setReadiness] = useState<ReadinessState | null>(null);
-  const [gaps, setGaps] = useState<ComplianceGapRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [slideOverGap, setSlideOverGap] = useState<ComplianceGapRow | null>(null);
   const [userId, setUserId] = useState<string>("");
-  const [dispatchSending, setDispatchSending] = useState(false);
+
+  const { data: readinessData, isLoading: loading } = useQuery<ReadinessQueryData>({
+    queryKey: queryKeys.compliance.readiness(orgId ?? ""),
+    queryFn: async () => {
+      const [readiness, gaps] = await Promise.all([
+        getComplianceReadinessAction(orgId!),
+        listComplianceGapsAction(orgId!),
+      ]);
+      return { readiness: readiness as ReadinessState, gaps };
+    },
+    enabled: !!orgId,
+    staleTime: 60_000,
+  });
+
+  const readiness = readinessData?.readiness ?? null;
+  const gaps = readinessData?.gaps ?? EMPTY_GAPS;
+
+  const readinessQueryKey = orgId ? queryKeys.compliance.readiness(orgId) : null;
+
+  const invalidateReadiness = () => {
+    if (orgId) {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.compliance.readiness(orgId),
+      });
+    }
+  };
+
+  const dispatchRemediationMutation = useMutation({
+    mutationFn: (gap: ComplianceGapRow) =>
+      sendTargetedRemediationAction({
+        organization_id: orgId!,
+        user_id: gap.affected_entity_id,
+        gap_title: gap.gap_title,
+      }),
+    onMutate: async (gap) => {
+      if (!readinessQueryKey) return {};
+      await queryClient.cancelQueries({ queryKey: readinessQueryKey });
+      const previous = queryClient.getQueryData<ReadinessQueryData>(readinessQueryKey);
+      queryClient.setQueryData<ReadinessQueryData>(readinessQueryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          gaps: old.gaps.map((g) =>
+            g.id === gap.id ? { ...g, _optimisticRemediation: "dispatched" as const } : g
+          ),
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _gap, context) => {
+      if (context?.previous !== undefined && readinessQueryKey) {
+        queryClient.setQueryData(readinessQueryKey, context.previous);
+      }
+      console.error("[ironclad] dispatch failed:", _err);
+    },
+    onSettled: () => {
+      invalidateReadiness();
+    },
+  });
 
   // Resolve current admin user id from auth store (no network call needed)
   const authUser = useAuthStore((s) => s.user);
   useEffect(() => {
     if (authUser?.id) setUserId(authUser.id);
   }, [authUser?.id]);
-
-  // ── Load data (with SWR cache) ─────────────────────
-  const loadData = useCallback(async (forceRefresh = false) => {
-    if (!orgId) return;
-    const cacheKey = `compliance-readiness:${orgId}`;
-    if (forceRefresh) invalidateCache(cacheKey);
-    if (!readiness) setLoading(true);
-    try {
-      const { data: result } = await cachedFetch(
-        cacheKey,
-        async () => {
-          const [readinessData, gapData] = await Promise.all([
-            getComplianceReadinessAction(orgId),
-            listComplianceGapsAction(orgId),
-          ]);
-          return { readiness: readinessData, gaps: gapData };
-        },
-        3 * 60 * 1000
-      );
-      setReadiness(result.readiness as ReadinessState);
-      setGaps(result.gaps);
-    } catch (e: any) {
-      console.error("[ironclad] load failed:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
-
-  useEffect(() => {
-    if (orgId) loadData();
-  }, [orgId, loadData]);
 
   // ── Filter by tab + search ────────────────────────
   const filteredGaps = useMemo(() => {
@@ -386,15 +419,21 @@ export default function ComplianceReadinessPage() {
 
                   {/* ACTION */}
                   <td className="py-3 pr-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSlideOverGap(gap);
-                      }}
-                      className="h-6 rounded-md px-2.5 text-[10px] font-medium text-emerald-500 transition-colors hover:bg-emerald-500/10"
-                    >
-                      Remediate
-                    </button>
+                    {gap._optimisticRemediation === "dispatched" ? (
+                      <span className="inline-flex h-6 items-center rounded-md px-2.5 text-[10px] font-medium text-sky-400">
+                        Reminder sent
+                      </span>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSlideOverGap(gap);
+                        }}
+                        className="h-6 rounded-md px-2.5 text-[10px] font-medium text-emerald-500 transition-colors hover:bg-emerald-500/10"
+                      >
+                        Remediate
+                      </button>
+                    )}
                   </td>
                 </motion.tr>
               ))
@@ -411,23 +450,11 @@ export default function ComplianceReadinessPage() {
             orgId={orgId}
             userId={userId}
             onClose={() => setSlideOverGap(null)}
-            onAction={loadData}
-            dispatchSending={dispatchSending}
+            onAction={invalidateReadiness}
+            dispatchSending={dispatchRemediationMutation.isPending}
             onDispatchNotification={async () => {
               if (!slideOverGap) return;
-              setDispatchSending(true);
-              try {
-                await sendTargetedRemediationAction({
-                  organization_id: orgId,
-                  user_id: slideOverGap.affected_entity_id,
-                  gap_title: slideOverGap.gap_title,
-                });
-                loadData();
-              } catch (e: any) {
-                console.error("[ironclad] dispatch failed:", e);
-              } finally {
-                setDispatchSending(false);
-              }
+              dispatchRemediationMutation.mutate(slideOverGap);
             }}
           />
         )}

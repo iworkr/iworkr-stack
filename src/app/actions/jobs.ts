@@ -714,7 +714,7 @@ export async function getJobLineItems(jobId: string) {
 
     const { data, error } = await supabase
       .from("job_line_items")
-      .select("*")
+      .select("id, job_id, description, quantity, unit_price_cents, sort_order")
       .eq("job_id", jobId)
       .order("sort_order", { ascending: true });
 

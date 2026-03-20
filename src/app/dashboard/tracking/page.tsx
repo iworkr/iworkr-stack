@@ -1,7 +1,9 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Navigation,
@@ -108,50 +110,33 @@ export default function TrackingDashboardPage() {
   const org = useOrg();
   const orgId = (org as any)?.orgId ?? (org as any)?.id;
 
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabId>("live");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sessions, setSessions] = useState<TrackingSession[]>([]);
-  const [stats, setStats] = useState<TrackingStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  // ── Fetch data ──────────────────────────────────────────
+  interface TrackingData {
+    sessions: TrackingSession[];
+    stats: TrackingStats | null;
+  }
 
-  const fetchData = useCallback(
-    async (silent = false) => {
-      if (!orgId) return;
-      if (!silent) setLoading(true);
-      else setRefreshing(true);
+  const filterArg = statusFilter === "all" ? undefined : statusFilter;
 
-      try {
-        const filterArg = statusFilter === "all" ? undefined : statusFilter;
-        const [sessRes, statsRes] = await Promise.all([
-          getTrackingSessions(orgId, filterArg),
-          getTrackingStats(orgId),
-        ]);
-        setSessions(sessRes.data ?? []);
-        setStats(statsRes.data ?? null);
-      } catch {
-        /* swallow — server actions handle errors */
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
+  const { data: trackingData, isLoading: loading, isFetching: refreshing } = useQuery<TrackingData>({
+    queryKey: queryKeys.tracking.sessions(orgId!, filterArg),
+    queryFn: async () => {
+      const [sessRes, statsRes] = await Promise.all([
+        getTrackingSessions(orgId!, filterArg),
+        getTrackingStats(orgId!),
+      ]);
+      return { sessions: sessRes.data ?? [], stats: statsRes.data ?? null };
     },
-    [orgId, statusFilter],
-  );
+    enabled: !!orgId,
+    refetchInterval: tab === "live" ? REFRESH_INTERVAL : false,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Auto-refresh for live tab
-  useEffect(() => {
-    if (tab !== "live") return;
-    const iv = setInterval(() => fetchData(true), REFRESH_INTERVAL);
-    return () => clearInterval(iv);
-  }, [tab, fetchData]);
+  const sessions = trackingData?.sessions ?? [];
+  const stats = trackingData?.stats ?? null;
 
   // ── Cancel handler ─────────────────────────────────────
 
@@ -160,7 +145,7 @@ export default function TrackingDashboardPage() {
     setCancellingId(sessionId);
     await cancelTrackingSession(sessionId, orgId);
     setCancellingId(null);
-    fetchData(true);
+    queryClient.invalidateQueries({ queryKey: queryKeys.tracking.sessions(orgId!, filterArg) });
   };
 
   // ── Guard ──────────────────────────────────────────────
@@ -206,7 +191,7 @@ export default function TrackingDashboardPage() {
             </div>
 
             <button
-              onClick={() => fetchData(true)}
+              onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.tracking.sessions(orgId!, filterArg) })}
               disabled={refreshing}
               className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-zinc-900/50 border border-white/5 rounded-lg transition-colors disabled:opacity-50"
             >

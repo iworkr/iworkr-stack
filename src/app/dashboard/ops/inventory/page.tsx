@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Package, Search, Plus, AlertTriangle, TrendingUp, TrendingDown,
   BarChart3, Upload, RefreshCw, Filter, ChevronDown, ArrowUpDown,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 import {
   getInventoryItems, getInventoryOverview, createInventoryItem,
   bulkPriceAdjustment,
@@ -48,33 +50,37 @@ interface Overview {
 
 export default function InventoryPage() {
   const org = useAuthStore((s) => s.currentOrg);
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [overview, setOverview] = useState<Overview | null>(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [count, setCount] = useState(0);
 
   const orgId = org?.id;
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
+  const { data: inventoryData, isLoading: loading } = useQuery<{
+    items: InventoryItem[];
+    overview: Overview | null;
+    count: number;
+  }>({
+    queryKey: [...queryKeys.ops.inventory(orgId!), { search, stockFilter }],
+    queryFn: async () => {
+      const [itemsRes, overviewRes] = await Promise.all([
+        getInventoryItems(orgId!, { search, stockLevel: stockFilter || undefined }),
+        getInventoryOverview(orgId!),
+      ]);
+      return {
+        items: itemsRes.data ?? [],
+        overview: (overviewRes.data as Overview) ?? null,
+        count: itemsRes.count,
+      };
+    },
+    enabled: !!orgId,
+  });
 
-    const [itemsRes, overviewRes] = await Promise.all([
-      getInventoryItems(orgId, { search, stockLevel: stockFilter || undefined }),
-      getInventoryOverview(orgId),
-    ]);
-
-    if (itemsRes.data) { setItems(itemsRes.data); setCount(itemsRes.count); }
-    if (overviewRes.data) setOverview(overviewRes.data as Overview);
-
-    setLoading(false);
-  }, [orgId, search, stockFilter]);
-
-  useEffect(() => { load(); }, [load]);
+  const items = inventoryData?.items ?? [];
+  const overview = inventoryData?.overview ?? null;
+  const count = inventoryData?.count ?? 0;
 
   const formatMoney = (v: number) =>
     new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(v);
@@ -169,7 +175,7 @@ export default function InventoryPage() {
           <option value="critical">Critical</option>
         </select>
 
-        <button onClick={load} className="stealth-btn-ghost text-xs p-2">
+        <button onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.ops.inventory(orgId!) })} className="stealth-btn-ghost text-xs p-2">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -267,7 +273,7 @@ export default function InventoryPage() {
           <BulkPriceModal
             orgId={orgId!}
             onClose={() => setShowBulkModal(false)}
-            onComplete={() => { setShowBulkModal(false); load(); }}
+            onComplete={() => { setShowBulkModal(false); queryClient.invalidateQueries({ queryKey: queryKeys.ops.inventory(orgId!) }); }}
           />
         )}
       </AnimatePresence>
