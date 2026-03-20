@@ -70,6 +70,39 @@ serve(async (req: Request) => {
 
     const body = await req.json();
 
+    // ── Batch mode: Argus-Panopticon continuous telemetry ───────
+    if (body.batch === true && Array.isArray(body.events)) {
+      const rows = body.events.map((evt: Record<string, unknown>) => ({
+        workspace_id: body.workspace_id || null,
+        user_id: body.user_id || null,
+        event_category: evt.event_category || "UNKNOWN",
+        severity: evt.severity || "INFO",
+        url_path: evt.url_path || null,
+        user_agent: (body.user_agent || "").slice(0, 300),
+        payload: scrubPII(evt.payload as Record<string, unknown> || {}),
+        created_at: evt.timestamp || new Date().toISOString(),
+      }));
+
+      if (rows.length > 0) {
+        const { error: batchErr } = await supabase
+          .from("system_telemetry")
+          .insert(rows);
+
+        if (batchErr) {
+          console.error("Batch telemetry insert failed:", batchErr.message);
+          return new Response(
+            JSON.stringify({ error: "Batch insert failed", detail: batchErr.message }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, ingested: rows.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ── Extract identity for rate limiting ───────────────────
     const userId = body.identity?.user_id || "anonymous";
     const deviceKey = `${userId}_${body.environment?.device_model || "web"}`;
@@ -249,22 +282,47 @@ function normalizePlatform(raw?: string): string {
   return "web";
 }
 
+/* ── PII Scrubbing Matrix ─────────────────────────────────────── */
+
+const PII_PATTERNS: [RegExp, string][] = [
+  // Credit card numbers (13-16 digits with optional spaces/dashes)
+  [/\b(?:\d[ -]*?){13,16}\b/g, "[REDACTED_CC]"],
+  // Email addresses
+  [/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[REDACTED_EMAIL]"],
+  // Bearer tokens
+  [/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, "Bearer [REDACTED_TOKEN]"],
+  // JWT-like tokens (3 base64 segments separated by dots)
+  [/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, "[REDACTED_JWT]"],
+  // Australian phone numbers
+  [/\b(?:\+?61|0)[2-478](?:[ -]?\d){8}\b/g, "[REDACTED_PHONE]"],
+  // NDIS numbers (9 digits)
+  [/\b4\d{8}\b/g, "[REDACTED_NDIS]"],
+];
+
+function scrubPII(obj: Record<string, unknown>): Record<string, unknown> {
+  const json = JSON.stringify(obj);
+  let scrubbed = json;
+  for (const [pattern, replacement] of PII_PATTERNS) {
+    scrubbed = scrubbed.replace(pattern, replacement);
+  }
+  try { return JSON.parse(scrubbed); }
+  catch { return obj; }
+}
+
 function sanitizePayload(body: Record<string, unknown>): Record<string, unknown> {
   const cleaned = { ...body };
-  // Remove base64 screenshot data from the stored JSON (already in storage)
   if (cleaned.visual_evidence && typeof cleaned.visual_evidence === "object") {
     const ve = { ...(cleaned.visual_evidence as Record<string, unknown>) };
     delete ve.screenshot_base64;
     cleaned.visual_evidence = ve;
   }
-  // Remove any auth tokens that might have leaked
   if (cleaned.context && typeof cleaned.context === "object") {
     const ctx = { ...(cleaned.context as Record<string, unknown>) };
     delete (ctx as Record<string, unknown>).auth_token;
     delete (ctx as Record<string, unknown>).session_token;
     cleaned.context = ctx;
   }
-  return cleaned;
+  return scrubPII(cleaned);
 }
 
 function normalizeConsoleBufferInput(

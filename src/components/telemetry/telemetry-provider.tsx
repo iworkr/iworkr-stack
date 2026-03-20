@@ -1,19 +1,16 @@
 "use client";
 
 /**
- * Project Panopticon — TelemetryProvider
+ * Project Panopticon + Argus — TelemetryProvider
  *
- * Client component that:
- *   1. Initializes the console ring buffer capture
- *   2. Flushes any queued offline telemetry payloads
- *   3. Listens for global unhandled rejections (Promise rejections)
- *   4. Tracks window.onerror for non-React errors
- *   5. Wires up user identity from auth store
+ * Dual telemetry pipeline:
+ *   1. Crash capture engine (autopsy payloads with screenshots)
+ *   2. Continuous telemetry agent (web vitals, console errors, network profiling)
  *
- * Mount this inside the dashboard layout, wrapping {children}.
+ * Both share the same ingest-telemetry Edge Function endpoint.
  */
 
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import {
   initConsoleCapture,
   flushTelemetryQueue,
@@ -21,17 +18,18 @@ import {
   captureAndSend,
   trackAction,
 } from "@/lib/telemetry";
+import { initAgent, setAgentIdentity, destroyAgent } from "@/lib/telemetry/telemetry-agent";
+import { useOrg } from "@/lib/hooks/use-org";
 
 export function TelemetryProvider({ children }: { children: React.ReactNode }) {
-  // Initialize on mount (client only)
-  useEffect(() => {
-    // 1. Start console capture
-    initConsoleCapture();
+  const { orgId, userId } = useOrg();
 
-    // 2. Flush any offline-queued payloads
+  useEffect(() => {
+    initConsoleCapture();
     flushTelemetryQueue();
 
-    // 3. Global unhandled Promise rejection handler
+    initAgent({ workspaceId: orgId ?? undefined, userId: userId ?? undefined });
+
     const handleRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason instanceof Error
         ? event.reason
@@ -40,7 +38,6 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       captureAndSend(error, "warning");
     };
 
-    // 4. Global window.onerror for non-React errors
     const handleError = (event: ErrorEvent) => {
       if (event.error) {
         captureAndSend(event.error, "warning");
@@ -50,7 +47,6 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("unhandledrejection", handleRejection);
     window.addEventListener("error", handleError);
 
-    // 5. Track click actions for "last_action" in payloads
     const handleClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target) return;
@@ -70,8 +66,13 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("unhandledrejection", handleRejection);
       window.removeEventListener("error", handleError);
       document.removeEventListener("click", handleClick, true);
+      destroyAgent();
     };
   }, []);
+
+  useEffect(() => {
+    setAgentIdentity(orgId, userId);
+  }, [orgId, userId]);
 
   return <>{children}</>;
 }
