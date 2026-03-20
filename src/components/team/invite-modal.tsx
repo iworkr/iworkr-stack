@@ -153,6 +153,7 @@ export function InviteModal() {
             email,
             role: selectedRole,
             branch: selectedBranches[0] || "HQ",
+            orgId,
           }),
         });
         const data = await res.json();

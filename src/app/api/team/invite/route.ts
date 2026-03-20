@@ -16,7 +16,7 @@ import { sendInviteEmail } from "@/lib/email";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, role, branch } = body;
+    const { email, role, branch, orgId: requestedOrgId } = body;
 
     if (!email || !role) {
       return NextResponse.json({ error: "Email and role are required" }, { status: 400 });
@@ -37,13 +37,17 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 2. Resolve org + permission check ────────────────────
-    const { data: membership } = await (supabase as any)
+    const memberQuery = (supabase as any)
       .from("organization_members")
       .select("organization_id, role")
       .eq("user_id", user.id)
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle();
+      .eq("status", "active");
+
+    if (requestedOrgId) {
+      memberQuery.eq("organization_id", requestedOrgId);
+    }
+
+    const { data: membership } = await memberQuery.limit(1).maybeSingle();
 
     if (!membership?.organization_id) {
       return NextResponse.json({ error: "No active organization found" }, { status: 400 });
