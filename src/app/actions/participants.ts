@@ -141,14 +141,18 @@ export async function fetchParticipantDossier(
   try {
     const supabase = await createServerSupabaseClient();
 
-    // Profile + client data
-    const { data: profile } = await (supabase as any)
+    // Profile + client data (use left join so missing client doesn't block)
+    const { data: profile, error: profileError } = await (supabase as any)
       .from("participant_profiles")
-      .select("*, clients!inner(name, email, phone)")
+      .select("*, clients(name, email, phone)")
       .eq("id", participantId)
       .eq("organization_id", orgId)
-      .single();
+      .maybeSingle();
 
+    if (profileError) {
+      console.error("[participants] dossier query error:", profileError);
+      return null;
+    }
     if (!profile) return null;
 
     // Active service agreement

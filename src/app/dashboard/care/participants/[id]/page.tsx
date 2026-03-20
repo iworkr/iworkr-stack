@@ -978,7 +978,7 @@ export default function ParticipantDossierPage() {
 
   const participantId = params.id as string;
 
-  const { data: participant, isLoading: dossierLoading, error: dossierError } = useQuery({
+  const { data: participant, isLoading: dossierLoading, isPending: dossierPending, error: dossierError } = useQuery({
     queryKey: queryKeys.participants.dossier(participantId),
     queryFn: () => fetchParticipantDossier(participantId, orgId!),
     enabled: !!orgId && !!participantId,
@@ -1012,7 +1012,7 @@ export default function ParticipantDossierPage() {
   });
   const coordinationLogs = (coordinationRaw as CoordinationLogEntry[] | undefined) ?? [];
 
-  const loading = dossierLoading;
+  const loading = dossierLoading || dossierPending;
   const error = dossierError ? dossierError.message : null;
 
   if (orgLoading || loading) {
