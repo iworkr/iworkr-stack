@@ -23,6 +23,10 @@ import {
   Stethoscope,
   CheckCircle2,
   ChevronDown,
+  Pill,
+  Target,
+  Wallet,
+  Car,
 } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -105,7 +109,34 @@ interface NDISItem {
   support_purpose: string;
 }
 
-const STEP_LABELS = ["Identity", "Care Profile", "Service Agreement", "Schedule", "Documents"] as const;
+const STEP_LABELS = ["Identity", "Care Profile", "Medications & Goals", "Service Agreement", "Schedule", "Funds Management", "Documents"] as const;
+
+const ROUTE_OPTIONS = [
+  { value: "oral", label: "Oral" },
+  { value: "topical", label: "Topical" },
+  { value: "inhaled", label: "Inhaled" },
+  { value: "sublingual", label: "Sublingual" },
+  { value: "subcutaneous", label: "Subcutaneous" },
+  { value: "intramuscular", label: "Intramuscular" },
+  { value: "other", label: "Other" },
+] as const;
+
+const FREQUENCY_OPTIONS = [
+  { value: "once_daily", label: "Once daily" },
+  { value: "twice_daily", label: "Twice daily" },
+  { value: "three_times_daily", label: "3× daily" },
+  { value: "every_morning", label: "Every morning" },
+  { value: "every_night", label: "Every night" },
+  { value: "weekly", label: "Weekly" },
+  { value: "prn", label: "PRN (as needed)" },
+  { value: "other", label: "Other" },
+] as const;
+
+const GOAL_CATEGORIES = [
+  { value: "core", label: "Core" },
+  { value: "capacity_building", label: "Capacity Building" },
+  { value: "capital", label: "Capital" },
+] as const;
 
 const labelCls = "mb-1 block text-[9px] font-medium uppercase tracking-wider text-zinc-600";
 const inputCls = "w-full border-b border-[var(--border-base)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]";
@@ -151,6 +182,8 @@ export function NewParticipantOverlay({
 
   const { fields: lineItems, append: appendLineItem, remove: removeLineItem } = useFieldArray({ control, name: "sa_line_items" });
   const { fields: rosterEntries, append: appendRoster, remove: removeRoster, update: updateRoster } = useFieldArray({ control, name: "roster_entries" });
+  const { fields: medications, append: appendMed, remove: removeMed } = useFieldArray({ control, name: "medications" });
+  const { fields: goals, append: appendGoal, remove: removeGoal } = useFieldArray({ control, name: "goals" });
 
   const watchedLineItems = watch("sa_line_items");
   const watchedRoster = watch("roster_entries");
@@ -242,7 +275,7 @@ export function NewParticipantOverlay({
       const valid = await trigger(["funding_type"]);
       if (!valid) return;
     }
-    if (step === 2 && fundingType === "plan_managed") {
+    if (step === 3 && fundingType === "plan_managed") {
       const email = getValues("plan_manager_email");
       if (email && email.length > 0) {
         const valid = await trigger(["plan_manager_email"]);
@@ -250,7 +283,7 @@ export function NewParticipantOverlay({
       }
     }
     setDirection(1);
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 6));
   }, [step, nameLocked, trigger, fundingType, getValues]);
 
   const goBack = useCallback(() => {
@@ -273,7 +306,7 @@ export function NewParticipantOverlay({
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
-        if (step === 4) handleSubmit(onSubmit)();
+        if (step === 6) handleSubmit(onSubmit)();
       }
     };
     window.addEventListener("keydown", handler);
@@ -327,7 +360,7 @@ export function NewParticipantOverlay({
 
   /* ── PDF ────────────────────────────────────────────────── */
   useEffect(() => {
-    if (step === 4 && !pdfGenerated && !generatingPdf) {
+    if (step === 6 && !pdfGenerated && !generatingPdf) {
       setGeneratingPdf(true);
       const t = setTimeout(() => { setPdfGenerated(true); setGeneratingPdf(false); }, 600);
       return () => clearTimeout(t);
@@ -399,6 +432,23 @@ export function NewParticipantOverlay({
           days: re.days, start_time: re.start_time, end_time: re.end_time,
           linked_item_number: re.linked_item_number || null, title: null,
         })),
+        medications: (data.medications || []).map((m) => ({
+          medication_name: m.medication_name, dosage: m.dosage,
+          route: m.route || "oral", frequency: m.frequency || "once_daily",
+          prescribing_doctor: m.prescribing_doctor || null,
+          is_prn: m.is_prn || false,
+          special_instructions: m.special_instructions || null,
+        })),
+        goals: (data.goals || []).map((g) => ({
+          title: g.title, description: g.description || null,
+          support_category: g.support_category || "core",
+          target_outcome: g.target_outcome || null,
+        })),
+        petty_cash_enabled: data.petty_cash_enabled || false,
+        petty_cash_limit: data.petty_cash_limit || 0,
+        petty_cash_notes: data.petty_cash_notes?.trim() || null,
+        transport_budget_weekly: data.transport_budget_weekly || 0,
+        discretionary_fund_notes: data.discretionary_fund_notes?.trim() || null,
       };
       const supabase = createClient();
       const { data: result, error } = await (supabase as any).rpc("create_participant_ecosystem", { p_payload: payload });
@@ -647,7 +697,150 @@ export function NewParticipantOverlay({
     </div>
   );
 
+  /* ── Step 2: Medications & Goals ─────────────────────── */
   const renderStep2 = () => (
+    <div className="px-6 py-5 space-y-5">
+      {/* Medications */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <label className={labelCls}><Pill size={8} className="mr-1 inline" />Current Medications</label>
+          <button type="button" onClick={() => appendMed({ medication_name: "", dosage: "", route: "oral", frequency: "once_daily", prescribing_doctor: "", is_prn: false, special_instructions: "" })}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-300"
+          ><Plus size={10} /> Add Medication</button>
+        </div>
+
+        {medications.length === 0 && (
+          <div className="rounded-lg border border-dashed border-zinc-800 py-6 text-center">
+            <Pill size={18} className="mx-auto mb-2 text-zinc-700" />
+            <p className="text-[11px] text-zinc-600">No medications added yet</p>
+            <button type="button" onClick={() => appendMed({ medication_name: "", dosage: "", route: "oral", frequency: "once_daily", prescribing_doctor: "", is_prn: false, special_instructions: "" })}
+              className="mt-2 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+            >+ Add first medication</button>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {medications.map((med, idx) => (
+            <div key={med.id} className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 p-3 space-y-2.5">
+              <div className="flex items-start gap-2">
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelCls}>Name</label>
+                    <input {...register(`medications.${idx}.medication_name`)} placeholder="e.g. Paracetamol" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Dosage</label>
+                    <input {...register(`medications.${idx}.dosage`)} placeholder="e.g. 500mg" className={inputCls} />
+                  </div>
+                </div>
+                <button type="button" onClick={() => removeMed(idx)} className="mt-3 rounded p-1 text-zinc-700 hover:text-rose-400 transition-colors">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className={labelCls}>Route</label>
+                  <select {...register(`medications.${idx}.route`)} className={`${inputCls} [color-scheme:dark]`}>
+                    {ROUTE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Frequency</label>
+                  <select {...register(`medications.${idx}.frequency`)} className={`${inputCls} [color-scheme:dark]`}>
+                    {FREQUENCY_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Prescriber</label>
+                  <input {...register(`medications.${idx}.prescribing_doctor`)} placeholder="Dr..." className={inputCls} />
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Controller control={control} name={`medications.${idx}.is_prn`}
+                  render={({ field }) => (
+                    <button type="button" onClick={() => field.onChange(!field.value)}
+                      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] transition-all ${field.value ? "bg-amber-500/15 text-amber-400" : "bg-zinc-800 text-zinc-600 hover:text-zinc-400"}`}
+                    >{field.value && <Check size={8} />}PRN</button>
+                  )}
+                />
+                <div className="flex-1">
+                  <input {...register(`medications.${idx}.special_instructions`)} placeholder="Special instructions..." className={`${inputCls} text-[11px]`} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Goals */}
+      <div className="border-t border-[var(--border-base)] pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <label className={labelCls}><Target size={8} className="mr-1 inline" />NDIS Goals</label>
+          <button type="button" onClick={() => appendGoal({ title: "", description: "", support_category: "core", target_outcome: "" })}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-300"
+          ><Plus size={10} /> Add Goal</button>
+        </div>
+
+        {goals.length === 0 && (
+          <div className="rounded-lg border border-dashed border-zinc-800 py-6 text-center">
+            <Target size={18} className="mx-auto mb-2 text-zinc-700" />
+            <p className="text-[11px] text-zinc-600">No goals added yet</p>
+            <button type="button" onClick={() => appendGoal({ title: "", description: "", support_category: "core", target_outcome: "" })}
+              className="mt-2 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+            >+ Add first goal</button>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {goals.map((goal, idx) => (
+            <div key={goal.id} className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 p-3 space-y-2.5">
+              <div className="flex items-start gap-2">
+                <div className="flex-1">
+                  <label className={labelCls}>Goal Title</label>
+                  <input {...register(`goals.${idx}.title`)} placeholder="e.g. Increase social participation" className={inputCls} />
+                </div>
+                <button type="button" onClick={() => removeGoal(idx)} className="mt-3 rounded p-1 text-zinc-700 hover:text-rose-400 transition-colors">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>Category</label>
+                  <div className="flex gap-1.5 mt-1">
+                    <Controller control={control} name={`goals.${idx}.support_category`}
+                      render={({ field }) => (
+                        <>{GOAL_CATEGORIES.map((c) => {
+                          const active = field.value === c.value;
+                          return (
+                            <button key={c.value} type="button" onClick={() => field.onChange(c.value)}
+                              className={`rounded-full px-2.5 py-1 text-[10px] transition-all ${active ? "bg-zinc-700 text-zinc-200" : "bg-[var(--card-bg)] text-zinc-600 hover:text-zinc-400"}`}
+                            >{active && <Check size={7} className="mr-1 inline" />}{c.label}</button>
+                          );
+                        })}</>
+                      )}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Target Outcome</label>
+                  <input {...register(`goals.${idx}.target_outcome`)} placeholder="Measurable outcome..." className={inputCls} />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Description</label>
+                <textarea {...register(`goals.${idx}.description`)} placeholder="Additional details..." rows={2}
+                  className="w-full resize-none bg-transparent text-[12px] leading-relaxed text-zinc-400 outline-none placeholder:text-zinc-700"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── Step 3: Service Agreement (was Step 2) ─────────── */
+  const renderStep3 = () => (
     <div className="px-6 py-5 space-y-5">
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -764,7 +957,8 @@ export function NewParticipantOverlay({
     </div>
   );
 
-  const renderStep3 = () => (
+  /* ── Step 4: Schedule (was Step 3) ────────────────────── */
+  const renderStep4 = () => (
     <div className="px-6 py-5 space-y-5">
       <div className="space-y-2.5">
         <AnimatePresence mode="popLayout">
@@ -877,7 +1071,69 @@ export function NewParticipantOverlay({
     </div>
   );
 
-  const renderStep4 = () => (
+  /* ── Step 5: Funds Management ─────────────────────────── */
+  const renderStep5 = () => (
+    <div className="px-6 py-5 space-y-5">
+      <div>
+        <label className={labelCls}><Wallet size={8} className="mr-1 inline" />Petty Cash Management</label>
+        <p className="text-[10px] text-zinc-700 mb-3">Does the participant have a petty cash float managed by support workers?</p>
+
+        <Controller control={control} name="petty_cash_enabled"
+          render={({ field }) => (
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => field.onChange(!field.value)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${field.value ? "bg-emerald-500/30" : "bg-zinc-800"}`}
+              >
+                <div className={`absolute top-0.5 h-4 w-4 rounded-full transition-all ${field.value ? "left-5 bg-emerald-400" : "left-0.5 bg-zinc-600"}`} />
+              </button>
+              <span className="text-[12px] text-zinc-400">{field.value ? "Enabled" : "Disabled"}</span>
+            </div>
+          )}
+        />
+      </div>
+
+      <AnimatePresence>
+        {watch("petty_cash_enabled") && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }} className="overflow-hidden"
+          >
+            <div className="grid grid-cols-2 gap-4 pb-3">
+              <div>
+                <label className={labelCls}>Weekly Limit ($)</label>
+                <input type="number" step="0.01" min="0" {...register("petty_cash_limit", { valueAsNumber: true })}
+                  placeholder="50.00" className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Notes / Purpose</label>
+                <input {...register("petty_cash_notes")} placeholder="e.g. Groceries, community outings" className={inputCls} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="border-t border-[var(--border-base)] pt-4">
+        <label className={labelCls}><Car size={8} className="mr-1 inline" />Transport Budget</label>
+        <p className="text-[10px] text-zinc-700 mb-3">Weekly transport allowance claimable under NDIS Core — Transport</p>
+        <div>
+          <label className={labelCls}>Weekly Budget ($)</label>
+          <input type="number" step="0.01" min="0" {...register("transport_budget_weekly", { valueAsNumber: true })}
+            placeholder="0.00" className={inputCls} />
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--border-base)] pt-4">
+        <label className={labelCls}><DollarSign size={8} className="mr-1 inline" />Discretionary / Other Funds</label>
+        <textarea {...register("discretionary_fund_notes")}
+          placeholder={"Any other fund management notes...\ne.g. Nominee manages bank account, direct debit for rent, etc."}
+          rows={3} className="w-full resize-none bg-transparent text-[12px] leading-relaxed text-zinc-400 outline-none placeholder:text-zinc-700"
+        />
+      </div>
+    </div>
+  );
+
+  /* ── Step 6: Documents (was Step 4) ─────────────────── */
+  const renderStep6 = () => (
     <div className="px-6 py-5">
       {generatingPdf && !pdfGenerated ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -943,7 +1199,7 @@ export function NewParticipantOverlay({
      RENDER
      ════════════════════════════════════════════════════════════ */
 
-  const stepContent = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4];
+  const stepContent = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6];
 
   return (
     <AnimatePresence>
@@ -1051,13 +1307,13 @@ export function NewParticipantOverlay({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {step >= 1 && step < 4 && (
+                  {step >= 1 && step < 6 && (
                     <button type="button" onClick={goNext}
                       className="rounded-md px-3 py-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-300"
                     >Skip</button>
                   )}
 
-                  {step < 4 ? (
+                  {step < 6 ? (
                     <motion.button type="button" whileTap={{ scale: 0.98 }}
                       onClick={goNext}
                       disabled={step === 0 && !nameLocked}
@@ -1086,7 +1342,7 @@ export function NewParticipantOverlay({
                     </motion.button>
                   )}
 
-                  {step >= 1 && step < 4 && (
+                  {step >= 1 && step < 6 && (
                     <motion.button type="submit" whileTap={{ scale: 0.98 }} disabled={saving}
                       className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[12px] text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-200 disabled:opacity-40"
                     >

@@ -811,6 +811,243 @@ export async function fetchClinicalTimeline(
 
 /* ── Apply NDIS Extension ─────────────────────────────── */
 
+/* ── Participant Medications ───────────────────────────── */
+
+export interface ParticipantMedication {
+  id: string;
+  medication_name: string;
+  dosage: string;
+  route: string;
+  frequency: string;
+  prescribing_doctor: string | null;
+  is_prn: boolean;
+  prn_reason: string | null;
+  special_instructions: string | null;
+  is_active: boolean;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export async function fetchParticipantMedications(
+  participantId: string,
+  orgId: string,
+): Promise<ParticipantMedication[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("participant_medications")
+      .select("id, medication_name, dosage, route, frequency, prescribing_doctor, is_prn, prn_reason, special_instructions, is_active, start_date, end_date")
+      .eq("participant_id", participantId)
+      .eq("organization_id", orgId)
+      .eq("is_active", true)
+      .order("medication_name");
+    if (error) { console.error("[participants] fetchMedications:", error); return []; }
+    return data || [];
+  } catch (e: any) {
+    console.error("[participants] fetchMedications failed:", e);
+    return [];
+  }
+}
+
+export async function upsertParticipantMedication(
+  orgId: string,
+  participantId: string,
+  med: Partial<ParticipantMedication> & { medication_name: string; dosage: string },
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const payload = {
+      organization_id: orgId,
+      participant_id: participantId,
+      medication_name: med.medication_name,
+      dosage: med.dosage,
+      route: med.route || "oral",
+      frequency: med.frequency || "once_daily",
+      prescribing_doctor: med.prescribing_doctor || null,
+      is_prn: med.is_prn || false,
+      special_instructions: med.special_instructions || null,
+    };
+    if (med.id) {
+      const { error } = await (supabase as any).from("participant_medications").update(payload).eq("id", med.id);
+      if (error) return { success: false, error: error.message };
+      return { success: true, id: med.id };
+    }
+    const { data, error } = await (supabase as any).from("participant_medications").insert(payload).select("id").single();
+    if (error) return { success: false, error: error.message };
+    return { success: true, id: data?.id };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Failed" };
+  }
+}
+
+export async function deleteParticipantMedication(medId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { error } = await (supabase as any).from("participant_medications").update({ is_active: false }).eq("id", medId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Failed" };
+  }
+}
+
+/* ── Participant Goals ────────────────────────────────── */
+
+export interface ParticipantGoal {
+  id: string;
+  title: string;
+  description: string | null;
+  target_outcome: string | null;
+  support_category: string | null;
+  status: string;
+  priority: number;
+  started_at: string | null;
+  achieved_at: string | null;
+  care_plan_id: string | null;
+}
+
+export async function fetchParticipantGoals(
+  participantId: string,
+  orgId: string,
+): Promise<ParticipantGoal[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("care_goals")
+      .select("id, title, description, target_outcome, support_category, status, priority, started_at, achieved_at, care_plan_id")
+      .eq("participant_id", participantId)
+      .eq("organization_id", orgId)
+      .order("priority", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) { console.error("[participants] fetchGoals:", error); return []; }
+    return data || [];
+  } catch (e: any) {
+    console.error("[participants] fetchGoals failed:", e);
+    return [];
+  }
+}
+
+export async function upsertParticipantGoal(
+  orgId: string,
+  participantId: string,
+  goal: Partial<ParticipantGoal> & { title: string },
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    if (goal.id) {
+      const { error } = await (supabase as any).from("care_goals").update({
+        title: goal.title,
+        description: goal.description || null,
+        target_outcome: goal.target_outcome || null,
+        support_category: goal.support_category || "core",
+        status: goal.status || "not_started",
+      }).eq("id", goal.id);
+      if (error) return { success: false, error: error.message };
+      return { success: true, id: goal.id };
+    }
+
+    // care_goals requires care_plan_id — fetch active care plan or create one
+    let carePlanId = goal.care_plan_id;
+    if (!carePlanId) {
+      const { data: cp } = await (supabase as any)
+        .from("care_plans")
+        .select("id")
+        .eq("participant_id", participantId)
+        .eq("organization_id", orgId)
+        .in("status", ["active", "draft"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cp) {
+        carePlanId = cp.id;
+      } else {
+        const { data: newCp, error: cpErr } = await (supabase as any)
+          .from("care_plans")
+          .insert({ organization_id: orgId, participant_id: participantId, title: "Care Plan", status: "active" })
+          .select("id")
+          .single();
+        if (cpErr) return { success: false, error: cpErr.message };
+        carePlanId = newCp.id;
+      }
+    }
+
+    const { data, error } = await (supabase as any).from("care_goals").insert({
+      organization_id: orgId,
+      participant_id: participantId,
+      care_plan_id: carePlanId,
+      title: goal.title,
+      description: goal.description || null,
+      target_outcome: goal.target_outcome || null,
+      support_category: goal.support_category || "core",
+      status: goal.status || "not_started",
+    }).select("id").single();
+    if (error) return { success: false, error: error.message };
+    return { success: true, id: data?.id };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Failed" };
+  }
+}
+
+export async function deleteParticipantGoal(goalId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { error } = await (supabase as any).from("care_goals").delete().eq("id", goalId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Failed" };
+  }
+}
+
+/* ── Participant Funds / Petty Cash ───────────────────── */
+
+export async function fetchParticipantFundsMetadata(
+  participantId: string,
+  orgId: string,
+): Promise<{ petty_cash_enabled: boolean; petty_cash_limit: number; petty_cash_notes: string | null; transport_budget_weekly: number; discretionary_fund_notes: string | null } | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("participant_profiles")
+      .select("petty_cash_enabled, petty_cash_limit, petty_cash_notes, transport_budget_weekly, discretionary_fund_notes")
+      .eq("id", participantId)
+      .eq("organization_id", orgId)
+      .single();
+    if (error || !data) return null;
+    return {
+      petty_cash_enabled: data.petty_cash_enabled ?? false,
+      petty_cash_limit: data.petty_cash_limit ?? 0,
+      petty_cash_notes: data.petty_cash_notes ?? null,
+      transport_budget_weekly: data.transport_budget_weekly ?? 0,
+      discretionary_fund_notes: data.discretionary_fund_notes ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function updateParticipantFundsMetadata(
+  participantId: string,
+  orgId: string,
+  data: { petty_cash_enabled?: boolean; petty_cash_limit?: number; petty_cash_notes?: string; transport_budget_weekly?: number; discretionary_fund_notes?: string },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { error } = await (supabase as any)
+      .from("participant_profiles")
+      .update(data)
+      .eq("id", participantId)
+      .eq("organization_id", orgId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Failed" };
+  }
+}
+
+/* ── Apply NDIS Extension ─────────────────────────────── */
+
 export async function applyNDISExtension(
   agreementId: string,
   days: number = 28,

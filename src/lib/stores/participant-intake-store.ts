@@ -20,8 +20,25 @@ export const rosterEntrySchema = z.object({
   linked_item_number: z.string().optional(),
 });
 
+export const medicationSchema = z.object({
+  medication_name: z.string().min(1, "Medication name required"),
+  dosage: z.string().min(1, "Dosage required"),
+  route: z.string(),
+  frequency: z.string(),
+  prescribing_doctor: z.string().optional(),
+  is_prn: z.boolean(),
+  special_instructions: z.string().optional(),
+});
+
+export const goalSchema = z.object({
+  title: z.string().min(1, "Goal title required"),
+  description: z.string().optional(),
+  support_category: z.string(),
+  target_outcome: z.string().optional(),
+});
+
 export const participantIntakeSchema = z.object({
-  // Step 1: Identity
+  // Step 0: Identity
   first_name: z.string().min(2, "First name is required"),
   last_name: z.string().min(2, "Last name is required"),
   preferred_name: z.string().optional(),
@@ -31,11 +48,15 @@ export const participantIntakeSchema = z.object({
   phone: z.string().optional(),
   funding_type: z.string().min(1, "Select a funding type"),
 
-  // Step 2: Medical
+  // Step 1: Care Profile
   primary_diagnosis: z.string().optional(),
   critical_alerts: z.string().optional(),
   mobility_status: z.string().optional(),
   communication_type: z.string().optional(),
+
+  // Step 2: Medications & Goals
+  medications: z.array(medicationSchema),
+  goals: z.array(goalSchema),
 
   // Step 3: Service Agreement
   sa_start_date: z.string().optional(),
@@ -45,9 +66,19 @@ export const participantIntakeSchema = z.object({
 
   // Step 4: Schedule
   roster_entries: z.array(rosterEntrySchema),
+
+  // Step 5: Funds Management
+  petty_cash_enabled: z.boolean(),
+  petty_cash_limit: z.number().min(0).optional(),
+  petty_cash_notes: z.string().optional(),
+  transport_budget_weekly: z.number().min(0).optional(),
+  discretionary_fund_notes: z.string().optional(),
 });
 
 export type IntakeFormData = z.infer<typeof participantIntakeSchema>;
+
+const today = () => new Date().toISOString().split("T")[0];
+const yearFromNow = () => new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0];
 
 export const INTAKE_DEFAULTS: IntakeFormData = {
   first_name: "",
@@ -62,11 +93,18 @@ export const INTAKE_DEFAULTS: IntakeFormData = {
   critical_alerts: "",
   mobility_status: "",
   communication_type: "",
-  sa_start_date: new Date().toISOString().split("T")[0],
-  sa_end_date: new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0],
+  medications: [],
+  goals: [],
+  sa_start_date: today(),
+  sa_end_date: yearFromNow(),
   plan_manager_email: "",
   sa_line_items: [],
   roster_entries: [],
+  petty_cash_enabled: false,
+  petty_cash_limit: 0,
+  petty_cash_notes: "",
+  transport_budget_weekly: 0,
+  discretionary_fund_notes: "",
 };
 
 interface IntakeState {
@@ -80,6 +118,8 @@ interface IntakeState {
   reset: () => void;
 }
 
+const MAX_STEP = 6;
+
 export const useIntakeStore = create<IntakeState>()(
   persist(
     (set) => ({
@@ -92,7 +132,7 @@ export const useIntakeStore = create<IntakeState>()(
           hasDraft: true,
         })),
       setStep: (step) => set({ currentStep: step }),
-      nextStep: () => set((state) => ({ currentStep: Math.min(state.currentStep + 1, 4) })),
+      nextStep: () => set((state) => ({ currentStep: Math.min(state.currentStep + 1, MAX_STEP) })),
       prevStep: () => set((state) => ({ currentStep: Math.max(state.currentStep - 1, 0) })),
       reset: () => set({ currentStep: 0, formData: {}, hasDraft: false }),
     }),

@@ -36,6 +36,7 @@ import { inviteFamilyPortalMember } from "@/app/actions/portal-family";
 import { getParticipantCoordinationLogsAction } from "@/app/actions/coordination";
 import { formatNDISNumber } from "@/lib/ndis-utils";
 import { queryKeys } from "@/lib/hooks/use-query-keys";
+import { MedicationsBox, GoalsBox, FundsManagementBox } from "@/components/care/participant-detail-sections";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Types
@@ -1185,6 +1186,11 @@ export default function ParticipantDossierPage() {
         <DocumentVaultBox participant={participant} />
         <ClinicalTimelineBox timeline={timeline} />
         <CoordinationLogBox logs={coordinationLogs} />
+
+        {/* Row 3: Medications, Goals & Funds */}
+        <MedicationsBox participantId={participant.id} orgId={orgId!} />
+        <GoalsBox participantId={participant.id} orgId={orgId!} />
+        <FundsManagementBox participantId={participant.id} orgId={orgId!} />
       </div>
     </div>
   );
