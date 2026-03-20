@@ -370,6 +370,9 @@ export async function triggerOnboarding(orgId: string): Promise<{ url?: string; 
     return { url: accountLink.url };
   } catch (err: any) {
     console.error("[triggerOnboarding] Stripe error:", err?.message);
+    if (err?.message?.includes("signed up for Connect")) {
+      return { error: "Stripe Connect is not enabled on the platform account. Please enable it at dashboard.stripe.com/connect first." };
+    }
     return { error: err?.message || "Failed to start onboarding" };
   }
 }
