@@ -66,7 +66,7 @@ export function useParticipantDossier(
     queryKey: queryKeys.participants.dossier(participantId ?? ""),
     queryFn: async () => {
       if (!workspaceId || !participantId) return null;
-      return fetchParticipantDossier(workspaceId, participantId);
+      return fetchParticipantDossier(participantId, workspaceId);
     },
     enabled: !!workspaceId && !!participantId,
     staleTime: 60_000,
@@ -81,7 +81,7 @@ export function useParticipantBudget(
     queryKey: queryKeys.participants.budget(participantId ?? ""),
     queryFn: async () => {
       if (!workspaceId || !participantId) return null;
-      return fetchBudgetTelemetry(workspaceId, participantId);
+      return fetchBudgetTelemetry(participantId, workspaceId);
     },
     enabled: !!workspaceId && !!participantId,
     staleTime: 2 * 60_000,
@@ -96,7 +96,7 @@ export function useParticipantTimeline(
     queryKey: queryKeys.participants.timeline(participantId ?? ""),
     queryFn: async () => {
       if (!workspaceId || !participantId) return [];
-      return fetchClinicalTimeline(workspaceId, participantId);
+      return fetchClinicalTimeline(participantId, workspaceId);
     },
     enabled: !!workspaceId && !!participantId,
     staleTime: 60_000,
@@ -121,7 +121,7 @@ export function usePrefetchParticipant() {
   return (participantId: string, workspaceId: string) => {
     queryClient.prefetchQuery({
       queryKey: queryKeys.participants.dossier(participantId),
-      queryFn: () => fetchParticipantDossier(workspaceId, participantId),
+      queryFn: () => fetchParticipantDossier(participantId, workspaceId),
       staleTime: 60_000,
     });
   };
