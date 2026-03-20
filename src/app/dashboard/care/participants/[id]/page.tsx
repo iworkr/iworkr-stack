@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,6 +25,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useQuery } from "@tanstack/react-query";
 import {
   fetchParticipantDossier,
   fetchBudgetTelemetry,
@@ -34,6 +35,7 @@ import {
 import { inviteFamilyPortalMember } from "@/app/actions/portal-family";
 import { getParticipantCoordinationLogsAction } from "@/app/actions/coordination";
 import { formatNDISNumber } from "@/lib/ndis-utils";
+import { queryKeys } from "@/lib/hooks/use-query-keys";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Types
@@ -976,60 +978,47 @@ export default function ParticipantDossierPage() {
 
   const participantId = params.id as string;
 
-  const [participant, setParticipant] = useState<ParticipantWithBudget | null>(null);
-  const [budget, setBudget] = useState<BudgetData | null>(null);
-  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
-  const [coordinationLogs, setCoordinationLogs] = useState<CoordinationLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: participant, isLoading: dossierLoading, error: dossierError } = useQuery({
+    queryKey: queryKeys.participants.dossier(participantId),
+    queryFn: () => fetchParticipantDossier(participantId, orgId!),
+    enabled: !!orgId && !!participantId,
+    staleTime: 60_000,
+  });
 
-  /* ── Load all data ── */
-  useEffect(() => {
-    if (!orgId || !participantId) return;
+  const { data: budget } = useQuery({
+    queryKey: queryKeys.participants.budget(participantId),
+    queryFn: () => fetchBudgetTelemetry(participantId, orgId!),
+    enabled: !!orgId && !!participantId,
+    staleTime: 2 * 60_000,
+  });
 
-    async function loadDossier() {
-      setLoading(true);
-      setError(null);
+  const { data: timelineRaw } = useQuery({
+    queryKey: queryKeys.participants.timeline(participantId),
+    queryFn: () => fetchClinicalTimeline(participantId, orgId!),
+    enabled: !!orgId && !!participantId,
+    staleTime: 60_000,
+  });
+  const timeline = (timelineRaw as TimelineEntry[] | undefined) ?? [];
 
-      try {
-        const [dossier, budgetData, timelineData, coordinationData] = await Promise.all([
-          fetchParticipantDossier(participantId, orgId!),
-          fetchBudgetTelemetry(participantId, orgId!),
-          fetchClinicalTimeline(participantId, orgId!),
-          getParticipantCoordinationLogsAction({
-            organization_id: orgId!,
-            participant_id: participantId,
-            limit: 20,
-          }),
-        ]);
+  const { data: coordinationRaw } = useQuery({
+    queryKey: ["participants", "coordination", participantId],
+    queryFn: () => getParticipantCoordinationLogsAction({
+      organization_id: orgId!,
+      participant_id: participantId,
+      limit: 20,
+    }),
+    enabled: !!orgId && !!participantId,
+    staleTime: 60_000,
+  });
+  const coordinationLogs = (coordinationRaw as CoordinationLogEntry[] | undefined) ?? [];
 
-        if (!dossier) {
-          setError("Participant not found");
-          setLoading(false);
-          return;
-        }
+  const loading = dossierLoading;
+  const error = dossierError ? dossierError.message : null;
 
-        setParticipant(dossier);
-        setBudget(budgetData);
-        setTimeline(timelineData as TimelineEntry[]);
-        setCoordinationLogs((coordinationData || []) as CoordinationLogEntry[]);
-      } catch (err) {
-        console.error("Failed to load participant dossier:", err);
-        setError("Failed to load participant data");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadDossier();
-  }, [orgId, participantId]);
-
-  /* ── Loading state ── */
   if (orgLoading || loading) {
     return <DossierSkeleton />;
   }
 
-  /* ── Error state ── */
   if (error || !participant) {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">

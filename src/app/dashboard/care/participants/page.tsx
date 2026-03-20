@@ -14,16 +14,12 @@ import {
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
-import {
-  fetchParticipants,
-  fetchExternalAgencies,
-  type ParticipantProfile,
-  type ExternalAgency,
-} from "@/app/actions/participants";
+import { type ParticipantProfile } from "@/app/actions/participants";
 import { formatNDISNumber } from "@/lib/ndis-utils";
 import { NewParticipantOverlay } from "@/components/care/new-participant-overlay";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
+import { useParticipantsList, usePrefetchParticipant, useInvalidateParticipants } from "@/lib/hooks/use-participants-query";
 
 /* ── Status Config ────────────────────────────────────── */
 
@@ -111,15 +107,11 @@ export default function ParticipantsPage() {
   const { t } = useIndustryLexicon();
 
   /* ── State ─────────────────────────────────────────── */
-  const [participants, setParticipants] = useState<ParticipantProfile[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedTab, setSelectedTab] = useState<StatusTab>("all");
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [agencies, setAgencies] = useState<ExternalAgency[]>([]);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -131,34 +123,20 @@ export default function ParticipantsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  /* ── Load participants ─────────────────────────────── */
-  const loadParticipants = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    try {
-      const result = await fetchParticipants(orgId, {
-        search: debouncedSearch || undefined,
-        status: selectedTab !== "all" ? selectedTab : undefined,
-        limit: 100,
-      });
-      setParticipants(result.data);
-      setTotal(result.total);
-    } catch (err) {
-      console.error("Failed to load participants:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, debouncedSearch, selectedTab]);
+  /* ── TanStack Query — cached participant list ────── */
+  const queryFilters = useMemo(() => ({
+    search: debouncedSearch || undefined,
+    status: selectedTab !== "all" ? selectedTab : undefined,
+    limit: 100,
+  }), [debouncedSearch, selectedTab]);
 
-  useEffect(() => {
-    loadParticipants();
-  }, [loadParticipants]);
+  const { data: queryResult, isLoading: loading } = useParticipantsList(orgId, queryFilters);
+  const participants = queryResult?.data ?? [];
+  const total = queryResult?.total ?? 0;
 
-  /* ── Load agencies for wizard ──────────────────────── */
-  useEffect(() => {
-    if (!orgId) return;
-    fetchExternalAgencies(orgId).then(setAgencies).catch(console.error);
-  }, [orgId]);
+  /* ── Hover-prefetch for detail pages ─────────────── */
+  const prefetch = usePrefetchParticipant();
+  const { invalidateList } = useInvalidateParticipants();
 
   /* ── Close filter on outside click ─────────────────── */
   useEffect(() => {
@@ -490,6 +468,7 @@ export default function ParticipantsPage() {
                   delay: Math.min(idx * 0.015, 0.2),
                   duration: 0.2,
                 }}
+                onMouseEnter={() => orgId && prefetch(participant.id, orgId)}
                 onClick={() => router.push(`/dashboard/care/participants/${participant.id}`)}
                 className={`group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer transition-colors duration-100 ${
                   isFocused
@@ -627,7 +606,7 @@ export default function ParticipantsPage() {
         onClose={() => setWizardOpen(false)}
         onComplete={() => {
           setWizardOpen(false);
-          loadParticipants();
+          if (orgId) invalidateList(orgId);
         }}
       />
     </div>

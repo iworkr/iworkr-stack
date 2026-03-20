@@ -19,6 +19,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 import { GlobalErrorBoundary } from "@/components/telemetry/global-error-boundary";
 import { TelemetryProvider } from "@/components/telemetry/telemetry-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 const DesktopBridge = dynamic(() => import("@/lib/desktop/desktop-bridge").then((m) => m.DesktopBridge), { ssr: false });
 const DesktopBadge = dynamic(() => import("@/lib/desktop/desktop-badge").then((m) => m.DesktopBadge), { ssr: false });
@@ -203,6 +204,7 @@ export default function DashboardLayout({
           className="flex-1 overflow-y-auto overflow-x-hidden"
           style={{ background: "var(--surface-0)" }}
         >
+          <QueryProvider>
           <TelemetryProvider>
           <DataProvider>
             <BrandProvider>
@@ -223,6 +225,7 @@ export default function DashboardLayout({
             </BrandProvider>
           </DataProvider>
           </TelemetryProvider>
+          </QueryProvider>
         </motion.main>
       </div>
 
