@@ -65,6 +65,27 @@ const COMMUNICATION_OPTIONS = [
   { value: "limited_verbal", label: "Limited Verbal" },
 ] as const;
 
+const DIAGNOSIS_SUGGESTIONS = [
+  "Autism Spectrum Disorder",
+  "Cerebral Palsy",
+  "Down Syndrome",
+  "Intellectual Disability",
+  "Psychosocial Disability",
+  "Multiple Sclerosis",
+  "Acquired Brain Injury",
+  "Spinal Cord Injury",
+  "Hearing Impairment",
+  "Vision Impairment",
+  "Epilepsy",
+  "Muscular Dystrophy",
+  "Stroke",
+  "Global Developmental Delay",
+  "ADHD",
+  "Fragile X Syndrome",
+  "Spina Bifida",
+  "Schizophrenia",
+] as const;
+
 const DAYS_OF_WEEK = [
   { key: "MON", label: "M", full: "Monday" },
   { key: "TUE", label: "T", full: "Tuesday" },
@@ -529,16 +550,34 @@ export function NewParticipantOverlay({
     </>
   );
 
+  const diagnosisValue = watch("primary_diagnosis") || "";
+  const diagnosisSuggestions = useMemo(() => {
+    if (!diagnosisValue.trim()) return DIAGNOSIS_SUGGESTIONS.slice(0, 12);
+    const q = diagnosisValue.toLowerCase();
+    return DIAGNOSIS_SUGGESTIONS.filter((d) => d.toLowerCase().includes(q) && d.toLowerCase() !== q);
+  }, [diagnosisValue]);
+
   const renderStep1 = () => (
     <div className="px-6 py-5 space-y-5">
       <div>
+        <label className={labelCls}>Primary Disability / Diagnosis</label>
         <input
           {...register("primary_diagnosis")}
-          placeholder="Primary diagnosis..."
+          placeholder="Start typing or select below..."
           autoComplete="off"
           autoFocus
-          className="w-full bg-transparent text-[20px] font-medium tracking-tight text-zinc-100 outline-none placeholder:text-zinc-700"
+          className={inputCls}
         />
+        {diagnosisSuggestions.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {diagnosisSuggestions.map((d) => (
+              <button key={d} type="button"
+                onClick={() => setValue("primary_diagnosis", d)}
+                className="rounded-full px-2.5 py-1 text-[10px] bg-[var(--card-bg)] text-zinc-600 transition-all hover:bg-[var(--subtle-bg-hover)] hover:text-zinc-300"
+              >{d}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="border-t border-[var(--border-base)] pt-4">
@@ -552,55 +591,57 @@ export function NewParticipantOverlay({
         <p className="mt-1 text-[9px] text-zinc-700">One alert per line. Displayed on every shift card.</p>
       </div>
 
-      <div>
-        <label className={labelCls}>Mobility</label>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          <Controller control={control} name="mobility_status"
-            render={({ field }) => (
-              <>{MOBILITY_OPTIONS.map((opt) => {
-                const active = field.value === opt.value;
-                return (
-                  <button key={opt.value} type="button"
-                    onClick={() => field.onChange(active ? "" : opt.value)}
-                    className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
-                      active
-                        ? "bg-zinc-700 text-zinc-200"
-                        : "bg-[var(--card-bg)] text-zinc-600 hover:bg-[var(--subtle-bg-hover)] hover:text-zinc-400"
-                    }`}
-                  >
-                    {active && <Check size={8} className="mr-1 inline" />}
-                    {opt.label}
-                  </button>
-                );
-              })}</>
-            )}
-          />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelCls}>Mobility</label>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <Controller control={control} name="mobility_status"
+              render={({ field }) => (
+                <>{MOBILITY_OPTIONS.map((opt) => {
+                  const active = field.value === opt.value;
+                  return (
+                    <button key={opt.value} type="button"
+                      onClick={() => field.onChange(active ? "" : opt.value)}
+                      className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                        active
+                          ? "bg-zinc-700 text-zinc-200"
+                          : "bg-[var(--card-bg)] text-zinc-600 hover:bg-[var(--subtle-bg-hover)] hover:text-zinc-400"
+                      }`}
+                    >
+                      {active && <Check size={8} className="mr-1 inline" />}
+                      {opt.label}
+                    </button>
+                  );
+                })}</>
+              )}
+            />
+          </div>
         </div>
-      </div>
 
-      <div>
-        <label className={labelCls}>Communication</label>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          <Controller control={control} name="communication_type"
-            render={({ field }) => (
-              <>{COMMUNICATION_OPTIONS.map((opt) => {
-                const active = field.value === opt.value;
-                return (
-                  <button key={opt.value} type="button"
-                    onClick={() => field.onChange(active ? "" : opt.value)}
-                    className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
-                      active
-                        ? "bg-zinc-700 text-zinc-200"
-                        : "bg-[var(--card-bg)] text-zinc-600 hover:bg-[var(--subtle-bg-hover)] hover:text-zinc-400"
-                    }`}
-                  >
-                    {active && <Check size={8} className="mr-1 inline" />}
-                    {opt.label}
-                  </button>
-                );
-              })}</>
-            )}
-          />
+        <div>
+          <label className={labelCls}>Communication</label>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <Controller control={control} name="communication_type"
+              render={({ field }) => (
+                <>{COMMUNICATION_OPTIONS.map((opt) => {
+                  const active = field.value === opt.value;
+                  return (
+                    <button key={opt.value} type="button"
+                      onClick={() => field.onChange(active ? "" : opt.value)}
+                      className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                        active
+                          ? "bg-zinc-700 text-zinc-200"
+                          : "bg-[var(--card-bg)] text-zinc-600 hover:bg-[var(--subtle-bg-hover)] hover:text-zinc-400"
+                      }`}
+                    >
+                      {active && <Check size={8} className="mr-1 inline" />}
+                      {opt.label}
+                    </button>
+                  );
+                })}</>
+              )}
+            />
+          </div>
         </div>
       </div>
     </div>

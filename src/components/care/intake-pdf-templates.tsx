@@ -6,212 +6,224 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
 } from "@react-pdf/renderer";
 import type { IntakeFormData } from "@/lib/stores/participant-intake-store";
 
-Font.register({
-  family: "Inter",
-  fonts: [
-    { src: "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff2", fontWeight: 400 },
-    { src: "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZ9hiA.woff2", fontWeight: 600 },
-    { src: "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYAZ9hiA.woff2", fontWeight: 700 },
-  ],
-});
-
 const s = StyleSheet.create({
-  page: { padding: 48, fontFamily: "Inter", fontSize: 10, color: "#1a1a1a", lineHeight: 1.5 },
-  header: { marginBottom: 24, borderBottomWidth: 2, borderBottomColor: "#10B981", paddingBottom: 16 },
-  title: { fontSize: 20, fontWeight: 700, color: "#050505", marginBottom: 4 },
-  subtitle: { fontSize: 11, color: "#6b7280" },
-  sectionTitle: { fontSize: 13, fontWeight: 600, color: "#050505", marginBottom: 8, marginTop: 20 },
-  row: { flexDirection: "row", marginBottom: 4 },
-  label: { width: 160, fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" as const, letterSpacing: 0.5 },
-  value: { flex: 1, fontSize: 10, color: "#1a1a1a" },
-  table: { marginTop: 8, borderWidth: 1, borderColor: "#e5e7eb" },
-  tableHeader: { flexDirection: "row", backgroundColor: "#f3f4f6", borderBottomWidth: 1, borderBottomColor: "#e5e7eb", padding: 8 },
-  tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#f3f4f6", padding: 8 },
-  tableCell: { fontSize: 9, color: "#374151" },
-  tableCellBold: { fontSize: 9, fontWeight: 600, color: "#1a1a1a" },
-  totalRow: { flexDirection: "row", padding: 8, backgroundColor: "#ecfdf5" },
-  footer: { position: "absolute" as const, bottom: 32, left: 48, right: 48, fontSize: 8, color: "#9ca3af", textAlign: "center" as const, borderTopWidth: 1, borderTopColor: "#e5e7eb", paddingTop: 8 },
-  badge: { backgroundColor: "#10B981", color: "#fff", fontSize: 8, fontWeight: 600, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  page: { padding: 40, fontSize: 10, color: "#111", lineHeight: 1.6 },
+  h1: { fontSize: 18, fontWeight: "bold", marginBottom: 2 },
+  h2: { fontSize: 12, fontWeight: "bold", color: "#111", marginTop: 20, marginBottom: 6, borderBottomWidth: 1, borderBottomColor: "#ddd", paddingBottom: 4 },
+  org: { fontSize: 10, color: "#666", marginBottom: 20 },
+  row: { flexDirection: "row", marginBottom: 3 },
+  lbl: { width: 140, fontSize: 9, color: "#666" },
+  val: { flex: 1, fontSize: 10, color: "#111" },
+  tHead: { flexDirection: "row", backgroundColor: "#f5f5f5", padding: 6, borderBottomWidth: 1, borderBottomColor: "#ddd" },
+  tRow: { flexDirection: "row", padding: 6, borderBottomWidth: 1, borderBottomColor: "#eee" },
+  tTotal: { flexDirection: "row", padding: 6, backgroundColor: "#f0fdf4" },
+  tCell: { fontSize: 9, color: "#333" },
+  tBold: { fontSize: 9, fontWeight: "bold", color: "#111" },
+  alert: { backgroundColor: "#fef2f2", padding: 8, borderRadius: 3, marginTop: 4, marginBottom: 4 },
+  sigLine: { borderBottomWidth: 1, borderBottomColor: "#ccc", height: 28, marginBottom: 3 },
+  sigLabel: { fontSize: 8, color: "#999" },
+  small: { fontSize: 8, color: "#999", marginTop: 16 },
+  footer: { position: "absolute" as const, bottom: 28, left: 40, right: 40, fontSize: 7, color: "#bbb", textAlign: "center" as const, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 6 },
 });
 
-const MGMT_LABELS: Record<string, string> = {
-  ndia_managed: "NDIA Managed",
-  plan_managed: "Plan Managed",
-  self_managed: "Self Managed",
-};
+const MGMT: Record<string, string> = { ndia_managed: "NDIA Managed", plan_managed: "Plan Managed", self_managed: "Self Managed" };
 
-function InfoRow({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <View style={s.row}>
-      <Text style={s.label}>{label}</Text>
-      <Text style={s.value}>{value || "—"}</Text>
-    </View>
-  );
+function R({ label, value }: { label: string; value?: string | null }) {
+  return <View style={s.row}><Text style={s.lbl}>{label}</Text><Text style={s.val}>{value || "—"}</Text></View>;
 }
+
+function fmt(n: number) { return n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function fmtDate(d?: string | null) {
+  if (!d) return "—";
+  try { return new Date(d).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }); } catch { return d; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SERVICE AGREEMENT
+   ═══════════════════════════════════════════════════════════════ */
 
 export function ServiceAgreementPDF({ data, orgName }: { data: IntakeFormData; orgName?: string }) {
   const total = (data.sa_line_items || []).reduce((sum, li) => sum + (li.allocated_budget || 0), 0);
-  const fullName = `${data.first_name} ${data.last_name}`.trim();
-  const today = new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+  const name = `${data.first_name} ${data.last_name}`.trim();
+  const provider = orgName || "iWorkr";
+  const today = fmtDate(new Date().toISOString().split("T")[0]);
 
   return (
     <Document>
       <Page size="A4" style={s.page}>
-        <View style={s.header}>
-          <Text style={s.title}>NDIS Service Agreement</Text>
-          <Text style={s.subtitle}>{orgName || "iWorkr"} — Generated {today}</Text>
-        </View>
+        <Text style={s.h1}>Service Agreement</Text>
+        <Text style={s.org}>{provider} — {today}</Text>
 
-        <Text style={s.sectionTitle}>Participant Details</Text>
-        <InfoRow label="Name" value={fullName} />
-        <InfoRow label="NDIS Number" value={data.ndis_number} />
-        <InfoRow label="Date of Birth" value={data.date_of_birth} />
-        <InfoRow label="Email" value={data.email} />
-        <InfoRow label="Phone" value={data.phone} />
-        <InfoRow label="Plan Management" value={MGMT_LABELS[data.funding_type] || data.funding_type} />
+        <Text style={s.h2}>1. Parties</Text>
+        <R label="Participant" value={name} />
+        <R label="NDIS Number" value={data.ndis_number} />
+        <R label="Date of Birth" value={fmtDate(data.date_of_birth)} />
+        <R label="Phone" value={data.phone} />
+        <R label="Email" value={data.email} />
+        <R label="Provider" value={provider} />
+
+        <Text style={s.h2}>2. Plan & Funding</Text>
+        <R label="Plan Management" value={MGMT[data.funding_type] || data.funding_type} />
         {data.funding_type === "plan_managed" && data.plan_manager_email && (
-          <InfoRow label="Plan Manager Email" value={data.plan_manager_email} />
+          <R label="Plan Manager Email" value={data.plan_manager_email} />
         )}
-
-        <Text style={s.sectionTitle}>Agreement Period</Text>
-        <InfoRow label="Start Date" value={data.sa_start_date} />
-        <InfoRow label="End Date" value={data.sa_end_date} />
+        <R label="Agreement Start" value={fmtDate(data.sa_start_date)} />
+        <R label="Agreement End" value={fmtDate(data.sa_end_date)} />
 
         {(data.sa_line_items?.length ?? 0) > 0 && (
           <>
-            <Text style={s.sectionTitle}>Support Items & Budget</Text>
-            <View style={s.table}>
-              <View style={s.tableHeader}>
-                <Text style={[s.tableCellBold, { width: 80 }]}>NDIS Code</Text>
-                <Text style={[s.tableCellBold, { flex: 1 }]}>Description</Text>
-                <Text style={[s.tableCellBold, { width: 70, textAlign: "right" as const }]}>Rate</Text>
-                <Text style={[s.tableCellBold, { width: 90, textAlign: "right" as const }]}>Budget</Text>
+            <Text style={s.h2}>3. Supports & Budget</Text>
+            <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, marginTop: 4 }}>
+              <View style={s.tHead}>
+                <Text style={[s.tBold, { width: 75 }]}>Code</Text>
+                <Text style={[s.tBold, { flex: 1 }]}>Support Item</Text>
+                <Text style={[s.tBold, { width: 60, textAlign: "right" as const }]}>Rate</Text>
+                <Text style={[s.tBold, { width: 80, textAlign: "right" as const }]}>Budget</Text>
               </View>
               {data.sa_line_items.map((li, i) => (
-                <View key={i} style={s.tableRow}>
-                  <Text style={[s.tableCell, { width: 80 }]}>{li.ndis_code}</Text>
-                  <Text style={[s.tableCell, { flex: 1 }]}>{li.ndis_name}</Text>
-                  <Text style={[s.tableCell, { width: 70, textAlign: "right" as const }]}>${li.unit_rate.toFixed(2)}/hr</Text>
-                  <Text style={[s.tableCell, { width: 90, textAlign: "right" as const }]}>${li.allocated_budget.toLocaleString("en-AU", { minimumFractionDigits: 2 })}</Text>
+                <View key={i} style={s.tRow}>
+                  <Text style={[s.tCell, { width: 75 }]}>{li.ndis_code}</Text>
+                  <Text style={[s.tCell, { flex: 1 }]}>{li.ndis_name}</Text>
+                  <Text style={[s.tCell, { width: 60, textAlign: "right" as const }]}>${fmt(li.unit_rate)}</Text>
+                  <Text style={[s.tCell, { width: 80, textAlign: "right" as const }]}>${fmt(li.allocated_budget)}</Text>
                 </View>
               ))}
-              <View style={s.totalRow}>
-                <Text style={[s.tableCellBold, { flex: 1 }]}>Total Agreement Value</Text>
-                <Text style={[s.tableCellBold, { width: 90, textAlign: "right" as const, color: "#059669" }]}>${total.toLocaleString("en-AU", { minimumFractionDigits: 2 })}</Text>
+              <View style={s.tTotal}>
+                <Text style={[s.tBold, { flex: 1 }]}>Total</Text>
+                <Text style={[s.tBold, { width: 80, textAlign: "right" as const }]}>${fmt(total)}</Text>
               </View>
             </View>
           </>
         )}
 
-        <View style={{ marginTop: 40 }}>
-          <Text style={s.sectionTitle}>Signatures</Text>
-          <View style={[s.row, { marginTop: 24 }]}>
-            <View style={{ flex: 1 }}>
-              <View style={{ borderBottomWidth: 1, borderBottomColor: "#d1d5db", marginBottom: 4, height: 32 }} />
-              <Text style={{ fontSize: 9, color: "#6b7280" }}>Participant / Nominee Signature</Text>
-            </View>
-            <View style={{ width: 32 }} />
-            <View style={{ flex: 1 }}>
-              <View style={{ borderBottomWidth: 1, borderBottomColor: "#d1d5db", marginBottom: 4, height: 32 }} />
-              <Text style={{ fontSize: 9, color: "#6b7280" }}>Provider Representative Signature</Text>
-            </View>
+        <Text style={s.h2}>4. Cancellation Policy</Text>
+        <Text style={{ fontSize: 9, color: "#444", lineHeight: 1.5 }}>
+          The participant may cancel or reduce a scheduled support at any time. However, the provider may charge a cancellation fee if the participant does not give at least 2 clear business days notice. Short notice cancellations will be charged at 100% of the agreed rate in accordance with the NDIS Pricing Arrangements.
+        </Text>
+
+        <Text style={s.h2}>5. Participant Rights</Text>
+        <Text style={{ fontSize: 9, color: "#444", lineHeight: 1.5 }}>
+          The participant has the right to: be treated with dignity and respect; have their privacy protected; access an advocate or support person; provide feedback or make a complaint; end this agreement at any time with reasonable notice.
+        </Text>
+
+        <Text style={s.h2}>6. Agreement</Text>
+        <Text style={[s.small, { marginBottom: 16, marginTop: 4 }]}>By signing below, both parties agree to the terms outlined in this Service Agreement.</Text>
+
+        <View style={[s.row, { marginTop: 8 }]}>
+          <View style={{ flex: 1, marginRight: 16 }}>
+            <View style={s.sigLine} />
+            <Text style={s.sigLabel}>Participant / Nominee</Text>
           </View>
-          <View style={[s.row, { marginTop: 16 }]}>
-            <View style={{ flex: 1 }}>
-              <View style={{ borderBottomWidth: 1, borderBottomColor: "#d1d5db", marginBottom: 4, height: 20 }} />
-              <Text style={{ fontSize: 9, color: "#6b7280" }}>Date</Text>
-            </View>
-            <View style={{ width: 32 }} />
-            <View style={{ flex: 1 }}>
-              <View style={{ borderBottomWidth: 1, borderBottomColor: "#d1d5db", marginBottom: 4, height: 20 }} />
-              <Text style={{ fontSize: 9, color: "#6b7280" }}>Date</Text>
-            </View>
+          <View style={{ flex: 1 }}>
+            <View style={s.sigLine} />
+            <Text style={s.sigLabel}>Provider Representative</Text>
+          </View>
+        </View>
+        <View style={[s.row, { marginTop: 8 }]}>
+          <View style={{ flex: 1, marginRight: 16 }}>
+            <View style={s.sigLine} />
+            <Text style={s.sigLabel}>Date</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={s.sigLine} />
+            <Text style={s.sigLabel}>Date</Text>
           </View>
         </View>
 
         <Text style={s.footer}>
-          This Service Agreement is made between the participant and the service provider in accordance with the National Disability Insurance Scheme Act 2013.
+          This agreement is made under the National Disability Insurance Scheme Act 2013. Generated by {provider}.
         </Text>
       </Page>
     </Document>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   CARE PLAN
+   ═══════════════════════════════════════════════════════════════ */
+
 export function CareplanPDF({ data, orgName }: { data: IntakeFormData; orgName?: string }) {
-  const fullName = `${data.first_name} ${data.last_name}`.trim();
-  const today = new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+  const name = `${data.first_name} ${data.last_name}`.trim();
+  const provider = orgName || "iWorkr";
+  const today = fmtDate(new Date().toISOString().split("T")[0]);
   const alerts = (data.critical_alerts || "").split("\n").map((a) => a.trim()).filter(Boolean);
+  const reviewDate = new Date();
+  reviewDate.setDate(reviewDate.getDate() + 90);
+  const mobility = data.mobility_status ? data.mobility_status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : null;
+  const comms = data.communication_type ? data.communication_type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : null;
 
   return (
     <Document>
       <Page size="A4" style={s.page}>
-        <View style={s.header}>
-          <Text style={s.title}>Clinical Care Plan</Text>
-          <Text style={s.subtitle}>{orgName || "iWorkr"} — Generated {today}</Text>
-        </View>
+        <Text style={s.h1}>Care Plan</Text>
+        <Text style={s.org}>{provider} — {today}</Text>
 
-        <Text style={s.sectionTitle}>Participant Information</Text>
-        <InfoRow label="Name" value={fullName} />
-        <InfoRow label="Preferred Name" value={data.preferred_name} />
-        <InfoRow label="NDIS Number" value={data.ndis_number} />
-        <InfoRow label="Date of Birth" value={data.date_of_birth} />
-        <InfoRow label="Email" value={data.email} />
-        <InfoRow label="Phone" value={data.phone} />
+        <Text style={s.h2}>Participant</Text>
+        <R label="Name" value={name} />
+        {data.preferred_name && <R label="Preferred Name" value={data.preferred_name} />}
+        <R label="NDIS Number" value={data.ndis_number} />
+        <R label="Date of Birth" value={fmtDate(data.date_of_birth)} />
+        <R label="Phone" value={data.phone} />
 
-        <Text style={s.sectionTitle}>Clinical Baseline</Text>
-        <InfoRow label="Primary Diagnosis" value={data.primary_diagnosis} />
-        <InfoRow label="Mobility" value={data.mobility_status ? data.mobility_status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : undefined} />
-        <InfoRow label="Communication" value={data.communication_type ? data.communication_type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : undefined} />
+        <Text style={s.h2}>Disability & Clinical</Text>
+        <R label="Primary Diagnosis" value={data.primary_diagnosis} />
+        {mobility && <R label="Mobility" value={mobility} />}
+        {comms && <R label="Communication" value={comms} />}
 
         {alerts.length > 0 && (
-          <>
-            <Text style={s.sectionTitle}>Critical Medical Alerts</Text>
-            <View style={{ backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fecaca", borderRadius: 4, padding: 12, marginTop: 4 }}>
-              {alerts.map((alert, i) => (
-                <View key={i} style={{ flexDirection: "row", marginBottom: i < alerts.length - 1 ? 4 : 0 }}>
-                  <Text style={{ fontSize: 10, color: "#dc2626", marginRight: 6 }}>!</Text>
-                  <Text style={{ fontSize: 10, color: "#991b1b", flex: 1 }}>{alert}</Text>
-                </View>
-              ))}
-            </View>
-          </>
+          <View style={s.alert}>
+            <Text style={{ fontSize: 9, fontWeight: "bold", color: "#b91c1c", marginBottom: 4 }}>Medical Alerts</Text>
+            {alerts.map((a, i) => (
+              <Text key={i} style={{ fontSize: 9, color: "#7f1d1d" }}>• {a}</Text>
+            ))}
+          </View>
         )}
 
-        <Text style={s.sectionTitle}>Support Schedule Summary</Text>
+        <Text style={s.h2}>Support Schedule</Text>
         {(data.roster_entries?.length ?? 0) > 0 ? (
-          <View style={s.table}>
-            <View style={s.tableHeader}>
-              <Text style={[s.tableCellBold, { flex: 1 }]}>Days</Text>
-              <Text style={[s.tableCellBold, { width: 80 }]}>Start</Text>
-              <Text style={[s.tableCellBold, { width: 80 }]}>End</Text>
-              <Text style={[s.tableCellBold, { width: 90 }]}>NDIS Item</Text>
+          <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, marginTop: 4 }}>
+            <View style={s.tHead}>
+              <Text style={[s.tBold, { flex: 1 }]}>Days</Text>
+              <Text style={[s.tBold, { width: 60 }]}>Start</Text>
+              <Text style={[s.tBold, { width: 60 }]}>End</Text>
+              <Text style={[s.tBold, { width: 80 }]}>Item</Text>
             </View>
-            {data.roster_entries.map((entry, i) => (
-              <View key={i} style={s.tableRow}>
-                <Text style={[s.tableCell, { flex: 1 }]}>{entry.days.join(", ")}</Text>
-                <Text style={[s.tableCell, { width: 80 }]}>{entry.start_time}</Text>
-                <Text style={[s.tableCell, { width: 80 }]}>{entry.end_time}</Text>
-                <Text style={[s.tableCell, { width: 90 }]}>{entry.linked_item_number || "—"}</Text>
+            {data.roster_entries.map((e, i) => (
+              <View key={i} style={s.tRow}>
+                <Text style={[s.tCell, { flex: 1 }]}>{e.days.join(", ")}</Text>
+                <Text style={[s.tCell, { width: 60 }]}>{e.start_time}</Text>
+                <Text style={[s.tCell, { width: 60 }]}>{e.end_time}</Text>
+                <Text style={[s.tCell, { width: 80 }]}>{e.linked_item_number || "—"}</Text>
               </View>
             ))}
           </View>
         ) : (
-          <Text style={{ fontSize: 10, color: "#9ca3af", fontStyle: "italic" as const }}>No schedule blocks configured during intake.</Text>
+          <Text style={{ fontSize: 9, color: "#999", fontStyle: "italic" as const }}>Schedule to be confirmed.</Text>
         )}
 
-        <View style={{ marginTop: 32 }}>
-          <Text style={s.sectionTitle}>Notes & Observations</Text>
-          <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 4, height: 100, padding: 8 }}>
-            <Text style={{ fontSize: 9, color: "#d1d5db" }}>Staff notes and observations will be recorded here.</Text>
-          </View>
+        <Text style={s.h2}>Goals</Text>
+        <Text style={{ fontSize: 9, color: "#666", lineHeight: 1.5, marginBottom: 4 }}>
+          Goals will be developed collaboratively with {data.first_name} and their support network during the first 2 weeks of service delivery.
+        </Text>
+        <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, padding: 8, minHeight: 40 }}>
+          <Text style={{ fontSize: 8, color: "#ccc" }}>1. {"\n"}2. {"\n"}3.</Text>
+        </View>
+
+        <Text style={s.h2}>Risk Assessment</Text>
+        <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, padding: 8, minHeight: 30 }}>
+          <Text style={{ fontSize: 8, color: "#ccc" }}>To be completed by the support coordinator during initial assessment.</Text>
+        </View>
+
+        <View style={{ marginTop: 16 }}>
+          <R label="Review Due" value={fmtDate(reviewDate.toISOString().split("T")[0])} />
         </View>
 
         <Text style={s.footer}>
-          This Care Plan is a living document and must be reviewed within 90 days or upon any significant change in the participant&apos;s circumstances.
+          This Care Plan must be reviewed within 90 days or upon any change in circumstances. Generated by {provider}.
         </Text>
       </Page>
     </Document>
