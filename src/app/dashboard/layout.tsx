@@ -172,6 +172,7 @@ export default function DashboardLayout({
   const mainMarginLeft = isMobile ? 0 : sidebarCollapsed ? 64 : 220;
 
   return (
+    <QueryProvider>
     <MapboxProvider>
     <HydrationGate>
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
@@ -207,7 +208,6 @@ export default function DashboardLayout({
           className="flex-1 overflow-y-auto overflow-x-hidden"
           style={{ background: "var(--surface-0)" }}
         >
-          <QueryProvider>
           <TelemetryProvider>
           <DataProvider>
             <BrandProvider>
@@ -228,7 +228,6 @@ export default function DashboardLayout({
             </BrandProvider>
           </DataProvider>
           </TelemetryProvider>
-          </QueryProvider>
         </motion.main>
       </div>
 
@@ -266,6 +265,7 @@ export default function DashboardLayout({
     </div>
     </HydrationGate>
     </MapboxProvider>
+    </QueryProvider>
   );
 }
 
