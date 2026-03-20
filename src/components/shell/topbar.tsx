@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useShellStore } from "@/lib/shell-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useInboxStore } from "@/lib/inbox-store";
@@ -118,26 +119,26 @@ function BranchSelector({
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { orgId } = useOrg();
-  const [branches, setBranches] = useState<Branch[]>([]);
   const [activeBranchId, setActiveBranchId] = useActiveBranch();
-  const [loaded, setLoaded] = useState(false);
 
-  // Load branches and restore selection from unified hook
+  const { data: branches = [], isFetched: loaded } = useQuery<Branch[]>({
+    queryKey: ["branches", orgId],
+    queryFn: async () => {
+      const { data } = await getBranches(orgId!);
+      return data || [];
+    },
+    enabled: !!orgId,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+
+  // Default to HQ branch if none selected
   useEffect(() => {
-    if (!orgId) return;
-    let cancelled = false;
-    getBranches(orgId).then(({ data }) => {
-      if (cancelled) return;
-      setBranches(data || []);
-      setLoaded(true);
-      // If no branch is selected yet, default to HQ or first branch
-      if (data && data.length > 0 && !activeBranchId) {
-        const hq = data.find((b) => b.is_headquarters);
-        setActiveBranchId(hq?.id || data[0].id);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (branches.length > 0 && !activeBranchId) {
+      const hq = branches.find((b) => b.is_headquarters);
+      setActiveBranchId(hq?.id || branches[0].id);
+    }
+  }, [branches, activeBranchId, setActiveBranchId]);
 
   // Outside click
   useEffect(() => {

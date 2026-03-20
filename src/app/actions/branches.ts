@@ -67,23 +67,24 @@ export async function getBranches(orgId: string): Promise<{ data: Branch[]; erro
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: [], error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: [], error: "Unauthorized" };
+    const [membershipResult, branchesResult] = await Promise.all([
+      supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("branches")
+        .select("*")
+        .eq("organization_id", orgId)
+        .order("is_headquarters", { ascending: false })
+        .order("name"),
+    ]);
 
-    const { data, error } = await supabase
-      .from("branches")
-      .select("*")
-      .eq("organization_id", orgId)
-      .order("is_headquarters", { ascending: false })
-      .order("name");
-
-    if (error) return { data: [], error: error.message };
-    return { data: (data || []) as Branch[] };
+    if (!membershipResult.data) return { data: [], error: "Unauthorized" };
+    if (branchesResult.error) return { data: [], error: branchesResult.error.message };
+    return { data: (branchesResult.data || []) as Branch[] };
   } catch (e: any) {
     console.error("[branches] getBranches failed:", e);
     return { data: [], error: e?.message || "An unexpected error occurred" };
