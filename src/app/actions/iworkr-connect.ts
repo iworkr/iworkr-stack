@@ -310,24 +310,68 @@ export async function triggerOnboarding(orgId: string): Promise<{ url?: string; 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized" };
 
-  const { data: session } = await supabase.auth.getSession();
-  const token = session.session?.access_token;
+  // Verify owner/admin
+  const { data: member } = await (supabase as any)
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
 
-  if (!token) return { error: "No session token" };
+  if (!member || !["owner", "admin"].includes(member.role)) {
+    return { error: "Only owners and admins can activate iWorkr Connect" };
+  }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const res = await fetch(`${supabaseUrl}/functions/v1/stripe-connect-onboard`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify({ orgId }),
-  });
+  const { data: org } = await (supabase as any)
+    .from("organizations")
+    .select("id, name, stripe_account_id, settings")
+    .eq("id", orgId)
+    .single();
 
-  const data = await res.json();
-  if (!res.ok) return { error: data.error ?? "Failed to start onboarding" };
-  return { url: data.url };
+  if (!org) return { error: "Workspace not found" };
+
+  try {
+    const stripe = getStripe();
+    const settings = (org.settings as Record<string, unknown>) ?? {};
+    let accountId: string | null = org.stripe_account_id || (settings.stripe_account_id as string) || null;
+
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "AU",
+        metadata: { organization_id: orgId },
+        business_profile: { name: org.name || undefined },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+      });
+      accountId = account.id;
+
+      await (supabase as any)
+        .from("organizations")
+        .update({
+          stripe_account_id: accountId,
+          settings: { ...settings, stripe_account_id: accountId },
+        })
+        .eq("id", orgId);
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.iworkrapp.com";
+
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${appUrl}/dashboard/finance/iworkr-connect?setup=refresh`,
+      return_url: `${appUrl}/dashboard/finance/iworkr-connect?setup=success`,
+      type: "account_onboarding",
+    });
+
+    return { url: accountLink.url };
+  } catch (err: any) {
+    console.error("[triggerOnboarding] Stripe error:", err?.message);
+    return { error: err?.message || "Failed to start onboarding" };
+  }
 }
 
 export async function exportStatementCsv(orgId: string): Promise<{ csv: string }> {
