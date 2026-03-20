@@ -113,53 +113,60 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // ─── Public Routes ────────────────────────────────────────────
-  const publicPaths = ["/auth", "/accept-invite", "/join", "/invite", "/api"];
-  if (publicPaths.some((p) => pathname.startsWith(p)) || pathname === "/") {
-    if (pathname === "/auth" && user) {
-      const next = request.nextUrl.searchParams.get("next");
+  // ─── Synapse-Gate: Authenticated Root Redirect ────────────────
+  // If user is authenticated and on public marketing pages or auth,
+  // redirect them to their workspace instead of showing marketing content
+  const PUBLIC_MARKETING = ["/", "/pricing", "/contact", "/ndis", "/features"];
+  const isMarketingPage = PUBLIC_MARKETING.includes(pathname);
+  const isAuthPage = pathname.startsWith("/auth") && !pathname.startsWith("/auth/callback");
+  const isSignupPage = pathname === "/signup";
 
-      // Determine redirect target from JWT claims first (fast path)
-      const jwtRole = user.app_metadata?.role as string | undefined;
-      const jwtOrgId = user.app_metadata?.org_id as string | undefined;
+  if (user && (isMarketingPage || isAuthPage || isSignupPage)) {
+    const next = request.nextUrl.searchParams.get("next");
 
-      let hasOrg = !!jwtOrgId;
-      let hasPortalLink = PORTAL_ROLES.includes(jwtRole ?? "");
+    const jwtRole = user.app_metadata?.role as string | undefined;
+    const jwtOrgId = user.app_metadata?.org_id as string | undefined;
 
-      // If JWT doesn't have claims, fall back to DB queries
-      if (!jwtRole && !jwtOrgId) {
-        const { data: activeMembership } = await supabase
-          .from("organization_members")
-          .select("organization_id")
+    let hasOrg = !!jwtOrgId;
+    let hasPortalLink = PORTAL_ROLES.includes(jwtRole ?? "");
+
+    if (!jwtRole && !jwtOrgId) {
+      const { data: activeMembership } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+
+      hasOrg = !!activeMembership;
+
+      if (!hasOrg) {
+        const { data: portalLink } = await (supabase as SupabaseClient)
+          .from("participant_network_members")
+          .select("participant_id")
           .eq("user_id", user.id)
-          .eq("status", "active")
           .limit(1)
           .maybeSingle();
-
-        hasOrg = !!activeMembership;
-
-        if (!hasOrg) {
-          const { data: portalLink } = await (supabase as SupabaseClient)
-            .from("participant_network_members")
-            .select("participant_id")
-            .eq("user_id", user.id)
-            .limit(1)
-            .maybeSingle();
-          hasPortalLink = !!portalLink;
-        }
+        hasPortalLink = !!portalLink;
       }
-
-      const url = request.nextUrl.clone();
-      if (next) {
-        url.pathname = next;
-      } else if (hasPortalLink && !hasOrg) {
-        url.pathname = "/portal";
-      } else {
-        url.pathname = "/dashboard";
-      }
-      url.searchParams.delete("next");
-      return NextResponse.redirect(url);
     }
+
+    const url = request.nextUrl.clone();
+    if (next) {
+      url.pathname = next;
+    } else if (hasPortalLink && !hasOrg) {
+      url.pathname = "/portal";
+    } else {
+      url.pathname = "/dashboard";
+    }
+    url.searchParams.delete("next");
+    return NextResponse.redirect(url);
+  }
+
+  // ─── Public Routes (unauthenticated access allowed) ─────────
+  const publicPaths = ["/auth", "/accept-invite", "/join", "/invite", "/api"];
+  if (publicPaths.some((p) => pathname.startsWith(p)) || isMarketingPage || isSignupPage) {
     return supabaseResponse;
   }
 

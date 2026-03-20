@@ -73,10 +73,15 @@ function AuthPageInner() {
 
   async function handleGoogleAuth() {
     setMode("authenticating");
+
+    const nextParam = searchParams.get("next");
+    const destination = nextParam || "/dashboard";
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
         scopes: "openid email profile",
         queryParams: {
           access_type: "offline",
@@ -99,10 +104,14 @@ function AuthPageInner() {
     setError(null);
     setMode("authenticating");
 
+    const nextParam = searchParams.get("next");
+    const destination = nextParam || "/dashboard";
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`;
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: callbackUrl,
       },
     });
 
@@ -141,7 +150,8 @@ function AuthPageInner() {
       return;
     }
 
-    router.push(getDashboardPath());
+    const nextParam = searchParams.get("next");
+    router.push(nextParam || getDashboardPath());
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
