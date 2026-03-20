@@ -30,6 +30,8 @@ import {
 } from "@/app/actions/workforce-dossier";
 import { getSchadsRates } from "@/app/actions/staff-profiles";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
+import { InviteModal } from "@/components/team/invite-modal";
+import { useTeamStore } from "@/lib/team-store";
 
 /* ── Constants ────────────────────────────────────────── */
 
@@ -235,7 +237,7 @@ export default function WorkforceTeamPage() {
 
             {/* Onboard Worker */}
             <button
-              onClick={() => router.push("/dashboard/team")}
+              onClick={() => useTeamStore.getState().setInviteModalOpen(true)}
               className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-[12px] font-medium text-black transition-all hover:bg-zinc-200"
             >
               <UserPlus size={13} />
@@ -489,6 +491,7 @@ export default function WorkforceTeamPage() {
           </>
         )}
       </div>
+      <InviteModal />
     </motion.div>
   );
 }

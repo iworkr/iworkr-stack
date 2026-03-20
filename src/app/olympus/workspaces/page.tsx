@@ -336,7 +336,6 @@ export default function WorkspacesPage() {
                     { key: "name", label: "Name", value: detail.organization?.name },
                     { key: "slug", label: "Slug", value: detail.organization?.slug },
                     { key: "industry_type", label: "Industry", value: detail.organization?.industry_type },
-                    { key: "plan_tier", label: "Plan", value: detail.organization?.plan_tier || "free" },
                   ].map((prop) => (
                     <div key={prop.key} className="flex items-center justify-between">
                       <span className="text-[10px] text-zinc-600">{prop.label}</span>
@@ -372,6 +371,22 @@ export default function WorkspacesPage() {
                       )}
                     </div>
                   ))}
+                  {/* Plan tier — dropdown to prevent key mismatches */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-600">Plan</span>
+                    <select
+                      value={detail.organization?.plan_tier || "free"}
+                      onChange={(e) => handleUpdateField("plan_tier", e.target.value)}
+                      className="rounded bg-white/[0.04] px-2 py-0.5 text-[11px] text-white outline-none border border-white/[0.08] cursor-pointer hover:border-white/[0.15] transition-colors"
+                    >
+                      <option value="free">Free</option>
+                      <option value="starter">Starter ($47/mo)</option>
+                      <option value="pro">Standard ($97/mo)</option>
+                      <option value="business">Enterprise ($247/mo)</option>
+                      <option value="care_standard">Care Standard</option>
+                      <option value="care_premium">Care Premium</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Quick Actions */}
