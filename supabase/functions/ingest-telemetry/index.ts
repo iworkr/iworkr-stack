@@ -18,12 +18,18 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { decode as base64Decode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+function getCorsHeaders(req?: Request) {
+  const origin = req?.headers.get("Origin") || "*";
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-active-workspace-id",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
+const corsHeaders = getCorsHeaders();
 
 /* ── Rate Limiter (in-memory, per-instance) ───────────────────── */
 
@@ -59,8 +65,10 @@ setInterval(() => {
 /* ── Main Handler ─────────────────────────────────────────────── */
 
 serve(async (req: Request) => {
+  const reqCors = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: reqCors });
   }
 
   try {
@@ -92,14 +100,14 @@ serve(async (req: Request) => {
           console.error("Batch telemetry insert failed:", batchErr.message);
           return new Response(
             JSON.stringify({ error: "Batch insert failed", detail: batchErr.message }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            { status: 500, headers: { ...reqCors, "Content-Type": "application/json" } }
           );
         }
       }
 
       return new Response(
         JSON.stringify({ success: true, ingested: rows.length }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...reqCors, "Content-Type": "application/json" } }
       );
     }
 
@@ -113,7 +121,7 @@ serve(async (req: Request) => {
           error: "Rate limited: crash loop detected",
           message: "Too many telemetry events from this device. Payloads dropped to protect the database.",
         }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 429, headers: { ...reqCors, "Content-Type": "application/json" } }
       );
     }
 
@@ -248,7 +256,7 @@ serve(async (req: Request) => {
       console.error("Telemetry insert failed:", error.message);
       return new Response(
         JSON.stringify({ error: "Failed to store telemetry event", detail: error.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...reqCors, "Content-Type": "application/json" } }
       );
     }
 
@@ -259,13 +267,13 @@ serve(async (req: Request) => {
         timestamp: data.event_timestamp,
         screenshot_stored: !!screenshotPath,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...reqCors, "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("Telemetry ingestion error:", err);
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...reqCors, "Content-Type": "application/json" } }
     );
   }
 });

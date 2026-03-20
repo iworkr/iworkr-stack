@@ -125,7 +125,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
     if (!orgId) return;
     const supabase = createClient();
     (supabase as any)
-      .from("org_members")
+      .from("organization_members")
       .select("profile_id, profiles(id, full_name, avatar_url)")
       .eq("organization_id", orgId)
       .then(({ data }: any) => {

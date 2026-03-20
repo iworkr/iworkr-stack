@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               `script-src 'self'${isDev ? " 'unsafe-eval'" : ""} 'unsafe-inline' https://api.mapbox.com https://js.stripe.com`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.mapbox.com",
-              `img-src 'self' blob: data: https://*.supabase.co${isDev ? " http://127.0.0.1:*" : ""} https://api.mapbox.com https://*.mapbox.com https://*.stripe.com`,
+              `img-src 'self' blob: data: https://*.supabase.co${isDev ? " http://127.0.0.1:*" : ""} https://api.mapbox.com https://*.mapbox.com https://*.stripe.com https://lh3.googleusercontent.com https://*.googleusercontent.com`,
               "font-src 'self' https://fonts.gstatic.com",
               `connect-src 'self' https://*.supabase.co wss://*.supabase.co${isDev ? " http://127.0.0.1:* ws://127.0.0.1:*" : ""} https://api.resend.com https://api.mapbox.com https://*.mapbox.com https://events.mapbox.com https://api.stripe.com`,
               "frame-src 'self' https://accounts.google.com https://js.stripe.com https://*.stripe.com",
