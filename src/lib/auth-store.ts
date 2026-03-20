@@ -21,7 +21,7 @@ export interface AuthState {
 
   initialize: () => Promise<void>;
   setCurrentOrg: (org: Organization) => void;
-  /** Full workspace switch: updates cookie, purges caches, sets membership. */
+  /** Full workspace switch: updates cookie, sets membership + Supabase client. */
   switchOrg: (newOrgId: string) => Promise<{ ok: boolean; error?: string }>;
   refreshProfile: () => Promise<void>;
   refreshOrganizations: () => Promise<void>;
@@ -199,8 +199,8 @@ export const useAuthStore = create<AuthState>()(
           : null,
       });
 
-      // 5. Purge all module-level caches to prevent stale data bleed
-      clearAllCaches();
+      // Client-side cache purge (TanStack Query, org module cache, etc.) happens in
+      // workspace-switcher after switch — avoids nuking localStorage + full navigation.
 
       return { ok: true };
     } catch (err) {

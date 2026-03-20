@@ -24,7 +24,7 @@ import {
   Activity,
   X,
 } from "lucide-react";
-import { BarChart, LineChart, DonutChart } from "@tremor/react";
+import { BarChart, LineChart, DonutChart } from "@/components/analytics/dynamic-chart-renderer";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useToastStore } from "@/components/app/action-toast";
 import {

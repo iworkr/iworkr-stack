@@ -17,9 +17,10 @@ import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { type ParticipantProfile } from "@/app/actions/participants";
 import { formatNDISNumber } from "@/lib/ndis-utils";
 import { NewParticipantOverlay } from "@/components/care/new-participant-overlay";
+import { VirtualizedList } from "@/components/ui/virtualized-list";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
-import { useParticipantsList, usePrefetchParticipant, useInvalidateParticipants } from "@/lib/hooks/use-participants-query";
+import { useInfiniteParticipants, usePrefetchParticipant, useInvalidateParticipants } from "@/lib/hooks/use-participants-query";
 
 /* ── Status Config ────────────────────────────────────── */
 
@@ -123,16 +124,29 @@ export default function ParticipantsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  /* ── TanStack Query — cached participant list ────── */
+  /* ── TanStack Query — infinite cursor-based participant list ── */
   const queryFilters = useMemo(() => ({
     search: debouncedSearch || undefined,
     status: selectedTab !== "all" ? selectedTab : undefined,
-    limit: 100,
   }), [debouncedSearch, selectedTab]);
 
-  const { data: queryResult, isLoading: loading } = useParticipantsList(orgId, queryFilters);
-  const participants = queryResult?.data ?? [];
-  const total = queryResult?.total ?? 0;
+  const {
+    data: infiniteData,
+    isLoading: loading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteParticipants(orgId, queryFilters);
+
+  const participants = useMemo(
+    () => infiniteData?.pages.flatMap((p) => p.data) ?? [],
+    [infiniteData]
+  );
+  const total = infiniteData?.pages[0]?.total ?? 0;
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   /* ── Hover-prefetch for detail pages ─────────────── */
   const prefetch = usePrefetchParticipant();
@@ -362,14 +376,14 @@ export default function ParticipantsPage() {
       </div>
 
       {/* ── Rows ───────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto scrollbar-none">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Empty state */}
         {participants.length === 0 && !loading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex flex-col items-center justify-center py-24 text-center"
+            className="relative flex flex-1 flex-col items-center justify-center py-24 text-center"
           >
             <div className="pointer-events-none absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[60px]" />
             <motion.div
@@ -411,7 +425,7 @@ export default function ParticipantsPage() {
 
         {/* Loading skeleton rows */}
         {loading && participants.length === 0 && (
-          <div>
+          <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex items-center px-5 py-3 border-b border-white/[0.02] animate-pulse">
                 <div className="w-64 px-2 flex items-center gap-3">
@@ -431,7 +445,7 @@ export default function ParticipantsPage() {
 
         {/* Stats summary bar */}
         {participants.length > 0 && (
-          <div className="flex items-center gap-6 border-b border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
+          <div className="flex shrink-0 items-center gap-6 border-b border-white/[0.02] bg-white/[0.01] px-7 py-2.5">
             <div className="flex items-center gap-1.5">
               <span className="font-mono text-[9px] tracking-widest text-zinc-700 uppercase">Records</span>
               <span className="font-mono text-[11px] font-medium text-zinc-400">{total}</span>
@@ -450,8 +464,16 @@ export default function ParticipantsPage() {
         )}
 
         {/* Participant rows */}
-        <AnimatePresence mode="popLayout">
-          {participants.map((participant, idx) => {
+        {participants.length > 0 && (
+        <VirtualizedList
+          items={participants}
+          estimateSize={56}
+          overscan={10}
+          className="min-h-0 flex-1 scrollbar-none"
+          getItemKey={(p) => p.id}
+          onEndReached={loadMore}
+          endReachedThreshold={10}
+          renderItem={(participant, idx) => {
             const sc = statusConfig[participant.status] ?? statusConfig.active;
             const initials = getInitials(participant.client_name || "Unknown");
             const avatarBg = getAvatarColor(participant.client_name || participant.id);
@@ -459,15 +481,7 @@ export default function ParticipantsPage() {
             const isFocused = idx === focusedIndex;
 
             return (
-              <motion.div
-                key={participant.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, x: -8 }}
-                transition={{
-                  delay: Math.min(idx * 0.015, 0.2),
-                  duration: 0.2,
-                }}
+              <div
                 onMouseEnter={() => orgId && prefetch(participant.id, orgId)}
                 onClick={() => router.push(`/dashboard/care/participants/${participant.id}`)}
                 className={`group flex items-center px-5 py-2.5 border-b border-white/[0.02] cursor-pointer transition-colors duration-100 ${
@@ -567,11 +581,20 @@ export default function ParticipantsPage() {
                     className="text-zinc-700 group-hover:text-zinc-400 transition-colors"
                   />
                 </div>
-              </motion.div>
+              </div>
             );
-          })}
-        </AnimatePresence>
+          }}
+        />
+        )}
       </div>
+
+      {/* Infinite scroll loading indicator */}
+      {isFetchingNextPage && (
+        <div className="flex items-center justify-center border-t border-white/[0.03] py-2 gap-2">
+          <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono text-[10px] text-zinc-600">Loading more…</span>
+        </div>
+      )}
 
       {/* ── Footer stats ──────────────────────────────── */}
       {!loading && participants.length > 0 && (

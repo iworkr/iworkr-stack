@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchParticipants,
   fetchParticipantDossier,
@@ -11,6 +11,8 @@ import {
 } from "@/app/actions/participants";
 import { queryKeys } from "./use-query-keys";
 
+const PAGE_SIZE = 50;
+
 export function useParticipantsList(
   workspaceId: string | null | undefined,
   filters?: { search?: string; status?: string; limit?: number }
@@ -18,13 +20,39 @@ export function useParticipantsList(
   return useQuery({
     queryKey: queryKeys.participants.list(workspaceId ?? "", filters),
     queryFn: async () => {
-      if (!workspaceId) return { data: [] as ParticipantProfile[], total: 0 };
+      if (!workspaceId) return { data: [] as ParticipantProfile[], total: 0, nextCursor: null };
       return fetchParticipants(workspaceId, {
         search: filters?.search,
         status: filters?.status,
         limit: filters?.limit ?? 100,
       });
     },
+    enabled: !!workspaceId,
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Cursor-based infinite scroll for large participant lists.
+ * Uses keyset pagination (created_at cursor) for O(log N) performance.
+ */
+export function useInfiniteParticipants(
+  workspaceId: string | null | undefined,
+  filters?: { search?: string; status?: string }
+) {
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.participants.list(workspaceId ?? "", filters), "infinite"] as const,
+    queryFn: async ({ pageParam }) => {
+      if (!workspaceId) return { data: [] as ParticipantProfile[], total: 0, nextCursor: null };
+      return fetchParticipants(workspaceId, {
+        search: filters?.search,
+        status: filters?.status,
+        limit: PAGE_SIZE,
+        cursor: pageParam ?? undefined,
+      });
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: !!workspaceId,
     staleTime: 60_000,
   });

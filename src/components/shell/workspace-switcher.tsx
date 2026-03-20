@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,6 +16,7 @@ import {
 import { useAuthStore } from "@/lib/auth-store";
 import { cachedFetch } from "@/lib/cache-utils";
 import { clearOrgCache } from "@/lib/hooks/use-org";
+import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 import { useActiveBranch, setActiveBranchId as setGlobalBranch } from "@/lib/hooks/use-active-branch";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
 import { NewWorkspaceModal } from "@/components/shell/new-workspace-modal";
@@ -32,16 +34,15 @@ interface WorkspaceSwitcherProps {
 /**
  * Obsidian WorkspaceSwitcher — Project Yggdrasil-Sync
  *
- * Top-left workspace/branch switcher with violent cache purge on switch.
- * Implements the full multi-tenant context pipeline:
- *   1. POST /api/auth/switch-context → updates HTTP-only cookie
- *   2. Updates Supabase browser client header
- *   3. clearAllCaches() / clearOrgCache() — purges all client-side state
- *   4. router.refresh() — forces Server Components to re-render from scratch
- *   5. router.push('/dashboard') — safe-lands to prevent deep-link 404s
+ * Multi-tenant workspace switch:
+ *   1. POST /api/auth/switch-context → HTTP-only cookie
+ *   2. switchOrg() → auth store + Supabase singleton
+ *   3. clearOrgCache + branch reset + queryClient.clear() — fresh org-scoped data
+ *   4. Stay on dashboard sub-routes when possible; otherwise push to sector home
  */
 export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
@@ -116,6 +117,9 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
       clearOrgCache();
       setGlobalBranch(null);
 
+      // TanStack Query: drop cached data so hooks refetch with the new orgId from useOrg()
+      queryClient.clear();
+
       // Update Supabase browser client header dynamically
       try {
         const { createClient } = await import("@/lib/supabase/client");
@@ -129,18 +133,22 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
         // non-fatal
       }
 
-      // Navigate to the correct sector dashboard. After switchOrg(), the
-      // store's currentOrg is already the NEW org, so getDashboardPath() reads
-      // the correct industry_type.
-      const { getDashboardPath } = await import("@/lib/hooks/use-dashboard-path");
-      router.push(getDashboardPath());
+      const targetPath = getDashboardPath();
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : "";
+
+      if (!currentPath.startsWith("/dashboard/") || currentPath === "/dashboard") {
+        router.push(targetPath);
+      } else {
+        router.refresh();
+      }
     } catch (err) {
       console.error("[WorkspaceSwitcher] switch error:", err);
       setSwitchError("An unexpected error occurred");
     } finally {
       setSwitching(false);
     }
-  }, [switching, currentOrg?.id, switchOrg, router]);
+  }, [switching, currentOrg?.id, switchOrg, router, queryClient]);
 
   const handleSwitchBranch = useCallback((branchId: string | null) => {
     setActiveBranchId(branchId);

@@ -88,8 +88,9 @@ export async function fetchParticipants(
     status?: string;
     limit?: number;
     offset?: number;
+    cursor?: string;
   }
-): Promise<{ data: ParticipantProfile[]; total: number }> {
+): Promise<{ data: ParticipantProfile[]; total: number; nextCursor: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
 
@@ -108,27 +109,38 @@ export async function fetchParticipants(
       query = query.or(`ndis_number.ilike.${s},clients.name.ilike.${s}`);
     }
 
-    if (options?.limit) query = query.limit(options.limit);
-    if (options?.offset) query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
+    if (options?.cursor) {
+      query = query.lt("created_at", options.cursor);
+    }
+
+    query = query.limit(options?.limit ?? 50);
 
     const { data, error, count } = await query;
-    if (error) return { data: [], total: 0 };
+    if (error) return { data: [], total: 0, nextCursor: null };
+
+    const mapped = (data || []).map((row: any) => ({
+      ...row,
+      client_name: row.clients?.name || "",
+      client_email: row.clients?.email || "",
+      client_phone: row.clients?.phone || "",
+      critical_alerts: row.critical_alerts || [],
+      address_lat: row.address_lat ? parseFloat(row.address_lat) : null,
+      address_lng: row.address_lng ? parseFloat(row.address_lng) : null,
+    }));
+
+    const pageSize = options?.limit ?? 50;
+    const nextCursor = mapped.length === pageSize
+      ? mapped[mapped.length - 1].created_at
+      : null;
 
     return {
-      data: (data || []).map((row: any) => ({
-        ...row,
-        client_name: row.clients?.name || "",
-        client_email: row.clients?.email || "",
-        client_phone: row.clients?.phone || "",
-        critical_alerts: row.critical_alerts || [],
-        address_lat: row.address_lat ? parseFloat(row.address_lat) : null,
-        address_lng: row.address_lng ? parseFloat(row.address_lng) : null,
-      })),
+      data: mapped,
       total: count || 0,
+      nextCursor,
     };
   } catch (e: any) {
     console.error("[participants] fetchParticipants failed:", e);
-    return { data: [], total: 0 };
+    return { data: [], total: 0, nextCursor: null };
   }
 }
 

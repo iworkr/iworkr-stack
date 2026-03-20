@@ -34,10 +34,25 @@ import { useOrg } from "@/lib/hooks/use-org";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { InvoiceData, InvoiceLineItemData, WorkspaceBrand } from "@/components/pdf/invoice-types";
 import { calcInvoiceTotals, formatCurrency } from "@/components/pdf/invoice-types";
-import { InvoiceDocument } from "@/components/pdf/invoice-document";
+
+function PDFSkeleton() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-zinc-950/50">
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 size={24} className="animate-spin text-zinc-500" />
+        <span className="text-xs text-zinc-600">Loading preview…</span>
+      </div>
+    </div>
+  );
+}
 
 const PDFViewer = dynamic(
   () => import("@react-pdf/renderer").then((m) => m.PDFViewer),
+  { ssr: false, loading: () => <PDFSkeleton /> },
+);
+
+const InvoiceDocument = dynamic(
+  () => import("@/components/pdf/invoice-document").then((m) => ({ default: m.InvoiceDocument })),
   { ssr: false, loading: () => <PDFSkeleton /> },
 );
 
@@ -73,19 +88,6 @@ function addDays(d: Date, n: number): Date {
 
 function dateStr(d: Date): string {
   return d.toISOString().split("T")[0];
-}
-
-/* ── Skeleton ─────────────────────────────────────────────── */
-
-function PDFSkeleton() {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-zinc-950/50">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 size={24} className="animate-spin text-zinc-500" />
-        <span className="text-xs text-zinc-600">Loading preview…</span>
-      </div>
-    </div>
-  );
 }
 
 /* ── Page ─────────────────────────────────────────────────── */
