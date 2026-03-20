@@ -436,6 +436,19 @@ export async function impersonateUser(userId: string) {
 
     if (error) return err(error.message);
 
+    // Create impersonation session record
+    const { data: session } = await admin
+      .from("impersonation_sessions")
+      .insert({
+        admin_id: caller.id,
+        admin_email: caller.email,
+        target_user_id: userId,
+        target_email: target.email,
+        status: "active",
+      })
+      .select("id")
+      .single();
+
     logAudit({ adminId: caller.id, adminEmail: caller.email, actionType: "IMPERSONATE_USER", targetRecordId: userId, notes: `Impersonating ${target.full_name} (${target.email})` });
 
     return ok({
@@ -443,6 +456,13 @@ export async function impersonateUser(userId: string) {
       email: target.email,
       name: target.full_name,
       verification_url: data?.properties?.action_link,
+      session_id: session?.id,
+      impersonation_cookie: JSON.stringify({
+        admin_id: caller.id,
+        target_name: target.full_name,
+        target_email: target.email,
+        session_id: session?.id,
+      }),
     });
   } catch (e: any) {
     return err(e.message);

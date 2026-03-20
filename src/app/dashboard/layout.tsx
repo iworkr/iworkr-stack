@@ -21,6 +21,8 @@ import { GlobalErrorBoundary } from "@/components/telemetry/global-error-boundar
 import { TelemetryProvider } from "@/components/telemetry/telemetry-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 
+const ImpersonationBanner = dynamic(() => import("@/components/olympus/impersonation-banner").then((m) => m.ImpersonationBanner), { ssr: false });
+
 const DesktopBridge = dynamic(() => import("@/lib/desktop/desktop-bridge").then((m) => m.DesktopBridge), { ssr: false });
 const DesktopBadge = dynamic(() => import("@/lib/desktop/desktop-badge").then((m) => m.DesktopBadge), { ssr: false });
 const DesktopOfflineBanner = dynamic(() => import("@/lib/desktop/desktop-offline").then((m) => m.DesktopOfflineBanner), { ssr: false });
@@ -190,6 +192,7 @@ export default function DashboardLayout({
         className="flex flex-1 flex-col overflow-hidden transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{ marginLeft: mainMarginLeft }}
       >
+        <ImpersonationBanner />
         <Topbar />
         <PastDueBannerWrapper />
 

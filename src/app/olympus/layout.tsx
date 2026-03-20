@@ -2,10 +2,10 @@
 
 /* ═══════════════════════════════════════════════════════════════════
    Project Olympus — Super Admin Layout
-   Obsidian Absolute: #000 background, crimson accents, high-density
-   Completely isolated from the standard dashboard layout.
+   Linear-grade, keyboard-first, edge-to-edge density
    ═══════════════════════════════════════════════════════════════════ */
 
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,8 +19,11 @@ import {
   AlertTriangle,
   Radar,
   ShieldAlert,
+  MessageSquare,
+  Smartphone,
 } from "lucide-react";
 import { useDashboardPath } from "@/lib/hooks/use-dashboard-path";
+import { OlympusCommandPalette } from "@/components/olympus/olympus-command-palette";
 
 /* ── Nav Items ────────────────────────────────────────────────── */
 
@@ -28,9 +31,11 @@ const NAV_ITEMS = [
   { id: "workspaces", label: "Workspaces", icon: Building2, href: "/olympus/workspaces" },
   { id: "users", label: "Users", icon: Users, href: "/olympus/users" },
   { id: "billing", label: "Billing", icon: CreditCard, href: "/olympus/billing" },
+  { id: "communications", label: "Communications", icon: MessageSquare, href: "/olympus/communications" },
   { id: "database", label: "Database", icon: Database, href: "/olympus/database" },
   { id: "health", label: "Health", icon: Radar, href: "/olympus/health" },
   { id: "telemetry", label: "Telemetry", icon: Activity, href: "/olympus/telemetry" },
+  { id: "mobile", label: "Mobile", icon: Smartphone, href: "/olympus/mobile-analytics" },
   { id: "aegis", label: "Aegis SIRS", icon: ShieldAlert, href: "/olympus/aegis/triage" },
   { id: "system", label: "System", icon: Activity, href: "/olympus/system" },
 ];
@@ -129,12 +134,27 @@ function OlympusContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function OlympusLayout({ children }: { children: React.ReactNode }) {
+  const [cmdOpen, setCmdOpen] = useState(false);
+
+  const handleKey = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      setCmdOpen((o) => !o);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [handleKey]);
+
   return (
     <div className="flex h-screen overflow-hidden bg-black text-white">
       <OlympusSidebar />
       <main className="flex-1 overflow-y-auto">
         <OlympusContent>{children}</OlympusContent>
       </main>
+      <OlympusCommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   );
 }
