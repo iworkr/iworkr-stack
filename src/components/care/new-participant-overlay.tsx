@@ -362,10 +362,14 @@ export function NewParticipantOverlay({
   useEffect(() => {
     if (step === 6 && !pdfGenerated && !generatingPdf) {
       setGeneratingPdf(true);
-      const t = setTimeout(() => { setPdfGenerated(true); setGeneratingPdf(false); }, 600);
-      return () => clearTimeout(t);
     }
   }, [step, pdfGenerated, generatingPdf]);
+
+  useEffect(() => {
+    if (!generatingPdf || pdfGenerated) return;
+    const t = setTimeout(() => { setPdfGenerated(true); setGeneratingPdf(false); }, 600);
+    return () => clearTimeout(t);
+  }, [generatingPdf, pdfGenerated]);
 
   const downloadPdf = useCallback(async (type: "sa" | "cp") => {
     const { pdf } = await import("@react-pdf/renderer");
