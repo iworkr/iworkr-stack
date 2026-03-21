@@ -46,7 +46,7 @@ import {
 interface NewParticipantOverlayProps {
   open: boolean;
   onClose: () => void;
-  onComplete?: (participantId: string) => void;
+  onComplete?: (participantId: string, participantName?: string) => void;
 }
 
 const FUNDING_TYPES = [
@@ -480,7 +480,7 @@ export function NewParticipantOverlay({
       setSaved(true);
       intakeStore.reset();
       addToast(`${data.first_name} ${data.last_name} activated`, undefined, "success");
-      onComplete?.(result?.participant_id ?? "");
+      onComplete?.(result?.participant_id ?? "", `${data.first_name} ${data.last_name}`);
       setTimeout(() => onClose(), 500);
     } catch (e: unknown) {
       addToast(e instanceof Error ? e.message : "Something went wrong", undefined, "error");

@@ -36,7 +36,8 @@ import { inviteFamilyPortalMember } from "@/app/actions/portal-family";
 import { getParticipantCoordinationLogsAction } from "@/app/actions/coordination";
 import { formatNDISNumber } from "@/lib/ndis-utils";
 import { queryKeys } from "@/lib/hooks/use-query-keys";
-import { MedicationsBox, GoalsBox, FundsManagementBox, CarePlansBox, ServiceAgreementsBox } from "@/components/care/participant-detail-sections";
+import { MedicationsBox, GoalsBox, FundsManagementBox, CarePlansBox, ServiceAgreementsBox, CareBlueprintBox } from "@/components/care/participant-detail-sections";
+import { CareBlueprintBuilder } from "@/components/care/care-blueprint-builder";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Types
@@ -976,6 +977,7 @@ export default function ParticipantDossierPage() {
   const params = useParams();
   const router = useRouter();
   const { orgId, loading: orgLoading } = useOrg();
+  const [blueprintBuilderOpen, setBlueprintBuilderOpen] = useState(false);
 
   const participantId = params.id as string;
 
@@ -1187,7 +1189,14 @@ export default function ParticipantDossierPage() {
         <ClinicalTimelineBox timeline={timeline} />
         <CoordinationLogBox logs={coordinationLogs} />
 
-        {/* Row 3: Care Plans & Service Agreements */}
+        {/* Row 3: Care Blueprint */}
+        <CareBlueprintBox
+          participantId={participant.id}
+          orgId={orgId!}
+          onOpenBuilder={() => setBlueprintBuilderOpen(true)}
+        />
+
+        {/* Row 4: Care Plans & Service Agreements */}
         <CarePlansBox participantId={participant.id} orgId={orgId!} />
         <ServiceAgreementsBox participantId={participant.id} orgId={orgId!} />
 
@@ -1196,6 +1205,16 @@ export default function ParticipantDossierPage() {
         <GoalsBox participantId={participant.id} orgId={orgId!} />
         <FundsManagementBox participantId={participant.id} orgId={orgId!} />
       </div>
+
+      {orgId && (
+        <CareBlueprintBuilder
+          open={blueprintBuilderOpen}
+          onClose={() => setBlueprintBuilderOpen(false)}
+          participantId={participant.id}
+          participantName={participant.client_name || "Participant"}
+          orgId={orgId}
+        />
+      )}
     </div>
   );
 }

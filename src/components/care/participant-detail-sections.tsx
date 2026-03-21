@@ -18,6 +18,9 @@ import {
   FileText,
   ClipboardList,
   Calendar,
+  Shield,
+  Users,
+  Sparkles,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -35,6 +38,10 @@ import {
   type ParticipantMedication,
   type ParticipantGoal,
 } from "@/app/actions/participants";
+import {
+  fetchBlueprintForParticipant,
+  type CareBlueprint,
+} from "@/app/actions/care-blueprints";
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -753,6 +760,94 @@ export function ServiceAgreementsBox({ participantId, orgId }: { participantId: 
               </div>
             );
           })}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Care Blueprint Box
+   ═══════════════════════════════════════════════════════════ */
+
+const COVERAGE_LABELS: Record<string, string> = {
+  standard_hourly: "Standard Hourly",
+  "24_7_continuous": "24/7 Continuous",
+  active_night: "Active Night",
+  sleepover: "Sleepover",
+};
+
+export function CareBlueprintBox({
+  participantId,
+  orgId,
+  onOpenBuilder,
+}: {
+  participantId: string;
+  orgId: string;
+  onOpenBuilder?: () => void;
+}) {
+  const { data: blueprint, isLoading } = useQuery<CareBlueprint | null>({
+    queryKey: ["care-blueprint", participantId, orgId],
+    queryFn: () => fetchBlueprintForParticipant(participantId, orgId),
+    enabled: !!participantId && !!orgId,
+    staleTime: 60_000,
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease, delay: 0.2 }}
+      className="col-span-2 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl p-5"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Shield size={14} className="text-emerald-400" />
+          <h3 className="text-[13px] font-semibold text-zinc-200">Care Blueprint</h3>
+        </div>
+        {!blueprint && !isLoading && onOpenBuilder && (
+          <button onClick={onOpenBuilder}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-300"
+          ><Sparkles size={12} /> Create Blueprint</button>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-6"><Loader2 size={16} className="animate-spin text-zinc-600" /></div>
+      ) : !blueprint ? (
+        <div className="text-center py-6">
+          <Shield size={20} className="mx-auto mb-2 text-zinc-700" />
+          <p className="text-[12px] text-zinc-600">No care blueprint configured</p>
+          <p className="text-[10px] text-zinc-700 mt-1">Create a blueprint to auto-generate rosters and match workers.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg border border-zinc-800/50 bg-zinc-900/30 p-2.5">
+              <p className="text-[9px] uppercase tracking-wider text-zinc-600 mb-0.5">Coverage</p>
+              <p className="text-[12px] font-medium text-zinc-300">{COVERAGE_LABELS[blueprint.coverage_type] || blueprint.coverage_type}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800/50 bg-zinc-900/30 p-2.5">
+              <p className="text-[9px] uppercase tracking-wider text-zinc-600 mb-0.5">Ratio</p>
+              <p className="text-[12px] font-medium text-zinc-300 flex items-center gap-1"><Users size={11} /> {blueprint.staffing_ratio}:1</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800/50 bg-zinc-900/30 p-2.5">
+              <p className="text-[9px] uppercase tracking-wider text-zinc-600 mb-0.5">Skills Required</p>
+              <p className="text-[12px] font-medium text-zinc-300">{blueprint.required_skills.length || "None"}</p>
+            </div>
+          </div>
+
+          {blueprint.shift_pattern && (
+            <div className="space-y-1">
+              {(blueprint.shift_pattern as Array<{ label: string; start: string; end: string }>).map((sp, i) => (
+                <div key={i} className="flex items-center gap-2 text-[11px] text-zinc-500">
+                  <Calendar size={10} className="text-zinc-600" />
+                  <span className="text-zinc-400 font-medium w-20">{sp.label}</span>
+                  <span>{sp.start} — {sp.end}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </motion.div>

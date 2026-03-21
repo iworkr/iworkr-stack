@@ -15,6 +15,7 @@ import { useOrg } from "@/lib/hooks/use-org";
 import { type ParticipantProfile } from "@/app/actions/participants";
 import { formatNDISNumber } from "@/lib/ndis-utils";
 import { NewParticipantOverlay } from "@/components/care/new-participant-overlay";
+import { CareBlueprintBuilder } from "@/components/care/care-blueprint-builder";
 import { VirtualizedList } from "@/components/ui/virtualized-list";
 import { useInfiniteParticipants, usePrefetchParticipant, useInvalidateParticipants } from "@/lib/hooks/use-participants-query";
 
@@ -122,6 +123,9 @@ export default function ParticipantsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedTab, setSelectedTab] = useState<StatusTab>("all");
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [blueprintOpen, setBlueprintOpen] = useState(false);
+  const [newParticipantId, setNewParticipantId] = useState("");
+  const [newParticipantName, setNewParticipantName] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -430,11 +434,26 @@ export default function ParticipantsPage() {
       <NewParticipantOverlay
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
-        onComplete={() => {
+        onComplete={(participantId, participantName) => {
           setWizardOpen(false);
           if (orgId) invalidateList(orgId);
+          if (participantId) {
+            setNewParticipantId(participantId);
+            setNewParticipantName(participantName || "New Participant");
+            setBlueprintOpen(true);
+          }
         }}
       />
+
+      {orgId && (
+        <CareBlueprintBuilder
+          open={blueprintOpen}
+          onClose={() => setBlueprintOpen(false)}
+          participantId={newParticipantId}
+          participantName={newParticipantName}
+          orgId={orgId}
+        />
+      )}
     </div>
   );
 }
