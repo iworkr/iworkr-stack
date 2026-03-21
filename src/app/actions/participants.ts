@@ -1118,6 +1118,30 @@ export async function fetchParticipantServiceAgreements(
   }
 }
 
+export async function createCarePlan(
+  participantId: string,
+  orgId: string,
+  title: string,
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("care_plans")
+      .insert({
+        organization_id: orgId,
+        participant_id: participantId,
+        title: title.trim(),
+        status: "active",
+      })
+      .select("id")
+      .single();
+    if (error) return { success: false, error: error.message };
+    return { success: true, id: data?.id };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Failed to create care plan" };
+  }
+}
+
 export async function applyNDISExtension(
   agreementId: string,
   days: number = 28,

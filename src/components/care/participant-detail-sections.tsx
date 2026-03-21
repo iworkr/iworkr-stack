@@ -31,6 +31,7 @@ import {
   updateParticipantFundsMetadata,
   fetchParticipantCarePlans,
   fetchParticipantServiceAgreements,
+  createCarePlan,
   type ParticipantMedication,
   type ParticipantGoal,
 } from "@/app/actions/participants";
@@ -565,11 +566,24 @@ const PLAN_STATUS_CONFIG: Record<string, { label: string; color: string; bg: str
 };
 
 export function CarePlansBox({ participantId, orgId }: { participantId: string; orgId: string }) {
+  const queryClient = useQueryClient();
+  const [creating, setCreating] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ["participants", "care-plans", participantId],
     queryFn: () => fetchParticipantCarePlans(participantId, orgId),
     enabled: !!participantId && !!orgId,
     staleTime: 60_000,
+  });
+
+  const createMut = useMutation({
+    mutationFn: () => createCarePlan(participantId, orgId, newTitle),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["participants", "care-plans", participantId] });
+      setCreating(false);
+      setNewTitle("");
+    },
   });
 
   return (
@@ -585,42 +599,68 @@ export function CarePlansBox({ participantId, orgId }: { participantId: string; 
           <h3 className="text-[13px] font-semibold text-zinc-200">Care Plans</h3>
           <span className="text-[10px] text-zinc-600 tabular-nums">{plans.length}</span>
         </div>
+        <button onClick={() => { setCreating(true); setNewTitle(""); }}
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-300"
+        ><Plus size={12} /> Add</button>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8"><Loader2 size={16} className="animate-spin text-zinc-600" /></div>
-      ) : plans.length === 0 ? (
+      ) : plans.length === 0 && !creating ? (
         <div className="text-center py-6">
           <ClipboardList size={20} className="mx-auto mb-2 text-zinc-700" />
           <p className="text-[12px] text-zinc-600">No care plans created yet</p>
-          <p className="text-[10px] text-zinc-700 mt-1">Care plans are created during participant intake or can be added manually.</p>
+          <button onClick={() => { setCreating(true); setNewTitle(""); }}
+            className="mt-2 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >+ Create first care plan</button>
         </div>
-      ) : (
-        <div className="space-y-2">
-          {plans.map((plan) => {
-            const sc = PLAN_STATUS_CONFIG[plan.status] || PLAN_STATUS_CONFIG.active;
-            return (
-              <div key={plan.id} className="group flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-white/[0.03]">
-                <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-                  <ClipboardList size={16} className="text-blue-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-[13px] font-medium text-zinc-200 truncate">{plan.title}</p>
-                    <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium border ${sc.bg} ${sc.color} ${sc.border}`}>
-                      {sc.label}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500">
-                    {plan.goals_count} goal{plan.goals_count !== 1 ? "s" : ""} · Created {new Date(plan.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
-                  </p>
-                </div>
-                <ChevronRight size={14} className="text-zinc-800 group-hover:text-zinc-600 transition-colors shrink-0" />
+      ) : null}
+
+      <div className="space-y-2">
+        {plans.map((plan) => {
+          const sc = PLAN_STATUS_CONFIG[plan.status] || PLAN_STATUS_CONFIG.active;
+          return (
+            <div key={plan.id} className="group flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-white/[0.03]">
+              <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                <ClipboardList size={16} className="text-blue-400" />
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-[13px] font-medium text-zinc-200 truncate">{plan.title}</p>
+                  <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium border ${sc.bg} ${sc.color} ${sc.border}`}>
+                    {sc.label}
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-500">
+                  {plan.goals_count} goal{plan.goals_count !== 1 ? "s" : ""} · Created {new Date(plan.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+              </div>
+              <ChevronRight size={14} className="text-zinc-800 group-hover:text-zinc-600 transition-colors shrink-0" />
+            </div>
+          );
+        })}
+
+        <AnimatePresence>
+          {creating && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
+                <div>
+                  <label className="mb-0.5 block text-[9px] font-medium uppercase tracking-wider text-zinc-600">Plan Title</label>
+                  <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="e.g. Care Plan — 2026 Review"
+                    className="w-full border-b border-zinc-800 bg-transparent pb-1.5 text-[12px] text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-zinc-600" autoFocus />
+                </div>
+                <div className="flex justify-end gap-1 pt-1">
+                  <button onClick={() => setCreating(false)} className="rounded-md px-2 py-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">Cancel</button>
+                  <button onClick={() => createMut.mutate()} disabled={createMut.isPending || !newTitle.trim()}
+                    className="rounded-md bg-white px-3 py-1 text-[11px] font-medium text-black hover:bg-zinc-200 disabled:opacity-40 transition-colors"
+                  >{createMut.isPending ? <Loader2 size={10} className="animate-spin" /> : "Create"}</button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
