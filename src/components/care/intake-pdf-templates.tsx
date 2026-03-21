@@ -27,9 +27,21 @@ const s = StyleSheet.create({
   sigLabel: { fontSize: 8, color: "#999" },
   small: { fontSize: 8, color: "#999", marginTop: 16 },
   footer: { position: "absolute" as const, bottom: 28, left: 40, right: 40, fontSize: 7, color: "#bbb", textAlign: "center" as const, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 6 },
+  pill: { backgroundColor: "#f0f0f0", borderRadius: 3, paddingHorizontal: 4, paddingVertical: 1, fontSize: 8, color: "#555" },
 });
 
 const MGMT: Record<string, string> = { ndia_managed: "NDIA Managed", plan_managed: "Plan Managed", self_managed: "Self Managed" };
+
+const FREQ_LABELS: Record<string, string> = {
+  once_daily: "Once daily", twice_daily: "Twice daily", three_times_daily: "3× daily",
+  four_times_daily: "4× daily", every_morning: "Morning", every_night: "Night",
+  weekly: "Weekly", fortnightly: "Fortnightly", monthly: "Monthly", prn: "PRN (as needed)", other: "Other",
+};
+
+const ROUTE_LABELS: Record<string, string> = {
+  oral: "Oral", topical: "Topical", inhaled: "Inhaled", sublingual: "Sublingual",
+  subcutaneous: "Subcutaneous", intramuscular: "IM", other: "Other",
+};
 
 function R({ label, value }: { label: string; value?: string | null }) {
   return <View style={s.row}><Text style={s.lbl}>{label}</Text><Text style={s.val}>{value || "—"}</Text></View>;
@@ -100,17 +112,17 @@ export function ServiceAgreementPDF({ data, orgName }: { data: IntakeFormData; o
           </>
         )}
 
-        <Text style={s.h2}>4. Cancellation Policy</Text>
+        <Text style={s.h2}>{(data.sa_line_items?.length ?? 0) > 0 ? "4" : "3"}. Cancellation Policy</Text>
         <Text style={{ fontSize: 9, color: "#444", lineHeight: 1.5 }}>
           The participant may cancel or reduce a scheduled support at any time. However, the provider may charge a cancellation fee if the participant does not give at least 2 clear business days notice. Short notice cancellations will be charged at 100% of the agreed rate in accordance with the NDIS Pricing Arrangements.
         </Text>
 
-        <Text style={s.h2}>5. Participant Rights</Text>
+        <Text style={s.h2}>{(data.sa_line_items?.length ?? 0) > 0 ? "5" : "4"}. Participant Rights</Text>
         <Text style={{ fontSize: 9, color: "#444", lineHeight: 1.5 }}>
           The participant has the right to: be treated with dignity and respect; have their privacy protected; access an advocate or support person; provide feedback or make a complaint; end this agreement at any time with reasonable notice.
         </Text>
 
-        <Text style={s.h2}>6. Agreement</Text>
+        <Text style={s.h2}>{(data.sa_line_items?.length ?? 0) > 0 ? "6" : "5"}. Agreement</Text>
         <Text style={[s.small, { marginBottom: 16, marginTop: 4 }]}>By signing below, both parties agree to the terms outlined in this Service Agreement.</Text>
 
         <View style={[s.row, { marginTop: 8 }]}>
@@ -155,6 +167,8 @@ export function CareplanPDF({ data, orgName }: { data: IntakeFormData; orgName?:
   reviewDate.setDate(reviewDate.getDate() + 90);
   const mobility = data.mobility_status ? data.mobility_status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : null;
   const comms = data.communication_type ? data.communication_type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : null;
+  const meds = (data.medications || []).filter((m) => m.medication_name?.trim());
+  const goals = (data.goals || []).filter((g) => g.title?.trim());
 
   return (
     <Document>
@@ -183,6 +197,67 @@ export function CareplanPDF({ data, orgName }: { data: IntakeFormData; orgName?:
           </View>
         )}
 
+        {/* Medications */}
+        <Text style={s.h2}>Current Medications</Text>
+        {meds.length > 0 ? (
+          <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, marginTop: 4 }}>
+            <View style={s.tHead}>
+              <Text style={[s.tBold, { flex: 1 }]}>Medication</Text>
+              <Text style={[s.tBold, { width: 65 }]}>Dosage</Text>
+              <Text style={[s.tBold, { width: 55 }]}>Route</Text>
+              <Text style={[s.tBold, { width: 70 }]}>Frequency</Text>
+              <Text style={[s.tBold, { width: 30, textAlign: "center" as const }]}>PRN</Text>
+            </View>
+            {meds.map((m, i) => (
+              <View key={i} style={s.tRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.tCell}>{m.medication_name}</Text>
+                  {m.prescribing_doctor ? <Text style={{ fontSize: 7, color: "#999" }}>Dr {m.prescribing_doctor}</Text> : null}
+                </View>
+                <Text style={[s.tCell, { width: 65 }]}>{m.dosage}</Text>
+                <Text style={[s.tCell, { width: 55 }]}>{ROUTE_LABELS[m.route] || m.route}</Text>
+                <Text style={[s.tCell, { width: 70 }]}>{FREQ_LABELS[m.frequency] || m.frequency}</Text>
+                <Text style={[s.tCell, { width: 30, textAlign: "center" as const }]}>{m.is_prn ? "Yes" : "—"}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={{ fontSize: 9, color: "#999", fontStyle: "italic" as const }}>No medications recorded at intake.</Text>
+        )}
+
+        {/* Goals */}
+        <Text style={s.h2}>Goals</Text>
+        {goals.length > 0 ? (
+          <View style={{ marginTop: 4 }}>
+            {goals.map((g, i) => (
+              <View key={i} style={{ marginBottom: 8, paddingLeft: 4 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 2 }}>
+                  <Text style={{ fontSize: 10, fontWeight: "bold", color: "#111" }}>{i + 1}. {g.title}</Text>
+                  {g.support_category && (
+                    <Text style={[s.pill, { marginLeft: 6 }]}>{g.support_category.replace(/_/g, " ")}</Text>
+                  )}
+                </View>
+                {g.target_outcome && (
+                  <Text style={{ fontSize: 9, color: "#555", marginLeft: 12 }}>Target: {g.target_outcome}</Text>
+                )}
+                {g.description && (
+                  <Text style={{ fontSize: 8, color: "#888", marginLeft: 12, marginTop: 1 }}>{g.description}</Text>
+                )}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <>
+            <Text style={{ fontSize: 9, color: "#666", lineHeight: 1.5, marginBottom: 4 }}>
+              Goals will be developed collaboratively with {data.first_name} and their support network during the first 2 weeks of service delivery.
+            </Text>
+            <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, padding: 8, minHeight: 40 }}>
+              <Text style={{ fontSize: 8, color: "#ccc" }}>1. {"\n"}2. {"\n"}3.</Text>
+            </View>
+          </>
+        )}
+
+        {/* Schedule */}
         <Text style={s.h2}>Support Schedule</Text>
         {(data.roster_entries?.length ?? 0) > 0 ? (
           <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, marginTop: 4 }}>
@@ -204,14 +279,6 @@ export function CareplanPDF({ data, orgName }: { data: IntakeFormData; orgName?:
         ) : (
           <Text style={{ fontSize: 9, color: "#999", fontStyle: "italic" as const }}>Schedule to be confirmed.</Text>
         )}
-
-        <Text style={s.h2}>Goals</Text>
-        <Text style={{ fontSize: 9, color: "#666", lineHeight: 1.5, marginBottom: 4 }}>
-          Goals will be developed collaboratively with {data.first_name} and their support network during the first 2 weeks of service delivery.
-        </Text>
-        <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, padding: 8, minHeight: 40 }}>
-          <Text style={{ fontSize: 8, color: "#ccc" }}>1. {"\n"}2. {"\n"}3.</Text>
-        </View>
 
         <Text style={s.h2}>Risk Assessment</Text>
         <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 3, padding: 8, minHeight: 30 }}>

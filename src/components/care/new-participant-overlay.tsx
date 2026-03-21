@@ -168,7 +168,6 @@ export function NewParticipantOverlay({
   const {
     register,
     control,
-    handleSubmit,
     watch,
     setValue,
     trigger,
@@ -306,7 +305,7 @@ export function NewParticipantOverlay({
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
-        if (step === 6) handleSubmit(onSubmit)();
+        if (step === 6) doActivate();
       }
     };
     window.addEventListener("keydown", handler);
@@ -371,7 +370,9 @@ export function NewParticipantOverlay({
     return () => clearTimeout(t);
   }, [generatingPdf, pdfGenerated]);
 
-  const downloadPdf = useCallback(async (type: "sa" | "cp") => {
+  const [pdfLoading, setPdfLoading] = useState<string | null>(null);
+
+  const buildPdfBlob = useCallback(async (type: "sa" | "cp") => {
     const { pdf } = await import("@react-pdf/renderer");
     const { ServiceAgreementPDF, CareplanPDF } = await import("@/components/care/intake-pdf-templates");
     const d = getValues();
@@ -379,34 +380,53 @@ export function NewParticipantOverlay({
     const doc = type === "sa"
       ? <ServiceAgreementPDF data={d} orgName={orgName} />
       : <CareplanPDF data={d} orgName={orgName} />;
-    const blob = await pdf(doc).toBlob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = type === "sa"
-      ? `Service_Agreement_${d.first_name}_${d.last_name}.pdf`
-      : `Care_Plan_${d.first_name}_${d.last_name}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    return pdf(doc).toBlob();
   }, [getValues, currentOrg]);
+
+  const downloadPdf = useCallback(async (type: "sa" | "cp") => {
+    setPdfLoading(`download-${type}`);
+    try {
+      const d = getValues();
+      const blob = await buildPdfBlob(type);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = type === "sa"
+        ? `Service_Agreement_${d.first_name}_${d.last_name}.pdf`
+        : `Care_Plan_${d.first_name}_${d.last_name}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      addToast("PDF downloaded", undefined, "success");
+    } catch {
+      addToast("Failed to generate PDF", undefined, "error");
+    } finally {
+      setPdfLoading(null);
+    }
+  }, [getValues, buildPdfBlob, addToast]);
 
   const previewPdf = useCallback(async (type: "sa" | "cp") => {
-    const { pdf } = await import("@react-pdf/renderer");
-    const { ServiceAgreementPDF, CareplanPDF } = await import("@/components/care/intake-pdf-templates");
-    const d = getValues();
-    const orgName = currentOrg?.name || "iWorkr";
-    const doc = type === "sa"
-      ? <ServiceAgreementPDF data={d} orgName={orgName} />
-      : <CareplanPDF data={d} orgName={orgName} />;
-    const blob = await pdf(doc).toBlob();
-    window.open(URL.createObjectURL(blob), "_blank");
-  }, [getValues, currentOrg]);
+    setPdfLoading(`preview-${type}`);
+    try {
+      const blob = await buildPdfBlob(type);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch {
+      addToast("Failed to generate PDF", undefined, "error");
+    } finally {
+      setPdfLoading(null);
+    }
+  }, [buildPdfBlob, addToast]);
 
   /* ── Submit ─────────────────────────────────────────────── */
-  const onSubmit = useCallback(async (data: IntakeFormData) => {
+  const doActivate = useCallback(async () => {
     if (saving || !org?.orgId) return;
+    const data = getValues();
+    if (!data.first_name?.trim() || !data.last_name?.trim()) {
+      addToast("First and last name are required", undefined, "error");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -415,13 +435,13 @@ export function NewParticipantOverlay({
         last_name: data.last_name.trim(),
         preferred_name: data.preferred_name?.trim() || null,
         ndis_number: data.ndis_number?.trim() || null,
-        funding_type: data.funding_type,
+        funding_type: data.funding_type || null,
         date_of_birth: data.date_of_birth || null,
         email: data.email?.trim() || null,
         phone: data.phone?.trim() || null,
         primary_diagnosis: data.primary_diagnosis?.trim() || null,
         critical_alerts: data.critical_alerts
-          ? data.critical_alerts.split("\n").map((a) => a.trim()).filter(Boolean)
+          ? data.critical_alerts.split("\n").map((a: string) => a.trim()).filter(Boolean)
           : [],
         mobility_status: data.mobility_status || null,
         communication_type: data.communication_type || null,
@@ -436,14 +456,14 @@ export function NewParticipantOverlay({
           days: re.days, start_time: re.start_time, end_time: re.end_time,
           linked_item_number: re.linked_item_number || null, title: null,
         })),
-        medications: (data.medications || []).map((m) => ({
-          medication_name: m.medication_name, dosage: m.dosage,
+        medications: (data.medications || []).filter((m) => m.medication_name?.trim()).map((m) => ({
+          medication_name: m.medication_name, dosage: m.dosage || "As directed",
           route: m.route || "oral", frequency: m.frequency || "once_daily",
           prescribing_doctor: m.prescribing_doctor || null,
           is_prn: m.is_prn || false,
           special_instructions: m.special_instructions || null,
         })),
-        goals: (data.goals || []).map((g) => ({
+        goals: (data.goals || []).filter((g) => g.title?.trim()).map((g) => ({
           title: g.title, description: g.description || null,
           support_category: g.support_category || "core",
           target_outcome: g.target_outcome || null,
@@ -467,7 +487,7 @@ export function NewParticipantOverlay({
     } finally {
       setSaving(false);
     }
-  }, [saving, org, addToast, onComplete, onClose, intakeStore]);
+  }, [saving, org, addToast, onComplete, onClose, intakeStore, getValues]);
 
   /* ════════════════════════════════════════════════════════════
      STEP RENDERERS
@@ -1136,39 +1156,51 @@ export function NewParticipantOverlay({
     </div>
   );
 
-  /* ── Step 6: Documents (was Step 4) ─────────────────── */
+  /* ── Step 6: Documents ───────────────────────────────── */
   const renderStep6 = () => (
     <div className="px-6 py-5">
       {generatingPdf && !pdfGenerated ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <Loader2 size={20} className="animate-spin text-zinc-500" />
-          <p className="text-[13px] text-zinc-500">Generating documents&hellip;</p>
+          <p className="text-[13px] text-zinc-500">Preparing documents&hellip;</p>
         </div>
       ) : pdfGenerated ? (
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          {/* Document cards */}
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-600 mb-2">Generated Documents</p>
+
           {[
-            { type: "sa" as const, icon: FileText, color: "blue", title: "NDIS Service Agreement", sub: `${firstName} ${lastName} · ${totalSABudget > 0 ? `$${totalSABudget.toLocaleString("en-AU")}` : "No budget set"}` },
-            { type: "cp" as const, icon: Stethoscope, color: "rose", title: "Clinical Care Plan", sub: `${firstName} ${lastName} · ${watch("primary_diagnosis") || "No diagnosis"}` },
+            { type: "sa" as const, icon: FileText, color: "blue", title: "NDIS Service Agreement", sub: `${firstName} ${lastName} · ${totalSABudget > 0 ? `$${totalSABudget.toLocaleString("en-AU")} budget` : "No budget set"}` },
+            { type: "cp" as const, icon: Stethoscope, color: "rose", title: "Clinical Care Plan", sub: `${firstName} ${lastName} · ${watch("primary_diagnosis") || "No diagnosis"} · 90-day review` },
           ].map((doc) => {
             const Icon = doc.icon;
+            const isPreviewing = pdfLoading === `preview-${doc.type}`;
+            const isDownloading = pdfLoading === `download-${doc.type}`;
             return (
-              <div key={doc.type} className="flex items-center gap-4 rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] p-4 transition-colors hover:border-[var(--card-border-hover)]">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                  doc.color === "blue" ? "bg-blue-500/10 text-blue-400" : "bg-rose-500/10 text-rose-400"
-                }`}>
-                  <Icon size={18} />
+              <div key={doc.type} className="rounded-lg border border-zinc-800/60 bg-zinc-900/30 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                    doc.color === "blue" ? "bg-blue-500/10 text-blue-400" : "bg-rose-500/10 text-rose-400"
+                  }`}>
+                    <Icon size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium text-zinc-200">{doc.title}</p>
+                    <p className="text-[10px] text-zinc-600">{doc.sub}</p>
+                  </div>
+                  <CheckCircle2 size={14} className="text-emerald-500/60 shrink-0" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-medium text-zinc-200">{doc.title}</p>
-                  <p className="text-[11px] text-zinc-600">{doc.sub}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => previewPdf(doc.type)} className="rounded-lg p-2 text-zinc-600 transition-colors hover:bg-white/5 hover:text-zinc-300" title="Preview">
-                    <Eye size={14} />
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => previewPdf(doc.type)} disabled={!!pdfLoading}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-zinc-700/60 px-3 py-2 text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200 disabled:opacity-40"
+                  >
+                    {isPreviewing ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
+                    {isPreviewing ? "Opening…" : "View PDF"}
                   </button>
-                  <button type="button" onClick={() => downloadPdf(doc.type)} className="rounded-lg p-2 text-zinc-600 transition-colors hover:bg-white/5 hover:text-zinc-300" title="Download">
-                    <Download size={14} />
+                  <button type="button" onClick={() => downloadPdf(doc.type)} disabled={!!pdfLoading}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-zinc-700/60 px-3 py-2 text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200 disabled:opacity-40"
+                  >
+                    {isDownloading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                    {isDownloading ? "Downloading…" : "Download"}
                   </button>
                 </div>
               </div>
@@ -1176,9 +1208,9 @@ export function NewParticipantOverlay({
           })}
 
           {/* Summary */}
-          <div className="border-t border-[var(--border-base)] pt-4 mt-4">
-            <p className={labelCls}>Summary</p>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 mt-2">
+          <div className="border-t border-zinc-800/40 pt-4 mt-2">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600 mb-2">Intake Summary</p>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
               {[
                 ["Name", `${firstName} ${lastName}`],
                 ["NDIS", watch("ndis_number") || "—"],
@@ -1186,6 +1218,8 @@ export function NewParticipantOverlay({
                 ["Budget", `$${totalSABudget.toLocaleString("en-AU")}`],
                 ["Diagnosis", watch("primary_diagnosis") || "—"],
                 ["Weekly Hours", `${rosterMath.weeklyHours}h`],
+                ["Medications", `${(watch("medications") || []).length}`],
+                ["Goals", `${(watch("goals") || []).length}`],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between py-0.5">
                   <span className="text-[11px] text-zinc-600">{label}</span>
@@ -1208,7 +1242,7 @@ export function NewParticipantOverlay({
   return (
     <AnimatePresence>
       {open && (
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={(e) => { e.preventDefault(); doActivate(); }}>
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -1327,7 +1361,8 @@ export function NewParticipantOverlay({
                       <kbd className="rounded bg-black/10 px-1 py-0.5 font-mono text-[9px]">&#8629;</kbd>
                     </motion.button>
                   ) : (
-                    <motion.button type="submit" whileTap={{ scale: 0.98 }} disabled={saving || !pdfGenerated}
+                    <motion.button type="button" whileTap={{ scale: 0.98 }} disabled={saving}
+                      onClick={doActivate}
                       className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[13px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-50"
                     >
                       {saving ? (
@@ -1347,7 +1382,8 @@ export function NewParticipantOverlay({
                   )}
 
                   {step >= 1 && step < 6 && (
-                    <motion.button type="submit" whileTap={{ scale: 0.98 }} disabled={saving}
+                    <motion.button type="button" whileTap={{ scale: 0.98 }} disabled={saving}
+                      onClick={doActivate}
                       className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[12px] text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-200 disabled:opacity-40"
                     >
                       {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
