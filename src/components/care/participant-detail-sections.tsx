@@ -15,6 +15,9 @@ import {
   ChevronRight,
   DollarSign,
   Loader2,
+  FileText,
+  ClipboardList,
+  Calendar,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,6 +29,8 @@ import {
   deleteParticipantGoal,
   fetchParticipantFundsMetadata,
   updateParticipantFundsMetadata,
+  fetchParticipantCarePlans,
+  fetchParticipantServiceAgreements,
   type ParticipantMedication,
   type ParticipantGoal,
 } from "@/app/actions/participants";
@@ -542,6 +547,172 @@ export function FundsManagementBox({ participantId, orgId }: { participantId: st
               <p className="text-[11px] text-zinc-400 whitespace-pre-line">{funds.discretionary_fund_notes}</p>
             </div>
           )}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Care Plans Box
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+const PLAN_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  active: { label: "Active", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  draft: { label: "Draft", color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
+  completed: { label: "Completed", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  archived: { label: "Archived", color: "text-zinc-500", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
+};
+
+export function CarePlansBox({ participantId, orgId }: { participantId: string; orgId: string }) {
+  const { data: plans = [], isLoading } = useQuery({
+    queryKey: ["participants", "care-plans", participantId],
+    queryFn: () => fetchParticipantCarePlans(participantId, orgId),
+    enabled: !!participantId && !!orgId,
+    staleTime: 60_000,
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease, delay: 0.25 }}
+      className="col-span-2 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl p-5"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <ClipboardList size={14} className="text-blue-400" />
+          <h3 className="text-[13px] font-semibold text-zinc-200">Care Plans</h3>
+          <span className="text-[10px] text-zinc-600 tabular-nums">{plans.length}</span>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 size={16} className="animate-spin text-zinc-600" /></div>
+      ) : plans.length === 0 ? (
+        <div className="text-center py-6">
+          <ClipboardList size={20} className="mx-auto mb-2 text-zinc-700" />
+          <p className="text-[12px] text-zinc-600">No care plans created yet</p>
+          <p className="text-[10px] text-zinc-700 mt-1">Care plans are created during participant intake or can be added manually.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {plans.map((plan) => {
+            const sc = PLAN_STATUS_CONFIG[plan.status] || PLAN_STATUS_CONFIG.active;
+            return (
+              <div key={plan.id} className="group flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-white/[0.03]">
+                <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                  <ClipboardList size={16} className="text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-[13px] font-medium text-zinc-200 truncate">{plan.title}</p>
+                    <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium border ${sc.bg} ${sc.color} ${sc.border}`}>
+                      {sc.label}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500">
+                    {plan.goals_count} goal{plan.goals_count !== 1 ? "s" : ""} · Created {new Date(plan.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
+                </div>
+                <ChevronRight size={14} className="text-zinc-800 group-hover:text-zinc-600 transition-colors shrink-0" />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Service Agreements Box
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+const SA_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  active: { label: "Active", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  draft: { label: "Draft", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  pending_signature: { label: "Pending", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  expired: { label: "Expired", color: "text-zinc-500", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
+  cancelled: { label: "Cancelled", color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20" },
+};
+
+const MGMT_LABELS: Record<string, string> = {
+  ndia_managed: "NDIA Managed", plan_managed: "Plan Managed", self_managed: "Self Managed",
+};
+
+export function ServiceAgreementsBox({ participantId, orgId }: { participantId: string; orgId: string }) {
+  const { data: agreements = [], isLoading } = useQuery({
+    queryKey: ["participants", "service-agreements", participantId],
+    queryFn: () => fetchParticipantServiceAgreements(participantId, orgId),
+    enabled: !!participantId && !!orgId,
+    staleTime: 60_000,
+  });
+
+  function fmtMoney(n: number) { return `$${n.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`; }
+  function fmtDate(d: string | null) {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease, delay: 0.28 }}
+      className="col-span-2 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl p-5"
+      style={{ boxShadow: "var(--shadow-inset-bevel)" }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <FileText size={14} className="text-violet-400" />
+          <h3 className="text-[13px] font-semibold text-zinc-200">Service Agreements</h3>
+          <span className="text-[10px] text-zinc-600 tabular-nums">{agreements.length}</span>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 size={16} className="animate-spin text-zinc-600" /></div>
+      ) : agreements.length === 0 ? (
+        <div className="text-center py-6">
+          <FileText size={20} className="mx-auto mb-2 text-zinc-700" />
+          <p className="text-[12px] text-zinc-600">No service agreements</p>
+          <p className="text-[10px] text-zinc-700 mt-1">Service agreements are created during participant intake.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {agreements.map((sa) => {
+            const sc = SA_STATUS_CONFIG[sa.status] || SA_STATUS_CONFIG.active;
+            return (
+              <div key={sa.id} className="group rounded-lg border border-zinc-800/40 bg-white/[0.015] px-4 py-3 transition-colors hover:bg-white/[0.03]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText size={14} className="text-violet-400 shrink-0" />
+                    <p className="text-[13px] font-medium text-zinc-200 truncate">{sa.title}</p>
+                  </div>
+                  <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium border shrink-0 ${sc.bg} ${sc.color} ${sc.border}`}>
+                    {sc.label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-zinc-600 mb-0.5">Period</p>
+                    <div className="flex items-center gap-1 text-[11px] text-zinc-400">
+                      <Calendar size={10} className="text-zinc-600" />
+                      {fmtDate(sa.start_date)} — {fmtDate(sa.end_date)}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-zinc-600 mb-0.5">Budget</p>
+                    <p className="font-mono text-[12px] font-semibold text-zinc-200 tabular-nums">{fmtMoney(sa.total_budget)}</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-zinc-600 mb-0.5">Management</p>
+                    <p className="text-[11px] text-zinc-400">{MGMT_LABELS[sa.funding_management_type || ""] || sa.funding_management_type || "—"}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </motion.div>

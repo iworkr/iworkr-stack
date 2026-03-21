@@ -1048,6 +1048,76 @@ export async function updateParticipantFundsMetadata(
 
 /* ── Apply NDIS Extension ─────────────────────────────── */
 
+/* ── Care Plans & Service Agreements ─────────────────── */
+
+export interface CarePlanSummary {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+  goals_count: number;
+}
+
+export interface ServiceAgreementRow {
+  id: string;
+  title: string;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  total_budget: number;
+  funding_management_type: string | null;
+  created_at: string;
+}
+
+export async function fetchParticipantCarePlans(
+  participantId: string,
+  orgId: string,
+): Promise<CarePlanSummary[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("care_plans")
+      .select("id, title, status, created_at, care_goals(id)")
+      .eq("participant_id", participantId)
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false });
+    if (error) { console.error("[participants] fetchCarePlans:", error); return []; }
+    return (data || []).map((cp: any) => ({
+      id: cp.id,
+      title: cp.title,
+      status: cp.status,
+      created_at: cp.created_at,
+      goals_count: Array.isArray(cp.care_goals) ? cp.care_goals.length : 0,
+    }));
+  } catch (e: any) {
+    console.error("[participants] fetchCarePlans failed:", e);
+    return [];
+  }
+}
+
+export async function fetchParticipantServiceAgreements(
+  participantId: string,
+  orgId: string,
+): Promise<ServiceAgreementRow[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("service_agreements")
+      .select("id, title, status, start_date, end_date, total_budget, funding_management_type, created_at")
+      .eq("participant_id", participantId)
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false });
+    if (error) { console.error("[participants] fetchServiceAgreements:", error); return []; }
+    return (data || []).map((sa: any) => ({
+      ...sa,
+      total_budget: parseFloat(sa.total_budget) || 0,
+    }));
+  } catch (e: any) {
+    console.error("[participants] fetchServiceAgreements failed:", e);
+    return [];
+  }
+}
+
 export async function applyNDISExtension(
   agreementId: string,
   days: number = 28,
