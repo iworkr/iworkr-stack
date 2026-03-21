@@ -27,7 +27,7 @@ const s = StyleSheet.create({
   sigLabel: { fontSize: 8, color: "#999" },
   small: { fontSize: 8, color: "#999", marginTop: 16 },
   footer: { position: "absolute" as const, bottom: 28, left: 40, right: 40, fontSize: 7, color: "#bbb", textAlign: "center" as const, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 6 },
-  pill: { backgroundColor: "#f0f0f0", borderRadius: 3, paddingHorizontal: 4, paddingVertical: 1, fontSize: 8, color: "#555" },
+  pill: { backgroundColor: "#f0f0f0", borderRadius: 3, paddingLeft: 4, paddingRight: 4, paddingTop: 1, paddingBottom: 1, fontSize: 8, color: "#555" },
 });
 
 const MGMT: Record<string, string> = { ndia_managed: "NDIA Managed", plan_managed: "Plan Managed", self_managed: "Self Managed" };
@@ -98,10 +98,10 @@ export function ServiceAgreementPDF({ data, orgName }: { data: IntakeFormData; o
               </View>
               {data.sa_line_items.map((li, i) => (
                 <View key={i} style={s.tRow}>
-                  <Text style={[s.tCell, { width: 75 }]}>{li.ndis_code}</Text>
-                  <Text style={[s.tCell, { flex: 1 }]}>{li.ndis_name}</Text>
-                  <Text style={[s.tCell, { width: 60, textAlign: "right" as const }]}>${fmt(li.unit_rate)}</Text>
-                  <Text style={[s.tCell, { width: 80, textAlign: "right" as const }]}>${fmt(li.allocated_budget)}</Text>
+                  <Text style={[s.tCell, { width: 75 }]}>{li.ndis_code || "—"}</Text>
+                  <Text style={[s.tCell, { flex: 1 }]}>{li.ndis_name || "—"}</Text>
+                  <Text style={[s.tCell, { width: 60, textAlign: "right" as const }]}>${fmt(li.unit_rate || 0)}</Text>
+                  <Text style={[s.tCell, { width: 80, textAlign: "right" as const }]}>${fmt(li.allocated_budget || 0)}</Text>
                 </View>
               ))}
               <View style={s.tTotal}>
@@ -211,12 +211,12 @@ export function CareplanPDF({ data, orgName }: { data: IntakeFormData; orgName?:
             {meds.map((m, i) => (
               <View key={i} style={s.tRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.tCell}>{m.medication_name}</Text>
+                  <Text style={s.tCell}>{m.medication_name || "—"}</Text>
                   {m.prescribing_doctor ? <Text style={{ fontSize: 7, color: "#999" }}>Dr {m.prescribing_doctor}</Text> : null}
                 </View>
-                <Text style={[s.tCell, { width: 65 }]}>{m.dosage}</Text>
-                <Text style={[s.tCell, { width: 55 }]}>{ROUTE_LABELS[m.route] || m.route}</Text>
-                <Text style={[s.tCell, { width: 70 }]}>{FREQ_LABELS[m.frequency] || m.frequency}</Text>
+                <Text style={[s.tCell, { width: 65 }]}>{m.dosage || "—"}</Text>
+                <Text style={[s.tCell, { width: 55 }]}>{(m.route && ROUTE_LABELS[m.route]) || m.route || "—"}</Text>
+                <Text style={[s.tCell, { width: 70 }]}>{(m.frequency && FREQ_LABELS[m.frequency]) || m.frequency || "—"}</Text>
                 <Text style={[s.tCell, { width: 30, textAlign: "center" as const }]}>{m.is_prn ? "Yes" : "—"}</Text>
               </View>
             ))}
@@ -232,17 +232,17 @@ export function CareplanPDF({ data, orgName }: { data: IntakeFormData; orgName?:
             {goals.map((g, i) => (
               <View key={i} style={{ marginBottom: 8, paddingLeft: 4 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 2 }}>
-                  <Text style={{ fontSize: 10, fontWeight: "bold", color: "#111" }}>{i + 1}. {g.title}</Text>
-                  {g.support_category && (
+                  <Text style={{ fontSize: 10, fontWeight: "bold", color: "#111" }}>{i + 1}. {g.title || "Untitled Goal"}</Text>
+                  {g.support_category ? (
                     <Text style={[s.pill, { marginLeft: 6 }]}>{g.support_category.replace(/_/g, " ")}</Text>
-                  )}
+                  ) : null}
                 </View>
-                {g.target_outcome && (
+                {g.target_outcome ? (
                   <Text style={{ fontSize: 9, color: "#555", marginLeft: 12 }}>Target: {g.target_outcome}</Text>
-                )}
-                {g.description && (
+                ) : null}
+                {g.description ? (
                   <Text style={{ fontSize: 8, color: "#888", marginLeft: 12, marginTop: 1 }}>{g.description}</Text>
-                )}
+                ) : null}
               </View>
             ))}
           </View>
