@@ -132,8 +132,9 @@ const CARE_NAV: NavGroup[] = [
     icon: Calendar,
     children: [
       { id: "nav_master_roster", label: "Master Roster", icon: CalendarClock, href: "/dashboard/schedule", shortcut: "G S" },
+      { id: "nav_roster_dispatch", label: "Roster Dispatch", icon: CalendarClock, href: "/dashboard/roster/dispatch" },
       { id: "nav_daily_ops", label: "Daily Ops", icon: Activity, href: "/dashboard/care/daily-ops" },
-      { id: "nav_facilities", label: "Facilities / SIL", icon: Building2, href: "/dashboard/care/facilities" },
+      { id: "nav_houses", label: "Houses / SIL", icon: Building2, href: "/dashboard/houses" },
       { id: "nav_fleet", label: "Fleet Management", icon: Truck, href: "/dashboard/fleet/overview" },
     ],
   },

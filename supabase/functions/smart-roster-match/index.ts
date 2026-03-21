@@ -14,6 +14,7 @@ interface ShiftSlot {
   target_ratio: number;
   start_time: string;
   end_time: string;
+  house_id: string | null;
 }
 
 interface WorkerCandidate {
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
     // 2. Fetch all UNFILLED shifts for this blueprint
     const { data: unfilledShifts, error: shiftErr } = await supabaseAdmin
       .from("schedule_blocks")
-      .select("id, organization_id, participant_id, blueprint_id, shift_group_id, target_ratio, start_time, end_time")
+      .select("id, organization_id, participant_id, blueprint_id, shift_group_id, target_ratio, start_time, end_time, house_id")
       .eq("blueprint_id", blueprint_id)
       .eq("status", "unfilled")
       .is("technician_id", null)
@@ -74,9 +75,32 @@ Deno.serve(async (req) => {
 
     if (shiftErr || !unfilledShifts || unfilledShifts.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "No unfilled shifts to match", filled: 0 }),
+        JSON.stringify({ success: true, message: "No unfilled shifts to match", filled: 0, total_unfilled: 0, remaining_unfilled: 0, assignments: [] }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // 2b. Ring-Fencing: check if participant lives in a house
+    const { data: houseLink } = await supabaseAdmin
+      .from("house_participants")
+      .select("house_id")
+      .eq("participant_id", participantId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+
+    const participantHouseId = houseLink?.house_id || null;
+
+    // 2c. If house exists, fetch house staff with roles for ring-fence scoring
+    const houseStaffMap = new Map<string, string>();
+    if (participantHouseId) {
+      const { data: houseStaff } = await supabaseAdmin
+        .from("house_staff")
+        .select("worker_id, role")
+        .eq("house_id", participantHouseId);
+      for (const hs of houseStaff || []) {
+        houseStaffMap.set(hs.worker_id, hs.role);
+      }
     }
 
     // 3. Fetch all active org members (workers)
@@ -234,8 +258,19 @@ Deno.serve(async (req) => {
         const weeklyHrs = workerWeeklyHours.get(workerId) || 0;
         const fatigueScore = Math.max(0, 40 * (1 - weeklyHrs / 38));
         const contScore = continuityWorkers.has(workerId) ? 40 : 0;
-        const proximityScore = 10; // Default — PostGIS not yet wired
-        const fitScore = fatigueScore + contScore + proximityScore;
+        const proximityScore = 10;
+
+        // Ring-Fencing: House staff prioritization
+        let houseScore = 0;
+        if (participantHouseId && houseStaffMap.size > 0) {
+          const houseRole = houseStaffMap.get(workerId);
+          if (houseRole === "leader") houseScore = 500;
+          else if (houseRole === "core_team") houseScore = 300;
+          else if (houseRole === "float_pool") houseScore = 50;
+          else houseScore = -1000; // Not in house staff — soft block
+        }
+
+        const fitScore = fatigueScore + contScore + proximityScore + houseScore;
 
         candidates.push({
           user_id: workerId,
