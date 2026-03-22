@@ -94,8 +94,8 @@ export async function POST(req: NextRequest) {
           );
 
         if (error) {
-          console.error("GHL ContactCreate upsert error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          console.error("[GHL Webhook Error] ContactCreate upsert:", error);
+          return NextResponse.json({ error: "Failed to process webhook payload." }, { status: 500 });
         }
 
         // Fire a notification for new leads

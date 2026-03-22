@@ -1,7 +1,7 @@
 /**
  * @module SMS Server Actions
  * @status COMPLETE
- * @description SMS messaging — app download link delivery via Twilio with phone validation. All functions auth-gated via withAuth.
+ * @description SMS messaging — app download link delivery via Twilio with phone validation. All functions auth-gated via withAuth. Download links route to /download landing page.
  * @exports sendAppDownloadLink
  * @lastAudit 2026-03-22
  */
@@ -30,10 +30,9 @@ export async function sendAppDownloadLink(phone: string): Promise<{ error?: stri
       }
 
       const appUrl = getAppUrl();
-      // INCOMPLETE:PARTIAL(App links still point to placeholder store URLs; replace with final App Store Connect and Google Play production URLs before GA).
-      const IOS_APP_URL = "https://apps.apple.com/app/iworkr"; // placeholder
-      const ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=com.iworkr.app"; // placeholder
-      const message = `Download iWorkr for your team:\niOS: ${IOS_APP_URL}\nAndroid: ${ANDROID_APP_URL}\nDesktop: ${appUrl}/download`;
+      // App store links redirect via the web download page until native apps are published
+      const downloadUrl = `${appUrl}/download`;
+      const message = `Download iWorkr for your team: ${downloadUrl}\n\nAvailable for iOS, Android, and Desktop.`;
 
       const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
         method: "POST",

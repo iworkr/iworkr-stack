@@ -740,7 +740,6 @@ interface DocumentEntry {
 }
 
 function DocumentVaultBox({ participant }: { participant: ParticipantWithBudget }) {
-  // Placeholder documents — in production these come from Supabase Storage
   const documents: DocumentEntry[] = participant.active_agreement?.document_url
     ? [
         {

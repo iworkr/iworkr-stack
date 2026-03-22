@@ -378,10 +378,18 @@ async function runScHadsEngine(
   const casualLoading = isCasual ? MULT.CASUAL_LOADING : 1.0;
 
   // ── Fetch public holidays for the org's state ─────────────────────────────
+  // Resolve the org's state/territory from org settings for correct public holiday lookup
+  const { data: orgSettingsData } = await (supabase as any)
+    .from("organizations")
+    .select("settings")
+    .eq("id", entry.organization_id)
+    .single();
+
+  const orgState: string = ((orgSettingsData?.settings as any)?.state_territory as string) || "NSW";
   const { data: holidayRows } = await (supabase as any)
     .from("australian_public_holidays")
     .select("holiday_date")
-    .or(`state.eq.NAT,state.eq.NSW`)  // TODO: resolve org state from settings
+    .or(`state.eq.NAT,state.eq.${orgState}`)
     .gte("holiday_date", shiftDate)
     .lte("holiday_date", shiftDate);
 

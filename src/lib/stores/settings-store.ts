@@ -2,7 +2,7 @@
  * @store SettingsStore
  * @status COMPLETE
  * @description Organization and profile settings state — org config, user preferences, and Supabase sync
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() clears all persisted state on workspace switch
  * @lastAudit 2026-03-22
  */
 
@@ -92,6 +92,7 @@ interface SettingsState {
   error: string | null;
 
   // Actions
+  reset: () => void;
   loadSettings: (orgId: string, userId: string) => Promise<void>;
   updateOrgField: (field: string, value: any) => Promise<void>;
   updateOrgSettingsField: (key: string, value: any) => Promise<void>;
@@ -123,6 +124,29 @@ export const useSettingsStore = create<SettingsState>()(
       saving: false,
       lastSaved: null,
       error: null,
+
+      reset: () => {
+        set({
+          orgId: null,
+          orgName: "",
+          orgSlug: "",
+          orgLogoUrl: "",
+          orgTrade: "",
+          orgSettings: {},
+          userId: null,
+          fullName: "",
+          email: "",
+          phone: "",
+          avatarUrl: "",
+          userTimezone: "Australia/Brisbane",
+          preferences: {},
+          notificationPrefs: {},
+          loading: false,
+          saving: false,
+          lastSaved: null,
+          error: null,
+        });
+      },
 
       loadSettings: async (orgId: string, userId: string) => {
         set({ loading: true, error: null, orgId, userId });

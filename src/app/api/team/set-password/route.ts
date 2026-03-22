@@ -108,7 +108,8 @@ export async function POST(request: Request) {
     );
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      console.error("[Set Password Error] Admin API:", error);
+      return NextResponse.json({ error: "Failed to update user credentials." }, { status: 400 });
     }
 
     return NextResponse.json({
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
       email: data.user.email,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[Set Password Error]:", err);
+    return NextResponse.json({ error: "Failed to update user credentials." }, { status: 500 });
   }
 }

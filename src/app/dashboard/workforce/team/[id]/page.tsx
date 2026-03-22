@@ -21,7 +21,6 @@ import {
   Clock,
   Activity,
   Key,
-  MessageSquare,
   Save,
   X,
   ChevronRight,
@@ -642,13 +641,6 @@ export default function WorkerDossierPage() {
 
           {/* Action Cluster */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {}}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.08] px-3.5 text-[12px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
-            >
-              <MessageSquare size={14} />
-              Message
-            </button>
             <button
               onClick={handleSuspendToggle}
               disabled={saving}
