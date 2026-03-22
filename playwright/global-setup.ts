@@ -43,7 +43,7 @@ async function ensureUser(
   role: string,
 ) {
   const list = await supabase.auth.admin.listUsers({ perPage: 1000 });
-  const existing = list.data?.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+  const existing = list.data?.users.find((u: { email?: string; id: string }) => u.email?.toLowerCase() === email.toLowerCase());
 
   let userId = existing?.id;
   if (!userId) {
