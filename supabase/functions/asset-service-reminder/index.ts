@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { MockResend, isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,7 +79,9 @@ serve(async (req) => {
     let notificationsSent = 0;
     let emailsSent = 0;
 
-    for (const [orgId, orgAssetList] of orgAssets) {
+    const orgEntries = Array.from(orgAssets.entries());
+    const selectedEntries = isTestEnv ? orgEntries.slice(0, 1) : orgEntries;
+    for (const [orgId, orgAssetList] of selectedEntries) {
       // Get org details
       const { data: org } = await adminClient
         .from("organizations")
@@ -171,17 +174,23 @@ serve(async (req) => {
             .join("");
 
           try {
-            await fetch("https://api.resend.com/emails", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${resendApiKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                from: Deno.env.get("RESEND_FROM_EMAIL") || "iWorkr <noreply@iworkrapp.com>",
+            if (isTestEnv) {
+              await MockResend.send({
                 to: [profile.email],
-                subject: `Asset Service Reminder: ${orgAssetList.length} asset${orgAssetList.length > 1 ? "s" : ""} need attention — ${org?.name || "Your org"}`,
-                html: `
+                subject: `Asset Service Reminder: ${orgAssetList.length}`,
+              });
+            } else {
+              await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${resendApiKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  from: Deno.env.get("RESEND_FROM_EMAIL") || "iWorkr <noreply@iworkrapp.com>",
+                  to: [profile.email],
+                  subject: `Asset Service Reminder: ${orgAssetList.length} asset${orgAssetList.length > 1 ? "s" : ""} need attention — ${org?.name || "Your org"}`,
+                  html: `
                   <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
                     <h2 style="color: #111; font-size: 20px; margin-bottom: 4px;">Asset Service Reminder</h2>
                     <p style="color: #888; font-size: 13px; margin-top: 0;">${org?.name || "Your organization"}</p>
@@ -210,8 +219,9 @@ serve(async (req) => {
                     </p>
                   </div>
                 `,
-              }),
-            });
+                }),
+              });
+            }
             emailsSent++;
           } catch (emailErr) {
             console.error(`Failed to send asset reminder to ${profile.email}:`, emailErr);

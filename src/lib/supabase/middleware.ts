@@ -298,6 +298,92 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // ─── Aegis-Citadel: Velocity Anomaly Detection ───────────────
+  // Uses Vercel's free geolocation headers to detect impossible travel.
+  // If a user's session appears in a different country within 5 minutes,
+  // the session is revoked and a 403 is returned.
+  if (user && isProtected) {
+    const currentCountry = request.headers.get("x-vercel-ip-country");
+    const currentIp = request.headers.get("x-real-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+
+    // Only run velocity checks if we have geolocation data (Vercel production)
+    // and skip for localhost/development
+    if (
+      currentCountry &&
+      currentIp &&
+      currentCountry !== "XX" &&
+      !currentIp.startsWith("127.") &&
+      currentIp !== "::1"
+    ) {
+      try {
+        // Lightweight check: store last known country in a cookie
+        const lastCountry = request.cookies.get("_citadel_geo")?.value;
+        const lastTimestamp = request.cookies.get("_citadel_ts")?.value;
+
+        if (lastCountry && lastTimestamp && lastCountry !== currentCountry) {
+          const elapsedMs = Date.now() - parseInt(lastTimestamp, 10);
+          const elapsedMinutes = elapsedMs / 60_000;
+
+          // Impossible travel: different country within 5 minutes
+          if (elapsedMinutes < 5) {
+            console.warn(
+              `[Citadel] VELOCITY ANOMALY: User ${user.id} traveled ${lastCountry} → ${currentCountry} in ${Math.round(elapsedMinutes)}min`
+            );
+
+            // Revoke the session
+            const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+            if (serviceKey) {
+              const { createClient } = await import("@supabase/supabase-js");
+              const admin = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                serviceKey,
+                { auth: { persistSession: false, autoRefreshToken: false } }
+              );
+              await admin.auth.admin.signOut(user.id, "global");
+              await admin.rpc("log_security_event", {
+                p_event_type: "IMPOSSIBLE_TRAVEL",
+                p_severity: "critical",
+                p_user_id: user.id,
+                p_ip_address: currentIp,
+                p_country_code: currentCountry,
+                p_details: {
+                  previous_country: lastCountry,
+                  minutes_elapsed: Math.round(elapsedMinutes),
+                },
+              });
+            }
+
+            // Return 403 — session has been revoked
+            return new NextResponse(
+              JSON.stringify({ error: "Session terminated: impossible travel detected" }),
+              { status: 403, headers: { "Content-Type": "application/json" } }
+            );
+          }
+        }
+
+        // Update geolocation cookies for next request comparison
+        supabaseResponse.cookies.set("_citadel_geo", currentCountry, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          maxAge: 86400, // 24 hours
+          path: "/",
+        });
+        supabaseResponse.cookies.set("_citadel_ts", Date.now().toString(), {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          maxAge: 86400,
+          path: "/",
+        });
+      } catch (velocityErr) {
+        // Never block the request due to velocity check failure
+        console.error("[Citadel] Velocity check error:", velocityErr);
+      }
+    }
+  }
+
   // ─── Inject active workspace header into response ─────────────
   // The iworkr_active_workspace cookie is set by /api/auth/switch-context.
   // We forward it as a request header so that Supabase SSR edge functions and

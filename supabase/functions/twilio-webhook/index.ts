@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "npm:zod@3.23.8";
+import { withZodInterceptor } from "../_shared/withZodInterceptor.ts";
 
 // ─── Config ──────────────────────────────────────────────────────────────
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -47,20 +49,21 @@ async function validateTwilioSignature(
 const OPT_OUT_KEYWORDS = ["stop", "stopall", "unsubscribe", "cancel", "end", "quit"];
 const OPT_IN_KEYWORDS = ["start", "yes", "unstop", "subscribe"];
 
-// ─── Parse form-urlencoded body ──────────────────────────────────────────
-function parseFormBody(body: string): Record<string, string> {
-  const params: Record<string, string> = {};
-  const pairs = body.split("&");
-  for (const pair of pairs) {
-    const [key, ...valueParts] = pair.split("=");
-    if (key) {
-      params[decodeURIComponent(key)] = decodeURIComponent(
-        valueParts.join("=").replace(/\+/g, " ")
-      );
-    }
-  }
-  return params;
-}
+const TwilioWebhookSchema = z.object({
+  MessageSid: z.string().min(5),
+  AccountSid: z.string().optional(),
+  MessagingServiceSid: z.string().optional(),
+  SmsSid: z.string().optional(),
+  SmsStatus: z.string().optional(),
+  From: z.string().regex(/^\+\d{10,15}$/, "Invalid E.164 phone number format"),
+  To: z.string().optional(),
+  Body: z.string().min(1),
+  NumMedia: z.union([z.string(), z.number()]).optional(),
+  NumSegments: z.union([z.string(), z.number()]).optional(),
+  ApiVersion: z.string().optional(),
+  MessageStatus: z.string().optional(),
+  OptOutType: z.string().optional(),
+}).strict();
 
 // ─── Empty TwiML response ────────────────────────────────────────────────
 function twimlResponse(message?: string): Response {
@@ -160,23 +163,20 @@ async function setOptOutStatus(
 }
 
 // ─── Main Handler ────────────────────────────────────────────────────────
-serve(async (req) => {
+serve(withZodInterceptor(TwilioWebhookSchema, async (req, payload) => {
   // Twilio sends POST with form-urlencoded body
   if (req.method !== "POST") {
     return twimlResponse();
   }
 
   try {
-    const bodyText = await req.text();
-    const params = parseFormBody(bodyText);
-
     // Validate Twilio signature in production
     if (TWILIO_AUTH_TOKEN) {
       const twilioSig = req.headers.get("X-Twilio-Signature") || "";
       const requestUrl = `${SUPABASE_URL}/functions/v1/twilio-webhook`;
       const valid = await validateTwilioSignature(
         requestUrl,
-        params,
+        payload as Record<string, string>,
         twilioSig,
         TWILIO_AUTH_TOKEN
       );
@@ -187,8 +187,8 @@ serve(async (req) => {
       }
     }
 
-    const from = params.From || "";
-    const messageBody = (params.Body || "").trim().toLowerCase();
+    const from = payload.From || "";
+    const messageBody = (payload.Body || "").trim().toLowerCase();
 
     if (!from || !messageBody) {
       return twimlResponse();
@@ -236,4 +236,4 @@ serve(async (req) => {
     // Always return valid TwiML even on error
     return twimlResponse();
   }
-});
+}, { providerHint: "twilio" }));

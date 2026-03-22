@@ -280,11 +280,17 @@ DO $$
 BEGIN
   -- Only create the cron job if pg_cron extension is available
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
-    PERFORM cron.unschedule('terminus_release_zombie_locks');
+    IF EXISTS (
+      SELECT 1
+      FROM cron.job
+      WHERE jobname = 'terminus_release_zombie_locks'
+    ) THEN
+      PERFORM cron.unschedule('terminus_release_zombie_locks');
+    END IF;
     PERFORM cron.schedule(
       'terminus_release_zombie_locks',
       '*/15 * * * *',
-      $$
+      $cron$
         UPDATE public.medication_administration_records
         SET status = 'cancelled',
             notes = COALESCE(notes, '') || ' [CRON-RELEASED: ' || now()::text || ']'
@@ -295,7 +301,7 @@ BEGIN
         SET locked_by = NULL, locked_at = NULL
         WHERE locked_by IS NOT NULL
           AND locked_at < now() - interval '30 minutes';
-      $$
+      $cron$
     );
   END IF;
 END $$;

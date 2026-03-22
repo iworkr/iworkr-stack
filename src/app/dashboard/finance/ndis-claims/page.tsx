@@ -17,6 +17,8 @@ import {
   ArrowRightLeft,
   Trash2,
   Loader2,
+  Download,
+  Calendar,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useCallback } from "react";
@@ -427,6 +429,202 @@ function SkeletonRow() {
   );
 }
 
+/* ── PRODA CSV Generator ──────────────────────────────── */
+
+function ProdaCsvGenerator({ orgId, onGenerated }: { orgId: string; onGenerated: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [periodStart, setPeriodStart] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().slice(0, 10);
+  });
+  const [periodEnd, setPeriodEnd] = useState(() => new Date().toISOString().slice(0, 10));
+  const [result, setResult] = useState<{
+    success?: boolean;
+    error?: string;
+    batch_number?: string;
+    total_claims?: number;
+    total_amount?: string;
+    validation_errors?: Array<{ shift_id: string; error: string; participant: string }>;
+  } | null>(null);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/ndis/generate-proda-csv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organization_id: orgId,
+          period_start: periodStart,
+          period_end: periodEnd,
+        }),
+      });
+
+      if (res.ok) {
+        // Download the CSV
+        const blob = await res.blob();
+        const batchNumber = res.headers.get("X-Batch-Number") || "PRODA";
+        const totalClaims = res.headers.get("X-Total-Claims") || "0";
+        const totalAmount = res.headers.get("X-Total-Amount") || "0.00";
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `PRODA_${batchNumber}_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        setResult({
+          success: true,
+          batch_number: batchNumber,
+          total_claims: parseInt(totalClaims),
+          total_amount: totalAmount,
+        });
+        onGenerated();
+      } else {
+        const err = await res.json();
+        setResult({
+          error: err.error || "Failed to generate PRODA batch",
+          validation_errors: err.validation_errors,
+        });
+      }
+    } catch (err: unknown) {
+      setResult({ error: (err as Error)?.message || "Network error" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="stealth-btn-ghost">
+        <Download className="w-4 h-4" />
+        Generate PRODA CSV
+      </button>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={() => setOpen(false)}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-lg bg-[#0A0A0A] border border-[var(--border-base)] rounded-xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
+          <div className="flex items-center gap-2">
+            <Download className="w-4 h-4 text-emerald-400" />
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Generate PRODA Bulk Claim CSV</h2>
+          </div>
+          <button onClick={() => setOpen(false)} className="p-1 rounded-md hover:bg-white/5 text-[var(--text-muted)]">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+            This will scan all approved, unbilled NDIS shifts within the selected period,
+            translate them into NDIS Support Item Codes, and generate a CSV file ready
+            for upload to the PRODA portal.
+          </p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] mb-1.5">
+                Period Start
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
+                <input
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => setPeriodStart(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] mb-1.5">
+                Period End
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
+                <input
+                  type="date"
+                  value={periodEnd}
+                  onChange={(e) => setPeriodEnd(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-base)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Result feedback */}
+          {result?.success && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-emerald-400">CSV Generated & Downloaded</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                  Batch {result.batch_number}: {result.total_claims} claims totaling ${result.total_amount}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {result?.error && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+              <AlertTriangle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-rose-400">{result.error}</p>
+                {result.validation_errors && result.validation_errors.length > 0 && (
+                  <ul className="text-xs text-[var(--text-muted)] mt-1 space-y-0.5">
+                    {result.validation_errors.slice(0, 5).map((ve, i) => (
+                      <li key={i}>• {ve.participant}: {ve.error}</li>
+                    ))}
+                    {result.validation_errors.length > 5 && (
+                      <li>...and {result.validation_errors.length - 5} more</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[var(--border-base)]">
+          <button onClick={() => setOpen(false)} className="stealth-btn-ghost">Cancel</button>
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="stealth-btn-brand disabled:opacity-40"
+          >
+            {generating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            {generating ? "Generating..." : "Generate & Download CSV"}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ── Main Page ────────────────────────────────────────── */
 
 export default function NDISClaimsPage() {
@@ -529,13 +727,16 @@ export default function NDISClaimsPage() {
               Submit, track, and reconcile NDIS claim batches via PRODA.
             </p>
           </div>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="stealth-btn-brand"
-          >
-            <Plus className="w-4 h-4" />
-            Create Batch
-          </button>
+          <div className="flex items-center gap-2">
+            <ProdaCsvGenerator orgId={orgId || ""} onGenerated={invalidateClaims} />
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="stealth-btn-brand"
+            >
+              <Plus className="w-4 h-4" />
+              Create Batch
+            </button>
+          </div>
         </div>
 
         {/* Metric Cards */}

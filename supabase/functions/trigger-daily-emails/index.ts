@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,7 +54,8 @@ serve(async (req) => {
     let emailsEnqueued = 0;
     let orgsProcessed = 0;
 
-    for (const org of orgs || []) {
+    const targetOrgs = isTestEnv ? (orgs || []).slice(0, 1) : (orgs || []);
+    for (const org of targetOrgs) {
       // Get admin/owner members who should receive the digest
       const { data: admins } = await adminClient
         .from("organization_members")

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +27,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: batch, error: claimErr } = await supabase.rpc(
       "claim_webhook_batch",
-      { batch_size: 50, worker_id: `edge-${Date.now()}` },
+      { batch_size: isTestEnv ? 1 : 50, worker_id: `edge-${Date.now()}` },
     );
 
     if (claimErr) {

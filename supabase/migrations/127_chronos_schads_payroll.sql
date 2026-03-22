@@ -227,7 +227,7 @@ AS $$
   SELECT COALESCE(
     SUM(
       EXTRACT(EPOCH FROM (te.clock_out - te.clock_in)) / 3600.0
-      - COALESCE(te.break_duration_minutes, 0) / 60.0
+      - COALESCE(te.break_minutes, 0) / 60.0
     ),
     0
   )

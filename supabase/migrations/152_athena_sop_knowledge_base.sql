@@ -12,6 +12,18 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ── 3. Upgrade knowledge_articles ───────────────────────────
+CREATE TABLE IF NOT EXISTS public.knowledge_articles (
+  id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id         UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  title                   TEXT NOT NULL,
+  category                TEXT,
+  tags                    JSONB DEFAULT '[]'::jsonb,
+  thumbnail_url           TEXT,
+  is_pinned               BOOLEAN DEFAULT false,
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 ALTER TABLE public.knowledge_articles ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE public.knowledge_articles ADD COLUMN IF NOT EXISTS content_html TEXT;
 ALTER TABLE public.knowledge_articles ADD COLUMN IF NOT EXISTS raw_text TEXT;

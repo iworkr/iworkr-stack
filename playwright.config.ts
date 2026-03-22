@@ -4,10 +4,10 @@ import path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 
-const ADMIN_STATE  = "e2e/.auth/admin.json";
-const WORKER_STATE = "e2e/.auth/worker.json";
+const ADMIN_STATE  = "playwright/.auth/admin.json";
+const WORKER_STATE = "playwright/.auth/worker.json";
 /** Legacy alias — kept for backwards compatibility with older spec files */
-const AUTH_STATE   = "e2e/.auth/user.json";
+const AUTH_STATE   = "playwright/.auth/user.json";
 
 const auditModules = [
   "dashboard", "inbox", "jobs", "schedule", "clients",
@@ -23,6 +23,7 @@ const chromeAuditProjects = auditModules.map((mod) => ({
 }));
 
 export default defineConfig({
+  globalSetup: require.resolve("./playwright/global-setup.ts"),
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -54,16 +55,17 @@ export default defineConfig({
 
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
-    trace: "retain-on-failure",
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    // Argus-Tartarus: Full forensic trace for EVERY test
+    trace: process.env.CI ? "retain-on-failure" : "on",
+    screenshot: "on",
+    video: process.env.CI ? "retain-on-failure" : "on",
     actionTimeout: 8_000,
     navigationTimeout: 15_000,
   },
 
   projects: [
-    // ── Auth setup (runs first, generates all storageState files) ────────────
-    { name: "setup", testMatch: /global-setup\.ts/ },
+    // ── Legacy setup project placeholder (globalSetup handles auth state) ─────
+    { name: "setup", testMatch: /$^/ },
 
     // ── Audit projects (Chrome, admin session) ───────────────────────────────
     ...chromeAuditProjects,
@@ -182,6 +184,98 @@ export default defineConfig({
       testMatch: /aegis\/golden-thread-trade\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
       dependencies: ["setup"],
+    },
+    {
+      name: "aegis-driver-golden-care",
+      testDir: "./tests/e2e",
+      testMatch: /golden-thread-care\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+
+    // ── Argus-Omniscience: Deep CRUD Matrices ──────────────────────────────
+    {
+      name: "argus-auth-flows",
+      testDir: "./tests/e2e",
+      testMatch: /auth-flows\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "argus-care-module",
+      testDir: "./tests/e2e",
+      testMatch: /care-module\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "argus-trades-module",
+      testDir: "./tests/e2e",
+      testMatch: /trades-module\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "argus-navigation",
+      testDir: "./tests/e2e",
+      testMatch: /navigation\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+
+    // ── Argus-Omniscience: Full CRUD Matrix Suite ───────────────────────────
+    {
+      name: "argus-full",
+      testDir: "./tests/e2e",
+      testMatch: /.*\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+
+    // ── Argus-Tartarus: Chaos Engineering & Penetration ────────────────────
+    {
+      name: "tartarus-chaos-budget",
+      testDir: "./tests/e2e/chaos",
+      testMatch: /race-budget\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "tartarus-chaos-roster",
+      testDir: "./tests/e2e/chaos",
+      testMatch: /roster-race\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "tartarus-temporal",
+      testDir: "./tests/e2e/chaos",
+      testMatch: /temporal-payroll\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "tartarus-network",
+      testDir: "./tests/e2e/chaos",
+      testMatch: /network-partition\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
+      name: "tartarus-full",
+      testDir: "./tests/e2e/chaos",
+      testMatch: /.*\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+
+    // ── Aegis-Citadel: Security Headers Verification ────────────────────
+    {
+      name: "citadel-security-headers",
+      testDir: "./tests/e2e",
+      testMatch: /security-headers\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+      // No dependencies — doesn't need auth
     },
     {
       name: "aegis-smoke-firefox",

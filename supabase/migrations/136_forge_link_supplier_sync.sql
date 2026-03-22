@@ -135,6 +135,44 @@ CREATE INDEX IF NOT EXISTS idx_supplier_catalog_org_sku
 CREATE INDEX IF NOT EXISTS idx_supplier_catalog_org_category
   ON public.supplier_catalog_cache (organization_id, category);
 
+-- ── 4b. Compatibility stubs for quote-backed PO pipelines ───
+-- Some environments don't yet include a dedicated quote schema.
+-- Create minimal tables so Forge-Link migrations and RPCs remain deployable.
+CREATE TABLE IF NOT EXISTS public.quotes (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
+  job_id          UUID REFERENCES public.jobs(id) ON DELETE SET NULL,
+  status          TEXT DEFAULT 'draft',
+  secure_token    TEXT,
+  subtotal        NUMERIC(12,2) DEFAULT 0,
+  tax_rate        NUMERIC(8,4) DEFAULT 10,
+  tax             NUMERIC(12,2) DEFAULT 0,
+  total           NUMERIC(12,2) DEFAULT 0,
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.quotes
+  ADD COLUMN IF NOT EXISTS job_id UUID REFERENCES public.jobs(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'draft',
+  ADD COLUMN IF NOT EXISTS secure_token TEXT;
+
+CREATE TABLE IF NOT EXISTS public.quote_line_items (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  quote_id            UUID REFERENCES public.quotes(id) ON DELETE CASCADE,
+  description         TEXT,
+  quantity            NUMERIC(10,2) NOT NULL DEFAULT 1,
+  unit_price          NUMERIC(12,2) NOT NULL DEFAULT 0,
+  is_supplier_linked  BOOLEAN DEFAULT false,
+  supplier_sku        TEXT,
+  supplier_enum       TEXT,
+  locked_cost_basis   NUMERIC(12,2),
+  live_cost           NUMERIC(12,2),
+  target_margin       NUMERIC(5,4) DEFAULT 0.40,
+  cost_delta          NUMERIC(12,2),
+  cost_delta_pct      NUMERIC(8,4),
+  price_check_at      TIMESTAMPTZ
+);
+
 -- ── 5. Quote Line Items Extensions for Margin Protector ─────
 ALTER TABLE public.quote_line_items
   ADD COLUMN IF NOT EXISTS is_supplier_linked    BOOLEAN DEFAULT false,

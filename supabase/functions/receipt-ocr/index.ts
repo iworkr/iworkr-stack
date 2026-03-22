@@ -6,6 +6,7 @@
 // ============================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
+import { MockOpenAI, isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +62,10 @@ RULES:
 5. CRITICAL: Return ONLY valid JSON. No explanation text, no markdown.`;
 
 async function extractWithOpenAI(imageBase64: string, mimeType: string): Promise<ExtractedReceipt> {
+  if (isTestEnv) {
+    const mock = await MockOpenAI.chat.completions.create();
+    return JSON.parse(mock.choices[0].message.content) as ExtractedReceipt;
+  }
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
@@ -110,6 +115,10 @@ async function extractWithOpenAI(imageBase64: string, mimeType: string): Promise
 }
 
 async function extractWithGemini(imageBase64: string, mimeType: string): Promise<ExtractedReceipt> {
+  if (isTestEnv) {
+    const mock = await MockOpenAI.chat.completions.create();
+    return JSON.parse(mock.choices[0].message.content) as ExtractedReceipt;
+  }
   const apiKey = Deno.env.get("GOOGLE_AI_API_KEY") || Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GOOGLE_AI_API_KEY not configured");
 

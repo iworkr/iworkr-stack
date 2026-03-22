@@ -9,6 +9,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -183,20 +184,24 @@ serve(async (req) => {
       Body: smsBody.slice(0, 1600), // Twilio max
     });
 
-    const twilioRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
-        },
-        body: smsParams.toString(),
-      }
-    );
-
-    const twilioData = await twilioRes.json();
-    const smsSent = twilioRes.ok;
+    const twilioData = isTestEnv
+      ? { sid: "SM_TEST_123" }
+      : await (async () => {
+        const twilioRes = await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
+            },
+            body: smsParams.toString(),
+          }
+        );
+        if (!twilioRes.ok) return { _failed: true, ...(await twilioRes.json()) };
+        return await twilioRes.json();
+      })();
+    const smsSent = !("_failed" in twilioData);
     const smsSid = twilioData?.sid || null;
 
     // ── 7. Update tracking session with SMS confirmation ──────────

@@ -16,6 +16,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
+      IS_TEST_ENV: ${{ secrets.IS_TEST_ENV }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,6 +25,13 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - name: Security preflight (block test mode)
+        run: |
+          if [ "${IS_TEST_ENV:-false}" = "true" ]; then
+            echo "FATAL: Test mode enabled in production build pipeline. Aborting."
+            exit 1
+          fi
 
       - name: Deploy auth-protected functions
         run: |

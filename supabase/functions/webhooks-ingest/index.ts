@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "npm:zod@3.23.8";
+import { withZodInterceptor } from "../_shared/withZodInterceptor.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -93,7 +95,38 @@ async function verifyXeroSignature(rawBody: string, signatureHeader: string, sec
   return expectedBase64 === signatureHeader;
 }
 
-Deno.serve(async (req: Request) => {
+const GenericIngestSchema = z.object({
+  tenant_id: z.string().uuid("Invalid Tenant ID mapping"),
+  event_type: z.string().min(1),
+  payload: z.record(z.unknown()),
+  timestamp: z.string().datetime(),
+  provider: z.string().optional(),
+  organization_id: z.string().uuid().optional(),
+  org_id: z.string().uuid().optional(),
+}).strict();
+
+const StripeEnvelopeSchema = z.object({
+  provider: z.literal("stripe").optional(),
+  type: z.string().min(1),
+  data: z.object({
+    object: z.record(z.unknown()).optional(),
+  }).strict(),
+  organization_id: z.string().uuid().optional(),
+  org_id: z.string().uuid().optional(),
+}).strict();
+
+const XeroEnvelopeSchema = z.object({
+  provider: z.literal("xero").optional(),
+  events: z.array(z.record(z.unknown())),
+  tenant_id: z.string().optional(),
+  tenantId: z.string().optional(),
+  organization_id: z.string().uuid().optional(),
+  org_id: z.string().uuid().optional(),
+}).strict();
+
+const WebhooksIngestSchema = z.union([GenericIngestSchema, StripeEnvelopeSchema, XeroEnvelopeSchema]);
+
+Deno.serve(withZodInterceptor(WebhooksIngestSchema, async (req: Request, parsed, ctx) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
   if (req.method !== "POST") return json(req, { error: "Method not allowed" }, 405);
 
@@ -102,34 +135,34 @@ Deno.serve(async (req: Request) => {
   });
 
   try {
-    const rawBody = await req.text();
+    const rawBody = ctx.rawBody;
     const payloadHash = await sha256Hex(rawBody);
-    const parsed = rawBody ? JSON.parse(rawBody) : {};
+    const normalized = parsed as Record<string, unknown>;
     const requestHeaders = headersToJson(req);
     const provider = (
       req.headers.get("x-iworkr-provider") ||
-      parsed.provider ||
-      (parsed.type?.startsWith("customer.") || parsed.type?.startsWith("payment_intent.")
+      normalized.provider ||
+      (String(normalized.type || "").startsWith("customer.") || String(normalized.type || "").startsWith("payment_intent.")
         ? "stripe"
         : "xero")
     ).toString().toLowerCase();
 
-    const orgId = req.headers.get("x-iworkr-org-id") || parsed.organization_id || parsed.org_id || null;
+    const orgId = req.headers.get("x-iworkr-org-id") || normalized.organization_id || normalized.org_id || null;
     const xeroTenantIdHeader = req.headers.get("xero-tenant-id") || req.headers.get("x-xero-tenant-id");
-    const firstXeroEvent = Array.isArray(parsed.events) ? parsed.events[0] : null;
+    const firstXeroEvent = Array.isArray(normalized.events) ? normalized.events[0] as Record<string, unknown> : null;
     const tenantId =
       xeroTenantIdHeader ||
-      parsed.tenant_id ||
-      parsed.realmId ||
-      parsed.tenantId ||
-      firstXeroEvent?.tenantId ||
-      firstXeroEvent?.tenant_id ||
+      normalized.tenant_id ||
+      normalized.realmId ||
+      normalized.tenantId ||
+      firstXeroEvent?.tenantId as string ||
+      firstXeroEvent?.tenant_id as string ||
       null;
     const eventType =
-      parsed.type ||
-      parsed.event_type ||
-      parsed.eventType ||
-      (Array.isArray(parsed.events) && parsed.events[0]?.eventType) ||
+      normalized.type ||
+      normalized.event_type ||
+      normalized.eventType ||
+      (Array.isArray(normalized.events) && (normalized.events[0] as Record<string, unknown>)?.eventType as string) ||
       "unknown";
 
     // Verify signatures when secrets are configured.
@@ -186,7 +219,7 @@ Deno.serve(async (req: Request) => {
         organization_id: resolvedOrgId,
         source: provider || "unknown",
         event_type: String(eventType || "unknown"),
-        raw_payload: parsed,
+        raw_payload: normalized,
         headers: requestHeaders,
         failure_reason: failureReason,
         is_resolved: false,
@@ -226,7 +259,7 @@ Deno.serve(async (req: Request) => {
         event_type: String(eventType),
         direction: "inbound",
         signature: iworkrSig || stripeSig || xeroSig || null,
-        payload: parsed,
+          payload: normalized,
         payload_hash: payloadHash,
         processed: false,
       })
@@ -249,7 +282,8 @@ Deno.serve(async (req: Request) => {
     let processedCount = 0;
 
     if (provider === "stripe") {
-      const stripeObject = parsed.data?.object || {};
+      const stripeData = (normalized.data as Record<string, unknown> | undefined) || {};
+      const stripeObject = (stripeData.object as Record<string, unknown> | undefined) || {};
       const internalInvoiceId = stripeObject.metadata?.invoice_id || stripeObject.metadata?.internal_invoice_id || null;
       const providerInvoiceId = stripeObject.invoice || stripeObject.id || null;
 
@@ -287,10 +321,11 @@ Deno.serve(async (req: Request) => {
         await log("success", "webhook", undefined, { event_type: eventType });
       }
     } else if (provider === "xero") {
-      const events = Array.isArray(parsed.events) ? parsed.events : [];
+      const events = Array.isArray(normalized.events) ? normalized.events : [];
       for (const evt of events) {
-        const resourceId = evt.resourceId || evt.resource_id;
-        const eventTypeValue = evt.eventType || evt.event_type || "xero_event";
+        const xeroEvent = evt as Record<string, unknown>;
+        const resourceId = (xeroEvent.resourceId as string) || (xeroEvent.resource_id as string);
+        const eventTypeValue = (xeroEvent.eventType as string) || (xeroEvent.event_type as string) || "xero_event";
         if (!integrationId || !resolvedOrgId || !resourceId) continue;
 
         // Xero webhook payloads don't always include full resource state, queue a fetch task.
@@ -351,5 +386,5 @@ Deno.serve(async (req: Request) => {
     console.error("[webhooks-ingest] error:", err);
     return json(req, { error: (err as Error).message || "Webhook ingest failed" }, 500);
   }
-});
+}, { bypassMethods: ["OPTIONS"] }));
 

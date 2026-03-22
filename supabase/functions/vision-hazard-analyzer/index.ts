@@ -3,6 +3,7 @@
 // Pipeline: Frame images → Gemini 1.5 Pro Multimodal → Risk Matrix JSON → SWMS tables
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -56,6 +57,28 @@ async function analyzeWithGemini(
   frameUrls: string[],
   supabase: ReturnType<typeof createClient>
 ): Promise<Record<string, unknown>> {
+  if (isTestEnv) {
+    return {
+      hazards: [
+        {
+          hazard_type: "trip_hazard",
+          description: "Loose cable crossing work area",
+          likelihood: 3,
+          consequence: 3,
+          initial_risk_score: 9,
+          control_measures: ["Secure cables with covers", "Mark hazard zone"],
+          residual_likelihood: 1,
+          residual_consequence: 2,
+          residual_risk_score: 2,
+          frame_index: 0,
+        },
+      ],
+      overall_site_risk: "MEDIUM",
+      recommended_ppe: ["Safety boots", "Gloves"],
+      site_conditions: ["Indoor", "Low visibility in corner"],
+      summary: "One material hazard detected and controls proposed.",
+    };
+  }
   // Download frames and convert to base64
   const imageParts: { inline_data: { mime_type: string; data: string } }[] = [];
 

@@ -18,6 +18,8 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "npm:zod@3.23.8";
+import { withZodInterceptor } from "../_shared/withZodInterceptor.ts";
 
 /* ── CORS ──────────────────────────────────────────────── */
 
@@ -329,7 +331,15 @@ async function executeAction(
 
 /* ── Main Worker ──────────────────────────────────────── */
 
-serve(async (req) => {
+const AutomationDryRunSchema = z.object({
+  flow_id: z.string().uuid(),
+  mock_payload: z.record(z.unknown()).optional(),
+}).strict();
+
+const AutomationQueueRunSchema = z.object({}).strict();
+const AutomationWorkerSchema = z.union([AutomationDryRunSchema, AutomationQueueRunSchema]);
+
+serve(withZodInterceptor(AutomationWorkerSchema, async (req, body) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -361,8 +371,7 @@ serve(async (req) => {
 
     // ── Dry Run Mode: Direct payload testing ────────────
     if (isDryRun) {
-      const body = await req.json();
-      const { flow_id, mock_payload } = body;
+      const { flow_id, mock_payload } = body as z.infer<typeof AutomationDryRunSchema>;
 
       if (!flow_id) {
         return new Response(JSON.stringify({ error: "flow_id required for dry run" }), {
@@ -737,7 +746,7 @@ serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}, { providerHint: "automation-worker", bypassMethods: ["OPTIONS"] }));
 
 /* ── Helpers ──────────────────────────────────────────── */
 

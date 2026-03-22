@@ -1,0 +1,14 @@
+{
+  "generatedAt": "2026-03-21T10:13:56.901Z",
+  "careGoldenThread": {
+    "generatedShifts": 42,
+    "approvedTimesheets": 2,
+    "pass": true
+  },
+  "tradeGoldenThread": {
+    "depositInvoices": 1,
+    "purchaseOrders": 1,
+    "pass": true
+  },
+  "overallPass": true
+}

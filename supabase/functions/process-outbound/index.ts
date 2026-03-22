@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { MockResend, isTestEnv } from "../_shared/mockClients.ts";
 
 // ─── Config ──────────────────────────────────────────────────────────────
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -10,7 +11,7 @@ const TWILIO_FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER") || "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "notifications@iworkrapp.com";
 const MAX_RETRIES = 3;
-const BATCH_SIZE = 50;
+const BATCH_SIZE = isTestEnv ? 1 : 50;
 
 // ─── Types ───────────────────────────────────────────────────────────────
 interface QueueRow {
@@ -46,6 +47,13 @@ async function sendSms(
   body: string,
   senderId?: string
 ): Promise<SendResult> {
+  if (isTestEnv) {
+    return {
+      success: true,
+      provider_message_id: "SM_TEST_123",
+      cost_microcents: 0,
+    };
+  }
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
     return { success: false, error: "Twilio not configured" };
   }
@@ -103,6 +111,10 @@ async function sendEmail(
   subject: string,
   body: string
 ): Promise<SendResult> {
+  if (isTestEnv) {
+    const mock = await MockResend.send({ to, subject, body });
+    return { success: true, provider_message_id: String(mock.id), cost_microcents: 0 };
+  }
   if (!RESEND_API_KEY) {
     return { success: false, error: "Resend not configured" };
   }

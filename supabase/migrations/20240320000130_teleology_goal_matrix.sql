@@ -39,7 +39,7 @@ ALTER TABLE public.participant_goals
   ADD COLUMN IF NOT EXISTS description TEXT,
   ADD COLUMN IF NOT EXISTS start_date DATE,
   ADD COLUMN IF NOT EXISTS end_date DATE,
-  ADD COLUMN IF NOT EXISTS goal_status goal_status DEFAULT 'ACTIVE',
+  ADD COLUMN IF NOT EXISTS goal_status goal_status DEFAULT 'in_progress',
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 -- Backfill title from goal_statement if it exists
@@ -135,7 +135,7 @@ AS $$
     id, title, description, domain, start_date, end_date, goal_status, created_at
   FROM public.participant_goals
   WHERE participant_id = p_participant_id
-    AND goal_status = 'ACTIVE'
+    AND goal_status = 'in_progress'
   ORDER BY created_at ASC;
 $$;
 
@@ -183,11 +183,11 @@ BEGIN
     v_inserted := v_inserted + 1;
   END LOOP;
 
-  -- Auto-update goal status to STAGNANT if < 2 linkages in last 14 days
+  -- Auto-update goal status to on_hold if < 2 linkages in last 14 days
   UPDATE public.participant_goals pg
-  SET goal_status = 'STAGNANT', updated_at = now()
+  SET goal_status = 'on_hold', updated_at = now()
   WHERE pg.participant_id = p_participant_id
-    AND pg.goal_status = 'ACTIVE'
+    AND pg.goal_status = 'in_progress'
     AND (
       SELECT COUNT(*) FROM public.shift_goal_linkages sgl
       WHERE sgl.goal_id = pg.id
@@ -244,10 +244,16 @@ AS $$
       SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
           'ts', t.created_at,
-          'rating', CASE t.progress_rating
+          'rating', CASE t.progress_rating::text
             WHEN 'PROGRESSED' THEN 1
             WHEN 'MAINTAINED' THEN 0
             WHEN 'REGRESSED' THEN -1
+            WHEN '1' THEN 1
+            WHEN '0' THEN 0
+            WHEN '-1' THEN -1
+            WHEN '1.00' THEN 1
+            WHEN '0.00' THEN 0
+            WHEN '-1.00' THEN -1
           END
         ) ORDER BY t.created_at ASC
       ), '[]'::JSONB)
@@ -277,7 +283,7 @@ CREATE OR REPLACE FUNCTION public.get_goal_evidence_feed(
 )
 RETURNS TABLE (
   linkage_id          UUID,
-  progress_rating     progress_rating,
+  progress_rating     TEXT,
   worker_observation  TEXT,
   created_at          TIMESTAMPTZ,
   worker_name         TEXT,
@@ -290,7 +296,7 @@ SET search_path = public
 AS $$
   SELECT
     sgl.id AS linkage_id,
-    sgl.progress_rating,
+    sgl.progress_rating::text,
     sgl.worker_observation,
     sgl.created_at,
     COALESCE(pr.full_name, pr.email, 'Worker') AS worker_name,
@@ -316,14 +322,14 @@ SET search_path = public
 AS $$
   SELECT jsonb_build_object(
     'active_goals',
-    (SELECT COUNT(*) FROM public.participant_goals WHERE organization_id = p_organization_id AND goal_status = 'ACTIVE'),
+    (SELECT COUNT(*) FROM public.participant_goals WHERE organization_id = p_organization_id AND goal_status = 'in_progress'),
     'observations_30d',
     (SELECT COUNT(*) FROM public.shift_goal_linkages WHERE organization_id = p_organization_id AND created_at >= now() - INTERVAL '30 days'),
     'stagnant_goals',
-    (SELECT COUNT(*) FROM public.participant_goals pg WHERE pg.organization_id = p_organization_id AND pg.goal_status = 'ACTIVE'
+    (SELECT COUNT(*) FROM public.participant_goals pg WHERE pg.organization_id = p_organization_id AND pg.goal_status = 'in_progress'
       AND (SELECT COUNT(*) FROM public.shift_goal_linkages sgl WHERE sgl.goal_id = pg.id AND sgl.created_at >= now() - INTERVAL '14 days') < 2),
     'upcoming_reviews',
-    (SELECT COUNT(*) FROM public.participant_goals WHERE organization_id = p_organization_id AND goal_status = 'ACTIVE' AND end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days')
+    (SELECT COUNT(*) FROM public.participant_goals WHERE organization_id = p_organization_id AND goal_status = 'in_progress' AND end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days')
   );
 $$;
 

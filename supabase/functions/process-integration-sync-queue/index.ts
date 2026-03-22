@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -28,7 +29,7 @@ Deno.serve(async () => {
     .eq("status", "pending")
     .lte("next_attempt_at", new Date().toISOString())
     .order("created_at", { ascending: true })
-    .limit(50);
+    .limit(isTestEnv ? 1 : 50);
 
   if (error) {
     console.error("[process-integration-sync-queue] load error:", error);
@@ -69,20 +70,24 @@ Deno.serve(async () => {
           throw new Error(`No tenant integration secret found for tenant ${tenantId}`);
         }
 
-        const invoiceRes = await fetch(
-          `https://api.xero.com/api.xro/2.0/Invoices/${resourceId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${secretRow.access_token}`,
-              "Xero-Tenant-Id": tenantId,
-              Accept: "application/json",
-            },
-          },
-        );
-        if (!invoiceRes.ok) {
-          throw new Error(`Xero API error (${invoiceRes.status}) while loading invoice ${resourceId}`);
-        }
-        const invoiceBody = await invoiceRes.json();
+        const invoiceBody = isTestEnv
+          ? { Invoices: [{ Status: "PAID", FullyPaidOnDate: new Date().toISOString() }] }
+          : await (async () => {
+            const invoiceRes = await fetch(
+              `https://api.xero.com/api.xro/2.0/Invoices/${resourceId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${secretRow.access_token}`,
+                  "Xero-Tenant-Id": tenantId,
+                  Accept: "application/json",
+                },
+              },
+            );
+            if (!invoiceRes.ok) {
+              throw new Error(`Xero API error (${invoiceRes.status}) while loading invoice ${resourceId}`);
+            }
+            return await invoiceRes.json();
+          })();
         const invoice = Array.isArray(invoiceBody?.Invoices) ? invoiceBody.Invoices[0] : null;
         if (!invoice) {
           throw new Error(`Xero invoice ${resourceId} not found`);

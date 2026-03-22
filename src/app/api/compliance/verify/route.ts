@@ -6,13 +6,19 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  let formData: FormData;
   try {
-    const formData = await request.formData();
-    const file = formData.get("file");
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ error: "No file provided — expected multipart/form-data" }, { status: 400 });
+  }
 
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return NextResponse.json({ error: "No file provided" }, { status: 400 });
+  }
+
+  try {
     const bytes = Buffer.from(await file.arrayBuffer());
     const hash = createHash("sha256").update(bytes).digest("hex");
 

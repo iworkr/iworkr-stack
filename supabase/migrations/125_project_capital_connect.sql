@@ -97,7 +97,7 @@ CREATE POLICY "Members can read network identities"
 -- Cannot insert/update from client — must go through edge functions
 CREATE POLICY "No direct writes"
   ON public.network_identities FOR INSERT
-  USING (FALSE);
+  WITH CHECK (FALSE);
 
 CREATE INDEX IF NOT EXISTS idx_network_identities_email_hash
   ON public.network_identities (email_hash)

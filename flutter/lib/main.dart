@@ -10,6 +10,7 @@ import 'package:iworkr_mobile/core/router/app_router.dart';
 import 'package:iworkr_mobile/core/services/brand_provider.dart';
 import 'package:iworkr_mobile/core/services/native_bridge_service.dart';
 import 'package:iworkr_mobile/core/services/background_sync_service.dart';
+import 'package:iworkr_mobile/core/services/rasp_service.dart';
 import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
 import 'package:iworkr_mobile/core/services/mobile_telemetry_engine.dart';
 import 'package:iworkr_mobile/core/services/notification_provider.dart';
@@ -75,6 +76,19 @@ void main() {
 
     await RevenueCatService.instance.initialize();
     await BackgroundSyncService.instance.initialize();
+
+    // Aegis-Citadel: Runtime Application Self-Protection
+    // Detects root/jailbreak, debugger, emulator, tampering.
+    // In debug mode, checks are disabled for development ergonomics.
+    await RaspService.instance.initialize();
+
+    // If a fatal RASP threat was detected, show security violation screen
+    if (RaspService.instance.isThreatDetected) {
+      runApp(RaspService.buildSecurityViolationScreen(
+        RaspService.instance.threatReason ?? 'Device security compromised',
+      ));
+      return;
+    }
 
     runApp(ProviderScope(
       observers: [TelemetryProviderObserver()],

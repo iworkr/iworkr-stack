@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,7 +111,9 @@ serve(async (req) => {
     let processed = 0;
     let aggregated = 0;
 
-    for (const [key, group] of groupMap.entries()) {
+    const groupedEntries = Array.from(groupMap.entries());
+    const groupsToProcess = isTestEnv ? groupedEntries.slice(0, 1) : groupedEntries;
+    for (const [key, group] of groupsToProcess) {
       const [organizationId, participantId, ndisLineItem] = key.split("|");
       const billableUnits = group.reduce((sum, g) => sum + Number(g.billable_units || 0), 0);
       const quantityHours = Number((billableUnits * 0.1).toFixed(2));

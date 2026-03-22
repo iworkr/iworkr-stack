@@ -282,14 +282,17 @@ BEGIN
   END IF;
 END $$;
 
--- ── 8. audit_logs organization_id column if missing ─────────
+-- ── 8. audit_log organization_id column if missing ──────────
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'audit_log'
+  ) AND NOT EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'audit_logs' AND column_name = 'organization_id'
+    WHERE table_schema = 'public' AND table_name = 'audit_log' AND column_name = 'organization_id'
   ) THEN
-    ALTER TABLE public.audit_logs ADD COLUMN organization_id UUID REFERENCES public.organizations(id);
+    ALTER TABLE public.audit_log ADD COLUMN organization_id UUID REFERENCES public.organizations(id);
   END IF;
 END $$;
 

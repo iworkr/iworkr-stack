@@ -8,6 +8,13 @@
 -- Enable pg_trgm for fuzzy text search if not already enabled
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- Compatibility shim for environments missing this table.
+CREATE TABLE IF NOT EXISTS public.workspace_communication_settings (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CORE TABLES — High-frequency query paths
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -15,12 +22,12 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- Participant name trigram search (fast LIKE/ILIKE on names)
 CREATE INDEX IF NOT EXISTS idx_participant_profiles_name_trgm
   ON public.participant_profiles
-  USING GIN ((COALESCE(preferred_name, '') || ' ' || COALESCE(primary_diagnosis, '')) gin_trgm_ops);
+  USING GIN ((COALESCE(primary_diagnosis, '')) gin_trgm_ops);
 
 -- Partial indexes for active job statuses (dispatch board, schedule)
 CREATE INDEX IF NOT EXISTS idx_jobs_active_status
   ON public.jobs(status)
-  WHERE status IN ('scheduled', 'en_route', 'in_progress', 'todo');
+  WHERE status IN ('backlog', 'todo', 'in_progress');
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- MISSING FK INDEXES — Identified gaps in existing schema
@@ -174,7 +181,7 @@ CREATE INDEX IF NOT EXISTS idx_workspace_suppliers_org
 
 -- Participant list (org + status) — used on every participants page load
 CREATE INDEX IF NOT EXISTS idx_participant_profiles_org_status
-  ON public.participant_profiles(organization_id, status);
+  ON public.participant_profiles(organization_id);
 
 -- Service agreements (org + participant + status)
 CREATE INDEX IF NOT EXISTS idx_service_agreements_org_participant

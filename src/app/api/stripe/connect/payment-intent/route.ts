@@ -96,14 +96,23 @@ export async function POST(req: NextRequest) {
       const feePercent = parseFloat((settings.platform_fee_percent as string) || "0") || 1.0;
       const applicationFee = Math.round(amountCents * (feePercent / 100));
 
+      // Zenith-Launch: Explicit destination charge with platform fee
+      // Stripe splits the payment at the gateway level:
+      //   - (amount - applicationFee) → merchant's connected account
+      //   - applicationFee → iWorkr platform account
       const paymentIntent = await stripe.paymentIntents.create(
         {
           amount: amountCents,
           currency: cur,
           application_fee_amount: applicationFee,
+          transfer_data: {
+            destination: stripeAccountId,
+          },
           metadata: {
             organization_id: orgId,
             invoice_id: invoiceId || "",
+            platform_fee_cents: applicationFee.toString(),
+            platform_fee_percent: feePercent.toString(),
           },
         },
         { stripeAccount: stripeAccountId }

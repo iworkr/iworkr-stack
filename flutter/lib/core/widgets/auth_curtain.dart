@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iworkr_mobile/core/services/biometric_service.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
@@ -33,18 +36,35 @@ class _AuthCurtainState extends State<AuthCurtain> with WidgetsBindingObserver {
   bool _coldStartLocked = true;
   bool _resumeLocked = false;
   bool _coldStartResolved = false;
+  /// Aegis-Citadel: OS screenshot fencing overlay
+  bool _showBlurOverlay = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initColdStart();
+    _enableScreenshotProtection();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Aegis-Citadel: Enable FLAG_SECURE on Android to block screenshots
+  /// and screen recording at the OS level. On iOS, we rely on the blur
+  /// overlay approach since there's no FLAG_SECURE equivalent.
+  Future<void> _enableScreenshotProtection() async {
+    if (kDebugMode) return; // Allow screenshots in debug mode
+    try {
+      if (Platform.isAndroid) {
+        await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
+      }
+    } catch (e) {
+      debugPrint('[Citadel] Screenshot protection failed: $e');
+    }
   }
 
   Future<void> _initColdStart() async {
@@ -65,9 +85,17 @@ class _AuthCurtainState extends State<AuthCurtain> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+    if (state == AppLifecycleState.inactive) {
+      // Aegis-Citadel: Show blur overlay immediately when entering task switcher.
+      // This ensures the OS screenshot for the task switcher captures a blurred screen.
+      if (mounted && !kDebugMode) {
+        setState(() => _showBlurOverlay = true);
+      }
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       _onPause();
     } else if (state == AppLifecycleState.resumed) {
+      // Remove blur overlay when app resumes
+      if (mounted) setState(() => _showBlurOverlay = false);
       _onResume();
     }
   }
@@ -123,6 +151,30 @@ class _AuthCurtainState extends State<AuthCurtain> with WidgetsBindingObserver {
             child: _VaultLockOverlay(
               isColdStart: _coldStartLocked,
               onUnlocked: _onUnlocked,
+            ),
+          ),
+        // Aegis-Citadel: OS Screenshot Fencing — opaque blur overlay
+        // Activated when app enters inactive state (task switcher).
+        // Ensures the OS only captures a blurred, useless grey screen.
+        if (_showBlurOverlay)
+          Positioned.fill(
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                child: Container(
+                  color: const Color(0xFF050505).withValues(alpha: 0.92),
+                  child: Center(
+                    child: Opacity(
+                      opacity: 0.3,
+                      child: Image.asset(
+                        'assets/logos/icon.png',
+                        width: 48,
+                        height: 48,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
       ],

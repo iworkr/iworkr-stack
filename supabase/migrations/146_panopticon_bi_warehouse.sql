@@ -77,7 +77,8 @@ LEFT JOIN LATERAL (
     SUM(tpl.units)             AS total_labor_hours
   FROM public.timesheet_pay_lines tpl
   JOIN public.time_entries te ON te.id = tpl.time_entry_id
-  WHERE te.job_id = j.id
+  LEFT JOIN public.schedule_blocks sb ON sb.id = te.shift_id
+  WHERE sb.job_id = j.id
 ) labor ON true
 
 -- Material cost aggregation
@@ -146,9 +147,10 @@ LEFT JOIN public.organization_members om
 LEFT JOIN LATERAL (
   SELECT SUM(te.total_hours) AS billable_hours
   FROM public.time_entries te
+  LEFT JOIN public.schedule_blocks sb ON sb.id = te.shift_id
   WHERE te.worker_id = tpl.worker_id
     AND te.organization_id = tpl.organization_id
-    AND te.job_id IS NOT NULL
+    AND sb.job_id IS NOT NULL
     AND DATE_TRUNC('month', te.clock_in::date) = DATE_TRUNC('month', tpl.shift_date)
 ) billed ON true
 
@@ -166,7 +168,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_ndis_fund_burn AS
 SELECT
   i.organization_id                              AS workspace_id,
   i.participant_id,
-  pp.full_name                                   AS participant_name,
+  c.name                                         AS participant_name,
   i.ndis_participant_number,
   i.funding_type,
 
@@ -183,13 +185,14 @@ SELECT
 
 FROM public.invoices i
 LEFT JOIN public.participant_profiles pp ON pp.id = i.participant_id
+LEFT JOIN public.clients c ON c.id = pp.client_id
 
 WHERE i.participant_id IS NOT NULL
   AND i.deleted_at IS NULL
   AND i.status::text NOT IN ('void', 'draft')
 
 GROUP BY
-  i.organization_id, i.participant_id, pp.full_name,
+  i.organization_id, i.participant_id, c.name,
   i.ndis_participant_number, i.funding_type,
   DATE_TRUNC('month', i.issue_date), EXTRACT(YEAR FROM i.issue_date);
 
@@ -247,7 +250,8 @@ LEFT JOIN LATERAL (
   SELECT SUM(tpl.total_line_amount) AS actual_labor
   FROM public.timesheet_pay_lines tpl
   JOIN public.time_entries te ON te.id = tpl.time_entry_id
-  WHERE te.job_id = j.id
+  LEFT JOIN public.schedule_blocks sb ON sb.id = te.shift_id
+  WHERE sb.job_id = j.id
 ) labor ON true
 
 LEFT JOIN LATERAL (

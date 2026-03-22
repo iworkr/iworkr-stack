@@ -106,6 +106,12 @@ async function fetchInvoicePayload(
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     let invoiceData: InvoiceData;
     let workspaceData: WorkspaceBrand;
@@ -114,19 +120,13 @@ export async function POST(request: NextRequest) {
       const payload = await fetchInvoicePayload(body.invoice_id);
       if (!payload) {
         return NextResponse.json(
-          { error: "Invoice not found or unauthorized" },
+          { error: "Invoice not found" },
           { status: 404 },
         );
       }
       invoiceData = payload.data;
       workspaceData = payload.workspace;
     } else if (body.data && body.workspace) {
-      // Require auth for direct PDF generation (no invoice_id lookup)
-      const supabase = await createServerSupabaseClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
       invoiceData = body.data;
       workspaceData = body.workspace;
     } else {

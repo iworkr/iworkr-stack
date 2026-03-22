@@ -74,19 +74,36 @@ CREATE INDEX IF NOT EXISTS idx_gcal_channels_expiry
 -- RLS
 ALTER TABLE public.google_calendar_channels ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "org_members_read_gcal_channels"
-  ON public.google_calendar_channels FOR SELECT
-  USING (organization_id IN (
-    SELECT organization_id FROM public.organization_members
-    WHERE user_id = auth.uid()
-  ));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'google_calendar_channels'
+      AND policyname = 'org_members_read_gcal_channels'
+  ) THEN
+    CREATE POLICY "org_members_read_gcal_channels"
+      ON public.google_calendar_channels FOR SELECT
+      USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members
+        WHERE user_id = auth.uid()
+      ));
+  END IF;
 
-CREATE POLICY IF NOT EXISTS "org_admins_manage_gcal_channels"
-  ON public.google_calendar_channels FOR ALL
-  USING (organization_id IN (
-    SELECT organization_id FROM public.organization_members
-    WHERE user_id = auth.uid() AND role IN ('owner','admin')
-  ));
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'google_calendar_channels'
+      AND policyname = 'org_admins_manage_gcal_channels'
+  ) THEN
+    CREATE POLICY "org_admins_manage_gcal_channels"
+      ON public.google_calendar_channels FOR ALL
+      USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members
+        WHERE user_id = auth.uid() AND role IN ('owner','admin')
+      ));
+  END IF;
+END $$;
 
 -- ═══════════════════════════════════════════════════════════
 -- PART 5: GoHighLevel Location mapping
@@ -110,19 +127,36 @@ CREATE INDEX IF NOT EXISTS idx_ghl_location_org
 -- RLS
 ALTER TABLE public.ghl_location_mappings ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "org_members_read_ghl"
-  ON public.ghl_location_mappings FOR SELECT
-  USING (organization_id IN (
-    SELECT organization_id FROM public.organization_members
-    WHERE user_id = auth.uid()
-  ));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'ghl_location_mappings'
+      AND policyname = 'org_members_read_ghl'
+  ) THEN
+    CREATE POLICY "org_members_read_ghl"
+      ON public.ghl_location_mappings FOR SELECT
+      USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members
+        WHERE user_id = auth.uid()
+      ));
+  END IF;
 
-CREATE POLICY IF NOT EXISTS "org_admins_manage_ghl"
-  ON public.ghl_location_mappings FOR ALL
-  USING (organization_id IN (
-    SELECT organization_id FROM public.organization_members
-    WHERE user_id = auth.uid() AND role IN ('owner','admin')
-  ));
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'ghl_location_mappings'
+      AND policyname = 'org_admins_manage_ghl'
+  ) THEN
+    CREATE POLICY "org_admins_manage_ghl"
+      ON public.ghl_location_mappings FOR ALL
+      USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members
+        WHERE user_id = auth.uid() AND role IN ('owner','admin')
+      ));
+  END IF;
+END $$;
 
 -- ═══════════════════════════════════════════════════════════
 -- PART 6: QuickBooks Tax Code mapping table
@@ -143,19 +177,36 @@ CREATE TABLE IF NOT EXISTS public.qbo_tax_mappings (
 -- RLS
 ALTER TABLE public.qbo_tax_mappings ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "org_members_read_qbo_tax"
-  ON public.qbo_tax_mappings FOR SELECT
-  USING (organization_id IN (
-    SELECT organization_id FROM public.organization_members
-    WHERE user_id = auth.uid()
-  ));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'qbo_tax_mappings'
+      AND policyname = 'org_members_read_qbo_tax'
+  ) THEN
+    CREATE POLICY "org_members_read_qbo_tax"
+      ON public.qbo_tax_mappings FOR SELECT
+      USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members
+        WHERE user_id = auth.uid()
+      ));
+  END IF;
 
-CREATE POLICY IF NOT EXISTS "org_admins_manage_qbo_tax"
-  ON public.qbo_tax_mappings FOR ALL
-  USING (organization_id IN (
-    SELECT organization_id FROM public.organization_members
-    WHERE user_id = auth.uid() AND role IN ('owner','admin')
-  ));
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'qbo_tax_mappings'
+      AND policyname = 'org_admins_manage_qbo_tax'
+  ) THEN
+    CREATE POLICY "org_admins_manage_qbo_tax"
+      ON public.qbo_tax_mappings FOR ALL
+      USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members
+        WHERE user_id = auth.uid() AND role IN ('owner','admin')
+      ));
+  END IF;
+END $$;
 
 -- ═══════════════════════════════════════════════════════════
 -- PART 7: Advisory lock helper for token refresh concurrency

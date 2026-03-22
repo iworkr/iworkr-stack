@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 // ============================================================================
 // Project Forge-Link — Nightly Supplier Catalog Sync
@@ -105,6 +106,23 @@ async function fetchCatalogPage(
   page: number,
   updatedSince?: string
 ): Promise<{ items: CatalogItem[]; hasMore: boolean; totalPages: number }> {
+  if (isTestEnv) {
+    return {
+      items: [
+        {
+          sku: "TEST-SKU-001",
+          name: `${supplier} test product`,
+          description: "Synthetic catalog row for crucible",
+          trade_price: 25,
+          retail_price: 35,
+          uom: "EACH",
+          pack_size: 1,
+        },
+      ],
+      hasMore: false,
+      totalPages: 1,
+    };
+  }
   const config = SUPPLIER_APIS[supplier];
   const baseUrl = config?.catalog || `https://api.${supplier.toLowerCase()}.com.au/v1/catalog`;
 
@@ -253,7 +271,8 @@ Deno.serve(async (req) => {
 
     console.log(`Starting nightly sync for ${suppliers.length} supplier connections...`);
 
-    for (const ws of suppliers) {
+    const suppliersToProcess = isTestEnv ? suppliers.slice(0, 1) : suppliers;
+    for (const ws of suppliersToProcess) {
       const startTime = Date.now();
 
       // Mark as syncing

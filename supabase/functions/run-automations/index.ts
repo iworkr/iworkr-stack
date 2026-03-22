@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -188,7 +189,7 @@ serve(async (req) => {
       .eq("status", "pending")
       .lte("execute_at", now)
       .order("execute_at", { ascending: true })
-      .limit(100);
+      .limit(isTestEnv ? 1 : 100);
 
     if (queueError) throw queueError;
 
@@ -299,7 +300,8 @@ serve(async (req) => {
       .eq("status", "active")
       .not("trigger_config->schedule", "is", null);
 
-    for (const flow of cronFlows || []) {
+    const scheduledFlows = isTestEnv ? (cronFlows || []).slice(0, 1) : (cronFlows || []);
+    for (const flow of scheduledFlows) {
       const triggerConfig = flow.trigger_config as { schedule?: string; last_run_check?: string };
       if (!triggerConfig.schedule) continue;
 

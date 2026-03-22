@@ -214,5 +214,13 @@ CREATE INDEX IF NOT EXISTS idx_org_members_uid_org_status
 
 -- ── 12. Branches: ensure FK to organizations exists ─────────────────────
 -- branches table already has organization_id — just make sure it has an index
-CREATE INDEX IF NOT EXISTS idx_branches_organization_id
-  ON public.branches (organization_id);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'branches'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_branches_organization_id
+      ON public.branches (organization_id);
+  END IF;
+END $$;

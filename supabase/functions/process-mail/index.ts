@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { MockResend, isTestEnv } from "../_shared/mockClients.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -6,7 +7,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const APP_URL = Deno.env.get("APP_URL") || "https://app.iworkrapp.com";
 const FROM_ADDRESS = "iWorkr <noreply@iworkrapp.com>";
 const MAX_RETRIES = 5;
-const BATCH_SIZE = 20;
+const BATCH_SIZE = isTestEnv ? 1 : 20;
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") || "https://iworkrapp.com",
@@ -432,13 +433,8 @@ Deno.serve(async (req: Request) => {
 
         const emailLogId = crypto.randomUUID();
 
-        const resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+        const resendData: Record<string, unknown> = isTestEnv
+          ? await MockResend.send({
             from: customFromAddress || FROM_ADDRESS,
             to: [recipientEmail],
             subject,
@@ -447,15 +443,32 @@ Deno.serve(async (req: Request) => {
               { name: "email_log_id", value: emailLogId },
               { name: "event", value: eventType },
             ],
-          }),
-        });
+          })
+          : await (async () => {
+            const resendRes = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${RESEND_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                from: customFromAddress || FROM_ADDRESS,
+                to: [recipientEmail],
+                subject,
+                html,
+                tags: [
+                  { name: "email_log_id", value: emailLogId },
+                  { name: "event", value: eventType },
+                ],
+              }),
+            });
 
-        if (!resendRes.ok) {
-          const errBody = await resendRes.text();
-          throw new Error(`Resend ${resendRes.status}: ${errBody}`);
-        }
-
-        const resendData = (await resendRes.json()) as Record<string, unknown>;
+            if (!resendRes.ok) {
+              const errBody = await resendRes.text();
+              throw new Error(`Resend ${resendRes.status}: ${errBody}`);
+            }
+            return (await resendRes.json()) as Record<string, unknown>;
+          })();
 
         await supabase.from("mail_queue").delete().eq("id", item.id);
 

@@ -15,10 +15,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "policy_id and organization_id are required" }, { status: 400 });
     }
 
-    const data = await getPolicyDossierDataAction({
-      policy_id: policyId,
-      organization_id: organizationId,
-    });
+    let data;
+    try {
+      data = await getPolicyDossierDataAction({
+        policy_id: policyId,
+        organization_id: organizationId,
+      });
+    } catch (authErr: any) {
+      if (authErr?.message === "Unauthorized") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      throw authErr;
+    }
     const currentVersion = (data.policy?.policy_versions || []).find((v: any) => v.id === data.policy?.current_version_id)
       || (data.policy?.policy_versions || [])[0]
       || null;

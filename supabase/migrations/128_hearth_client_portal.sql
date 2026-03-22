@@ -353,7 +353,7 @@ BEGIN
   LEFT JOIN public.profiles p ON p.id = sb.technician_id
   WHERE sb.participant_id = p_participant_id
     AND sb.start_time > NOW()
-    AND sb.status NOT IN ('cancelled', 'deleted')
+    AND sb.status <> 'cancelled'
   ORDER BY sb.start_time ASC
   LIMIT 1;
 
@@ -411,7 +411,7 @@ AS $$
   WHERE sb.participant_id = p_participant_id
     AND public.is_participant_nominee(p_participant_id)
     AND sb.start_time BETWEEN p_from AND p_to
-    AND sb.status NOT IN ('deleted')
+    AND sb.status <> 'cancelled'
   ORDER BY sb.start_time ASC;
 $$;
 

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,28 +60,37 @@ serve(async (req) => {
     let updated = 0;
     let errors = 0;
 
-    for (const localSub of localSubs || []) {
+    const subsToSync = isTestEnv ? (localSubs || []).slice(0, 1) : (localSubs || []);
+    for (const localSub of subsToSync) {
       try {
         // Fetch current subscription state from Polar
-        const polarRes = await fetch(
-          `https://api.polar.sh/v1/subscriptions/${localSub.polar_subscription_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${polarToken}`,
-              "Content-Type": "application/json",
-            },
+        const polarSub = isTestEnv
+          ? {
+            status: "active",
+            current_period_end: localSub.current_period_end,
+            cancel_at_period_end: false,
           }
-        );
+          : await (async () => {
+            const polarRes = await fetch(
+              `https://api.polar.sh/v1/subscriptions/${localSub.polar_subscription_id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${polarToken}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
 
-        if (!polarRes.ok) {
-          console.error(
-            `Failed to fetch Polar subscription ${localSub.polar_subscription_id}: ${polarRes.status}`
-          );
-          errors++;
-          continue;
-        }
-
-        const polarSub = await polarRes.json();
+            if (!polarRes.ok) {
+              console.error(
+                `Failed to fetch Polar subscription ${localSub.polar_subscription_id}: ${polarRes.status}`
+              );
+              errors++;
+              return null;
+            }
+            return await polarRes.json();
+          })();
+        if (!polarSub) continue;
         synced++;
 
         // Determine if an update is needed
@@ -152,7 +162,8 @@ serve(async (req) => {
 
     let newSubsFound = 0;
 
-    for (const org of orgsWithCustomer || []) {
+    const orgsToScan = isTestEnv ? (orgsWithCustomer || []).slice(0, 1) : (orgsWithCustomer || []);
+    for (const org of orgsToScan) {
       // Check if org already has an active local subscription
       const { data: existingSub } = await adminClient
         .from("subscriptions")

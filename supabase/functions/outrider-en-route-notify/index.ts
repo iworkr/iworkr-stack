@@ -9,6 +9,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { z } from "npm:zod@3.23.8";
+import { withZodInterceptor } from "../_shared/withZodInterceptor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,17 +18,30 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface EnRoutePayload {
-  user_id: string;
-  shift_id?: string; // schedule_blocks.id (Care)
-  job_id?: string; // jobs.id (Trade)
-  current_lat: number;
-  current_lng: number;
-  eta_minutes?: number;
-  vehicle_id?: string;
-}
+const OutriderNotifySchema = z
+  .object({
+    job_id: z.string().uuid().optional(),
+    shift_id: z.string().uuid().optional(),
+    worker_id: z.string().uuid(),
+    target_status: z.enum(["EN_ROUTE", "DELAYED"]),
+    delay_minutes: z.number().int().nonnegative().optional(),
+    current_lat: z.number().optional(),
+    current_lng: z.number().optional(),
+    vehicle_id: z.string().uuid().optional(),
+  })
+  .strict()
+  .refine((data) => data.job_id || data.shift_id, {
+    message: "Either job_id or shift_id is required",
+    path: ["job_id"],
+  })
+  .refine((data) => {
+    if (data.target_status === "DELAYED" && data.delay_minutes === undefined) {
+      return false;
+    }
+    return true;
+  }, { message: "delay_minutes is required when target_status is DELAYED", path: ["delay_minutes"] });
 
-serve(async (req) => {
+serve(withZodInterceptor(OutriderNotifySchema, async (req, payload) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -49,7 +64,7 @@ serve(async (req) => {
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name")
-      .eq("id", payload.user_id)
+      .eq("id", payload.worker_id)
       .single();
     workerName = profile?.full_name || "Your technician";
 
@@ -57,7 +72,10 @@ serve(async (req) => {
       // ── TRADE MODE: Update job status ───────────────────────────────
       await supabase
         .from("jobs")
-        .update({ status: "in_progress", updated_at: new Date().toISOString() })
+        .update({
+          status: payload.target_status === "DELAYED" ? "todo" : "in_progress",
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", payload.job_id);
 
       // Get client details
@@ -91,7 +109,7 @@ serve(async (req) => {
       await supabase
         .from("schedule_blocks")
         .update({
-          status: "en_route",
+          status: payload.target_status === "DELAYED" ? "confirmed" : "en_route",
           updated_at: new Date().toISOString(),
         })
         .eq("id", payload.shift_id);
@@ -126,7 +144,9 @@ serve(async (req) => {
           .single();
 
         if (!prefs || prefs.send_eta_sms_to_client !== false) {
-          const etaMinutes = payload.eta_minutes || 15;
+          const etaMinutes = payload.target_status === "DELAYED"
+            ? payload.delay_minutes || 15
+            : 15;
           let template =
             prefs?.eta_sms_template ||
             "Hi {{client_name}}, your {{worker_role}} {{worker_name}} is currently en route and should arrive in approximately {{eta_minutes}} minutes.";
@@ -169,14 +189,14 @@ serve(async (req) => {
     const { data: membership } = await supabase
       .from("organization_members")
       .select("organization_id")
-      .eq("user_id", payload.user_id)
+      .eq("user_id", payload.worker_id)
       .eq("status", "active")
       .limit(1)
       .single();
 
-    if (membership) {
+    if (membership && payload.current_lat !== undefined && payload.current_lng !== undefined) {
       await supabase.from("vehicle_transit_logs").insert({
-        user_id: payload.user_id,
+        user_id: payload.worker_id,
         organization_id: membership.organization_id,
         shift_id: payload.shift_id || payload.job_id,
         vehicle_id: payload.vehicle_id || null,
@@ -186,7 +206,7 @@ serve(async (req) => {
         start_lng: payload.current_lng,
         eta_sms_sent: smsSent,
         eta_sms_sent_at: smsSent ? new Date().toISOString() : null,
-        eta_minutes_estimated: payload.eta_minutes || null,
+        eta_minutes_estimated: payload.delay_minutes || null,
         handoff_route: payload.job_id
           ? `/jobs/${payload.job_id}/execute`
           : `/care/shift/${payload.shift_id}`,
@@ -199,7 +219,7 @@ serve(async (req) => {
         sms_sent: smsSent,
         client_name: clientName,
         destination: destinationAddress,
-        eta_minutes: payload.eta_minutes,
+        eta_minutes: payload.delay_minutes || null,
       }),
       {
         status: 200,
@@ -216,4 +236,4 @@ serve(async (req) => {
       }
     );
   }
-});
+}, { providerHint: "outrider", bypassMethods: ["OPTIONS"] }));

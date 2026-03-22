@@ -10,6 +10,20 @@ DO $$ BEGIN
   );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- Compatibility shim for environments where goal linkage schema
+-- is not present yet but Rosetta needs to reference it.
+CREATE TABLE IF NOT EXISTS public.shift_goal_linkages (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id     UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
+  participant_id      UUID REFERENCES public.participant_profiles(id) ON DELETE CASCADE,
+  shift_id            UUID,
+  goal_id             UUID,
+  worker_id           UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  worker_observation  TEXT,
+  progress_rating     NUMERIC(5,2),
+  created_at          TIMESTAMPTZ DEFAULT now()
+);
+
 -- ── 2. Plan Reviews (Master Ledger) ─────────────────────────
 CREATE TABLE IF NOT EXISTS public.plan_reviews (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),

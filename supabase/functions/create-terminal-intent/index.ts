@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@17?target=deno";
+import { MockStripe, isTestEnv } from "../_shared/mockClients.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -93,21 +94,32 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-12-18.acacia" });
+    const stripe = isTestEnv
+      ? MockStripe
+      : new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-12-18.acacia" });
     const feePercent = parseFloat((settings.platform_fee_percent as string) || "0") || 1.0;
     const applicationFee = Math.round(amountCents * (feePercent / 100));
 
+    // Zenith-Launch: Explicit destination charge with platform fee
+    // The homeowner pays $X. Stripe splits it at the gateway:
+    //   - (100% - fee%) goes to the merchant's connected account
+    //   - fee% goes to iWorkr's platform account
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: amountCents,
-        currency: currency || "usd",
+        currency: currency || "aud",
         payment_method_types: ["card_present"],
         capture_method: "automatic",
         application_fee_amount: applicationFee,
+        transfer_data: {
+          destination: stripeAccountId,
+        },
         metadata: {
           organization_id: orgId,
           invoice_id: invoiceId || "",
           source: "tap_to_pay",
+          platform_fee_cents: applicationFee.toString(),
+          platform_fee_percent: feePercent.toString(),
         },
       },
       { stripeAccount: stripeAccountId }
@@ -119,11 +131,11 @@ Deno.serve(async (req: Request) => {
       invoice_id: invoiceId || null,
       stripe_payment_intent_id: paymentIntent.id,
       amount_cents: amountCents,
-      currency: currency || "usd",
+      currency: currency || "aud",
       platform_fee_cents: applicationFee,
       status: "pending",
-      source: "tap_to_pay",
-      created_by: user.id,
+      payment_method: "tap_to_pay",
+      collected_by: user.id,
     });
 
     return new Response(

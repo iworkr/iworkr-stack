@@ -8,6 +8,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@3";
+import { MockResend, isTestEnv } from "../_shared/mockClients.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
-  const resend = new Resend(Deno.env.get("RESEND_API_KEY")!);
+  const resend = isTestEnv ? MockResend : new Resend(Deno.env.get("RESEND_API_KEY")!);
 
   try {
     // Auth

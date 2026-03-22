@@ -299,5 +299,149 @@ INSERT INTO public.automation_flows (organization_id, name, description, categor
   (v_org_id, 'Low Stock Alert',              'Notifies when inventory drops below minimum.',     'operations', 'active', 8,   now() - interval '2 hours',v_user_id, '{"event":"inventory.quantity_change","condition":"quantity<min_quantity"}'::jsonb,'[{"type":"action","action":"create_notification","severity":"warning"}]'::jsonb)
 ON CONFLICT DO NOTHING;
 
-RAISE NOTICE 'Project Genesis seed completed successfully!';
+-- ═══════════════════════════════════════════════════════
+-- CARE SECTOR: PARTICIPANT PROFILES
+-- ═══════════════════════════════════════════════════════
+
+INSERT INTO public.clients (id, organization_id, name, email, phone, status, type, address, address_lat, address_lng, tags, since) VALUES
+  ('c0000000-0000-0000-0000-000000000101', v_org_id, 'Margaret Thompson',  'marg.t@ndis.gov.au',     '+61 400 101 001', 'active', 'residential', '15 Jacaranda Dr, Ashgrove 4060',     -27.4355, 152.9870, ARRAY['NDIS','SIL'], '2024-06-01'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000102', v_org_id, 'James Wright',       'j.wright@outlook.com',   '+61 400 101 002', 'active', 'residential', '22 Laurel Ave, Gordon Park 4031',     -27.4210, 153.0120, ARRAY['NDIS','Community'], '2024-09-15'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000103', v_org_id, 'Aisha Patel',        'aisha.p@gmail.com',      '+61 400 101 003', 'active', 'residential', '8 Sunrise Ct, Nundah 4012',           -27.3890, 153.0320, ARRAY['NDIS','Respite'], '2025-01-01'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000104', v_org_id, 'William O''Brien',   'w.obrien@yahoo.com.au',  '+61 400 101 004', 'active', 'residential', '44 Boundary Rd, Bardon 4065',         -27.4590, 152.9710, ARRAY['NDIS','SIL'], '2024-03-01'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000105', v_org_id, 'Sophia Nguyen',      's.nguyen@outlook.com',   '+61 400 101 005', 'active', 'residential', '67 Meridian St, Toowong 4066',        -27.4850, 152.9830, ARRAY['NDIS','Community'], '2025-03-01'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000106', v_org_id, 'Robert Chen',        'r.chen@icloud.com',      '+61 400 101 006', 'active', 'residential', '91 Skyline Dr, Paddington 4064',      -27.4610, 152.9920, ARRAY['NDIS','SDA'], '2024-11-01'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000107', v_org_id, 'Emily Watson',       'e.watson@bigpond.com',   '+61 400 101 007', 'active', 'residential', '3 Rosemary Ln, Red Hill 4059',        -27.4520, 152.9940, ARRAY['NDIS','Community'], '2025-02-01'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000108', v_org_id, 'Daniel Morrison',    'd.morrison@gmail.com',   '+61 400 101 008', 'active', 'residential', '28 Heritage Pl, Kelvin Grove 4059',   -27.4470, 153.0040, ARRAY['NDIS','SIL'], '2024-08-01'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000109', v_org_id, 'Grace Kowalski',     'g.kowalski@hotmail.com', '+61 400 101 009', 'active', 'residential', '55 Valley View Rd, Indooroopilly 4068',-27.4990, 152.9730,ARRAY['NDIS','Respite'], '2025-05-01'::timestamptz),
+  ('c0000000-0000-0000-0000-000000000110', v_org_id, 'Michael Santos',     'm.santos@gmail.com',     '+61 400 101 010', 'active', 'residential', '12 Bayside Tce, Wynnum 4178',         -27.4430, 153.1580, ARRAY['NDIS','Community'], '2024-12-01'::timestamptz)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.participant_profiles (id, client_id, organization_id, ndis_number, date_of_birth, primary_diagnosis, mobility_requirements, communication_preferences, support_categories, emergency_contacts, notes) VALUES
+  ('d0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000101', v_org_id, '430111222', '1955-03-15', 'Acquired brain injury', 'Wheelchair — powered', 'Uses AAC device', ARRAY['Core','Capacity Building'], '[{"name":"Peter Thompson","phone":"+61400999001","relationship":"Son"}]'::jsonb, 'Lives in SIL house. Requires 24h support.'),
+  ('d0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000102', v_org_id, '430222333', '1988-07-22', 'Autism Spectrum Disorder', 'Independent', 'Prefers written communication', ARRAY['Core','Social Participation'], '[{"name":"Sarah Wright","phone":"+61400999002","relationship":"Sister"}]'::jsonb, 'Community access participant. Attends day program Mon/Wed/Fri.'),
+  ('d0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000103', v_org_id, '430333444', '2001-11-08', 'Intellectual disability', 'Independent with supervision', 'Verbal, easy to understand', ARRAY['Core','Daily Activities'], '[{"name":"Raj Patel","phone":"+61400999003","relationship":"Father"}]'::jsonb, 'Respite care weekends. Attends supported employment.'),
+  ('d0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000104', v_org_id, '430444555', '1970-01-30', 'Multiple sclerosis', 'Walker and manual wheelchair', 'Verbal', ARRAY['Core','Assistive Technology'], '[{"name":"Patricia O''Brien","phone":"+61400999004","relationship":"Wife"}]'::jsonb, 'SIL resident. Progressive condition — review plan quarterly.'),
+  ('d0000000-0000-0000-0000-000000000005', 'c0000000-0000-0000-0000-000000000105', v_org_id, '430555666', '1995-05-18', 'Cerebral palsy', 'Powered wheelchair', 'Verbal — mild dysarthria', ARRAY['Core','Capacity Building','Social Participation'], '[{"name":"Linh Nguyen","phone":"+61400999005","relationship":"Mother"}]'::jsonb, 'Community access. Active social calendar.'),
+  ('d0000000-0000-0000-0000-000000000006', 'c0000000-0000-0000-0000-000000000106', v_org_id, '430666777', '1962-09-04', 'Stroke — left hemiplegia', 'Manual wheelchair', 'Verbal but slow', ARRAY['Core','Daily Activities'], '[{"name":"Mary Chen","phone":"+61400999006","relationship":"Wife"}]'::jsonb, 'SDA resident. Requires PEG feeding support.'),
+  ('d0000000-0000-0000-0000-000000000007', 'c0000000-0000-0000-0000-000000000107', v_org_id, '430777888', '2003-12-25', 'Down syndrome', 'Independent', 'Verbal — Makaton signs', ARRAY['Core','Social Participation','Employment'], '[{"name":"David Watson","phone":"+61400999007","relationship":"Father"}]'::jsonb, 'Supported employment. Community access 3x/week.'),
+  ('d0000000-0000-0000-0000-000000000008', 'c0000000-0000-0000-0000-000000000108', v_org_id, '430888999', '1980-06-11', 'Spinal cord injury (C5)', 'Powered wheelchair', 'Verbal', ARRAY['Core','Assistive Technology','Daily Activities'], '[{"name":"Jennifer Morrison","phone":"+61400999008","relationship":"Sister"}]'::jsonb, 'SIL house resident. Requires 24h support. Ventilator at night.'),
+  ('d0000000-0000-0000-0000-000000000009', 'c0000000-0000-0000-0000-000000000109', v_org_id, '430999111', '1998-02-14', 'Psychosocial disability', 'Independent', 'Verbal — prefers 1:1', ARRAY['Core','Capacity Building'], '[{"name":"Stefan Kowalski","phone":"+61400999009","relationship":"Brother"}]'::jsonb, 'Respite weekends. Behaviour support plan in place.'),
+  ('d0000000-0000-0000-0000-000000000010', 'c0000000-0000-0000-0000-000000000110', v_org_id, '430111333', '1992-08-07', 'Traumatic brain injury', 'Walker', 'Verbal — fatigue affects clarity', ARRAY['Core','Daily Activities','Social Participation'], '[{"name":"Rosa Santos","phone":"+61400999010","relationship":"Mother"}]'::jsonb, 'Community access participant. Goal: independent travel.')
+ON CONFLICT (id) DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════
+-- CARE SECTOR: CARE PLANS
+-- ═══════════════════════════════════════════════════════
+
+INSERT INTO public.care_plans (id, organization_id, participant_id, title, status, start_date, review_date, next_review_date, domains, assessor_name, assessor_role, notes) VALUES
+  ('e0000000-0000-0000-0000-000000000001', v_org_id, 'd0000000-0000-0000-0000-000000000001', 'Margaret Thompson — Annual Plan', 'active', '2025-07-01', '2025-07-01', '2026-07-01', '{"daily_living": {"budget": 45000, "used": 18200}, "community": {"budget": 12000, "used": 4800}, "capacity_building": {"budget": 8000, "used": 2100}}'::jsonb, 'Dr. Sarah Lane', 'Plan Manager', 'Core supports dominant. Review SIL ratio Q2.'),
+  ('e0000000-0000-0000-0000-000000000002', v_org_id, 'd0000000-0000-0000-0000-000000000002', 'James Wright — Community Access Plan', 'active', '2025-09-01', '2025-09-01', '2026-09-01', '{"community": {"budget": 15000, "used": 6200}, "capacity_building": {"budget": 10000, "used": 3500}}'::jsonb, 'Maria Lopez', 'Support Coordinator', 'Focus on social skills and community integration.'),
+  ('e0000000-0000-0000-0000-000000000003', v_org_id, 'd0000000-0000-0000-0000-000000000003', 'Aisha Patel — Respite Plan', 'active', '2025-01-01', '2025-01-01', '2026-01-01', '{"core_support": {"budget": 20000, "used": 9500}, "respite": {"budget": 8000, "used": 3200}}'::jsonb, 'Tom Bradley', 'Case Manager', 'Weekend respite focus. Family carer burnout risk.')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.care_goals (id, care_plan_id, organization_id, participant_id, title, description, target_outcome, status, priority) VALUES
+  ('f0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001', v_org_id, 'd0000000-0000-0000-0000-000000000001', 'Improve mobility', 'Physiotherapy exercises 3x weekly to maintain upper body strength', 'Maintain current mobility level for 12 months', 'in_progress', 1),
+  ('f0000000-0000-0000-0000-000000000002', 'e0000000-0000-0000-0000-000000000001', v_org_id, 'd0000000-0000-0000-0000-000000000001', 'Social engagement', 'Attend community group 2x weekly', '80% attendance rate', 'in_progress', 2),
+  ('f0000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000002', v_org_id, 'd0000000-0000-0000-0000-000000000002', 'Independent travel', 'Learn to use public transport independently', 'Complete 5 solo trips by end of plan', 'in_progress', 1),
+  ('f0000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000003', v_org_id, 'd0000000-0000-0000-0000-000000000003', 'Employment readiness', 'Supported employment program participation', 'Maintain 3 days/week attendance', 'not_started', 1)
+ON CONFLICT (id) DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════
+-- CARE SECTOR: MEDICATIONS (eMAR)
+-- ═══════════════════════════════════════════════════════
+
+INSERT INTO public.participant_medications (id, organization_id, participant_id, medication_name, generic_name, dosage, route, frequency, time_slots, prescribing_doctor, pharmacy, start_date, is_prn, is_active) VALUES
+  ('10000000-0000-0000-0000-000000000001', v_org_id, 'd0000000-0000-0000-0000-000000000001', 'Panadol', 'Paracetamol', '500mg', 'oral', 'twice_daily', ARRAY['08:00','20:00'], 'Dr. Sarah Lane', 'Terry White Ashgrove', '2025-01-01', false, true),
+  ('10000000-0000-0000-0000-000000000002', v_org_id, 'd0000000-0000-0000-0000-000000000001', 'Endep', 'Amitriptyline', '25mg', 'oral', 'once_daily', ARRAY['20:00'], 'Dr. Sarah Lane', 'Terry White Ashgrove', '2025-03-01', false, true),
+  ('10000000-0000-0000-0000-000000000003', v_org_id, 'd0000000-0000-0000-0000-000000000004', 'Baclofen', 'Baclofen', '10mg', 'oral', 'three_times_daily', ARRAY['07:00','13:00','21:00'], 'Dr. James Koh', 'Priceline Bardon', '2024-06-01', false, true),
+  ('10000000-0000-0000-0000-000000000004', v_org_id, 'd0000000-0000-0000-0000-000000000004', 'Nurofen Plus', 'Ibuprofen + Codeine', '200mg/12.8mg', 'oral', 'prn', ARRAY[]::text[], 'Dr. James Koh', 'Priceline Bardon', '2024-06-01', true, true),
+  ('10000000-0000-0000-0000-000000000005', v_org_id, 'd0000000-0000-0000-0000-000000000006', 'Aspirin', 'Aspirin', '100mg', 'oral', 'once_daily', ARRAY['08:00'], 'Dr. Wei Lin', 'Chemist Warehouse Paddington', '2024-09-01', false, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.medication_administration_records (id, organization_id, medication_id, participant_id, worker_id, outcome, administered_at, notes) VALUES
+  ('11000000-0000-0000-0000-000000000001', v_org_id, '10000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'given', now() - interval '2 hours', 'Morning dose administered with breakfast.'),
+  ('11000000-0000-0000-0000-000000000002', v_org_id, '10000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'given', now() - interval '14 hours', 'Evening dose administered.'),
+  ('11000000-0000-0000-0000-000000000003', v_org_id, '10000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'refused', now() - interval '3 hours', 'Participant refused morning dose. Reported to RN.')
+ON CONFLICT (id) DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════
+-- CARE SECTOR: INCIDENTS & SIRS
+-- ═══════════════════════════════════════════════════════
+
+INSERT INTO public.incidents (id, organization_id, participant_id, worker_id, category, severity, status, title, description, location, occurred_at, reported_at, immediate_actions, is_reportable) VALUES
+  ('12000000-0000-0000-0000-000000000001', v_org_id, 'd0000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'fall', 'medium', 'reported', 'Fall in bathroom — no injury', 'Participant slipped on wet floor in ensuite. No visible injury. Ambulance NOT required.', '15 Jacaranda Dr, Ashgrove', now() - interval '1 day', now() - interval '23 hours', 'Applied ice pack to elbow. Monitored for 2 hours. No signs of injury.', false),
+  ('12000000-0000-0000-0000-000000000002', v_org_id, 'd0000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'medication_error', 'high', 'under_review', 'Wrong medication time — Baclofen', 'Baclofen 10mg administered at 15:00 instead of 13:00 due to scheduling error.', '44 Boundary Rd, Bardon', now() - interval '2 days', now() - interval '47 hours', 'Notified RN. No adverse effects observed. Dose schedule reviewed.', true),
+  ('12000000-0000-0000-0000-000000000003', v_org_id, 'd0000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000002', 'behavioral', 'low', 'resolved', 'Verbal aggression during outing', 'Participant became verbally aggressive at shopping centre. De-escalated with sensory break.', '55 Valley View Rd, Indooroopilly', now() - interval '5 days', now() - interval '5 days', 'Removed from environment. Applied BSP strategies. Calm within 15 mins.', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════
+-- GOVERNANCE: POLICIES & ACKNOWLEDGEMENTS
+-- ═══════════════════════════════════════════════════════
+
+INSERT INTO public.policy_register (id, organization_id, title, category, version, status, content, effective_date, review_date, requires_acknowledgement) VALUES
+  ('13000000-0000-0000-0000-000000000001', v_org_id, 'Workplace Health and Safety Policy', 'safety', '2.1', 'current', 'This policy outlines the WHS obligations of all workers...', '2025-01-01', '2026-01-01', true),
+  ('13000000-0000-0000-0000-000000000002', v_org_id, 'NDIS Code of Conduct', 'governance', '1.0', 'current', 'All workers must adhere to the NDIS Code of Conduct...', '2024-06-01', '2025-06-01', true),
+  ('13000000-0000-0000-0000-000000000003', v_org_id, 'Medication Administration Procedure', 'clinical', '3.0', 'current', 'Procedure for safe medication administration including S8 handling...', '2025-03-01', '2026-03-01', true),
+  ('13000000-0000-0000-0000-000000000004', v_org_id, 'Privacy and Confidentiality Policy', 'privacy', '1.5', 'current', 'Personal information must be handled in accordance with APPs...', '2025-01-01', '2026-01-01', true),
+  ('13000000-0000-0000-0000-000000000005', v_org_id, 'Incident Reporting and SIRS Procedure', 'safety', '2.0', 'current', 'All reportable incidents must be logged within 24 hours...', '2025-06-01', '2026-06-01', true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.policy_acknowledgements (organization_id, policy_id, user_id, acknowledged_at, policy_version) VALUES
+  (v_org_id, '13000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', now() - interval '30 days', '2.1'),
+  (v_org_id, '13000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', now() - interval '60 days', '1.0'),
+  (v_org_id, '13000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', now() - interval '25 days', '2.1')
+ON CONFLICT DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════
+-- CARE SECTOR: SCHEDULE BLOCKS (SHIFTS)
+-- ═══════════════════════════════════════════════════════
+
+INSERT INTO public.schedule_blocks (organization_id, technician_id, participant_id, title, client_name, location, start_time, end_time, status, travel_minutes) VALUES
+  (v_org_id, '00000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000001', 'Morning personal care — Margaret',  'Margaret Thompson', '15 Jacaranda Dr, Ashgrove', now()::date + interval '6 hours',  now()::date + interval '8 hours',  'scheduled', 20),
+  (v_org_id, '00000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', 'Community access — James',          'James Wright',      '22 Laurel Ave, Gordon Park', now()::date + interval '9 hours',  now()::date + interval '13 hours', 'scheduled', 15),
+  (v_org_id, '00000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000003', 'Respite care — Aisha',             'Aisha Patel',       '8 Sunrise Ct, Nundah',      (now()::date + interval '1 day')::timestamptz + interval '8 hours', (now()::date + interval '1 day')::timestamptz + interval '16 hours', 'scheduled', 30),
+  (v_org_id, '00000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000004', 'Evening medication & personal care','William O''Brien',  '44 Boundary Rd, Bardon',    now()::date + interval '18 hours', now()::date + interval '20 hours', 'scheduled', 25)
+ON CONFLICT DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════
+-- ADDITIONAL CLIENTS (scale to 50+)
+-- ═══════════════════════════════════════════════════════
+
+INSERT INTO public.clients (organization_id, name, email, phone, status, type, address, tags, since) VALUES
+  (v_org_id, 'Peter Grant',        'p.grant@email.com',       '+61400201001', 'active', 'commercial',  '120 Eagle St, Brisbane 4000',         ARRAY['Commercial','Net30'],   '2024-01-15'::timestamptz),
+  (v_org_id, 'Sandra Lee',         's.lee@email.com',         '+61400201002', 'active', 'residential', '45 Coorparoo St, Coorparoo 4151',     ARRAY['Residential'],          '2024-02-01'::timestamptz),
+  (v_org_id, 'Michael Brown',      'm.brown@email.com',       '+61400201003', 'active', 'residential', '78 Caxton St, Paddington 4064',       ARRAY['Residential','VIP'],    '2024-03-15'::timestamptz),
+  (v_org_id, 'Jennifer Adams',     'j.adams@email.com',       '+61400201004', 'active', 'commercial',  '200 Ann St, Brisbane 4000',           ARRAY['Commercial'],           '2024-04-01'::timestamptz),
+  (v_org_id, 'Christopher Taylor', 'c.taylor@email.com',      '+61400201005', 'active', 'residential', '33 Lytton Rd, East Brisbane 4169',    ARRAY['Residential'],          '2024-05-15'::timestamptz),
+  (v_org_id, 'Amanda Davis',       'a.davis@email.com',       '+61400201006', 'lead',   'residential', '15 Park Rd, Milton 4064',             ARRAY['Lead'],                 '2025-01-01'::timestamptz),
+  (v_org_id, 'Robert Wilson Jr',   'r.wilson@email.com',      '+61400201007', 'active', 'residential', '62 Vulture St, West End 4101',        ARRAY['Residential'],          '2024-07-01'::timestamptz),
+  (v_org_id, 'Karen Anderson',     'k.anderson@email.com',    '+61400201008', 'active', 'commercial',  '88 Creek St, Brisbane 4000',          ARRAY['Commercial','Net14'],   '2024-08-15'::timestamptz),
+  (v_org_id, 'Steven Martinez',    's.martinez@email.com',    '+61400201009', 'active', 'residential', '21 Montague Rd, South Brisbane 4101', ARRAY['Residential'],          '2024-09-01'::timestamptz),
+  (v_org_id, 'Michelle Garcia',    'm.garcia@email.com',      '+61400201010', 'inactive','residential','50 Kelvin Grove Rd, Kelvin Grove 4059',ARRAY['Residential'],         '2024-10-15'::timestamptz),
+  (v_org_id, 'Brian Robinson',     'b.robinson@email.com',    '+61400201011', 'active', 'commercial',  '15 Turbot St, Brisbane 4000',         ARRAY['Commercial'],           '2024-11-01'::timestamptz),
+  (v_org_id, 'Lisa Thompson',      'l.thompson@email.com',    '+61400201012', 'active', 'residential', '77 Enoggera Rd, Newmarket 4051',      ARRAY['Residential','Referral'], '2024-12-15'::timestamptz),
+  (v_org_id, 'Kevin White',        'k.white@email.com',       '+61400201013', 'active', 'residential', '4 Waterworks Rd, The Gap 4061',       ARRAY['Residential'],          '2025-01-01'::timestamptz),
+  (v_org_id, 'Nancy Lewis',        'n.lewis@email.com',       '+61400201014', 'active', 'commercial',  '300 Queen St, Brisbane 4000',         ARRAY['Commercial','VIP'],     '2025-02-15'::timestamptz),
+  (v_org_id, 'Paul Walker',        'p.walker@email.com',      '+61400201015', 'active', 'residential', '99 Gladstone Rd, Dutton Park 4102',   ARRAY['Residential'],          '2025-03-01'::timestamptz),
+  (v_org_id, 'Dorothy Hall',       'd.hall@email.com',        '+61400201016', 'lead',   'residential', '11 Coronation Dr, Toowong 4066',      ARRAY['Lead'],                 '2025-04-01'::timestamptz),
+  (v_org_id, 'George Allen',       'g.allen@email.com',       '+61400201017', 'active', 'residential', '23 Merthyr Rd, New Farm 4005',        ARRAY['Residential'],          '2024-06-15'::timestamptz),
+  (v_org_id, 'Helen Young',        'h.young@email.com',       '+61400201018', 'active', 'residential', '68 Commercial Rd, Teneriffe 4005',    ARRAY['Residential','VIP'],    '2024-07-15'::timestamptz),
+  (v_org_id, 'Frank Scott',        'f.scott@email.com',       '+61400201019', 'active', 'commercial',  '555 Coronation Dr, Toowong 4066',     ARRAY['Commercial'],           '2024-08-01'::timestamptz),
+  (v_org_id, 'Barbara King',       'b.king@email.com',        '+61400201020', 'active', 'residential', '9 Moggill Rd, Taringa 4068',          ARRAY['Residential','Recurring'], '2024-09-15'::timestamptz),
+  (v_org_id, 'Thomas Green',       't.green@email.com',       '+61400201021', 'active', 'residential', '140 Boundary St, West End 4101',      ARRAY['Residential'],          '2024-10-01'::timestamptz),
+  (v_org_id, 'Margaret Baker',     'm.baker@email.com',       '+61400201022', 'active', 'residential', '25 Kurilpa St, West End 4101',        ARRAY['Residential'],          '2024-11-15'::timestamptz),
+  (v_org_id, 'Joseph Nelson',      'j.nelson@email.com',      '+61400201023', 'active', 'commercial',  '75 Mary St, Brisbane 4000',           ARRAY['Commercial','Net30'],   '2024-12-01'::timestamptz),
+  (v_org_id, 'Patricia Carter',    'p.carter@email.com',      '+61400201024', 'active', 'residential', '31 Latrobe Tce, Paddington 4064',     ARRAY['Residential'],          '2025-01-15'::timestamptz),
+  (v_org_id, 'Charles Mitchell',   'c.mitchell@email.com',    '+61400201025', 'active', 'residential', '47 Prospect Tce, Kelvin Grove 4059',  ARRAY['Residential','Emergency'], '2025-02-01'::timestamptz),
+  (v_org_id, 'Linda Campbell',     'l.campbell@email.com',    '+61400201026', 'active', 'residential', '82 Gregory Tce, Spring Hill 4000',    ARRAY['Residential'],          '2025-03-15'::timestamptz),
+  (v_org_id, 'Daniel Turner',      'd.turner@email.com',      '+61400201027', 'active', 'commercial',  '10 Felix St, Brisbane 4000',          ARRAY['Commercial'],           '2025-04-01'::timestamptz),
+  (v_org_id, 'Susan Phillips',     's.phillips@email.com',    '+61400201028', 'lead',   'residential', '58 Chalk St, Lutwyche 4030',          ARRAY['Lead'],                 '2025-05-15'::timestamptz),
+  (v_org_id, 'Mark Evans',         'm.evans@email.com',       '+61400201029', 'active', 'residential', '19 Rode Rd, Wavell Heights 4012',     ARRAY['Residential'],          '2024-04-15'::timestamptz),
+  (v_org_id, 'Jessica Collins',    'j.collins@email.com',     '+61400201030', 'active', 'residential', '36 Hamilton Rd, Moorooka 4105',       ARRAY['Residential'],          '2024-05-01'::timestamptz),
+  (v_org_id, 'William Stewart',    'w.stewart@email.com',     '+61400201031', 'active', 'residential', '71 Abbotsford Rd, Bowen Hills 4006',  ARRAY['Residential','VIP'],    '2024-06-01'::timestamptz),
+  (v_org_id, 'Elizabeth Morgan',   'e.morgan@email.com',      '+61400201032', 'active', 'commercial',  '180 Ann St, Brisbane 4000',           ARRAY['Commercial'],           '2024-07-01'::timestamptz),
+  (v_org_id, 'Richard Bell',       'r.bell@email.com',        '+61400201033', 'active', 'residential', '42 Oriel Rd, Clayfield 4011',         ARRAY['Residential'],          '2024-08-01'::timestamptz)
+ON CONFLICT DO NOTHING;
+
+RAISE NOTICE 'Argus-Resilience: Full seed completed — Trades + Care + 50 clients + 10 participants + medications + incidents + policies!';
 END $$;

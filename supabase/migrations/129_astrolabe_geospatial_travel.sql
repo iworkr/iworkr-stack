@@ -279,11 +279,13 @@ STABLE
 SECURITY DEFINER
 AS $func$
   SELECT ROUND(
-    ST_Distance(
+    (
+      ST_Distance(
       ST_GeographyFromText('SRID=4326;POINT(' || p_start_lng || ' ' || p_start_lat || ')'),
       ST_GeographyFromText('SRID=4326;POINT(' || p_end_lng || ' ' || p_end_lat || ')')
-    ) / 1000.0, 2
-  );
+      ) / 1000.0
+    )::numeric, 2
+  )::DECIMAL;
 $func$;
 
 -- ── 11. RPC: get_travel_claims_for_org ───────────────────────────────────

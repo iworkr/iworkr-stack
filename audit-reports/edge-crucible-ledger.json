@@ -1,0 +1,3159 @@
+{
+  "summary": {
+    "generatedAt": "2026-03-21T13:03:16.331Z",
+    "seedContext": {
+      "workspace_id": "00000000-0000-0000-0000-000000000010",
+      "admin_user_id": "00000000-0000-0000-0000-000000000001",
+      "worker_user_id": "00000000-0000-0000-0000-000000000002",
+      "client_id": "00000000-0000-0000-0000-00000000ca01",
+      "participant_id": "00000000-0000-0000-0000-00000000aa01",
+      "job_id": "00000000-0000-0000-0000-00000000dd01",
+      "invoice_id": "0ea3f37a-de3e-4cde-b4d5-7ed210feed1f",
+      "care_blueprint_id": "00000000-0000-0000-0000-00000000dd01",
+      "shift_id": "2bd4a930-eaf8-40eb-bd0c-272dfd69dfe7"
+    },
+    "functionsTotal": 95,
+    "verdictCounts": {
+      "PASS": 0,
+      "WARN": 72,
+      "FAIL": 23
+    }
+  },
+  "ledger": [
+    {
+      "function": "accept-invite",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 34,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Invite token is required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Invite token is required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "accounting-webhook",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unknown webhook provider\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unknown webhook provider\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "aegis-triage-router",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"No incident record provided\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"No incident record provided\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "agent-outrider-arbitrator",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"anomaly_id, organization_id, worker_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"anomaly_id, organization_id, worker_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "aggregate-coordination-billing",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 8023,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "asset-service-reminder",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 10,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "automation-worker",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"type\":\"https://iworkr.app/errors/validation-failed\",\"title\":\"Payload Validation Failed\",\"status\":400,\"detail\":\"The provided payload did not match the required schema.\",\"issues\":[{\"path\":\"\",\"message\":\"Unrecognized key(s) in object: 'workspace_id', 'organization_id', 'org_id', 'user_id', 'worker_id', 'client_id', 'participant_id', 'job_id', 'invoice_id', 'shift_id', 'payload', 'event_type', 'trigger_event', 'context_id', 'timestamp'\",\"code\":\"unrecognized_keys\"}]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"type\":\"https://iworkr.app/errors/validation-failed\",\"title\":\"Payload Validation Failed\",\"status\":400,\"detail\":\"The provided payload did not match the required schema.\",\"issues\":[{\"path\":\"\",\"message\":\"Unrecognized key(s) in object: 'workspace_id', 'organization_id', 'org_id', 'user_id', 'worker_id', 'client_id', 'participant_id', 'job_id', 'invoice_id', 'shift_id', 'payload', 'event_type', 'trigger_event', 'context_id', 'timestamp'\",\"code\":\"unrecognized_keys\"}]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "calculate-dynamic-yield",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "PASS",
+          "responseSnippet": "{\"margin\":0.4,\"surge_modifier\":0,\"was_clamped\":false,\"error\":\"No active yield profile — using 40% default\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_ACCEPTED_MALFORMED",
+          "responseSnippet": "{\"margin\":0.4,\"surge_modifier\":0,\"was_clamped\":false,\"error\":\"No active yield profile — using 40% default\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "calculate-travel-financials",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "care-dashboard-snapshot",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "catalog-nightly-sync",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"Failed to fetch suppliers\",\"detail\":{\"message\":\"An unexpected error occurred\"}}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"Failed to fetch suppliers\",\"detail\":{\"message\":\"An unexpected error occurred\"}}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "color-math",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"hex field is required (e.g. '#10B981')\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"hex field is required (e.g. '#10B981')\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "contextual-sop-match",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"job_id, workspace_id, and job_title are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"job_id, workspace_id, and job_title are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "convoy-daily-health-check",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "convoy-defect-escalation",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"defect_id is required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"defect_id is required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "create-checkout",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id and price_id are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id and price_id are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "create-terminal-intent",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "dispatch-arrival-sms",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"success\":false,\"error\":\"No session_id or record provided\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"success\":false,\"error\":\"No session_id or record provided\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "dispatch-invoices",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "Internal Server Error",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "Internal Server Error",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "distribute-policy",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 1,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "evaluate-halcyon-state",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"eligible\":false,\"reason\":\"evaluation_error\",\"detail\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_ACCEPTED_MALFORMED",
+          "responseSnippet": "{\"eligible\":false,\"reason\":\"evaluation_error\",\"detail\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 1,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "execute-drop-and-cover",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"leave_request_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"leave_request_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "execute-workflow",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "fetch-participant-dossier",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "generate-pdf",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 404,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Invoice not found\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 404,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Invoice not found\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "generate-plan-report",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "generate-proda-payload",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id and claim_line_item_ids[] are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id and claim_line_item_ids[] are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "generate-sil-roc-excel",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "generate-swms-pdf",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"record_id and organization_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"record_id and organization_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "get-participant-timeline",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "inbound-email-webhook",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Missing sender\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Missing sender\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "inbound-supplier-invoice",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"No PDF provided\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"No PDF provided\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "ingest-regulation",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"framework_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"framework_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "ingest-telemetry",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"Failed to store telemetry event\",\"detail\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"Failed to store telemetry event\",\"detail\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "invite-member",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id and email are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id and email are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "live-price-check",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Missing organization_id, supplier, or skus\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Missing organization_id, supplier, or skus\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "log-wallet-transaction",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 10,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "oracle-claim-predict",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id and claims[] required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id and claims[] required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "outrider-en-route-notify",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"success\":false,\"error\":\"En-route notification failed\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "PASS",
+          "responseSnippet": "{\"type\":\"https://iworkr.app/errors/validation-failed\",\"title\":\"Payload Validation Failed\",\"status\":400,\"detail\":\"The provided payload did not match the required schema.\",\"issues\":[{\"path\":\"worker_id\",\"message\":\"Invalid uuid\",\"code\":\"invalid_string\"}]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "pace-check-budget",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Could not resolve NDIS number for participant\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Could not resolve NDIS number for participant\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "pace-submit-claim",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id and claim_id are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id and claim_id are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "panopticon-text-to-sql",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"question and organization_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"question and organization_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "payroll-evaluator",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"agreement_id and organization_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"agreement_id and organization_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "pending-critical-policies",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "polar-webhook",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"Webhook secret not configured\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"Webhook secret not configured\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "portal-link",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-inbound-invoice",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id and pdf_base64 are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id and pdf_base64 are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-integration-sync-queue",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 2974,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 10,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-mail",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 11,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\",\"processed\":0,\"sent\":0,\"failed\":0}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\",\"processed\":0,\"sent\":0,\"failed\":0}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-outbound",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-payout",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-shift-note",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"worker_declared must be true before finalization\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"worker_declared must be true before finalization\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-sync-queue",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-telemetry-alert",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"ok\":true,\"critical\":false}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "WARN_ACCEPTED_MALFORMED",
+          "responseSnippet": "{\"ok\":true,\"critical\":false}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-timesheet-math",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"time_entry_id and organization_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"time_entry_id and organization_id required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-transit",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Invalid token\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Invalid token\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "process-webhook-queue",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "proda-auth",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 404,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"No PRODA device found for this organization\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 404,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"No PRODA device found for this organization\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "provision-house-threads",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "PASS",
+          "responseSnippet": "{\"message\":\"Provisioned 0 participant hub(s)\",\"results\":[]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_ACCEPTED_MALFORMED",
+          "responseSnippet": "{\"message\":\"Provisioned 0 participant hub(s)\",\"results\":[]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "push-dispatcher",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Missing required notification data (user_id, title, id)\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Missing required notification data (user_id, title, id)\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "receipt-ocr",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"success\":false,\"error\":\"Insert receipt: An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"success\":false,\"error\":\"Insert receipt: An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "regulatory-rag-intercept",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id, serialized_intent, context_type required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id, serialized_intent, context_type required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "resend-webhook",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Malformed Payload\",\"details\":[{\"path\":[\"type\"],\"message\":\"Required\",\"code\":\"invalid_type\"},{\"path\":[\"data\"],\"message\":\"Required\",\"code\":\"invalid_type\"}]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Malformed Payload\",\"details\":[{\"path\":[\"type\"],\"message\":\"Required\",\"code\":\"invalid_type\"},{\"path\":[\"data\"],\"message\":\"Required\",\"code\":\"invalid_type\"}]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "revenuecat-webhook",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"Webhook secret not configured\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"Webhook secret not configured\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "run-automations",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "schads-interpreter",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "semantic-voice-router",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 14,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"Storage download failed: Object not found\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 12,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"Storage download failed: Object not found\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "send-push",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Missing notification data\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Missing notification data\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "sentinel-scan",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id and trigger_type are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id and trigger_type are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "sirs-sanitizer",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"No text to sanitize\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"No text to sanitize\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "smart-roster-match",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 404,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Blueprint not found\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 404,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Blueprint not found\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "start-report-aggregation",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "stripe-connect-onboard",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 12,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "stripe-webhook",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "Missing stripe-signature header",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "Missing stripe-signature header",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "submit-internal-feedback",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"success\":false,\"error\":\"user_id and feedback_text are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"success\":false,\"error\":\"user_id and feedback_text are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "submit-leave-request",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id, worker_id, leave_type, start_date, end_date are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id, worker_id, leave_type, start_date, end_date are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "sync-chat-memberships",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "PASS",
+          "responseSnippet": "{\"message\":\"Synced 0 participant(s)\",\"results\":[]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_ACCEPTED_MALFORMED",
+          "responseSnippet": "{\"message\":\"Synced 0 participant(s)\",\"results\":[]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "sync-engine",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "sync-leave-balances",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "sync-ndis-catalogue",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"csv_content and effective_from (YYYY-MM-DD) are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"csv_content and effective_from (YYYY-MM-DD) are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "sync-outbound",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 11,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"ok\":false,\"error\":\"Invoice not found\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"ok\":false,\"error\":\"Invoice not found\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "sync-polar-status",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 503,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"Polar not configured — POLAR_ACCESS_TOKEN is missing\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 503,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"Polar not configured — POLAR_ACCESS_TOKEN is missing\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "synthesize-plan-review",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"organization_id and review_id are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"organization_id and review_id are required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "terminal-token",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 10,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 9,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "trigger-daily-emails",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 3039,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 12,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"An unexpected error occurred\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "trust-engine",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"At least one identifier required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"At least one identifier required\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "twilio-llm-negotiator",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Missing phone or message\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Missing phone or message\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "twilio-voice-inbound",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "WARN_ACCEPTED_MALFORMED",
+          "responseSnippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "twilio-voice-status",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 200,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_ACCEPTED_MALFORMED",
+          "responseSnippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "twilio-webhook",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"type\":\"https://iworkr.app/errors/validation-failed\",\"title\":\"Payload Validation Failed\",\"status\":400,\"detail\":\"The provided payload did not match the required schema.\",\"issues\":[{\"path\":\"MessageSid\",\"message\":\"Required\",\"code\":\"invalid_type\"},{\"path\":\"From\",\"message\":\"Required\",\"code\":\"invalid_type\"},{\"path\":\"Body\",\"message\":\"Required\",\"code\":\"invalid_type\"},{\"path\":\"\",\"message\":\"Unrecognized key(s) in object: 'workspace_id', 'organization_id', 'org_id', 'user_id', 'worker_id', 'client_id', 'p",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"type\":\"https://iworkr.app/errors/validation-failed\",\"title\":\"Payload Validation Failed\",\"status\":400,\"detail\":\"The provided payload did not match the required schema.\",\"issues\":[{\"path\":\"MessageSid\",\"message\":\"Required\",\"code\":\"invalid_type\"},{\"path\":\"From\",\"message\":\"Required\",\"code\":\"invalid_type\"},{\"path\":\"Body\",\"message\":\"Required\",\"code\":\"invalid_type\"},{\"path\":\"\",\"message\":\"Unrecognized key(s) in object: 'workspace_id', 'organization_id', 'org_id', 'user_id', 'worker_id', 'client_id', 'p",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "update-member-role",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Missing target_user_id, organization_id, or new_role\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 3,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Missing target_user_id, organization_id, or new_role\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "validate-schedule",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Unauthorized\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 1,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "verify-s8-witness",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 7,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"error\":\"Missing required fields\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 4,
+          "classification": "PASS",
+          "responseSnippet": "{\"error\":\"Missing required fields\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 2,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "vision-hazard-analyzer",
+      "verdict": "FAIL",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 11,
+          "classification": "FAIL_500_ON_HAPPY",
+          "responseSnippet": "{\"error\":\"No valid frames to analyze\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 500,
+          "timedOut": false,
+          "elapsedMs": 12,
+          "classification": "FAIL_500_ON_MALFORMED",
+          "responseSnippet": "{\"error\":\"No valid frames to analyze\"}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": 401,
+          "timedOut": false,
+          "elapsedMs": 5,
+          "classification": "PASS",
+          "responseSnippet": "{\"msg\":\"Error: Missing authorization header\"}",
+          "mutationDelta": []
+        }
+      ]
+    },
+    {
+      "function": "webhooks-ingest",
+      "verdict": "WARN",
+      "scenarios": [
+        {
+          "scenario": "happy",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 8,
+          "classification": "WARN_NON_2XX_HAPPY",
+          "responseSnippet": "{\"type\":\"https://iworkr.app/errors/validation-failed\",\"title\":\"Payload Validation Failed\",\"status\":400,\"detail\":\"The provided payload did not match the required schema.\",\"issues\":[{\"path\":\"\",\"message\":\"Invalid input\",\"code\":\"invalid_union\"}]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "malformed",
+          "status": 400,
+          "timedOut": false,
+          "elapsedMs": 6,
+          "classification": "PASS",
+          "responseSnippet": "{\"type\":\"https://iworkr.app/errors/validation-failed\",\"title\":\"Payload Validation Failed\",\"status\":400,\"detail\":\"The provided payload did not match the required schema.\",\"issues\":[{\"path\":\"\",\"message\":\"Invalid input\",\"code\":\"invalid_union\"}]}",
+          "mutationDelta": []
+        },
+        {
+          "scenario": "unauthorized",
+          "status": null,
+          "timedOut": false,
+          "elapsedMs": 0,
+          "classification": "SKIPPED",
+          "responseSnippet": "Skipped: public webhook endpoint",
+          "mutationDelta": []
+        }
+      ]
+    }
+  ]
+}
