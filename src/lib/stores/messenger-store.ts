@@ -88,6 +88,9 @@ interface MessengerState {
   // Channel actions
   createGroupChannel: (orgId: string, name: string, memberIds: string[]) => Promise<Channel | null>;
   openDM: (orgId: string, otherUserId: string) => Promise<Channel | null>;
+
+  // Reset
+  reset: () => void;
 }
 
 export const useMessengerStore = create<MessengerState>()((set, get) => ({
@@ -267,5 +270,18 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
       return channel;
     }
     return null;
+  },
+
+  reset: () => {
+    set({
+      channels: [],
+      messages: {},
+      members: {},
+      activeChannelId: null,
+      activeView: "chat",
+      channelsLoaded: false,
+      messagesLoading: false,
+      sendingMessage: false,
+    });
   },
 }));

@@ -722,7 +722,7 @@ export default function JobsPage() {
                           <Pencil size={12} />
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); addToast(`Assign ${job.id}`); }}
+                          onClick={(e) => { e.stopPropagation(); addToast("Open job to assign a team member"); }}
                           className="rounded-md p-1.5 text-zinc-600 transition-colors duration-100 hover:bg-white/[0.06] hover:text-zinc-200"
                           title="Assign"
                         >
@@ -810,13 +810,22 @@ export default function JobsPage() {
               <span className="text-[13px] font-medium text-white">{selected.size} selected</span>
               <div className="h-4 w-px bg-zinc-700" />
               <button
-                onClick={() => addToast(`${selected.size} jobs status updated`)}
+                onClick={async () => {
+                  const ids = Array.from(selected);
+                  try {
+                    await Promise.all(ids.map((id) => updateJobStatus(id, "in_progress")));
+                    addToast(`${ids.length} jobs updated to In Progress`);
+                    clearSelection();
+                  } catch {
+                    addToast("Failed to update jobs");
+                  }
+                }}
                 className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] text-zinc-400 transition-colors duration-100 hover:bg-zinc-800 hover:text-white"
               >
                 <ArrowRight size={12} />Change Status
               </button>
               <button
-                onClick={() => addToast(`${selected.size} jobs assigned`)}
+                onClick={() => addToast(`Select a team member to assign — bulk assign coming soon`)}
                 className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] text-zinc-400 transition-colors duration-100 hover:bg-zinc-800 hover:text-white"
               >
                 <User size={12} />Assign

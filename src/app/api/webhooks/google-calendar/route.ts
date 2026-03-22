@@ -20,9 +20,21 @@ const supabaseAdmin = createClient(
 export async function POST(req: NextRequest) {
   const channelId = req.headers.get("x-goog-channel-id");
   const resourceState = req.headers.get("x-goog-resource-state");
+  const channelToken = req.headers.get("x-goog-channel-token");
 
   if (!channelId) {
     return NextResponse.json({ error: "Missing channel ID" }, { status: 400 });
+  }
+
+  // ── Aegis: Verify channel token matches what we registered ──
+  // Google sends back the token we provided during channel creation.
+  // This prevents spoofed notifications from arbitrary sources.
+  if (channelToken) {
+    const expectedToken = process.env.GOOGLE_WEBHOOK_CHANNEL_TOKEN;
+    if (expectedToken && channelToken !== expectedToken) {
+      console.warn("[Google Cal] Channel token mismatch — rejecting");
+      return NextResponse.json({ error: "Invalid channel token" }, { status: 401 });
+    }
   }
 
   // Initial sync notification — just acknowledge

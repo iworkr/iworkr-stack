@@ -169,10 +169,9 @@ export function SlideOver() {
                     <MessageSquare size={12} /> Activity
                   </h4>
                   <div className="space-y-3">
-                    {(job?.activity || [
-                      { text: "Status changed to In Progress", time: "2h ago" },
-                      { text: "Job created by system", time: "1d ago" },
-                    ]).map((entry, i) => (
+                    {(job?.activity || []).length === 0 ? (
+                      <div className="text-xs text-[var(--text-muted)] py-4 text-center">No activity recorded yet</div>
+                    ) : (job?.activity || []).map((entry, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-700" />
                         <div>

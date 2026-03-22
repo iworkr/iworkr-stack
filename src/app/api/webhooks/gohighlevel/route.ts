@@ -14,7 +14,26 @@ const supabaseAdmin = createClient(
  */
 export async function POST(req: NextRequest) {
   try {
-    const payload = await req.json();
+    const rawBody = await req.text();
+    
+    // ── Aegis: Webhook Signature Verification ──
+    const signature = req.headers.get("x-ghl-signature") || req.headers.get("x-hook-secret");
+    const webhookSecret = process.env.GHL_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      if (!signature) {
+        return NextResponse.json({ error: "Missing webhook signature" }, { status: 401 });
+      }
+      const { createHmac } = await import("crypto");
+      const expected = createHmac("sha256", webhookSecret).update(rawBody).digest("hex");
+      if (signature !== expected) {
+        console.warn("[GHL Webhook] Signature mismatch — rejecting");
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      }
+    } else {
+      console.warn("[GHL Webhook] GHL_WEBHOOK_SECRET not set — webhook signature verification disabled. Set this in production.");
+    }
+
+    const payload = JSON.parse(rawBody);
     const eventType = payload.type ?? payload.event;
     const locationId = payload.locationId ?? payload.location_id;
 

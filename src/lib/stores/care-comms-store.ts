@@ -70,6 +70,9 @@ interface CareCommsState {
   removeRealtimeMessage: (messageId: string) => void;
   acknowledgeAlert: (messageId: string) => Promise<void>;
   markRead: (channelId: string) => Promise<void>;
+
+  // Reset
+  reset: () => void;
 }
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
@@ -260,5 +263,20 @@ export const useCareCommsStore = create<CareCommsState>()((set, get) => ({
 
   markRead: async (channelId: string) => {
     await markReadServer(channelId);
+  },
+
+  reset: () => {
+    set({
+      channels: [],
+      messages: {},
+      members: {},
+      participantHubs: [],
+      activeChannelId: null,
+      activeView: "participants",
+      expandedHubId: null,
+      channelsLoaded: false,
+      messagesLoading: false,
+      sendingMessage: false,
+    });
   },
 }));
