@@ -37,7 +37,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
       }
     } else {
-      console.warn("[GHL Webhook] GHL_WEBHOOK_SECRET not set — webhook signature verification disabled. Set this in production.");
+      // CRITICAL: Never process unsigned webhooks in production
+      console.error("[GHL Webhook] GHL_WEBHOOK_SECRET not set — rejecting request. Configure the secret.");
+      return NextResponse.json(
+        { error: "Server configuration error: webhook secret not configured" },
+        { status: 500 }
+      );
     }
 
     const payload = JSON.parse(rawBody);

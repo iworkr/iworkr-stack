@@ -35,6 +35,7 @@ import {
   type IntegrationEntityType,
 } from "@/app/actions/ledger-sync";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useToastStore } from "@/components/app/action-toast";
 
 // ── NDIS Categories to map ────────────────────────────────
 const NDIS_CATEGORIES = [
@@ -392,6 +393,7 @@ function IntegrationCard({
 // ── Main Page ─────────────────────────────────────────────
 export default function IntegrationsPage() {
   const { orgId } = useOrg();
+  const { addToast } = useToastStore();
   const [statuses, setStatuses] = useState<IntegrationStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -424,7 +426,7 @@ export default function IntegrationsPage() {
       const url = await getXeroConnectUrl(orgId);
       window.location.href = url;
     } else {
-      alert("MYOB integration coming soon. Contact support to enable early access.");
+      addToast("MYOB integration coming soon. Contact support to enable early access.", undefined, "info");
     }
   }
 

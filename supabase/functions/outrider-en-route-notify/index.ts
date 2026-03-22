@@ -51,6 +51,28 @@ serve(withZodInterceptor(OutriderNotifySchema, async (req, payload) => {
   }
 
   try {
+    // ── Aegis Auth Gate: Verify caller is a logged-in field worker ──
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Missing auth token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authError } = await anonClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid session" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // payload is already parsed by withZodInterceptor — do NOT re-call req.json()
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,

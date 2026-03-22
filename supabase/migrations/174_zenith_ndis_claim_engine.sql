@@ -50,7 +50,7 @@ BEGIN
   -- Check if the shift date falls on a public holiday
   SELECT EXISTS(
     SELECT 1 FROM public.public_holidays ph
-    WHERE ph.holiday_date = v_start_local::DATE
+    WHERE ph.date = v_start_local::DATE
       AND (ph.organization_id IS NULL OR ph.organization_id = p_org_id)
   ) INTO v_is_holiday;
 
@@ -365,14 +365,14 @@ COMMENT ON FUNCTION public.generate_ndis_claim_batch IS
 CREATE TABLE IF NOT EXISTS public.public_holidays (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id  UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
-  holiday_date     DATE NOT NULL,
+  date             DATE NOT NULL,
   name             TEXT NOT NULL,
-  state            TEXT DEFAULT 'national',
+  state            TEXT DEFAULT 'National',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_public_holidays_date
-  ON public.public_holidays (holiday_date);
+  ON public.public_holidays (date);
 CREATE INDEX IF NOT EXISTS idx_public_holidays_org
   ON public.public_holidays (organization_id);
 
@@ -399,13 +399,13 @@ CREATE POLICY "public_holidays_admin_write" ON public.public_holidays
   );
 
 -- Seed 2026 national public holidays
-INSERT INTO public.public_holidays (holiday_date, name, state) VALUES
-  ('2026-01-01', 'New Year''s Day', 'national'),
-  ('2026-01-26', 'Australia Day', 'national'),
-  ('2026-04-03', 'Good Friday', 'national'),
-  ('2026-04-04', 'Easter Saturday', 'national'),
-  ('2026-04-06', 'Easter Monday', 'national'),
-  ('2026-04-25', 'ANZAC Day', 'national'),
+INSERT INTO public.public_holidays (date, name, state) VALUES
+  ('2026-01-01', 'New Year''s Day', 'National'),
+  ('2026-01-26', 'Australia Day', 'National'),
+  ('2026-04-03', 'Good Friday', 'National'),
+  ('2026-04-04', 'Easter Saturday', 'National'),
+  ('2026-04-06', 'Easter Monday', 'National'),
+  ('2026-04-25', 'ANZAC Day', 'National'),
   ('2026-06-08', 'Queen''s Birthday (QLD)', 'QLD'),
   ('2026-06-08', 'Queen''s Birthday (VIC)', 'VIC'),
   ('2026-06-08', 'Queen''s Birthday (NSW)', 'NSW'),
@@ -413,8 +413,8 @@ INSERT INTO public.public_holidays (holiday_date, name, state) VALUES
   ('2026-06-08', 'Queen''s Birthday (TAS)', 'TAS'),
   ('2026-06-08', 'Queen''s Birthday (ACT)', 'ACT'),
   ('2026-09-28', 'Queen''s Birthday (WA)', 'WA'),
-  ('2026-12-25', 'Christmas Day', 'national'),
-  ('2026-12-28', 'Boxing Day (observed)', 'national')
+  ('2026-12-25', 'Christmas Day', 'National'),
+  ('2026-12-28', 'Boxing Day (observed)', 'National')
 ON CONFLICT DO NOTHING;
 
 -- ── Grant execute to authenticated users ─────────────────────────────────────

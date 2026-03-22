@@ -27,17 +27,17 @@ CREATE INDEX IF NOT EXISTS idx_session_geo_user_country
   ON public.session_geometry (user_id, country_code);
 
 -- Expire old entries automatically (keep 90 days)
-DO $$
+DO $outer$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
     PERFORM cron.schedule(
       'citadel-session-geo-cleanup',
-      '0 3 * * 0',  -- Every Sunday at 3 AM
-      $$DELETE FROM public.session_geometry WHERE created_at < NOW() - INTERVAL '90 days';$$
+      '0 3 * * 0',
+      $cron_sql$DELETE FROM public.session_geometry WHERE created_at < NOW() - INTERVAL '90 days';$cron_sql$
     );
   END IF;
 END;
-$$;
+$outer$;
 
 -- RLS
 ALTER TABLE public.session_geometry ENABLE ROW LEVEL SECURITY;

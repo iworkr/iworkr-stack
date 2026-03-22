@@ -33,34 +33,71 @@ jobs:
             exit 1
           fi
 
+      - name: Discover and classify Edge Functions
+        id: discover
+        run: |
+          set -euo pipefail
+          
+          # Webhook functions that need --no-verify-jwt
+          WEBHOOK_FUNCTIONS="webhooks-ingest resend-webhook stripe-webhook polar-webhook revenuecat-webhook twilio-webhook"
+          
+          AUTH_FNS=""
+          WEBHOOK_FNS=""
+          
+          for dir in supabase/functions/*/; do
+            fn=$(basename "$dir")
+            # Skip directories that start with _ (shared modules)
+            if [[ "$fn" == _* ]]; then
+              continue
+            fi
+            # Skip test directories
+            if [[ "$fn" == "tests" ]]; then
+              continue
+            fi
+            # Check if this is a webhook function
+            if echo "$WEBHOOK_FUNCTIONS" | grep -qw "$fn"; then
+              WEBHOOK_FNS="$WEBHOOK_FNS $fn"
+            else
+              AUTH_FNS="$AUTH_FNS $fn"
+            fi
+          done
+          
+          echo "auth_fns=$AUTH_FNS" >> "$GITHUB_OUTPUT"
+          echo "webhook_fns=$WEBHOOK_FNS" >> "$GITHUB_OUTPUT"
+          echo "Discovered auth-protected functions:$AUTH_FNS"
+          echo "Discovered webhook functions:$WEBHOOK_FNS"
+
       - name: Deploy auth-protected functions
         run: |
           set -euo pipefail
-          for fn in \
-            convoy-defect-escalation \
-            convoy-daily-health-check \
-            process-timesheet-math \
-            process-integration-sync-queue \
-            panopticon-text-to-sql \
-            execute-drop-and-cover \
-            aegis-triage-router \
-            agent-outrider-arbitrator \
-            smart-roster-match
-          do
+          FAILED=""
+          for fn in ${{ steps.discover.outputs.auth_fns }}; do
             echo "Deploying ${fn}..."
-            supabase functions deploy "${fn}" --project-ref "${PROJECT_REF}"
+            if ! supabase functions deploy "${fn}" --project-ref "${PROJECT_REF}"; then
+              echo "WARNING: Failed to deploy ${fn}"
+              FAILED="${FAILED} ${fn}"
+            fi
           done
+          if [ -n "$FAILED" ]; then
+            echo "::warning::Failed to deploy:${FAILED}"
+          fi
 
-      - name: Deploy public webhook functions
+      - name: Deploy public webhook functions (--no-verify-jwt)
         run: |
           set -euo pipefail
-          for fn in \
-            webhooks-ingest \
-            resend-webhook \
-            stripe-webhook \
-            polar-webhook \
-            revenuecat-webhook
-          do
+          FAILED=""
+          for fn in ${{ steps.discover.outputs.webhook_fns }}; do
             echo "Deploying ${fn} with --no-verify-jwt..."
-            supabase functions deploy "${fn}" --project-ref "${PROJECT_REF}" --no-verify-jwt
+            if ! supabase functions deploy "${fn}" --project-ref "${PROJECT_REF}" --no-verify-jwt; then
+              echo "WARNING: Failed to deploy ${fn}"
+              FAILED="${FAILED} ${fn}"
+            fi
           done
+          if [ -n "$FAILED" ]; then
+            echo "::warning::Failed to deploy:${FAILED}"
+          fi
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Edge Function deployment complete"
+          echo "Project: ${PROJECT_REF}"

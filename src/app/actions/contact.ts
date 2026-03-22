@@ -222,7 +222,7 @@ export async function submitContactForm(data: ContactFormData): Promise<{ succes
   }
 
   // Rate limit by email to prevent spam
-  const rl = rateLimit(`contact:${data.email}`, RateLimits.api);
+  const rl = await rateLimit(`contact:${data.email}`, RateLimits.api);
   if (!rl.success) {
     return { success: false, error: "Too many submissions. Please try again later." };
   }

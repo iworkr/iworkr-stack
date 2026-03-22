@@ -162,11 +162,11 @@ CREATE POLICY "hyperion_impersonation_self_or_superadmin"
 ON public.impersonation_sessions
 FOR ALL TO authenticated
 USING (
-  auth.uid() = user_id 
+  auth.uid() = admin_id
   OR (auth.jwt()->'app_metadata'->>'is_super_admin')::boolean = true
 )
 WITH CHECK (
-  auth.uid() = user_id 
+  auth.uid() = admin_id
   OR (auth.jwt()->'app_metadata'->>'is_super_admin')::boolean = true
 );
 

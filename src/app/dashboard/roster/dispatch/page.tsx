@@ -26,6 +26,7 @@ import {
 } from "@/app/actions/care-blueprints";
 import { fetchParticipants } from "@/app/actions/participants";
 import { getOrgTechnicians } from "@/app/actions/schedule";
+import { useToastStore } from "@/components/app/action-toast";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -61,6 +62,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; border: string; 
 export default function RosterDispatchPage() {
   const { orgId } = useOrg();
   const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [selectedBlueprint, setSelectedBlueprint] = useState<CareBlueprint | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -160,7 +162,7 @@ export default function RosterDispatchPage() {
 
       const validation = await validateWorkerAssignment(workerId, shiftId, orgId);
       if (!validation.valid) {
-        alert(`Assignment Rejected: Worker lacks required skills — ${validation.missing_skills.join(", ")}`);
+        addToast(`Assignment Rejected: Worker lacks required skills — ${validation.missing_skills.join(", ")}`, undefined, "error");
         setAssigning(null);
         return;
       }
@@ -169,7 +171,7 @@ export default function RosterDispatchPage() {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ["blueprint-shifts"] });
       } else {
-        alert(`Failed: ${result.error}`);
+        addToast(`Failed: ${result.error}`, undefined, "error");
       }
       setAssigning(null);
     },

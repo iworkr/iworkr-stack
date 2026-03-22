@@ -157,7 +157,7 @@ SELECT
   sp.id,
   sp.user_id,
   sp.organization_id,
-  sp.full_name,
+  p.full_name,
   -- Decrypted fields (only visible to service_role which powers these views)
   CASE
     WHEN sp.bank_account_name_enc IS NOT NULL
@@ -187,7 +187,8 @@ SELECT
     THEN public.citadel_decrypt(sp.super_number_enc)
     ELSE sp.superannuation_number
   END AS superannuation_number
-FROM public.staff_profiles sp;
+FROM public.staff_profiles sp
+LEFT JOIN public.profiles p ON p.id = sp.user_id;
 
 -- Service role only — application must use service_role to query this view
 REVOKE ALL ON public.v_staff_banking_secure FROM PUBLIC, anon, authenticated;
@@ -198,7 +199,7 @@ SELECT
   sp.id,
   sp.user_id,
   sp.organization_id,
-  sp.full_name,
+  p.full_name,
   CASE
     WHEN sp.home_address_enc IS NOT NULL
     THEN public.citadel_decrypt(sp.home_address_enc)
@@ -218,7 +219,8 @@ SELECT
     THEN public.citadel_decrypt(sp.vehicle_reg_enc)
     ELSE sp.vehicle_registration
   END AS vehicle_registration
-FROM public.staff_profiles sp;
+FROM public.staff_profiles sp
+LEFT JOIN public.profiles p ON p.id = sp.user_id;
 
 REVOKE ALL ON public.v_staff_pii_secure FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.v_staff_pii_secure TO service_role;
@@ -228,8 +230,6 @@ SELECT
   pp.id,
   pp.client_id,
   pp.organization_id,
-  pp.first_name,
-  pp.last_name,
   pp.full_name,
   CASE
     WHEN pp.ndis_number_enc IS NOT NULL

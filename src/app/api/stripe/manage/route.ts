@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
   } catch (err: any) {
-    console.error("[Stripe Manage]", err.message);
-    return NextResponse.json({ error: err.message || "Stripe error" }, { status: 500 });
+    console.error("[stripe/manage] error:", err);
+    return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
   }
 }

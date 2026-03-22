@@ -14,6 +14,7 @@ import { Events, dispatch } from "@/lib/automation";
 import { createClientSchema, validate } from "@/lib/validation";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { withAuth } from "@/lib/safe-action";
 
 const UpdateClientSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -134,19 +135,17 @@ export interface UpdateClientContactParams {
  * Get all clients for an organization with job count, total spend, and last job date
  */
 export async function getClients(orgId: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
     // Get all clients
     const { data: clients, error: clientsError } = await supabase
@@ -227,23 +226,22 @@ export async function getClients(orgId: string) {
     }));
 
     return { data: clientsWithStats, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to fetch clients" };
-  }
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to fetch clients" };
+    }
+  });
 }
 
 /**
  * Get a single client with contacts, recent activity, and spend history
  */
 export async function getClient(clientId: string, orgId?: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    // Get client — filter by org when provided to enforce ownership
-    let query = supabase
+      // Get client — filter by org when provided to enforce ownership
+      let query = supabase
       .from("clients")
       .select("*")
       .eq("id", clientId)
@@ -328,33 +326,27 @@ export async function getClient(clientId: string, orgId?: string) {
     };
 
     return { data: clientWithDetails, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to fetch client" };
-  }
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to fetch client" };
+    }
+  });
 }
 
 /**
  * Create a new client with optional initial contact
  */
 export async function createClient(params: CreateClientParams) {
-  try {
-    // Validate input
-    const validated = validate(createClientSchema, params);
-    if (validated.error) {
-      return { data: null, error: validated.error };
-    }
+  return withAuth(async (_user) => {
+    try {
+      // Validate input
+      const validated = validate(createClientSchema, params);
+      if (validated.error) {
+        return { data: null, error: validated.error };
+      }
 
-    const supabase = await createServerSupabaseClient();
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
-    }
-
-    // Create client
+      // Create client
     const clientData = {
       organization_id: params.organization_id,
       name: params.name,
@@ -411,32 +403,26 @@ export async function createClient(params: CreateClientParams) {
     }));
 
     revalidatePath("/dashboard/clients");
-    return { data: client, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to create client" };
-  }
+      return { data: client, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to create client" };
+    }
+  });
 }
 
 /**
  * Update a client (orgId optional but recommended for ownership verification)
  */
 export async function updateClient(clientId: string, updates: UpdateClientParams, orgId?: string) {
-  try {
-    // Validate input
-    const validated = validate(UpdateClientSchema, updates);
-    if (validated.error) return { data: null, error: validated.error };
+  return withAuth(async (_user) => {
+    try {
+      // Validate input
+      const validated = validate(UpdateClientSchema, updates);
+      if (validated.error) return { data: null, error: validated.error };
 
-    const supabase = await createServerSupabaseClient();
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
-    }
-
-    // Verify org ownership when orgId is provided
+      // Verify org ownership when orgId is provided
     if (orgId) {
       const { data: existing } = await supabase
         .from("clients")
@@ -479,64 +465,52 @@ export async function updateClient(clientId: string, updates: UpdateClientParams
     }
 
     revalidatePath("/dashboard/clients");
-    return { data: client, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to update client" };
-  }
+      return { data: client, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to update client" };
+    }
+  });
 }
 
 /**
  * Soft delete a client (orgId optional but recommended for ownership verification)
  */
 export async function deleteClient(clientId: string, orgId?: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      let query = supabase
+        .from("clients")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", clientId)
+        .is("deleted_at", null);
 
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
+      if (orgId) query = query.eq("organization_id", orgId);
+
+      const { error } = await query;
+
+      if (error) {
+        return { data: null, error: error.message };
+      }
+
+      revalidatePath("/dashboard/clients");
+      return { data: { success: true }, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to delete client" };
     }
-
-    let query = supabase
-      .from("clients")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", clientId)
-      .is("deleted_at", null);
-
-    if (orgId) query = query.eq("organization_id", orgId);
-
-    const { error } = await query;
-
-    if (error) {
-      return { data: null, error: error.message };
-    }
-
-    revalidatePath("/dashboard/clients");
-    return { data: { success: true }, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to delete client" };
-  }
+  });
 }
 
 /**
  * Add a contact to a client
  */
 export async function addClientContact(clientId: string, contact: CreateClientContactParams) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
-    }
-
-    // If this is set as primary, unset other primary contacts
+      // If this is set as primary, unset other primary contacts
     if (contact.is_primary) {
       await supabase
         .from("client_contacts")
@@ -565,28 +539,22 @@ export async function addClientContact(clientId: string, contact: CreateClientCo
     }
 
     revalidatePath("/dashboard/clients");
-    return { data: newContact, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to add contact" };
-  }
+      return { data: newContact, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to add contact" };
+    }
+  });
 }
 
 /**
  * Update a client contact
  */
 export async function updateClientContact(contactId: string, updates: UpdateClientContactParams) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
-    }
-
-    // Get current contact to check client_id
+      // Get current contact to check client_id
     const { data: currentContact, error: fetchError } = await supabase
       .from("client_contacts")
       .select("client_id, is_primary")
@@ -630,28 +598,22 @@ export async function updateClientContact(contactId: string, updates: UpdateClie
     }
 
     revalidatePath("/dashboard/clients");
-    return { data: contact, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to update contact" };
-  }
+      return { data: contact, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to update contact" };
+    }
+  });
 }
 
 /**
  * Delete a client contact
  */
 export async function deleteClientContact(contactId: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
-    }
-
-    // Fetch contact to get client_id, then client to get org_id
+      // Fetch contact to get client_id, then client to get org_id
     const { data: contact } = await supabase
       .from("client_contacts")
       .select("client_id")
@@ -685,10 +647,11 @@ export async function deleteClientContact(contactId: string) {
     }
 
     revalidatePath("/dashboard/clients");
-    return { data: { success: true }, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to delete contact" };
-  }
+      return { data: { success: true }, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to delete contact" };
+    }
+  });
 }
 
 /* ── RPC-backed Operations ─────────────────────────────── */
@@ -697,10 +660,11 @@ export async function deleteClientContact(contactId: string) {
  * Get clients with aggregated stats via RPC (efficient single query)
  */
 export async function getClientsWithStats(orgId: string, filters: ClientFilters = {}) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data, error } = await supabase.rpc("get_clients_with_stats", {
+      const { data, error } = await supabase.rpc("get_clients_with_stats", {
       p_org_id: orgId,
       p_search: filters.search ?? undefined,
       p_status: filters.status ?? undefined,
@@ -717,23 +681,22 @@ export async function getClientsWithStats(orgId: string, filters: ClientFilters 
     }
 
     return { data: data || [], error: null };
-  } catch (error: any) {
-    logger.error("Failed to fetch clients with stats", "clients", error);
-    return { data: null, error: error.message || "Failed to fetch clients" };
-  }
+    } catch (error: any) {
+      logger.error("Failed to fetch clients with stats", "clients", error);
+      return { data: null, error: error.message || "Failed to fetch clients" };
+    }
+  });
 }
 
 /**
  * Create client with contact via RPC (transactional)
  */
 export async function createClientFull(params: CreateClientParams) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Not authenticated" };
-
-    const { data: result, error: rpcError } = await supabase.rpc("create_client_full", {
+      const { data: result, error: rpcError } = await supabase.rpc("create_client_full", {
       p_org_id: params.organization_id,
       p_name: params.name,
       p_type: params.type || "residential",
@@ -775,21 +738,23 @@ export async function createClientFull(params: CreateClientParams) {
       .maybeSingle();
 
     revalidatePath("/dashboard/clients");
-    return { data: client || result, error: null };
-  } catch (error: any) {
-    logger.error("Failed to create client (full)", "clients", error);
-    return { data: null, error: error.message || "Failed to create client" };
-  }
+      return { data: client || result, error: null };
+    } catch (error: any) {
+      logger.error("Failed to create client (full)", "clients", error);
+      return { data: null, error: error.message || "Failed to create client" };
+    }
+  });
 }
 
 /**
  * Get full client details via RPC (orgId enforces ownership — PRD §2.1)
  */
 export async function getClientDetails(clientId: string, orgId?: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    // Security: verify org ownership before calling security-definer RPC
+      // Security: verify org ownership before calling security-definer RPC
     if (orgId) {
       const { data: exists } = await supabase
         .from("clients")
@@ -811,10 +776,11 @@ export async function getClientDetails(clientId: string, orgId?: string) {
     }
 
     return { data, error: null };
-  } catch (error: any) {
-    logger.error("Failed to fetch client details", "clients", error);
-    return { data: null, error: error.message || "Failed to fetch client details" };
-  }
+    } catch (error: any) {
+      logger.error("Failed to fetch client details", "clients", error);
+      return { data: null, error: error.message || "Failed to fetch client details" };
+    }
+  });
 }
 
 /* ── ABN Lookup ─────────────────────────────────────── */
@@ -822,25 +788,27 @@ export async function getClientDetails(clientId: string, orgId?: string) {
 export async function lookupABN(name: string): Promise<{
   abn: string; name: string; type: string; address: string; status: string;
 } | null> {
-  const guid = process.env.ABR_GUID;
-  if (!guid) return null;
-  try {
-    const url = `https://abr.business.gov.au/json/AbnDetails.aspx?abn=&callback=c&name=${encodeURIComponent(name)}&guid=${guid}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    const text = await res.text();
-    const jsonStr = text.replace(/^c\(/, "").replace(/\)$/, "");
-    const data = JSON.parse(jsonStr);
-    if (!data?.Abn) return null;
-    return {
-      abn: data.Abn,
-      name: data.EntityName || data.BusinessName?.[0] || name,
-      type: data.EntityTypeName || "Unknown",
-      address: [data.AddressState, data.AddressPostcode].filter(Boolean).join(" "),
-      status: data.AbnStatus || "Unknown",
-    };
-  } catch {
-    return null;
-  }
+  return withAuth(async (_user) => {
+    const guid = process.env.ABR_GUID;
+    if (!guid) return null;
+    try {
+      const url = `https://abr.business.gov.au/json/AbnDetails.aspx?abn=&callback=c&name=${encodeURIComponent(name)}&guid=${guid}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const text = await res.text();
+      const jsonStr = text.replace(/^c\(/, "").replace(/\)$/, "");
+      const data = JSON.parse(jsonStr);
+      if (!data?.Abn) return null;
+      return {
+        abn: data.Abn,
+        name: data.EntityName || data.BusinessName?.[0] || name,
+        type: data.EntityTypeName || "Unknown",
+        address: [data.AddressState, data.AddressPostcode].filter(Boolean).join(" "),
+        status: data.AbnStatus || "Unknown",
+      };
+    } catch {
+      return null;
+    }
+  });
 }
 
 /* ── Distance from HQ ──────────────────────────────── */
@@ -861,37 +829,39 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
 }
 
 export async function getDistanceFromHQ(orgId: string, clientAddress: string): Promise<string | null> {
-  if (!clientAddress) return null;
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data: org } = await supabase
-      .from("organizations").select("settings").eq("id", orgId).maybeSingle();
-    const hqAddress = (org?.settings as any)?.address;
-    if (!hqAddress) return null;
+  return withAuth(async (_user) => {
+    if (!clientAddress) return null;
+    try {
+      const supabase = await createServerSupabaseClient();
+      const { data: org } = await supabase
+        .from("organizations").select("settings").eq("id", orgId).maybeSingle();
+      const hqAddress = (org?.settings as any)?.address;
+      if (!hqAddress) return null;
 
-    // Geocode both addresses using Mapbox
-    const [originCoords, destCoords] = await Promise.all([
-      geocodeAddress(hqAddress),
-      geocodeAddress(clientAddress),
-    ]);
-    if (!originCoords || !destCoords) return null;
+      // Geocode both addresses using Mapbox
+      const [originCoords, destCoords] = await Promise.all([
+        geocodeAddress(hqAddress),
+        geocodeAddress(clientAddress),
+      ]);
+      if (!originCoords || !destCoords) return null;
 
-    // Use Mapbox Directions API for driving distance/duration
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords[0]},${originCoords[1]};${destCoords[0]},${destCoords[1]}?access_token=${MAPBOX_TOKEN}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    const data = await res.json();
-    const duration = data?.routes?.[0]?.duration;
-    if (duration == null) return null;
+      // Use Mapbox Directions API for driving distance/duration
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords[0]},${originCoords[1]};${destCoords[0]},${destCoords[1]}?access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const data = await res.json();
+      const duration = data?.routes?.[0]?.duration;
+      if (duration == null) return null;
 
-    // Format duration in human-readable form
-    const mins = Math.round(duration / 60);
-    if (mins < 60) return `${mins} mins`;
-    const hrs = Math.floor(mins / 60);
-    const remainMins = mins % 60;
-    return remainMins > 0 ? `${hrs} hr ${remainMins} mins` : `${hrs} hr`;
-  } catch {
-    return null;
-  }
+      // Format duration in human-readable form
+      const mins = Math.round(duration / 60);
+      if (mins < 60) return `${mins} mins`;
+      const hrs = Math.floor(mins / 60);
+      const remainMins = mins % 60;
+      return remainMins > 0 ? `${hrs} hr ${remainMins} mins` : `${hrs} hr`;
+    } catch {
+      return null;
+    }
+  });
 }
 
 /* ── CSV Client Import ─────────────────────────────── */
@@ -919,55 +889,55 @@ function parseCSVRows(text: string): Record<string, string>[] {
 }
 
 export async function importClientsFromCSV(orgId: string, csvText: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-  const { data: membership } = await supabase
-    .from("organization_members").select("user_id")
-    .eq("organization_id", orgId).eq("user_id", user.id).maybeSingle();
-  if (!membership) return { error: "Unauthorized" };
+  return withAuth(async (user) => {
+    const supabase = await createServerSupabaseClient();
+    const { data: membership } = await supabase
+      .from("organization_members").select("user_id")
+      .eq("organization_id", orgId).eq("user_id", user.id).maybeSingle();
+    if (!membership) return { error: "Unauthorized" };
 
-  const rows = parseCSVRows(csvText);
-  if (rows.length === 0) return { error: "No data rows found in CSV" };
-  if (rows.length > 5000) return { error: "Maximum 5000 rows per import" };
+    const rows = parseCSVRows(csvText);
+    if (rows.length === 0) return { error: "No data rows found in CSV" };
+    if (rows.length > 5000) return { error: "Maximum 5000 rows per import" };
 
-  let imported = 0;
-  let skipped = 0;
-  const errors: string[] = [];
+    let imported = 0;
+    let skipped = 0;
+    const errors: string[] = [];
 
-  const ClientRowSchema = z.object({
-    name: z.string().min(1).max(200),
-    email: z.string().email().max(255).optional().or(z.literal("")),
-    phone: z.string().max(30).optional(),
-    address: z.string().max(500).optional(),
-    type: z.enum(["residential", "commercial"]).optional(),
+    const ClientRowSchema = z.object({
+      name: z.string().min(1).max(200),
+      email: z.string().email().max(255).optional().or(z.literal("")),
+      phone: z.string().max(30).optional(),
+      address: z.string().max(500).optional(),
+      type: z.enum(["residential", "commercial"]).optional(),
+    });
+
+    for (let i = 0; i < rows.length; i += 100) {
+      const batch = rows.slice(i, i + 100);
+      const validRecords: any[] = [];
+      for (const row of batch) {
+        const parsed = ClientRowSchema.safeParse({
+          name: row.name || row.client_name || row.company || "",
+          email: row.email || row.client_email || "",
+          phone: row.phone || row.mobile || "",
+          address: row.address || row.street_address || "",
+          type: row.type === "commercial" ? "commercial" : "residential",
+        });
+        if (!parsed.success) { skipped++; errors.push(`Row ${i + batch.indexOf(row) + 2}: Invalid data`); continue; }
+        validRecords.push({
+          organization_id: orgId, name: parsed.data.name,
+          email: parsed.data.email || null, phone: parsed.data.phone || null,
+          address: parsed.data.address || null, type: parsed.data.type || "residential",
+          status: "active" as const,
+        });
+      }
+      if (validRecords.length > 0) {
+        const { error } = await supabase.from("clients").insert(validRecords);
+        if (error) { errors.push(`Batch error: ${error.message}`); skipped += validRecords.length; }
+        else { imported += validRecords.length; }
+      }
+    }
+    revalidatePath("/dashboard/clients");
+    return { imported, skipped, errors: errors.slice(0, 20) };
   });
-
-  for (let i = 0; i < rows.length; i += 100) {
-    const batch = rows.slice(i, i + 100);
-    const validRecords: any[] = [];
-    for (const row of batch) {
-      const parsed = ClientRowSchema.safeParse({
-        name: row.name || row.client_name || row.company || "",
-        email: row.email || row.client_email || "",
-        phone: row.phone || row.mobile || "",
-        address: row.address || row.street_address || "",
-        type: row.type === "commercial" ? "commercial" : "residential",
-      });
-      if (!parsed.success) { skipped++; errors.push(`Row ${i + batch.indexOf(row) + 2}: Invalid data`); continue; }
-      validRecords.push({
-        organization_id: orgId, name: parsed.data.name,
-        email: parsed.data.email || null, phone: parsed.data.phone || null,
-        address: parsed.data.address || null, type: parsed.data.type || "residential",
-        status: "active" as const,
-      });
-    }
-    if (validRecords.length > 0) {
-      const { error } = await supabase.from("clients").insert(validRecords);
-      if (error) { errors.push(`Batch error: ${error.message}`); skipped += validRecords.length; }
-      else { imported += validRecords.length; }
-    }
-  }
-  revalidatePath("/dashboard/clients");
-  return { imported, skipped, errors: errors.slice(0, 20) };
 }

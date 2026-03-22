@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
       email_sent: emailSent,
     });
   } catch (err: any) {
-    console.error("[invite] exception:", err.message);
-    return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 });
+    console.error("[invite] error:", err);
+    return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
   }
 }

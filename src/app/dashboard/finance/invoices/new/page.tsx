@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useAuthStore } from "@/lib/auth-store";
+import { createClient } from "@/lib/supabase/client";
 import { useClientsStore } from "@/lib/clients-store";
 import { useFinanceStore } from "@/lib/finance-store";
 import { useToastStore } from "@/components/app/action-toast";
@@ -74,17 +75,10 @@ const TERMS: { value: PaymentTerms; label: string; days: number }[] = [
   { value: "net_30", label: "Net 30", days: 30 },
 ];
 
-const CATALOG = [
-  { name: "Standard Callout Fee", price: 120 },
-  { name: "Boiler Service — Annual", price: 450 },
-  { name: "Hot Water System Inspection", price: 180 },
-  { name: "Blocked Drain — CCTV & Jetting", price: 680 },
-  { name: "Pipe Repair — Copper", price: 350 },
-  { name: "Tap Replacement", price: 220 },
-  { name: "Toilet Replacement", price: 480 },
-  { name: "Gas Compliance Certificate", price: 200 },
-  { name: "Emergency Call-out Surcharge", price: 110 },
-  { name: "Kitchen Repipe — Copper to PEX", price: 3800 },
+const DEFAULT_CATALOG = [
+  { name: "Service Call", price: 120 },
+  { name: "Labor Hour", price: 85 },
+  { name: "Materials", price: 0 },
 ];
 
 function addDays(d: Date, n: number): Date {
@@ -146,6 +140,30 @@ export default function InvoiceBuilderPage() {
   const [savedInvoice, setSavedInvoice] = useState<{ displayId: string; invoiceId: string; paymentLink: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  /* ── Dynamic Catalog ─────────────────────────────────────── */
+  const [catalogItems, setCatalogItems] = useState<Array<{ name: string; price: number }>>(DEFAULT_CATALOG);
+
+  useEffect(() => {
+    async function loadCatalog() {
+      try {
+        const supabase = createClient();
+        const { data } = await (supabase as any)
+          .from("catalog_items")
+          .select("description, unit_price")
+          .eq("organization_id", orgId!)
+          .eq("active", true)
+          .order("description")
+          .limit(100);
+        if (data && data.length > 0) {
+          setCatalogItems(data.map((item: any) => ({ name: item.description, price: Number(item.unit_price) || 0 })));
+        }
+      } catch {
+        // Fallback to DEFAULT_CATALOG if table doesn't exist or query fails
+      }
+    }
+    if (orgId) loadCatalog();
+  }, [orgId]);
+
   /* ── Auto-select client from query ──────────────────────── */
   useEffect(() => {
     if (prefillClientId && storeClients.length > 0 && !selectedClient) {
@@ -176,9 +194,9 @@ export default function InvoiceBuilderPage() {
   const filteredCatalog = useMemo(
     () =>
       catalogQuery.length > 0
-        ? CATALOG.filter((ci) => ci.name.toLowerCase().includes(catalogQuery.toLowerCase()))
-        : CATALOG,
-    [catalogQuery],
+        ? catalogItems.filter((ci) => ci.name.toLowerCase().includes(catalogQuery.toLowerCase()))
+        : catalogItems,
+    [catalogQuery, catalogItems],
   );
 
   const dueDate = addDays(issueDate, TERMS.find((t) => t.value === terms)?.days || 7);

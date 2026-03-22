@@ -36,7 +36,10 @@ export async function GET(req: NextRequest) {
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false })
       .limit(Math.min(Math.max(limit, 1), 50));
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error("[integrations/sync-radar] error:", error);
+      return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
+    }
 
     const rows = Array.isArray(data) ? data : [];
     const ids = Array.from(new Set(rows.map((r) => r.integration_id).filter(Boolean)));

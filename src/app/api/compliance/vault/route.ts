@@ -327,6 +327,7 @@ export async function POST(request: NextRequest) {
     }
     return response;
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to load vault" }, { status: 500 });
+    console.error("[compliance/vault] error:", error);
+    return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
   }
 }

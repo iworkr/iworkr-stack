@@ -11,6 +11,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
+import { withAuth } from "@/lib/safe-action";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -80,183 +81,188 @@ export interface ConnectStats {
 // ── Actions ───────────────────────────────────────────────────────────────
 
 export async function getConnectStatus(orgId: string): Promise<ConnectStatus> {
-  const supabase = await createServerSupabaseClient();
-  const { data: org } = await (supabase as any)
-    .from("organizations")
-    .select("stripe_account_id, settings, charges_enabled, payouts_enabled, stripe_account_active")
-    .eq("id", orgId)
-    .single();
+  return withAuth(async (_user) => {
+    const supabase = await createServerSupabaseClient();
+    const { data: org } = await (supabase as any)
+      .from("organizations")
+      .select("stripe_account_id, settings, charges_enabled, payouts_enabled, stripe_account_active")
+      .eq("id", orgId)
+      .single();
 
-  if (!org) return { isActivated: false, chargesEnabled: false, payoutsEnabled: false, stripeAccountId: null };
+    if (!org) return { isActivated: false, chargesEnabled: false, payoutsEnabled: false, stripeAccountId: null };
 
-  const settings = (org.settings as Record<string, unknown>) ?? {};
-  const accountId = org.stripe_account_id || (settings.stripe_account_id as string) || null;
+    const settings = (org.settings as Record<string, unknown>) ?? {};
+    const accountId = org.stripe_account_id || (settings.stripe_account_id as string) || null;
 
-  return {
-    isActivated: !!accountId && (org.charges_enabled || org.payouts_enabled),
-    chargesEnabled: !!org.charges_enabled,
-    payoutsEnabled: !!org.payouts_enabled,
-    stripeAccountId: accountId,
-  };
+    return {
+      isActivated: !!accountId && (org.charges_enabled || org.payouts_enabled),
+      chargesEnabled: !!org.charges_enabled,
+      payoutsEnabled: !!org.payouts_enabled,
+      stripeAccountId: accountId,
+    };
+  });
 }
 
 export async function getConnectBalance(orgId: string): Promise<ConnectBalance | null> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  return withAuth(async (_user) => {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: org } = await (supabase as any)
-    .from("organizations")
-    .select("stripe_account_id, settings")
-    .eq("id", orgId)
-    .single();
+    const { data: org } = await (supabase as any)
+      .from("organizations")
+      .select("stripe_account_id, settings")
+      .eq("id", orgId)
+      .single();
 
-  const settings = (org?.settings as Record<string, unknown>) ?? {};
-  const accountId = org?.stripe_account_id || (settings.stripe_account_id as string);
-  if (!accountId) return null;
+    const settings = (org?.settings as Record<string, unknown>) ?? {};
+    const accountId = org?.stripe_account_id || (settings.stripe_account_id as string);
+    if (!accountId) return null;
 
-  try {
-    const stripe = getStripe();
-    const balance = await stripe.balance.retrieve({}, { stripeAccount: accountId });
-    const available = balance.available.find((b) => b.currency === "aud") ?? balance.available[0];
-    const pending = balance.pending.find((b) => b.currency === "aud") ?? balance.pending[0];
-    return {
-      availableCents: available?.amount ?? 0,
-      pendingCents: pending?.amount ?? 0,
-      currency: available?.currency ?? "aud",
-    };
-  } catch {
-    return null;
-  }
+    try {
+      const stripe = getStripe();
+      const balance = await stripe.balance.retrieve({}, { stripeAccount: accountId });
+      const available = balance.available.find((b) => b.currency === "aud") ?? balance.available[0];
+      const pending = balance.pending.find((b) => b.currency === "aud") ?? balance.pending[0];
+      return {
+        availableCents: available?.amount ?? 0,
+        pendingCents: pending?.amount ?? 0,
+        currency: available?.currency ?? "aud",
+      };
+    } catch {
+      return null;
+    }
+  });
 }
 
 export async function getConnectTransactions(
   orgId: string,
   limit = 50
 ): Promise<ConnectTransaction[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  return withAuth(async (_user) => {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: org } = await (supabase as any)
-    .from("organizations")
-    .select("stripe_account_id, settings")
-    .eq("id", orgId)
-    .single();
+    const { data: org } = await (supabase as any)
+      .from("organizations")
+      .select("stripe_account_id, settings")
+      .eq("id", orgId)
+      .single();
 
-  const settings = (org?.settings as Record<string, unknown>) ?? {};
-  const accountId = org?.stripe_account_id || (settings.stripe_account_id as string);
-  if (!accountId) return [];
+    const settings = (org?.settings as Record<string, unknown>) ?? {};
+    const accountId = org?.stripe_account_id || (settings.stripe_account_id as string);
+    if (!accountId) return [];
 
-  try {
-    const stripe = getStripe();
-    const charges = await stripe.charges.list(
-      { limit, expand: ["data.invoice"] },
-      { stripeAccount: accountId }
-    );
+    try {
+      const stripe = getStripe();
+      const charges = await stripe.charges.list(
+        { limit, expand: ["data.invoice"] },
+        { stripeAccount: accountId }
+      );
 
-    return charges.data.map((charge) => {
-      const invoice = (charge as any).invoice as any;
-      return {
-        id: charge.id,
-        type: "payment",
-        amount: charge.amount,
-        fee: (charge as any).application_fee_amount ?? 0,
-        net: charge.amount - ((charge as any).application_fee_amount ?? 0),
-        currency: charge.currency,
-        status: charge.status,
-        description: charge.description,
-        customerId: charge.customer as string | null,
-        customerName: (charge.billing_details?.name) ?? null,
-        customerEmail: (charge.billing_details?.email) ?? null,
-        invoiceRef: invoice?.number ?? null,
-        createdAt: new Date(charge.created * 1000).toISOString(),
-      };
-    });
-  } catch {
-    return [];
-  }
+      return charges.data.map((charge) => {
+        const invoice = (charge as any).invoice as any;
+        return {
+          id: charge.id,
+          type: "payment",
+          amount: charge.amount,
+          fee: (charge as any).application_fee_amount ?? 0,
+          net: charge.amount - ((charge as any).application_fee_amount ?? 0),
+          currency: charge.currency,
+          status: charge.status,
+          description: charge.description,
+          customerId: charge.customer as string | null,
+          customerName: (charge.billing_details?.name) ?? null,
+          customerEmail: (charge.billing_details?.email) ?? null,
+          invoiceRef: invoice?.number ?? null,
+          createdAt: new Date(charge.created * 1000).toISOString(),
+        };
+      });
+    } catch {
+      return [];
+    }
+  });
 }
 
 export async function getConnectPayouts(orgId: string, limit = 10): Promise<ConnectPayout[]> {
-  const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: org } = await (supabase as any)
-    .from("organizations")
-    .select("stripe_account_id, settings, payouts_enabled")
-    .eq("id", orgId)
-    .single();
+    const { data: org } = await (supabase as any)
+      .from("organizations")
+      .select("stripe_account_id, settings, payouts_enabled")
+      .eq("id", orgId)
+      .single();
 
-  const settings = (org?.settings as Record<string, unknown>) ?? {};
-  const accountId = org?.stripe_account_id || (settings.stripe_account_id as string);
-  if (!accountId || !org?.payouts_enabled) return [];
+    const settings = (org?.settings as Record<string, unknown>) ?? {};
+    const accountId = org?.stripe_account_id || (settings.stripe_account_id as string);
+    if (!accountId || !org?.payouts_enabled) return [];
 
-  try {
-    const stripe = getStripe();
-    const payouts = await stripe.payouts.list({ limit }, { stripeAccount: accountId });
-    return payouts.data.map((p) => ({
-      id: p.id,
-      amount: p.amount,
-      arrivalDate: p.arrival_date,
-      status: p.status,
-      currency: p.currency,
-      createdAt: p.created,
-    }));
-  } catch {
-    return [];
-  }
+    try {
+      const stripe = getStripe();
+      const payouts = await stripe.payouts.list({ limit }, { stripeAccount: accountId });
+      return payouts.data.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        arrivalDate: p.arrival_date,
+        status: p.status,
+        currency: p.currency,
+        createdAt: p.created,
+      }));
+    } catch {
+      return [];
+    }
+  });
 }
 
 export async function getConnectStats(orgId: string): Promise<ConnectStats> {
-  const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: org } = await (supabase as any)
-    .from("organizations")
-    .select("stripe_account_id, settings")
-    .eq("id", orgId)
-    .single();
+    const { data: org } = await (supabase as any)
+      .from("organizations")
+      .select("stripe_account_id, settings")
+      .eq("id", orgId)
+      .single();
 
-  const settings = (org?.settings as Record<string, unknown>) ?? {};
-  const accountId = org?.stripe_account_id || (settings.stripe_account_id as string);
+    const settings = (org?.settings as Record<string, unknown>) ?? {};
+    const accountId = org?.stripe_account_id || (settings.stripe_account_id as string);
 
-  if (!accountId) {
-    return { volume7Day: 0, disputeRate: 0, nextPayoutDate: null, nextPayoutAmount: 0 };
-  }
+    if (!accountId) {
+      return { volume7Day: 0, disputeRate: 0, nextPayoutDate: null, nextPayoutAmount: 0 };
+    }
 
-  try {
-    const stripe = getStripe();
-    const sevenDaysAgo = Math.floor(Date.now() / 1000) - 7 * 24 * 3600;
+    try {
+      const stripe = getStripe();
+      const sevenDaysAgo = Math.floor(Date.now() / 1000) - 7 * 24 * 3600;
 
-    const [charges, disputes, payouts] = await Promise.all([
-      stripe.charges.list({ created: { gte: sevenDaysAgo }, limit: 100 }, { stripeAccount: accountId }),
-      stripe.disputes.list({ created: { gte: sevenDaysAgo - 30 * 24 * 3600 }, limit: 10 }, { stripeAccount: accountId }),
-      stripe.payouts.list({ limit: 3, status: "pending" }, { stripeAccount: accountId }),
-    ]);
+      const [charges, disputes, payouts] = await Promise.all([
+        stripe.charges.list({ created: { gte: sevenDaysAgo }, limit: 100 }, { stripeAccount: accountId }),
+        stripe.disputes.list({ created: { gte: sevenDaysAgo - 30 * 24 * 3600 }, limit: 10 }, { stripeAccount: accountId }),
+        stripe.payouts.list({ limit: 3, status: "pending" }, { stripeAccount: accountId }),
+      ]);
 
-    const volume7Day = charges.data.filter(c => c.status === "succeeded").reduce((s, c) => s + c.amount, 0);
-    const totalCharged = charges.data.length;
-    const disputeRate = totalCharged > 0 ? (disputes.data.length / totalCharged) * 100 : 0;
+      const volume7Day = charges.data.filter(c => c.status === "succeeded").reduce((s, c) => s + c.amount, 0);
+      const totalCharged = charges.data.length;
+      const disputeRate = totalCharged > 0 ? (disputes.data.length / totalCharged) * 100 : 0;
 
-    const nextPayout = payouts.data[0];
-    const nextPayoutDate = nextPayout ? new Date(nextPayout.arrival_date * 1000).toLocaleDateString("en-AU", { weekday: "long", month: "short", day: "numeric" }) : null;
+      const nextPayout = payouts.data[0];
+      const nextPayoutDate = nextPayout ? new Date(nextPayout.arrival_date * 1000).toLocaleDateString("en-AU", { weekday: "long", month: "short", day: "numeric" }) : null;
 
-    return {
-      volume7Day,
-      disputeRate: Math.round(disputeRate * 100) / 100,
-      nextPayoutDate,
-      nextPayoutAmount: nextPayout?.amount ?? 0,
-    };
-  } catch {
-    return { volume7Day: 0, disputeRate: 0, nextPayoutDate: null, nextPayoutAmount: 0 };
-  }
+      return {
+        volume7Day,
+        disputeRate: Math.round(disputeRate * 100) / 100,
+        nextPayoutDate,
+        nextPayoutAmount: nextPayout?.amount ?? 0,
+      };
+    } catch {
+      return { volume7Day: 0, disputeRate: 0, nextPayoutDate: null, nextPayoutAmount: 0 };
+    }
+  });
 }
 
 export async function getNetworkCustomers(orgId: string): Promise<NetworkCustomer[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  return withAuth(async (_user) => {
+    const supabase = await createServerSupabaseClient();
 
-  const { data: clients } = await (supabase as any)
+    const { data: clients } = await (supabase as any)
     .from("clients")
     .select(`
       id, first_name, last_name, email, phone,
@@ -310,15 +316,15 @@ export async function getNetworkCustomers(orgId: string): Promise<NetworkCustome
       } : null,
     };
   });
+  });
 }
 
 export async function triggerOnboarding(orgId: string): Promise<{ url?: string; error?: string }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+  return withAuth(async (user) => {
+    const supabase = await createServerSupabaseClient();
 
-  // Verify owner/admin
-  const { data: member } = await (supabase as any)
+    // Verify owner/admin
+    const { data: member } = await (supabase as any)
     .from("organization_members")
     .select("role")
     .eq("organization_id", orgId)
@@ -382,17 +388,20 @@ export async function triggerOnboarding(orgId: string): Promise<{ url?: string; 
     }
     return { error: err?.message || "Failed to start onboarding" };
   }
+  });
 }
 
 export async function exportStatementCsv(orgId: string): Promise<{ csv: string }> {
-  const transactions = await getConnectTransactions(orgId, 500);
-  const header = "Date,Transaction ID,Customer,Invoice,Gross (AUD),Fee (AUD),Net (AUD),Status\n";
-  const rows = transactions.map((t) => {
-    const gross = (t.amount / 100).toFixed(2);
-    const fee = (t.fee / 100).toFixed(2);
-    const net = (t.net / 100).toFixed(2);
-    const date = new Date(t.createdAt).toLocaleDateString("en-AU");
-    return `${date},${t.id},${t.customerName ?? ""},${t.invoiceRef ?? ""},${gross},${fee},${net},${t.status}`;
+  return withAuth(async (_user) => {
+    const transactions = await getConnectTransactions(orgId, 500);
+    const header = "Date,Transaction ID,Customer,Invoice,Gross (AUD),Fee (AUD),Net (AUD),Status\n";
+    const rows = transactions.map((t) => {
+      const gross = (t.amount / 100).toFixed(2);
+      const fee = (t.fee / 100).toFixed(2);
+      const net = (t.net / 100).toFixed(2);
+      const date = new Date(t.createdAt).toLocaleDateString("en-AU");
+      return `${date},${t.id},${t.customerName ?? ""},${t.invoiceRef ?? ""},${gross},${fee},${net},${t.status}`;
+    });
+    return { csv: header + rows.join("\n") };
   });
-  return { csv: header + rows.join("\n") };
 }

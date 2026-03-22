@@ -349,13 +349,13 @@ REVOKE ALL ON FUNCTION public.log_security_event FROM PUBLIC, anon, authenticate
 -- 6. Auto-Partition Maintenance (monthly partition creation via pg_cron)
 -- ══════════════════════════════════════════════════════════════════════════════
 
-DO $$
+DO $outer$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
     PERFORM cron.schedule(
       'citadel-audit-partition-maintenance',
-      '0 0 1 * *',  -- 1st of every month at midnight
-      $$
+      '0 0 1 * *',
+      $cron_sql$
       DO $inner$
       DECLARE
         v_start DATE := DATE_TRUNC('month', NOW() + '2 months'::interval);
@@ -370,8 +370,8 @@ BEGIN
         END IF;
       END;
       $inner$;
-      $$
+      $cron_sql$
     );
   END IF;
 END;
-$$;
+$outer$;

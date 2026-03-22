@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       message: data ? "DOCUMENT AUTHENTIC - UNALTERED" : "DOCUMENT TAMPERED OR UNKNOWN",
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Verification failed" }, { status: 500 });
+    console.error("[compliance/verify] error:", error);
+    return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
   }
 }

@@ -45,6 +45,7 @@ import { formatNDISNumber } from "@/lib/ndis-utils";
 import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { MedicationsBox, GoalsBox, FundsManagementBox, CarePlansBox, ServiceAgreementsBox, CareBlueprintBox } from "@/components/care/participant-detail-sections";
 import { CareBlueprintBuilder } from "@/components/care/care-blueprint-builder";
+import { useToastStore } from "@/components/app/action-toast";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Types
@@ -984,6 +985,7 @@ export default function ParticipantDossierPage() {
   const params = useParams();
   const router = useRouter();
   const { orgId, loading: orgLoading } = useOrg();
+  const { addToast } = useToastStore();
   const [blueprintBuilderOpen, setBlueprintBuilderOpen] = useState(false);
 
   const participantId = params.id as string;
@@ -1152,10 +1154,10 @@ export default function ParticipantDossierPage() {
                   relationship_type: "primary_guardian",
                 });
                 if (!result.success) {
-                  window.alert(result.error || "Invitation failed.");
+                  addToast(result.error || "Invitation failed.", undefined, "error");
                   return;
                 }
-                window.alert("Invitation sent.");
+                addToast("Invitation sent.");
               }}
             >
               <Users size={13} />

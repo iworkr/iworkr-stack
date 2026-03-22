@@ -23,7 +23,7 @@ import { logger } from "@/lib/logger";
  */
 export async function GET(request: NextRequest) {
   // Rate limit
-  const rl = rateLimit(`cron:${getIdentifier(request)}`, RateLimits.cron);
+  const rl = await rateLimit(`cron:${getIdentifier(request)}`, RateLimits.cron);
   if (!rl.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

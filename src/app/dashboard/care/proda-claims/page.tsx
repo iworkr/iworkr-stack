@@ -54,6 +54,7 @@ import {
   type AggregationRun,
   type ReturnEntry,
 } from "@/app/actions/synapse";
+import { useToastStore } from "@/components/app/action-toast";
 
 /* ── Status Configs ──────────────────────────────────────── */
 
@@ -195,6 +196,7 @@ export default function ProdaClaimsPage() {
 
 function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats: () => void }) {
   const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
   const [aggregating, setAggregating] = useState(false);
   const [approving, setApproving] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -249,7 +251,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
       invalidateLines();
       onRefreshStats();
     } catch (e: any) {
-      alert(`Aggregation failed: ${e.message}`);
+      addToast(`Aggregation failed: ${e.message}`, undefined, "error");
     } finally {
       setAggregating(false);
     }
@@ -257,7 +259,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
 
   const handleApprove = async () => {
     const ids = [...selected].filter((id) => draftLines.some((l) => l.id === id));
-    if (!ids.length) return alert("Select draft claim lines to approve");
+    if (!ids.length) return addToast("Select draft claim lines to approve", undefined, "error");
     setApproving(true);
     try {
       await approveClaimLines(orgId, ids);
@@ -265,7 +267,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
       invalidateLines();
       onRefreshStats();
     } catch (e: any) {
-      alert(`Approval failed: ${e.message}`);
+      addToast(`Approval failed: ${e.message}`, undefined, "error");
     } finally {
       setApproving(false);
     }
@@ -276,7 +278,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
     if (!ids.length) {
       // If nothing selected, use all approved
       const allApproved = approvedLines.map((l) => l.id);
-      if (!allApproved.length) return alert("No approved claim lines to submit");
+      if (!allApproved.length) return addToast("No approved claim lines to submit", undefined, "error");
       setGenerating(true);
       try {
         const { csv, batch_number } = await generateProdaCSV(orgId, allApproved);
@@ -285,7 +287,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
         invalidateLines();
         onRefreshStats();
       } catch (e: any) {
-        alert(`CSV generation failed: ${e.message}`);
+        addToast(`CSV generation failed: ${e.message}`, undefined, "error");
       } finally {
         setGenerating(false);
       }
@@ -300,7 +302,7 @@ function PipelineTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats:
       invalidateLines();
       onRefreshStats();
     } catch (e: any) {
-      alert(`CSV generation failed: ${e.message}`);
+      addToast(`CSV generation failed: ${e.message}`, undefined, "error");
     } finally {
       setGenerating(false);
     }
@@ -613,6 +615,7 @@ function BatchesTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats: 
 
 function ReconciliationTab({ orgId, onRefreshStats }: { orgId: string; onRefreshStats: () => void }) {
   const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
   const [returns, setReturns] = useState<ReturnEntry[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -648,7 +651,7 @@ function ReconciliationTab({ orgId, onRefreshStats }: { orgId: string; onRefresh
       await loadReturns(selectedBatch);
       onRefreshStats();
     } catch (err: any) {
-      alert(`Return file ingestion failed: ${err.message}`);
+      addToast(`Return file ingestion failed: ${err.message}`, undefined, "error");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";

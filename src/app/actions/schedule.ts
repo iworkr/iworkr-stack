@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
 import { validate, createScheduleBlockSchema } from "@/lib/validation";
+import { withAuth } from "@/lib/safe-action";
 
 /* ── Schemas ──────────────────────────────────────── */
 
@@ -160,21 +161,19 @@ async function validateTransportCredentials(
  * Get all schedule blocks for a date range, organized by technician
  */
 export async function getScheduleBlocks(orgId: string, date: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    // Parse date to get start and end of day
+      // Parse date to get start and end of day
     const startDate = new Date(date);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
@@ -218,37 +217,31 @@ export async function getScheduleBlocks(orgId: string, date: string) {
     });
 
     return { data: blocksByTechnician, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to fetch schedule blocks" };
-  }
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to fetch schedule blocks" };
+    }
+  });
 }
 
 /**
  * Create a new schedule block with conflict checking
  */
 export async function createScheduleBlock(params: CreateScheduleBlockParams) {
-  try {
-    // Validate input
-    const validated = validate(createScheduleBlockSchema, params);
-    if (validated.error) return { data: null, error: validated.error };
+  return withAuth(async (user) => {
+    try {
+      // Validate input
+      const validated = validate(createScheduleBlockSchema, params);
+      if (validated.error) return { data: null, error: validated.error };
 
-    const supabase = await createServerSupabaseClient();
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
-    }
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", params.organization_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", params.organization_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
     if (params.requires_transport && params.technician_id) {
       const credentialCheck = await validateTransportCredentials(
@@ -341,32 +334,26 @@ export async function createScheduleBlock(params: CreateScheduleBlockParams) {
     }
 
     revalidatePath("/dashboard/schedule");
-    return { data: block, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to create schedule block" };
-  }
+      return { data: block, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to create schedule block" };
+    }
+  });
 }
 
 /**
  * Update a schedule block
  */
 export async function updateScheduleBlock(blockId: string, updates: UpdateScheduleBlockParams) {
-  try {
-    // Validate input
-    const validated = validate(UpdateScheduleBlockSchema, updates);
-    if (validated.error) return { data: null, error: validated.error };
+  return withAuth(async (user) => {
+    try {
+      // Validate input
+      const validated = validate(UpdateScheduleBlockSchema, updates);
+      if (validated.error) return { data: null, error: validated.error };
 
-    const supabase = await createServerSupabaseClient();
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
-    }
-
-    // Get current block to check for conflict updates
+      // Get current block to check for conflict updates
     const { data: currentBlock, error: fetchError } = await supabase
       .from("schedule_blocks")
       .select("organization_id, technician_id, start_time, end_time")
@@ -452,78 +439,71 @@ export async function updateScheduleBlock(blockId: string, updates: UpdateSchedu
     }
 
     revalidatePath("/dashboard/schedule");
-    return { data: block, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to update schedule block" };
-  }
+      return { data: block, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to update schedule block" };
+    }
+  });
 }
 
 /**
  * Delete a schedule block
  */
 export async function deleteScheduleBlock(blockId: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      // Fetch block to verify org ownership
+      const { data: block } = await supabase
+        .from("schedule_blocks")
+        .select("organization_id")
+        .eq("id", blockId)
+        .maybeSingle();
+      if (!block) return { data: null, error: "Block not found" };
 
-    if (!user) {
-      return { data: null, error: "Not authenticated" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", block.organization_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
+
+      const { error } = await supabase
+        .from("schedule_blocks")
+        .delete()
+        .eq("id", blockId);
+
+      if (error) {
+        return { data: null, error: error.message };
+      }
+
+      revalidatePath("/dashboard/schedule");
+      return { data: { success: true }, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to delete schedule block" };
     }
-
-    // Fetch block to verify org ownership
-    const { data: block } = await supabase
-      .from("schedule_blocks")
-      .select("organization_id")
-      .eq("id", blockId)
-      .maybeSingle();
-    if (!block) return { data: null, error: "Block not found" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", block.organization_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const { error } = await supabase
-      .from("schedule_blocks")
-      .delete()
-      .eq("id", blockId);
-
-    if (error) {
-      return { data: null, error: error.message };
-    }
-
-    revalidatePath("/dashboard/schedule");
-    return { data: { success: true }, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to delete schedule block" };
-  }
+  });
 }
 
 /**
  * Get all technicians for an organization
  */
 export async function getOrgTechnicians(orgId: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const { data: members, error } = await supabase
+      const { data: members, error } = await supabase
       .from("organization_members")
       .select(`
         user_id,
@@ -550,9 +530,10 @@ export async function getOrgTechnicians(orgId: string) {
       .filter((tech: Technician) => tech.id);
 
     return { data: technicians, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to fetch technicians" };
-  }
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to fetch technicians" };
+    }
+  });
 }
 
 /* ── Schedule View (RPC-backed) ────────────────────────── */
@@ -561,21 +542,19 @@ export async function getOrgTechnicians(orgId: string) {
  * Get full schedule view: technicians, blocks, events, and backlog in one RPC call
  */
 export async function getScheduleView(orgId: string, date: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const { data, error } = await supabase.rpc("get_schedule_view", {
+      const { data, error } = await supabase.rpc("get_schedule_view", {
       p_org_id: orgId,
       p_date: date,
     });
@@ -587,10 +566,11 @@ export async function getScheduleView(orgId: string, date: string) {
     }
 
     return { data, error: null };
-  } catch (error: any) {
-    logger.error("Failed to fetch schedule view", "schedule", error);
-    return { data: null, error: error.message || "Failed to fetch schedule view" };
-  }
+    } catch (error: any) {
+      logger.error("Failed to fetch schedule view", "schedule", error);
+      return { data: null, error: error.message || "Failed to fetch schedule view" };
+    }
+  });
 }
 
 async function getScheduleBlocksFallback(orgId: string, date: string) {
@@ -629,13 +609,11 @@ export async function moveScheduleBlockServer(
   startTime: string,
   endTime: string
 ) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: blockRow } = await supabase
+      const { data: blockRow } = await supabase
       .from("schedule_blocks")
       .select("organization_id")
       .eq("id", blockId)
@@ -693,53 +671,53 @@ export async function moveScheduleBlockServer(
     }
 
     revalidatePath("/dashboard/schedule");
-    return { data, error: null };
-  } catch (error: any) {
-    logger.error("Failed to move schedule block", "schedule", error);
-    return { data: null, error: error.message || "Failed to move block" };
-  }
+      return { data, error: null };
+    } catch (error: any) {
+      logger.error("Failed to move schedule block", "schedule", error);
+      return { data: null, error: error.message || "Failed to move block" };
+    }
+  });
 }
 
 /**
  * Resize a block (update end_time)
  */
 export async function resizeScheduleBlockServer(blockId: string, endTime: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+      const { data: blockRow } = await supabase
+        .from("schedule_blocks")
+        .select("organization_id")
+        .eq("id", blockId)
+        .maybeSingle();
+      if (!blockRow) return { data: null, error: "Block not found" };
 
-    const { data: blockRow } = await supabase
-      .from("schedule_blocks")
-      .select("organization_id")
-      .eq("id", blockId)
-      .maybeSingle();
-    if (!blockRow) return { data: null, error: "Block not found" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", blockRow.organization_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", blockRow.organization_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+      const { data, error } = await supabase
+        .from("schedule_blocks")
+        .update({ end_time: endTime, updated_at: new Date().toISOString() })
+        .eq("id", blockId)
+        .select()
+        .single();
 
-    const { data, error } = await supabase
-      .from("schedule_blocks")
-      .update({ end_time: endTime, updated_at: new Date().toISOString() })
-      .eq("id", blockId)
-      .select()
-      .single();
+      if (error) return { data: null, error: error.message };
 
-    if (error) return { data: null, error: error.message };
-
-    revalidatePath("/dashboard/schedule");
-    return { data, error: null };
-  } catch (error: any) {
-    logger.error("Failed to resize schedule block", "schedule", error);
-    return { data: null, error: error.message || "Failed to resize block" };
-  }
+      revalidatePath("/dashboard/schedule");
+      return { data, error: null };
+    } catch (error: any) {
+      logger.error("Failed to resize schedule block", "schedule", error);
+      return { data: null, error: error.message || "Failed to resize block" };
+    }
+  });
 }
 
 /**
@@ -753,13 +731,11 @@ export async function assignJobToSchedule(
   startTime: string,
   endTime: string
 ) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
+      const { data: membership } = await supabase
       .from("organization_members")
       .select("user_id")
       .eq("organization_id", orgId)
@@ -849,24 +825,24 @@ export async function assignJobToSchedule(
     }
 
     revalidatePath("/dashboard/schedule");
-    revalidatePath("/dashboard/jobs");
-    return { data, error: null };
-  } catch (error: any) {
-    logger.error("Failed to assign job to schedule", "schedule", error);
-    return { data: null, error: error.message || "Failed to assign job" };
-  }
+      revalidatePath("/dashboard/jobs");
+      return { data, error: null };
+    } catch (error: any) {
+      logger.error("Failed to assign job to schedule", "schedule", error);
+      return { data: null, error: error.message || "Failed to assign job" };
+    }
+  });
 }
 
 /**
  * Unschedule a job: delete the schedule_block and reset the job's assignee + status
  */
 export async function unscheduleJob(blockId: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    // Get the block to find the linked job
+      // Get the block to find the linked job
     const { data: block, error: fetchErr } = await supabase
       .from("schedule_blocks")
       .select("job_id, organization_id")
@@ -900,11 +876,12 @@ export async function unscheduleJob(blockId: string) {
     }
 
     revalidatePath("/dashboard/schedule");
-    revalidatePath("/dashboard/jobs");
-    return { data: { success: true }, error: null };
-  } catch (error: any) {
-    return { data: null, error: error.message || "Failed to unschedule" };
-  }
+      revalidatePath("/dashboard/jobs");
+      return { data: { success: true }, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message || "Failed to unschedule" };
+    }
+  });
 }
 
 /* ── Backlog Jobs ──────────────────────────────────────── */
@@ -913,21 +890,19 @@ export async function unscheduleJob(blockId: string) {
  * Get unscheduled backlog jobs
  */
 export async function getBacklogJobs(orgId: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const { data, error } = await supabase
+      const { data, error } = await supabase
       .from("jobs")
       .select(`
         id,
@@ -957,10 +932,11 @@ export async function getBacklogJobs(orgId: string) {
     }));
 
     return { data: backlog, error: null };
-  } catch (error: any) {
-    logger.error("Failed to fetch backlog jobs", "schedule", error);
-    return { data: null, error: error.message || "Failed to fetch backlog" };
-  }
+    } catch (error: any) {
+      logger.error("Failed to fetch backlog jobs", "schedule", error);
+      return { data: null, error: error.message || "Failed to fetch backlog" };
+    }
+  });
 }
 
 /* ── Schedule Events CRUD ──────────────────────────────── */
@@ -979,21 +955,19 @@ export interface CreateScheduleEventParams {
  * Get schedule events for a date
  */
 export async function getScheduleEvents(orgId: string, date: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const startDate = new Date(date);
+      const startDate = new Date(date);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
@@ -1018,36 +992,35 @@ export async function getScheduleEvents(orgId: string, date: string) {
     }));
 
     return { data: events, error: null };
-  } catch (error: any) {
-    logger.error("Failed to fetch schedule events", "schedule", error);
-    return { data: null, error: error.message || "Failed to fetch events" };
-  }
+    } catch (error: any) {
+      logger.error("Failed to fetch schedule events", "schedule", error);
+      return { data: null, error: error.message || "Failed to fetch events" };
+    }
+  });
 }
 
 /**
  * Create a schedule event
  */
 export async function createScheduleEvent(params: CreateScheduleEventParams) {
-  try {
-    // Validate input
-    const CreateScheduleEventSchema = z.object({
-      organization_id: z.string().uuid(),
-      user_id: z.string().uuid(),
-      type: z.enum(["break", "meeting", "personal", "unavailable"]),
-      title: z.string().min(1).max(200),
-      start_time: z.string().datetime({ offset: true }),
-      end_time: z.string().datetime({ offset: true }),
-      notes: z.string().max(2000).optional().nullable(),
-    });
-    const validated = validate(CreateScheduleEventSchema, params);
-    if (validated.error) return { data: null, error: validated.error };
+  return withAuth(async (user) => {
+    try {
+      // Validate input
+      const CreateScheduleEventSchema = z.object({
+        organization_id: z.string().uuid(),
+        user_id: z.string().uuid(),
+        type: z.enum(["break", "meeting", "personal", "unavailable"]),
+        title: z.string().min(1).max(200),
+        start_time: z.string().datetime({ offset: true }),
+        end_time: z.string().datetime({ offset: true }),
+        notes: z.string().max(2000).optional().nullable(),
+      });
+      const validated = validate(CreateScheduleEventSchema, params);
+      if (validated.error) return { data: null, error: validated.error };
 
-    const supabase = await createServerSupabaseClient();
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
+      const { data: membership } = await supabase
       .from("organization_members")
       .select("user_id")
       .eq("organization_id", params.organization_id)
@@ -1072,52 +1045,52 @@ export async function createScheduleEvent(params: CreateScheduleEventParams) {
     if (error) return { data: null, error: error.message };
 
     revalidatePath("/dashboard/schedule");
-    return { data, error: null };
-  } catch (error: any) {
-    logger.error("Failed to create schedule event", "schedule", error);
-    return { data: null, error: error.message || "Failed to create event" };
-  }
+      return { data, error: null };
+    } catch (error: any) {
+      logger.error("Failed to create schedule event", "schedule", error);
+      return { data: null, error: error.message || "Failed to create event" };
+    }
+  });
 }
 
 /**
  * Delete a schedule event
  */
 export async function deleteScheduleEvent(eventId: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+      // Fetch event to verify org ownership
+      const { data: event } = await supabase
+        .from("schedule_events")
+        .select("organization_id")
+        .eq("id", eventId)
+        .maybeSingle();
+      if (!event) return { data: null, error: "Event not found" };
 
-    // Fetch event to verify org ownership
-    const { data: event } = await supabase
-      .from("schedule_events")
-      .select("organization_id")
-      .eq("id", eventId)
-      .maybeSingle();
-    if (!event) return { data: null, error: "Event not found" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", event.organization_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", event.organization_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
+      const { error } = await supabase
+        .from("schedule_events")
+        .delete()
+        .eq("id", eventId);
 
-    const { error } = await supabase
-      .from("schedule_events")
-      .delete()
-      .eq("id", eventId);
+      if (error) return { data: null, error: error.message };
 
-    if (error) return { data: null, error: error.message };
-
-    revalidatePath("/dashboard/schedule");
-    return { data: { success: true }, error: null };
-  } catch (error: any) {
-    logger.error("Failed to delete schedule event", "schedule", error);
-    return { data: null, error: error.message || "Failed to delete event" };
-  }
+      revalidatePath("/dashboard/schedule");
+      return { data: { success: true }, error: null };
+    } catch (error: any) {
+      logger.error("Failed to delete schedule event", "schedule", error);
+      return { data: null, error: error.message || "Failed to delete event" };
+    }
+  });
 }
 
 /* ── Conflict Check ────────────────────────────────────── */
@@ -1126,21 +1099,19 @@ export async function deleteScheduleEvent(eventId: string) {
  * Check for schedule conflicts via RPC
  */
 export async function checkScheduleConflicts(orgId: string) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: [], error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: [], error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: [], error: "Unauthorized" };
-
-    const { data, error } = await supabase.rpc("check_schedule_conflicts", {
+      const { data, error } = await supabase.rpc("check_schedule_conflicts", {
       p_org_id: orgId,
     });
 
@@ -1150,10 +1121,11 @@ export async function checkScheduleConflicts(orgId: string) {
     }
 
     return { data: data || [], error: null };
-  } catch (error: any) {
-    logger.error("Failed to check conflicts", "schedule", error);
-    return { data: [], error: error.message || "Failed to check conflicts" };
-  }
+    } catch (error: any) {
+      logger.error("Failed to check conflicts", "schedule", error);
+      return { data: [], error: error.message || "Failed to check conflicts" };
+    }
+  });
 }
 
 export interface CascadingDelay {
@@ -1170,21 +1142,19 @@ export async function getCascadingDelays(
   technicianId: string,
   date?: string
 ): Promise<{ data: CascadingDelay[]; error: string | null }> {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: [], error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: [], error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: [], error: "Unauthorized" };
-
-    const { data, error } = await supabase.rpc("get_cascading_delays", {
+      const { data, error } = await supabase.rpc("get_cascading_delays", {
       p_org_id: orgId,
       p_technician_id: technicianId,
       ...(date ? { p_date: date } : {}),
@@ -1196,10 +1166,11 @@ export async function getCascadingDelays(
     }
 
     return { data: data || [], error: null };
-  } catch (error: any) {
-    logger.error("Failed to get cascading delays", "schedule", error);
-    return { data: [], error: error.message || "Failed to get cascading delays" };
-  }
+    } catch (error: any) {
+      logger.error("Failed to get cascading delays", "schedule", error);
+      return { data: [], error: error.message || "Failed to get cascading delays" };
+    }
+  });
 }
 
 export async function validateScheduleDrop(
@@ -1211,21 +1182,19 @@ export async function validateScheduleDrop(
   locationLat?: number,
   locationLng?: number
 ) {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const { data, error } = await supabase.rpc("validate_schedule_drop", {
+      const { data, error } = await supabase.rpc("validate_schedule_drop", {
       p_org_id: orgId,
       p_technician_id: technicianId,
       p_start_time: startTime,
@@ -1241,10 +1210,11 @@ export async function validateScheduleDrop(
     }
 
     return { data, error: null };
-  } catch (error: any) {
-    logger.error("Failed to validate schedule drop", "schedule", error);
-    return { data: null, error: error.message || "Failed to validate" };
-  }
+    } catch (error: any) {
+      logger.error("Failed to validate schedule drop", "schedule", error);
+      return { data: null, error: error.message || "Failed to validate" };
+    }
+  });
 }
 
 /* ── Fatigue Compliance Check (SCHADS 10-Hour Rest Rule) ─── */
@@ -1260,10 +1230,11 @@ export async function checkFatigueCompliance(
   earliest_allowed_start: string | null;
   last_shift_end: string | null;
 }> {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
 
-    // Get the worker's most recent shift end time before the proposed start
+      // Get the worker's most recent shift end time before the proposed start
     const { data: recentBlocks } = await (supabase as any)
       .from("schedule_blocks")
       .select("end_time")
@@ -1307,16 +1278,17 @@ export async function checkFatigueCompliance(
       earliest_allowed_start: earliestAllowed.toISOString(),
       last_shift_end: recentBlocks[0].end_time,
     };
-  } catch (error: any) {
-    logger.error("Failed to check fatigue compliance", "schedule", error);
-    return {
-      compliant: true, // fail-open to not block scheduling
-      gap_hours: null,
-      minimum_required: 10,
-      earliest_allowed_start: null,
-      last_shift_end: null,
-    };
-  }
+    } catch (error: any) {
+      logger.error("Failed to check fatigue compliance", "schedule", error);
+      return {
+        compliant: true, // fail-open to not block scheduling
+        gap_hours: null,
+        minimum_required: 10,
+        earliest_allowed_start: null,
+        last_shift_end: null,
+      };
+    }
+  });
 }
 
 /* ── Get Weekly Hours for a Worker ──────────────────────── */
@@ -1331,8 +1303,9 @@ export async function getWorkerWeeklyHours(
   overtime_risk: boolean;
   blocks_count: number;
 }> {
-  try {
-    const supabase = await createServerSupabaseClient();
+  return withAuth(async (_user) => {
+    try {
+      const supabase = await createServerSupabaseClient();
     const date = weekDate ? new Date(weekDate) : new Date();
 
     const day = date.getDay();
@@ -1371,7 +1344,8 @@ export async function getWorkerWeeklyHours(
       overtime_risk: hours >= maxHours * 0.9,
       blocks_count: (blocks || []).length,
     };
-  } catch {
-    return { scheduled_hours: 0, max_hours: 38, overtime_risk: false, blocks_count: 0 };
-  }
+    } catch {
+      return { scheduled_hours: 0, max_hours: 38, overtime_risk: false, blocks_count: 0 };
+    }
+  });
 }

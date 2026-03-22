@@ -106,3 +106,18 @@ export function invalidateCachePrefix(prefix: string): void {
     }
   }
 }
+
+/** Clear all cache entries for a specific workspace (call on workspace switch) */
+export function clearWorkspaceCache(workspaceId: string): void {
+  for (const key of _memoryCache.keys()) {
+    if (key.startsWith(`${workspaceId}:`)) {
+      _memoryCache.delete(key);
+    }
+  }
+}
+
+/** Clear ALL in-memory cache entries (nuclear option for sign-out) */
+export function clearAllMemoryCache(): void {
+  _memoryCache.clear();
+  _inflightRequests.clear();
+}

@@ -449,6 +449,15 @@ function AuthPageInner() {
                   Sign In
                   <ArrowRight size={14} />
                 </motion.button>
+
+                <div className="pt-2 text-center">
+                  <a
+                    href="/auth/forgot-password"
+                    className="text-xs text-zinc-500 transition-colors hover:text-emerald-400"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
               </div>
             </motion.div>
           )}

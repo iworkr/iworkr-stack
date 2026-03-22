@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
       role: invite.role,
     });
   } catch (err: any) {
-    console.error("[accept-invite] exception:", err.message);
-    return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 });
+    console.error("[accept-invite] error:", err);
+    return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
   }
 }

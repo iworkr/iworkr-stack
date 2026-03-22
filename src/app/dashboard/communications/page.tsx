@@ -10,6 +10,7 @@
 import { useCallback, useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/hooks/use-query-keys";
+import DOMPurify from "dompurify";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone,
@@ -742,7 +743,7 @@ export default function CommunicationsPage() {
                           {detailEmail.body_html ? (
                             <div
                               className="prose prose-invert prose-sm max-w-none text-[13px] text-zinc-300"
-                              dangerouslySetInnerHTML={{ __html: detailEmail.body_html }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(detailEmail.body_html) }}
                             />
                           ) : (
                             <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-zinc-300">

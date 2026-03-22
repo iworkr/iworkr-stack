@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to render preview" }, { status: 500 });
+    console.error("[care/plan-reviews/preview] error:", error);
+    return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
   }
 }

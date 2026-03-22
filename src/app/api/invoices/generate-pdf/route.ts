@@ -186,9 +186,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err: any) {
-    console.error("PDF generation error:", err);
+    console.error("[invoices/generate-pdf] error:", err);
     return NextResponse.json(
-      { error: err.message || "PDF generation failed" },
+      { error: "An unexpected error occurred. Please try again." },
       { status: 500 },
     );
   }

@@ -152,10 +152,24 @@ serve(async (req) => {
       default:
         break;
     }
-  // FIXME: HIGH — No DLQ routing. Failed RevenueCat webhook payloads are lost. Route to webhook_dead_letters table on catch.
   } catch (err) {
     console.error("RevenueCat webhook error:", err);
-    return new Response(JSON.stringify({ error: String(err) }), {
+
+    // ── DLQ: Route failed payloads to webhook_dead_letters for retry ──
+    try {
+      await supabase.from("webhook_dead_letters").insert({
+        source: "revenuecat",
+        event_type: type,
+        payload: body,
+        error_message: err instanceof Error ? err.message : String(err),
+        status: "FAILED_REQUIRES_RETRY",
+        created_at: new Date().toISOString(),
+      });
+    } catch (dlqErr) {
+      console.error("[revenuecat-webhook] DLQ insert also failed:", dlqErr);
+    }
+
+    return new Response(JSON.stringify({ error: "Webhook processing failed" }), {
       status: 500,
     });
   }

@@ -22,7 +22,7 @@ import { logger } from "@/lib/logger";
 export async function POST(request: NextRequest) {
   try {
     // Rate limit
-    const rl = rateLimit(`automation:${getIdentifier(request)}`, RateLimits.api);
+    const rl = await rateLimit(`automation:${getIdentifier(request)}`, RateLimits.api);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many requests" },

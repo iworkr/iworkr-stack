@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       user_id: newUser.user.id,
     });
   } catch (err: any) {
-    console.error("[signup-invite] exception:", err.message);
-    return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 });
+    console.error("[signup-invite] error:", err);
+    return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
   }
 }

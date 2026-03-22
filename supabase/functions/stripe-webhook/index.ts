@@ -231,9 +231,23 @@ Deno.serve(async (req: Request) => {
         break;
       }
     }
-  // FIXME: HIGH — No DLQ routing. Failed Stripe webhook payloads are lost. Route to webhook_dead_letters table on catch.
   } catch (err) {
     console.error(`Webhook error [${type}]:`, err);
+
+    // ── DLQ: Route failed payloads to webhook_dead_letters for retry ──
+    try {
+      await supabase.from("webhook_dead_letters").insert({
+        source: "stripe",
+        event_type: type,
+        payload: { type, data },
+        error_message: err instanceof Error ? err.message : String(err),
+        status: "FAILED_REQUIRES_RETRY",
+        created_at: new Date().toISOString(),
+      });
+    } catch (dlqErr) {
+      console.error("[stripe-webhook] DLQ insert also failed:", dlqErr);
+    }
+
     return new Response("Webhook handler error", { status: 500 });
   }
 

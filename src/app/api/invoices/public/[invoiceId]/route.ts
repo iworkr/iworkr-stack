@@ -1,8 +1,9 @@
 /**
  * @route GET /api/invoices/public/[invoiceId]
  * @status COMPLETE
- * @auth PUBLIC — No auth required, public invoice access
- * @description Returns public invoice data for customer payment pages
+ * @auth PUBLIC — Requires secure_token query parameter to prevent IDOR
+ * @description Returns public invoice data for customer payment pages.
+ *   Uses secure_token to verify invoice ownership — prevents UUID guessing attacks.
  * @lastAudit 2026-03-22
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -10,37 +11,44 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Public endpoint — no auth required.
+ * Public endpoint — requires secure_token for IDOR protection.
  * Returns invoice data for the payment page.
  * Uses service role to bypass RLS (finance tables are locked to admins).
  */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ invoiceId: string }> }
 ) {
   const { invoiceId } = await params;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  // ── IDOR Protection: Require secure_token ──────────────────────────
+  const token = req.nextUrl.searchParams.get("token");
+  if (!token) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
 
-  const supabase = createClient(supabaseUrl, anonKey, {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
 
+  // Query BOTH id AND secure_token — prevents IDOR via UUID guessing
   const { data: invoice, error: invError } = await (supabase as any)
     .from("invoices")
-    .select("id, display_id, client_name, client_email, subtotal, tax_rate, tax, total, status, due_date, notes, payment_link, organization_id")
+    .select("id, display_id, client_name, client_email, subtotal, tax_rate, tax, total, status, due_date, notes, payment_link, organization_id, secure_token")
     .eq("id", invoiceId)
+    .eq("secure_token", token)
     .is("deleted_at", null)
     .maybeSingle();
 
   if (invError) {
-    console.error("[public-invoice] query error:", invError.message, invError.code, invoiceId);
+    console.error("[public-invoice] query error:", invError.code, invoiceId);
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
   if (!invoice) {
-    console.error("[public-invoice] no invoice found for id:", invoiceId);
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
@@ -60,6 +68,7 @@ export async function GET(
   const org = orgResult.data;
   const lineItems = itemsResult.data || [];
 
+  // Track "viewed" status (only once: sent → viewed)
   if (invoice.status === "sent") {
     await (supabase as any)
       .from("invoices")

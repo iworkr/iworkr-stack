@@ -159,7 +159,8 @@ export async function GET(request: NextRequest) {
       upsert: true,
     });
     if (upload.error) {
-      return NextResponse.json({ error: upload.error.message }, { status: 500 });
+      console.error("[compliance/dossier] upload error:", upload.error);
+      return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
     }
 
     await supabase.from("document_hashes").insert({
@@ -183,6 +184,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to generate dossier" }, { status: 500 });
+    console.error("[compliance/dossier] error:", error);
+    return NextResponse.json({ error: "An unexpected error occurred. Please try again." }, { status: 500 });
   }
 }

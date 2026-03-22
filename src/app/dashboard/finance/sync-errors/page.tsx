@@ -18,6 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { getSyncErrors, retrySyncLog, type SyncError } from "@/app/actions/ledger-sync";
+import { useToastStore } from "@/components/app/action-toast";
 import { useOrg } from "@/lib/hooks/use-org";
 
 function formatDateTime(iso: string) {
@@ -45,6 +46,7 @@ const PROVIDER_COLORS: Record<string, string> = {
 
 export default function SyncErrorsPage() {
   const { orgId } = useOrg();
+  const { addToast } = useToastStore();
   const [errors, setErrors] = useState<SyncError[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export default function SyncErrorsPage() {
     setRetrying(logId);
     startTransition(async () => {
       const { error: err } = await retrySyncLog(orgId, logId);
-      if (err) alert(`Retry failed: ${err}`);
+      if (err) addToast(`Retry failed: ${err}`, undefined, "error");
       else {
         setErrors((prev) => prev.filter((e) => e.id !== logId));
       }

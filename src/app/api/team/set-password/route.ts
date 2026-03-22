@@ -21,7 +21,7 @@ import { rateLimit, getIdentifier } from "@/lib/rate-limit";
 export async function POST(request: Request) {
   try {
     // Rate limit: 5 requests per minute per IP
-    const rl = rateLimit(`set-password:${getIdentifier(request)}`, { limit: 5, windowSeconds: 60 });
+    const rl = await rateLimit(`set-password:${getIdentifier(request)}`, { limit: 5, windowSeconds: 60 });
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many requests" },
