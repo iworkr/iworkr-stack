@@ -38,9 +38,14 @@ jobs:
           set -euo pipefail
           for fn in \
             convoy-defect-escalation \
+            convoy-daily-health-check \
             process-timesheet-math \
             process-integration-sync-queue \
-            convoy-daily-health-check
+            panopticon-text-to-sql \
+            execute-drop-and-cover \
+            aegis-triage-router \
+            agent-outrider-arbitrator \
+            smart-roster-match
           do
             echo "Deploying ${fn}..."
             supabase functions deploy "${fn}" --project-ref "${PROJECT_REF}"

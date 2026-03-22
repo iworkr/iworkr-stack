@@ -34,7 +34,8 @@ async function waitForProfile(pg: PgClient, userId: string, maxAttempts = 20) {
 }
 
 async function ensureUser(
-  supabase: ReturnType<typeof createClient>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   pg: PgClient,
   email: string,
   password: string,
