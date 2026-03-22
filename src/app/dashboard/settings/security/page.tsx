@@ -10,6 +10,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import type { Factor } from "@supabase/supabase-js";
+// Hyperion-Vanguard S-04: Client-side QR code — TOTP secret never leaves the browser
+import { QRCodeSVG } from "qrcode.react";
 
 /**
  * Aegis-Citadel: Security Settings — MFA Enrollment
@@ -216,13 +218,15 @@ export default function SecuritySettingsPage() {
                 1. Scan this QR code with your authenticator app:
               </p>
               <div className="flex justify-center rounded-lg bg-white p-4">
-                {/* QR code rendered as a data URL to the TOTP URI */}
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUri)}`}
-                  alt="MFA QR Code"
-                  width={200}
-                  height={200}
-                  className="rounded"
+                {/* Hyperion-Vanguard S-04: QR code rendered client-side.
+                    The TOTP URI (containing the MFA seed) NEVER leaves the browser.
+                    Previously used api.qrserver.com which leaked the seed to a 3rd party. */}
+                <QRCodeSVG
+                  value={qrUri}
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                  level="M"
                 />
               </div>
               {secret && (

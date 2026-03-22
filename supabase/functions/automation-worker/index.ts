@@ -31,10 +31,11 @@ import { withZodInterceptor } from "../_shared/withZodInterceptor.ts";
 
 /* ── CORS ──────────────────────────────────────────────── */
 
+import { corsHeaders as _baseCorsHeaders } from "../_shared/cors.ts";
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-dry-run",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  ..._baseCorsHeaders,
+  "Access-Control-Allow-Headers": _baseCorsHeaders["Access-Control-Allow-Headers"] + ", x-dry-run",
 };
 
 /* ── JSON Logic Engine (Lightweight) ──────────────────── */

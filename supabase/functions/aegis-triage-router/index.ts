@@ -7,13 +7,7 @@
  * @lastAudit 2026-03-22
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // Project Aegis — SIRS Triage Router

@@ -17,6 +17,8 @@ import {
   type FormEvent,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+// Hyperion-Vanguard F-04: Sanitize AI-generated HTML to prevent XSS
+import DOMPurify from "dompurify";
 import {
   Sparkles,
   FileText,
@@ -989,18 +991,18 @@ function TheCanvas({
           <li
             key={key}
             className="text-sm text-zinc-300 leading-relaxed ml-4 list-disc"
-            dangerouslySetInnerHTML={{ __html: processed.slice(2) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(processed.slice(2)) }}
           />
         );
       }
       // Empty line
       if (!text.trim()) return <div key={key} className="h-3" />;
-      // Paragraph
+      // Paragraph — Hyperion-Vanguard F-04: Sanitize AI output
       return (
         <p
           key={key}
           className="text-sm text-zinc-300 leading-relaxed mb-2"
-          dangerouslySetInnerHTML={{ __html: processed }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(processed) }}
         />
       );
     },
@@ -1118,16 +1120,20 @@ function TheCanvas({
             onInput={handleInput}
             className="prose prose-invert prose-sm max-w-none text-zinc-300 leading-relaxed focus:outline-none min-h-[400px]"
             dangerouslySetInnerHTML={{
-              __html: markdown
-                .replace(/\n/g, "<br/>")
-                .replace(
-                  /\{\{cite:([A-Za-z0-9_-]+)\}\}/g,
-                  (_, noteId: string) => {
-                    const citationIds = extractCitationIds(markdown);
-                    const idx = citationIds.indexOf(noteId) + 1;
-                    return `<sup class="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer font-mono text-[11px] hover:bg-emerald-500/20 transition-colors" data-cite-note="${noteId}" data-cite-index="${idx}">[${idx}]</sup>`;
-                  },
-                ),
+              // Hyperion-Vanguard F-04: Sanitize AI-generated content before rendering
+              __html: DOMPurify.sanitize(
+                markdown
+                  .replace(/\n/g, "<br/>")
+                  .replace(
+                    /\{\{cite:([A-Za-z0-9_-]+)\}\}/g,
+                    (_, noteId: string) => {
+                      const citationIds = extractCitationIds(markdown);
+                      const idx = citationIds.indexOf(noteId) + 1;
+                      return `<sup class="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer font-mono text-[11px] hover:bg-emerald-500/20 transition-colors" data-cite-note="${noteId}" data-cite-index="${idx}">[${idx}]</sup>`;
+                    },
+                  ),
+                { ADD_TAGS: ["sup"], ADD_ATTR: ["data-cite-note", "data-cite-index"] }
+              ),
             }}
           />
         ) : (

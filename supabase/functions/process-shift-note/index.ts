@@ -1,18 +1,14 @@
 /**
  * @module process-shift-note
  * @status COMPLETE
- * @auth UNSECURED — No user auth check; accepts POST with org/shift/worker IDs directly
+ * @auth SECURED — Hyperion-Vanguard S-03 Aegis Auth Gate
  * @description Processes shift note submissions with template resolution, family-visible data projection, signature handling, and Glasshouse progress note publishing
  * @dependencies Supabase
  * @lastAudit 2026-03-22
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 type ShiftNotePayload = {
   submission_id?: string;
@@ -51,6 +47,27 @@ function sanitizeFamilyProjection(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // ── Hyperion-Vanguard S-03: Aegis Auth Gate ──────────────────
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Missing authorization" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const supabaseAuth = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+  if (authError || !authUser) {
+    return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {

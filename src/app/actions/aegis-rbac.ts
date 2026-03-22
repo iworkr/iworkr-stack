@@ -78,6 +78,9 @@ export type MemberWithRole = {
 // ── Permission Queries ────────────────────────────────────────
 export async function getAllPermissions(): Promise<{ data: Permission[] | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data, error } = await (supabase as SupabaseRbac)
     .from("system_permissions")
     .select("*")
@@ -86,6 +89,10 @@ export async function getAllPermissions(): Promise<{ data: Permission[] | null; 
 }
 
 export async function getPermissionsByModule(): Promise<{ data: Record<string, Permission[]> | null; error: string | null }> {
+  // Hyperion-Vanguard S-02: Auth gate
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data, error } = await getAllPermissions();
   if (error || !data) return { data: null, error };
   const grouped: Record<string, Permission[]> = {};
@@ -99,6 +106,9 @@ export async function getPermissionsByModule(): Promise<{ data: Record<string, P
 // ── Role Queries ──────────────────────────────────────────────
 export async function getRoles(orgId: string): Promise<{ data: WorkspaceRole[] | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data: roles, error } = await (supabase as SupabaseRbac)
     .from("organization_roles")
     .select("*")
@@ -147,6 +157,9 @@ export async function getRoles(orgId: string): Promise<{ data: WorkspaceRole[] |
 
 export async function getRoleDetail(roleId: string): Promise<{ data: WorkspaceRole | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data: role, error } = await (supabase as SupabaseRbac)
     .from("organization_roles")
     .select("*")
@@ -178,6 +191,9 @@ export async function createRole(
   description?: string
 ): Promise<{ data: WorkspaceRole | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data, error } = await (supabase as SupabaseRbac)
     .from("organization_roles")
     .insert({ organization_id: orgId, name, color, description, is_system_role: false })
@@ -185,17 +201,14 @@ export async function createRole(
     .single();
 
   if (data) {
-    // Log audit
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await (supabase as SupabaseRbac).from("permission_audit_log").insert({
-        organization_id: orgId,
-        actor_id: user.id,
-        action: "role_created",
-        target_role_id: data.id,
-        details: { name, color },
-      });
-    }
+    // Log audit (user already verified by auth gate above)
+    await (supabase as SupabaseRbac).from("permission_audit_log").insert({
+      organization_id: orgId,
+      actor_id: user.id,
+      action: "role_created",
+      target_role_id: data.id,
+      details: { name, color },
+    });
   }
 
   return { data: data ? { ...(data as Record<string, unknown>), permission_ids: [] } as unknown as WorkspaceRole : null, error: error?.message ?? null };
@@ -206,6 +219,9 @@ export async function updateRole(
   updates: { name?: string; color?: string; description?: string }
 ): Promise<{ error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { error: "Unauthorized" };
   const { error } = await (supabase as SupabaseRbac)
     .from("organization_roles")
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -215,6 +231,9 @@ export async function updateRole(
 
 export async function deleteRole(roleId: string, orgId: string): Promise<{ error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { error: "Unauthorized" };
 
   // Check if role is immutable
   const { data: role } = await (supabase as SupabaseRbac)
@@ -231,16 +250,14 @@ export async function deleteRole(roleId: string, orgId: string): Promise<{ error
     .update({ role_id: null })
     .eq("role_id", roleId);
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await (supabase as SupabaseRbac).from("permission_audit_log").insert({
-      organization_id: orgId,
-      actor_id: user.id,
-      action: "role_deleted",
-      target_role_id: roleId,
-      details: { name: role?.name },
-    });
-  }
+  // Log audit (user already verified by auth gate above)
+  await (supabase as SupabaseRbac).from("permission_audit_log").insert({
+    organization_id: orgId,
+    actor_id: user.id,
+    action: "role_deleted",
+    target_role_id: roleId,
+    details: { name: role?.name },
+  });
 
   const { error } = await (supabase as SupabaseRbac)
     .from("organization_roles")
@@ -256,7 +273,9 @@ export async function setRolePermissions(
   orgId: string
 ): Promise<{ error: string | null }> {
   const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { error: "Unauthorized" };
 
   // Delete existing
   await (supabase as SupabaseRbac).from("role_permissions").delete().eq("role_id", roleId);
@@ -272,16 +291,14 @@ export async function setRolePermissions(
     if (error) return { error: error.message };
   }
 
-  // Audit
-  if (user) {
-    await (supabase as SupabaseRbac).from("permission_audit_log").insert({
-      organization_id: orgId,
-      actor_id: user.id,
-      action: "permissions_updated",
-      target_role_id: roleId,
-      details: { permission_count: permissionIds.length },
-    });
-  }
+  // Audit (user already verified by auth gate above)
+  await (supabase as SupabaseRbac).from("permission_audit_log").insert({
+    organization_id: orgId,
+    actor_id: user.id,
+    action: "permissions_updated",
+    target_role_id: roleId,
+    details: { permission_count: permissionIds.length },
+  });
 
   return { error: null };
 }
@@ -293,7 +310,9 @@ export async function toggleRolePermission(
   orgId: string
 ): Promise<{ error: string | null }> {
   const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { error: "Unauthorized" };
 
   if (enabled) {
     const { error } = await (supabase as SupabaseRbac).from("role_permissions").upsert({
@@ -311,15 +330,14 @@ export async function toggleRolePermission(
     if (error) return { error: error.message };
   }
 
-  if (user) {
-    await (supabase as SupabaseRbac).from("permission_audit_log").insert({
-      organization_id: orgId,
-      actor_id: user.id,
-      action: enabled ? "permission_granted" : "permission_revoked",
-      target_role_id: roleId,
-      details: { permission_id: permissionId },
-    });
-  }
+  // Audit (user already verified by auth gate above)
+  await (supabase as SupabaseRbac).from("permission_audit_log").insert({
+    organization_id: orgId,
+    actor_id: user.id,
+    action: enabled ? "permission_granted" : "permission_revoked",
+    target_role_id: roleId,
+    details: { permission_id: permissionId },
+  });
 
   return { error: null };
 }
@@ -331,28 +349,33 @@ export async function assignRoleToMember(
   roleId: string | null
 ): Promise<{ error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { error: "Unauthorized" };
+
   const { error } = await (supabase as SupabaseRbac)
     .from("organization_members")
     .update({ role_id: roleId })
     .eq("organization_id", orgId)
     .eq("user_id", userId);
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await (supabase as SupabaseRbac).from("permission_audit_log").insert({
-      organization_id: orgId,
-      actor_id: user.id,
-      action: roleId ? "role_assigned" : "role_unassigned",
-      target_user_id: userId,
-      details: { role_id: roleId },
-    });
-  }
+  // Audit (user already verified by auth gate above)
+  await (supabase as SupabaseRbac).from("permission_audit_log").insert({
+    organization_id: orgId,
+    actor_id: user.id,
+    action: roleId ? "role_assigned" : "role_unassigned",
+    target_user_id: userId,
+    details: { role_id: roleId },
+  });
 
   return { error: error?.message ?? null };
 }
 
 export async function getMembersWithRoles(orgId: string): Promise<{ data: MemberWithRole[] | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data, error } = await (supabase as SupabaseRbac)
     .from("organization_members")
     .select(`
@@ -410,6 +433,9 @@ export async function getUserPermissions(
   orgId: string
 ): Promise<{ data: { permissions: string[]; role_name: string; is_owner: boolean } | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data, error } = await (supabase as SupabaseRbac).rpc("get_user_permissions", {
     p_user_id: userId,
     p_org_id: orgId,
@@ -421,6 +447,9 @@ export async function getUserPermissions(
 // ── Stats ─────────────────────────────────────────────────────
 export async function getRbacStats(orgId: string): Promise<{ data: RbacStats | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data, error } = await (supabase as SupabaseRbac).rpc("get_rbac_stats", { p_org_id: orgId });
   if (error) return { data: null, error: error.message };
   return { data: data as RbacStats, error: null };
@@ -433,6 +462,9 @@ export async function duplicateRole(
   newName: string
 ): Promise<{ data: WorkspaceRole | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
 
   // Get original role
   const { data: original } = await (supabase as SupabaseRbac)
@@ -465,7 +497,7 @@ export async function duplicateRole(
     .eq("role_id", roleId);
 
   if (perms && perms.length > 0) {
-    const { data: { user } } = await supabase.auth.getUser();
+    // user already verified by auth gate above
     await (supabase as SupabaseRbac).from("role_permissions").insert(
       (perms as { permission_id: string }[]).map((p) => ({
         role_id: newRole.id,
@@ -484,6 +516,9 @@ export async function duplicateRole(
 // ── Audit Log ─────────────────────────────────────────────────
 export async function getAuditLog(orgId: string, limit = 100): Promise<{ data: AuditEntry[] | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data, error } = await (supabase as SupabaseRbac)
     .from("permission_audit_log")
     .select(`
@@ -531,6 +566,9 @@ export async function setDefaultRole(
   roleId: string
 ): Promise<{ error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { error: "Unauthorized" };
   // Unset all defaults first
   await (supabase as SupabaseRbac)
     .from("organization_roles")
@@ -550,6 +588,9 @@ export async function getImpersonationPermissions(
   roleId: string
 ): Promise<{ data: string[] | null; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { data: null, error: "Unauthorized" };
   const { data, error } = await (supabase as SupabaseRbac)
     .from("role_permissions")
     .select("permission_id")
@@ -566,6 +607,9 @@ export async function migrateToCustomRole(
   targetRoleId: string
 ): Promise<{ count: number; error: string | null }> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return { count: 0, error: "Unauthorized" };
 
   // Get all members with this legacy role and no custom role
   const { data: members, error: fetchErr } = await (supabase as SupabaseRbac)
@@ -589,16 +633,13 @@ export async function migrateToCustomRole(
 
   if (error) return { count: 0, error: error.message };
 
-  // Audit
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await (supabase as SupabaseRbac).from("permission_audit_log").insert({
-      organization_id: orgId,
-      actor_id: user.id,
-      action: "batch_migration",
-      details: { legacy_role: legacyRole, target_role_id: targetRoleId, count: userIds.length },
-    });
-  }
+  // Audit (user already verified by auth gate above)
+  await (supabase as SupabaseRbac).from("permission_audit_log").insert({
+    organization_id: orgId,
+    actor_id: user.id,
+    action: "batch_migration",
+    details: { legacy_role: legacyRole, target_role_id: targetRoleId, count: userIds.length },
+  });
 
   return { count: userIds.length, error: null };
 }

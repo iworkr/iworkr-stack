@@ -12,11 +12,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders as _baseCorsHeaders } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-active-workspace-id",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  ..._baseCorsHeaders,
+  "Access-Control-Allow-Headers": _baseCorsHeaders["Access-Control-Allow-Headers"] + ", x-active-workspace-id",
 };
 
 Deno.serve(async (req) => {

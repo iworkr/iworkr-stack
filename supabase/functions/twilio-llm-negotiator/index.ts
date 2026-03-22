@@ -11,6 +11,7 @@
 // Pipeline: Twilio SMS webhook → GPT-4o Function Calling → Schedule mutation → Auto-reply
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -18,12 +19,6 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
 const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
 const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER") ?? "";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const TOOLS = [
   {
@@ -286,14 +281,28 @@ Context:
 
       // Execute the schedule mutation
       if (neg.job_id) {
+        // Hyperion-Vanguard D-06: Fixed duration calculation.
+        // Previously: original_start - original_start = 0 (always zero).
+        // Now: Look up existing block to get actual duration, fallback to 1 hour.
+        const { data: existingBlock } = await supabase
+          .from("schedule_blocks")
+          .select("start_time, end_time")
+          .eq("job_id", neg.job_id as string)
+          .eq("organization_id", orgId)
+          .neq("status", "cancelled")
+          .limit(1)
+          .maybeSingle();
+
+        const originalDuration = existingBlock?.start_time && existingBlock?.end_time
+          ? new Date(existingBlock.end_time).getTime() - new Date(existingBlock.start_time).getTime()
+          : 3600000; // default 1 hour
+
         await supabase
           .from("schedule_blocks")
           .update({
             start_time: newDatetime,
             end_time: new Date(
-              new Date(newDatetime).getTime() +
-                (new Date(neg.original_datetime as string).getTime() -
-                  new Date(neg.original_datetime as string).getTime() || 3600000)
+              new Date(newDatetime).getTime() + originalDuration
             ).toISOString(),
             metadata: {
               ai_rescheduled: true,

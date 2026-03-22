@@ -8,10 +8,11 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { corsHeaders as _baseCorsHeaders } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-active-workspace-id",
+  ..._baseCorsHeaders,
+  "Access-Control-Allow-Headers": _baseCorsHeaders["Access-Control-Allow-Headers"] + ", x-active-workspace-id",
 };
 
 interface ShiftSlot {

@@ -84,6 +84,9 @@ export async function getWorkforceDirectory(
 ): Promise<{ members: WorkforceMember[]; telemetry: WorkforceTelemetry }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return { members: [], telemetry: { total_headcount: 0, active_on_shift: 0, compliance_rate: 0, avg_utilization: 0 } };
 
     // 1. Get all active members
     const { data: members, error } = await supabase
@@ -260,6 +263,9 @@ export async function getWorkerCredentials(
 ): Promise<WorkerCredential[]> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return [];
     const { data, error } = await (supabase as any)
       .from("worker_credentials")
       .select("*")
@@ -296,6 +302,9 @@ export async function getWorkerActivity(
 ): Promise<WorkerActivity[]> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return [];
 
     // Get audit log entries for this user
     const { data: auditLogs } = await (supabase as any)
@@ -372,6 +381,9 @@ export async function updateStaffBanking(data: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return { success: false, error: "Unauthorized" };
 
     // Ensure staff_profiles row exists (upsert a minimal row if not)
     await (supabase as any)
@@ -415,6 +427,9 @@ export async function updateWorkerAvailability(data: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return { success: false, error: "Unauthorized" };
 
     // Transform availability to the storage format (only include available slots)
     const cleanAvailability: Record<string, { start: string; end: string }[]> = {};
@@ -455,6 +470,9 @@ export async function updateWorkerSkills(data: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return { success: false, error: "Unauthorized" };
 
     // Upsert staff_profiles to ensure the row exists + update qualifications atomically
     const { error } = await (supabase as any)
@@ -494,9 +512,9 @@ export async function updateWorkerRole(data: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Unauthorized" };
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return { success: false, error: "Unauthorized" };
 
     // If elevating to admin/owner, require confirmation
     if ((data.new_role === "admin" || data.new_role === "owner") && data.confirmation !== "GRANT ADMIN") {
@@ -554,9 +572,9 @@ export async function toggleWorkerSuspension(data: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Unauthorized" };
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return { success: false, error: "Unauthorized" };
 
     const newStatus = data.action === "suspend" ? "suspended" : "active";
 
@@ -594,6 +612,9 @@ export async function toggleWorkerSuspension(data: {
 export async function getWorkerDossier(userId: string, orgId: string) {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return null;
 
     // Parallel fetch all data
     const [staffResult, memberResult, profileResult, credsResult, scheduledResult] = await Promise.all([

@@ -246,7 +246,32 @@ Deno.serve(async (req) => {
     }
 
     // ── Step 3: Vision AI Extraction ────────────────────────
-    const base64Pdf = btoa(String.fromCharCode(...pdfBuffer));
+    // Hyperion-Vanguard F-03: Fixed PDF stack overflow.
+    // String.fromCharCode(...pdfBuffer) on a 5MB PDF passes 5 million args,
+    // blowing the V8 call stack. Use chunked encoding instead.
+    let base64Pdf = "";
+    const chunkSize = 8192;
+    const bytes = pdfBuffer instanceof Uint8Array ? pdfBuffer : new Uint8Array(pdfBuffer);
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      let binary = "";
+      for (let j = 0; j < chunk.length; j++) {
+        binary += String.fromCharCode(chunk[j]);
+      }
+      base64Pdf += btoa(binary);
+    }
+    // Re-encode properly: decode the concatenated base64 and re-encode as one string
+    // Actually, we can use a simpler approach for Deno:
+    {
+      let binaryStr = "";
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+        for (let j = 0; j < chunk.length; j++) {
+          binaryStr += String.fromCharCode(chunk[j]);
+        }
+      }
+      base64Pdf = btoa(binaryStr);
+    }
 
     let extracted: ExtractedInvoice;
     let aiModel = "gpt-4o";

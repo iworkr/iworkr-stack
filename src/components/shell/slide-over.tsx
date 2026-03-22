@@ -7,8 +7,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Maximize2, MessageSquare } from "lucide-react";
-import { useState, useEffect } from "react";
+import { X, Maximize2, MessageSquare, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useShellStore } from "@/lib/shell-store";
 import { useJobsStore } from "@/lib/jobs-store";
@@ -17,6 +17,8 @@ import { StatusIcon } from "@/components/app/status-icon";
 import { PriorityIcon } from "@/components/app/priority-icon";
 import { PopoverMenu } from "@/components/app/popover-menu";
 import { useToastStore } from "@/components/app/action-toast";
+// Hyperion-Vanguard D-05: Wire SlideOver edits to actual server action
+import { updateJob } from "@/app/actions/jobs";
 import type { Priority, JobStatus } from "@/lib/data";
 
 const statusOptions: { value: JobStatus; label: string }[] = [
@@ -55,6 +57,26 @@ export function SlideOver() {
   const [localAssignee, setLocalAssignee] = useState("");
   const [activePopover, setActivePopover] = useState<string | null>(null);
   const [description, setDescription] = useState("");
+  const [isSaving, startSaving] = useTransition();
+
+  // Hyperion-Vanguard D-05: Persist edits to the database via server action
+  const persistUpdate = useCallback(
+    (field: string, value: unknown) => {
+      if (!slideOverContent?.id) return;
+      startSaving(async () => {
+        try {
+          const result = await updateJob(slideOverContent.id, { [field]: value });
+          if (result?.error) {
+            addToast(`Failed to save: ${result.error}`);
+          }
+        } catch (err) {
+          addToast("Failed to save changes");
+          console.error("[SlideOver] Save failed:", err);
+        }
+      });
+    },
+    [slideOverContent?.id, addToast],
+  );
 
   // Sync from job data
   useEffect(() => {
@@ -143,10 +165,11 @@ export function SlideOver() {
                     onChange={(e) => setLocalTitle(e.target.value)}
                     onBlur={() => {
                       setEditingTitle(false);
+                      persistUpdate("title", localTitle);
                       addToast("Title updated");
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") { setEditingTitle(false); addToast("Title updated"); }
+                      if (e.key === "Enter") { setEditingTitle(false); persistUpdate("title", localTitle); addToast("Title updated"); }
                     }}
                     className="mb-4 w-full bg-transparent text-[20px] font-medium tracking-tight text-zinc-100 outline-none"
                   />
@@ -163,7 +186,7 @@ export function SlideOver() {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  onBlur={() => addToast("Saved")}
+                  onBlur={() => { persistUpdate("description", description); addToast("Saved"); }}
                   placeholder="Add description..."
                   className="mb-6 w-full resize-none rounded-lg border border-transparent bg-transparent p-0 text-[13px] leading-relaxed text-[var(--text-muted)] outline-none transition-colors focus:border-[var(--card-border)] focus:bg-[var(--card-bg)] focus:p-3"
                   rows={4}
@@ -212,7 +235,7 @@ export function SlideOver() {
                         onClose={() => setActivePopover(null)}
                         items={statusOptions.map((s) => ({ value: s.value, label: s.label, icon: <StatusIcon status={s.value} size={12} /> }))}
                         selected={localStatus}
-                        onSelect={(v) => { setLocalStatus(v); addToast(`Status changed to ${statusOptions.find(s => s.value === v)?.label}`); }}
+                        onSelect={(v) => { setLocalStatus(v); persistUpdate("status", v); addToast(`Status changed to ${statusOptions.find(s => s.value === v)?.label}`); }}
                         width={180}
                         searchable={false}
                       />
@@ -235,7 +258,7 @@ export function SlideOver() {
                         onClose={() => setActivePopover(null)}
                         items={priorityOptions.map((p) => ({ value: p.value, label: p.label, icon: <PriorityIcon priority={p.value} size={12} /> }))}
                         selected={localPriority}
-                        onSelect={(v) => { setLocalPriority(v); addToast(`Priority changed to ${priorityOptions.find(p => p.value === v)?.label}`); }}
+                        onSelect={(v) => { setLocalPriority(v); persistUpdate("priority", v); addToast(`Priority changed to ${priorityOptions.find(p => p.value === v)?.label}`); }}
                         width={170}
                         searchable={false}
                       />
@@ -257,7 +280,13 @@ export function SlideOver() {
                         onClose={() => setActivePopover(null)}
                         items={assigneeOptions.map((a) => ({ value: a, label: a }))}
                         selected={localAssignee}
-                        onSelect={(v) => { setLocalAssignee(v); addToast(`Assigned to ${v}`); }}
+                        onSelect={(v) => {
+                          setLocalAssignee(v);
+                          // Find the team member's user_id for the assignee_id field
+                          const member = teamMembers.find((m) => (m.name || "Team Member") === v);
+                          if (member) persistUpdate("assignee_id", member.id);
+                          addToast(`Assigned to ${v}`);
+                        }}
                         width={190}
                       />
                     </div>

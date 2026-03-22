@@ -420,6 +420,81 @@ export async function syncClaimToXero(claimId: string, orgId: string) {
 /* ══════════════════════════════════════════════════════════════
    RETENTION DASHBOARD
    ══════════════════════════════════════════════════════════════ */
+/**
+ * Hyperion-Vanguard D-04: Release retention funds for a contract.
+ * Updates the contract's retention_released amount and sets the appropriate
+ * release milestone flags. This replaces the fake setTimeout placeholder.
+ */
+export async function releaseRetention(
+  contractId: string,
+  orgId: string,
+  releaseType: "50_percent" | "final" = "final",
+): Promise<{ ok: boolean; error: string | null }> {
+  try {
+    const { supabase, user } = await assertOrgMember(orgId);
+
+    // Get the contract
+    const { data: contract, error: fetchErr } = await (supabase as any)
+      .from("commercial_contracts")
+      .select("id, total_retention_held, retention_released, retention_release_50_done, retention_release_final, status")
+      .eq("id", contractId)
+      .eq("organization_id", orgId)
+      .single();
+
+    if (fetchErr || !contract) {
+      return { ok: false, error: fetchErr?.message || "Contract not found" };
+    }
+
+    if (contract.retention_release_final) {
+      return { ok: false, error: "Retention already fully released" };
+    }
+
+    const totalHeld = contract.total_retention_held || 0;
+    const alreadyReleased = contract.retention_released || 0;
+    const remaining = totalHeld - alreadyReleased;
+
+    let releaseAmount: number;
+    const updates: Record<string, unknown> = {};
+
+    if (releaseType === "50_percent" && !contract.retention_release_50_done) {
+      releaseAmount = Math.round(totalHeld * 0.5 * 100) / 100;
+      updates.retention_release_50_done = true;
+    } else {
+      // Final release — release everything remaining
+      releaseAmount = remaining;
+      updates.retention_release_final = true;
+      updates.status = "CLOSED";
+    }
+
+    updates.retention_released = alreadyReleased + releaseAmount;
+    updates.updated_at = new Date().toISOString();
+
+    const { error: updateErr } = await (supabase as any)
+      .from("commercial_contracts")
+      .update(updates)
+      .eq("id", contractId)
+      .eq("organization_id", orgId);
+
+    if (updateErr) throw updateErr;
+
+    // Create a ledger entry for audit trail
+    await (supabase as any).from("finance_ledger_entries").insert({
+      organization_id: orgId,
+      type: "retention_release",
+      amount: releaseAmount,
+      reference_id: contractId,
+      reference_type: "commercial_contract",
+      description: `Retention ${releaseType === "50_percent" ? "50%" : "final"} release`,
+      created_by: user.id,
+    }).then(() => {}).catch(() => {});
+
+    revalidatePath("/dashboard/finance/retention");
+    return { ok: true, error: null };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "Release failed" };
+  }
+}
+
 export async function getRetentionSummary(orgId: string) {
   try {
     const { supabase } = await assertOrgMember(orgId);

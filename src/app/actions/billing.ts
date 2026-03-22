@@ -147,6 +147,9 @@ export async function getBillingInvoices(
 ): Promise<{ invoices: BillingInvoice[]; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
 
     let query = (supabase as SupabaseClient)
       .from("invoices")
@@ -244,6 +247,9 @@ export async function getInvoiceDetail(
 }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
 
     const [invoiceRes, orgRes] = await Promise.all([
       (supabase as SupabaseClient)
@@ -355,6 +361,9 @@ export async function getBillingTelemetry(
 ): Promise<{ telemetry: BillingTelemetry | null; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
     const { data, error } = await (supabase as SupabaseClient).rpc("get_billing_telemetry", {
       p_org_id: orgId,
     });
@@ -373,6 +382,9 @@ export async function runBillingBatch(
 ): Promise<{ result: BatchResult | null; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
     const { data, error } = await (supabase as SupabaseClient).rpc("generate_billing_batches", {
       p_org_id: orgId,
     });
@@ -397,6 +409,9 @@ export async function dispatchInvoice(
 ): Promise<{ ok: boolean; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
 
     // If override email provided, update plan_manager_email first
     if (overrideEmail) {
@@ -449,6 +464,9 @@ export async function bulkDispatchInvoices(
 }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Unauthorized");
 
@@ -496,6 +514,9 @@ export async function markInvoicesPaid(
 ): Promise<{ ok: boolean; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
     const { error } = await (supabase as SupabaseClient)
       .from("invoices")
       .update({
@@ -528,6 +549,9 @@ export async function overrideLineItem(
 ): Promise<{ ok: boolean; newTotal: number; error: string | null }> {
   try {
     const supabase = await createServerSupabaseClient();
+    // Hyperion-Vanguard S-02: Auth gate
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
 
     const newHours = updates.hours;
     const newRate = updates.rate;
@@ -585,10 +609,15 @@ export async function exportProdaCsv(
   try {
     const supabase = await createServerSupabaseClient();
 
+    // Hyperion-Vanguard D-02: Auth gate — prevent unauthenticated PRODA export
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return { csv: null, error: "Unauthorized" };
+
+    // Hyperion-Vanguard D-02: Include `id` in SELECT so we can mark as CLAIMED
     const { data: invoices } = await (supabase as SupabaseClient)
       .from("invoices")
       .select(
-        `display_id, ndis_participant_number, plan_manager_email, total,
+        `id, display_id, ndis_participant_number, plan_manager_email, total,
          billing_period_start, billing_period_end, funding_type,
          invoice_line_items(ndis_support_item_number, shift_date, hours, rate, line_total, description)`,
       )
@@ -597,6 +626,15 @@ export async function exportProdaCsv(
       .is("deleted_at", null);
 
     if (!invoices?.length) return { csv: null, error: "No invoices queued for PRODA export" };
+
+    // Get org registration number for the CSV
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("settings")
+      .eq("id", orgId)
+      .single();
+    const orgSettings = (orgData?.settings as OrgSettingsRaw) || {};
+    const registrationNumber = orgSettings.ndis_registration_number || "";
 
     const rows: string[] = [
       "RegistrationNumber,NDISNumber,SupportItemNumber,DateOfService,ClaimedAmount,ClaimReference",
@@ -607,7 +645,7 @@ export async function exportProdaCsv(
       for (const li of items) {
         rows.push(
           [
-            "", // provider registration number — filled from org settings
+            registrationNumber,
             inv.ndis_participant_number || "",
             li.ndis_support_item_number || "",
             li.shift_date || "",
@@ -618,13 +656,28 @@ export async function exportProdaCsv(
       }
     }
 
-    // Mark as exported
-    const ids = invoices.map((i: Record<string, unknown>) => i.id as string | undefined).filter(Boolean);
-    if (ids.length) {
-      await (supabase as SupabaseClient)
+    // Hyperion-Vanguard D-02: Mark as CLAIMED BEFORE returning CSV
+    // This prevents duplicate government claims on re-export
+    const claimedIds = invoices
+      .map((i: Record<string, unknown>) => i.id as string)
+      .filter(Boolean);
+
+    if (claimedIds.length) {
+      const { error: updateErr } = await (supabase as SupabaseClient)
         .from("invoices")
-        .update({ proda_export_status: "exported", status: "sent" })
-        .in("id", ids);
+        .update({
+          proda_export_status: "exported",
+          status: "sent",
+          updated_at: new Date().toISOString(),
+        })
+        .in("id", claimedIds);
+
+      if (updateErr) {
+        // CRITICAL: If we can't mark as claimed, do NOT return CSV
+        // This prevents duplicate government claims
+        console.error("[exportProdaCsv] Failed to mark invoices as claimed:", updateErr);
+        return { csv: null, error: "Failed to mark invoices as exported. Aborting to prevent duplicate claims." };
+      }
     }
 
     revalidatePath("/dashboard/finance/invoicing");

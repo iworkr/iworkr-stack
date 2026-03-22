@@ -107,23 +107,25 @@ export async function POST(req: NextRequest) {
       // Stripe splits the payment at the gateway level:
       //   - (amount - applicationFee) → merchant's connected account
       //   - applicationFee → iWorkr platform account
-      const paymentIntent = await stripe.paymentIntents.create(
-        {
-          amount: amountCents,
-          currency: cur,
-          application_fee_amount: applicationFee,
-          transfer_data: {
-            destination: stripeAccountId,
-          },
-          metadata: {
-            organization_id: orgId,
-            invoice_id: invoiceId || "",
-            platform_fee_cents: applicationFee.toString(),
-            platform_fee_percent: feePercent.toString(),
-          },
+      // Hyperion-Vanguard D-01: Destination Charge — DO NOT pass stripeAccount
+      // as the 2nd arg. Stripe Connect destination charges route funds via
+      // transfer_data.destination. Passing stripeAccount simultaneously causes
+      // the "double-account" API crash (invalid_request_error).
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amountCents,
+        currency: cur,
+        application_fee_amount: applicationFee,
+        transfer_data: {
+          destination: stripeAccountId,
         },
-        { stripeAccount: stripeAccountId }
-      );
+        automatic_payment_methods: { enabled: true },
+        metadata: {
+          organization_id: orgId,
+          invoice_id: invoiceId || "",
+          platform_fee_cents: applicationFee.toString(),
+          platform_fee_percent: feePercent.toString(),
+        },
+      });
 
       const { error: paymentRecordError } = await (supabase as any).from("payments").insert({
         organization_id: orgId,

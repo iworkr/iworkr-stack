@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "post api auth switch context with valid session",
+    "description": "Test POST /api/auth/switch-context with a valid session cookie and valid workspaceId (and optional branchId) in the request body. Verify the response status is 200 and the response body contains ok: true and the workspace object with id, name, slug, and role."
+  },
+  {
+    "id": "TC002",
+    "title": "get api auth switch context with valid session",
+    "description": "Test GET /api/auth/switch-context with a valid session cookie. Verify the response status is 200 and the response body contains the current workspaceId and branchId."
+  },
+  {
+    "id": "TC003",
+    "title": "post api auth switch context without session cookie",
+    "description": "Test POST /api/auth/switch-context without a session cookie. Verify the response status is 401 Not authenticated."
+  },
+  {
+    "id": "TC004",
+    "title": "get api auth switch context with expired or invalid cookie",
+    "description": "Test GET /api/auth/switch-context with an expired or invalid session cookie. Verify the response status is 401 Not authenticated."
+  },
+  {
+    "id": "TC005",
+    "title": "post api team invite with valid admin session",
+    "description": "Test POST /api/team/invite with a valid admin session cookie and a valid request body containing email and role. Verify the response status is 200 and the response body contains success, invite_id, email, and role."
+  },
+  {
+    "id": "TC006",
+    "title": "post api team validate invite with valid token",
+    "description": "Test POST /api/team/validate-invite with a valid invite token in the request body. Verify the response status is 200 and the response body contains valid: true, email, role, and organization_id."
+  },
+  {
+    "id": "TC007",
+    "title": "post api team signup invite with valid data",
+    "description": "Test POST /api/team/signup-invite with a valid token, email, and password in the request body. Verify the response status is 200 and the response body contains success and user_id."
+  },
+  {
+    "id": "TC008",
+    "title": "post api team accept invite with valid session",
+    "description": "Test POST /api/team/accept-invite with a valid session cookie for an existing user. Verify the response status is 200 and the response body contains success and organization_id."
+  },
+  {
+    "id": "TC009",
+    "title": "post api team set password with admin privileges",
+    "description": "Test POST /api/team/set-password with a valid admin session cookie and a valid request body containing userId and password. Verify the response status is 200 and the response body contains success and email."
+  },
+  {
+    "id": "TC010",
+    "title": "post api compliance verify with file upload",
+    "description": "Test POST /api/compliance/verify with a multipart/form-data request containing a file field and no session cookie. Verify the response status is 200 and the response body contains authentic, sha256_hash, record, and message."
+  }
+]

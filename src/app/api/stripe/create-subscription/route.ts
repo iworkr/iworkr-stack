@@ -114,7 +114,8 @@ export async function POST(req: NextRequest) {
       type,
     });
   } catch (err: any) {
-    console.error(`[Stripe] Subscription creation failed:`, err.message, `priceId=${priceId}, stripeKey starts with=${process.env.STRIPE_SECRET_KEY?.slice(0, 10)}`);
+    // Hyperion-Vanguard S-05: NEVER log Stripe secret key (even prefix)
+    console.error(`[Stripe] Subscription creation failed:`, err.message, `priceId=${priceId}`);
     return NextResponse.json(
       { error: err.message || "Stripe subscription creation failed" },
       { status: 500 }

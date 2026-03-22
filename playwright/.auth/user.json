@@ -1,0 +1,33 @@
+{
+  "cookies": [
+    {
+      "name": "sb-127-auth-token",
+      "value": "base64-eyJhY2Nlc3NfdG9rZW4iOiJleUpoYkdjaU9pSkZVekkxTmlJc0ltdHBaQ0k2SW1JNE1USTJPV1l4TFRJeFpEZ3ROR1l5WlMxaU56RTVMV015TWpRd1lUZzBNR1E1TUNJc0luUjVjQ0k2SWtwWFZDSjkuZXlKcGMzTWlPaUpvZEhSd09pOHZNVEkzTGpBdU1DNHhPalUwTXpJeEwyRjFkR2d2ZGpFaUxDSnpkV0lpT2lJd01EQXdNREF3TUMwd01EQXdMVEF3TURBdE1EQXdNQzB3TURBd01EQXdNREF3TURFaUxDSmhkV1FpT2lKaGRYUm9aVzUwYVdOaGRHVmtJaXdpWlhod0lqb3hOemMwTVRJeE5ETTJMQ0pwWVhRaU9qRTNOelF4TVRjNE16WXNJbVZ0WVdsc0lqb2ljV0V0ZEdWemRFQnBkMjl5YTNKaGNIQXVZMjl0SWl3aWNHaHZibVVpT2lJaUxDSmhjSEJmYldWMFlXUmhkR0VpT25zaWIzSm5YMmxrSWpvaU1EQXdNREF3TURBdE1EQXdNQzB3TURBd0xUQXdNREF0TURBd01EQXdNREF3TURFd0lpd2ljSEp2ZG1sa1pYSWlPaUpsYldGcGJDSXNJbkJ5YjNacFpHVnljeUk2V3lKbGJXRnBiQ0pkTENKeWIyeGxJam9pYjNkdVpYSWlmU3dpZFhObGNsOXRaWFJoWkdGMFlTSTZleUpsYldGcGJGOTJaWEpwWm1sbFpDSTZkSEoxWlN3aVpuVnNiRjl1WVcxbElqb2lVVUVnUVdSdGFXNGlmU3dpY205c1pTSTZJbUYxZEdobGJuUnBZMkYwWldRaUxDSmhZV3dpT2lKaFlXd3hJaXdpWVcxeUlqcGJleUp0WlhSb2IyUWlPaUp3WVhOemQyOXlaQ0lzSW5ScGJXVnpkR0Z0Y0NJNk1UYzNOREV4Tnpnek5uMWRMQ0p6WlhOemFXOXVYMmxrSWpvaVpXWXdaREEwWkRVdE0ySXdPQzAwTUdWbExXRTBNamN0TXpaa05XTmhOMkV6WVRrMElpd2lhWE5mWVc1dmJubHRiM1Z6SWpwbVlXeHpaWDAuU2J0X2FJWnFzdkdLY1ZYVm1iejR6WGRWcktCR0NJUXZqQ0JFS040aTJUSkEzbnBlYnpHWjhETGtWcS1CcjZSbFNOWmw3VllCTHY1dzNYQlJidXI0QmciLCJ0b2tlbl90eXBlIjoiYmVhcmVyIiwiZXhwaXJlc19pbiI6MzYwMCwiZXhwaXJlc19hdCI6MTc3NDEyMTQzNiwicmVmcmVzaF90b2tlbiI6InRwNXFxY201cWN0aCIsInVzZXIiOnsiaWQiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJlbWFpbCI6InFhLXRlc3RAaXdvcmtyYXBwLmNvbSIsImVtYWlsX2NvbmZpcm1lZF9hdCI6IjIwMjYtMDMtMjFUMTg6MzA6MzAuNjA1Mjg1WiIsInBob25lIjoiIiwiY29uZmlybWVkX2F0IjoiMjAyNi0wMy0yMVQxODozMDozMC42MDUyODVaIiwibGFzdF9zaWduX2luX2F0IjoiMjAyNi0wMy0yMVQxODozMDozNi44NzUxOTg0NjRaIiwiYXBwX21ldGFkYXRhIjp7Im9yZ19pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAxMCIsInByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXSwicm9sZSI6Im93bmVyIn0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWxfdmVyaWZpZWQiOnRydWUsImZ1bGxfbmFtZSI6IlFBIEFkbWluIn0sImlkZW50aXRpZXMiOlt7ImlkZW50aXR5X2lkIjoiMDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAxIiwiaWQiOiJxYS10ZXN0QGl3b3JrcmFwcC5jb20iLCJ1c2VyX2lkIjoiMDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAxIiwiaWRlbnRpdHlfZGF0YSI6eyJlbWFpbCI6InFhLXRlc3RAaXdvcmtyYXBwLmNvbSIsInN1YiI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMSJ9LCJwcm92aWRlciI6ImVtYWlsIiwibGFzdF9zaWduX2luX2F0IjoiMjAyNi0wMy0yMVQxNjo0Mjo0Ny4zNzg2MTJaIiwiY3JlYXRlZF9hdCI6IjIwMjYtMDMtMjFUMTY6NDI6NDcuMzc4NjEyWiIsInVwZGF0ZWRfYXQiOiIyMDI2LTAzLTIxVDE2OjQyOjQ3LjM3ODYxMloiLCJlbWFpbCI6InFhLXRlc3RAaXdvcmtyYXBwLmNvbSJ9XSwiY3JlYXRlZF9hdCI6IjIwMjYtMDMtMjFUMTY6NDI6NDcuMzc4NjEyWiIsInVwZGF0ZWRfYXQiOiIyMDI2LTAzLTIxVDE4OjMwOjM2Ljg4MDU0NloiLCJpc19hbm9ueW1vdXMiOmZhbHNlfSwid2Vha19wYXNzd29yZCI6bnVsbH0",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1808677836.892585,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "iworkr-shell",
+          "value": "{\"state\":{\"sidebarCollapsed\":false,\"mobileSidebarOpen\":false,\"commandMenuOpen\":false,\"slideOverOpen\":false,\"slideOverContent\":null,\"activeNavItem\":\"nav_dashboard\",\"createClientModalOpen\":false,\"createJobModalOpen\":false,\"createInvoiceModalOpen\":false,\"createParticipantModalOpen\":false},\"version\":0}"
+        },
+        {
+          "name": "iworkr-dashboard",
+          "value": "{\"state\":{\"layouts\":{\"lg\":[{\"i\":\"revenue\",\"x\":0,\"y\":0,\"w\":8,\"h\":4,\"minW\":4,\"minH\":2},{\"i\":\"dispatch\",\"x\":8,\"y\":0,\"w\":4,\"h\":4,\"minW\":4,\"minH\":3},{\"i\":\"inbox\",\"x\":0,\"y\":4,\"w\":4,\"h\":3,\"minW\":3,\"minH\":2},{\"i\":\"schedule\",\"x\":4,\"y\":4,\"w\":4,\"h\":3,\"minW\":3,\"minH\":2},{\"i\":\"actions\",\"x\":8,\"y\":4,\"w\":4,\"h\":3,\"minW\":3,\"minH\":2},{\"i\":\"insights\",\"x\":0,\"y\":7,\"w\":4,\"h\":3,\"minW\":3,\"minH\":2}],\"sm\":[{\"i\":\"revenue\",\"x\":0,\"y\":0,\"w\":6,\"h\":4,\"minW\":4,\"minH\":2,\"moved\":false,\"static\":false},{\"i\":\"dispatch\",\"x\":2,\"y\":4,\"w\":4,\"h\":4,\"minW\":4,\"minH\":3,\"moved\":false,\"static\":false},{\"i\":\"inbox\",\"x\":0,\"y\":8,\"w\":4,\"h\":3,\"minW\":3,\"minH\":2,\"moved\":false,\"static\":false},{\"i\":\"schedule\",\"x\":2,\"y\":11,\"w\":4,\"h\":3,\"minW\":3,\"minH\":2,\"moved\":false,\"static\":false},{\"i\":\"actions\",\"x\":2,\"y\":14,\"w\":4,\"h\":3,\"minW\":3,\"minH\":2,\"moved\":false,\"static\":false},{\"i\":\"insights\",\"x\":0,\"y\":17,\"w\":4,\"h\":3,\"minW\":3,\"minH\":2,\"moved\":false,\"static\":false}]},\"activeWidgets\":[\"revenue\",\"dispatch\",\"inbox\",\"schedule\",\"actions\",\"insights\"],\"notepadContent\":\"\",\"quickLinks\":[{\"label\":\"New Job\",\"href\":\"/dashboard/jobs\",\"icon\":\"Briefcase\"},{\"label\":\"Schedule\",\"href\":\"/dashboard/schedule\",\"icon\":\"Calendar\"},{\"label\":\"Finance\",\"href\":\"/dashboard/finance\",\"icon\":\"Banknote\"}],\"snapshot\":null,\"snapshotFetchedAt\":null,\"widgetRevenueStats\":{\"data\":null,\"fetchedAt\":null},\"widgetSchedule\":{\"data\":null,\"fetchedAt\":null},\"widgetInsights\":{\"data\":null,\"fetchedAt\":null},\"widgetDispatch\":{\"data\":null,\"fetchedAt\":null}},\"version\":0}"
+        },
+        {
+          "name": "iworkr-auth",
+          "value": "{\"state\":{\"profile\":null,\"organizations\":[],\"currentOrg\":null,\"currentMembership\":null},\"version\":0}"
+        }
+      ]
+    }
+  ]
+}

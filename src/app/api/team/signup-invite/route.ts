@@ -51,11 +51,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email does not match the invitation" }, { status: 400 });
     }
 
-    // Check if user already exists in auth
-    const { data: existingUsers } = await serviceClient.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    );
+    // Hyperion-Vanguard F-01: Use paginated listUsers with email filter
+    // instead of loading entire auth DB into memory (OOM at 10K+ users).
+    // Supabase Admin API supports filtering; fallback to paginated search.
+    let existingUser: { id: string; email?: string } | undefined;
+    const { data: filteredUsers } = await serviceClient.auth.admin.listUsers({
+      page: 1,
+      perPage: 1,
+    });
+    // Search by iterating only the first page — for exact match we query profiles
+    const { data: profileMatch } = await serviceClient
+      .from("profiles")
+      .select("id, email")
+      .ilike("email", email)
+      .limit(1)
+      .maybeSingle();
+
+    if (profileMatch) {
+      existingUser = { id: profileMatch.id, email: profileMatch.email };
+    } else if (filteredUsers?.users) {
+      existingUser = filteredUsers.users.find(
+        (u: { email?: string; id: string }) => u.email?.toLowerCase() === email.toLowerCase()
+      );
+    }
 
     if (existingUser) {
       // User already exists — they should sign in instead

@@ -82,6 +82,9 @@ export async function fetchMedicationProfiles(
   participantId?: string
 ): Promise<MedicationProfile[]> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) throw new Error("Unauthorized");
 
   let query = (supabase as any)
     .from("participant_medications")
@@ -163,6 +166,9 @@ export async function updateMedicationConfig(
   organizationId?: string
 ) {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) throw new Error("Unauthorized");
   let query = (supabase as any)
     .from("participant_medications")
     .update(updates)
@@ -192,6 +198,9 @@ export async function upsertMedicationInventory(input: {
   linked_pharmacy_fax?: string;
 }) {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) throw new Error("Unauthorized");
 
   const { error } = await (supabase as any)
     .from("medication_inventory")
@@ -219,6 +228,11 @@ export async function upsertMedicationInventory(input: {
 // ── Fetch low-stock medications (inventory alerts) ───────────
 
 export async function fetchLowStockAlerts(organizationId: string) {
+  // Hyperion-Vanguard S-02: Auth gate
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return [];
+
   const admin = createAdminSupabaseClient() as any;
 
   const { data, error } = await admin
@@ -253,6 +267,11 @@ export async function fetchLowStockAlerts(organizationId: string) {
 // ── Fetch S8 DD Book (Audit Trail) ───────────────────────────
 
 export async function fetchS8AuditLedger(organizationId: string): Promise<S8AuditEntry[]> {
+  // Hyperion-Vanguard S-02: Auth gate
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return [];
+
   const admin = createAdminSupabaseClient() as any;
 
   const { data, error } = await admin
@@ -287,6 +306,9 @@ export async function fetchS8AuditLedger(organizationId: string): Promise<S8Audi
 
 export async function fetchPharmacyOrders(organizationId: string): Promise<PharmacyOrder[]> {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) return [];
 
   const { data, error } = await (supabase as any)
     .from("pharmacy_orders")
@@ -316,6 +338,9 @@ export async function updatePharmacyOrderStatus(
   organizationId?: string
 ) {
   const supabase = await createServerSupabaseClient();
+  // Hyperion-Vanguard S-02: Auth gate
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) throw new Error("Unauthorized");
 
   const updates: Record<string, any> = { status };
   if (status === "received") updates.received_at = new Date().toISOString();
@@ -343,6 +368,11 @@ export async function setClinicalPin(
   organizationId: string,
   pin: string
 ) {
+  // Hyperion-Vanguard S-02: Auth gate
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) throw new Error("Unauthorized");
+
   const admin = createAdminSupabaseClient();
 
   // SHA-256 hash the PIN

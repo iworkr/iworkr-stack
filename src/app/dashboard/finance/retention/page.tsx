@@ -21,7 +21,8 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
-import { getRetentionSummary } from "@/app/actions/aegis-contract";
+// Hyperion-Vanguard D-04: Wire actual release action
+import { getRetentionSummary, releaseRetention } from "@/app/actions/aegis-contract";
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -383,13 +384,19 @@ export default function RetentionEscrowPage() {
 
   const handleRelease = async (contractId: string) => {
     setReleasing(contractId);
-    // INCOMPLETE: Wire up actual retention release action
-    // This would call a server action like `releaseRetention(contractId, orgId)`
+    // Hyperion-Vanguard D-04: Wired to actual server action
     startTransition(async () => {
-      // Placeholder for release logic
-      await new Promise((r) => setTimeout(r, 1000));
-      await load();
-      setReleasing(null);
+      try {
+        const result = await releaseRetention(contractId, orgId!, "final");
+        if (result.error) {
+          console.error("[Retention] Release failed:", result.error);
+        }
+      } catch (err) {
+        console.error("[Retention] Release error:", err);
+      } finally {
+        await load();
+        setReleasing(null);
+      }
     });
   };
 

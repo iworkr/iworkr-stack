@@ -1,0 +1,407 @@
+version: "2"
+type: backend
+tech_stack:
+  - TypeScript
+  - Next.js 16.1.6
+  - Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+  - Stripe (Connect, Terminal, Billing)
+  - Resend (email)
+  - OpenAI
+  - Twilio (SMS)
+  - Xero OAuth
+features:
+  - name: Authentication & Context Switching
+    description: Cookie-based session auth and workspace switching
+    files:
+      - src/app/api/auth/switch-context/route.ts
+    endpoints:
+      - method: POST
+        path: /api/auth/switch-context
+        description: Switch active workspace
+        auth_required: true
+        request_schema:
+          body:
+            workspaceId: string
+            branchId: string (optional)
+        response_schema:
+          "200": "{ok: true, workspace: {id, name, slug, role}}"
+          "400": "Missing workspaceId"
+          "401": "Not authenticated"
+      - method: GET
+        path: /api/auth/switch-context
+        description: Get active workspace context
+        auth_required: true
+        response_schema:
+          "200": "{workspaceId, branchId}"
+    depends_on:
+      - Supabase Auth
+
+  - name: Team Management
+    description: Invitations, signup, password management
+    files:
+      - src/app/api/team/invite/route.ts
+      - src/app/api/team/validate-invite/route.ts
+      - src/app/api/team/signup-invite/route.ts
+      - src/app/api/team/accept-invite/route.ts
+      - src/app/api/team/set-password/route.ts
+    endpoints:
+      - method: POST
+        path: /api/team/invite
+        description: Send team invitation
+        auth_required: true
+        request_schema:
+          body:
+            email: string
+            role: string
+        response_schema:
+          "200": "{success, invite_id, email, role}"
+          "401": "Not authenticated"
+      - method: POST
+        path: /api/team/validate-invite
+        description: Validate invitation token
+        auth_required: false
+        request_schema:
+          body:
+            token: string
+        response_schema:
+          "200": "{valid: boolean, email, role, organization_id}"
+      - method: POST
+        path: /api/team/signup-invite
+        description: Create account via invite
+        auth_required: false
+        request_schema:
+          body:
+            token: string
+            email: string
+            password: string
+        response_schema:
+          "200": "{success, user_id}"
+          "400": "Missing fields, short password"
+      - method: POST
+        path: /api/team/accept-invite
+        description: Accept invite as existing user
+        auth_required: true
+        response_schema:
+          "200": "{success, organization_id}"
+          "401": "Not authenticated"
+      - method: POST
+        path: /api/team/set-password
+        description: Admin sets team member password
+        auth_required: true
+        request_schema:
+          body:
+            userId: string
+            password: string
+        response_schema:
+          "200": "{success, email}"
+          "401": "Not authenticated"
+    depends_on:
+      - Supabase Auth
+      - Resend
+
+  - name: User Organization
+    description: Get user organization
+    files:
+      - src/app/api/user/organization/route.ts
+    endpoints:
+      - method: GET
+        path: /api/user/organization
+        description: Get user org ID
+        auth_required: true
+        response_schema:
+          "200": "{organization_id}"
+          "401": "Not authenticated"
+
+  - name: Compliance & Verification
+    description: Document verification, dossiers, vault, policies
+    files:
+      - src/app/api/compliance/verify/route.ts
+      - src/app/api/compliance/dossier/route.ts
+      - src/app/api/compliance/vault/route.ts
+      - src/app/api/compliance/policies/dossier/route.ts
+    endpoints:
+      - method: POST
+        path: /api/compliance/verify
+        description: Verify document SHA256 hash
+        auth_required: false
+        request_schema:
+          content_type: multipart/form-data
+          body:
+            file: File
+        response_schema:
+          "200": "{authentic, sha256_hash, record, message}"
+          "400": "No file provided"
+      - method: GET
+        path: /api/compliance/dossier
+        description: Generate compliance dossier PDF
+        auth_required: true
+        response_schema:
+          "200": "application/pdf"
+          "401": "Not authenticated"
+      - method: POST
+        path: /api/compliance/vault
+        description: Access auditor vault
+        auth_required: false
+        request_schema:
+          body:
+            token: string
+            passcode: string
+            mode: string
+        response_schema:
+          "200": "Vault data"
+          "404": "Portal not found"
+      - method: GET
+        path: /api/compliance/policies/dossier
+        description: Generate policy dossier PDF
+        auth_required: true
+        response_schema:
+          "200": "application/pdf"
+          "401": "Unauthorized"
+
+  - name: Invoices
+    description: PDF generation and public invoice access
+    files:
+      - src/app/api/invoices/generate-pdf/route.ts
+      - src/app/api/invoices/public/[invoiceId]/route.ts
+    endpoints:
+      - method: POST
+        path: /api/invoices/generate-pdf
+        description: Generate invoice PDF
+        auth_required: true
+        response_schema:
+          "200": "application/pdf or {url}"
+          "401": "Unauthorized"
+          "404": "Invoice not found"
+      - method: GET
+        path: /api/invoices/public/{invoiceId}
+        description: Public invoice data
+        auth_required: false
+        response_schema:
+          "200": "Invoice JSON"
+          "404": "Not found"
+
+  - name: Quotes
+    description: Accept/decline quotes via tokens
+    files:
+      - src/app/api/quotes/[id]/accept/route.ts
+      - src/app/api/quotes/[id]/decline/route.ts
+    endpoints:
+      - method: POST
+        path: /api/quotes/{id}/accept
+        description: Accept quote via token
+        auth_required: false
+        response_schema:
+          "200": "{message, quote_id}"
+          "401": "Missing token"
+      - method: POST
+        path: /api/quotes/{id}/decline
+        description: Decline quote via token
+        auth_required: false
+        response_schema:
+          "200": "{message, quote_id}"
+          "401": "Missing token"
+
+  - name: Schedule Validation
+    description: Validate schedule blocks
+    files:
+      - src/app/api/schedule/validate/route.ts
+    endpoints:
+      - method: POST
+        path: /api/schedule/validate
+        description: Validate schedule block
+        auth_required: true
+        request_schema:
+          body:
+            organization_id: string
+            technician_id: string
+            start_time: string
+            end_time: string
+        response_schema:
+          "200": "{valid, conflicts, travel, warnings}"
+          "401": "Not authenticated"
+
+  - name: Notifications
+    description: Device registration for push
+    files:
+      - src/app/api/notifications/register-device/route.ts
+    endpoints:
+      - method: POST
+        path: /api/notifications/register-device
+        description: Register push notification device
+        auth_required: true
+        request_schema:
+          body:
+            fcm_token: string
+            device_type: string
+        response_schema:
+          "200": "{success: true}"
+          "401": "Not authenticated"
+
+  - name: Automation Engine
+    description: Cron and automation execution
+    files:
+      - src/app/api/automation/cron/route.ts
+      - src/app/api/automation/execute/route.ts
+    endpoints:
+      - method: GET
+        path: /api/automation/cron
+        description: Run cron jobs
+        auth_required: true
+        response_schema:
+          "200": "{success, processed_at}"
+          "401": "Invalid secret"
+      - method: POST
+        path: /api/automation/execute
+        description: Execute automation flows
+        auth_required: true
+        response_schema:
+          "200": "{success, flows_matched}"
+          "401": "Invalid secret"
+
+  - name: Stripe Billing
+    description: All Stripe endpoints
+    files:
+      - src/app/api/stripe/
+    endpoints:
+      - method: POST
+        path: /api/stripe/checkout
+        description: Legacy checkout
+        auth_required: false
+      - method: POST
+        path: /api/stripe/create-subscription
+        description: Create subscription
+        auth_required: true
+      - method: POST
+        path: /api/stripe/manage
+        description: Manage subscription
+        auth_required: true
+      - method: POST
+        path: /api/stripe/portal
+        description: Billing portal URL
+        auth_required: true
+      - method: POST
+        path: /api/stripe/connect/onboard
+        description: Connect onboarding
+        auth_required: true
+      - method: POST
+        path: /api/stripe/connect/dashboard
+        description: Connect dashboard
+        auth_required: true
+      - method: POST
+        path: /api/stripe/connect/payment-intent
+        description: Create payment intent
+        auth_required: true
+      - method: POST
+        path: /api/stripe/connect/terminal-token
+        description: Terminal connection token
+        auth_required: true
+      - method: POST
+        path: /api/stripe/webhook
+        description: Stripe webhook handler
+        auth_required: false
+
+  - name: Webhooks
+    description: External webhook handlers
+    files:
+      - src/app/api/webhooks/
+      - src/app/api/webhook/polar/route.ts
+    endpoints:
+      - method: POST
+        path: /api/webhooks/gohighlevel
+        description: GoHighLevel webhook
+        auth_required: false
+      - method: POST
+        path: /api/webhooks/google-calendar
+        description: Google Calendar webhook
+        auth_required: false
+      - method: POST
+        path: /api/webhook/polar
+        description: Polar webhook (deprecated)
+        auth_required: false
+
+  - name: Admin & Utilities
+    description: Admin, revalidation, telemetry, desktop
+    files:
+      - src/app/api/admin/end-impersonation/route.ts
+      - src/app/api/revalidate/route.ts
+      - src/app/api/telemetry/export/route.ts
+      - src/app/api/desktop/version/route.ts
+      - src/app/api/checkout/route.ts
+      - src/app/api/portal/route.ts
+    endpoints:
+      - method: POST
+        path: /api/admin/end-impersonation
+        description: End impersonation session
+        auth_required: false
+      - method: POST
+        path: /api/revalidate
+        description: Cache revalidation
+        auth_required: false
+      - method: GET
+        path: /api/telemetry/export
+        description: Export telemetry CSV
+        auth_required: true
+      - method: GET
+        path: /api/desktop/version
+        description: Desktop app version
+        auth_required: false
+      - method: GET
+        path: /api/checkout
+        description: Legacy checkout redirect
+        auth_required: false
+      - method: GET
+        path: /api/portal
+        description: Legacy portal redirect
+        auth_required: false
+
+  - name: Integrations
+    description: OAuth callbacks and sync monitoring
+    files:
+      - src/app/api/integrations/
+    endpoints:
+      - method: GET
+        path: /api/integrations/sync-radar
+        description: Integration sync status
+        auth_required: true
+      - method: GET
+        path: /api/integrations/callback
+        description: OAuth callback handler
+        auth_required: false
+
+  - name: Care Module
+    description: Plan reviews and facility cleaning logs
+    files:
+      - src/app/api/care/
+    endpoints:
+      - method: GET
+        path: /api/care/plan-reviews/preview
+        description: Plan review PDF preview
+        auth_required: true
+      - method: GET
+        path: /api/care/facilities/{facilityId}/cleaning-log
+        description: Facility cleaning log PDF
+        auth_required: true
+
+  - name: Client Statements
+    description: Client statement PDFs
+    files:
+      - src/app/api/clients/[id]/statement/route.ts
+    endpoints:
+      - method: GET
+        path: /api/clients/{id}/statement
+        description: Client statement PDF
+        auth_required: true
+
+known_limitations:
+  - issue: Cookie-based auth may be blocked by TestSprite proxy (407)
+    location: TestSprite infrastructure
+    impact: Authenticated tests may fail
+  - issue: Compliance verify now properly returns 400 for missing file (FIXED)
+    location: src/app/api/compliance/verify/route.ts
+    impact: Bug fixed - should now pass
+  - issue: Compliance policies dossier now properly returns 401 (FIXED)
+    location: src/app/api/compliance/policies/dossier/route.ts
+    impact: Bug fixed - should now pass
+  - issue: Invoice generate-pdf now checks auth before lookup (FIXED)
+    location: src/app/api/invoices/generate-pdf/route.ts
+    impact: Bug fixed - should now pass

@@ -1,0 +1,19 @@
+{
+  "status": "commited",
+  "type": "backend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000/api",
+  "backendAuthType": "public",
+  "executionArgs": {
+    "projectName": "iWorkr-Linear",
+    "projectPath": "/Users/tlenterprises/Development/STACK/iWorkr-Linear",
+    "testIds": [],
+    "additionalInstruction": "Test all care sector routes (participants, care plans, medications, incidents, NDIS claims), all trades sector routes (jobs, clients, finance, invoices, quotes, dispatch, schedule, assets), all settings pages, and all authentication flows. Focus on CRUD operations and validate form submissions, error states, and data rendering.",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-e-Pw4drrOiHmE8SV0hYPLRosTgQcSlOgsFu9p2Ewl8vfEyA790ipgrNf1__aC0N9cQtKmFn-B4DUUMnUnXPdjSPlpNgj5_BjU3RbsXRGz1InOtsvfQgv4X8GEL5gLM7REIs"
+    }
+  },
+  "serverPort": 61110,
+  "proxy": "http://fda64aae-2152-410f-9f1b-089d4258aa29:MVx5UcRG4LFcfrBTJZxdbWyE3Pufqc8J@tun.testsprite.com:8080"
+}
