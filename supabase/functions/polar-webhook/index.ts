@@ -1,8 +1,8 @@
 /**
  * @module polar-webhook
- * @status PARTIAL
+ * @status COMPLETE
  * @auth SECURED — HMAC-SHA256 webhook signature verification (Polar)
- * @description Handles Polar billing webhooks: subscription created/updated/canceled, customer updated; missing DLQ for failed events
+ * @description Handles Polar billing webhooks: subscription created/updated/canceled, customer updated with DLQ routing on failure
  * @dependencies Supabase, Polar.sh (billing)
  * @lastAudit 2026-03-22
  */
@@ -185,9 +185,26 @@ serve(async (req) => {
       JSON.stringify({ received: true }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  // FIXME: HIGH — No DLQ routing. Failed Polar webhook payloads are lost. Route to webhook_dead_letters table on catch.
   } catch (err) {
     console.error("Webhook processing error:", err);
+
+    // ── DLQ: Route failed webhook to dead letter queue ──
+    try {
+      const dlqClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      await dlqClient.from("webhook_dead_letters").insert({
+        provider: "polar",
+        event_type: "unknown",
+        payload: body ? JSON.parse(body) : {},
+        error_message: (err as Error).message,
+        status: "DEAD",
+      });
+    } catch (dlqErr) {
+      console.error("DLQ insert also failed:", dlqErr);
+    }
+
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
       { status: 500, headers: { "Content-Type": "application/json" } }

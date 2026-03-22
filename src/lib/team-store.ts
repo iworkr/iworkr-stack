@@ -2,7 +2,7 @@
  * @store TeamStore
  * @status COMPLETE
  * @description Team management state — members, roles, invites, permissions, and RBAC enforcement
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -213,6 +213,9 @@ interface TeamState {
     permissions: any,
     scopes?: any
   ) => Promise<{ error: string | null }>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useTeamStore = create<TeamState>()(
@@ -506,6 +509,25 @@ export const useTeamStore = create<TeamState>()(
     const res = await updateRolePermissionsServer(roleDbId, permissions, scopes);
     if (!res.error) get().refresh();
     return { error: res.error };
+  },
+
+  reset: () => {
+    set({
+      members: [],
+      roles: [],
+      overview: null,
+      searchQuery: "",
+      filterBranch: "all",
+      filterRole: "all",
+      filterSkill: "all",
+      selectedMemberId: null,
+      inviteModalOpen: false,
+      loaded: false,
+      loading: false,
+      orgId: null,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

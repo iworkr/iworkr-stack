@@ -1,7 +1,7 @@
 /**
  * @module ingest-regulation
  * @status PARTIAL
- * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @auth SECURED — Aegis Auth Gate (admin-only operation)
  * @description Ingests regulatory PDFs into vector DB: text extraction → recursive chunking → OpenAI embeddings → bulk insert
  * @dependencies Supabase (Storage: compliance-raw), OpenAI (text-embedding-3-small)
  * @lastAudit 2026-03-22
@@ -146,6 +146,25 @@ async function extractTextFromPdf(buffer: ArrayBuffer): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // ── Aegis Auth Gate ──────────────────────────────────────
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Missing authorization" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } }
+  );
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);

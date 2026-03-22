@@ -2,7 +2,7 @@
  * @store FinanceStore
  * @status COMPLETE
  * @description Invoicing and finance state — invoices, payouts, revenue, expenses with SWR caching
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -83,6 +83,9 @@ interface FinanceState {
 
   /** Sync a single line-item edit to the server */
   syncLineItemToServer: (invoiceId: string, lineItemId: string, patch: Partial<LineItem>) => Promise<void>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useFinanceStore = create<FinanceState>()(
@@ -498,6 +501,22 @@ export const useFinanceStore = create<FinanceState>()(
 
   handleRealtimeUpdate: () => {
     get().refresh();
+  },
+
+  reset: () => {
+    set({
+      invoices: [],
+      payouts: [],
+      dailyRevenue: [],
+      overview: null,
+      loaded: false,
+      loading: false,
+      activeTab: "overview",
+      focusedIndex: 0,
+      orgId: null,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

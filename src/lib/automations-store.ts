@@ -2,7 +2,7 @@
  * @store AutomationsStore
  * @status COMPLETE
  * @description Manages automation flows, execution runs, and trace logs with SWR caching
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -72,6 +72,9 @@ interface AutomationsState {
   duplicateFlowServer: (id: string) => Promise<{ error: string | null }>;
   createFlowServer: (params: { name: string; description?: string; category?: string; blocks?: any[] }) => Promise<{ data: any; error: string | null }>;
   testFlowServer: (id: string) => Promise<{ data: any; error: string | null }>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 function mapServerFlow(sf: any): AutomationFlow {
@@ -375,6 +378,24 @@ export const useAutomationsStore = create<AutomationsState>()(
     const res = await testFlowServer(id);
     if (!res.error) get().refresh();
     return { data: res.data, error: res.error };
+  },
+
+  reset: () => {
+    set({
+      flows: [],
+      logs: [],
+      runs: [],
+      stats: null,
+      activeTab: "flows",
+      searchQuery: "",
+      masterPaused: false,
+      loaded: false,
+      loading: false,
+      runsLoading: false,
+      orgId: null,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

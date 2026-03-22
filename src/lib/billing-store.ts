@@ -2,7 +2,7 @@
  * @store BillingStore
  * @status COMPLETE
  * @description Manages subscription state, plan info, and billing portal for Stripe integration
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -29,6 +29,9 @@ export interface BillingState {
   loadBilling: (orgId: string) => Promise<void>;
   /** Re-fetch billing for the current org (call after checkout, webhook, etc.) */
   refreshBilling: () => Promise<void>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useBillingStore = create<BillingState>()(
@@ -98,6 +101,18 @@ export const useBillingStore = create<BillingState>()(
     // Force refetch by clearing lastFetchedAt
     set({ _lastFetchedAt: null });
     await get().loadBilling(orgId);
+  },
+
+  reset: () => {
+    set({
+      subscription: null,
+      plan: getPlanByKey("free"),
+      planTier: "free",
+      memberCount: 0,
+      loading: false,
+      _orgId: null,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

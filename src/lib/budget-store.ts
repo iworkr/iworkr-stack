@@ -2,7 +2,7 @@
  * @store BudgetStore
  * @status COMPLETE
  * @description NDIS budget allocations, claim line items, and PRODA batch management (Nightingale Phase 3)
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -137,6 +137,9 @@ interface BudgetState {
   fetchClaimLines: (orgId: string, batchId?: string, status?: ClaimLineStatus) => Promise<void>;
   fetchBatches: (orgId: string) => Promise<void>;
   createClaimBatch: (orgId: string, lineItemIds: string[]) => Promise<ProdaClaimBatch | null>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useBudgetStore = create<BudgetState>((set, get) => ({
@@ -242,6 +245,19 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
       set({ error: (err as Error).message });
       return null;
     }
+  },
+
+  reset: () => {
+    set({
+      allocations: [],
+      claimLines: [],
+      batches: [],
+      loading: false,
+      error: null,
+      _lastAllocFetchedAt: null,
+      _lastClaimsFetchedAt: null,
+      _lastBatchesFetchedAt: null,
+    });
   },
 }));
 

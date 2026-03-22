@@ -1,8 +1,8 @@
 /**
  * @module resend-webhook
- * @status PARTIAL
+ * @status COMPLETE
  * @auth SECURED — Svix HMAC signature verification on webhook payloads
- * @description Handles Resend email event webhooks (delivered, bounced, complained, opened) with signature verification, bounce flagging, and email log updates. Missing DLQ routing on failure.
+ * @description Handles Resend email event webhooks (delivered, bounced, complained, opened) with signature verification, bounce flagging, email log updates, and DLQ routing on failure.
  * @dependencies Resend (Svix webhooks), Supabase
  * @lastAudit 2026-03-22
  */
@@ -235,9 +235,21 @@ Deno.serve(async (req: Request) => {
       default:
         console.log(`Unhandled Resend event: ${type}`);
     }
-  // FIXME: MEDIUM — No DLQ routing. Failed Resend webhook payloads should be routed to webhook_dead_letters.
   } catch (err) {
     console.error(`Resend webhook error [${type}]:`, err);
+
+    // ── DLQ: Route failed event to dead letter queue ──
+    try {
+      await supabase.from("webhook_dead_letters").insert({
+        provider: "resend",
+        event_type: type,
+        payload: webhook,
+        error_message: (err as Error).message || String(err),
+        status: "DEAD",
+      });
+    } catch (dlqErr) {
+      console.error("DLQ insert also failed:", dlqErr);
+    }
   }
 
   return new Response(JSON.stringify({ received: true }), {

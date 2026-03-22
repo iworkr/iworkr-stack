@@ -1,7 +1,7 @@
 /**
  * @module live-price-check
  * @status PARTIAL
- * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @auth SECURED — Aegis Auth Gate + org membership check
  * @description Queries supplier B2B APIs (Reece, Rexel, Tradelink, etc.) for real-time trade pricing and branch stock availability
  * @dependencies Supabase, External supplier B2B APIs (Reece, Rexel, Tradelink, MMEM, CNW)
  * @lastAudit 2026-03-22
@@ -191,11 +191,43 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: getCorsHeaders(req) });
   }
 
+  // ── Aegis Auth Gate ──────────────────────────────────────
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Missing authorization" }), {
+      status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+    });
+  }
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } }
+  );
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const body: PriceCheckRequest = await req.json();
 
     if (!body.organization_id || !body.supplier || !body.skus?.length) {
       return jsonResponse(req, { error: "Missing organization_id, supplier, or skus" }, 400);
+    }
+
+    // ── Org membership check ──
+    const { data: member } = await userClient
+      .from("organization_members")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("organization_id", body.organization_id)
+      .maybeSingle();
+    if (!member) {
+      return new Response(JSON.stringify({ error: "Forbidden: Not a member of this organization" }), {
+        status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
     }
 
     const supabase = serviceClient();

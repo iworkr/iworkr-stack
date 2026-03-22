@@ -2,7 +2,7 @@
  * @store DashboardStore
  * @status COMPLETE
  * @description Dashboard layout state — widget registry, grid layouts, edit mode, and persistence
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -144,6 +144,9 @@ interface DashboardState {
   ) => void;
   isWidgetFresh: (key: 'widgetRevenueStats' | 'widgetSchedule' | 'widgetInsights' | 'widgetDispatch') => boolean;
   getWidgetCache: <T>(key: 'widgetRevenueStats' | 'widgetSchedule' | 'widgetInsights' | 'widgetDispatch') => T | null;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useDashboardStore = create<DashboardState>()(
@@ -228,6 +231,28 @@ export const useDashboardStore = create<DashboardState>()(
           layouts: { lg: DEFAULT_LAYOUT },
           activeWidgets: DEFAULT_LAYOUT.map((l) => l.i),
         }),
+
+      reset: () => {
+        set({
+          layouts: { lg: DEFAULT_LAYOUT },
+          activeWidgets: DEFAULT_LAYOUT.map((l) => l.i),
+          editMode: false,
+          drawerOpen: false,
+          snapshot: null,
+          snapshotLoading: false,
+          snapshotFetchedAt: null,
+          widgetRevenueStats: { data: null, fetchedAt: null },
+          widgetSchedule: { data: null, fetchedAt: null },
+          widgetInsights: { data: null, fetchedAt: null },
+          widgetDispatch: { data: null, fetchedAt: null },
+          notepadContent: "",
+          quickLinks: [
+            { label: "New Job", href: "/dashboard/jobs", icon: "Briefcase" },
+            { label: "Schedule", href: "/dashboard/schedule", icon: "Calendar" },
+            { label: "Finance", href: "/dashboard/finance", icon: "Banknote" },
+          ],
+        });
+      },
     }),
     {
       name: "iworkr-dashboard",

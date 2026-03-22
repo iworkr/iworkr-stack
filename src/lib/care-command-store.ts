@@ -2,7 +2,7 @@
  * @store CareCommandStore
  * @status COMPLETE
  * @description Unified Nightingale Command Center state — care plans, budgets, alerts, and participant data
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -222,6 +222,9 @@ interface CareCommandState {
   fetchAllocations: (orgId: string) => Promise<void>;
   setTimelineParticipantFilter: (id: string | null) => void;
   setSelectedPlanId: (id: string | null) => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useCareCommandStore = create<CareCommandState>()(
@@ -422,6 +425,25 @@ export const useCareCommandStore = create<CareCommandState>()(
 
   setTimelineParticipantFilter: (id) => set({ timelineParticipantFilter: id }),
   setSelectedPlanId: (id) => set({ selectedPlanId: id }),
+
+  reset: () => {
+    set({
+      snapshot: null,
+      snapshotLoading: false,
+      snapshotFetchedAt: null,
+      timeline: [],
+      timelineLoading: false,
+      timelineParticipantFilter: null,
+      alerts: [],
+      alertsLoading: false,
+      plans: [],
+      plansLoading: false,
+      selectedPlanId: null,
+      allocations: [],
+      allocationsLoading: false,
+      credentialAlerts: [],
+    });
+  },
   }),
   {
     name: "iworkr-care-command",

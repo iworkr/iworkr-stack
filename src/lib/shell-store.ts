@@ -2,7 +2,7 @@
  * @store ShellStore
  * @status COMPLETE
  * @description App shell UI state — sidebar, command palette, slide-over, and navigation
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -32,6 +32,9 @@ interface ShellState {
   setCreateJobModalOpen: (open: boolean) => void;
   setCreateInvoiceModalOpen: (open: boolean) => void;
   setCreateParticipantModalOpen: (open: boolean) => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useShellStore = create<ShellState>()(
@@ -63,6 +66,21 @@ export const useShellStore = create<ShellState>()(
       setCreateJobModalOpen: (open) => set({ createJobModalOpen: open }),
       setCreateInvoiceModalOpen: (open) => set({ createInvoiceModalOpen: open }),
       setCreateParticipantModalOpen: (open) => set({ createParticipantModalOpen: open }),
+
+      reset: () => {
+        set({
+          sidebarCollapsed: false,
+          mobileSidebarOpen: false,
+          commandMenuOpen: false,
+          slideOverOpen: false,
+          slideOverContent: null,
+          activeNavItem: "nav_dashboard",
+          createClientModalOpen: false,
+          createJobModalOpen: false,
+          createInvoiceModalOpen: false,
+          createParticipantModalOpen: false,
+        });
+      },
     }),
     { name: "iworkr-shell" }
   )

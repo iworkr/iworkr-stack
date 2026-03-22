@@ -2,7 +2,7 @@
  * @store CredentialsStore
  * @status COMPLETE
  * @description Workforce compliance credentials — CRUD, expiry tracking, and realtime updates (Nightingale)
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -113,6 +113,9 @@ interface CredentialsState {
   handleRealtimeInsert: (payload: WorkerCredential) => void;
   handleRealtimeUpdate: (payload: WorkerCredential) => void;
   handleRealtimeDelete: (id: string) => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export interface CreateCredentialParams {
@@ -295,6 +298,18 @@ export const useCredentialsStore = create<CredentialsState>((set, get) => ({
     set((s) => ({
       credentials: s.credentials.filter((c) => c.id !== id),
     }));
+  },
+
+  reset: () => {
+    set({
+      credentials: [],
+      loading: false,
+      error: null,
+      _lastFetchedAt: null,
+      statusFilter: "all",
+      typeFilter: "all",
+      memberFilter: "all",
+    });
   },
 }));
 

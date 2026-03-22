@@ -2,7 +2,7 @@
  * @store MedicationsStore
  * @status COMPLETE
  * @description eMAR state — participant medications and administration records (Nightingale Phase 2)
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -101,6 +101,9 @@ interface MedicationsState {
   updateMedication: (id: string, updates: Partial<ParticipantMedication>) => Promise<boolean>;
   recordAdministration: (params: Omit<MAREntry, "id" | "created_at">) => Promise<MAREntry | null>;
   setSelectedParticipantId: (id: string | null) => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useMedicationsStore = create<MedicationsState>()(
@@ -233,6 +236,17 @@ export const useMedicationsStore = create<MedicationsState>()(
   },
 
   setSelectedParticipantId: (id) => set({ selectedParticipantId: id }),
+
+  reset: () => {
+    set({
+      medications: [],
+      marEntries: [],
+      loading: false,
+      error: null,
+      _lastFetchedAt: null,
+      selectedParticipantId: null,
+    });
+  },
   }),
   {
     name: "iworkr-medications",

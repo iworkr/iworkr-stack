@@ -2,7 +2,7 @@
  * @store SentinelStore
  * @status COMPLETE
  * @description Sentinel AI compliance alerts — real-time feed, acknowledgement, and escalation (Nightingale Phase 3)
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -124,6 +124,9 @@ interface SentinelState {
   fetchAlerts: (orgId: string, status?: AlertStatus) => Promise<void>;
   acknowledgeAlert: (id: string, action: string, notes?: string) => Promise<boolean>;
   refreshCounts: (orgId: string) => Promise<void>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useSentinelStore = create<SentinelState>((set, get) => ({
@@ -181,6 +184,17 @@ export const useSentinelStore = create<SentinelState>((set, get) => ({
     } catch {
       // Non-blocking — counts are secondary
     }
+  },
+
+  reset: () => {
+    set({
+      alerts: [],
+      loading: false,
+      error: null,
+      activeCount: 0,
+      criticalCount: 0,
+      _lastFetchedAt: null,
+    });
   },
 }));
 

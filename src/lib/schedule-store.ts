@@ -2,7 +2,7 @@
  * @store ScheduleStore
  * @status COMPLETE
  * @description Schedule and dispatch state — calendar blocks, technician assignments, and drag-drop operations
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -148,6 +148,9 @@ interface ScheduleState {
 
   /** Called by realtime when a schedule_block changes */
   handleRealtimeUpdate: () => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 function mapServerBlock(b: any, workspaceTz?: string | null): ScheduleBlock {
@@ -723,6 +726,25 @@ export const useScheduleStore = create<ScheduleState>()(
       _realtimeDebounceTimer = null;
       get().refresh();
     }, 500);
+  },
+
+  reset: () => {
+    set({
+      blocks: [],
+      technicians: [],
+      backlogJobs: [],
+      scheduleEvents: [],
+      loaded: false,
+      loading: false,
+      orgId: null,
+      viewScale: "day",
+      selectedDate: new Date().toISOString().split("T")[0],
+      draggingBlockId: null,
+      peekBlockId: null,
+      unscheduledDrawerOpen: false,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

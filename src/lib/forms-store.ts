@@ -2,7 +2,7 @@
  * @store FormsStore
  * @status COMPLETE
  * @description Form template and submission state — CRUD, versioning, telemetry with SWR caching
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -207,6 +207,9 @@ interface FormsState {
     documentHash: string,
     metadata?: { ip?: string; device?: string; gps?: { lat: number; lng: number } }
   ) => Promise<{ data: any; error: string | null; missingFields?: string[] }>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useFormsStore = create<FormsState>()(
@@ -400,6 +403,21 @@ export const useFormsStore = create<FormsState>()(
       error: res.error,
       missingFields: (res as any).missingFields,
     };
+  },
+
+  reset: () => {
+    set({
+      templates: [],
+      submissions: [],
+      overview: null,
+      activeTab: "my_forms",
+      searchQuery: "",
+      loaded: false,
+      loading: false,
+      orgId: null,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

@@ -1,7 +1,7 @@
 /**
  * @module pace-submit-claim
  * @status PARTIAL
- * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @auth SECURED — Aegis Auth Gate + org membership check
  * @description Submits individual claims to NDIA PACE API with endorsement pre-check, error mapping, retry queuing, and graceful degradation
  * @dependencies Supabase, PACE API (NDIS), PRODA auth
  * @lastAudit 2026-03-22
@@ -200,6 +200,25 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // ── Aegis Auth Gate ──────────────────────────────────────
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Missing authorization" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } }
+  );
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { organization_id, claim_id } = await req.json();
 
@@ -208,6 +227,19 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "organization_id and claim_id are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // ── Org membership check ──
+    const { data: member } = await userClient
+      .from("organization_members")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("organization_id", organization_id)
+      .maybeSingle();
+    if (!member) {
+      return new Response(JSON.stringify({ error: "Forbidden: Not a member of this organization" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);

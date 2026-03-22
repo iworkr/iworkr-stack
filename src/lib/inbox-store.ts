@@ -2,7 +2,7 @@
  * @store InboxStore
  * @status COMPLETE
  * @description Notification inbox state — read/unread, archive, snooze, and real-time updates
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -106,6 +106,9 @@ interface InboxStore {
   moveDown: () => void;
   moveUp: () => void;
   selectFocused: () => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useInboxStore = create<InboxStore>()(
@@ -342,6 +345,21 @@ export const useInboxStore = create<InboxStore>()(
       set({ selectedId: item.id });
       get().markAsRead(item.id);
     }
+  },
+
+  reset: () => {
+    set({
+      items: [],
+      loaded: false,
+      loading: false,
+      selectedId: null,
+      focusedIndex: 0,
+      activeTab: "all",
+      filter: "all",
+      replyText: "",
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

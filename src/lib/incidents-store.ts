@@ -2,7 +2,7 @@
  * @store IncidentsStore
  * @status COMPLETE
  * @description Incident reporting, investigation, and resolution state (Nightingale Phase 2)
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -92,6 +92,9 @@ interface IncidentsState {
   setSeverityFilter: (f: IncidentSeverity | "all") => void;
   setStatusFilter: (f: IncidentStatus | "all") => void;
   setCategoryFilter: (f: IncidentCategory | "all") => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export interface CreateIncidentParams {
@@ -185,6 +188,18 @@ export const useIncidentsStore = create<IncidentsState>((set, get) => ({
   setSeverityFilter: (f) => set({ severityFilter: f }),
   setStatusFilter: (f) => set({ statusFilter: f }),
   setCategoryFilter: (f) => set({ categoryFilter: f }),
+
+  reset: () => {
+    set({
+      incidents: [],
+      loading: false,
+      error: null,
+      _lastFetchedAt: null,
+      severityFilter: "all",
+      statusFilter: "all",
+      categoryFilter: "all",
+    });
+  },
 }));
 
 /* ── Selectors ───────────────────────────────────────── */

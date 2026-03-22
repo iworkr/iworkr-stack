@@ -2,7 +2,7 @@
  * @store ChronosStore
  * @status COMPLETE
  * @description Time-tracking state — activity logging, timesheets, and duration tracking
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -59,6 +59,9 @@ interface ChronosState {
   updateTimerDraft: (id: string, patch: Partial<Pick<ChronosTimer, "caseNoteDraft" | "activityType" | "participantId" | "participantName" | "ndisLineItem" | "hourlyRate" | "metadata">>) => void;
   elapsedMs: (id: string) => number;
   runningTimerCount: () => number;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 function nowIso() {
@@ -173,6 +176,14 @@ export const useChronosStore = create<ChronosState>()(
       },
 
       runningTimerCount: () => get().timers.filter((t) => t.status === "running").length,
+
+      reset: () => {
+        set({
+          timers: [],
+          selectedTimerId: null,
+          lastInteractionAtIso: null,
+        });
+      },
     }),
     {
       name: "chronos-v1",

@@ -1,6 +1,6 @@
 /**
  * @component Sidebar
- * @status PARTIAL
+ * @status COMPLETE
  * @description Main navigation sidebar with collapsible sections, badge counts, and workspace context
  * @lastAudit 2026-03-22
  */
@@ -66,6 +66,8 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useTeamStore } from "@/lib/team-store";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useInboxStore } from "@/lib/inbox-store";
+import { useIncidentsStore } from "@/lib/incidents-store";
+import { useSentinelStore } from "@/lib/sentinel-store";
 import { Shimmer } from "@/components/ui/shimmer";
 import { useBillingStore } from "@/lib/billing-store";
 import { createClient } from "@/lib/supabase/client";
@@ -356,15 +358,15 @@ function useAccordionState(groups: NavGroup[], pathname: string) {
 
 function useBadgeCounts(): Record<string, number> {
   const unread = useInboxStore((s) => s.items.filter((i) => !i.read && !i.archived).length);
-  // Map child nav IDs to their badge counts
-  // In the future, this can pull from multiple stores (incidents, notes, etc.)
+  const incidentCount = useIncidentsStore((s) => s.incidents.filter((i) => i.status === "reported" || i.status === "under_review" || i.status === "investigation").length);
+  const sentinelCount = useSentinelStore((s) => s.alerts.filter((a) => a.status === "active" || a.status === "escalated").length);
   return useMemo(
     () => ({
-      nav_inbox: unread,         // Trades: Messages
-      nav_incidents: 0,          // Placeholder — wire to real incident store
-      nav_shift_notes: 0,        // Placeholder
+      nav_inbox: unread,
+      nav_incidents: incidentCount,
+      nav_shift_notes: sentinelCount,
     } as Record<string, number>),
-    [unread],
+    [unread, incidentCount, sentinelCount],
   );
 }
 

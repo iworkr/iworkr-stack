@@ -2,7 +2,7 @@
  * @store JobsStore
  * @status COMPLETE
  * @description Job management state — CRUD, status transitions, subtasks, and SWR caching
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -52,6 +52,9 @@ interface JobsState {
 
   loadFromServer: (orgId: string) => Promise<void>;
   refresh: () => Promise<void>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 function mapServerJob(sj: any): Job {
@@ -320,6 +323,19 @@ export const useJobsStore = create<JobsState>()(
     } catch {
       // silently fail refresh
     }
+  },
+
+  reset: () => {
+    set({
+      jobs: [],
+      focusedIndex: 0,
+      selected: new Set(),
+      loaded: false,
+      loading: false,
+      orgId: null,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

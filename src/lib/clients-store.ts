@@ -2,7 +2,7 @@
  * @store ClientsStore
  * @status COMPLETE
  * @description Client CRM state — CRUD, search, stats, and SWR caching for client records
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -96,6 +96,9 @@ interface ClientsState {
 
   /** Server-synced create — persists to DB and updates local state */
   createClientServer: (params: CreateClientParams) => Promise<{ success: boolean; clientId?: string; error?: string }>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useClientsStore = create<ClientsState>()(
@@ -238,6 +241,20 @@ export const useClientsStore = create<ClientsState>()(
     } catch (err: any) {
       return { success: false, error: err.message || "Unexpected error" };
     }
+  },
+
+  reset: () => {
+    set({
+      clients: [],
+      focusedIndex: 0,
+      loaded: false,
+      loading: false,
+      orgId: null,
+      filterStatus: null,
+      filterType: null,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

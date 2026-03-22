@@ -2,7 +2,7 @@
  * @store CarePlansStore
  * @status COMPLETE
  * @description NDIS participant care plans and goals management (Nightingale Phase 3)
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -114,6 +114,9 @@ interface CarePlansState {
   createGoal: (input: CreateCareGoalInput) => Promise<CareGoal | null>;
   updateGoal: (id: string, updates: Partial<CareGoal> & { status?: CareGoalStatus }) => Promise<boolean>;
   setSelectedPlanId: (id: string | null) => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export interface CreateCarePlanInput {
@@ -232,6 +235,16 @@ export const useCarePlansStore = create<CarePlansState>((set, get) => ({
   },
 
   setSelectedPlanId: (id) => set({ selectedPlanId: id }),
+
+  reset: () => {
+    set({
+      plans: [],
+      loading: false,
+      error: null,
+      selectedPlanId: null,
+      _lastFetchedAt: null,
+    });
+  },
 }));
 
 /* ── Selectors ───────────────────────────────────────── */

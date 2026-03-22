@@ -2,7 +2,7 @@
  * @store IntegrationsStore
  * @status COMPLETE
  * @description Third-party integration state — connection status, sync settings, and event logs
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -109,6 +109,9 @@ interface IntegrationsState {
   syncNowServer: (id: string) => Promise<{ error: string | null }>;
   updateSyncSettingsServer: (integrationId: string, settingId: string) => Promise<{ error: string | null }>;
   updateAccountMappingServer: (integrationId: string, mappingId: string, value: string) => Promise<{ error: string | null }>;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useIntegrationsStore = create<IntegrationsState>()(
@@ -377,6 +380,23 @@ export const useIntegrationsStore = create<IntegrationsState>()(
       get().updateAccountMapping(integrationId, mappingId, prev);
     }
     return { error: res.error };
+  },
+
+  reset: () => {
+    set({
+      integrations: [],
+      events: [],
+      overview: null,
+      activeTab: "all",
+      searchQuery: "",
+      configPanelId: null,
+      stripeModalOpen: false,
+      loaded: false,
+      loading: false,
+      orgId: null,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
   },
     }),
     {

@@ -1,6 +1,6 @@
 /**
  * @module process-webhook-queue
- * @status PARTIAL
+ * @status COMPLETE
  * @auth UNSECURED — No user auth; service_role cron-triggered webhook processor
  * @description Aegis-Zero webhook queue processor: claims and processes batched webhooks from Stripe, RevenueCat, Resend with exponential backoff retry via RPC
  * @dependencies Stripe, RevenueCat, Resend, Supabase
@@ -157,14 +157,96 @@ async function processStripeWebhook(
 
 async function processRevenueCatWebhook(
   webhook: { event_type: string; payload: Record<string, unknown> },
-  _supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient>,
 ) {
-  console.log(`[RevenueCat Queue] Processed ${webhook.event_type}`);
+  const payload = webhook.payload;
+  const appUserId = (payload.app_user_id as string) || null;
+
+  switch (webhook.event_type) {
+    case "INITIAL_PURCHASE":
+    case "RENEWAL":
+    case "PRODUCT_CHANGE": {
+      // Map RevenueCat entitlement to our subscription
+      if (appUserId) {
+        const entitlementId = (payload.entitlement_id as string) || "pro";
+        const expiresDate = (payload.expiration_at_ms as number)
+          ? new Date(payload.expiration_at_ms as number).toISOString()
+          : null;
+
+        await supabase
+          .from("subscriptions")
+          .update({
+            status: "active",
+            current_period_end: expiresDate,
+            metadata: { ...payload, source: "revenuecat" },
+          })
+          .eq("revenuecat_app_user_id", appUserId);
+
+        console.log(`[RevenueCat Queue] ${webhook.event_type}: ${appUserId} → ${entitlementId}`);
+      }
+      break;
+    }
+    case "CANCELLATION":
+    case "EXPIRATION": {
+      if (appUserId) {
+        await supabase
+          .from("subscriptions")
+          .update({
+            status: "canceled",
+            canceled_at: new Date().toISOString(),
+          })
+          .eq("revenuecat_app_user_id", appUserId);
+        console.log(`[RevenueCat Queue] ${webhook.event_type}: ${appUserId} → canceled`);
+      }
+      break;
+    }
+    default:
+      console.log(`[RevenueCat Queue] Unhandled: ${webhook.event_type}`);
+  }
 }
 
 async function processResendWebhook(
   webhook: { event_type: string; payload: Record<string, unknown> },
-  _supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient>,
 ) {
-  console.log(`[Resend Queue] Processed ${webhook.event_type}`);
+  const payload = webhook.payload;
+  const emailLogId = (payload.email_log_id as string) || null;
+
+  switch (webhook.event_type) {
+    case "email.delivered": {
+      if (emailLogId) {
+        await supabase.from("email_logs").update({ status: "delivered" }).eq("id", emailLogId);
+      }
+      break;
+    }
+    case "email.bounced": {
+      if (emailLogId) {
+        await supabase.from("email_logs").update({ status: "bounced" }).eq("id", emailLogId);
+      }
+      const bouncedTo = (payload.to as string[]) || [];
+      for (const email of bouncedTo) {
+        const { data: profile } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
+        if (profile) {
+          await supabase.from("profiles").update({ email_bounced: true }).eq("id", profile.id);
+        }
+      }
+      break;
+    }
+    case "email.complained": {
+      if (emailLogId) {
+        await supabase.from("email_logs").update({ status: "complained" }).eq("id", emailLogId);
+      }
+      break;
+    }
+    case "email.opened": {
+      if (emailLogId) {
+        const { data: existing } = await supabase.from("email_logs").select("metadata").eq("id", emailLogId).single();
+        const meta = (existing?.metadata as Record<string, unknown>) ?? {};
+        await supabase.from("email_logs").update({ metadata: { ...meta, opened_at: new Date().toISOString() } }).eq("id", emailLogId);
+      }
+      break;
+    }
+    default:
+      console.log(`[Resend Queue] Unhandled: ${webhook.event_type}`);
+  }
 }

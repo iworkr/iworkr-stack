@@ -2,7 +2,7 @@
  * @store AssetsStore
  * @status COMPLETE
  * @description Manages asset inventory, stock items, and audit entries with SWR caching
- * @resetSafe NO — No reset() method for workspace switching
+ * @resetSafe YES — reset() method available for workspace switching
  * @lastAudit 2026-03-22
  */
 
@@ -174,6 +174,9 @@ interface AssetsState {
 
   /* Audit */
   addAuditEntry: (entry: Omit<AssetAuditEntry, "id">) => void;
+
+  /** Reset all state for workspace switching */
+  reset: () => void;
 }
 
 export const useAssetsStore = create<AssetsState>()(
@@ -376,6 +379,23 @@ export const useAssetsStore = create<AssetsState>()(
     set((s) => ({
       auditLog: [{ ...entry, id: `aud-${Date.now()}` }, ...s.auditLog],
     })),
+
+  reset: () => {
+    set({
+      assets: [],
+      stock: [],
+      auditLog: [],
+      overview: null,
+      activeTab: "fleet",
+      viewMode: "grid",
+      searchQuery: "",
+      loaded: false,
+      loading: false,
+      orgId: null,
+      _stale: true,
+      _lastFetchedAt: null,
+    });
+  },
     }),
     {
       name: "iworkr-assets",

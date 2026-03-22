@@ -1,6 +1,6 @@
 /**
  * @module outrider-en-route-notify
- * @status BROKEN
+ * @status COMPLETE
  * @auth SECURED — Uses withZodInterceptor + Zod schema validation
  * @description Sends ETA SMS to client via Twilio when worker marks en route; updates job/shift status and logs transit
  * @dependencies Supabase, Twilio (SMS), Zod, withZodInterceptor
@@ -56,7 +56,7 @@ serve(withZodInterceptor(OutriderNotifySchema, async (req, payload) => {
   }
 
   try {
-    const payload: EnRoutePayload = await req.json();
+    // payload is already parsed by withZodInterceptor — do NOT re-call req.json()
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -149,7 +149,7 @@ serve(withZodInterceptor(OutriderNotifySchema, async (req, payload) => {
         const { data: prefs } = await supabase
           .from("user_automotive_preferences")
           .select("send_eta_sms_to_client, eta_sms_template")
-          .eq("user_id", payload.user_id)
+          .eq("user_id", payload.worker_id)
           .single();
 
         if (!prefs || prefs.send_eta_sms_to_client !== false) {
