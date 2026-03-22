@@ -1,3 +1,10 @@
+/**
+ * @module LedgerSync Server Actions
+ * @status COMPLETE
+ * @description Accounting ledger synchronization — Xero/MYOB connection, entity mapping, sync queue, and reconciliation
+ * @exports fetchIntegrationStatus, syncToLedger, fetchMappings, updateMapping, fetchSyncHistory
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

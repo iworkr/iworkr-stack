@@ -1,6 +1,11 @@
-// process-payout Edge Function
-// Triggers an instant payout from the connected Stripe account to the
-// workspace's linked bank account.
+/**
+ * @module process-payout
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() + owner/admin role check
+ * @description Triggers an instant Stripe Connect payout from a workspace's connected account to their linked bank account
+ * @dependencies Stripe (Connect), Supabase
+ * @lastAudit 2026-03-22
+ */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14";

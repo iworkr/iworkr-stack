@@ -1,3 +1,11 @@
+/**
+ * @module evaluate-halcyon-state
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth guard; uses service_role key internally. Accepts user_id in body.
+ * @description Evaluates user eligibility for app review prompt (Sentiment Sieve) via PostgreSQL RPC, enforces Apple StoreKit 3-per-365-day throttle
+ * @dependencies Supabase (DB, RPCs)
+ * @lastAudit 2026-03-22
+ */
 // ============================================================================
 // Project Halcyon — Evaluate User Eligibility for App Review Prompt
 // ============================================================================

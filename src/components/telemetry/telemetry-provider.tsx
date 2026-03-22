@@ -1,3 +1,9 @@
+/**
+ * @component TelemetryProvider
+ * @status COMPLETE
+ * @description Dual telemetry pipeline for crash capture and continuous web vitals monitoring
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /**

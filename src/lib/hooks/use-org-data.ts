@@ -1,3 +1,9 @@
+/**
+ * @hook useOrgData
+ * @status COMPLETE
+ * @description Org-scoped data fetcher that gates on org loading before executing
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useOrg } from "./use-org";

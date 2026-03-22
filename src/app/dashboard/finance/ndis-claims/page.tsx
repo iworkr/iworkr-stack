@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/ndis-claims
+ * @status COMPLETE
+ * @description NDIS claims management with bulk submission and PRODA integration
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

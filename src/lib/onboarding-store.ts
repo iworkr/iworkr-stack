@@ -1,3 +1,11 @@
+/**
+ * @store OnboardingStore
+ * @status COMPLETE
+ * @description Onboarding wizard state — step progression, sector/trade selection, and form data
+ * @resetSafe YES — Has reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 

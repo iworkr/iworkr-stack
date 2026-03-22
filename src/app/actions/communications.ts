@@ -1,3 +1,10 @@
+/**
+ * @module Communications Server Actions
+ * @status COMPLETE
+ * @description Communication preferences — SMS/email notification settings for roster, shifts, announcements, and payslips
+ * @exports fetchCommunicationSettings, updateCommunicationSettings
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

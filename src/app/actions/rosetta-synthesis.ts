@@ -1,3 +1,10 @@
+/**
+ * @module RosettaSynthesis Server Actions
+ * @status COMPLETE
+ * @description AI-powered plan review synthesis — auto-generate NDIS plan review reports from participant data and progress notes
+ * @exports generateSynthesisAction, fetchSynthesisAction, approveSynthesisAction, regenerateSectionAction, exportSynthesisPDF
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

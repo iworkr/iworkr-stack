@@ -1,3 +1,9 @@
+/**
+ * @component FlowCard
+ * @status COMPLETE
+ * @description Renders an automation flow card with trigger/action visualization
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

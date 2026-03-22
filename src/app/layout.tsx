@@ -1,3 +1,9 @@
+/**
+ * @layout RootLayout
+ * @status COMPLETE
+ * @description Root HTML layout with fonts, theme, auth, and analytics providers
+ * @lastAudit 2026-03-22
+ */
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { AuthProvider } from "@/components/providers/auth-provider";

@@ -1,7 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════
--- Migration 125: Project Capital — iWorkr Connect & Universal Trust Engine
--- network_identities table, webhook idempotency, fix stripe_account_id column
--- ═══════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration ProjectCapitalConnect
+-- @status COMPLETE
+-- @description Project Capital — iWorkr Connect trust engine, network identities, webhook idempotency
+-- @tables network_identities, organizations (altered — stripe_account_active)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Fix stripe_account_id: ensure it's a real column (not just JSONB) ──
 -- The column already exists from migration 037, but the onboard route writes

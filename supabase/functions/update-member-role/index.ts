@@ -1,3 +1,11 @@
+/**
+ * @module update-member-role
+ * @status COMPLETE
+ * @auth SECURED — Validates JWT and checks owner/admin role
+ * @description Updates a team member's role in organization_members and syncs to auth.users.raw_app_meta_data for JWT claims
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
 // ============================================================
 // update-member-role — Aegis Role Change + Force JWT Refresh
 // When an owner/admin changes a member's role, this function:

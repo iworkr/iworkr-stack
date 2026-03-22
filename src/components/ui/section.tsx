@@ -1,3 +1,9 @@
+/**
+ * @component Section
+ * @status COMPLETE
+ * @description Reusable landing page section wrapper with consistent padding and max-width
+ * @lastAudit 2026-03-22
+ */
 import { type ReactNode } from "react";
 
 interface SectionProps {

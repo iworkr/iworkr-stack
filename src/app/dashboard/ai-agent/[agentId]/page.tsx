@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ai-agent/[agentId]
+ * @status COMPLETE
+ * @description Dynamic AI agent config editor — loads/saves per-agent settings via server action
+ * @dataSource server-action: getAgentConfig, upsertAgentConfig
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useParams, useRouter } from "next/navigation";

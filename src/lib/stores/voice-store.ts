@@ -1,11 +1,9 @@
 /**
- * Voice Store — Zustand store for Cloud PBX / WebRTC softphone state.
- *
- * Manages: Twilio Voice SDK Device, active call state, screen pop data,
- * microphone permissions, network quality, and call history.
- *
- * This store is consumed by the ScreenPop component and the global
- * layout provider to manage the browser-as-phone experience.
+ * @store VoiceStore
+ * @status COMPLETE
+ * @description Cloud PBX / WebRTC softphone state — Twilio device, call state, screen pop, and mic permissions
+ * @resetSafe YES — Has reset() method for workspace switching
+ * @lastAudit 2026-03-22
  */
 import { create } from "zustand";
 

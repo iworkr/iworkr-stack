@@ -1,3 +1,9 @@
+/**
+ * @component ActionToast
+ * @status COMPLETE
+ * @description Global toast notification system with Zustand store for success, error, and info messages
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

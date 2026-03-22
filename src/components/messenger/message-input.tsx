@@ -1,3 +1,9 @@
+/**
+ * @component MessageInput
+ * @status COMPLETE
+ * @description Rich message input with attachments, polls, emoji picker, and slash commands
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";

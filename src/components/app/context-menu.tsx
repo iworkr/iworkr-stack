@@ -1,3 +1,9 @@
+/**
+ * @component ContextMenu
+ * @status COMPLETE
+ * @description Animated right-click context menu with keyboard shortcuts, icons, and divider support
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/desktop/version
+ * @status COMPLETE
+ * @auth PUBLIC — Version check endpoint
+ * @description Returns latest desktop app version info from Supabase Storage
+ * @lastAudit 2026-03-22
+ */
 import { NextResponse } from "next/server";
 
 const SUPABASE_STORAGE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL

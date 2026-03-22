@@ -1,3 +1,10 @@
+/**
+ * @module RosterTemplates Server Actions
+ * @status COMPLETE
+ * @description Roster template engine — cyclic roster patterns, shift generation, NDIS cancellation logic, and template application
+ * @exports createRosterTemplate, fetchRosterTemplates, applyTemplateToWeek, cancelShiftWithNDISLogic, updateRosterTemplate
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import type { SupabaseClient } from "@supabase/supabase-js";

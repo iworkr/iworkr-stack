@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/telemetry/export
+ * @status COMPLETE
+ * @auth REQUIRED — Super admin only
+ * @description Exports system telemetry data as JSON or CSV for super admins
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";

@@ -1,3 +1,11 @@
+/**
+ * @module care-dashboard-snapshot
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser()
+ * @description Aggregated care dashboard: parallel queries for participants, shifts, incidents, sentinel alerts, credentials, budget, claims, care plans, clinical observations
+ * @dependencies Supabase (Auth, DB)
+ * @lastAudit 2026-03-22
+ */
 // ═══════════════════════════════════════════════════════════════════════════════
 // care-dashboard-snapshot — Aggregated care metrics in one call
 // Project Nightingale: Powers the Participant Command Center

@@ -1,3 +1,9 @@
+/**
+ * @component PermissionGate
+ * @status COMPLETE
+ * @description JWT-based permission gate using compiled permissions array for granular access control
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useAuthStore } from "@/lib/auth-store";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ai-agent/dispatch
+ * @status COMPLETE
+ * @description AI Dispatch agent configuration — routing rules, priority overrides, auto-assign
+ * @dataSource server-action: upsertAgentConfig
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

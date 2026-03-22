@@ -1,3 +1,10 @@
+/**
+ * @module IntegrationOAuth Server Actions
+ * @status COMPLETE
+ * @description OAuth token lifecycle — code exchange, token encryption/storage, refresh flows, and provider disconnection
+ * @exports exchangeOAuthCode, refreshIntegrationToken, disconnectIntegration, getOAuthUrl, fetchTokenStatus
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

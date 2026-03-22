@@ -1,3 +1,9 @@
+/**
+ * @component DashboardGrid
+ * @status COMPLETE
+ * @description Responsive drag-and-drop dashboard grid using react-grid-layout with persistent layout storage
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";

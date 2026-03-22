@@ -1,3 +1,10 @@
+/**
+ * @module GovernancePolicies Server Actions
+ * @status COMPLETE
+ * @description Policy lifecycle management — create, publish, version, acknowledge, and enforce organizational policies
+ * @exports createPolicyAction, fetchPoliciesAction, publishPolicyAction, acknowledgePolicyAction, fetchComplianceMatrixAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

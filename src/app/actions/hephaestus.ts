@@ -1,3 +1,10 @@
+/**
+ * @module Hephaestus Server Actions
+ * @status COMPLETE
+ * @description CPQ engine — inventory, trade kits, supplier invoice triage, proposals, zero-day seed, bulk pricing, and margin cascade
+ * @exports createInventoryItem, fetchInventory, createTradeKit, triageSupplierInvoice, generateProposal
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

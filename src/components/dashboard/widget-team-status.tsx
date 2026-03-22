@@ -1,3 +1,9 @@
+/**
+ * @component WidgetTeamStatus
+ * @status COMPLETE
+ * @description Dashboard widget showing team member avatars with online/offline status indicators
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

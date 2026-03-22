@@ -1,3 +1,9 @@
+/**
+ * @page /contact
+ * @status COMPLETE
+ * @description Public contact form with support, feedback, and bug report categories
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";

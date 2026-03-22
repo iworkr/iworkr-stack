@@ -1,3 +1,9 @@
+/**
+ * @component CreateClientModal
+ * @status COMPLETE
+ * @description Client creation modal with address autocomplete, contact details, and AI duplicate detection
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

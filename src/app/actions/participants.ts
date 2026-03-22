@@ -1,3 +1,10 @@
+/**
+ * @module Participants Server Actions
+ * @status COMPLETE
+ * @description NDIS participant management — profiles, goals, funding plans, service agreements, and care coordination
+ * @exports createParticipant, fetchParticipants, updateParticipant, fetchParticipantById, archiveParticipant
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

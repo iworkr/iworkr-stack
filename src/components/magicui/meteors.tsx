@@ -1,3 +1,9 @@
+/**
+ * @component Meteors
+ * @status COMPLETE
+ * @description Renders animated meteor/shooting-star particles as a visual effect
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import React, { useEffect, useState } from "react";

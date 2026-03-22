@@ -1,3 +1,9 @@
+/**
+ * @component SpotlightButton
+ * @status COMPLETE
+ * @description Animated CTA button with hover spotlight effect and multiple variant styles
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

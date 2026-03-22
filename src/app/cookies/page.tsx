@@ -1,3 +1,9 @@
+/**
+ * @page /cookies
+ * @status COMPLETE
+ * @description Cookie policy page with EU Cookie Law compliance details
+ * @lastAudit 2026-03-22
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";

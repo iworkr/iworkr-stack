@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 143: Project Chronos-EBA — Custom EBA Rules Engine
--- Version 145.0 — "Abstract Determinism & Mathematical Sovereignty"
--- ============================================================
+-- ============================================================================
+-- @migration ChronosEBAPayrollRules
+-- @status COMPLETE
+-- @description Project Chronos-EBA — custom enterprise bargaining agreement rules engine
+-- @tables eba_agreements, eba_rules, eba_rule_test_cases
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. ENUMs ────────────────────────────────────────────────
 DO $$ BEGIN

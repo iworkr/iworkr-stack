@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/invoicing
+ * @status COMPLETE
+ * @description Billing invoices list with filters, batch actions, and send/export
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useTransition } from "react";

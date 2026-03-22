@@ -1,3 +1,9 @@
+/**
+ * @page LandingPage
+ * @status COMPLETE
+ * @description Public marketing landing page with hero, bento grid, pricing, and CTA sections
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { Navbar } from "@/components/sections/navbar";

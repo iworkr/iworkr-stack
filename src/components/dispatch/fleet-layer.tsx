@@ -1,3 +1,9 @@
+/**
+ * @component FleetLayer
+ * @status COMPLETE
+ * @description Mapbox layer rendering animated fleet vehicle markers with heading rotation and speed data
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef } from "react";

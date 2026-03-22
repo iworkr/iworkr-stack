@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 159: Project Solon-Law — Semantic Regulatory
---   Enforcement & RAG Compliance Firewall
--- ============================================================
+-- ============================================================================
+-- @migration SolonLawRegulatoryRAG
+-- @status COMPLETE
+-- @description Project Solon-Law — semantic regulatory RAG, compliance firewall, pgvector
+-- @tables regulatory_frameworks, regulation_chunks, compliance_checks
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- pgvector already enabled in migration 152
 

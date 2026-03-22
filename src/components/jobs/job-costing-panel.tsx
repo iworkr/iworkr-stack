@@ -1,3 +1,9 @@
+/**
+ * @component JobCostingPanel
+ * @status COMPLETE
+ * @description Displays job costing breakdown with labour, materials, margin, and profitability metrics
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect } from "react";

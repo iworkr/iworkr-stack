@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/behaviour
+ * @status COMPLETE
+ * @description Behaviour support plan tracker — incident patterns, ABC data, escalation alerts, and plan compliance
+ * @dataSource react-query via care actions
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/funding-engine
+ * @status COMPLETE
+ * @description NDIS funding engine — claim lifecycle, budget utilisation, pace alerts, and PRODA submission queue
+ * @dataSource react-query via nightingale-pace + aegis-spend actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

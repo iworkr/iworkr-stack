@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 011: Jobs (Core Workflow)
--- Job management, subtasks, activity timeline
--- ============================================================
+-- ============================================================================
+-- @migration ModuleJobs
+-- @status COMPLETE
+-- @description Job management, subtasks, activity timeline
+-- @tables jobs, job_subtasks, job_activity
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create type public.job_status as enum ('backlog', 'todo', 'in_progress', 'done', 'cancelled');
 create type public.job_priority as enum ('urgent', 'high', 'medium', 'low', 'none');

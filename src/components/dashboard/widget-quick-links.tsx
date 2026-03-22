@@ -1,3 +1,9 @@
+/**
+ * @component WidgetQuickLinks
+ * @status COMPLETE
+ * @description Dashboard widget displaying a configurable grid of quick-nav links to key app sections
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { Link as LinkIcon, Briefcase, Calendar, Banknote, Users, Inbox, Warehouse, FileText, Workflow, Plug } from "lucide-react";

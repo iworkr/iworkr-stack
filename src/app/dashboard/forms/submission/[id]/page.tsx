@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/forms/submission/[id]
+ * @status COMPLETE
+ * @description Read-only form submission detail with forensic metadata and audit trail
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

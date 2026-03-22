@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/sil-quoting
+ * @status COMPLETE
+ * @description SIL quotes list with search, filters, and navigation to individual quotes
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useMemo, useState } from "react";

@@ -1,3 +1,10 @@
+/**
+ * @module Aegis Server Actions
+ * @status COMPLETE
+ * @description Core Aegis SIRS compliance — incident CRUD, 5-business-day reporting, and notification management
+ * @exports createAegisIncident, fetchAegisIncidents, updateAegisIncident, deleteAegisIncident, fetchIncidentNotifications
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";

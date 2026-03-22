@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 015: Forms (Compliance & Custom Forms)
--- Form templates, submissions, blocks
--- ============================================================
+-- ============================================================================
+-- @migration ModuleForms
+-- @status COMPLETE
+-- @description Compliance and custom forms — templates, submissions, blocks
+-- @tables forms, form_blocks, form_submissions
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create type public.form_status as enum ('draft', 'published', 'archived');
 create type public.submission_status as enum ('pending', 'signed', 'expired', 'rejected');

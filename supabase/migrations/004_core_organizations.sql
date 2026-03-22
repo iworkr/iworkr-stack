@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 004: Organizations & Members
--- Multi-tenancy backbone: orgs, members, invites
--- ============================================================
+-- ============================================================================
+-- @migration CoreOrganizations
+-- @status COMPLETE
+-- @description Multi-tenancy backbone — organizations, members, invites
+-- @tables organizations, organization_members, invites
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Organizations (Workspaces)
 create table public.organizations (

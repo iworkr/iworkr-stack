@@ -1,3 +1,10 @@
+/**
+ * @module CareHouses Server Actions
+ * @status COMPLETE
+ * @description SIL/SDA house management — facility CRUD, resident assignments, petty cash, and house rules
+ * @exports createHouseAction, fetchHousesAction, updateHouseAction, deleteHouseAction, assignResidentAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

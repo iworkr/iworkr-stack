@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/templates/rules
+ * @status COMPLETE
+ * @description Template assignment rules for auto-matching shift note templates to shifts
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useTransition } from "react";

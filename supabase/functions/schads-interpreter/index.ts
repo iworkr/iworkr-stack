@@ -1,20 +1,10 @@
 /**
- * SCHADS Award Interpreter — Supabase Edge Function
- * Version: 1.0 — Project Chronos-SCHADS
- *
- * A deterministic 5-step pipeline that ingests a time_entry record and
- * produces granular timesheet_pay_lines conforming to the Australian
- * Social, Community, Home Care and Disability Services (SCHADS) Award.
- *
- * Pipeline steps:
- *   1. Midnight & Threshold Splitter  — fractures time blocks at penalty boundaries
- *   2. Day-of-Week Evaluator          — Saturday/Sunday/Public Holiday override
- *   3. Minimum Engagement Padding     — FWO 2-hour casual minimum
- *   4. Overtime Accumulator           — 38h weekly limit, 1.5x/2.0x buckets
- *   5. Allowance Injector             — Broken shifts, sleepovers, first aid
- *
- * DST Safety: All duration math uses UTC epoch arithmetic (never local clock diff).
- * Re-entrant: Purges existing pay lines before recalculating (idempotent).
+ * @module schads-interpreter
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() + admin/manager role check
+ * @description Project Chronos-SCHADS: Deterministic 5-step SCHADS Award interpreter — midnight splitting, penalty rates, minimum engagement, overtime accumulation, broken shift/sleepover allowances. DST-safe, idempotent.
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";

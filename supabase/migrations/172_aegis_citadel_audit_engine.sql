@@ -1,9 +1,9 @@
 -- ============================================================================
--- Aegis-Citadel Phase 1B: Forensic Immutable Audit Engine
--- ============================================================================
--- Creates an append-only, tamper-resistant audit log for PII access.
--- Every read/write to sensitive tables is recorded with user, IP, and timestamp.
--- Even service_role cannot DELETE from this table (protected by trigger).
+-- @migration AegisCitadelAuditEngine
+-- @status COMPLETE
+-- @description Aegis-Citadel Phase 1B — append-only forensic audit log for PII access
+-- @tables security_audit_log (partitioned)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ══════════════════════════════════════════════════════════════════════════════

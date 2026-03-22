@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/supplier-invoices
+ * @status COMPLETE
+ * @description Supplier invoice inbox with OCR upload, approval, and line mapping
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";

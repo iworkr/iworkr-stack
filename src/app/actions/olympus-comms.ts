@@ -1,3 +1,10 @@
+/**
+ * @module OlympusComms Server Actions
+ * @status COMPLETE
+ * @description Super admin communications — platform-wide announcements, system notifications, and admin broadcast messaging
+ * @exports sendPlatformAnnouncementAction, fetchAnnouncementsAction, sendSystemNotificationAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

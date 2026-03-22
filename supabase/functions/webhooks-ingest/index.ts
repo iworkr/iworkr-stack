@@ -1,3 +1,11 @@
+/**
+ * @module webhooks-ingest
+ * @status COMPLETE
+ * @auth SECURED — Validates provider-specific signatures (Stripe, Xero, Polar) via HMAC
+ * @description Universal webhook ingestion endpoint — validates, logs, and routes webhooks from Stripe, Xero, Polar, and custom providers
+ * @dependencies Supabase, Stripe, Xero, Polar.sh, Zod
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "npm:zod@3.23.8";
 import { withZodInterceptor } from "../_shared/withZodInterceptor.ts";

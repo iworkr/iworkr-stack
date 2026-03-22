@@ -1,3 +1,12 @@
+/**
+ * @module panopticon-text-to-sql
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() + org membership verification
+ * @description Text-to-SQL conversational analytics: NL question → GPT-4o SQL → sandboxed exec → viz agent → SSE stream
+ * @dependencies Supabase (RPC: execute_analytics_query), OpenAI (gpt-4o, gpt-4o-mini)
+ * @lastAudit 2026-03-22
+ */
+
 // Edge Function: panopticon-text-to-sql
 // Project Panopticon-Chat — Text-to-SQL Conversational Analytics
 // Pipeline: NL question → GPT-4o SQL → sandboxed execution → visualization agent → SSE stream

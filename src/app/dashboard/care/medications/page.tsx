@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/medications
+ * @status COMPLETE
+ * @description Medication register — searchable list with schedule indicators, stock levels, and admin log
+ * @dataSource react-query via medications-store
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useMemo, useState } from "react";

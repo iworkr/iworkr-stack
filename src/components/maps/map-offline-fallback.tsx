@@ -1,3 +1,9 @@
+/**
+ * @component MapOfflineFallback
+ * @status COMPLETE
+ * @description Renders a styled fallback placeholder when the map cannot load
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /**

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/governance/policies
+ * @status COMPLETE
+ * @description Policy governance dashboard with upload, distribution, and acknowledgement tracking
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

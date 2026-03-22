@@ -1,3 +1,11 @@
+/**
+ * @module twilio-webhook
+ * @status COMPLETE
+ * @auth SECURED — Validates Twilio request signature via HMAC-SHA1
+ * @description Ingests Twilio SMS/MMS webhooks, logs messages, resolves contacts, and optionally triggers LLM negotiator
+ * @dependencies Supabase, Twilio, Zod
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "npm:zod@3.23.8";

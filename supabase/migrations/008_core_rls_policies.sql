@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 008: RLS Policies
--- Row Level Security for all core tables
--- ============================================================
+-- ============================================================================
+-- @migration CoreRLSPolicies
+-- @status COMPLETE
+-- @description Row Level Security policies for all core tables
+-- @tables profiles, organizations, organization_members, invites, subscriptions, audit_log (policies)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── Profiles ──────────────────────────────────────────────
 alter table public.profiles enable row level security;

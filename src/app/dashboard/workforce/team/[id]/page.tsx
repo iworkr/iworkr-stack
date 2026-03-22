@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/workforce/team/[id]
+ * @status COMPLETE
+ * @description Workforce team member detail with profile, compliance, pay, and availability
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

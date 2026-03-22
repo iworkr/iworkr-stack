@@ -1,3 +1,10 @@
+/**
+ * @module CareShiftNotes Server Actions
+ * @status COMPLETE
+ * @description Shift note templates and submissions — configurable note fields, family-visible flags, and shift documentation
+ * @exports createShiftNoteTemplateAction, fetchShiftNoteTemplatesAction, submitShiftNoteAction, fetchShiftNotesAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

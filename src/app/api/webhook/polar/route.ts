@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/webhook/polar
+ * @status COMPLETE
+ * @auth WEBHOOK — Deprecated, returns 200 unconditionally
+ * @description Legacy Polar.sh webhook stub to prevent retry storms
+ * @lastAudit 2026-03-22
+ */
 import { NextResponse } from "next/server";
 
 /**

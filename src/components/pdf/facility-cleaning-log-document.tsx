@@ -1,3 +1,9 @@
+/**
+ * @component FacilityCleaningLogDocument
+ * @status COMPLETE
+ * @description PDF document rendering a facility cleaning log with task status rows
+ * @lastAudit 2026-03-22
+ */
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 export type FacilityCleaningLogRow = {

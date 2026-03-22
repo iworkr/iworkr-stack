@@ -1,3 +1,10 @@
+/**
+ * @module Billing Server Actions
+ * @status COMPLETE
+ * @description NDIS billing engine — invoice CRUD, funding allocation, claim generation, and payment reconciliation
+ * @exports createInvoiceAction, fetchInvoicesAction, submitClaimAction, reconcilePaymentAction, fetchBillingSummary
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import type { SupabaseClient } from "@supabase/supabase-js";

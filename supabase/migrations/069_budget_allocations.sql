@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 069: Budget Allocations, Quarantine Ledger, Funders & Claim Lines
--- (Project Nightingale Phase 3)
--- Real-time budget quarantining, multi-funder split billing, and claim line items.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration BudgetAllocations
+-- @status COMPLETE
+-- @description Budget quarantine ledger, multi-funder split billing, claim line items
+-- @tables funders, budget_allocations, budget_quarantine_ledger, claim_line_items
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Funders Table ──────────────────────────────────────────────────────

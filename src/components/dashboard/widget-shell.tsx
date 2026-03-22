@@ -1,3 +1,9 @@
+/**
+ * @component WidgetShell
+ * @status COMPLETE
+ * @description Reusable dashboard widget container with hover glow effect, header slot, and animated entrance
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, useMotionValue, useMotionTemplate } from "framer-motion";

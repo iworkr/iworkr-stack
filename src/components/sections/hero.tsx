@@ -1,3 +1,9 @@
+/**
+ * @component Hero
+ * @status COMPLETE
+ * @description Landing page hero section with animated headline, product mockup, and scroll parallax
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";

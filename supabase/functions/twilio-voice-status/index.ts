@@ -1,3 +1,11 @@
+/**
+ * @module twilio-voice-status
+ * @status COMPLETE
+ * @auth SECURED — Validates Twilio request signature
+ * @description Handles Twilio voice status callbacks — updates call records and communication logs with duration, recording URLs, and final status
+ * @dependencies Supabase, Twilio Voice
+ * @lastAudit 2026-03-22
+ */
 // ============================================================================
 // Twilio Voice Status — Edge Function
 // ============================================================================

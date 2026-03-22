@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/team/invite
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with owner/admin/manager role
+ * @description Sends a team invite email with secure token and 7-day expiry
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";

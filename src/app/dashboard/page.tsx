@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard
+ * @status COMPLETE
+ * @description Main dashboard with configurable bento grid widgets and live KPI snapshot
+ * @dataSource server-action: getDashboardSnapshot, loadDashboardLayout
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState } from "react";

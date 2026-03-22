@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 175: Zenith-Launch — Critical Database Fixes
--- Fixes: log_job_activity enum, low-stock trigger, get_member_stats column,
---        budget function SECURITY DEFINER, duplicate RLS policy cleanup
+-- @migration ZenithCriticalFixes
+-- @status COMPLETE
+-- @description Zenith-Launch — fix log_job_activity, low-stock trigger, member stats, duplicate RLS
+-- @tables (none — function fixes and policy cleanup)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ── 1. Fix log_job_activity: 'update' → 'note' (valid activity_type) ─────

@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════
--- Migration 126: Project Ledger-Prime — Unified Participant Invoicing Engine
--- Adds NDIS billing columns to invoices, invoice_line_items,
--- the ndis_support_items pricing catalog, and the generate_billing_batches RPC.
--- ═══════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration LedgerPrimeBilling
+-- @status COMPLETE
+-- @description Project Ledger-Prime — NDIS participant invoicing, billing batches, support items
+-- @tables invoices (altered), invoice_line_items (altered), ndis_support_items
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Extend invoices table for NDIS participant billing ─────────────────
 ALTER TABLE public.invoices

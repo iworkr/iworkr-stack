@@ -1,9 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════
--- Migration 127: Project Chronos-SCHADS — Award Interpreter Schema
--- Creates: worker_pay_profiles, timesheet_pay_lines, australian_public_holidays
--- Extends: time_entries (sleepover, cancellation flags)
--- RPCs:   get_cumulative_week_hours, get_worker_pay_profile_at_date
--- ═══════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration ChronosSCHADSPayroll
+-- @status COMPLETE
+-- @description Project Chronos-SCHADS — award interpreter, pay profiles, timesheet pay lines
+-- @tables worker_pay_profiles, timesheet_pay_lines, australian_public_holidays, time_entries (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Extend time_entries for SCHADS-specific flags ─────────────────────
 ALTER TABLE public.time_entries

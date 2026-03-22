@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/team/validate-invite
+ * @status COMPLETE
+ * @auth PUBLIC — No auth required, token-based validation
+ * @description Validates a team invite token server-side for the onboarding flow
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 

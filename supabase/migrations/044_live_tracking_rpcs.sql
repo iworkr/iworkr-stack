@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 044: Live Tracking RPCs
--- SAFE: Wrapped in table existence checks.
--- ============================================================
+-- ============================================================================
+-- @migration LiveTrackingRPCs
+-- @status COMPLETE
+-- @description Live dispatch tracking RPCs using fleet_positions
+-- @tables (none — functions only: get_live_dispatch)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Replace get_live_dispatch to use fleet_positions ──
 DO $$ BEGIN

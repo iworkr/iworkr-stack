@@ -1,3 +1,9 @@
+/**
+ * @component InlineMap
+ * @status COMPLETE
+ * @description Renders an interactive Mapbox GL map with Obsidian-styled markers
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef } from "react";

@@ -1,3 +1,10 @@
+/**
+ * @module Contact Server Actions
+ * @status COMPLETE
+ * @description Public contact form — rate-limited email submission with Zod validation and Resend delivery
+ * @exports submitContactForm, submitBugReport, submitFeatureRequest
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { sendEmail } from "@/lib/email/send";

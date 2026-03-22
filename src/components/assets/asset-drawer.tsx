@@ -1,3 +1,9 @@
+/**
+ * @component AssetDrawer
+ * @status COMPLETE
+ * @description Slide-out drawer for viewing and editing asset details, photos, service history, and audit trail
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useCallback, useRef } from "react";

@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 040: Project Grandmaster — Schedule Dispatch Enhancements
--- SAFE: All statements wrapped with table existence checks.
+-- @migration GrandmasterScheduleDispatch
+-- @status COMPLETE
+-- @description Project Grandmaster — schedule drop validation, dispatch RPCs
+-- @tables (none — functions only: validate_schedule_drop, etc.)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- --------------------------------------------------------------------------

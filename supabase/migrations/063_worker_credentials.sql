@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 063: Worker Credentials (Project Nightingale)
--- Workforce compliance: credentials, expiry tracking, and scheduling hard gate.
--- SAFE: All statements wrapped with existence checks.
+-- @migration WorkerCredentials
+-- @status COMPLETE
+-- @description Project Nightingale — workforce credentials, expiry tracking, scheduling gate
+-- @tables worker_credentials
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- 1. Create credential_type enum

@@ -1,3 +1,9 @@
+/**
+ * @component WidgetMap
+ * @status COMPLETE
+ * @description Dashboard map widget showing live technician/job pins with Mapbox and realtime updates
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { ArrowRight, MapPin as MapPinIcon, Radio } from "lucide-react";

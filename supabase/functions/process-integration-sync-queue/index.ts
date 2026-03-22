@@ -1,3 +1,12 @@
+/**
+ * @module process-integration-sync-queue
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; uses service_role key internally (invoked by cron/trigger)
+ * @description Processes pending integration sync queue jobs (e.g. Xero invoice refresh) with retry logic and exponential backoff
+ * @dependencies Xero API, Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";
 

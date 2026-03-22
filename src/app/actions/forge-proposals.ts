@@ -1,3 +1,10 @@
+/**
+ * @module ForgeProposals Server Actions
+ * @status COMPLETE
+ * @description Trade kit administration and public proposal generation — kit CRUD, proposal templates, and client-facing proposal links
+ * @exports createTradeKitAction, fetchTradeKitsAction, generateProposalAction, fetchProposalsAction, publishProposalAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

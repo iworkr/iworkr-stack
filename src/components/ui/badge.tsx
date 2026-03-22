@@ -1,3 +1,9 @@
+/**
+ * @component Badge
+ * @status COMPLETE
+ * @description Animated badge component with optional glow effect for labels and tags
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

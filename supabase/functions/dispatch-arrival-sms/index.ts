@@ -1,3 +1,11 @@
+/**
+ * @module dispatch-arrival-sms
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; invoked by DB trigger or direct call with service_role key
+ * @description Sends tracking URL via Twilio SMS when a tracking session is created, supports Trade and Care modes
+ * @dependencies Twilio (SMS), Supabase (DB)
+ * @lastAudit 2026-03-22
+ */
 // ============================================================================
 // Project Glasshouse-Arrival — SMS Dispatch Edge Function
 // ============================================================================

@@ -1,3 +1,10 @@
+/**
+ * @module GlasshouseTriage Server Actions
+ * @status COMPLETE
+ * @description Public booking widget — triage forms, appointment scheduling, availability checks, and booking confirmation
+ * @exports createBookingAction, fetchAvailableSlotsAction, updateBookingAction, cancelBookingAction, fetchTriageConfigAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

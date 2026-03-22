@@ -1,3 +1,12 @@
+/**
+ * @module pace-check-budget
+ * @status PARTIAL
+ * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @description Queries NDIS PACE API for participant budgets and endorsement status with WIP arbitration; falls back to mock data in dev
+ * @dependencies Supabase, PACE API (NDIS), PRODA auth
+ * @lastAudit 2026-03-22
+ */
+
 // Edge Function: pace-check-budget
 // Queries PACE API for participant budgets and endorsement status
 // Used for Pre-Dispatch Live Fund Checking and Endorsement Verification

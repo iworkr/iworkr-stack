@@ -1,3 +1,10 @@
+/**
+ * @module ShiftCost Server Actions
+ * @status COMPLETE
+ * @description Shift cost calculation — time segment breakdown, penalty rates, allowances, and real-time cost estimates
+ * @exports calculateShiftCostAction, fetchShiftCostBreakdownAction, estimateCostAction, fetchCostSummaryAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

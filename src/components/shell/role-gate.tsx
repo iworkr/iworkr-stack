@@ -1,3 +1,9 @@
+/**
+ * @component RoleGate
+ * @status COMPLETE
+ * @description Conditionally renders children based on user role in current workspace
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /**

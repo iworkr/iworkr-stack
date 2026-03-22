@@ -1,3 +1,10 @@
+/**
+ * @module Clients Server Actions
+ * @status COMPLETE
+ * @description Client CRM — full CRUD, search, filtering, statements, notes, automation events, and bulk operations
+ * @exports createClient, updateClient, deleteClient, fetchClients, fetchClientById
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

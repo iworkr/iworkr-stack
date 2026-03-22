@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 094: Project Persona - Comprehensive Participant/Client Profiles
--- Living dossier schema, RBAC governance, worker briefing acknowledgments,
--- family update request triage, and hydrated dossier RPC.
+-- @migration PersonaLivingDossier
+-- @status COMPLETE
+-- @description Project Persona — living dossier, RBAC governance, worker briefings, family triage
+-- @tables participant_profiles (altered), dossier_sections, worker_briefing_acks
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- 1) Expand participant baseline

@@ -1,3 +1,9 @@
+/**
+ * @component BentoGrid
+ * @status COMPLETE
+ * @description Landing page bento grid showcasing product features with tilt-hover animated cards
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, useMotionValue, useSpring } from "framer-motion";

@@ -1,3 +1,11 @@
+/**
+ * @store SettingsStore
+ * @status COMPLETE
+ * @description Organization and profile settings state — org config, user preferences, and Supabase sync
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";

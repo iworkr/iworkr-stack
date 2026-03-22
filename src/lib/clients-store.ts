@@ -1,3 +1,11 @@
+/**
+ * @store ClientsStore
+ * @status COMPLETE
+ * @description Client CRM state — CRUD, search, stats, and SWR caching for client records
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isFresh } from "./cache-utils";

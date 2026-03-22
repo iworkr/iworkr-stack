@@ -1,3 +1,10 @@
+/**
+ * @module Quotes Server Actions
+ * @status COMPLETE
+ * @description Quote management — create, update, send, approve/decline quotes with PDF generation and email delivery
+ * @exports createQuote, updateQuote, sendQuote, approveQuote, fetchQuotes
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

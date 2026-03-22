@@ -1,3 +1,9 @@
+/**
+ * @component CustodyModal
+ * @status COMPLETE
+ * @description Modal for transferring asset custody to a team member with search and confirmation
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

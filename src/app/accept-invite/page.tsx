@@ -1,3 +1,9 @@
+/**
+ * @page /accept-invite
+ * @status COMPLETE
+ * @description Team invite acceptance flow with password setup and onboarding
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { createClient } from "@/lib/supabase/client";

@@ -1,3 +1,10 @@
+/**
+ * @module PanopticonVision Server Actions
+ * @status COMPLETE
+ * @description Computer vision analytics — image processing, object detection results, visual inspection reports, and anomaly detection
+ * @exports processImageAction, fetchVisionResultsAction, createInspectionReportAction, fetchAnomaliesAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

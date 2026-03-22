@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/incidents
+ * @status COMPLETE
+ * @description Incident register — searchable list with severity filters, create modal, and detail drawer
+ * @dataSource zustand: useIncidentsStore
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

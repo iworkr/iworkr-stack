@@ -1,3 +1,11 @@
+/**
+ * @module create-terminal-intent
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser() + org membership check
+ * @description Creates a Stripe Terminal payment intent for tap-to-pay with destination charges and platform fee splitting
+ * @dependencies Stripe (Connect, Terminal), Supabase (Auth, DB)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@17?target=deno";
 import { MockStripe, isTestEnv } from "../_shared/mockClients.ts";

@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 168: Project Genesis-Roster
--- Creates the Care Blueprint architecture, clinical skills system,
--- and the rpc_generate_roster_shell function for auto-rostering.
+-- @migration GenesisRoster
+-- @status COMPLETE
+-- @description Project Genesis-Roster — care blueprints, clinical skills, auto-rostering RPC
+-- @tables care_blueprints, blueprint_shifts, clinical_skills, worker_clinical_skills
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ── 1. Enums ────────────────────────────────────────────────────────────────

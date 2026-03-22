@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/checkout
+ * @status COMPLETE
+ * @auth PUBLIC — Redirect endpoint
+ * @description Legacy Polar.sh checkout redirect to new pricing page
+ * @lastAudit 2026-03-22
+ */
 import { NextResponse } from "next/server";
 
 /**

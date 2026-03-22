@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 062: Industry Toggle (Project Nightingale)
--- Adds industry_type to organizations to support Trades vs Care sector.
--- SAFE: All statements use IF NOT EXISTS / ADD COLUMN IF NOT EXISTS.
+-- @migration IndustryToggle
+-- @status COMPLETE
+-- @description Project Nightingale — adds industry_type toggle (trades vs care) to organizations
+-- @tables organizations (altered)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- 1. Add industry_type column to organizations

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/facilities
+ * @status COMPLETE
+ * @description Care facilities list — searchable directory with filters, capacity indicators, and create/edit modals
+ * @dataSource react-query via care-houses actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useMemo, useState } from "react";

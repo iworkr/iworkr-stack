@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 135: Project Hephaestus — Global Trade Seed Data
--- 500+ materials and 50+ kits for Electrical and Plumbing trades
--- This is the "Zero-Day Seed" — instant platform utility.
--- ============================================================
+-- ============================================================================
+-- @migration HephaestusTradeSeedData
+-- @status COMPLETE
+-- @description Project Hephaestus — 500+ materials and 50+ kits seed data (Electrical + Plumbing)
+-- @tables global_trade_seed (inserts)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ════════════════════════════════════════════════════════════
 -- PART 1: ELECTRICAL MATERIALS (300+ items)

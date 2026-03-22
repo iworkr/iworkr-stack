@@ -1,9 +1,9 @@
 -- ============================================================================
--- Migration 080: Recurring Roster & Master Schedule Engine
--- (Project Nightingale — The Blueprint Matrix)
--- Creates roster_templates, template_shifts, staff_leave tables.
--- Extends schedule_blocks with template origin tracking & cancellation fields.
--- SAFE: All statements use IF NOT EXISTS / ADD COLUMN IF NOT EXISTS.
+-- @migration RecurringRosterEngine
+-- @status COMPLETE
+-- @description Blueprint Matrix — roster templates, template shifts, staff leave, rollout
+-- @tables roster_templates, template_shifts, staff_leave, schedule_blocks (altered)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Staff Leave ─────────────────────────────────────────────────────────

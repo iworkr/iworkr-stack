@@ -1,3 +1,10 @@
+/**
+ * @module ImportExport Server Actions
+ * @status COMPLETE
+ * @description Data import/export — CSV client import with validation, data export, and bulk operations
+ * @exports importClientsFromCSV, exportClientsToCSV, importJobsFromCSV
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

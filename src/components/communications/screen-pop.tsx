@@ -1,3 +1,9 @@
+/**
+ * @component ScreenPop
+ * @status COMPLETE
+ * @description Incoming call screen-pop overlay with caller info, CRM context, and call controls
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";

@@ -1,3 +1,9 @@
+/**
+ * @page /checkout
+ * @status COMPLETE
+ * @description Stripe-powered checkout flow for plan subscriptions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, Suspense, useRef } from "react";

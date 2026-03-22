@@ -1,3 +1,10 @@
+/**
+ * @module Synapse Server Actions
+ * @status COMPLETE
+ * @description PRODA bulk claiming engine — timesheet aggregation, claim line items, CSV generation, return file ingestion, and reconciliation
+ * @exports runAggregationAction, generateProdaCsvAction, ingestReturnFileAction, fetchClaimBatchesAction, fetchAggregationRunsAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

@@ -1,9 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════
--- Migration 112: Project Glasshouse — Daily Updates & Worker Bios
--- ═══════════════════════════════════════════════════════════════════
--- Adds the coordinator-sanitized daily updates feed, expands
--- staff_profiles with public bio fields, and creates the
--- glasshouse publishing workflow.
+-- ============================================================================
+-- @migration GlasshouseDailyUpdates
+-- @status COMPLETE
+-- @description Project Glasshouse — daily updates feed, worker bios, publishing workflow
+-- @tables glasshouse_daily_updates, staff_profiles (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Worker Bio fields on staff_profiles ───────────────────────
 ALTER TABLE public.staff_profiles

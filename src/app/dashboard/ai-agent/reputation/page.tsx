@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ai-agent/reputation
+ * @status COMPLETE
+ * @description AI Reputation agent configuration — review monitoring, auto-response templates, sentiment rules
+ * @dataSource server-action: upsertAgentConfig
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

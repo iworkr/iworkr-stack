@@ -1,3 +1,11 @@
+/**
+ * @module execute-workflow
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser() + org membership verification
+ * @description Workflow action router: COMPLETE_JOB, ASSIGN_JOB, CANCEL_JOB, SEND_INVOICE — with auto-invoicing and notification dispatch
+ * @dependencies Supabase (Auth, DB)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

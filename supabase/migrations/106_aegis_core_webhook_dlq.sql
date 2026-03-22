@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 106: Project Aegis-Core
--- Dead-letter queue for unresolved/failed webhook processing
--- ============================================================
+-- ============================================================================
+-- @migration AegisCoreWebhookDLQ
+-- @status COMPLETE
+-- @description Project Aegis — webhook dead-letter queue for failed processing
+-- @tables webhook_dead_letters
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create table if not exists public.webhook_dead_letters (
   id uuid primary key default gen_random_uuid(),

@@ -1,3 +1,9 @@
+/**
+ * @component RoutingLayer
+ * @status COMPLETE
+ * @description Mapbox routing layer that renders driving-direction polylines between technicians and jobs
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

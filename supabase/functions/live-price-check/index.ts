@@ -1,3 +1,11 @@
+/**
+ * @module live-price-check
+ * @status PARTIAL
+ * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @description Queries supplier B2B APIs (Reece, Rexel, Tradelink, etc.) for real-time trade pricing and branch stock availability
+ * @dependencies Supabase, External supplier B2B APIs (Reece, Rexel, Tradelink, MMEM, CNW)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ============================================================================

@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/compliance/dossier
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Generates a PDF compliance audit dossier document
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createElement } from "react";

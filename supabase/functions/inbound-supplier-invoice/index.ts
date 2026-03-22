@@ -1,3 +1,11 @@
+/**
+ * @module inbound-supplier-invoice
+ * @status COMPLETE
+ * @auth UNSECURED — Accepts webhook/direct uploads via service_role, no caller auth gate
+ * @description AI-powered supplier invoice parser: Vision AI extraction, fuzzy inventory matching, sanity checks, cost anomaly detection
+ * @dependencies Supabase (RPC: fuzzy_match_inventory, Storage: supplier-invoices), OpenAI (gpt-4o)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ============================================================================

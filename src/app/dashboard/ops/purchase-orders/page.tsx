@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ops/purchase-orders
+ * @status COMPLETE
+ * @description Purchase order management with status workflow and supplier push
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

@@ -1,3 +1,10 @@
+/**
+ * @module TeamData
+ * @status COMPLETE
+ * @description Type definitions and mock data for team members, roles, RBAC permissions, and skills
+ * @lastAudit 2026-03-22
+ */
+
 /* ── Team & RBAC Data ──────────────────────────────────── */
 
 export type MemberStatus = "active" | "pending" | "suspended" | "archived";

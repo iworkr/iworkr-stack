@@ -1,3 +1,10 @@
+/**
+ * @module ParticipantPersona Server Actions
+ * @status COMPLETE
+ * @description Participant persona profiles — medical alerts, preferences, communication styles, and personalized care instructions
+ * @exports createMedicalAlertAction, fetchMedicalAlertsAction, updatePersonaAction, fetchPersonaAction, deactivateAlertAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

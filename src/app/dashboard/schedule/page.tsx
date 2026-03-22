@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/schedule
+ * @status COMPLETE
+ * @description Weekly/daily schedule calendar with drag-to-assign and map view
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

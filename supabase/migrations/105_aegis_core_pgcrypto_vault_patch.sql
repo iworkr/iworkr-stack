@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 105: Project Aegis-Core
--- Cryptographic vault remediation for tenant integrations
--- ============================================================
+-- ============================================================================
+-- @migration AegisCorePgcryptoVaultPatch
+-- @status COMPLETE
+-- @description Project Aegis — pgcrypto vault remediation for tenant integrations
+-- @tables tenant_integrations (altered — encryption functions)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Ensure pgcrypto is available in extensions schema and functions
 -- are addressable via explicit schema qualification.

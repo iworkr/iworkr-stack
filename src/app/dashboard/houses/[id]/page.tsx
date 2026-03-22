@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/houses/[id]
+ * @status COMPLETE
+ * @description SIL house detail with participants, staff, notes, and maintenance tabs
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useMemo } from "react";

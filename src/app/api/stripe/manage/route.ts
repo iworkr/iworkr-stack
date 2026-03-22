@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/stripe/manage
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org admin/owner role
+ * @description Manages subscriptions: cancel, reactivate, or change plan
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";

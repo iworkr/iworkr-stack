@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 006: Audit Log
--- Immutable record of all destructive/state-changing operations
--- ============================================================
+-- ============================================================================
+-- @migration CoreAuditLog
+-- @status COMPLETE
+-- @description Immutable audit log for all destructive/state-changing operations
+-- @tables audit_log
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create table public.audit_log (
   id              uuid primary key default gen_random_uuid(),

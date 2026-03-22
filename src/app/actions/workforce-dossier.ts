@@ -1,3 +1,10 @@
+/**
+ * @module WorkforceDossier Server Actions
+ * @status COMPLETE
+ * @description Workforce intelligence — member dossiers, skill matrices, compliance tracking, and workforce analytics dashboards
+ * @exports fetchWorkforceDossierAction, updateDossierAction, fetchSkillMatrixAction, fetchComplianceStatusAction, fetchWorkforceAnalytics
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

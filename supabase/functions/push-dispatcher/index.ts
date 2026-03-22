@@ -1,9 +1,11 @@
-// ============================================================
-// push-dispatcher — Project Pulse central push notification brain
-// Triggered by DB webhook on INSERT to `notifications` table.
-// Replaces the simpler `send-push` function with preference-aware,
-// multi-device, throttled, shift-aware push delivery.
-// ============================================================
+/**
+ * @module push-dispatcher
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; triggered by database webhook on notifications INSERT
+ * @description Project Pulse: Preference-aware, multi-device, throttled, shift-aware FCM v1 push notification dispatcher with DND, stale token cleanup, and per-type muting
+ * @dependencies FCM (Firebase Cloud Messaging), Supabase
+ * @lastAudit 2026-03-22
+ */
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";

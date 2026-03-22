@@ -1,3 +1,9 @@
+/**
+ * @component Pricing
+ * @status COMPLETE
+ * @description Landing page pricing section with monthly/annual toggle and tiered plan cards
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

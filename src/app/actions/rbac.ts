@@ -1,3 +1,10 @@
+/**
+ * @module RBAC Server Actions
+ * @status COMPLETE
+ * @description Role-based access control — role changes, permission checks, JWT claim management, and member role updates
+ * @exports updateMemberRole, checkPermission, fetchOrgRoles, refreshJWTClaims, fetchMemberPermissions
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

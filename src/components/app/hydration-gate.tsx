@@ -1,3 +1,9 @@
+/**
+ * @component HydrationGate
+ * @status COMPLETE
+ * @description Blocks child rendering until Zustand persist stores rehydrate, with animated loading screen
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";

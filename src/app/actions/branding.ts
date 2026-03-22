@@ -1,3 +1,10 @@
+/**
+ * @module Branding Server Actions
+ * @status COMPLETE
+ * @description White-label branding — logo uploads, email template customization, branded PDF generation via Resend
+ * @exports updateBrandingAction, fetchBrandingAction, uploadLogoAction, sendBrandedEmailAction, previewBrandedTemplate
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

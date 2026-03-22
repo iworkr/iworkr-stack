@@ -1,3 +1,9 @@
+/**
+ * @component Workflow
+ * @status COMPLETE
+ * @description Landing page workflow section showing step-by-step product process with scroll animations
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";

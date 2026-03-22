@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 067: Health Observations (Project Nightingale)
--- Phase 2 Clinical Safety: vital signs, health telemetry, and trend tracking.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration HealthObservations
+-- @status COMPLETE
+-- @description Vital signs, health telemetry, and trend tracking for clinical safety
+-- @tables health_observations
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Observation Type Enum ───────────────────────────────────────────────

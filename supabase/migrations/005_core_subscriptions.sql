@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 005: Subscriptions
--- Local cache of Polar.sh billing state for instant feature gating
--- ============================================================
+-- ============================================================================
+-- @migration CoreSubscriptions
+-- @status COMPLETE
+-- @description Local cache of Polar.sh billing state for instant feature gating
+-- @tables subscriptions
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create table public.subscriptions (
   id                     uuid primary key default gen_random_uuid(),

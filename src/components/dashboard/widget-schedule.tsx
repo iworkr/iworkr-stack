@@ -1,3 +1,9 @@
+/**
+ * @component WidgetSchedule
+ * @status COMPLETE
+ * @description Dashboard schedule widget displaying today's upcoming jobs with time, location, and status
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

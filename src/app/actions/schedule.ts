@@ -1,3 +1,10 @@
+/**
+ * @module Schedule Server Actions
+ * @status COMPLETE
+ * @description Scheduling engine — schedule block CRUD, drag-drop updates, conflict detection, and calendar view data fetching
+ * @exports createScheduleBlock, updateScheduleBlock, deleteScheduleBlock, fetchScheduleBlocks, detectConflicts
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

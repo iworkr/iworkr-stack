@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════
--- Migration 033: Workspace Branding
--- ═══════════════════════════════════════════════════════════
--- Adds brand customization columns to organizations for
--- multi-tenant white-labeling (dynamic theme colors + logos).
+-- ============================================================================
+-- @migration WorkspaceBranding
+-- @status COMPLETE
+-- @description Adds brand customization columns for multi-tenant white-labeling
+-- @tables organizations (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 ALTER TABLE public.organizations
   ADD COLUMN IF NOT EXISTS brand_color_hex varchar(7) DEFAULT '#10B981',

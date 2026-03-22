@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 065: eMAR — Electronic Medication Administration Record
--- Phase 2 Clinical Safety: medication profiles + administration records.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration EMARTables
+-- @status COMPLETE
+-- @description eMAR — electronic medication profiles and administration records
+-- @tables medication_profiles, medication_administrations
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Medication Route Enum ────────────────────────────────────────────────

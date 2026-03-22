@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/petty-cash
+ * @status COMPLETE
+ * @description Petty cash wallet with receipt OCR, transactions, and approvals
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState, useTransition, useCallback } from "react";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/workforce/payroll-export
+ * @status COMPLETE
+ * @description Payroll batch export with SCHADS evaluation and download
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

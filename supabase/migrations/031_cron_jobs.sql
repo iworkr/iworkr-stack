@@ -1,8 +1,10 @@
--- ============================================================
--- 031: Cron Job Registration
--- Registers scheduled jobs using pg_cron extension.
--- These call the Next.js API automation endpoint.
--- ============================================================
+-- ============================================================================
+-- @migration CronJobs
+-- @status COMPLETE
+-- @description Registers scheduled pg_cron jobs calling Next.js API automation endpoint
+-- @tables cron.job (inserts)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Ensure pg_cron and pg_net are available
 create extension if not exists pg_cron with schema extensions;

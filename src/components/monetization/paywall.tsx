@@ -1,3 +1,9 @@
+/**
+ * @component Paywall
+ * @status COMPLETE
+ * @description Full paywall UI with plan comparison, checkout integration, and modal variant
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

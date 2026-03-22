@@ -1,13 +1,9 @@
 -- ============================================================================
--- Migration 130: Genesis-Client — Atomic Participant Ecosystem RPC
--- Creates a monolithic RPC that atomically inserts:
---   1. clients record
---   2. participant_profiles record
---   3. service_agreements record
---   4. budget_allocations records (per SA line item)
---   5. roster_templates + template_shifts records (recurring schedule)
--- If any step fails, the entire transaction rolls back.
--- SAFE: Uses CREATE OR REPLACE FUNCTION.
+-- @migration GenesisParticipantEcosystemRPC
+-- @status COMPLETE
+-- @description Atomic RPC creating client + participant + service agreement + budgets + roster
+-- @tables (none — function: create_participant_ecosystem)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.create_participant_ecosystem(p_payload JSONB)

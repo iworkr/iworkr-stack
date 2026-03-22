@@ -1,3 +1,12 @@
+/**
+ * @module payroll-evaluator
+ * @status COMPLETE
+ * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @description Dynamic AST-based EBA payroll engine: temporal shift fracture, condition evaluation, conflict resolution, pay line generation
+ * @dependencies Supabase (RPC: get_eba_rules_for_evaluation)
+ * @lastAudit 2026-03-22
+ */
+
 // Edge Function: payroll-evaluator
 // Chronos-EBA — Dynamic AST-based payroll evaluation engine
 // Parses JSONB condition/action trees to fracture shifts and calculate pay

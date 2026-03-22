@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/roster/dispatch
+ * @status COMPLETE
+ * @description Roster dispatch with smart-match, shift calendar, and worker assignment
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useMemo, useCallback } from "react";

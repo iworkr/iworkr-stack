@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 003: Profiles
--- Extends auth.users with application-specific data
--- ============================================================
+-- ============================================================================
+-- @migration CoreProfiles
+-- @status COMPLETE
+-- @description Extends auth.users with application-specific profile data
+-- @tables profiles
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create table public.profiles (
   id              uuid primary key references auth.users on delete cascade,

@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 022: Schedule Module Enhancements
--- schedule_events table, estimated_duration_minutes on jobs,
--- conflict detection RPC, schedule view RPC, realtime
--- ============================================================
+-- ============================================================================
+-- @migration ScheduleEnhancements
+-- @status COMPLETE
+-- @description Schedule events, conflict detection RPC, schedule view RPC, realtime
+-- @tables schedule_events
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Add estimated_duration_minutes to jobs ───────────
 alter table public.jobs

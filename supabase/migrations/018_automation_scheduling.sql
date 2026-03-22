@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 018: Automation Scheduling
--- Deferred action queue and scheduled trigger support
--- ============================================================
+-- ============================================================================
+-- @migration AutomationScheduling
+-- @status COMPLETE
+-- @description Deferred action queue and scheduled trigger support for automations
+-- @tables automation_queue, automation_schedules
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Queue for deferred automation actions (delays)
 create table public.automation_queue (

@@ -1,9 +1,10 @@
--- ═══════════════════════════════════════════════════════════
--- Migration 035: Multi-Provider Billing Support
--- ═══════════════════════════════════════════════════════════
--- Adds billing_provider tracking so the system knows whether
--- a workspace pays via Stripe (web), Apple IAP, or Google IAP.
--- RevenueCat webhooks populate these fields alongside Stripe.
+-- ============================================================================
+-- @migration BillingProvider
+-- @status COMPLETE
+-- @description Multi-provider billing support (Stripe, Apple IAP, Google IAP via RevenueCat)
+-- @tables organizations (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 ALTER TABLE public.organizations
   ADD COLUMN IF NOT EXISTS billing_provider text NOT NULL DEFAULT 'free'

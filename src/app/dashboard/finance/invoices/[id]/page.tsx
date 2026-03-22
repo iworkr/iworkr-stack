@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/invoices/[id]
+ * @status COMPLETE
+ * @description Invoice detail with line items, payment tracking, PDF download, and send via email
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

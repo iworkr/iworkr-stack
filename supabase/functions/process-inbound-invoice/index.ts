@@ -1,4 +1,13 @@
 /**
+ * @module process-inbound-invoice
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() verified
+ * @description OCR invoice parsing for NDIS plan managers: Vision AI extraction, participant fuzzy matching, confidence scoring, auto-approval logic
+ * @dependencies Supabase (Storage: documents), OpenAI (gpt-4o)
+ * @lastAudit 2026-03-22
+ */
+
+/**
  * process-inbound-invoice — Project Nightingale Phase 3
  *
  * Edge Function: OCR Invoice Parsing for Plan Managers

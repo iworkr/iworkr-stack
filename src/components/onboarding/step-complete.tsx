@@ -1,3 +1,9 @@
+/**
+ * @component StepComplete
+ * @status COMPLETE
+ * @description Final onboarding step that executes org setup, sends team invites, and redirects to dashboard
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

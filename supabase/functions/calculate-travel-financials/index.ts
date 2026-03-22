@@ -1,3 +1,11 @@
+/**
+ * @module calculate-travel-financials
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser()
+ * @description Calculates travel variance and financial metrics for a travel log entry via Postgres RPCs
+ * @dependencies Supabase (Auth, DB, RPCs)
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

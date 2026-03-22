@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/daily-ops
+ * @status COMPLETE
+ * @description Daily operations board — realtime shift tracking, task checklists, and roster downloads
+ * @dataSource supabase-client (realtime) + server-action: care actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useTransition, useRef } from "react";

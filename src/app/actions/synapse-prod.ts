@@ -1,3 +1,10 @@
+/**
+ * @module SynapseProd Server Actions
+ * @status COMPLETE
+ * @description Production accounting sync (Xero & QBO) — token lifecycle, sync queues, entity mappings, reference data, and health metrics
+ * @exports fetchTokenAction, enqueueSyncAction, fetchMappingsAction, refreshTokenAction, fetchSyncHealthAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

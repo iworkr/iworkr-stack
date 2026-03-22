@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/settings/compliance-engine
+ * @status COMPLETE
+ * @description Compliance engine settings with rule management and audit log
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";

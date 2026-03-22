@@ -1,3 +1,10 @@
+/**
+ * @module CareBlueprints Server Actions
+ * @status COMPLETE
+ * @description Care service blueprints — clinical skills matrices, care plan templates, and skill-based worker matching
+ * @exports createBlueprintAction, fetchBlueprintsAction, updateBlueprintAction, deleteBlueprintAction, matchWorkersAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

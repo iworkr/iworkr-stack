@@ -1,3 +1,10 @@
+/**
+ * @module IntegrationsData
+ * @status COMPLETE
+ * @description Type definitions and mock data for third-party integrations (Xero, Stripe, Slack, etc.)
+ * @lastAudit 2026-03-22
+ */
+
 /* ── Integrations & Ecosystem Data ──────────────────── */
 
 export type IntegrationCategory = "financial" | "communication" | "storage" | "calendar" | "maps" | "marketing";

@@ -1,9 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════════
--- Migration 084: Project Olympus — Super Admin Control Plane
--- Adds is_super_admin flag, immutable audit logs, organization feature flags,
--- and subscription override infrastructure.
--- SAFE: All statements use IF NOT EXISTS / DO blocks.
--- ═══════════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration OlympusSuperAdmin
+-- @status COMPLETE
+-- @description Project Olympus — super admin flag, feature flags, subscription overrides
+-- @tables profiles (altered), organization_feature_flags, super_admin_audit_log
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ─── 1. Super Admin flag on profiles ─────────────────────────────────────────
 

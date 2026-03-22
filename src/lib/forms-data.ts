@@ -1,3 +1,10 @@
+/**
+ * @module FormsData
+ * @status COMPLETE
+ * @description Type definitions and mock data for forms, submissions, and compliance blocks
+ * @lastAudit 2026-03-22
+ */
+
 /* ── Forms & Compliance Data ────────────────────────── */
 
 export type FormStatus = "draft" | "published" | "archived";

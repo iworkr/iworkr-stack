@@ -1,3 +1,12 @@
+/**
+ * @module outrider-en-route-notify
+ * @status BROKEN
+ * @auth SECURED — Uses withZodInterceptor + Zod schema validation
+ * @description Sends ETA SMS to client via Twilio when worker marks en route; updates job/shift status and logs transit
+ * @dependencies Supabase, Twilio (SMS), Zod, withZodInterceptor
+ * @lastAudit 2026-03-22
+ */
+
 // ============================================================================
 // Project Outrider — En Route ETA Notification (SMS via Twilio)
 // ============================================================================

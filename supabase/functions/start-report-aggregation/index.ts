@@ -1,3 +1,11 @@
+/**
+ * @module start-report-aggregation
+ * @status COMPLETE
+ * @auth UNSECURED — No auth guard; relies on service-role invocation
+ * @description Aggregates NDIS participant data, goals, shifts, and incidents into a PDF/HTML report with charts
+ * @dependencies Supabase, QuickChart.io
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

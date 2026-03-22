@@ -1,3 +1,9 @@
+/**
+ * @component SlideOver
+ * @status COMPLETE
+ * @description Slide-over panel for quick job/entity editing with status controls and notes
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

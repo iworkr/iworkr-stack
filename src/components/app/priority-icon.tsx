@@ -1,3 +1,9 @@
+/**
+ * @component PriorityIcon
+ * @status COMPLETE
+ * @description Renders SVG priority indicator icons (urgent, high, medium, low, none) with color coding
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import type { Priority } from "@/lib/data";

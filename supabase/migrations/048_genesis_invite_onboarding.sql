@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 048: Project Genesis — Team Lifecycle & Onboarding
--- SAFE: All statements idempotent with existence checks.
--- ============================================================
+-- ============================================================================
+-- @migration GenesisInviteOnboarding
+-- @status COMPLETE
+-- @description Project Genesis — team lifecycle, invite flow, and onboarding
+-- @tables organizations (altered), invites (altered), onboarding_checklist
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Add brand_color_hex to organizations ──────────────
 ALTER TABLE public.organizations

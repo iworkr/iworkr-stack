@@ -1,3 +1,12 @@
+/**
+ * @module process-telemetry-alert
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; triggered by database webhook on telemetry inserts
+ * @description Evaluates mobile telemetry events for critical errors (PGRST) and fires external webhook alerts
+ * @dependencies External webhook (optional)
+ * @lastAudit 2026-03-22
+ */
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 const corsHeaders = {

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/jobs
+ * @status COMPLETE
+ * @description Jobs list with kanban/list view, filters, search, and bulk actions
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

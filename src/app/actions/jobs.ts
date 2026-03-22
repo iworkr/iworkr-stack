@@ -1,3 +1,10 @@
+/**
+ * @module Jobs Server Actions
+ * @status COMPLETE
+ * @description Job lifecycle management — full CRUD, status transitions, technician assignment, subtasks, and automation event dispatch
+ * @exports createJob, updateJob, deleteJob, fetchJobs, assignTechnician
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

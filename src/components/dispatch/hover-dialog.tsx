@@ -1,3 +1,9 @@
+/**
+ * @component HoverDialog
+ * @status COMPLETE
+ * @description Floating popup dialog showing technician details when hovering over dispatch map markers
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState } from "react";

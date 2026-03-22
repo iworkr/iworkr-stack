@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/oracle-triage
+ * @status COMPLETE
+ * @description AI-powered claim triage with risk scoring and auto-remediation
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

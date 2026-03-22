@@ -1,3 +1,10 @@
+/**
+ * @module Encryption
+ * @status COMPLETE
+ * @description AES-256-GCM encrypt/decrypt utilities for OAuth token storage
+ * @lastAudit 2026-03-22
+ */
+
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto";
 
 const ALGORITHM = "aes-256-gcm";

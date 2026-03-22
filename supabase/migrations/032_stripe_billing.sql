@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════
--- Migration 032: Stripe Billing Columns
--- ═══════════════════════════════════════════════════════════
--- Adds Stripe identifiers to the organizations and subscriptions
--- tables so the Stripe webhook can map events to workspaces.
+-- ============================================================================
+-- @migration StripeBilling
+-- @status COMPLETE
+-- @description Adds Stripe customer/subscription IDs to organizations and subscriptions
+-- @tables organizations (altered), subscriptions (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- 1. Add Stripe customer ID to organizations (one customer per workspace)
 ALTER TABLE public.organizations

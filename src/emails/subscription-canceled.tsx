@@ -1,3 +1,9 @@
+/**
+ * @email SubscriptionCanceledEmail
+ * @status COMPLETE
+ * @description Subscription cancellation confirmation with win-back CTA
+ * @lastAudit 2026-03-22
+ */
 import { Button, Text, Section, Hr } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout, styles, colors } from "./components/layout";

@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 078: Shift Financial Ledgers
--- (Project Nightingale — Workforce & Intelligent Rostering Engine)
--- Per-shift cost/revenue tracking linking SCHADS wages to NDIS pricing.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration ShiftFinancialLedgers
+-- @status COMPLETE
+-- @description Per-shift cost/revenue tracking linking SCHADS wages to NDIS pricing
+-- @tables shift_financial_ledgers
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Shift Financial Ledgers ─────────────────────────────────────────────

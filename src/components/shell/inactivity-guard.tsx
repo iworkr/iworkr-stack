@@ -1,3 +1,9 @@
+/**
+ * @component InactivityGuard
+ * @status COMPLETE
+ * @description Auto-locks session after inactivity timeout with countdown warning modal
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";

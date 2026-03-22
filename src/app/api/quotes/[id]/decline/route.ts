@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/quotes/[id]/decline
+ * @status COMPLETE
+ * @auth PUBLIC — Secure token verification (email link access)
+ * @description Declines a quote via secure token with optional reason
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 

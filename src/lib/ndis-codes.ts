@@ -1,11 +1,8 @@
 /**
- * Zenith-Launch: NDIS Support Item Code Resolution Engine
- *
- * This module translates temporal context (day of week, time of day, public holiday)
- * into the exact 15-character NDIS Support Item Code as dictated by the
- * NDIS Pricing Arrangements and Price Limits.
- *
- * Used by both the Postgres RPC (server-side) and this TypeScript module (client-side validation).
+ * @module NdisCodes
+ * @status COMPLETE
+ * @description NDIS Support Item Code resolution engine — temporal context to 15-char code mapping
+ * @lastAudit 2026-03-22
  */
 
 /* ── NDIS Rate Table (2024-25 Price Guide) ────────────────────── */

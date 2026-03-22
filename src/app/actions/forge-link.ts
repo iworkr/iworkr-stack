@@ -1,3 +1,10 @@
+/**
+ * @module ForgeLink Server Actions
+ * @status COMPLETE
+ * @description Supplier & sub-contractor linking — onboarding workflows, compliance document collection, and supplier relationship management
+ * @exports createSupplierLinkAction, fetchSupplierLinksAction, updateSupplierLinkAction, deleteSupplierLinkAction, inviteSupplierAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

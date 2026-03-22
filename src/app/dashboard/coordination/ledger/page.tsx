@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/coordination/ledger
+ * @status COMPLETE
+ * @description Coordination of supports ledger with billable units, activity log, and daily KPIs
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";

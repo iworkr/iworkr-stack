@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 101: Project Synthesis — NDIS Plan Review & Outcome Reporting
+-- @migration SynthesisPlanReviewReporting
+-- @status COMPLETE
+-- @description Project Synthesis — NDIS plan review and outcome reporting engine
+-- @tables plan_review_reports, plan_review_sections
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 create table if not exists public.plan_review_reports (

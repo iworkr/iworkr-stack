@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/routines
+ * @status COMPLETE
+ * @description Routine template management with daily task generation per facility
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useMemo, useState, useTransition } from "react";

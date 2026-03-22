@@ -1,3 +1,11 @@
+/**
+ * @store AssetsStore
+ * @status COMPLETE
+ * @description Manages asset inventory, stock items, and audit entries with SWR caching
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isFresh } from "./cache-utils";

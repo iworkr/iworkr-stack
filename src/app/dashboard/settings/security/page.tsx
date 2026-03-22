@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/settings/security
+ * @status COMPLETE
+ * @description MFA enrollment settings with TOTP setup and security event log
+ * @dataSource api-route
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";

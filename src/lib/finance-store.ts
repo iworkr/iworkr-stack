@@ -1,3 +1,11 @@
+/**
+ * @store FinanceStore
+ * @status COMPLETE
+ * @description Invoicing and finance state — invoices, payouts, revenue, expenses with SWR caching
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isFresh } from "./cache-utils";

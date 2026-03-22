@@ -1,4 +1,13 @@
 /**
+ * @module generate-proda-payload
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() verified
+ * @description Compiles approved NDIS claim lines into PRODA CSV payload with travel claims, uploads to Storage
+ * @dependencies Supabase (RPC: generate_batch_number), Project Odyssey (shift_travel_logs)
+ * @lastAudit 2026-03-22
+ */
+
+/**
  * generate-proda-payload — Project Nightingale Phase 3
  *
  * Edge Function: PRODA/PACE API Bulk Claim Payload Generator

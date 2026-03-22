@@ -1,3 +1,10 @@
+/**
+ * @module OlympusMobile Server Actions
+ * @status COMPLETE
+ * @description Mobile telemetry dashboard — device analytics, crash reports, usage stats, and mobile fleet health monitoring
+ * @exports fetchMobileTelemetry, fetchMobileStats, fetchCrashReports, fetchDeviceInventory
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

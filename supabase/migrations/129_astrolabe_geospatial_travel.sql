@@ -1,7 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════
--- Migration 129: Project Astrolabe — Geospatial Travel & Transport Auto-Billing
--- PostGIS spatial schema for GPS-verified NDIS Provider Travel claims
--- ═══════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration AstrolabeGeospatialTravel
+-- @status COMPLETE
+-- @description Project Astrolabe — PostGIS spatial schema for GPS-verified NDIS travel claims
+-- @tables travel_routes, travel_waypoints, travel_claims
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. PostGIS already enabled in migration 095; ensure it's present ─────
 CREATE EXTENSION IF NOT EXISTS postgis;

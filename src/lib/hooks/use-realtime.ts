@@ -1,3 +1,9 @@
+/**
+ * @hook useRealtime
+ * @status COMPLETE
+ * @description Supabase Realtime hooks for table changes, presence, and query invalidation
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";

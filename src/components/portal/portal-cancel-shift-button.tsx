@@ -1,3 +1,9 @@
+/**
+ * @component PortalCancelShiftButton
+ * @status COMPLETE
+ * @description Button with confirmation dialog for requesting shift cancellations from the family portal
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useTransition } from "react";

@@ -1,3 +1,9 @@
+/**
+ * @component WidgetRevenue
+ * @status COMPLETE
+ * @description Dashboard revenue widget with animated counters, sparkline chart, and trend indicators
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";

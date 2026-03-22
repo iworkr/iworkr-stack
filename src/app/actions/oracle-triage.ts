@@ -1,3 +1,10 @@
+/**
+ * @module OracleTriage Server Actions
+ * @status COMPLETE
+ * @description AI-powered triage system — intake classification, priority scoring, routing rules, and escalation workflows
+ * @exports createTriageRuleAction, fetchTriageRulesAction, classifyIntakeAction, fetchTriageQueueAction, escalateAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

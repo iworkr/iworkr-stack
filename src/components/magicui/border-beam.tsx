@@ -1,3 +1,9 @@
+/**
+ * @component BorderBeam
+ * @status COMPLETE
+ * @description Renders an animated gradient beam effect along element borders
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { cn } from "@/lib/utils";

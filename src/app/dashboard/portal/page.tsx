@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/portal
+ * @status COMPLETE
+ * @description Family portal admin view with nominees, shift approvals, and budget telemetry
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

@@ -1,3 +1,11 @@
+/**
+ * @store InboxStore
+ * @status COMPLETE
+ * @description Notification inbox state — read/unread, archive, snooze, and real-time updates
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isFresh } from "./cache-utils";

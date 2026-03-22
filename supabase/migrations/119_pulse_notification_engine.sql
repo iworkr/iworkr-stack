@@ -1,9 +1,9 @@
 -- ============================================================================
--- Migration 119: Pulse — Notification Engine
--- Adds nudge-based clock-in/clock-out notifications, multi-device FCM
--- token registry, granular notification preferences, push throttling/dedup,
--- chat mention parsing, and org-wide announcement broadcasting.
--- SAFE: All statements idempotent (IF NOT EXISTS, DO blocks, CREATE OR REPLACE).
+-- @migration PulseNotificationEngine
+-- @status COMPLETE
+-- @description Pulse — nudge notifications, multi-device FCM, throttling, announcements
+-- @tables notification_type (enum expansion), user_devices (altered), notification_preferences
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 

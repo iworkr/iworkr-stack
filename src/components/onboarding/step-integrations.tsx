@@ -1,3 +1,9 @@
+/**
+ * @component StepIntegrations
+ * @status COMPLETE
+ * @description Onboarding step for selecting third-party integrations to connect
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/inbox
+ * @status COMPLETE
+ * @description Unified inbox with sidebar, chat stream, triage panel, and mentions
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";

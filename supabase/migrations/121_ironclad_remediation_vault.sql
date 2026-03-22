@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 121: Ironclad-Remediation Vault
--- Project: Evidence Vault + Cascading Worker Suspension
--- ============================================================
+-- ============================================================================
+-- @migration IroncladRemediationVault
+-- @status COMPLETE
+-- @description Evidence vault, compliance documents bucket, cascading worker suspension
+-- @tables storage bucket: compliance-documents, remediation_actions
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. compliance-documents Storage Bucket ─────────────────
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

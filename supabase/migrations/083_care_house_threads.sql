@@ -1,10 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════════
--- Migration 083: Care Communications — House Thread Messaging Engine
--- (Project Nightingale — Project Echo)
--- Participant-centric channels with internal/external split, mandatory
--- acknowledgements, dynamic roster-synced memberships.
--- SAFE: All statements use IF NOT EXISTS.
--- ═══════════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration CareHouseThreads
+-- @status COMPLETE
+-- @description Project Echo — participant-centric messaging channels with acknowledgements
+-- @tables care_chat_channels, care_chat_messages, care_chat_members, care_chat_acknowledgements
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ─── 1. Care Chat Channels (House Threads) ───────────────────────────────────
 

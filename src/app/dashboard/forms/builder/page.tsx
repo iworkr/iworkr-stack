@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/forms/builder
+ * @status COMPLETE
+ * @description New form creation entry point — creates template and redirects to DnD builder
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /**

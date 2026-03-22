@@ -1,3 +1,9 @@
+/**
+ * @component WorkspaceSwitcher
+ * @status COMPLETE
+ * @description Dropdown switcher for navigating between organization workspaces
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";

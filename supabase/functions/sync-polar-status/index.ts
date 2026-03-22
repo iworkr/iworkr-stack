@@ -1,3 +1,11 @@
+/**
+ * @module sync-polar-status
+ * @status COMPLETE
+ * @auth SECURED — Validates JWT or service-role key
+ * @description Syncs subscription status from Polar.sh API to workspaces table, updating plan tiers and trial status
+ * @dependencies Supabase, Polar.sh API
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";

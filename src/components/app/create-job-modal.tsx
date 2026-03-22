@@ -1,3 +1,9 @@
+/**
+ * @component CreateJobModal
+ * @status COMPLETE
+ * @description Full-featured modal for creating jobs with client lookup, scheduling, line items, and estimate mode
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

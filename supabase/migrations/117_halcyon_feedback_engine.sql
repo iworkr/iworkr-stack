@@ -1,10 +1,9 @@
 -- ============================================================================
--- Migration 117: Project Halcyon — Psychological Feedback & Review Engine
--- 1) user_feedback_metrics  — per-user engagement & prompt tracking
--- 2) internal_feedback_logs — absorbed negative sentiment (the "1-star sieve")
--- 3) RLS policies for both tables
--- 4) Evaluation helper RPC for the Edge Function
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration HalcyonFeedbackEngine
+-- @status COMPLETE
+-- @description Project Halcyon — feedback metrics, sentiment absorption, review engine
+-- @tables user_feedback_metrics, internal_feedback_logs
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. User Feedback Metrics ───────────────────────────────────────────────

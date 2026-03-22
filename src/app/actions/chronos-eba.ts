@@ -1,3 +1,10 @@
+/**
+ * @module ChronosEBA Server Actions
+ * @status COMPLETE
+ * @description Enterprise Bargaining Agreement engine — EBA rules, penalty rates, allowances, overtime triggers, and pay interpretation
+ * @exports createEbaAgreementAction, fetchEbaAgreementsAction, createEbaRuleAction, simulatePayAction, activateAgreementAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

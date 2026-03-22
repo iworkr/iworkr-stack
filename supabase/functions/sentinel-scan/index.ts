@@ -1,19 +1,10 @@
 /**
- * sentinel-scan — Project Nightingale Phase 4
- *
- * Edge Function: Automated Risk Detection & Compliance Monitoring
- *
- * Scans progress notes for high-risk keywords, detects health baseline
- * deviations, identifies medication non-compliance patterns, and flags
- * care plan reviews that are overdue.
- *
- * Can be triggered:
- *   - On INSERT to progress_notes (via database webhook)
- *   - On INSERT to health_observations (via database webhook)
- *   - On INSERT to medication_administration_records (via database webhook)
- *   - Via scheduled cron (for care plan review checks)
- *
- * POST body: { trigger_type, record_id, organization_id }
+ * @module sentinel-scan
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; triggered by database webhooks or scheduled cron
+ * @description Project Nightingale Phase 4: Automated risk detection — keyword scanning in progress notes, health baseline deviation alerts, medication non-compliance tracking, and care plan review monitoring
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
  */
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";

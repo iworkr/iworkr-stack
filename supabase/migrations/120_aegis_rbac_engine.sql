@@ -1,18 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════════
--- Migration 120: Project Aegis — Global RBAC Engine
--- ═══════════════════════════════════════════════════════════════════════════════
--- 100% idempotent: CREATE OR REPLACE, DO $$ blocks throughout.
---
--- What this migration does:
---   1. Custom access-token hook (injects org_id, role, is_super_admin into JWT)
---   2. Fast JWT-based RLS helper functions (zero-query claim extraction)
---   3. Grants / revokes for the auth hook
---   4. Performance index for the hook's hot-path query
---
--- ⚠️  NOTE: RLS policy swaps (replacing org_members subquery policies with
--- jwt_is_admin() / jwt_is_worker() policies) are NOT included here. They
--- require the auth hook to be enabled FIRST in the Supabase Dashboard.
--- See migration 121_aegis_rls_swap.sql (to be run AFTER hook activation).
+-- ============================================================================
+-- @migration AegisRBACEngine
+-- @status COMPLETE
+-- @description Project Aegis — JWT auth hook, zero-query RLS helpers, RBAC grants
+-- @tables (none — auth hook function, RLS helpers: jwt_is_admin, jwt_is_worker, etc.)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 --
 -- Role priority (highest → lowest):
 --   owner > admin > manager > office_admin > senior_tech > technician

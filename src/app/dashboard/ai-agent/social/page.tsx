@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ai-agent/social
+ * @status COMPLETE
+ * @description AI Social agent configuration — post scheduling, content tone, platform targeting
+ * @dataSource server-action: upsertAgentConfig
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

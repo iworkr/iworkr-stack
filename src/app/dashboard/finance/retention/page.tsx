@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/retention
+ * @status COMPLETE
+ * @description Retention schedule management with milestone tracking and release workflow
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";

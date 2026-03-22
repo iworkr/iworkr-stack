@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 148: Project Glasshouse-Arrival — Uber-Style Client Telemetry
--- Version 150.0 — "Zero-Latency Trust & Spatial Transparency"
--- ============================================================
+-- ============================================================================
+-- @migration GlasshouseArrivalTracking
+-- @status COMPLETE
+-- @description Project Glasshouse-Arrival — Uber-style client tracking, ETA telemetry
+-- @tables tracking_sessions, tracking_pings
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Tracking Session Status ENUM ─────────────────────────
 DO $$ BEGIN

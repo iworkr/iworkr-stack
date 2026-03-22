@@ -1,3 +1,9 @@
+/**
+ * @component Navbar
+ * @status COMPLETE
+ * @description Landing page sticky navbar with scroll-blur effect, mobile menu, and auth-aware CTA
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";

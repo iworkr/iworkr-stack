@@ -1,3 +1,9 @@
+/**
+ * @component FormCard
+ * @status COMPLETE
+ * @description Renders an individual form card with type icon, metadata, and action menu
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

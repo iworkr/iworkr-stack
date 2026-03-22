@@ -1,3 +1,11 @@
+/**
+ * @module twilio-llm-negotiator
+ * @status COMPLETE
+ * @auth UNSECURED — Twilio webhook endpoint; no JWT guard
+ * @description LLM-powered SMS negotiation pipeline using GPT-4o function calling for automated schedule mutations and client replies
+ * @dependencies Supabase, OpenAI (GPT-4o), Twilio SMS
+ * @lastAudit 2026-03-22
+ */
 // Edge Function: twilio-llm-negotiator
 // Project Outrider-Autonomous — LLM-Powered SMS Client Negotiation
 // Pipeline: Twilio SMS webhook → GPT-4o Function Calling → Schedule mutation → Auto-reply

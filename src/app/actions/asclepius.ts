@@ -1,3 +1,10 @@
+/**
+ * @module Asclepius Server Actions
+ * @status COMPLETE
+ * @description Advanced eMAR (electronic Medication Administration Record) — medication profiles, administration logs, PRN protocols
+ * @exports createMedicationProfile, fetchMedicationProfiles, logMedicationAdministration, fetchAdministrationLogs, createPrnProtocol
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

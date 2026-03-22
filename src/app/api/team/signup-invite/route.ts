@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/team/signup-invite
+ * @status COMPLETE
+ * @auth PUBLIC — Invite token verification (no session needed)
+ * @description Creates a user account for an invited team member with auto-confirm
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 

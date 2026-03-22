@@ -1,3 +1,9 @@
+/**
+ * @hook useOrg
+ * @status COMPLETE
+ * @description Core org context hook — resolves orgId, userId, role, and membership
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState } from "react";

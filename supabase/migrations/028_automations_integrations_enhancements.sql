@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 028: Automations & Integrations Enhancements
--- connection_id, get_automation_stats, get_integrations_overview,
--- toggle_flow_status RPC, Realtime
--- ============================================================
+-- ============================================================================
+-- @migration AutomationsIntegrationsEnhancements
+-- @status COMPLETE
+-- @description Integration connection_id, automation stats RPC, toggle flow status
+-- @tables integrations (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Add missing columns ──────────────────────────────
 alter table public.integrations

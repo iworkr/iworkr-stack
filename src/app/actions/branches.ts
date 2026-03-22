@@ -1,3 +1,10 @@
+/**
+ * @module Branches Server Actions
+ * @status COMPLETE
+ * @description Multi-branch organization management — branch CRUD, staff assignments, and branch-level settings
+ * @exports createBranch, updateBranch, deleteBranch, fetchBranches, assignStaffToBranch
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

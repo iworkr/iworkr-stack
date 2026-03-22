@@ -1,3 +1,9 @@
+/**
+ * @email MagicLinkEmail
+ * @status COMPLETE
+ * @description Passwordless magic-link authentication email
+ * @lastAudit 2026-03-22
+ */
 import { Button, Text, Section, Hr } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout, styles, colors } from "./components/layout";

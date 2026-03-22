@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/note-review
+ * @status COMPLETE
+ * @description Glasshouse note review queue — clinical-to-family-safe sanitisation gate with AI rewrites
+ * @dataSource server-action: glasshouse-triage actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

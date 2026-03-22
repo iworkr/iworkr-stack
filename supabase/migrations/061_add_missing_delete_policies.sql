@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 061: Add Missing DELETE RLS Policies
--- SAFE: All statements wrapped with table + policy existence checks.
+-- @migration AddMissingDeletePolicies
+-- @status COMPLETE
+-- @description Add missing DELETE RLS policies across all module tables
+-- @tables client_contacts, job_subtasks, invoice_line_items, etc. (policies)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- Helper macro: for each table, check existence then add policy

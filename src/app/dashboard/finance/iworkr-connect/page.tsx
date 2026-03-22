@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/iworkr-connect
+ * @status COMPLETE
+ * @description Stripe Connect onboarding and payment terminal dashboard
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

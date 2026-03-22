@@ -1,3 +1,9 @@
+/**
+ * @component ScheduleMonthView
+ * @status COMPLETE
+ * @description Monthly calendar grid displaying schedule blocks with day-cell summaries
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useMemo } from "react";

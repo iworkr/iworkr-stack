@@ -1,3 +1,9 @@
+/**
+ * @component OnboardingWizard
+ * @status COMPLETE
+ * @description Multi-step onboarding wizard handling identity, profile, execution, and role-based handoff
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════

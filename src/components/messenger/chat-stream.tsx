@@ -1,3 +1,9 @@
+/**
+ * @component ChatStream
+ * @status COMPLETE
+ * @description Renders the real-time message stream with reactions, threads, and pinning
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,3 +1,9 @@
+/**
+ * @page /style-guide
+ * @status COMPLETE
+ * @description Interactive design system showcase with all UI components and tokens
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useRef } from "react";

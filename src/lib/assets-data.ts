@@ -1,3 +1,10 @@
+/**
+ * @module AssetsData
+ * @status COMPLETE
+ * @description Type definitions and mock data for assets, inventory, and stock management
+ * @lastAudit 2026-03-22
+ */
+
 /* ── Asset & Inventory Data ─────────────────────────── */
 
 export type AssetStatus = "available" | "assigned" | "maintenance";

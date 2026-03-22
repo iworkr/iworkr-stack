@@ -1,3 +1,11 @@
+/**
+ * @module log-wallet-transaction
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() verified
+ * @description Logs a petty cash / wallet transaction via RPC with receipt and incident linking
+ * @dependencies Supabase (RPC: log_wallet_transaction)
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

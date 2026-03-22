@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/team/[id]/training
+ * @status COMPLETE
+ * @description Worker-participant training matrix with fast-track clearance actions
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState } from "react";

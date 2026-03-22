@@ -1,3 +1,11 @@
+/**
+ * @store AuthStore
+ * @status COMPLETE
+ * @description Core authentication state — user, session, profile, org, workspace switching
+ * @resetSafe YES — Has reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";

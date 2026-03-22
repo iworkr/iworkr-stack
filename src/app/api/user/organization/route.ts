@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/user/organization
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user session
+ * @description Returns the authenticated user's organization ID
+ * @lastAudit 2026-03-22
+ */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 

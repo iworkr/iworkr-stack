@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 086: Fix Broken RPC Functions (E2E Audit Fixes)
--- Fixes column reference errors and creates missing RPCs/tables
--- SAFE: All statements use CREATE OR REPLACE / IF NOT EXISTS
--- ============================================================
+-- ============================================================================
+-- @migration FixRPCFunctions
+-- @status COMPLETE
+-- @description Fix broken RPC functions — column reference errors, missing RPCs/tables
+-- @tables (none — function fixes: get_schedule_view, etc.)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ═══════════════════════════════════════════════════════════
 -- FIX 1: get_schedule_view — backlog ORDER BY j.created_at

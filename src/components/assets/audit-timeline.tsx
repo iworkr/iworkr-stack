@@ -1,3 +1,9 @@
+/**
+ * @component AuditTimeline
+ * @status COMPLETE
+ * @description Real-time audit timeline with filtering, animated entries, and event-type icons for assets
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState } from "react";

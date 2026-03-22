@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 007: RLS Helper Functions
--- Reusable security functions for Row Level Security policies
--- ============================================================
+-- ============================================================================
+-- @migration CoreRLSHelpers
+-- @status COMPLETE
+-- @description Reusable security functions for Row Level Security policies
+-- @tables (none — functions only: get_user_org_ids, get_user_role, etc.)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Returns all organization IDs the authenticated user belongs to
 create or replace function public.get_user_org_ids()

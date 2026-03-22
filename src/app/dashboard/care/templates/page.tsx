@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/templates
+ * @status COMPLETE
+ * @description Shift note template builder with field configuration and preview
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";

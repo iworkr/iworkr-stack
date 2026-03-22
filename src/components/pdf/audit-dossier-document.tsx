@@ -1,3 +1,9 @@
+/**
+ * @component AuditDossierDocument
+ * @status COMPLETE
+ * @description PDF document rendering a compliance audit dossier with scored sections
+ * @lastAudit 2026-03-22
+ */
 import {
   Document,
   Page,

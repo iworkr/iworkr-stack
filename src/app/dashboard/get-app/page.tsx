@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/get-app
+ * @status COMPLETE
+ * @description Download page for mobile (iOS/Android) and desktop apps with QR codes
+ * @dataSource static
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

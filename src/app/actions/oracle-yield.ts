@@ -1,3 +1,10 @@
+/**
+ * @module OracleYield Server Actions
+ * @status COMPLETE
+ * @description Revenue yield analytics — profitability forecasting, utilization metrics, and financial optimization recommendations
+ * @exports fetchYieldDashboardAction, calculateUtilizationAction, fetchProfitabilityAction, generateForecastAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

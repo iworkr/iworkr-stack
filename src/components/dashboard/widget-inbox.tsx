@@ -1,3 +1,9 @@
+/**
+ * @component WidgetInbox
+ * @status COMPLETE
+ * @description Dashboard inbox widget showing recent notifications with mark-as-read and navigation actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

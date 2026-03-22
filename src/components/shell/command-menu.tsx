@@ -1,3 +1,9 @@
+/**
+ * @component CommandMenu
+ * @status COMPLETE
+ * @description Keyboard-first command palette with fuzzy search, recent actions, and navigation
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

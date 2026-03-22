@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/clinical/reviews
+ * @status COMPLETE
+ * @description Clinical reviews with AI-powered assessments, scoring, and multi-domain evaluations
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import {

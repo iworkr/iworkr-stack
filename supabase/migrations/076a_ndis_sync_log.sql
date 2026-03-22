@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 076a: NDIS Sync Log & Category Counts RPC
--- Tracks sync history and provides fast category counts.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration NDISSyncLog
+-- @status COMPLETE
+-- @description NDIS sync history tracking and category counts RPC
+-- @tables ndis_sync_log
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. NDIS Sync Log ──────────────────────────────────────────────────────

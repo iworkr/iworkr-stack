@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 077: Staff Profiles & SCHADS Award Rates
--- (Project Nightingale — Workforce & Intelligent Rostering Engine)
--- Extends organization_members with deep HR profile data and federal wage lookup.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration StaffProfiles
+-- @status COMPLETE
+-- @description Staff HR profiles, SCHADS award rates, workforce rostering data
+-- @tables staff_profiles
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Staff Profiles ─────────────────────────────────────────────────────

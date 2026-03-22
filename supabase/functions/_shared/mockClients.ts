@@ -1,3 +1,9 @@
+/**
+ * @module MockClients
+ * @status COMPLETE
+ * @description Test-environment mock clients for OpenAI, Twilio, and Supabase
+ * @lastAudit 2026-03-22
+ */
 export const isTestEnv = Deno.env.get("IS_TEST_ENV") === "true";
 
 export const MockOpenAI = {

@@ -1,3 +1,9 @@
+/**
+ * @component DispatchSearch
+ * @status COMPLETE
+ * @description Cmd+K activated search overlay for filtering dispatch map pins by technician or job
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef, useState } from "react";

@@ -1,16 +1,10 @@
--- ============================================================
--- Project Aegis-Zero: P0-2 — care_typing_indicators RLS Hardening
--- 
--- Current state: RLS enabled, 2 policies exist:
---   1. "Chat members can manage typing indicators" (channel membership check)
---   2. "Members manage typing" (user_id = auth.uid())
---
--- Problem: No direct organization-level isolation. The channel membership
--- chain is secure, but adding a direct org check provides defense-in-depth.
---
--- Fix: Replace existing policies with tighter org-scoped policies that
--- verify the user is a member of the organization that owns the channel.
--- ============================================================
+-- ============================================================================
+-- @migration AegisZeroTypingIndicatorsRLSHardening
+-- @status COMPLETE
+-- @description Project Aegis-Zero — tighten care_typing_indicators RLS with org-scoped policies
+-- @tables care_typing_indicators (policies)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- 1. Drop existing policies
 DROP POLICY IF EXISTS "Chat members can manage typing indicators" ON public.care_typing_indicators;

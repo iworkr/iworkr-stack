@@ -1,4 +1,12 @@
 /**
+ * @module sync-chat-memberships
+ * @status COMPLETE
+ * @auth UNSECURED — Triggered by database webhook or service-role invocation
+ * @description Syncs chat channel memberships based on schedule proximity — workers only see threads for participants they support
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
+/**
  * sync-chat-memberships — Project Nightingale / Project Echo
  *
  * Edge Function: Dynamic Roster-Based Channel Membership Sync

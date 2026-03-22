@@ -1,6 +1,10 @@
--- ============================================================
--- MIGRATION 131: Project Ledger-Sync — Bidirectional Xero/MYOB Integration
--- ============================================================
+-- ============================================================================
+-- @migration LedgerSyncIntegration
+-- @status COMPLETE
+-- @description Project Ledger-Sync — bidirectional Xero/MYOB accounting integration
+-- @tables accounting_mappings, sync_sessions, sync_errors
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── ENUMs ─────────────────────────────────────────────────
 DO $$ BEGIN

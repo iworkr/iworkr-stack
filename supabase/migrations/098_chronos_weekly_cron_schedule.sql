@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 098: Chronos Weekly Aggregator pg_cron job
+-- @migration ChronosWeeklyCronSchedule
+-- @status COMPLETE
+-- @description Chronos weekly aggregator pg_cron job for coordination billing
+-- @tables cron.job (inserts)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 do $$

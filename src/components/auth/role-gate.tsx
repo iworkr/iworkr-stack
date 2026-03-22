@@ -1,3 +1,9 @@
+/**
+ * @component RoleGate
+ * @status COMPLETE
+ * @description Conditional rendering gate based on user role with optional lock-screen fallback
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useAuthStore } from "@/lib/auth-store";

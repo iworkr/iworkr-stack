@@ -1,3 +1,10 @@
+/**
+ * @module Feedback Server Actions
+ * @status COMPLETE
+ * @description Project Halcyon — feedback dashboard for viewing, managing, and routing internal feedback with sentiment analysis
+ * @exports fetchFeedbackAction, updateFeedbackStatusAction, routeFeedbackAction, fetchFeedbackStatsAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ops/inventory
+ * @status COMPLETE
+ * @description Inventory management with stock levels, bulk price adjustment, and alerts
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";

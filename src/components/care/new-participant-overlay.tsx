@@ -1,3 +1,9 @@
+/**
+ * @component NewParticipantOverlay
+ * @status COMPLETE
+ * @description Full-screen overlay for onboarding new NDIS participants with multi-section form
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";

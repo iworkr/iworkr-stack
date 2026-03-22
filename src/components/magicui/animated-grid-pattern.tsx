@@ -1,3 +1,9 @@
+/**
+ * @component AnimatedGridPattern
+ * @status COMPLETE
+ * @description Renders an animated SVG grid pattern with staggered cell reveals
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import {

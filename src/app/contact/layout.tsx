@@ -1,3 +1,9 @@
+/**
+ * @layout ContactLayout
+ * @status COMPLETE
+ * @description Contact page layout with metadata for support and enterprise enquiries
+ * @lastAudit 2026-03-22
+ */
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

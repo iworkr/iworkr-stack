@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 087: Project Synapse Integration Engine
--- Universal webhook ingestion, mapping ledger, and sync queue.
--- ============================================================
+-- ============================================================================
+-- @migration ProjectSynapseIntegrationEngine
+-- @status COMPLETE
+-- @description Project Synapse — universal webhook ingestion, mapping ledger, sync queue
+-- @tables external_mappings, sync_queue, webhook_events
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Extend integration status enum for lifecycle visibility.
 ALTER TYPE public.integration_status ADD VALUE IF NOT EXISTS 'expired';

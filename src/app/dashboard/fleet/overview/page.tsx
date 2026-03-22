@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/fleet/overview
+ * @status COMPLETE
+ * @description Fleet overview with vehicle list, status filters, and detail drawer
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useMemo, useState, useTransition } from "react";

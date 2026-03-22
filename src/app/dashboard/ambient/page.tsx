@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ambient
+ * @status COMPLETE
+ * @description Ambient audio debrief dashboard — lists transcribed debriefs with stats and review queue
+ * @dataSource server-action: getAudioDebriefs, getAmbientStats
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

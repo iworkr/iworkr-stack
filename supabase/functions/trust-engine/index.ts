@@ -1,3 +1,11 @@
+/**
+ * @module trust-engine
+ * @status COMPLETE
+ * @auth UNSECURED — No auth guard; uses service-role key internally
+ * @description Upserts network identity hashes for clients and recalculates the iWorkr Trust Grade via PG function
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
 // trust-engine Edge Function
 // Upserts a network identity hash when a new client is added to any workspace.
 // Recalculates the iWorkr Trust Grade using the calculate_trust_grade() PG function.

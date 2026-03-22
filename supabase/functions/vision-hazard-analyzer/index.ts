@@ -1,3 +1,11 @@
+/**
+ * @module vision-hazard-analyzer
+ * @status COMPLETE
+ * @auth UNSECURED — No auth guard; uses service-role key internally
+ * @description Multimodal SWMS auto-generation — analyzes jobsite images via Gemini 1.5 Pro to produce risk matrices and SWMS documents
+ * @dependencies Supabase, Google Gemini (multimodal)
+ * @lastAudit 2026-03-22
+ */
 // Edge Function: vision-hazard-analyzer
 // Project Hermes-Scribe — Multimodal SWMS Auto-Generation
 // Pipeline: Frame images → Gemini 1.5 Pro Multimodal → Risk Matrix JSON → SWMS tables

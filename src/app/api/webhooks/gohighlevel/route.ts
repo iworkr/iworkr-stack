@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/webhooks/gohighlevel
+ * @status COMPLETE
+ * @auth WEBHOOK — GHL event payload (no signature verification)
+ * @description Handles GoHighLevel webhook events for contact and opportunity sync
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 

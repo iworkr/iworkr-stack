@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 150: Project Synapse-Comms — Cloud PBX & Unified Inbox
--- Version 152.0 — "Absolute Context & Zero-Latency Routing"
--- ============================================================
+-- ============================================================================
+-- @migration SynapseCommsUnifiedInbox
+-- @status COMPLETE
+-- @description Project Synapse-Comms — cloud PBX, unified inbox, call routing, SMS threading
+-- @tables comm_threads, comm_messages, comm_contacts, voicemail_transcripts
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. ENUMs ────────────────────────────────────────────────
 DO $$ BEGIN

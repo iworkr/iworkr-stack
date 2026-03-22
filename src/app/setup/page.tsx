@@ -1,3 +1,9 @@
+/**
+ * @page /setup
+ * @status COMPLETE
+ * @description Multi-step onboarding wizard for new organization setup
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState } from "react";

@@ -1,3 +1,9 @@
+/**
+ * @hook useData
+ * @status COMPLETE
+ * @description Generic data-fetching hook with SWR caching and mutation helpers
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";

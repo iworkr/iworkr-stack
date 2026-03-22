@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/invoices/public/[invoiceId]
+ * @status COMPLETE
+ * @auth PUBLIC — No auth required, public invoice access
+ * @description Returns public invoice data for customer payment pages
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";

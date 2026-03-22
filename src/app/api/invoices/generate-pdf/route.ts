@@ -1,4 +1,11 @@
 /**
+ * @route POST /api/invoices/generate-pdf
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Generates invoice PDF via react-pdf and returns or stores it
+ * @lastAudit 2026-03-22
+ */
+/**
  * POST /api/invoices/generate-pdf
  *
  * Server-side PDF generation using @react-pdf/renderer.

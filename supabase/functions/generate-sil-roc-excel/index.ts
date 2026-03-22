@@ -1,3 +1,11 @@
+/**
+ * @module generate-sil-roc-excel
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() verified
+ * @description Generates NDIS SIL Roster of Care Excel workbook with provider, participant, roster, and financial sheets
+ * @dependencies Supabase, ExcelJS
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import ExcelJS from "npm:exceljs@4.4.0";
 

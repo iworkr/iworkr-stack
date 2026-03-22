@@ -1,3 +1,11 @@
+/**
+ * @module submit-leave-request
+ * @status COMPLETE
+ * @auth UNSECURED — No auth guard; uses service-role key internally
+ * @description Submits a leave request for a worker with date range, type, and optional medical certificate
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

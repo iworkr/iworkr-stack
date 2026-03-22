@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/invoices/new
+ * @status COMPLETE
+ * @description New invoice creation form with line items, client selection, and send/save actions
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";

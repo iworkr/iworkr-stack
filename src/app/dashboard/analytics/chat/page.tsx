@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/analytics/chat
+ * @status COMPLETE
+ * @description Panopticon Chat — natural language to SQL analytics with streaming AI responses and chart rendering
+ * @dataSource server-action: panopticon-chat (text-to-SQL pipeline)
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";

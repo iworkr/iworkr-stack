@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 071: Plan Manager Invoices & OCR (Project Nightingale Phase 3)
--- Inbound invoice parsing for organizations acting as Plan Managers.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration PlanManagerInvoices
+-- @status COMPLETE
+-- @description Plan manager inbound invoice parsing and OCR for NDIS
+-- @tables plan_manager_invoices
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Plan Manager Invoices Table ────────────────────────────────────────

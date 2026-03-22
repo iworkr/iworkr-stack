@@ -1,3 +1,10 @@
+/**
+ * @module AthenaSOP Server Actions
+ * @status COMPLETE
+ * @description Standard Operating Procedures management — SOP CRUD, version control, acknowledgement tracking, and publishing
+ * @exports createSopAction, fetchSopsAction, updateSopAction, publishSopAction, acknowledgeSopAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

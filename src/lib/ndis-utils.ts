@@ -1,3 +1,10 @@
+/**
+ * @module NdisUtils
+ * @status COMPLETE
+ * @description NDIS number validation and formatting utilities (pure functions, client+server safe)
+ * @lastAudit 2026-03-22
+ */
+
 /* ── NDIS Number Utilities ────────────────────────────── */
 /* Pure functions — safe for both client and server use.   */
 

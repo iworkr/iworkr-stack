@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 146: Project Panopticon-BI — Data Warehouse & BI Engine
--- Version 148.0 — "Analytical Supremacy & Frictionless Discovery"
--- ============================================================
+-- ============================================================================
+-- @migration PanopticonBIWarehouse
+-- @status COMPLETE
+-- @description Project Panopticon-BI — materialized views, data marts, BI warehouse
+-- @tables mv_job_profitability, mv_workforce_utilization, bi_saved_queries (materialized views)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Materialized View: Job Profitability Data Mart ───────
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_job_profitability AS

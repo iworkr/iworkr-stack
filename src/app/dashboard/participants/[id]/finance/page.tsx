@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/participants/[id]/finance
+ * @status COMPLETE
+ * @description Alias redirect to /dashboard/care/participants/[id]/finance
+ * @dataSource static
+ * @lastAudit 2026-03-22
+ */
 import { redirect } from "next/navigation";
 
 export default async function ParticipantsFinanceAliasPage({

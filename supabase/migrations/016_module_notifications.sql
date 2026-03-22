@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 016: Notifications (Inbox)
--- In-app notification system
--- ============================================================
+-- ============================================================================
+-- @migration ModuleNotifications
+-- @status COMPLETE
+-- @description In-app notification system for user inbox
+-- @tables notifications
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create type public.notification_type as enum (
   'job_assigned', 'quote_approved', 'mention', 'system', 'review',

@@ -1,3 +1,10 @@
+/**
+ * @module TeamLeave Server Actions
+ * @status COMPLETE
+ * @description Leave management — request creation, approval workflows, leave balance tracking, and calendar integration
+ * @exports createLeaveRequestAction, fetchLeaveRequestsAction, approveLeaveAction, rejectLeaveAction, fetchLeaveBalancesAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/claims
+ * @status COMPLETE
+ * @description NDIS claims management with batch submission, status tracking, and payment reconciliation
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

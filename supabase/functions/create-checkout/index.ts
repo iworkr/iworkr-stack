@@ -1,3 +1,11 @@
+/**
+ * @module create-checkout
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser() + owner/admin role check
+ * @description Creates a Polar.sh checkout session for subscription billing, with customer creation and audit logging
+ * @dependencies Polar.sh (billing), Supabase (Auth, DB)
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

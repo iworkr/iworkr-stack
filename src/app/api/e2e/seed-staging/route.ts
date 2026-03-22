@@ -1,4 +1,11 @@
 /**
+ * @route POST /api/e2e/seed-staging
+ * @status COMPLETE
+ * @auth WEBHOOK — E2E seed secret header required, blocked in production
+ * @description Seeds staging database with deterministic test data for E2E tests
+ * @lastAudit 2026-03-22
+ */
+/**
  * /api/e2e/seed-staging — Deterministic Staging Data Factory
  *
  * Project Argus-Omniscience: Solves the "Empty Database" problem by providing

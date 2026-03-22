@@ -1,3 +1,10 @@
+/**
+ * @module Help Server Actions
+ * @status COMPLETE
+ * @description Help center & knowledge base — support threads, article management, and community Q&A
+ * @exports createThread, fetchThreads, createReply, markResolved, fetchHelpArticles
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

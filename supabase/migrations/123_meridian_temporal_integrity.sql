@@ -1,6 +1,10 @@
--- Migration 123: Project Meridian — Global Temporal Synchronization
--- Audits and enforces TIMESTAMPTZ across all time-critical tables.
--- Adds timezone column to organizations if not already present.
+-- ============================================================================
+-- @migration MeridianTemporalIntegrity
+-- @status COMPLETE
+-- @description Project Meridian — TIMESTAMPTZ enforcement audit across all tables
+-- @tables organizations (altered — timezone), (verification across all tables)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Verify TIMESTAMPTZ compliance ───────────────────────────────────────
 -- All target tables already use TIMESTAMPTZ (verified 2026-03-16).

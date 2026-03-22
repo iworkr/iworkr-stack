@@ -1,7 +1,11 @@
-// Edge Function: semantic-voice-router
-// Project Hermes-Scribe — Voice-to-Ledger Engine
-// Pipeline: Audio upload → Whisper transcription → GPT-4o Function Calling
-// → Structured actions → HITL review queue
+/**
+ * @module semantic-voice-router
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; accepts debrief_id and organization_id directly
+ * @description Project Hermes-Scribe: Voice-to-Ledger engine — Whisper transcription → GPT-4o function calling → structured actions (shift notes, medications, incidents, goals, POs) with HITL review queue
+ * @dependencies OpenAI (Whisper + GPT-4o), Supabase Storage
+ * @lastAudit 2026-03-22
+ */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";

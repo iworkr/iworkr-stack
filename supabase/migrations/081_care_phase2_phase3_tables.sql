@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════════
--- Migration 081: CentralCare Phase 2 & Phase 3 Tables
--- Behaviour Support Plans, Restrictive Practices, CI Actions, Policy Governance,
--- Worker Onboarding Checklists, Support Coordination Cases
--- ═══════════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration CarePhase2Phase3Tables
+-- @status COMPLETE
+-- @description Behaviour plans, restrictive practices, CI actions, policy governance, onboarding
+-- @tables behaviour_support_plans, restrictive_practices, ci_actions, policy_documents, worker_onboarding_checklists, support_coordination_cases
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── Phase 2: Behaviour Support Plans ─────────────────────────────────────────
 

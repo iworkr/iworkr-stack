@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 023: Clients Module Enhancements
--- get_clients_with_stats RPC, create_client_full RPC,
--- VIP auto-tag trigger, last_active_at trigger, billing_terms
--- ============================================================
+-- ============================================================================
+-- @migration ClientsEnhancements
+-- @status COMPLETE
+-- @description Clients RPC functions, VIP auto-tag trigger, billing_terms column
+-- @tables clients (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Add billing_terms and last_active_at to clients ──
 alter table public.clients

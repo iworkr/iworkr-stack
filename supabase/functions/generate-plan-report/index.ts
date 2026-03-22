@@ -1,3 +1,12 @@
+/**
+ * @module generate-plan-report
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() verified via bearer token
+ * @description Aggregates NDIS goal data with optional OpenAI synthesis for plan report PDF rendering
+ * @dependencies Supabase (RPC: get_plan_report_data), OpenAI (gpt-4o-mini, optional)
+ * @lastAudit 2026-03-22
+ */
+
 // Deno Edge Function: generate-plan-report
 // Aggregates NDIS goal data and returns a structured JSON payload for PDF rendering
 // PDF is rendered client-side via @react-pdf/renderer using this payload

@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/team/set-password
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org admin/owner role
+ * @description Sets a password for a team member via Supabase Admin API
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";

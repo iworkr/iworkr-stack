@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 140: Project Nightingale-PACE — Direct NDIA API
--- Version 142.0 — "Zero-Latency Revenue & Algorithmic Solvency"
--- ============================================================
+-- ============================================================================
+-- @migration NightingalePaceNDIAAPI
+-- @status COMPLETE
+-- @description Project Nightingale-PACE — direct NDIA/PRODA API integration for claiming
+-- @tables proda_device_registrations, pace_endorsements, pace_service_bookings, pace_claim_submissions
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. PRODA Device Status ENUM ─────────────────────────────
 DO $$ BEGIN

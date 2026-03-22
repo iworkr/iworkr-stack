@@ -1,6 +1,8 @@
 /**
- * Shared caching utilities for Zustand stores.
- * Used by all data stores to implement stale-while-revalidate (SWR).
+ * @module CacheUtils
+ * @status COMPLETE
+ * @description Shared SWR caching utilities (staleness checks, cache clearing) for all Zustand stores
+ * @lastAudit 2026-03-22
  */
 
 /** Data older than this is considered stale and will be refetched in the background.

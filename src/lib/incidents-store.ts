@@ -1,7 +1,9 @@
 /**
- * Incidents Store — Project Nightingale Phase 2
- *
- * Zustand store for incident reporting, investigation, and resolution.
+ * @store IncidentsStore
+ * @status COMPLETE
+ * @description Incident reporting, investigation, and resolution state (Nightingale Phase 2)
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
  */
 
 import { create } from "zustand";

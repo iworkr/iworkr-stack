@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/integrations
+ * @status COMPLETE
+ * @description Integrations marketplace with connect/disconnect and status indicators
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

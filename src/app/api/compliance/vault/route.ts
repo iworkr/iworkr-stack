@@ -1,3 +1,10 @@
+/**
+ * @route GET,POST /api/compliance/vault
+ * @status COMPLETE
+ * @auth PUBLIC — Passcode + OTP 2FA (self-contained auth)
+ * @description Secure compliance vault with 2FA access for document retrieval
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createHash, createHmac, randomInt } from "crypto";

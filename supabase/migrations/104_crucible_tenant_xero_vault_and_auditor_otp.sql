@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 104: Project Crucible
--- Multi-tenant integration token vault + auditor SMS OTP gate
--- ============================================================
+-- ============================================================================
+-- @migration CrucibleTenantXeroVaultAndAuditorOTP
+-- @status COMPLETE
+-- @description Project Crucible — encrypted tenant integration vault + auditor SMS OTP gate
+-- @tables tenant_integrations, auditor_otp_sessions
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create extension if not exists pgcrypto;
 

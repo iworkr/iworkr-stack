@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 049: Project Automata — Core Execution Engine
--- SAFE: All statements idempotent with existence checks.
--- ============================================================
+-- ============================================================================
+-- @migration AutomataEngine
+-- @status COMPLETE
+-- @description Project Automata — automation execution engine with versioning and JSON Logic
+-- @tables automation_flows (altered), automation_executions, automation_execution_steps
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Extend automation_flows with versioning & JSON Logic ──
 DO $$ BEGIN

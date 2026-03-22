@@ -1,3 +1,10 @@
+/**
+ * @module Validation
+ * @status COMPLETE
+ * @description Zod schemas and validation helpers for emails, UUIDs, passwords, ABNs, and form inputs
+ * @lastAudit 2026-03-22
+ */
+
 import { z } from "zod";
 
 /* ── Common Schemas ──────────────────────────────────── */

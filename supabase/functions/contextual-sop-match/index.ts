@@ -1,4 +1,12 @@
 /**
+ * @module contextual-sop-match
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth guard; uses service_role key internally
+ * @description Hybrid SOP matching: deterministic tag matching + semantic vector similarity via OpenAI embeddings and pgvector, persists top 5 recommendations
+ * @dependencies OpenAI (embeddings), Supabase (DB, pgvector RPCs)
+ * @lastAudit 2026-03-22
+ */
+/**
  * contextual-sop-match — Panopticon Knowledge Engine
  *
  * Edge Function: Hybrid Tag + Semantic Vector SOP Matching

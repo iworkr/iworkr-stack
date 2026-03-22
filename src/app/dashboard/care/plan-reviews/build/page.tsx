@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/plan-reviews/build
+ * @status COMPLETE
+ * @description Build and generate plan review reports with participant aggregation
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

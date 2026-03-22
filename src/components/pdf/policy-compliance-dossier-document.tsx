@@ -1,3 +1,9 @@
+/**
+ * @component PolicyComplianceDossierDocument
+ * @status COMPLETE
+ * @description PDF document rendering a policy compliance dossier with worker acknowledgement records
+ * @lastAudit 2026-03-22
+ */
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 type AckRow = {

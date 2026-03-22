@@ -1,3 +1,9 @@
+/**
+ * @component SocialProof
+ * @status COMPLETE
+ * @description Landing page social proof bar with animated client logos marquee
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { FadeIn } from "@/components/ui/fade-in";

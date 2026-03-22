@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/unauthorized
+ * @status COMPLETE
+ * @description RBAC unauthorized access page shown when route is blocked by permissions
+ * @dataSource static
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useAuthStore } from "@/lib/auth-store";

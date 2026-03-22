@@ -1,3 +1,10 @@
+/**
+ * @module NewWorkspaceContext
+ * @status COMPLETE
+ * @description React context for new workspace onboarding modal — isModal flag, onComplete, onClose callbacks
+ * @lastAudit 2026-03-22
+ */
+
 import { createContext, useContext } from "react";
 
 export interface NewWorkspaceContextValue {

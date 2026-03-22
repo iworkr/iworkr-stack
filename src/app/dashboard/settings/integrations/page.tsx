@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/settings/integrations
+ * @status COMPLETE
+ * @description Integration settings with OAuth connect/disconnect and sync configuration
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";

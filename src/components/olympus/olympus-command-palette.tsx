@@ -1,3 +1,9 @@
+/**
+ * @component OlympusCommandPalette
+ * @status COMPLETE
+ * @description Super-admin command palette for cross-tenant search and impersonation
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";

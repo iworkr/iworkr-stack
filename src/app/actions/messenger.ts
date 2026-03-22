@@ -1,3 +1,10 @@
+/**
+ * @module Messenger Server Actions
+ * @status COMPLETE
+ * @description Real-time messaging — channel CRUD, message sending, read receipts, attachments, and channel member management
+ * @exports createChannel, sendMessage, fetchChannels, fetchMessages, markChannelRead
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

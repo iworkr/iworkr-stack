@@ -1,3 +1,9 @@
+/**
+ * @component JobChat
+ * @status COMPLETE
+ * @description Renders an inline chat panel for job-specific conversations with real-time sync
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";

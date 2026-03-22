@@ -1,3 +1,9 @@
+/**
+ * @component Topbar
+ * @status COMPLETE
+ * @description Top navigation bar with notifications, user menu, breadcrumbs, and mobile toggle
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

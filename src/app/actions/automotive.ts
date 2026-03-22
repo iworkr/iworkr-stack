@@ -1,3 +1,10 @@
+/**
+ * @module Automotive Server Actions
+ * @status COMPLETE
+ * @description Project Outrider — automotive dashboard for transit logs, SOS events, and fleet telemetry
+ * @exports fetchTransitLogsAction, fetchSosEventsAction, fetchFleetTelemetryAction, acknowledgeSOSAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

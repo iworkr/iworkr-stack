@@ -1,15 +1,10 @@
 /**
- * provision-house-threads — Project Nightingale / Project Echo
- *
- * Edge Function: Automatically provisions internal + external House Thread
- * channels when a new participant_profile is created via the Intake Wizard.
- *
- * Triggered:
- *   - On INSERT to participant_profiles (via database webhook)
- *   - Manual invocation for batch provisioning of existing participants
- *
- * POST body: { participant_id, organization_id, participant_name }
- *            OR { batch: true, organization_id } to provision all missing
+ * @module provision-house-threads
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; triggered by database webhook or manual batch invocation
+ * @description Project Nightingale/Echo: Auto-provisions internal + external care chat channels (House Threads) for participants with welcome messages
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
  */
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";

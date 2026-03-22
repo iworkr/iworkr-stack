@@ -1,3 +1,10 @@
+/**
+ * @module CareRoutines Server Actions
+ * @status COMPLETE
+ * @description Facility routines management — facility CRUD, task templates, routine checklists, and daily task scheduling
+ * @exports createFacilityAction, createTaskTemplateAction, fetchRoutinesAction, completeRoutineTaskAction, fetchFacilitiesAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

@@ -1,3 +1,10 @@
+/**
+ * @module PanopticonBI Server Actions
+ * @status COMPLETE
+ * @description Business intelligence dashboards — custom reports, KPI widgets, data visualization queries, and scheduled report generation
+ * @exports fetchBIReportAction, createCustomReportAction, fetchKPIDataAction, scheduleReportAction, exportReportAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

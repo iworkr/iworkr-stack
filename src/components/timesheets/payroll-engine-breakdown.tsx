@@ -1,3 +1,9 @@
+/**
+ * @component PayrollEngineBreakdown
+ * @status COMPLETE
+ * @description SCHADS payroll calculation breakdown with line-by-line audit matrix
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /**

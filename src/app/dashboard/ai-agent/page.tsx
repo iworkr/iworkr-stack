@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ai-agent
+ * @status COMPLETE
+ * @description AI Agent hub — grid of all agent types (Phone, Ads, Social, Reputation, Dispatch) with status cards
+ * @dataSource server-action: getAgentConfig
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

@@ -1,3 +1,10 @@
+/**
+ * @module Travel Server Actions
+ * @status COMPLETE
+ * @description Travel management — distance estimation, travel apportionment, allowance compilation, and route optimization
+ * @exports estimateTravelAction, calculateApportionmentAction, compileTravelAllowanceSummaryAction, fetchTravelLogsAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

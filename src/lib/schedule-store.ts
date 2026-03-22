@@ -1,3 +1,11 @@
+/**
+ * @store ScheduleStore
+ * @status COMPLETE
+ * @description Schedule and dispatch state — calendar blocks, technician assignments, and drag-drop operations
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isFresh } from "./cache-utils";

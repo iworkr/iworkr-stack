@@ -1,3 +1,10 @@
+/**
+ * @module IntegrationSync Server Actions
+ * @status COMPLETE
+ * @description Sync orchestrator — trigger, monitor, and manage bi-directional data sync across integrated providers
+ * @exports triggerSync, fetchSyncStatus, retrySyncAction, fetchSyncHistory
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

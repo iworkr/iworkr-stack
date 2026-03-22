@@ -1,3 +1,12 @@
+/**
+ * @module smart-roster-match
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() validates calling user
+ * @description Intelligent roster matching engine: scores workers by skills, continuity, fatigue, house ring-fencing, leave, SCHADS 10hr rest gaps, and assigns top candidates to unfilled shifts
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {

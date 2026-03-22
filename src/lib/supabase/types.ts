@@ -1,3 +1,9 @@
+/**
+ * @module SupabaseTypes
+ * @status COMPLETE
+ * @description Auto-generated Supabase database type definitions
+ * @lastAudit 2026-03-22
+ */
 export type Json =
   | string
   | number

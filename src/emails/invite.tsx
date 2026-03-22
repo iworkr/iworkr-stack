@@ -1,3 +1,9 @@
+/**
+ * @email InviteEmail
+ * @status COMPLETE
+ * @description Team invite email with branded CTA for new member onboarding
+ * @lastAudit 2026-03-22
+ */
 import { Button, Text, Section, Hr, Img } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout, styles, colors } from "./components/layout";

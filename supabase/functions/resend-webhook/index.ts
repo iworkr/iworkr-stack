@@ -1,3 +1,12 @@
+/**
+ * @module resend-webhook
+ * @status PARTIAL
+ * @auth SECURED — Svix HMAC signature verification on webhook payloads
+ * @description Handles Resend email event webhooks (delivered, bounced, complained, opened) with signature verification, bounce flagging, and email log updates. Missing DLQ routing on failure.
+ * @dependencies Resend (Svix webhooks), Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 

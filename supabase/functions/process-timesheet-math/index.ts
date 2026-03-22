@@ -1,11 +1,10 @@
 /**
- * process-timesheet-math — Award Interpretation Engine
- * ═══════════════════════════════════════════════════════════════════════════════
- * Takes a raw time entry and fractures it into payroll categories based on
- * the organization's industry_type (care → SCHADS, trades → relevant award).
- *
- * Input: { time_entry_id, organization_id }
- * Output: Updates time_entries.award_interpretation with the payroll payload
+ * @module process-timesheet-math
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; accepts time_entry_id and organization_id directly
+ * @description Award interpretation engine that fractures time entries into payroll categories (SCHADS for care, Trades award) with overtime, penalty rates, and public holiday logic
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";

@@ -1,3 +1,10 @@
+/**
+ * @module PlanReviews Server Actions
+ * @status COMPLETE
+ * @description NDIS plan reviews — report generation, PDF compilation, evidence collection, and review scheduling
+ * @exports createReportAction, fetchReportsAction, generatePdfAction, submitReviewAction, fetchReviewScheduleAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

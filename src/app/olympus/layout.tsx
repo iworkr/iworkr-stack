@@ -1,3 +1,9 @@
+/**
+ * @layout OlympusLayout
+ * @status COMPLETE
+ * @description Super Admin shell with keyboard-first nav, impersonation, and Olympus sidebar
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

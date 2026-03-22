@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/stripe/connect/terminal-token
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Generates Stripe Terminal ConnectionToken for mobile tap-to-pay
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";

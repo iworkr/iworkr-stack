@@ -1,3 +1,9 @@
+/**
+ * @component Footer
+ * @status COMPLETE
+ * @description Landing page footer with link columns, social icons, and legal links
+ * @lastAudit 2026-03-22
+ */
 import Image from "next/image";
 import { FadeIn } from "@/components/ui/fade-in";
 

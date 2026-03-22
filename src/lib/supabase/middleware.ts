@@ -1,3 +1,9 @@
+/**
+ * @middleware SupabaseSessionMiddleware
+ * @status COMPLETE
+ * @description Edge RBAC middleware with JWT-based role checks and session refresh
+ * @lastAudit 2026-03-22
+ */
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";

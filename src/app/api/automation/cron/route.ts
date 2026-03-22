@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/automation/cron
+ * @status COMPLETE
+ * @auth WEBHOOK — Cron secret or rate-limited public access
+ * @description Periodic cron job for deferred actions, overdue invoices, and reminders
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { dispatchAndWait, Events } from "@/lib/automation";

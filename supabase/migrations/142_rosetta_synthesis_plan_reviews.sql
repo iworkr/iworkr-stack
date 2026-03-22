@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 142: Project Rosetta-Synthesis — AI End-of-Plan Reviews
--- Version 144.0 — "Infinite Context & Clinical Precision"
--- ============================================================
+-- ============================================================================
+-- @migration RosettaSynthesisPlanReviews
+-- @status COMPLETE
+-- @description Project Rosetta-Synthesis — AI-powered end-of-plan reviews with goal linkage
+-- @tables shift_goal_linkages, plan_review_data (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. ENUMs ────────────────────────────────────────────────
 DO $$ BEGIN

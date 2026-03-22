@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care
+ * @status COMPLETE
+ * @description Care command center — KPI snapshot, alerts, quick-nav grid to sub-modules (compliance, meds, notes, etc.)
+ * @dataSource zustand: useCareCommandStore.fetchSnapshot + fetchAlerts
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

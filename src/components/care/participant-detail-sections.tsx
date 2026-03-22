@@ -1,3 +1,9 @@
+/**
+ * @component ParticipantDetailSections
+ * @status COMPLETE
+ * @description Tabbed detail sections for participant profiles including meds, goals, funding, and documents
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useCallback } from "react";

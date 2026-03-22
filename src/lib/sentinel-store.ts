@@ -1,8 +1,9 @@
 /**
- * Sentinel Store — Project Nightingale Phase 3
- *
- * Zustand store for Sentinel AI compliance alerts.
- * Manages real-time alert feeds, acknowledgement, and escalation.
+ * @store SentinelStore
+ * @status COMPLETE
+ * @description Sentinel AI compliance alerts — real-time feed, acknowledgement, and escalation (Nightingale Phase 3)
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
  */
 
 import { create } from "zustand";

@@ -1,3 +1,12 @@
+/**
+ * @module process-shift-note
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth check; accepts POST with org/shift/worker IDs directly
+ * @description Processes shift note submissions with template resolution, family-visible data projection, signature handling, and Glasshouse progress note publishing
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

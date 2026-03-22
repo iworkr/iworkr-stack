@@ -1,9 +1,9 @@
 -- ============================================================================
--- Migration 174: Zenith-Launch — NDIS Bulk Claim Engine
--- Project: iWorkr v183.0 — "Revenue Realization & Operational Closure"
--- Purpose: Automated translation of approved schedule_blocks (shifts) into
---          claim_line_items with correct NDIS Support Item Codes based on
---          day-of-week, time-of-day, and public holiday status.
+-- @migration ZenithNDISClaimEngine
+-- @status COMPLETE
+-- @description Zenith-Launch — automated NDIS bulk claim engine with time-of-day code translation
+-- @tables ndis_code_translation_matrix, claim_generation_runs
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ── The NDIS Code Translation Matrix ─────────────────────────────────────────

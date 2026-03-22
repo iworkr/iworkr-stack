@@ -1,3 +1,11 @@
+/**
+ * @module submit-internal-feedback
+ * @status COMPLETE
+ * @auth SECURED — Validates JWT via Supabase auth
+ * @description Absorbs negative user sentiment feedback, stores logs, updates metrics, and optionally routes to Slack
+ * @dependencies Supabase, Slack (optional webhook)
+ * @lastAudit 2026-03-22
+ */
 // ============================================================================
 // Project Halcyon — Submit Internal Feedback (Negative Sentiment Absorption)
 // ============================================================================

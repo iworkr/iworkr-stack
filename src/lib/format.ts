@@ -1,5 +1,8 @@
 /**
- * Shared formatting utilities (testable in isolation).
+ * @module Format
+ * @status COMPLETE
+ * @description Shared formatting utilities — currency, dates, durations, relative time
+ * @lastAudit 2026-03-22
  */
 
 export function formatCurrency(num: number, locale = "en-AU"): string {

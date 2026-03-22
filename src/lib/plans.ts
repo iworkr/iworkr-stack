@@ -1,10 +1,8 @@
 /**
- * Plan configuration — the single source of truth for pricing,
- * feature limits, and Stripe Price IDs.
- *
- * All billing flows through self-hosted Stripe Checkout (Embedded).
- * Stripe Price IDs are loaded from env vars so they can differ
- * between staging and production.
+ * @module Plans
+ * @status COMPLETE
+ * @description Single source of truth for plan pricing, feature limits, and Stripe Price IDs
+ * @lastAudit 2026-03-22
  */
 
 export interface PlanLimits {

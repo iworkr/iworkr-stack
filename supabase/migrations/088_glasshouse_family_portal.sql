@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 088: Project Glasshouse - Family & Participant Portal
--- Polymorphic RBAC portal, dual-note visibility, secure family document vault.
+-- @migration GlasshouseFamilyPortal
+-- @status COMPLETE
+-- @description Project Glasshouse — family portal RBAC, dual-note visibility, document vault
+-- @tables participant_network_members, family_document_vault, portal_sessions
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1) Link external family/participant users to participants ───────────────

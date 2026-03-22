@@ -1,3 +1,11 @@
+/**
+ * @module execute-drop-and-cover
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser()
+ * @description Executes drop-and-cover leave reassignment via Postgres RPC when a leave request is approved
+ * @dependencies Supabase (Auth, DB, RPCs)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

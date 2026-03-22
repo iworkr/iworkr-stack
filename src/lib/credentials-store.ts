@@ -1,8 +1,9 @@
 /**
- * Credentials Store — Project Nightingale
- *
- * Zustand store for workforce compliance credentials (worker_credentials table).
- * Manages CRUD operations, expiry tracking, and realtime updates.
+ * @store CredentialsStore
+ * @status COMPLETE
+ * @description Workforce compliance credentials — CRUD, expiry tracking, and realtime updates (Nightingale)
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
  */
 
 import { create } from "zustand";

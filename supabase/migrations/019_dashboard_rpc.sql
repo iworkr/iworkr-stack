@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 019: Dashboard RPC Functions
--- Server-side aggregations for fast dashboard loading
--- ============================================================
+-- ============================================================================
+-- @migration DashboardRPC
+-- @status COMPLETE
+-- @description Server-side RPC aggregations for fast dashboard loading
+-- @tables (none — functions only: get_dashboard_stats, etc.)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. get_dashboard_stats ──────────────────────────────
 -- Returns revenue total, growth, and job counts in one call

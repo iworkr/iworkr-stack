@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 039: Project Grandmaster — Operational Pipelines
--- SAFE: All statements wrapped with existence checks.
+-- @migration GrandmasterPipelines
+-- @status COMPLETE
+-- @description Project Grandmaster — operational pipeline stages and job workflow expansion
+-- @tables pipeline_stages, jobs (altered — enum expansion)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- --------------------------------------------------------------------------

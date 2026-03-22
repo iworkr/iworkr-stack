@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/compliance/policies/dossier
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated via server action
+ * @description Generates a PDF policy compliance dossier report
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";

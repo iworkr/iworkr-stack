@@ -1,3 +1,9 @@
+/**
+ * @component NewWorkspaceModal
+ * @status COMPLETE
+ * @description Multi-step onboarding modal for creating a new workspace
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useCallback, useRef } from "react";

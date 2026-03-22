@@ -1,3 +1,11 @@
+/**
+ * @module convoy-defect-escalation
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser()
+ * @description Escalates critical/major vehicle defects: grounds vehicles, cancels future bookings, sends urgent push notification
+ * @dependencies Supabase (Auth, DB, Edge Functions)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

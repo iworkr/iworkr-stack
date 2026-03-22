@@ -1,3 +1,10 @@
+/**
+ * @module Automations Server Actions
+ * @status COMPLETE
+ * @description Automation flow engine — CRUD for flows, triggers, conditions, actions, execution logs, and event dispatching
+ * @exports createFlow, updateFlow, deleteFlow, executeFlow, fetchFlows
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

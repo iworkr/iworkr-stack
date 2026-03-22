@@ -1,3 +1,9 @@
+/**
+ * @component FeatureGate
+ * @status COMPLETE
+ * @description Conditionally renders children based on plan entitlements, showing upgrade prompt for locked features
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { ReactNode, useState } from "react";

@@ -1,3 +1,9 @@
+/**
+ * @component StepIdentity
+ * @status COMPLETE
+ * @description Onboarding step for entering company name and creating the organization
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

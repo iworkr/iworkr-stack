@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 047: Client Activity Logs (Project Helix §2)
--- SAFE: All statements idempotent with existence checks.
--- ============================================================
+-- ============================================================================
+-- @migration ClientActivityLogs
+-- @status COMPLETE
+-- @description Project Helix — client activity log table with auto-triggers
+-- @tables client_activity_logs
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Create client_activity_logs table ─────────────────
 CREATE TABLE IF NOT EXISTS public.client_activity_logs (

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/plan-reviews
+ * @status COMPLETE
+ * @description Plan reviews list with search, filters, and status tracking
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useMemo } from "react";

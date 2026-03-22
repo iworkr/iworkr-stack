@@ -1,3 +1,10 @@
+/**
+ * @module CareIronclad Server Actions
+ * @status COMPLETE
+ * @description Auditor portal & compliance vault — auditor access portals, evidence bundles, passcode-secured document sharing
+ * @exports createAuditorPortalAction, fetchAuditorPortalsAction, generateEvidenceBundleAction, verifyAuditorPasscodeAction, revokePortalAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

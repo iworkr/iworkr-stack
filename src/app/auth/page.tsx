@@ -1,3 +1,9 @@
+/**
+ * @page /auth
+ * @status COMPLETE
+ * @description Unified authentication page with login, signup, and password reset flows
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

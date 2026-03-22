@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 108: Panopticon Mobile Black Box Telemetry Ledger
--- Creates mobile_telemetry_events, RLS, and triage trigger wiring.
+-- @migration PanopticonMobileBlackBox
+-- @status COMPLETE
+-- @description Panopticon — mobile telemetry events, black box crash analytics, triage trigger
+-- @tables mobile_telemetry_events
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 create table if not exists public.mobile_telemetry_events (

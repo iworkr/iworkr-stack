@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 160: Project Panopticon-Chat — Text-to-SQL
---   Conversational Analytics Engine
--- ============================================================
+-- ============================================================================
+-- @migration PanopticonChatTextToSQL
+-- @status COMPLETE
+-- @description Project Panopticon-Chat — text-to-SQL analytics, analytics_reader role
+-- @tables analytics_query_log, analytics_saved_queries
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ═══════════════════════════════════════════════════════════
 -- PART 1: analytics_reader role (read-only sandbox)

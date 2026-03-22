@@ -1,4 +1,13 @@
 /**
+ * @module ingest-telemetry
+ * @status COMPLETE
+ * @auth UNSECURED — Public telemetry endpoint, no auth required (rate-limited instead)
+ * @description Receives client-side crash/telemetry autopsy payloads with PII scrubbing, rate limiting, screenshot storage, and batch mode
+ * @dependencies Supabase (Storage: telemetry_snapshots)
+ * @lastAudit 2026-03-22
+ */
+
+/**
  * ingest-telemetry — Project Panopticon
  *
  * Edge Function: Receives autopsy payloads from client-side capture engines

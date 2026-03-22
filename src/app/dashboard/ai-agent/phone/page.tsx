@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ai-agent/phone
+ * @status COMPLETE
+ * @description AI Phone agent — live call dashboard, voice config, call log, and forwarding rules
+ * @dataSource react-query via server-action: ai-agent actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";

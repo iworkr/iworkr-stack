@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 144: Project Synapse-Prod — Production Accounting Sync
--- Version 146.0 — "Cryptographic Resilience & Absolute Ledger Parity"
--- ============================================================
+-- ============================================================================
+-- @migration SynapseProdAccountingSync
+-- @status COMPLETE
+-- @description Project Synapse-Prod — production accounting sync with rate limiting and resilience
+-- @tables integration_tokens (altered), integration_sync_queue (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Upgrade integration_tokens with connection_id + webhook key ──
 ALTER TABLE public.integration_tokens

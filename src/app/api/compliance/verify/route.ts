@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/compliance/verify
+ * @status COMPLETE
+ * @auth PUBLIC — Document hash verification (no session needed)
+ * @description Verifies document integrity via SHA-256 hash comparison
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";

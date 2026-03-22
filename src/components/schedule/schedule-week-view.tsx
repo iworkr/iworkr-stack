@@ -1,3 +1,9 @@
+/**
+ * @component ScheduleWeekView
+ * @status COMPLETE
+ * @description Weekly schedule grid with technician rows, drag-drop blocks, and navigation
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useMemo } from "react";

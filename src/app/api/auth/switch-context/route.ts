@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/auth/switch-context
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with workspace membership
+ * @description Validates workspace switch and sets active workspace cookie
+ * @lastAudit 2026-03-22
+ */
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";

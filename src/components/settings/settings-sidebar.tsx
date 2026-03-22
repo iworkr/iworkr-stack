@@ -1,3 +1,9 @@
+/**
+ * @component SettingsSidebar
+ * @status COMPLETE
+ * @description Settings page sidebar navigation with grouped links and active-state indicator
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { usePathname } from "next/navigation";

@@ -1,3 +1,9 @@
+/**
+ * @module SupabaseClient
+ * @status COMPLETE
+ * @description Browser-side Supabase client singleton with Realtime channel helpers
+ * @lastAudit 2026-03-22
+ */
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "./types";
 

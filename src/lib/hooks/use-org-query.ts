@@ -1,3 +1,9 @@
+/**
+ * @hook useOrgQuery
+ * @status COMPLETE
+ * @description Universal org-scoped React Query hook with automatic orgId gating
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";

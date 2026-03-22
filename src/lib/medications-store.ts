@@ -1,7 +1,9 @@
 /**
- * Medications Store — Project Nightingale Phase 2
- *
- * Zustand store for eMAR: participant medications and administration records.
+ * @store MedicationsStore
+ * @status COMPLETE
+ * @description eMAR state — participant medications and administration records (Nightingale Phase 2)
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
  */
 
 import { create } from "zustand";

@@ -1,4 +1,11 @@
 /**
+ * @route POST /api/ndis/generate-proda-csv
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Generates PRODA-format CSV for NDIS bulk claim submissions
+ * @lastAudit 2026-03-22
+ */
+/**
  * Zenith-Launch: PRODA Bulk Claim CSV Generator
  *
  * POST /api/ndis/generate-proda-csv

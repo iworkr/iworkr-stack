@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/kits
+ * @status COMPLETE
+ * @description Trade kits builder with margin calculator and component management
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";

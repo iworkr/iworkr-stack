@@ -1,4 +1,12 @@
 /**
+ * @module Care Server Actions (Barrel)
+ * @status COMPLETE
+ * @description Barrel re-export aggregating care-clinical, care-compliance, and care-governance sub-modules
+ * @exports createObservationAction, createRestrictivePracticeAction, createIncidentAction, fetchObservationsAction, fetchIncidentsAction
+ * @lastAudit 2026-03-22
+ */
+
+/**
  * Barrel re-export — original monolith decomposed into domain modules.
  * All existing imports from "@/app/actions/care" continue to work unchanged.
  *

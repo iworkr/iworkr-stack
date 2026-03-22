@@ -1,3 +1,10 @@
+/**
+ * @module AegisSpend Server Actions
+ * @status COMPLETE
+ * @description Spend management — budgets, purchase orders, approvals, and expense tracking
+ * @exports createBudgetAction, fetchBudgetsAction, createPurchaseOrderAction, approvePurchaseOrderAction, fetchExpensesAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

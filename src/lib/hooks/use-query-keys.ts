@@ -1,3 +1,9 @@
+/**
+ * @hook queryKeys
+ * @status COMPLETE
+ * @description Centralised React Query key factory for all domain entities
+ * @lastAudit 2026-03-22
+ */
 export const queryKeys = {
   participants: {
     all: (orgId: string) => ["participants", orgId] as const,

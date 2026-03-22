@@ -1,3 +1,9 @@
+/**
+ * @page /privacy
+ * @status COMPLETE
+ * @description Privacy policy page with GDPR and CCPA compliance details
+ * @lastAudit 2026-03-22
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";

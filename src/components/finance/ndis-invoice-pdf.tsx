@@ -1,3 +1,9 @@
+/**
+ * @component NdisInvoicePdf
+ * @status COMPLETE
+ * @description NDIS-compliant invoice PDF template using @react-pdf/renderer with provider ABN, participant NDIS number, and support item line items
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 // NDIS-compliant invoice PDF template using @react-pdf/renderer

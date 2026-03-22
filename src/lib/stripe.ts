@@ -1,3 +1,10 @@
+/**
+ * @module Stripe
+ * @status COMPLETE
+ * @description Stripe SDK singleton initialization with lazy loading and env validation
+ * @lastAudit 2026-03-22
+ */
+
 import Stripe from "stripe";
 
 let stripeInstance: Stripe | null = null;

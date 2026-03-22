@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/forms/builder/[id]
+ * @status COMPLETE
+ * @description Drag-and-drop form builder with field palette and live preview
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import {

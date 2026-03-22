@@ -1,3 +1,9 @@
+/**
+ * @component FinalCTA
+ * @status COMPLETE
+ * @description Landing page final call-to-action section with particle background and auth-aware button
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { ArrowRight, LayoutDashboard } from "lucide-react";

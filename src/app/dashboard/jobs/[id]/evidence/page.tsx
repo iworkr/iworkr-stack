@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/jobs/[id]/evidence
+ * @status COMPLETE
+ * @description Job evidence gallery with photo upload, tagging, and GPS metadata
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";

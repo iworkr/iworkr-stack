@@ -1,3 +1,9 @@
+/**
+ * @component StatusIcon
+ * @status COMPLETE
+ * @description Renders circular SVG status indicators with fill levels for job workflow states
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 const config: Record<string, { label: string; color: string; fill: number }> = {

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ai-agent/ads
+ * @status COMPLETE
+ * @description AI Ads agent configuration — ad copy tone, platforms, budget rules
+ * @dataSource server-action: upsertAgentConfig
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

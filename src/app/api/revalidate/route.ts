@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/revalidate
+ * @status COMPLETE
+ * @auth WEBHOOK — Revalidate secret required
+ * @description Cache purge endpoint for Edge Functions to trigger ISR revalidation
+ * @lastAudit 2026-03-22
+ */
 // /api/revalidate — cache purge endpoint for Edge Functions
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";

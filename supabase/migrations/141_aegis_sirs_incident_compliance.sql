@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 141: Project Aegis-SIRS — Serious Incident Response
--- Version 143.0 — "Statutory Determinism & Liability Sanitization"
--- ============================================================
+-- ============================================================================
+-- @migration AegisSIRSIncidentCompliance
+-- @status COMPLETE
+-- @description Project Aegis-SIRS — serious incident response, statutory compliance, SIRS reporting
+-- @tables incidents (altered — SIRS enum expansion), sirs_submissions
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. ENUMs ────────────────────────────────────────────────
 -- NOTE: incident_severity and incident_category ENUMs already exist with lowercase values:

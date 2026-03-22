@@ -1,3 +1,10 @@
+/**
+ * @module SolonLaw Server Actions
+ * @status COMPLETE
+ * @description Legal compliance engine — regulatory rule management, compliance checks, and legislative change tracking
+ * @exports createRuleAction, fetchRulesAction, checkComplianceAction, updateRuleAction, fetchComplianceReportAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

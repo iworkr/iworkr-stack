@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/settings/communications
+ * @status COMPLETE
+ * @description Communication preferences for email, SMS, push, and automation triggers
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";

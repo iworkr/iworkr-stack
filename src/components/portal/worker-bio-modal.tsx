@@ -1,3 +1,9 @@
+/**
+ * @component WorkerBioModal
+ * @status COMPLETE
+ * @description Modal displaying a worker's verified profile, credentials, and bio for family trust-building
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

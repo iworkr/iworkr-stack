@@ -1,26 +1,10 @@
 /**
- * Project Astrolabe — process-transit Edge Function
- *
- * Receives a GPS transit payload from the Flutter app (clock-out/clock-in coords),
- * calls Google Maps Distance Matrix API to establish algorithmic ground truth,
- * applies the NDIS variance lock and MMM zoning cap, then writes a verified
- * travel_claim to the database.
- *
- * POST /functions/v1/process-transit
- * Body: {
- *   organization_id: string,
- *   worker_id: string,
- *   transit_type: "PROVIDER_TRAVEL" | "PARTICIPANT_TRANSPORT",
- *   origin_shift_id?: string,
- *   destination_shift_id?: string,
- *   start_lat: number, start_lng: number,
- *   end_lat: number, end_lng: number,
- *   device_start_time: string (ISO),
- *   device_end_time: string (ISO),
- *   route_polyline?: string,  // only for PARTICIPANT_TRANSPORT
- *   device_os?: string,
- *   app_version?: string,
- * }
+ * @module process-transit
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() validates calling user
+ * @description Project Astrolabe: GPS transit claim processor with Google Maps arbitration, NDIS variance fraud lock, and MMM zoning cap for travel billing
+ * @dependencies Google Maps Distance Matrix API, Supabase
+ * @lastAudit 2026-03-22
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";

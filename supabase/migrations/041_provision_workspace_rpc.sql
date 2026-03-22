@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 041: Workspace Provisioning RPC
--- SAFE: All CREATE OR REPLACE + table existence checks.
+-- @migration ProvisionWorkspaceRPC
+-- @status COMPLETE
+-- @description Workspace provisioning RPC — create_organization_with_owner
+-- @tables (none — functions only)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- --------------------------------------------------------------------------

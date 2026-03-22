@@ -1,9 +1,11 @@
-// ============================================================
-// Edge Function: receipt-ocr
-// Project Aegis-Spend — Vision AI Receipt Parsing
-// Trigger: Storage webhook on supplier-receipts-photos bucket
-//          OR direct POST with receipt image/PDF
-// ============================================================
+/**
+ * @module receipt-ocr
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; triggered by storage webhook or direct POST
+ * @description Project Aegis-Spend: Vision AI receipt parsing via GPT-4o/Gemini with dual-model fallback, GST validation, PO variance matching, and catalog price checks
+ * @dependencies OpenAI (GPT-4o), Google Gemini, Supabase Storage
+ * @lastAudit 2026-03-22
+ */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { MockOpenAI, isTestEnv } from "../_shared/mockClients.ts";

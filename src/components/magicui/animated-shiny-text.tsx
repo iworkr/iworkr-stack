@@ -1,3 +1,9 @@
+/**
+ * @component AnimatedShinyText
+ * @status COMPLETE
+ * @description Renders text with an animated shimmer/shine gradient effect
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { type ComponentPropsWithoutRef, type CSSProperties, type FC } from "react";

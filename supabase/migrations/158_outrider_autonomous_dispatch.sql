@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 158: Project Outrider-Autonomous — Self-Healing
---   Roster & Agentic Dispatch Engine
--- ============================================================
+-- ============================================================================
+-- @migration OutriderAutonomousDispatch
+-- @status COMPLETE
+-- @description Project Outrider-Autonomous — self-healing roster, agentic dispatch, anomaly detection
+-- @tables dispatch_anomalies, dispatch_actions, dispatch_config
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ═══════════════════════════════════════════════════════════
 -- PART 1: ENUMs

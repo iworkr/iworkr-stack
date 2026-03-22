@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 013: Finance (Invoices & Payouts)
--- Invoice management, line items, events, payouts
--- ============================================================
+-- ============================================================================
+-- @migration ModuleFinance
+-- @status COMPLETE
+-- @description Invoice management, line items, events, payouts
+-- @tables invoices, invoice_line_items, invoice_events, payouts
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create type public.invoice_status as enum ('draft', 'sent', 'paid', 'overdue', 'voided');
 create type public.payout_status as enum ('completed', 'pending', 'processing');

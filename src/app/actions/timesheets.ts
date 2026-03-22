@@ -1,3 +1,10 @@
+/**
+ * @module Timesheets Server Actions
+ * @status COMPLETE
+ * @description Timesheet management — clock in/out, shift records, approval workflows, travel allowance compilation, and payroll export
+ * @exports createTimesheetAction, fetchTimesheetsAction, approveTimesheetAction, clockInAction, clockOutAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

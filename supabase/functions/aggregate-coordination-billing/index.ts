@@ -1,3 +1,11 @@
+/**
+ * @module aggregate-coordination-billing
+ * @status COMPLETE
+ * @auth UNSECURED — No auth guard; designed for pg_cron or internal invocation
+ * @description Weekly aggregator for NDIS coordination time entries: groups unbilled entries, creates invoices and claim line items
+ * @dependencies Supabase (DB)
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";

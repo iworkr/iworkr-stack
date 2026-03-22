@@ -1,3 +1,9 @@
+/**
+ * @component VirtualizedList
+ * @status COMPLETE
+ * @description Performant virtualized list using TanStack Virtual for large datasets
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useRef, useEffect, type ReactNode } from "react";

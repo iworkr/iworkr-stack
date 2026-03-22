@@ -1,3 +1,10 @@
+/**
+ * @module CareClinical Server Actions
+ * @status COMPLETE
+ * @description Clinical safety & health — vital observations, medications, behaviour events, wound care, and bowel tracking
+ * @exports createObservationAction, fetchObservationsAction, createMedicationAction, createBehaviourEventAction, createWoundCareAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

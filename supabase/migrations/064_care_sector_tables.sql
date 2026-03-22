@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 064: Care Sector Tables (Project Nightingale)
--- Participant profiles, service agreements, progress notes with EVV.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration CareSectorTables
+-- @status COMPLETE
+-- @description Project Nightingale — participant profiles, service agreements, progress notes
+-- @tables participant_profiles, service_agreements, progress_notes
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Participant Profiles ─────────────────────────────────────────────────

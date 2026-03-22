@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/assets
+ * @status COMPLETE
+ * @description Asset registry — grid/list views with search, filters, barcode scanning, and KPI summary
+ * @dataSource server-action: assets actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence, useSpring, useTransform, useMotionValue } from "framer-motion";

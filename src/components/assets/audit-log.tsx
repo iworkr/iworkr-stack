@@ -1,3 +1,9 @@
+/**
+ * @component AuditLog
+ * @status COMPLETE
+ * @description Renders a chronological audit log of asset events (transfers, services, creation, disposal)
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

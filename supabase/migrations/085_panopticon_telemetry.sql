@@ -1,9 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════════
--- Migration 085: Project Panopticon — Global Telemetry & Crash Analytics
--- Partitioned telemetry_events table, storage bucket for screenshots,
--- RLS policies for Super Admin access.
--- SAFE: All statements use IF NOT EXISTS / DO blocks.
--- ═══════════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration PanopticonTelemetry
+-- @status COMPLETE
+-- @description Project Panopticon — partitioned telemetry events, crash analytics, screenshots
+-- @tables telemetry_events (partitioned), storage bucket: telemetry-screenshots
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ─── 1. Telemetry Events (Partitioned by month) ────────────────────────────
 

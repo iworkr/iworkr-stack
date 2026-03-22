@@ -1,3 +1,9 @@
+/**
+ * @component JobLayer
+ * @status COMPLETE
+ * @description Mapbox layer rendering job location markers with status-colored pins on the dispatch map
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef } from "react";

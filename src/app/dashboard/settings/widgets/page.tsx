@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/settings/widgets
+ * @status COMPLETE
+ * @description Embeddable widget builder with preview, config, and embed code generator
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";

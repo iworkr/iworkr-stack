@@ -1,3 +1,9 @@
+/**
+ * @page /join
+ * @status COMPLETE
+ * @description SSR token-validated team join entry point with onboarding redirect
+ * @lastAudit 2026-03-22
+ */
 /* ═══════════════════════════════════════════════════════════════
    Project Genesis — /join
    SSR Token Validation & Onboarding Entry Point

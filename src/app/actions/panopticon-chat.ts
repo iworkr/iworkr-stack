@@ -1,3 +1,10 @@
+/**
+ * @module PanopticonChat Server Actions
+ * @status COMPLETE
+ * @description AI analytics chat — natural language data queries, conversation history, and insight generation
+ * @exports sendChatQueryAction, fetchChatHistoryAction, clearChatHistoryAction, generateInsightAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

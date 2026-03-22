@@ -1,5 +1,8 @@
 /**
- * Industry Lexicon — Project Nightingale
+ * @module IndustryLexicon
+ * @status COMPLETE
+ * @description Maps trade-specific UI labels to care-specific labels based on workspace industry type
+ * @lastAudit 2026-03-22
  *
  * Maps trade-specific UI labels to care-specific labels based on the
  * workspace's `industry_type` setting. For "trades" workspaces, all

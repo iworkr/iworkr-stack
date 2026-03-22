@@ -1,3 +1,11 @@
+/**
+ * @store ParticipantIntakeStore
+ * @status COMPLETE
+ * @description NDIS participant intake wizard state — multi-step form, validation, and draft persistence
+ * @resetSafe YES — Has reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 "use client";
 
 import { create } from "zustand";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/plan-reviews/[participantId]
+ * @status COMPLETE
+ * @description Individual participant plan review detail with report generation and AI aggregation
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

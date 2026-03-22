@@ -1,3 +1,9 @@
+/**
+ * @email PaymentFailedEmail
+ * @status COMPLETE
+ * @description Payment failure notification with retry/update-card CTA
+ * @lastAudit 2026-03-22
+ */
 import { Button, Text, Section, Hr } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout, styles, colors } from "./components/layout";

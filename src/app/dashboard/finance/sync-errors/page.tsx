@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/sync-errors
+ * @status COMPLETE
+ * @description Accounting sync error log with retry and resolution actions
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";

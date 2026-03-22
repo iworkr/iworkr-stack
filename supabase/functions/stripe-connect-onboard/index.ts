@@ -1,3 +1,11 @@
+/**
+ * @module stripe-connect-onboard
+ * @status COMPLETE
+ * @auth SECURED — Validates JWT via Supabase auth
+ * @description Creates/retrieves a Stripe Express account and returns an Account Link URL for KYC onboarding
+ * @dependencies Supabase, Stripe Connect
+ * @lastAudit 2026-03-22
+ */
 // stripe-connect-onboard Edge Function
 // Creates/retrieves a Stripe Express account for a workspace and returns
 // an Account Link URL for KYC onboarding.

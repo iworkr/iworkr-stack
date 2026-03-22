@@ -1,3 +1,11 @@
+/**
+ * @module fetch-participant-dossier
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() verified
+ * @description Fetches a full participant dossier via RPC, gated by auth and org access
+ * @dependencies Supabase (RPC: fetch_participant_dossier)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

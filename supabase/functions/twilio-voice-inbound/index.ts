@@ -1,3 +1,11 @@
+/**
+ * @module twilio-voice-inbound
+ * @status COMPLETE
+ * @auth SECURED — Validates Twilio request signature
+ * @description Handles inbound VOIP calls via Twilio — screen-pop lookup, Realtime broadcast, call logging, and TwiML routing
+ * @dependencies Supabase, Twilio Voice
+ * @lastAudit 2026-03-22
+ */
 // ============================================================================
 // Twilio Voice Inbound — Edge Function
 // ============================================================================

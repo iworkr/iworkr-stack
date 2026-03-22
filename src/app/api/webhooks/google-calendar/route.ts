@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/webhooks/google-calendar
+ * @status COMPLETE
+ * @auth WEBHOOK — Google Push Notification channel verification
+ * @description Handles Google Calendar push notifications for schedule sync
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 

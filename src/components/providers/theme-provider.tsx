@@ -1,3 +1,9 @@
+/**
+ * @component ThemeProvider
+ * @status COMPLETE
+ * @description Provides dark/light theme context with localStorage persistence and DOM sync
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";

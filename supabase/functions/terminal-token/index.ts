@@ -1,3 +1,11 @@
+/**
+ * @module terminal-token
+ * @status COMPLETE
+ * @auth SECURED — Validates JWT via Supabase auth
+ * @description Creates a Stripe Terminal connection token for tap-to-pay hardware integration
+ * @dependencies Supabase, Stripe Terminal
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@17?target=deno";
 

@@ -1,3 +1,10 @@
+/**
+ * @module AegisRBAC Server Actions
+ * @status COMPLETE
+ * @description Fine-grained RBAC permission management — system permissions, role permissions, and audit logging
+ * @exports fetchPermissionsAction, assignPermissionAction, revokePermissionAction, fetchRolePermissionsAction, fetchPermissionAuditLogAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

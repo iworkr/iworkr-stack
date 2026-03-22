@@ -1,3 +1,9 @@
+/**
+ * @component BulkActionBar
+ * @status COMPLETE
+ * @description Floating action bar for bulk operations (status change, assign, delete) on selected items
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

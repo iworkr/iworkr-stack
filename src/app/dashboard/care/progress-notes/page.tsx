@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/progress-notes
+ * @status COMPLETE
+ * @description Progress notes CRUD with note types, participant linking, and real-time cache
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

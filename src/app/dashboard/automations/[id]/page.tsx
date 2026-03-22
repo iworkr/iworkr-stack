@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/automations/[id]
+ * @status COMPLETE
+ * @description Automation builder — visual workflow editor with trigger/action blocks, conditions, and test runner
+ * @dataSource zustand: useAutomationsStore
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 024: Finance Module Enhancements
--- get_finance_overview RPC, create_invoice_full RPC,
--- overdue watchdog, realtime for invoices
--- ============================================================
+-- ============================================================================
+-- @migration FinanceEnhancements
+-- @status COMPLETE
+-- @description Finance overview RPC, create_invoice_full, overdue watchdog, realtime
+-- @tables invoices (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. RPC: Finance Overview (dashboard aggregations) ───
 create or replace function public.get_finance_overview(

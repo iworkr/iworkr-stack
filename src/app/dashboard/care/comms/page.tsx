@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/comms
+ * @status COMPLETE
+ * @description Care Communications — 3-pane messaging with triage, house threads, DMs, and channels
+ * @dataSource zustand: useCareCommsStore + server-action: care-comms.ts
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

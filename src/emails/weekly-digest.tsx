@@ -1,3 +1,9 @@
+/**
+ * @email WeeklyDigestEmail
+ * @status COMPLETE
+ * @description Weekly summary digest with job stats, revenue, and upcoming schedule
+ * @lastAudit 2026-03-22
+ */
 import { Button, Text, Section, Hr } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout, styles, colors } from "./components/layout";

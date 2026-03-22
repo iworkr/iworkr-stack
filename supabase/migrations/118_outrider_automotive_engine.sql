@@ -1,10 +1,9 @@
 -- ============================================================================
--- Migration 118: Project Outrider — CarPlay & Android Auto Engine
--- 1) user_automotive_preferences — per-user car UI settings
--- 2) vehicle_transit_logs — telematics, mileage, safety override tracking
--- 3) Adds 'en_route' SMS notification trigger infrastructure
--- 4) RLS policies for all tables
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration OutriderAutomotiveEngine
+-- @status COMPLETE
+-- @description Project Outrider — CarPlay/Android Auto preferences, vehicle telematics
+-- @tables user_automotive_preferences, vehicle_transit_logs
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. User Automotive Preferences ────────────────────────────────────────

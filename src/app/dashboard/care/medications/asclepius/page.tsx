@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/medications/asclepius
+ * @status COMPLETE
+ * @description Project Asclepius — S8 DD book, Webster-pak inventory, PRN config, pharmacy reorder, and low-stock alerts
+ * @dataSource react-query via asclepius actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

@@ -1,3 +1,9 @@
+/**
+ * @component KeyboardShortcuts
+ * @status COMPLETE
+ * @description Modal displaying all available keyboard shortcuts organized by section
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

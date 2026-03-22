@@ -1,3 +1,9 @@
+/**
+ * @component UpgradeModal
+ * @status COMPLETE
+ * @description Plan upgrade modal with feature comparison, billing toggle, and Stripe checkout integration
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

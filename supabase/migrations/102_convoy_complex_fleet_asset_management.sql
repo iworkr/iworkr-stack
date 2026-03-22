@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 102: Project Convoy — Complex Fleet & Asset Management
+-- @migration ConvoyComplexFleetAssetManagement
+-- @status COMPLETE
+-- @description Project Convoy — complex fleet vehicles, bookings, inspections, fuel logs
+-- @tables fleet_vehicles, fleet_bookings, fleet_inspections, fleet_fuel_logs
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 create extension if not exists btree_gist;

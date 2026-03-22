@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/stripe/checkout
+ * @status COMPLETE
+ * @auth PUBLIC — Legacy redirect endpoint
+ * @description Legacy Stripe Checkout redirect to self-hosted checkout page
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 
 /**

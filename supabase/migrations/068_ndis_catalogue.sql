@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 068: NDIS Support Catalogue & Region Modifiers (Project Nightingale Phase 3)
--- Versioned NDIS Price Guide with temporal querying and MMM region loading.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration NDISCatalogue
+-- @status COMPLETE
+-- @description Versioned NDIS Price Guide catalogue with temporal querying and MMM regions
+-- @tables ndis_catalogue, ndis_region_modifiers
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. NDIS Support Catalogue ─────────────────────────────────────────────

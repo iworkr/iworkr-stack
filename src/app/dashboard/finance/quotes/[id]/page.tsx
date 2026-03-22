@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/quotes/[id]
+ * @status COMPLETE
+ * @description Individual quote detail view with send, preview, and status timeline
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

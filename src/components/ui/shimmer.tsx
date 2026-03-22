@@ -1,3 +1,9 @@
+/**
+ * @component Shimmer
+ * @status COMPLETE
+ * @description Premium skeleton/shimmer loading primitives for the Obsidian design system
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /**

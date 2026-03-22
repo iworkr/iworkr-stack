@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/care/facilities/[facilityId]/cleaning-log
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Generates a PDF cleaning log report for a facility
+ * @lastAudit 2026-03-22
+ */
 import { createElement } from "react";
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ops/safety
+ * @status COMPLETE
+ * @description Safety compliance hub with SWMS, incidents, stop-work alerts, and geofences
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";

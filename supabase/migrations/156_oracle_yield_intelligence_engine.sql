@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 156: Project Oracle-Yield — Algorithmic
---   Profitability & Zero-Rejection Cash Flow Engine
--- ============================================================
+-- ============================================================================
+-- @migration OracleYieldIntelligenceEngine
+-- @status COMPLETE
+-- @description Project Oracle-Yield — claim prediction, profitability optimization, cash flow
+-- @tables claim_predictions, yield_optimizations, revenue_forecasts
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ═══════════════════════════════════════════════════════════
 -- PART 1: ENUMs

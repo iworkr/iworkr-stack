@@ -1,15 +1,9 @@
 -- ============================================================================
--- Aegis-Citadel Phase 1A: Cryptographic Vault (Data at Rest)
--- ============================================================================
--- Uses pgcrypto (already installed) to encrypt PII/financial columns.
--- Strategy: Shadow encrypted columns + decryption views gated by role.
---
--- REQUIRES: Set the encryption key as a Supabase secret BEFORE running:
---   ALTER DATABASE postgres SET app.settings.citadel_encryption_key = 'your-256-bit-key';
---
--- The key MUST be set via the Supabase Dashboard → Database → Settings → Configuration
--- or via: supabase secrets set CITADEL_ENCRYPTION_KEY=...
--- It is NEVER stored in code, migrations, or version control.
+-- @migration AegisCitadelEncryptionVault
+-- @status COMPLETE
+-- @description Aegis-Citadel Phase 1A — PII encryption vault with shadow columns and gated views
+-- @tables staff_profiles (altered — encrypted shadows), participant_profiles (altered)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ══════════════════════════════════════════════════════════════════════════════

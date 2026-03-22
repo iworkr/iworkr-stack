@@ -1,3 +1,10 @@
+/**
+ * @module BeaconDispatch Server Actions
+ * @status COMPLETE
+ * @description Smart dispatch engine — job queue management, technician dispatching, geofenced routing, and batch operations
+ * @exports enqueueJobAction, dispatchBatchAction, fetchQueueAction, reassignJobAction, fetchDispatchMetrics
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

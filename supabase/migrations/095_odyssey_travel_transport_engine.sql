@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 095: Project Odyssey - Intelligent Travel & Transport Engine
--- Background route tracking, variance analysis, financial split calculation,
--- and transport-assignment compliance controls.
+-- @migration OdysseyTravelTransportEngine
+-- @status COMPLETE
+-- @description Project Odyssey — route tracking, variance analysis, transport compliance
+-- @tables shift_travel_logs, transport_assignments, travel_variance_reports
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 create extension if not exists postgis;

@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/portal
+ * @status COMPLETE
+ * @auth PUBLIC — Redirect endpoint
+ * @description Legacy Polar.sh portal redirect to Stripe billing settings
+ * @lastAudit 2026-03-22
+ */
 import { NextResponse } from "next/server";
 
 /**

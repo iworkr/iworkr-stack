@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/team/accept-invite
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user session
+ * @description Accepts a team invite, adds user to org, and updates profile
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";

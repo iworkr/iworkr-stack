@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ops/suppliers
+ * @status COMPLETE
+ * @description Supplier directory with CRUD, catalog sync, and stats overview
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect } from "react";

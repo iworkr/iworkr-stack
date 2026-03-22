@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/workforce/payroll-rules
+ * @status COMPLETE
+ * @description SCHADS payroll rules engine with condition builder and simulation sandbox
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

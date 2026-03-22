@@ -1,3 +1,11 @@
+/**
+ * @module pending-critical-policies
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() verified
+ * @description Returns pending critical policies that a user must acknowledge via RPC
+ * @dependencies Supabase (RPC: pending_critical_policies_for_user)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

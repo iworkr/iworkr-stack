@@ -1,3 +1,11 @@
+/**
+ * @module convoy-daily-health-check
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser()
+ * @description Daily fleet compliance check: grounds vehicles with expired compliance documents via Postgres RPC, sends push notifications
+ * @dependencies Supabase (Auth, DB, RPCs, Edge Functions)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

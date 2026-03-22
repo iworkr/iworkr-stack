@@ -1,3 +1,9 @@
+/**
+ * @component WidgetInsights
+ * @status COMPLETE
+ * @description Dashboard AI insights widget displaying prioritized actionable recommendations with severity icons
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

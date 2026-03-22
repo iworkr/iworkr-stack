@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 090: Project Ironclad — Global Audit & Compliance Fortress
+-- @migration IroncladAuditFortress
+-- @status COMPLETE
+-- @description Project Ironclad — immutable system audit ledger, compliance fortress
+-- @tables system_audit_logs (partitioned)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- 1) Immutable, partitioned system audit ledger

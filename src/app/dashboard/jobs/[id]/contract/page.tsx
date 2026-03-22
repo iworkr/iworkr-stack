@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/jobs/[id]/contract
+ * @status COMPLETE
+ * @description Commercial contract builder with SOV lines, variations, and lock workflow
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";

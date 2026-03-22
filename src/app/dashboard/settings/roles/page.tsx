@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/settings/roles
+ * @status COMPLETE
+ * @description RBAC role editor with permission matrix, custom roles, and audit trail
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

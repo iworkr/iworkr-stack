@@ -1,7 +1,10 @@
--- ============================================================
--- 030: Storage Buckets
--- Creates the required storage buckets with RLS policies.
--- ============================================================
+-- ============================================================================
+-- @migration StorageBuckets
+-- @status COMPLETE
+-- @description Creates required storage buckets with RLS policies
+-- @tables storage.buckets, storage.objects (policies)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Create buckets
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

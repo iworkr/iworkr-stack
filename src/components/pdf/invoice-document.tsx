@@ -1,4 +1,9 @@
 /**
+ * @component InvoiceDocument
+ * @status COMPLETE
+ * @description Isomorphic invoice PDF template with dynamic branding for web preview and server rendering
+ * @lastAudit 2026-03-22
+ *
  * Isomorphic Invoice PDF Template — @react-pdf/renderer
  *
  * This single component is the source of truth for both:

@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/admin/end-impersonation
+ * @status COMPLETE
+ * @auth REQUIRED — Super admin only
+ * @description Ends an active admin impersonation session
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";

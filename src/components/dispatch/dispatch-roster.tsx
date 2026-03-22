@@ -1,3 +1,9 @@
+/**
+ * @component DispatchRoster
+ * @status COMPLETE
+ * @description Sidebar roster panel listing technicians with status, fly-to-map, and hover highlight interactions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useMemo, useState } from "react";

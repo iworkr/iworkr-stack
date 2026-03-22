@@ -1,3 +1,9 @@
+/**
+ * @component StripeModal
+ * @status COMPLETE
+ * @description Modal dialog for Stripe Connect onboarding with multi-stage setup flow
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

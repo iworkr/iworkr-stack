@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 149: Project Forge-Proposals — Multi-Option Quoting & CPQ
--- Version 151.0 — "Psychological Anchoring & Frictionless Upselling"
--- ============================================================
+-- ============================================================================
+-- @migration ForgeProposalsTieredQuoting
+-- @status COMPLETE
+-- @description Project Forge-Proposals — multi-option quoting, CPQ, psychological anchoring
+-- @tables quote_tiers, quote_tier_line_items, proposal_templates
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Quote Tier Status ENUM ───────────────────────────────
 DO $$ BEGIN

@@ -1,3 +1,11 @@
+/**
+ * @module stripe-webhook
+ * @status COMPLETE
+ * @auth SECURED — Validates Stripe webhook signature via STRIPE_WEBHOOK_SECRET
+ * @description Handles Stripe webhook events (checkout, subscription, invoice) and syncs plan status to workspaces
+ * @dependencies Supabase, Stripe
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";
 

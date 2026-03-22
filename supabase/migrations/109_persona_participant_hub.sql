@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════
--- Migration 109: Project Persona — Participant Hub Expansion
--- ═══════════════════════════════════════════════════════════════════
--- Adds missing profile columns, emergency contacts table,
--- participant communication logs (handover chat), and RLS.
+-- ============================================================================
+-- @migration PersonaParticipantHub
+-- @status COMPLETE
+-- @description Project Persona — emergency contacts, communication logs, profile expansion
+-- @tables participant_emergency_contacts, participant_communication_logs, participant_profiles (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Expand participant_profiles with missing PRD columns ──────
 ALTER TABLE public.participant_profiles

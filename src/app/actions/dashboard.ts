@@ -1,3 +1,10 @@
+/**
+ * @module Dashboard Server Actions
+ * @status COMPLETE
+ * @description Dashboard data — stats, revenue charts, schedule items, AI insights, dispatch pins, layout persistence, and footprint trails
+ * @exports fetchDashboardStats, fetchRevenueChart, fetchScheduleItems, fetchAIInsights, saveDashboardLayout
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { z } from "zod";

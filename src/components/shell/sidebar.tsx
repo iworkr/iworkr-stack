@@ -1,3 +1,9 @@
+/**
+ * @component Sidebar
+ * @status PARTIAL
+ * @description Main navigation sidebar with collapsible sections, badge counts, and workspace context
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

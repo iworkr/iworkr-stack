@@ -1,12 +1,9 @@
 -- ============================================================================
--- Migration 091: Project Equinox — Global Leave Management & Emergency Cover
--- ============================================================================
--- Upgrades existing leave flows into an operational + financial engine:
--- 1) richer leave_requests lifecycle
--- 2) leave balance cache
--- 3) blast-radius RPC
--- 4) automated drop-and-cover trigger path
--- 5) shadow timesheet injection for payroll-only leave
+-- @migration EquinoxLeaveManagementEngine
+-- @status COMPLETE
+-- @description Project Equinox — leave requests, balance cache, blast-radius RPC, cover triggers
+-- @tables leave_requests, leave_balances, leave_cover_offers
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ── 0) Expand schedule enum / assignability for critical unassigned states ───

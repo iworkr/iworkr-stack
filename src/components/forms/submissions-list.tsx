@@ -1,3 +1,9 @@
+/**
+ * @component SubmissionsList
+ * @status COMPLETE
+ * @description Renders a list of form submissions with status indicators and detail view
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

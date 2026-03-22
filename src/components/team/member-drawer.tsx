@@ -1,3 +1,9 @@
+/**
+ * @component MemberDrawer
+ * @status COMPLETE
+ * @description Slide-out drawer showing team member details, roles, skills, and management actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

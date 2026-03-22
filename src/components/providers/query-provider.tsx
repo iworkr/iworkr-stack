@@ -1,3 +1,9 @@
+/**
+ * @component QueryProvider
+ * @status COMPLETE
+ * @description Wraps app in React Query client provider with SSR-safe singleton
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

@@ -1,3 +1,11 @@
+/**
+ * @store ChronosStore
+ * @status COMPLETE
+ * @description Time-tracking state — activity logging, timesheets, and duration tracking
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 "use client";
 
 import { create } from "zustand";

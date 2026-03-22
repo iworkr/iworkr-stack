@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/stripe/connect/payment-intent
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Creates a Stripe Connect payment intent for invoice payments
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";

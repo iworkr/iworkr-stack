@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 010: Clients (CRM)
--- Core client management — contacts, activity, spend tracking
--- ============================================================
+-- ============================================================================
+-- @migration ModuleClients
+-- @status COMPLETE
+-- @description Core client/CRM management — contacts, activity, spend tracking
+-- @tables clients, client_contacts, client_activity
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Enum for client status
 create type public.client_status as enum ('active', 'lead', 'churned', 'inactive');

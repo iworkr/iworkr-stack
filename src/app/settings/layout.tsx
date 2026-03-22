@@ -1,3 +1,9 @@
+/**
+ * @layout SettingsLayout
+ * @status COMPLETE
+ * @description Settings shell with sidebar navigation, save indicator, and brand provider
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, type ReactNode } from "react";

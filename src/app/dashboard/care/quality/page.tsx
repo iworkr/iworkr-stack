@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/quality
+ * @status COMPLETE
+ * @description Quality framework management with practice standards, audits, and improvement plans
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

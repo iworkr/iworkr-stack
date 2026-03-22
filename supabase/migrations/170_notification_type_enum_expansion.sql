@@ -1,3 +1,10 @@
+-- ============================================================================
+-- @migration NotificationTypeEnumExpansion
+-- @status COMPLETE
+-- @description Compatibility patch — add missing notification_type enum values
+-- @tables (none — enum expansion: notification_type)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 -- Compatibility patch: notification types used by later triggers/seed data.
 DO $$
 BEGIN

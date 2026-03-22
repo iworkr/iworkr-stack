@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 025: Assets & Inventory Module Enhancements
--- toggle_asset_custody RPC, consume_inventory RPC,
--- get_assets_overview RPC, low-stock trigger, service due
--- ============================================================
+-- ============================================================================
+-- @migration AssetsEnhancements
+-- @status COMPLETE
+-- @description Asset custody RPC, consume inventory, low-stock trigger, service due alerts
+-- @tables assets (altered), inventory_items (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Add columns for PRD compatibility ────────────────
 alter table public.assets

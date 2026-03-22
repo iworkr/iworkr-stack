@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/messages
+ * @status COMPLETE
+ * @description Split-pane messaging interface with inbox list and chat canvas
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════

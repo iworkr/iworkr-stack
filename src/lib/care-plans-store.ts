@@ -1,7 +1,9 @@
 /**
- * Care Plans Store — Project Nightingale Phase 3
- *
- * Zustand store for care plans and goals management (NDIS participant plans).
+ * @store CarePlansStore
+ * @status COMPLETE
+ * @description NDIS participant care plans and goals management (Nightingale Phase 3)
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
  */
 
 import { create } from "zustand";

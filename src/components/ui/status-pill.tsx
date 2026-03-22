@@ -1,3 +1,9 @@
+/**
+ * @component StatusPill
+ * @status COMPLETE
+ * @description Colour-coded status pill for job/entity workflow states with label formatting
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 export function formatStatus(status: string): string {

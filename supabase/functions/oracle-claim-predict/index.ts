@@ -1,3 +1,12 @@
+/**
+ * @module oracle-claim-predict
+ * @status COMPLETE
+ * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @description NDIS claim rejection prediction engine: rule-based classification to intercept likely-rejected claims before PACE submission
+ * @dependencies Supabase (RPC: predict_claim_rejection)
+ * @lastAudit 2026-03-22
+ */
+
 // Edge Function: oracle-claim-predict
 // NDIS claim rejection prediction engine — intercepts invoices before PACE submission.
 // Uses rule-based classification (worker credentials, temporal conflicts, budget, ratios)

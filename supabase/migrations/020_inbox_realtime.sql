@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 020: Inbox Realtime & Automation
--- Postgres triggers, RPC functions, and Realtime for the Inbox
--- ============================================================
+-- ============================================================================
+-- @migration InboxRealtime
+-- @status COMPLETE
+-- @description Postgres triggers, RPC functions, and Realtime for the Inbox
+-- @tables (none — triggers and functions for notifications)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Enable Realtime for notifications ────────────────
 -- notifications already in supabase_realtime publication

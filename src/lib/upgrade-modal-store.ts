@@ -1,3 +1,11 @@
+/**
+ * @store UpgradeModalStore
+ * @status COMPLETE
+ * @description Upgrade modal UI state — open/close, preselected plan, and trigger feature context
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 
 interface UpgradeModalState {

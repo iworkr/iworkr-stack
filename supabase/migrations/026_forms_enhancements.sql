@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 026: Forms & Compliance Module Enhancements
--- increment_form_submissions, sign_and_lock_submission RPC,
--- save_form_draft RPC, document_hash, verify hash, realtime
--- ============================================================
+-- ============================================================================
+-- @migration FormsEnhancements
+-- @status COMPLETE
+-- @description Form signing, draft saving, document hash verification, realtime
+-- @tables form_submissions (altered), forms (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Add missing columns ──────────────────────────────
 alter table public.form_submissions

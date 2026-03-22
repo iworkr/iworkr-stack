@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/schedule/validate
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Validates schedule blocks for conflicts, travel time, and NDIS compliance
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 

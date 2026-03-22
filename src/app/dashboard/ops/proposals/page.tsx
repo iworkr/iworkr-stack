@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ops/proposals
+ * @status COMPLETE
+ * @description Proposals list with status filters, search, and send actions
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

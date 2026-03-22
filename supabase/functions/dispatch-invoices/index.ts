@@ -1,3 +1,11 @@
+/**
+ * @module dispatch-invoices
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser() + owner/admin role check
+ * @description Dispatches NDIS invoices: plan_managed (email PDF), self_managed (Stripe payment link + email), ndia_managed (PRODA queue). Idempotent.
+ * @dependencies Resend (email), Stripe (payment links), Supabase (Auth, DB)
+ * @lastAudit 2026-03-22
+ */
 // dispatch-invoices Edge Function
 // Handles single and bulk invoice dispatch:
 //   - plan_managed: email PDF to plan manager via Resend

@@ -1,3 +1,10 @@
+/**
+ * @module GlasshouseArrival Server Actions
+ * @status COMPLETE
+ * @description Uber-style client arrival tracking — ETA updates, live location sharing, arrival notifications, and journey logs
+ * @exports createArrivalTrackingAction, updateETAAction, fetchActiveArrivalsAction, completeArrivalAction, fetchArrivalHistory
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

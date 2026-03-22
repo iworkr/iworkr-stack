@@ -1,3 +1,10 @@
+/**
+ * @module AegisSafety Server Actions
+ * @status COMPLETE
+ * @description Workplace health & safety management — incidents, hazards, inspections, and risk assessments
+ * @exports createSafetyIncidentAction, fetchSafetyIncidentsAction, createHazardAction, fetchHazardsAction, createInspectionAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

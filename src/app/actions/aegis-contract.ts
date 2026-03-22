@@ -1,3 +1,10 @@
+/**
+ * @module AegisContract Server Actions
+ * @status COMPLETE
+ * @description CRUD operations for Aegis contract management with org membership checks
+ * @exports createContractAction, updateContractAction, fetchContractsAction, deleteContractAction, fetchContractByIdAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

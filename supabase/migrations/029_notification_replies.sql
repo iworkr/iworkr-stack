@@ -1,7 +1,10 @@
--- ============================================================
--- 029: Notification Replies
--- Allows users to reply to inbox notifications.
--- ============================================================
+-- ============================================================================
+-- @migration NotificationReplies
+-- @status COMPLETE
+-- @description Allows users to reply to inbox notifications
+-- @tables notification_replies
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create table if not exists public.notification_replies (
   id            uuid primary key default gen_random_uuid(),

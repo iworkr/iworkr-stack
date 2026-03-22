@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 093: Project Choreography — Task Management, Routines & SIL Ops
+-- @migration ChoreographyTaskManagementEngine
+-- @status COMPLETE
+-- @description Project Choreography — care facilities, tasks, routines, SIL daily ops
+-- @tables care_facilities, care_tasks, care_routines, daily_ops_logs
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 create table if not exists public.care_facilities (

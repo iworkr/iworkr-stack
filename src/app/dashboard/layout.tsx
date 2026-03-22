@@ -1,3 +1,9 @@
+/**
+ * @layout DashboardLayout
+ * @status COMPLETE
+ * @description Authenticated dashboard shell with sidebar, topbar, command palette, and slide-over
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import dynamic from "next/dynamic";

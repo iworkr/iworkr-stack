@@ -1,3 +1,9 @@
+/**
+ * @component NewMessageModal
+ * @status COMPLETE
+ * @description Modal for starting a new direct message conversation with team member search
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

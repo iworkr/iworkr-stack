@@ -1,3 +1,9 @@
+/**
+ * @component usePaywall
+ * @status COMPLETE
+ * @description Hook that provides paywall gating logic with a modal trigger for plan upgrades
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useCallback } from "react";

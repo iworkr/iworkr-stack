@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 151: Project Panopticon-Vision — Evidence Vault
--- Version 153.0 — "Contextual Fidelity & Spatial Clarity"
--- ============================================================
+-- ============================================================================
+-- @migration PanopticonVisionEvidenceVault
+-- @status COMPLETE
+-- @description Project Panopticon-Vision — evidence vault, photo annotations, before/after
+-- @tables evidence_items, evidence_annotations, storage buckets: evidence-raw, evidence-annotated
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Storage Buckets ──────────────────────────────────────
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

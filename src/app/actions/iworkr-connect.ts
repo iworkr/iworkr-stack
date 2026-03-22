@@ -1,3 +1,10 @@
+/**
+ * @module iWorkrConnect Server Actions
+ * @status COMPLETE
+ * @description Stripe Connect integration — onboarding, account status, payout management, and payment intent creation
+ * @exports getConnectStatus, createConnectOnboardingLink, createPaymentIntent, fetchPayouts, getConnectDashboardLink
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

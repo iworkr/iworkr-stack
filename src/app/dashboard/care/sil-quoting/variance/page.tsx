@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/sil-quoting/variance
+ * @status COMPLETE
+ * @description SIL quote variance analysis comparing quoted vs actual costs
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState, useTransition } from "react";

@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 060: Fix Locked RLS Tables
--- SAFE: All statements wrapped with table + policy existence checks.
+-- @migration FixLockedRLSTables
+-- @status COMPLETE
+-- @description Fix missing RLS policies on locked tables (organization_roles, etc.)
+-- @tables organization_roles, automation_flows, automation_queue (policies)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- 1. organization_roles

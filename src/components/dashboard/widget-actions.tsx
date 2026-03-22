@@ -1,3 +1,9 @@
+/**
+ * @component WidgetActions
+ * @status COMPLETE
+ * @description Dashboard quick-actions widget with buttons for creating jobs, quotes, invites, and broadcasts
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";

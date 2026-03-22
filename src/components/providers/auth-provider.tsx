@@ -1,3 +1,9 @@
+/**
+ * @component AuthProvider
+ * @status COMPLETE
+ * @description Handles initial auth load and Supabase auth state change listeners
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef } from "react";

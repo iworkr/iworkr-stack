@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 046: Invoice Payment Portal
--- SAFE: All statements idempotent.
+-- @migration InvoicePaymentPortal
+-- @status COMPLETE
+-- @description Invoice payment portal — secure tokens, public invoice access
+-- @tables invoices (altered — secure_token)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 DO $$ BEGIN

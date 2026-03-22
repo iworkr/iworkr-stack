@@ -1,3 +1,9 @@
+/**
+ * @page /verify
+ * @status COMPLETE
+ * @description Document authenticity verification page with SHA-256 hash checking
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";

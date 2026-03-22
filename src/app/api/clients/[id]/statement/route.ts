@@ -1,4 +1,11 @@
 /**
+ * @route GET /api/clients/[id]/statement
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Generates a PDF statement for a client with invoices and payments
+ * @lastAudit 2026-03-22
+ */
+/**
  * GET /api/clients/[id]/statement
  *
  * Generates a PDF statement for a client listing all their invoices and payments.

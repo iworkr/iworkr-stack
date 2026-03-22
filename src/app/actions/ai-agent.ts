@@ -1,3 +1,10 @@
+/**
+ * @module AIAgent Server Actions
+ * @status COMPLETE
+ * @description AI phone agent configuration — upsert config, fetch config, call logs, and analytics
+ * @exports upsertAgentConfig, fetchAgentConfig, fetchAgentCallLogs, fetchAgentAnalytics, testAgentVoice
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

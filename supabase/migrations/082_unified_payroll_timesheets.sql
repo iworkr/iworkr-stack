@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════════
--- Migration 082: Unified Payroll & Timesheet Engine (Project Ledger)
--- Timesheets, Time Entries with GPS/EVV, Payroll Exports, Award Interpretation
--- SAFE: All statements use IF NOT EXISTS.
--- ═══════════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration UnifiedPayrollTimesheets
+-- @status COMPLETE
+-- @description Project Ledger — timesheets, time entries with GPS/EVV, payroll exports
+-- @tables timesheets, time_entries, payroll_exports
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ─── 1. Timesheets (Weekly Container) ────────────────────────────────────────
 

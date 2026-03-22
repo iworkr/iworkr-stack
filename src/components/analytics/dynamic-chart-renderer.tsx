@@ -1,3 +1,9 @@
+/**
+ * @component DynamicChartRenderer
+ * @status COMPLETE
+ * @description Dynamically imports and renders Tremor chart components (Bar, Line, Area, Donut) based on config
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import dynamic from "next/dynamic";

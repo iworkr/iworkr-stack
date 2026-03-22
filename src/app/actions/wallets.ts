@@ -1,3 +1,10 @@
+/**
+ * @module Wallets Server Actions
+ * @status COMPLETE
+ * @description Petty cash & wallet management — wallet CRUD, transaction logging, balance tracking, and financial delegation
+ * @exports createWalletAction, fetchWalletsAction, logTransactionAction, fetchTransactionsAction, updateWalletAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

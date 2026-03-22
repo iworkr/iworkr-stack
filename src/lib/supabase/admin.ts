@@ -1,10 +1,13 @@
 /**
- * Admin Supabase Client — Service Role (Bypasses RLS)
- * 
+ * @module SupabaseAdmin
+ * @status COMPLETE
+ * @description Service-role Supabase client that bypasses RLS — super-admin only
+ * @lastAudit 2026-03-22
+ *
  * DANGER: This client operates with full database access, bypassing all
  * Row Level Security policies. Only use in Super Admin server actions
  * that have already verified the caller has is_super_admin === true.
- * 
+ *
  * Never import this in client components or standard server actions.
  */
 

@@ -1,3 +1,9 @@
+/**
+ * @page /ndis
+ * @status COMPLETE
+ * @description NDIS disability care landing page with features, pricing, and CTA sections
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, useScroll, useTransform, useMotionValue, useSpring, AnimatePresence } from "framer-motion";

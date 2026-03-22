@@ -1,3 +1,11 @@
+/**
+ * @store BillingStore
+ * @status COMPLETE
+ * @description Manages subscription state, plan info, and billing portal for Stripe integration
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";

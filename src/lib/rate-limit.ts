@@ -1,8 +1,8 @@
 /**
- * iWorkr Rate Limiter
- *
- * In-memory sliding window rate limiter for API routes.
- * For production at scale, replace with Redis/Upstash.
+ * @module RateLimit
+ * @status COMPLETE
+ * @description In-memory sliding window rate limiter for API routes (swap to Redis/Upstash at scale)
+ * @lastAudit 2026-03-22
  */
 
 interface RateLimitEntry {

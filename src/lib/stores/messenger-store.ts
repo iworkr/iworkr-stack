@@ -1,3 +1,11 @@
+/**
+ * @store MessengerStore
+ * @status COMPLETE
+ * @description Team messenger state — channels, messages, reactions, polls, and read receipts
+ * @resetSafe YES — Has reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import {

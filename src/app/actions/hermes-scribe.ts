@@ -1,3 +1,10 @@
+/**
+ * @module HermesScribe Server Actions
+ * @status COMPLETE
+ * @description Automated documentation — AI-powered note generation, transcription, document templates, and report compilation
+ * @exports generateNoteAction, fetchNotesAction, createTemplateAction, compileReportAction, transcribeAudioAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

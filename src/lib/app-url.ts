@@ -1,6 +1,8 @@
 /**
- * Centralized application URL resolution.
- * Uses NEXT_PUBLIC_APP_URL in production, falls back to localhost in development.
+ * @module AppUrl
+ * @status COMPLETE
+ * @description Centralized application URL resolution with env-aware fallbacks
+ * @lastAudit 2026-03-22
  */
 export function getAppUrl(): string {
   const url = process.env.NEXT_PUBLIC_APP_URL;

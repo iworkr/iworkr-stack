@@ -1,3 +1,9 @@
+/**
+ * @component OnboardingLayout
+ * @status COMPLETE
+ * @description Animated layout wrapper with step transitions and progress indicator for onboarding
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

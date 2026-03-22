@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 066: Incidents & Restrictive Practices (Project Nightingale)
--- Phase 2 Clinical Safety: incident reporting, categorization, and
--- restrictive practice governance.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration Incidents
+-- @status COMPLETE
+-- @description Incident reporting, categorization, and restrictive practice governance
+-- @tables incidents, restrictive_practices
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Incident Category Enum ──────────────────────────────────────────────

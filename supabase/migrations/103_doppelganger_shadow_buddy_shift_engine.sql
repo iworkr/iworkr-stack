@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 103: Project Doppelganger — Shadow & Buddy Shift Logistics Engine
+-- @migration DoppelgangerShadowBuddyShiftEngine
+-- @status COMPLETE
+-- @description Project Doppelganger — shadow/buddy shift pairing and logistics
+-- @tables schedule_blocks (altered), shift_financial_ledgers (altered)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 alter table public.schedule_blocks

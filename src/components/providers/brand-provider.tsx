@@ -1,3 +1,9 @@
+/**
+ * @component BrandProvider
+ * @status COMPLETE
+ * @description Fetches workspace branding and injects CSS custom properties for theming
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo } from "react";

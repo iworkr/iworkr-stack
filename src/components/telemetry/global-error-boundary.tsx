@@ -1,3 +1,9 @@
+/**
+ * @component GlobalErrorBoundary
+ * @status COMPLETE
+ * @description React error boundary with crash screenshots, console capture, and telemetry reporting
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /**

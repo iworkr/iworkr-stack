@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance
+ * @status COMPLETE
+ * @description Finance hub with revenue metrics, invoice list, and quick actions
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence, useSpring, useTransform, useMotionValue } from "framer-motion";

@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/care/plan-reviews/preview
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user session
+ * @description Generates a PDF preview of a care plan review report
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createElement } from "react";

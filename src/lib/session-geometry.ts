@@ -1,9 +1,8 @@
 /**
- * Aegis-Citadel: Session Geometry — Velocity Anomaly Detection
- *
- * Tracks session location data using Vercel's free geolocation headers.
- * Detects impossible travel (country change within 5 minutes).
- * Integrates with the session_geometry Supabase table.
+ * @module SessionGeometry
+ * @status COMPLETE
+ * @description Aegis-Citadel velocity anomaly detection — impossible travel detection via geolocation headers
+ * @lastAudit 2026-03-22
  */
 
 import type { NextRequest } from "next/server";

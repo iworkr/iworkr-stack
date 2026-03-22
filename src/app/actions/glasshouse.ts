@@ -1,3 +1,10 @@
+/**
+ * @module Glasshouse Server Actions
+ * @status COMPLETE
+ * @description Coordinator sanitization & publishing — daily updates, family-visible content curation, and coordinator dashboard
+ * @exports createDailyUpdateAction, fetchDailyUpdatesAction, publishUpdateAction, sanitizeContentAction, fetchPublishedUpdates
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

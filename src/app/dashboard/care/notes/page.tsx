@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/notes
+ * @status COMPLETE
+ * @description Shift notes list — filterable submissions with flag indicators, export, and acknowledge actions
+ * @dataSource server-action: care-shift-notes actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useTransition } from "react";

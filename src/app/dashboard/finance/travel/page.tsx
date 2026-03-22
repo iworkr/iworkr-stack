@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/travel
+ * @status COMPLETE
+ * @description Shift travel logs with distance adjustment and variance approval
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";

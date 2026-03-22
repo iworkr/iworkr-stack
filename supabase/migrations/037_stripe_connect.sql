@@ -1,7 +1,10 @@
--- ═══════════════════════════════════════════════════════════
--- Migration 037: Stripe Connect — iWorkr Pay Infrastructure
--- SAFE: All statements idempotent.
--- ═══════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration StripeConnect
+-- @status COMPLETE
+-- @description Stripe Connect infrastructure — iWorkr Pay, payment intents, transfers
+-- @tables organizations (altered), payment_intents, stripe_transfers
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── Stripe Connect fields on organizations ───────────────
 

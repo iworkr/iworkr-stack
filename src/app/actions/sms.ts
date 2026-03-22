@@ -1,3 +1,10 @@
+/**
+ * @module SMS Server Actions
+ * @status COMPLETE
+ * @description SMS messaging — app download link delivery via Twilio with phone validation
+ * @exports sendAppDownloadLink
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { z } from "zod";

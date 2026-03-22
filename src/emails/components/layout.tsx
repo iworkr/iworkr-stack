@@ -1,3 +1,9 @@
+/**
+ * @layout EmailLayout
+ * @status COMPLETE
+ * @description Shared email template layout with branded header, footer, and design tokens
+ * @lastAudit 2026-03-22
+ */
 import {
   Body,
   Container,

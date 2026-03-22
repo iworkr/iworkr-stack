@@ -1,3 +1,11 @@
+/**
+ * @store DashboardStore
+ * @status COMPLETE
+ * @description Dashboard layout state — widget registry, grid layouts, edit mode, and persistence
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 "use client";
 
 import { create } from "zustand";

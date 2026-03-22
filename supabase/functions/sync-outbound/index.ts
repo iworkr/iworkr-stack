@@ -1,3 +1,11 @@
+/**
+ * @module sync-outbound
+ * @status COMPLETE
+ * @auth UNSECURED — Triggered by DB webhook; no JWT guard
+ * @description Pushes invoices and payroll data to Xero/QBO when invoice status changes to 'sent', handles OAuth token refresh
+ * @dependencies Supabase, Xero API
+ * @lastAudit 2026-03-22
+ */
 // Edge Function: sync-outbound
 // Triggered by DB webhook when invoices.status = 'sent'
 // Handles: token refresh, contact resolution, invoice push, payroll push

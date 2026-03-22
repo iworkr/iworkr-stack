@@ -1,3 +1,10 @@
+/**
+ * @module Integrations Server Actions
+ * @status COMPLETE
+ * @description Integration management — provider CRUD, configuration, status monitoring, and sync trigger orchestration
+ * @exports createIntegration, updateIntegration, deleteIntegration, fetchIntegrations, syncIntegration
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

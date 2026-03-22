@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 042: Pipeline Resilience Infrastructure
--- SAFE: All statements idempotent.
+-- @migration PipelineResilience
+-- @status COMPLETE
+-- @description Pipeline events table, deduplication, and resilience infrastructure
+-- @tables pipeline_events
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- --------------------------------------------------------------------------

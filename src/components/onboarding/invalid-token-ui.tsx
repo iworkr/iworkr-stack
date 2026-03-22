@@ -1,3 +1,9 @@
+/**
+ * @component InvalidTokenUI
+ * @status COMPLETE
+ * @description Renders branded error states for expired, accepted, or revoked invite tokens
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════

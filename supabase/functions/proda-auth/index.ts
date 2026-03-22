@@ -1,6 +1,11 @@
-// Edge Function: proda-auth
-// Handles PRODA B2B Device JWT authentication for NDIA PACE API
-// Generates RS256-signed JWTs, exchanges for OAuth 2.0 access tokens
+/**
+ * @module proda-auth
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; accepts organization_id directly (service-to-service PRODA flow)
+ * @description PRODA B2B Device JWT authentication for NDIA PACE API — generates RS256 JWTs, exchanges for OAuth2 access tokens, with vault-based key storage and token caching
+ * @dependencies PRODA/NDIA API, Supabase Vault
+ * @lastAudit 2026-03-22
+ */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/stripe/webhook
+ * @status COMPLETE
+ * @auth WEBHOOK — Stripe signature verification
+ * @description Handles Stripe webhook events for subscription and payment lifecycle
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/observations
+ * @status COMPLETE
+ * @description Vitals & observations — real-time participant health data (BP, temp, weight, mood) with charting
+ * @dataSource supabase-client direct query
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

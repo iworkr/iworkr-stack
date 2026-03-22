@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/houses
+ * @status COMPLETE
+ * @description SIL houses list with occupancy stats and create-house modal
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";

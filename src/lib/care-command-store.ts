@@ -1,8 +1,9 @@
 /**
- * Care Command Store — Unified state for the Nightingale Command Center
- *
- * Replaces the scattered care-plans-store, budget-store, and sentinel-store
- * with a single, powerful store that drives the new care experience.
+ * @store CareCommandStore
+ * @status COMPLETE
+ * @description Unified Nightingale Command Center state — care plans, budgets, alerts, and participant data
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
  */
 
 import { create } from "zustand";

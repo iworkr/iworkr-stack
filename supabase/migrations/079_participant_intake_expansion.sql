@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 079: Participant Intake Expansion (Care CRM & Intelligent Intake)
--- Extends participant_profiles with clinical baseline, risk matrix, and care
--- network fields. Adds external_agencies for plan managers & support coordinators.
--- SAFE: All statements use IF NOT EXISTS / ADD COLUMN IF NOT EXISTS.
+-- @migration ParticipantIntakeExpansion
+-- @status COMPLETE
+-- @description Extends participant profiles with clinical baseline, risk matrix, care network
+-- @tables external_agencies, participant_profiles (altered)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. External Agencies ───────────────────────────────────────────────────

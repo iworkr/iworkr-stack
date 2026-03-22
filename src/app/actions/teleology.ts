@@ -1,3 +1,10 @@
+/**
+ * @module Teleology Server Actions
+ * @status COMPLETE
+ * @description NDIS goal tracking — goal CRUD, progress milestones, outcome measurement, and domain-based goal categorization
+ * @exports createGoalAction, fetchGoalsAction, updateGoalProgressAction, archiveGoalAction, fetchGoalOutcomesAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

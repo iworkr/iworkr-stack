@@ -1,3 +1,9 @@
+/**
+ * @component FamilyPortalShell
+ * @status COMPLETE
+ * @description App shell with bottom navigation and participant switcher for the family portal
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import Link from "next/link";

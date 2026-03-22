@@ -1,3 +1,10 @@
+/**
+ * @module APIKeys Server Actions
+ * @status COMPLETE
+ * @description API key lifecycle management — generate, list, revoke, and validate API keys with scoped permissions
+ * @exports generateApiKey, fetchApiKeys, revokeApiKey, validateApiKey
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

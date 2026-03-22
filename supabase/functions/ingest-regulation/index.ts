@@ -1,3 +1,12 @@
+/**
+ * @module ingest-regulation
+ * @status PARTIAL
+ * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @description Ingests regulatory PDFs into vector DB: text extraction → recursive chunking → OpenAI embeddings → bulk insert
+ * @dependencies Supabase (Storage: compliance-raw), OpenAI (text-embedding-3-small)
+ * @lastAudit 2026-03-22
+ */
+
 // Edge Function: ingest-regulation
 // Project Solon-Law — PDF → Chunks → Embeddings → Vector DB
 // Pipeline: Supabase Storage PDF → text extraction → recursive splitting → OpenAI embeddings → bulk insert

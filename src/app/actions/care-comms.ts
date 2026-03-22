@@ -1,3 +1,10 @@
+/**
+ * @module CareComms Server Actions
+ * @status COMPLETE
+ * @description Project Echo — house thread messaging engine, care communication channels, and shift handover notes
+ * @exports createThreadAction, sendMessageAction, fetchThreadsAction, markReadAction, fetchUnreadCountAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

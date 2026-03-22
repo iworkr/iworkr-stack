@@ -1,3 +1,11 @@
+/**
+ * @module portal-link
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() + org role check (owner/admin)
+ * @description Generates a Polar.sh customer billing portal link for subscription management
+ * @dependencies Supabase, Polar.sh (billing portal API)
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

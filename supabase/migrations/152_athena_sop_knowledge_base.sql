@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 152: Project Athena-SOP — Knowledge Base & Video Wiki
--- Version 154.0 — "Omnipresent Expertise & Zero-Friction Upskilling"
--- ============================================================
+-- ============================================================================
+-- @migration AthenaSopKnowledgeBase
+-- @status COMPLETE
+-- @description Project Athena-SOP — knowledge base, video wiki, pgvector embeddings
+-- @tables knowledge_articles, knowledge_categories, article_embeddings
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Enable pgvector ──────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS vector;

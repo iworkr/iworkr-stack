@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════
--- Migration 124: Project Yggdrasil-Sync — Multi-Tenant RBAC Hardening
--- Adds the user_belongs_to_workspace helper, upgrades RLS policies to
--- enforce active workspace header, and adds RBAC guard on approve_timesheet.
--- ═══════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration YggdrasilSyncRBAC
+-- @status COMPLETE
+-- @description Project Yggdrasil — workspace header enforcement, RBAC guard on timesheets
+-- @tables (none — functions: get_active_workspace_id, user_belongs_to_workspace + policies)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Helper: safe active workspace extraction ──────────────────────────
 -- Returns the x-active-workspace-id header value as UUID, or NULL if absent/malformed.

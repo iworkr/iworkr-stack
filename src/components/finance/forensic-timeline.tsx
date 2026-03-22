@@ -1,3 +1,9 @@
+/**
+ * @component ForensicTimeline
+ * @status COMPLETE
+ * @description Vertical event timeline for quotes/invoices showing status transitions with icons and timestamps
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

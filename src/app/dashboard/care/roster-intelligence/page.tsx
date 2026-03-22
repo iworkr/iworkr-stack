@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/roster-intelligence
+ * @status COMPLETE
+ * @description AI-powered roster intelligence with compliance scoring, gap detection, and optimization
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

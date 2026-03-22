@@ -1,3 +1,10 @@
+/**
+ * @module CareCompliance Server Actions
+ * @status COMPLETE
+ * @description Compliance management — restrictive practices tracking, behaviour support plans, and regulatory audit trails
+ * @exports createRestrictivePracticeAction, fetchRestrictivePracticesAction, updateRestrictivePracticeAction, fetchComplianceReportAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

@@ -1,3 +1,10 @@
+/**
+ * @module Settings Server Actions
+ * @status COMPLETE
+ * @description Organization settings — profile updates, preferences, team configuration, and workspace customization
+ * @exports updateOrganization, fetchOrganizationSettings, updateUserProfile, updateNotificationPreferences, fetchWorkspaceConfig
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

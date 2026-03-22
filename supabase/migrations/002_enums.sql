@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 002: Custom Enums
--- All enum types used across core and modules
--- ============================================================
+-- ============================================================================
+-- @migration Enums
+-- @status COMPLETE
+-- @description Define all custom enum types used across core and module tables
+-- @tables (none — enum types only)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Core enums
 create type public.org_role as enum (

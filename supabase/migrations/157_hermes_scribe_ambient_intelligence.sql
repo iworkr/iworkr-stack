@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 157: Project Hermes-Scribe — Voice-to-Ledger &
---   Multimodal Video Scanning Ambient Intelligence Engine
--- ============================================================
+-- ============================================================================
+-- @migration HermesScribeAmbientIntelligence
+-- @status COMPLETE
+-- @description Project Hermes-Scribe — voice-to-ledger, video scanning, ambient AI
+-- @tables audio_debriefs, video_scans, ambient_observations
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ═══════════════════════════════════════════════════════════
 -- PART 1: ENUMs

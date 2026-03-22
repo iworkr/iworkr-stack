@@ -1,3 +1,9 @@
+/**
+ * @component IntakePdfTemplates
+ * @status COMPLETE
+ * @description React-PDF templates for generating participant intake form PDFs
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import {

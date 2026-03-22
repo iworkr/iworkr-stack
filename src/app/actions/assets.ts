@@ -1,3 +1,10 @@
+/**
+ * @module Assets Server Actions
+ * @status COMPLETE
+ * @description Asset lifecycle management — vehicles, tools, equipment CRUD with assignment, maintenance tracking, and automation events
+ * @exports createAsset, updateAsset, deleteAsset, fetchAssets, assignAsset
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

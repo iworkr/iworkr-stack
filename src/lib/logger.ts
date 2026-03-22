@@ -1,8 +1,8 @@
 /**
- * iWorkr Structured Logger
- *
- * Production-ready logging utility that outputs structured JSON in production
- * and human-readable format in development.
+ * @module Logger
+ * @status COMPLETE
+ * @description Structured logging utility — JSON in production, human-readable in development
+ * @lastAudit 2026-03-22
  */
 
 type LogLevel = "debug" | "info" | "warn" | "error";

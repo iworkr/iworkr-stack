@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/settings/integration-health
+ * @status COMPLETE
+ * @description Integration health dashboard with sync status, error logs, and reconnect
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useState } from "react";

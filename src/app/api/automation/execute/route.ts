@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/automation/execute
+ * @status COMPLETE
+ * @auth WEBHOOK — Service key required for external calls
+ * @description Processes automation events from triggers, API, or cron
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { dispatchAndWait, type AutomationEvent } from "@/lib/automation";

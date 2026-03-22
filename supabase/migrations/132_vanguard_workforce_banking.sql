@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 132: Project Vanguard-Workforce
--- Add banking/financial routing fields to staff_profiles
--- + audit_logs table for activity tracking
--- ============================================================
+-- ============================================================================
+-- @migration VanguardWorkforceBanking
+-- @status COMPLETE
+-- @description Project Vanguard — banking, super, TFN fields on staff profiles
+-- @tables staff_profiles (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── Banking & Financial Routing Columns ──────────────────
 ALTER TABLE public.staff_profiles

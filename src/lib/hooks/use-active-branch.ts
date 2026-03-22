@@ -1,3 +1,9 @@
+/**
+ * @hook useActiveBranch
+ * @status COMPLETE
+ * @description Unified branch persistence layer with localStorage sync across tabs
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

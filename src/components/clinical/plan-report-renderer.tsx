@@ -1,3 +1,9 @@
+/**
+ * @component PlanReportRenderer
+ * @status COMPLETE
+ * @description React-PDF renderer for generating NDIS plan review evidence PDF reports
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 // Plan Report PDF Renderer — uses @react-pdf/renderer to generate NDIS evidence PDFs

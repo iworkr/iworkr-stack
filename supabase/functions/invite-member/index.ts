@@ -1,3 +1,11 @@
+/**
+ * @module invite-member
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() + org role check (owner/admin/manager)
+ * @description Invites a user to an organization via email with Resend, creates invite record, logs to audit
+ * @dependencies Supabase, Resend (email)
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

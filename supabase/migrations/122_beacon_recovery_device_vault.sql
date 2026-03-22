@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 122: Project Beacon-Recovery — Device Vault
--- FCM device registry hardening + RLS + upsert RPC
--- ============================================================
+-- ============================================================================
+-- @migration BeaconRecoveryDeviceVault
+-- @status COMPLETE
+-- @description Project Beacon — FCM device registry hardening, RLS, upsert RPC
+-- @tables user_devices (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── Extend existing user_devices table ────────────────────
 ALTER TABLE public.user_devices ADD COLUMN IF NOT EXISTS last_refreshed_at TIMESTAMPTZ DEFAULT NOW();

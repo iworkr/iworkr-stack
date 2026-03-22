@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/compliance/audits
+ * @status COMPLETE
+ * @description Compliance audit management with auditor portals, scope configuration, and evidence upload
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

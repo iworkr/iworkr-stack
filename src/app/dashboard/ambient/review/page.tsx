@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ambient/review
+ * @status COMPLETE
+ * @description Ambient debrief review — detailed transcript view with proposed actions, edit, and commit controls
+ * @dataSource react-query via hermes-scribe actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

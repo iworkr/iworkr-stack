@@ -1,6 +1,11 @@
-// Edge Function: sirs-sanitizer
-// AI-powered clinical note sanitization for NDIS SIRS compliance
-// Strips speculation, emotion, and internal HR commentary from worker notes
+/**
+ * @module sirs-sanitizer
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; accepts organization_id and submission_id/raw_text directly
+ * @description AI-powered clinical note sanitization for NDIS SIRS compliance — strips speculation, emotion, and HR commentary using GPT-4o with regex fallback
+ * @dependencies OpenAI (GPT-4o), Supabase
+ * @lastAudit 2026-03-22
+ */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

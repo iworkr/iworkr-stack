@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/team/[id]
+ * @status COMPLETE
+ * @description Team member detail with profile, role, pay, training, and activity tabs
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

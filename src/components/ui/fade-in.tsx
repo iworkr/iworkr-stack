@@ -1,3 +1,9 @@
+/**
+ * @component FadeIn
+ * @status COMPLETE
+ * @description Framer Motion fade-in wrapper with configurable delay, direction, and stagger support
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, type Variants } from "framer-motion";

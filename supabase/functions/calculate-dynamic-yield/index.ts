@@ -1,3 +1,11 @@
+/**
+ * @module calculate-dynamic-yield
+ * @status COMPLETE
+ * @auth UNSECURED — No auth guard; accepts any POST with organization_id
+ * @description Computes dynamic margin pricing using fleet utilization, weather severity, and client elasticity with gouging-prevention clamps
+ * @dependencies OpenWeatherMap API, Supabase (DB)
+ * @lastAudit 2026-03-22
+ */
 // Edge Function: calculate-dynamic-yield
 // Computes dynamic margin pricing using fleet utilization, weather severity,
 // and client elasticity — with strict gouging-prevention clamps.

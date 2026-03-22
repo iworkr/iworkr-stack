@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/roster/rollout
+ * @status COMPLETE
+ * @description Roster rollout preview with conflict detection and publish workflow
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";

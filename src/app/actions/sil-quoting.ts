@@ -1,3 +1,10 @@
+/**
+ * @module SILQuoting Server Actions
+ * @status COMPLETE
+ * @description SIL (Supported Independent Living) quoting — roster-based cost modeling, ROC PDF generation, and family-facing documents
+ * @exports createSilQuoteAction, fetchSilQuotesAction, generateRocPdfAction, updateSilQuoteAction, approveSilQuoteAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

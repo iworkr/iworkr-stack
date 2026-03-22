@@ -1,3 +1,11 @@
+/**
+ * @module get-participant-timeline
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() verified
+ * @description Returns a merged, chronologically-sorted timeline of progress notes, medication records, and health observations for a participant
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

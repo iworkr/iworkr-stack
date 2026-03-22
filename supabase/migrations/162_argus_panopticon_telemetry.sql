@@ -1,8 +1,10 @@
--- ╔══════════════════════════════════════════════════════════════════╗
--- ║ Migration 162: Project Argus-Panopticon — System Telemetry     ║
--- ║ Partitioned high-throughput telemetry table with 90-day        ║
--- ║ retention, GIN index on payload, and auto-partition management ║
--- ╚══════════════════════════════════════════════════════════════════╝
+-- ============================================================================
+-- @migration ArgusPanopticonTelemetry
+-- @status COMPLETE
+-- @description Project Argus — partitioned system telemetry, 90-day retention, auto-partition
+-- @tables system_telemetry (partitioned)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- 1. Partitioned master table
 CREATE TABLE IF NOT EXISTS public.system_telemetry (

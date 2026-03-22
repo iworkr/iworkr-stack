@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 147: Project Glasshouse-Triage — Public Smart Booking Widget
--- Version 149.0 — "Zero-Touch Revenue & Algorithmic Dispatch"
--- ============================================================
+-- ============================================================================
+-- @migration GlasshouseTriageBookingWidget
+-- @status COMPLETE
+-- @description Project Glasshouse-Triage — public smart booking widget with AI dispatch
+-- @tables booking_intents, booking_widget_configs, booking_availability_slots
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Booking Intent Status ENUM ───────────────────────────
 DO $$ BEGIN

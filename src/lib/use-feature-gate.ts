@@ -1,3 +1,10 @@
+/**
+ * @module UseFeatureGate
+ * @status COMPLETE
+ * @description React hook for plan-based feature gating — checks subscription tier and enforces limits
+ * @lastAudit 2026-03-22
+ */
+
 "use client";
 
 import { useAuthStore } from "@/lib/auth-store";

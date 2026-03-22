@@ -1,3 +1,9 @@
+/**
+ * @component RemediationSlideOver
+ * @status COMPLETE
+ * @description Slide-over panel for governance remediation workflows with evidence upload and approval steps
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

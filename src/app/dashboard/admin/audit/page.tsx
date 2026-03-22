@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/admin/audit
+ * @status COMPLETE
+ * @description Admin audit log viewer with session history, export, and copy-link actions
+ * @dataSource react-query via fetchAuditSessionsAction
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

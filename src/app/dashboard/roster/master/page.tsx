@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/roster/master
+ * @status COMPLETE
+ * @description Master roster template builder with shift patterns, recurrence, and bulk ops
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 "use client";
 

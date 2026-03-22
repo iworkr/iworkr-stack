@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 107: Project Panopticon
--- RLS hardening for critical vault/audit/DLQ surfaces
--- ============================================================
+-- ============================================================================
+-- @migration PanopticonRLSHardening
+-- @status COMPLETE
+-- @description Project Panopticon — RLS hardening for vault, audit, and DLQ tables
+-- @tables super_admin_audit_logs, webhook_dead_letters, tenant_integrations (policies)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- 1) Hard deny grants for sensitive tables.
 revoke all on table public.super_admin_audit_logs from public, anon, authenticated;

@@ -1,5 +1,8 @@
 /**
- * useDashboardPath — Sector-aware dashboard routing
+ * @hook useDashboardPath
+ * @status COMPLETE
+ * @description Sector-aware dashboard routing based on org industry type
+ * @lastAudit 2026-03-22
  *
  * Returns the correct dashboard home path based on the current org's
  * industry_type. Trades orgs → "/dashboard", Care orgs → "/dashboard/care".

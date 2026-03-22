@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 139: Project Aegis-Safety — Dynamic SWMS,
--- Geofenced Compliance, Risk Matrix, Digital Signatures
--- Version 141.0 — "Impenetrable Compliance & Spatial Integrity"
--- ============================================================
+-- ============================================================================
+-- @migration AegisSafetySWMSGeofence
+-- @status COMPLETE
+-- @description Project Aegis-Safety — dynamic SWMS, geofenced compliance, risk matrix, signatures
+-- @tables swms_templates, swms_records, site_geofences, risk_assessments
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. SWMS status enums ────────────────────────────────────
 DO $$ BEGIN

@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/auth/xero/callback
+ * @status COMPLETE
+ * @auth REQUIRED — OAuth callback with session validation
+ * @description Exchanges Xero OAuth code for tokens and stores in vault
+ * @lastAudit 2026-03-22
+ */
 // /api/auth/xero/callback — exchanges code for tokens + stores in vault
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";

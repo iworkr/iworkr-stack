@@ -1,3 +1,9 @@
+/**
+ * @component PortalSignDocumentButton
+ * @status COMPLETE
+ * @description Canvas-based signature capture button for signing portal documents
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useRef, useState, useTransition } from "react";

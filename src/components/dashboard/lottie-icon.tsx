@@ -1,3 +1,9 @@
+/**
+ * @component LottieIcon
+ * @status COMPLETE
+ * @description Dynamic-import wrapper for Lottie animations with SSR-safe lazy loading
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import dynamic from "next/dynamic";

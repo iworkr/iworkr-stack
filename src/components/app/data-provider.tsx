@@ -1,3 +1,9 @@
+/**
+ * @component DataProvider
+ * @status COMPLETE
+ * @description Root data hydration provider that fetches and populates all Zustand stores on mount
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef } from "react";

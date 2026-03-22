@@ -1,3 +1,10 @@
+/**
+ * @module NDISPricing Server Actions
+ * @status COMPLETE
+ * @description NDIS price catalogue management — item lookups, rate configuration, region-based pricing, and bulk price imports
+ * @exports fetchCatalogueItems, updateItemRate, fetchPriceGuide, importPriceGuide, searchCatalogueItems
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

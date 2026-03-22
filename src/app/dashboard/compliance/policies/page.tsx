@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/compliance/policies
+ * @status COMPLETE
+ * @description Policy compliance matrix showing worker acknowledgment status and reminder dispatch
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";

@@ -1,3 +1,9 @@
+/**
+ * @component ProBadge
+ * @status COMPLETE
+ * @description Renders a small animated PRO pill badge for premium feature indicators
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { Crown, Lock } from "lucide-react";

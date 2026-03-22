@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 070: PRODA Claim Batches (Project Nightingale Phase 3)
--- Batch tracking for NDIS bulk claiming via PRODA/PACE APIs.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration PRODAClaimBatches
+-- @status COMPLETE
+-- @description PRODA/PACE API batch tracking for NDIS bulk claiming
+-- @tables proda_claim_batches
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Batch Status Enum ──────────────────────────────────────────────────

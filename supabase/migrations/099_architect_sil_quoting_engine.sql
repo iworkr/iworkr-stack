@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 099: Project Architect - SIL Quoting & Roster of Care
+-- @migration ArchitectSILQuotingEngine
+-- @status COMPLETE
+-- @description Project Architect — SIL quoting, roster of care, cost modeling
+-- @tables sil_quotes, sil_quote_shifts, sil_quote_residents
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 create table if not exists public.sil_quotes (

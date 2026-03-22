@@ -1,3 +1,9 @@
+/**
+ * @component Download
+ * @status COMPLETE
+ * @description Landing page download section with platform cards for macOS, Windows, and mobile
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

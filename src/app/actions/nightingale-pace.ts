@@ -1,3 +1,10 @@
+/**
+ * @module NightingalePACE Server Actions
+ * @status COMPLETE
+ * @description PACE (Planning & Assessment for Care Excellence) — care assessments, progress notes, and outcome tracking
+ * @exports createAssessmentAction, fetchAssessmentsAction, updateAssessmentAction, createProgressNoteAction, fetchOutcomesAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

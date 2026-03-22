@@ -1,4 +1,12 @@
 /**
+ * @module validate-schedule
+ * @status COMPLETE
+ * @auth SECURED — Validates JWT via Supabase auth
+ * @description Scheduling hard gate — validates credentials, fatigue rules, qualifications, and overtime for care organizations
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
+/**
  * validate-schedule — Project Nightingale
  *
  * Edge Function: Scheduling Hard Gate

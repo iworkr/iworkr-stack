@@ -1,3 +1,10 @@
+/**
+ * @module StaffProfiles Server Actions
+ * @status COMPLETE
+ * @description Staff profile management — employment details, SCHADS levels, qualifications, availability, and compliance documents
+ * @exports createStaffProfile, fetchStaffProfiles, updateStaffProfile, fetchStaffProfileById, archiveStaffProfile
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

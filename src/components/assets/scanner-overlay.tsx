@@ -1,3 +1,9 @@
+/**
+ * @component ScannerOverlay
+ * @status COMPLETE
+ * @description Full-screen barcode/QR scanner overlay with camera access, manual entry, and scan animation
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";

@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/quotes/[id]/accept
+ * @status COMPLETE
+ * @auth PUBLIC — Secure token verification (email link access)
+ * @description Accepts a quote via secure token and creates corresponding job
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 

@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/stripe/create-subscription
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org admin/owner role
+ * @description Creates a Stripe subscription with client secret for embedded checkout
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";

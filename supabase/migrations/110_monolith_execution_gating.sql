@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════
--- Migration 110: Project Monolith-Execution — Operational Gating
--- ═══════════════════════════════════════════════════════════════════
--- Adds is_retroactive columns, shift_tasks table, shift_participants
--- linking table (SIL multi-participant), and the RLS helper function.
+-- ============================================================================
+-- @migration MonolithExecutionGating
+-- @status COMPLETE
+-- @description Project Monolith — retroactive flags, shift_tasks, shift_participants linking
+-- @tables shift_tasks, shift_participants, health_observations (altered), medication_administration_records (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Add is_retroactive to clinical tables ─────────────────────
 ALTER TABLE public.health_observations

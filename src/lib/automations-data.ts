@@ -1,3 +1,10 @@
+/**
+ * @module AutomationsData
+ * @status COMPLETE
+ * @description Type definitions and mock data for automation flows, triggers, and execution logs
+ * @lastAudit 2026-03-22
+ */
+
 /* ── Automations & Logic Engine Data ───────────────────── */
 
 export type FlowStatus = "active" | "paused" | "draft" | "archived";

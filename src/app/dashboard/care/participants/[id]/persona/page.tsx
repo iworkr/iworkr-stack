@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/participants/[id]/persona
+ * @status COMPLETE
+ * @description Participant persona — AI dossier, goals, behaviours, medical alerts, and profile update requests
+ * @dataSource server-action: participant-persona actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

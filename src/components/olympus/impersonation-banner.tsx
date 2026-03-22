@@ -1,3 +1,9 @@
+/**
+ * @component ImpersonationBanner
+ * @status COMPLETE
+ * @description Renders a warning banner when an admin is impersonating another user
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState } from "react";

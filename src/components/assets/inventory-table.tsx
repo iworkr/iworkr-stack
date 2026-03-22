@@ -1,3 +1,9 @@
+/**
+ * @component InventoryTable
+ * @status COMPLETE
+ * @description Stock inventory table with inline quantity adjustment, low-stock alerts, and category filtering
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

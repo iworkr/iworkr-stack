@@ -1,3 +1,9 @@
+/**
+ * @component ComplianceInterceptOverlay
+ * @status COMPLETE
+ * @description Full-screen compliance intercept overlay with expandable violation details and resolution actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";

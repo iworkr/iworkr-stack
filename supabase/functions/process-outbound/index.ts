@@ -1,3 +1,12 @@
+/**
+ * @module process-outbound
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; service_role batch processor for outbound_queue
+ * @description Multi-channel outbound message processor (SMS via Twilio, email via Resend, push via notifications table) with retry and backoff
+ * @dependencies Twilio, Resend, Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { MockResend, isTestEnv } from "../_shared/mockClients.ts";

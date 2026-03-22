@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 134: Project Hephaestus — CPQ, Seeded Kits & AI Supplier Sync
--- Native Configure-Price-Quote engine, trade seed catalog,
--- supplier invoice parsing, Moving Average Cost, margin cascade.
--- ============================================================
+-- ============================================================================
+-- @migration HephaestusCPQEngine
+-- @status COMPLETE
+-- @description Project Hephaestus — CPQ engine, trade seed catalog, supplier sync, margin cascade
+-- @tables global_trade_seed, workspace_materials, material_kits, kit_components, supplier_invoices
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 0. Extension: pg_trgm for fuzzy matching ────────────────
 CREATE EXTENSION IF NOT EXISTS pg_trgm;

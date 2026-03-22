@@ -1,9 +1,10 @@
--- ═══════════════════════════════════════════════════════════
--- Migration 036: Role-Granular RLS Enforcement
--- Project Cerberus — The Iron Matrix
--- ═══════════════════════════════════════════════════════════
--- SAFE: All DROP POLICY IF EXISTS + CREATE POLICY are wrapped
---       in DO blocks to handle missing tables gracefully.
+-- ============================================================================
+-- @migration RBACEnforcement
+-- @status COMPLETE
+-- @description Project Cerberus — role-granular RLS enforcement across all tables
+-- @tables (policies on jobs, clients, invoices, assets, forms, etc.)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Helper: extract role from organization_members for current user
 CREATE OR REPLACE FUNCTION get_user_org_role(p_org_id uuid)

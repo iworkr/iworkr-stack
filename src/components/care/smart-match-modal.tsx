@@ -1,3 +1,9 @@
+/**
+ * @component SmartMatchModal
+ * @status COMPLETE
+ * @description AI-powered modal for matching participants to optimal support workers
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/compliance/readiness
+ * @status COMPLETE
+ * @description Compliance readiness dashboard with gap analysis, remediation actions, and evidence upload
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

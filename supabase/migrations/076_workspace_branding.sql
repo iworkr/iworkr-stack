@@ -1,7 +1,10 @@
--- ============================================================
--- 076: Workspace Branding — Project Chameleon
--- Full whitelabel identity schema: colors, logos, custom domains
--- ============================================================
+-- ============================================================================
+-- @migration WorkspaceBrandingChameleon
+-- @status COMPLETE
+-- @description Project Chameleon — full whitelabel identity schema with custom domains
+-- @tables workspace_branding
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Create workspace_branding table (1:1 with organizations) ──
 CREATE TABLE IF NOT EXISTS public.workspace_branding (

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/timesheets
+ * @status COMPLETE
+ * @description Timesheet triage with approval workflow, telemetry, and GPS verification
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

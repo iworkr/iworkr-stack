@@ -1,3 +1,9 @@
+/**
+ * @component ChangeScopeModal
+ * @status COMPLETE
+ * @description Modal for changing NDIS service scope with branching/versioning controls
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 

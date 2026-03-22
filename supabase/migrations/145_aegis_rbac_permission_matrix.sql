@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 145: Project Aegis-RBAC — Granular Permission Matrices
--- Version 147.0 — "Cryptographic Abstraction & Zero-Trust Governance"
--- ============================================================
+-- ============================================================================
+-- @migration AegisRBACPermissionMatrix
+-- @status COMPLETE
+-- @description Project Aegis-RBAC — granular permission matrices, system permissions dictionary
+-- @tables system_permissions, role_permissions, permission_audit_log
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. System Permissions Dictionary ────────────────────────
 CREATE TABLE IF NOT EXISTS public.system_permissions (

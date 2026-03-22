@@ -1,3 +1,9 @@
+/**
+ * @component FeatureGate
+ * @status COMPLETE
+ * @description Wraps children behind plan-based feature gating with inline paywall fallback
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { type ReactNode } from "react";

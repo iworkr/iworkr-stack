@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/assets/[id]
+ * @status COMPLETE
+ * @description Asset detail view — service history, location, assignments, depreciation, and maintenance log
+ * @dataSource server-action: assets actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,3 +1,9 @@
+/**
+ * @page /download
+ * @status COMPLETE
+ * @description Desktop app download page with platform detection and release info
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

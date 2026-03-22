@@ -1,6 +1,11 @@
-// Edge Function: regulatory-rag-intercept
-// Project Solon-Law — Semantic Compliance Evaluation via RAG
-// Pipeline: Serialize intent → Embed → Vector search → LLM evaluation → Violation report
+/**
+ * @module regulatory-rag-intercept
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; accepts organization_id and serialized_intent directly
+ * @description Project Solon-Law: Semantic compliance evaluation via RAG — embeds operational intent, vector-searches regulatory chunks, LLM evaluates violations with severity and actionable fixes
+ * @dependencies OpenAI (Embeddings + GPT-4o), Supabase (pgvector)
+ * @lastAudit 2026-03-22
+ */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

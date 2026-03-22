@@ -1,8 +1,9 @@
 -- ============================================================================
--- Aegis-Citadel Phase 4: Zero-Trust IAM — Session Geometry & Auth Hardening
--- ============================================================================
--- Tracks session locations for velocity anomaly detection.
--- Logs security events for forensic analysis.
+-- @migration AegisCitadelAuthHardening
+-- @status COMPLETE
+-- @description Aegis-Citadel Phase 4 — zero-trust IAM, session geometry, velocity anomaly detection
+-- @tables session_geometry, security_events
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ══════════════════════════════════════════════════════════════════════════════

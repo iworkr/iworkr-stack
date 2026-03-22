@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 166: Fix budget_allocations category mapping in RPC
--- The support_purpose from ndis_support_items uses display names like "Core"
--- and "Capacity Building", but budget_allocations.category CHECK constraint
--- expects lowercase snake_case: 'core', 'capacity_building', 'capital'.
+-- @migration FixBudgetCategoryMapping
+-- @status COMPLETE
+-- @description Fix budget_allocations category mapping — display names to snake_case
+-- @tables (none — function: create_participant_ecosystem category mapping fix)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.create_participant_ecosystem(p_payload JSONB)

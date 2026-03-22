@@ -1,3 +1,9 @@
+/**
+ * @component ChronosFab
+ * @status COMPLETE
+ * @description Floating action button for time tracking with multi-timer support and NDIS line items
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

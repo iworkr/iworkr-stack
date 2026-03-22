@@ -1,3 +1,9 @@
+/**
+ * @component ConfigPanel
+ * @status COMPLETE
+ * @description Configuration slide-over panel for managing integration settings, API keys, and sync options
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

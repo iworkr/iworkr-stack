@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 138: Project Aegis-Contract — Commercial Progress
--- Claims, Schedule of Values, Retention Escrow
--- Version 140.0 — "Mathematical Supremacy & Cash Flow Determinism"
--- ============================================================
+-- ============================================================================
+-- @migration AegisContractProgressClaims
+-- @status COMPLETE
+-- @description Project Aegis-Contract — progress claims, schedule of values, retention escrow
+-- @tables contracts, schedule_of_values, progress_claims, retention_releases
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Contract status enum ─────────────────────────────────
 DO $$ BEGIN

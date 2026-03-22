@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/coordination-ledger
+ * @status COMPLETE
+ * @description Financial coordination ledger with time entries, billing status, and timer controls
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";

@@ -1,3 +1,9 @@
+/**
+ * @page /portal
+ * @status COMPLETE
+ * @description Family portal home with participant overview, schedule, and communications
+ * @lastAudit 2026-03-22
+ */
 import { getPortalDashboard } from "@/app/actions/portal-family";
 import { FamilyPortalShell } from "@/components/portal/family-portal-shell";
 import { Clock, User, CalendarDays, DollarSign, Circle, MessageCircle, ArrowRight, Heart } from "lucide-react";

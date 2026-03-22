@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/participants
+ * @status COMPLETE
+ * @description Participant registry — infinite-scroll list with search, filters, risk badges, and create modal
+ * @dataSource react-query: useInfiniteParticipants hook
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { AnimatePresence } from "framer-motion";

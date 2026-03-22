@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/clinical/goals
+ * @status COMPLETE
+ * @description Clinical goals management with participant progress tracking and status filters
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/team/leave
+ * @status COMPLETE
+ * @description Leave management with triage, orphaned shift backfill, and calendar view
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

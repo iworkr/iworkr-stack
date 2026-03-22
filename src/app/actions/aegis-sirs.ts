@@ -1,3 +1,10 @@
+/**
+ * @module AegisSIRS Server Actions
+ * @status COMPLETE
+ * @description Serious Incident Response Scheme (SIRS) reporting and compliance tracking
+ * @exports createSirsReportAction, fetchSirsReportsAction, updateSirsReportAction, deleteSirsReportAction, fetchSirsReportByIdAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

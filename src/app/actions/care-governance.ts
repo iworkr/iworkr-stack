@@ -1,3 +1,10 @@
+/**
+ * @module CareGovernance Server Actions
+ * @status COMPLETE
+ * @description Care governance — incident management, risk registers, quality audits, corrective actions, and governance dashboards
+ * @exports createIncidentAction, fetchIncidentsAction, createRiskAction, fetchAuditScheduleAction, createCorrectiveActionAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

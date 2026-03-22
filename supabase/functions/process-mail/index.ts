@@ -1,3 +1,12 @@
+/**
+ * @module process-mail
+ * @status COMPLETE
+ * @auth UNSECURED — No user auth; service_role cron-triggered mail queue processor
+ * @description Processes pending mail_queue items with branded HTML templates, custom domains, and bounce detection via Resend
+ * @dependencies Resend, Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { MockResend, isTestEnv } from "../_shared/mockClients.ts";
 

@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 021: Jobs Module Enhancements
--- Line items table, display ID trigger, auto-activity trigger,
--- and create_job_with_estimate RPC
--- ============================================================
+-- ============================================================================
+-- @migration JobsEnhancements
+-- @status COMPLETE
+-- @description Job line items, display ID trigger, auto-activity, create_job_with_estimate RPC
+-- @tables job_line_items
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Job Line Items table ─────────────────────────────
 create table if not exists public.job_line_items (

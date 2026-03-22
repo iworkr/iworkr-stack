@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/communications
+ * @status COMPLETE
+ * @description Unified communications hub with calls, emails, SMS, and message threading
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useState, useRef } from "react";

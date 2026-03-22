@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 073: Care Plans, Goals & Goal-Progress Links
--- (Project Nightingale Phase 4)
--- Structured care planning with auditable goal-to-shift linkage.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration CarePlans
+-- @status COMPLETE
+-- @description Structured care plans, goals, and auditable goal-to-shift linkage
+-- @tables care_plans, care_goals, goal_progress_links
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Care Plan Status Enum ─────────────────────────────────────────────

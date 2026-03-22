@@ -1,3 +1,10 @@
+/**
+ * @module Data
+ * @status COMPLETE
+ * @description Core type definitions and mock/demo data for all iWorkr modules (jobs, clients, invoices, etc.)
+ * @lastAudit 2026-03-22
+ */
+
 // Mock/demo data used for development and empty-state previews only.
 
 /* ── Mock data for iWorkr modules ───────────────────── */

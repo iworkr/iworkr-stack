@@ -1,3 +1,9 @@
+/**
+ * @component PlanReviewReportDocument
+ * @status COMPLETE
+ * @description PDF document rendering an NDIS plan review report with goals, ratings, and recommendations
+ * @lastAudit 2026-03-22
+ */
 import {
   Document,
   Page,

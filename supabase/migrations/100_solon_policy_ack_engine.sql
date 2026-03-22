@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 100: Project Solon - Policy & Procedure Acknowledgement System
+-- @migration SolonPolicyAckEngine
+-- @status COMPLETE
+-- @description Project Solon — policy versioning, acknowledgement tracking, enforcement
+-- @tables policy_versions, policy_acknowledgements, policy_register (altered)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 alter table public.policy_register

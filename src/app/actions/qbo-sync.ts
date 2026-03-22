@@ -1,3 +1,10 @@
+/**
+ * @module QBOSync Server Actions
+ * @status COMPLETE
+ * @description QuickBooks Online synchronization — OAuth token management, invoice sync, customer mapping, and reconciliation
+ * @exports syncInvoicesToQBO, fetchQBOConnection, refreshQBOToken, mapCustomers, fetchQBOSyncLog
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

@@ -1,3 +1,9 @@
+/**
+ * @component FAQ
+ * @status COMPLETE
+ * @description Landing page FAQ accordion section with animated expand/collapse items
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

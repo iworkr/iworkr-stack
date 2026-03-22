@@ -1,3 +1,9 @@
+/**
+ * @middleware RootMiddleware
+ * @status COMPLETE
+ * @description Next.js root middleware — delegates to Supabase session refresh
+ * @lastAudit 2026-03-22
+ */
 import { updateSession } from "@/lib/supabase/middleware";
 import type { NextRequest } from "next/server";
 

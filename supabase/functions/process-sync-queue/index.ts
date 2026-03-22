@@ -1,3 +1,12 @@
+/**
+ * @module process-sync-queue
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() validates calling user
+ * @description Offline-first sync engine: processes client mutation batches with field-level conflict detection, last-write-wins resolution, and audit logging
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

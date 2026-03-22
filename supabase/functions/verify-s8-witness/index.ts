@@ -1,3 +1,11 @@
+/**
+ * @module verify-s8-witness
+ * @status COMPLETE
+ * @auth SECURED — Validates JWT via Supabase auth
+ * @description Validates secondary witness for Schedule 8 narcotic double-signing — prevents self-witnessing, verifies clinical PIN and org membership
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
 // ═══════════════════════════════════════════════════════════════════
 // Project Asclepius — S8 Controlled Drug Double-Signing Verification
 // ═══════════════════════════════════════════════════════════════════

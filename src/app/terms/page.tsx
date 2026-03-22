@@ -1,3 +1,9 @@
+/**
+ * @page /terms
+ * @status COMPLETE
+ * @description Terms of service page with subscription, liability, and account rules
+ * @lastAudit 2026-03-22
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";

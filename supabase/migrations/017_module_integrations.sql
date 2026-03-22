@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 017: Integrations & Automations
--- Integration configs and automation flows
--- ============================================================
+-- ============================================================================
+-- @migration ModuleIntegrations
+-- @status COMPLETE
+-- @description Integration configs and automation flow definitions
+-- @tables integrations, automations
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Integration connections
 create type public.integration_status as enum ('connected', 'disconnected', 'error', 'syncing');

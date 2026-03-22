@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/integrations/callback
+ * @status COMPLETE
+ * @auth PUBLIC — OAuth callback with HMAC state verification
+ * @description Handles OAuth callback for third-party integration connections
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { exchangeOAuthCode } from "@/app/actions/integration-oauth";

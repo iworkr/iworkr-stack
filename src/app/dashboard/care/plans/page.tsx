@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/plans
+ * @status COMPLETE
+ * @description Care plans list with search, create, and goal management
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,3 +1,10 @@
+-- ============================================================================
+-- @migration EquinoxFixLeaveImpactRevenueJoin
+-- @status COMPLETE
+-- @description Fix Equinox calculate_leave_impact RPC to use correct ledger FK
+-- @tables (none — function fix only)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 -- Fix Project Equinox impact RPC to use correct ledger FK.
 create or replace function public.calculate_leave_impact(
   p_worker_id uuid,

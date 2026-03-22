@@ -1,3 +1,10 @@
+/**
+ * @module SystemTelemetry Server Actions
+ * @status COMPLETE
+ * @description System telemetry collection — event tracking, error logging, performance metrics, and workspace-level analytics
+ * @exports logTelemetryEvent, fetchTelemetryEvents, fetchTelemetryStats, fetchErrorLogs
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

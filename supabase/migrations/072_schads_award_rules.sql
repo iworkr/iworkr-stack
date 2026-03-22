@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 072: SCHADS Award Rules, Public Holidays & Fatigue Overrides
--- (Project Nightingale Phase 3.5)
--- Award interpretation engine for SCHADS compliance guardrails.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration SCHADSAwardRules
+-- @status COMPLETE
+-- @description SCHADS award rules, public holidays, and fatigue override engine
+-- @tables award_rules, public_holidays, fatigue_overrides
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Award Rules Configuration ─────────────────────────────────────────

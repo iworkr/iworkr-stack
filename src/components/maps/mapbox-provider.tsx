@@ -1,3 +1,9 @@
+/**
+ * @component MapboxProvider
+ * @status COMPLETE
+ * @description Context provider that lazy-loads the Mapbox GL JS SDK and exposes readiness state
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";

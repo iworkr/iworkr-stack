@@ -1,9 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════════
--- Migration 161: Project Aegis-Velocity — Performance Indexes
--- B-Tree indexes on all foreign keys to prevent sequential scans
--- Partial indexes on frequently filtered status columns
--- GIN trigram index for participant name search
--- ═══════════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration AegisVelocityPerformanceIndexes
+-- @status COMPLETE
+-- @description Project Aegis-Velocity — B-Tree FK indexes, partial status indexes, GIN trigram
+-- @tables (indexes across all major tables)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- Enable pg_trgm for fuzzy text search if not already enabled
 CREATE EXTENSION IF NOT EXISTS pg_trgm;

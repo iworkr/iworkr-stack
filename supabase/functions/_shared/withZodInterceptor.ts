@@ -1,3 +1,9 @@
+/**
+ * @module WithZodInterceptor
+ * @status COMPLETE
+ * @description Zod-based request interceptor with dry-run/enforce modes and telemetry logging
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "npm:zod@3.23.8";
 

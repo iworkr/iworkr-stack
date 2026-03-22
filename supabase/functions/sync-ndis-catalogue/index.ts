@@ -1,4 +1,12 @@
 /**
+ * @module sync-ndis-catalogue
+ * @status COMPLETE
+ * @auth SECURED — Validates JWT via Supabase auth
+ * @description Parses NDIS Support Catalogue CSV uploads and upserts into ndis_catalogue table with temporal versioning
+ * @dependencies Supabase
+ * @lastAudit 2026-03-22
+ */
+/**
  * sync-ndis-catalogue — NDIS Price Guide Synchronization
  *
  * Edge Function: Accepts NDIS Support Catalogue CSV uploads, parses all support items,

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/automations
+ * @status COMPLETE
+ * @description Automations list — searchable grid of workflows with status badges, run counts, and quick actions
+ * @dataSource zustand: useAutomationsStore
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

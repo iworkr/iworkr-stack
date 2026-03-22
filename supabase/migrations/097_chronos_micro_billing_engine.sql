@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 097: Project Chronos - Support Coordination Micro-Billing Engine
+-- @migration ChronosMicroBillingEngine
+-- @status COMPLETE
+-- @description Project Chronos — support coordination time entries and micro-billing
+-- @tables coordination_time_entries, coordination_invoices, coordination_weekly_summaries
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 create extension if not exists btree_gist;

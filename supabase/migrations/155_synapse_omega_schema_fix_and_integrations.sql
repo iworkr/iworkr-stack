@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 155: Project Synapse-Omega — Schema Linearization
---   & Integration Engine for QBO, Google Calendar, GoHighLevel
--- ============================================================
+-- ============================================================================
+-- @migration SynapseOmegaSchemaFixAndIntegrations
+-- @status COMPLETE
+-- @description Project Synapse-Omega — schema linearization + QBO/GCal/GoHighLevel integration
+-- @tables integration_tokens, google_calendar_sync_cursors, ghl_webhook_events
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ═══════════════════════════════════════════════════════════
 -- PART 1: Patch schema_migrations for renamed duplicate files

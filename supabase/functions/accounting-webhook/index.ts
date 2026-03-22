@@ -1,3 +1,11 @@
+/**
+ * @module accounting-webhook
+ * @status COMPLETE
+ * @auth SECURED — HMAC-SHA256 signature validation (Xero + QBO webhook signatures)
+ * @description Handles inbound Xero/QBO accounting webhooks: ITR handshake, invoice sync, token refresh, reconciliation
+ * @dependencies Xero API, QuickBooks Online API, Supabase (DB)
+ * @lastAudit 2026-03-22
+ */
 // ============================================================
 // Edge Function: accounting-webhook
 // Project Synapse-Prod — Production Accounting Webhook Handler

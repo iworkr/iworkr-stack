@@ -1,3 +1,10 @@
+/**
+ * @module SCHADSPayroll Server Actions
+ * @status COMPLETE
+ * @description SCHADS award payroll — pay run generation, penalty rate calculations, allowances, and payslip generation
+ * @exports createPayRunAction, fetchPayRunsAction, calculatePenaltyRatesAction, generatePayslipsAction, approvePayRunAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import type { SupabaseClient } from "@supabase/supabase-js";

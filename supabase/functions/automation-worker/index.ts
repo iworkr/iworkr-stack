@@ -1,4 +1,12 @@
 /**
+ * @module automation-worker
+ * @status COMPLETE
+ * @auth SECURED — Accepts service_role key or validates user via supabase.auth.getUser(); uses withZodInterceptor
+ * @description Core automation execution engine: SKIP LOCKED queue processing, JSON Logic conditions, action blocks (email, SMS, webhook, notifications), dry-run sandbox
+ * @dependencies Resend (email), Twilio (SMS), Supabase (Auth, DB, RPCs), Zod
+ * @lastAudit 2026-03-22
+ */
+/**
  * ═══════════════════════════════════════════════════════════
  * Project Automata — Automation Worker (Edge Function)
  * ═══════════════════════════════════════════════════════════

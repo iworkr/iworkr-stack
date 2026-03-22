@@ -1,3 +1,9 @@
+/**
+ * @component CareBlueprintBuilder
+ * @status COMPLETE
+ * @description Multi-step builder for creating and editing care plan blueprints with AI assist
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";

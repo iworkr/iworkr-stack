@@ -1,3 +1,9 @@
+/**
+ * @component ParticipantIntakeWizard
+ * @status COMPLETE
+ * @description Multi-step wizard for NDIS participant intake with validation and progress tracking
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";

@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 167: Always create care plan during intake + backfill
--- Previously, care plans were only created if goals were provided.
--- Now a care plan is ALWAYS created for every participant during intake.
--- Also backfills care plans for existing participants that don't have one.
+-- @migration AlwaysCreateCarePlan
+-- @status COMPLETE
+-- @description Always create care plan during intake + backfill existing participants
+-- @tables (none — function: create_participant_ecosystem updated + backfill query)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.create_participant_ecosystem(p_payload JSONB)

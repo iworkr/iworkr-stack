@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 096: Project Fort Knox - Participant Wallets & Petty Cash Ledger
+-- @migration FortKnoxParticipantWallets
+-- @status COMPLETE
+-- @description Project Fort Knox — participant wallets, petty cash ledger, reconciliation
+-- @tables participant_wallets, wallet_transactions, wallet_reconciliations
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 create table if not exists public.participant_wallets (

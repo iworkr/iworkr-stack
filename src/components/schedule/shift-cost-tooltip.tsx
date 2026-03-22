@@ -1,3 +1,9 @@
+/**
+ * @component ShiftCostTooltip
+ * @status COMPLETE
+ * @description Animated tooltip displaying shift cost breakdown with penalty and overtime indicators
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

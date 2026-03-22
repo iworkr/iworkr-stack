@@ -1,3 +1,11 @@
+/**
+ * @store FormsStore
+ * @status COMPLETE
+ * @description Form template and submission state — CRUD, versioning, telemetry with SWR caching
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isFresh } from "./cache-utils";

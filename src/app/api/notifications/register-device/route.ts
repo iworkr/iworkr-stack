@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/notifications/register-device
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user session
+ * @description Registers a device FCM token for push notifications
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { z } from "zod";

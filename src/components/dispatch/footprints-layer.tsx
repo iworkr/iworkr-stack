@@ -1,3 +1,9 @@
+/**
+ * @component FootprintsLayer
+ * @status COMPLETE
+ * @description Mapbox layer rendering technician trail breadcrumbs with time-based opacity gradients
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef } from "react";

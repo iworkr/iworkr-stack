@@ -1,3 +1,11 @@
+/**
+ * @module polar-webhook
+ * @status PARTIAL
+ * @auth SECURED — HMAC-SHA256 webhook signature verification (Polar)
+ * @description Handles Polar billing webhooks: subscription created/updated/canceled, customer updated; missing DLQ for failed events
+ * @dependencies Supabase, Polar.sh (billing)
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";

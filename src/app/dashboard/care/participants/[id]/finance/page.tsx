@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/participants/[id]/finance
+ * @status COMPLETE
+ * @description Participant finance — wallet balances, ledger entries, and transaction creation
+ * @dataSource server-action: wallets actions (createParticipantWallet, listWalletLedgerEntries)
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";

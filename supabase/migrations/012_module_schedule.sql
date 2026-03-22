@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 012: Schedule (Dispatch & Scheduling)
--- Schedule blocks linked to jobs and technicians
--- ============================================================
+-- ============================================================================
+-- @migration ModuleSchedule
+-- @status COMPLETE
+-- @description Schedule blocks linked to jobs and technicians for dispatch
+-- @tables schedule_blocks
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create type public.schedule_block_status as enum ('scheduled', 'en_route', 'in_progress', 'complete', 'cancelled');
 

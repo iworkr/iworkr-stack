@@ -1,3 +1,9 @@
+/**
+ * @component MentionsPanel
+ * @status COMPLETE
+ * @description Displays aggregated @mentions across channels with filtering and navigation
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

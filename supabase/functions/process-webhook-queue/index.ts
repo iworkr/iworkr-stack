@@ -1,3 +1,12 @@
+/**
+ * @module process-webhook-queue
+ * @status PARTIAL
+ * @auth UNSECURED — No user auth; service_role cron-triggered webhook processor
+ * @description Aegis-Zero webhook queue processor: claims and processes batched webhooks from Stripe, RevenueCat, Resend with exponential backoff retry via RPC
+ * @dependencies Stripe, RevenueCat, Resend, Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";

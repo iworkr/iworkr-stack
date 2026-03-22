@@ -1,3 +1,10 @@
+/**
+ * @module Forms Server Actions
+ * @status COMPLETE
+ * @description Dynamic form builder — form CRUD, field configuration, submission capture, and form template management
+ * @exports createForm, updateForm, deleteForm, fetchForms, submitFormResponse
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

@@ -1,3 +1,12 @@
+/**
+ * @module generate-swms-pdf
+ * @status PARTIAL
+ * @auth UNSECURED — Uses service_role key directly, no caller auth check
+ * @description Generates immutable, GPS-stamped SWMS compliance HTML document (not actual PDF) and uploads to compliance-vault
+ * @dependencies Supabase (Storage: compliance-vault), Project Aegis-Safety
+ * @lastAudit 2026-03-22
+ */
+
 // =============================================================
 // Edge Function: generate-swms-pdf
 // Project Aegis-Safety — Compliance PDF Generation

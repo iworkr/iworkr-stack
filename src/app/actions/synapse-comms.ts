@@ -1,3 +1,10 @@
+/**
+ * @module SynapseComms Server Actions
+ * @status COMPLETE
+ * @description Unified communications engine — inbox, screen pop, VoIP, email threads, call logging, lead conversion, and billable time
+ * @exports fetchUnifiedInboxAction, screenPopLookupAction, createCallRecordAction, convertLeadAction, logCommunicationAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

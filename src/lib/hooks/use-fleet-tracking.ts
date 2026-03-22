@@ -1,3 +1,9 @@
+/**
+ * @hook useFleetTracking
+ * @status COMPLETE
+ * @description GPS position broadcaster for fleet live-tracking at 15s intervals
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";

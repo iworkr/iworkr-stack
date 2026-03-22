@@ -1,3 +1,9 @@
+/**
+ * @component Globe
+ * @status COMPLETE
+ * @description Interactive 3D globe rendered with COBE for landing page hero visuals
+ * @lastAudit 2026-03-22
+ */
 "use client"
 
 import createGlobe, { COBEOptions } from "cobe"

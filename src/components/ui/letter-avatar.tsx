@@ -1,3 +1,9 @@
+/**
+ * @component LetterAvatar
+ * @status COMPLETE
+ * @description Deterministic letter-based avatar with persistent colour and optional image fallback
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useMemo, useState } from "react";

@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 027: Team Module — RBAC & User Management
--- organization_roles table, has_permission(), get_member_stats(),
--- get_team_overview(), invite_member(), Realtime
--- ============================================================
+-- ============================================================================
+-- @migration TeamRBACEnhancements
+-- @status COMPLETE
+-- @description RBAC roles table, has_permission(), team overview/invite RPCs, realtime
+-- @tables organization_roles
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Organization Roles table ─────────────────────────
 create table if not exists public.organization_roles (

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/clinical/sirs-triage
+ * @status COMPLETE
+ * @description SIRS incident triage with severity classification, investigation, and resolution tracking
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import {

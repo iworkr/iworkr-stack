@@ -1,8 +1,10 @@
--- ============================================================
--- Migration 136: Project Forge-Link — Supplier Catalog Sync & Live Pricing
--- B2B API credential vault, high-velocity catalog cache with pg_trgm,
--- margin protector quote extensions, purchase order automation.
--- ============================================================
+-- ============================================================================
+-- @migration ForgeLinkSupplierSync
+-- @status COMPLETE
+-- @description Project Forge-Link — B2B supplier catalog sync, live pricing, margin protector
+-- @tables b2b_supplier_credentials, b2b_catalog_items, purchase_orders
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 0. Extension: pg_trgm already exists from migration 134 ──
 -- CREATE EXTENSION IF NOT EXISTS pg_trgm; (already installed)

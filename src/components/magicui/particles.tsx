@@ -1,3 +1,9 @@
+/**
+ * @component Particles
+ * @status COMPLETE
+ * @description Renders interactive canvas-based particle field with mouse tracking
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import React, { useEffect, useRef, useState, type ComponentPropsWithoutRef } from "react";

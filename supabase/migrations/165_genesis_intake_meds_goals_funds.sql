@@ -1,9 +1,9 @@
 -- ============================================================================
--- Migration 165: Genesis-Intake — Add medications, goals, and funds
--- Extends create_participant_ecosystem to also insert:
---   6. participant_medications records
---   7. care_goals records (auto-creating care_plan if needed)
---   8. funds management columns on participant_profiles
+-- @migration GenesisIntakeMedsGoalsFunds
+-- @status COMPLETE
+-- @description Extends create_participant_ecosystem RPC with medications, goals, and funds
+-- @tables (none — function: create_participant_ecosystem updated)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.create_participant_ecosystem(p_payload JSONB)

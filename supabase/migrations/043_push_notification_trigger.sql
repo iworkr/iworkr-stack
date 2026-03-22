@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 043: Push Notification FCM Trigger
--- SAFE: All statements idempotent.
+-- @migration PushNotificationTrigger
+-- @status COMPLETE
+-- @description FCM push notification trigger on notification insert
+-- @tables profiles (altered — fcm_token, push_enabled)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS fcm_token text;

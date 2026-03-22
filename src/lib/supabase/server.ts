@@ -1,3 +1,9 @@
+/**
+ * @module SupabaseServer
+ * @status COMPLETE
+ * @description Server-side Supabase client factory using cookie-based auth
+ * @lastAudit 2026-03-22
+ */
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "./types";

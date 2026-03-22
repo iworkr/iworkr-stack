@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 062: Project Beacon — Outbound Communications Engine
--- SAFE: All statements idempotent with existence checks.
--- ============================================================
+-- ============================================================================
+-- @migration ProjectBeaconOutboundComms
+-- @status COMPLETE
+-- @description Project Beacon — outbound communications queue (email, SMS, push)
+-- @tables outbound_queue, communication_logs
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- 1. outbound_queue table
 CREATE TABLE IF NOT EXISTS public.outbound_queue (

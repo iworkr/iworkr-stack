@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 137: Project Aegis-Spend — Purchase Order Enhancements,
--- Supplier Receipts, Receipt OCR, Job Costing, Spend Limits
--- ============================================================
+-- ============================================================================
+-- @migration AegisSpendAPReceipts
+-- @status COMPLETE
+-- @description Project Aegis-Spend — PO enhancements, receipt OCR, job costing, spend limits
+-- @tables supplier_receipts, purchase_orders (altered), spend_limits
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Receipt status enum ──────────────────────────────────
 DO $$ BEGIN

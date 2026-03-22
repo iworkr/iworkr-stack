@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/clients/[id]
+ * @status COMPLETE
+ * @description Client detail page with contact info, jobs history, invoices, and notes
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,3 +1,11 @@
+/**
+ * @module synthesize-plan-review
+ * @status COMPLETE
+ * @auth UNSECURED — No auth guard; uses service-role key internally
+ * @description AI-powered NDIS end-of-plan review synthesis via Gemini/OpenAI with SSE streaming from 365 days of shift notes
+ * @dependencies Supabase, Google Gemini, OpenAI (fallback)
+ * @lastAudit 2026-03-22
+ */
 // Edge Function: synthesize-plan-review
 // AI End-of-Plan Review Synthesis via Gemini 1.5 Pro with SSE Streaming
 // Ingests 365 days of shift notes and generates a clinical NDIS report

@@ -1,3 +1,9 @@
+/**
+ * @hook useParticipantsQuery
+ * @status COMPLETE
+ * @description React Query hooks for participant CRUD, dossier, budget, and clinical timeline
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";

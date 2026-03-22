@@ -1,4 +1,13 @@
 /**
+ * @module generate-pdf
+ * @status COMPLETE
+ * @auth SECURED — Authorization header + auth.getUser() with org membership check; also accepts service_role
+ * @description Generates a branded invoice PDF via jsPDF, uploads to Storage, returns public URL
+ * @dependencies Supabase, jsPDF, Project Chameleon (workspace_branding)
+ * @lastAudit 2026-03-22
+ */
+
+/**
  * Supabase Edge Function: generate-pdf
  *
  * Receives an invoice_id, fetches the data from the database, generates

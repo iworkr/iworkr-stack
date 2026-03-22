@@ -1,3 +1,11 @@
+/**
+ * @module catalog-nightly-sync
+ * @status COMPLETE
+ * @auth UNSECURED — No auth guard; designed for pg_cron invocation at 02:00 AM AEST
+ * @description Nightly supplier catalog sync: authenticates with B2B supplier APIs (Reece, Rexel, Tradelink, etc.), fetches differential catalog updates, bulk UPSERTs into cache
+ * @dependencies Supplier B2B APIs (Reece, Rexel, Tradelink, MMEM, CNW), Supabase (DB)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";
 

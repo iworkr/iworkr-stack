@@ -1,3 +1,11 @@
+/**
+ * @module distribute-policy
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser() + owner/admin/manager role check
+ * @description Distributes policy version to org members: creates acknowledgement records, handles leave suspension, expires old pending acks, sends push notifications
+ * @dependencies Supabase (Auth, DB, Edge Functions)
+ * @lastAudit 2026-03-22
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

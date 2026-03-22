@@ -1,3 +1,9 @@
+/**
+ * @component ObsidianModal
+ * @status COMPLETE
+ * @description Centred dialog with backdrop blur, scale-in animation, and focus trap
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { createPortal } from "react-dom";

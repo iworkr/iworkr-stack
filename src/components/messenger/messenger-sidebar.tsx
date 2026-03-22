@@ -1,3 +1,9 @@
+/**
+ * @component MessengerSidebar
+ * @status COMPLETE
+ * @description Sidebar navigation for messenger with channels, DMs, search, and quick-actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

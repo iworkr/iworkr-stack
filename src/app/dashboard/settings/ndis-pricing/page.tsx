@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/settings/ndis-pricing
+ * @status COMPLETE
+ * @description NDIS pricing catalog with upload, search, and version history
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

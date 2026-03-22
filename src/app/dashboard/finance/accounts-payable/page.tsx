@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/accounts-payable
+ * @status COMPLETE
+ * @description Accounts payable with receipt OCR, verification workflow, and Xero push
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

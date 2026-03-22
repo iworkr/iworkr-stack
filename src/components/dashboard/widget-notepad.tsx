@@ -1,3 +1,9 @@
+/**
+ * @component WidgetNotepad
+ * @status COMPLETE
+ * @description Dashboard notepad widget with persistent textarea for quick notes
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { FileText } from "lucide-react";

@@ -1,3 +1,12 @@
+/**
+ * @module pace-submit-claim
+ * @status PARTIAL
+ * @auth UNSECURED — No auth header check, uses service_role key directly
+ * @description Submits individual claims to NDIA PACE API with endorsement pre-check, error mapping, retry queuing, and graceful degradation
+ * @dependencies Supabase, PACE API (NDIS), PRODA auth
+ * @lastAudit 2026-03-22
+ */
+
 // Edge Function: pace-submit-claim
 // Submits claims to the NDIA PACE API in real-time (single-piece flow)
 // Handles claim submission, error mapping, and graceful degradation

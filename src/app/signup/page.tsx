@@ -1,3 +1,9 @@
+/**
+ * @page /signup
+ * @status COMPLETE
+ * @description Signup redirect stub that forwards to /auth?mode=signup
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect } from "react";

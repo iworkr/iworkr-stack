@@ -1,3 +1,9 @@
+/**
+ * @component NotificationToast
+ * @status COMPLETE
+ * @description Toast notification system with Zustand store and animated stacked toasts
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { create } from "zustand";

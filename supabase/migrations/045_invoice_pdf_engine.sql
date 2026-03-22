@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 045: Invoice PDF Engine — "Project Ledger"
--- SAFE: All statements idempotent.
+-- @migration InvoicePDFEngine
+-- @status COMPLETE
+-- @description Project Ledger — invoice PDF generation, tax rates, discount fields
+-- @tables invoice_line_items (altered), invoices (altered)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- Per-line tax rate override

@@ -1,5 +1,9 @@
 -- ============================================================================
--- Migration 089: Project Rosetta — Dynamic Shift Notes & Compliance Forms
+-- @migration RosettaShiftNotesEngine
+-- @status COMPLETE
+-- @description Project Rosetta — dynamic shift note templates and compliance forms
+-- @tables shift_note_templates, shift_note_submissions
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- 1) Template definitions (versioned, immutable)

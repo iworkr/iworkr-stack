@@ -1,3 +1,10 @@
+/**
+ * @module OutriderAutonomous Server Actions
+ * @status COMPLETE
+ * @description Autonomous vehicle fleet operations — route planning, geofence management, autonomous dispatch, and safety monitoring
+ * @exports createRouteAction, fetchRoutesAction, updateGeofenceAction, fetchAutonomousFleetAction, triggerEmergencyStopAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

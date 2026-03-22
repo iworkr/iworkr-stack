@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/clinical-timeline
+ * @status COMPLETE
+ * @description Clinical timeline — chronological event feed of vitals, observations, medications, and incidents
+ * @dataSource zustand: useCareCommandStore.fetchTimeline
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

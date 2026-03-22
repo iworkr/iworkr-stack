@@ -1,3 +1,9 @@
+/**
+ * @component LottieIconInner
+ * @status COMPLETE
+ * @description Core Lottie animation renderer using lottie-web with hover-to-play and autoplay support
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useRef, useEffect, useCallback, memo, type CSSProperties } from "react";

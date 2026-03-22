@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/dispatch
+ * @status COMPLETE
+ * @description Dispatch map view with Mapbox integration, fleet tracking, job pins, and route visualization
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

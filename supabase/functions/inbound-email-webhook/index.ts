@@ -1,3 +1,12 @@
+/**
+ * @module inbound-email-webhook
+ * @status COMPLETE
+ * @auth UNSECURED — Webhook endpoint, no auth header required (SendGrid calls this)
+ * @description Handles SendGrid Inbound Parse webhooks: parses email, thread-matches, logs communication, stores attachments
+ * @dependencies Supabase (RPC: log_communication, Storage: email-attachments), SendGrid
+ * @lastAudit 2026-03-22
+ */
+
 // ============================================================================
 // Inbound Email Webhook — Edge Function
 // ============================================================================

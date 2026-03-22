@@ -1,3 +1,9 @@
+/**
+ * @component PortalRosterList
+ * @status COMPLETE
+ * @description Family portal roster list displaying scheduled shifts with worker bio modals
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

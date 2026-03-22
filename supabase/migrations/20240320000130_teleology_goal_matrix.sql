@@ -1,6 +1,10 @@
--- ============================================================
--- MIGRATION 130: Project Teleology — NDIS Goal Progression Matrix
--- ============================================================
+-- ============================================================================
+-- @migration TeleologyGoalMatrix
+-- @status COMPLETE
+-- @description Project Teleology — NDIS goal progression matrix with domain tracking
+-- @tables ndis_goals, goal_progress_entries, goal_evidence
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── ENUMs ─────────────────────────────────────────────────
 DO $$

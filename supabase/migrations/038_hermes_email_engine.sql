@@ -1,7 +1,10 @@
--- ═══════════════════════════════════════════════════════════
--- Migration 038: Project Hermes — Dynamic Workspace Email Engine
--- SAFE: All enum/table/trigger/cron statements are idempotent.
--- ═══════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration HermesEmailEngine
+-- @status COMPLETE
+-- @description Project Hermes — dynamic workspace email engine with templates and campaigns
+-- @tables email_templates, email_campaigns, email_sends, email_events
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. ENUMs (safe create) ────────────────────────────────
 

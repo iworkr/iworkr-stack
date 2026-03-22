@@ -1,3 +1,9 @@
+/**
+ * @component StaticMap
+ * @status COMPLETE
+ * @description Renders a static Mapbox map image with geocoded address pin
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useEffect, useState } from "react";

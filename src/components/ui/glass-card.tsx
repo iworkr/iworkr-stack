@@ -1,3 +1,9 @@
+/**
+ * @component GlassCard
+ * @status COMPLETE
+ * @description Glassmorphism card with mouse-tracking spotlight and tilt effect
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, useMotionValue, useSpring } from "framer-motion";

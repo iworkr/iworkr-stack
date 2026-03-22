@@ -1,3 +1,9 @@
+/**
+ * @layout HelpLayout
+ * @status COMPLETE
+ * @description Help centre layout with back-navigation and support ticket link
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import Link from "next/link";

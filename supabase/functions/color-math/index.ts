@@ -1,4 +1,12 @@
 /**
+ * @module color-math
+ * @status COMPLETE
+ * @auth UNSECURED — Public utility endpoint, no auth required
+ * @description Calculates WCAG-compliant contrast colors, YIQ/relative luminance, and derived opacity variants for a given hex code
+ * @dependencies None (pure computation)
+ * @lastAudit 2026-03-22
+ */
+/**
  * Supabase Edge Function: color-math
  *
  * Calculates WCAG-compliant contrast color for a given hex code.

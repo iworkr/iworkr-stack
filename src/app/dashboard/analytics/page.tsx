@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/analytics
+ * @status COMPLETE
+ * @description Panopticon BI analytics dashboard — KPI cards, charts, trend analysis, and drill-down views
+ * @dataSource react-query via server-action: panopticon-bi actions
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

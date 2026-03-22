@@ -1,3 +1,10 @@
+/**
+ * @module Onboarding Server Actions
+ * @status COMPLETE
+ * @description Organization onboarding wizard — org creation, trade selection, team invites, and welcome email dispatch
+ * @exports createOrganization, completeOnboarding, inviteTeamMembers, updateOrganizationSetup, skipOnboardingStep
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

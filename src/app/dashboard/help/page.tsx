@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/help
+ * @status COMPLETE
+ * @description Help center with changelog, FAQ, keyboard shortcuts, and support contact
+ * @dataSource static
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

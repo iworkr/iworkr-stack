@@ -1,3 +1,11 @@
+/**
+ * @module accept-invite
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser()
+ * @description Accepts an org invite token, adds user to org, marks invite as accepted, logs to audit
+ * @dependencies Supabase (Auth, DB)
+ * @lastAudit 2026-03-22
+ */
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

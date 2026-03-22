@@ -1,3 +1,9 @@
+/**
+ * @component CreateInvoiceModal
+ * @status COMPLETE
+ * @description Full invoice creation modal with client selection, line items, tax, discounts, and PDF generation
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

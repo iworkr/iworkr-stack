@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/proda-claims
+ * @status COMPLETE
+ * @description PRODA claims management with batch submission, CSV export, and status tracking
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

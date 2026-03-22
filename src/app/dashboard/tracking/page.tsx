@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/tracking
+ * @status COMPLETE
+ * @description Live GPS tracking with worker map, breadcrumb trails, and geofence alerts
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

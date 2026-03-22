@@ -1,9 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════
--- Migration 111: Project Aegis — SIRS Compliance Engine
--- ═══════════════════════════════════════════════════════════════════
--- Expands incidents with SIRS fields, adds incident_participants,
--- incident_investigations (5 Whys RCA), corrective_actions (CAPA),
--- and incident_media. All with RLS.
+-- ============================================================================
+-- @migration AegisIncidentEngine
+-- @status COMPLETE
+-- @description Project Aegis — SIRS compliance, incident investigations, CAPA, media
+-- @tables incidents (altered), incident_participants, incident_investigations, corrective_actions, incident_media
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Expand incidents table with SIRS fields ──────────────────
 ALTER TABLE public.incidents

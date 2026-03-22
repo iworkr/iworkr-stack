@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/fleet/vehicles
+ * @status COMPLETE
+ * @description Vehicle management with bookings, defect reports, and status updates
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useTransition } from "react";

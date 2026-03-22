@@ -1,3 +1,10 @@
+/**
+ * @module Finance Server Actions
+ * @status COMPLETE
+ * @description Financial operations — invoices, expenses, payments, revenue tracking, and accounting integration with automation events
+ * @exports createInvoice, updateInvoice, deleteInvoice, fetchInvoices, recordPayment
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

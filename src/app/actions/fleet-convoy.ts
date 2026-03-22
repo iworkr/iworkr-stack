@@ -1,3 +1,10 @@
+/**
+ * @module FleetConvoy Server Actions
+ * @status COMPLETE
+ * @description Fleet vehicle management — vehicle CRUD, maintenance schedules, fuel logs, inspections, and compliance tracking
+ * @exports createVehicleAction, fetchVehiclesAction, updateVehicleAction, logMaintenanceAction, fetchFleetDashboard
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { revalidatePath } from "next/cache";

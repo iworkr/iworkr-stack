@@ -1,10 +1,9 @@
 -- ============================================================================
--- Migration 115: Project Terminus — Temporal Math Engine + Glasshouse RLS
--- 1) calculate_schads_split_shift RPC for midnight-crossover payroll splits
--- 2) release_s8_medication_locks RPC for zombie lock cleanup
--- 3) Fortified Glasshouse RLS policies on schedule_blocks for family users
--- 4) Enable RLS on care_typing_indicators (Argus P0-2 remediation)
--- SAFE: All statements use IF NOT EXISTS / CREATE OR REPLACE.
+-- @migration TerminusTemporalMathAndRLS
+-- @status COMPLETE
+-- @description Project Terminus — midnight-crossover payroll splits, S8 lock cleanup, Glasshouse RLS
+-- @tables (none — functions: calculate_schads_split_shift, release_s8_medication_locks + policies)
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Temporal Math Engine: Midnight Crossover Split ───────────────────────

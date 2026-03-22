@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/sil-quoting/[id]
+ * @status COMPLETE
+ * @description Individual SIL quote detail with line items, PDF export, and rate calculations
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";

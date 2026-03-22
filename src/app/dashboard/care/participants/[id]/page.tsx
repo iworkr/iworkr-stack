@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/participants/[id]
+ * @status COMPLETE
+ * @description Participant detail — profile, contacts, documents, care plan, coordination log, and portal invite
+ * @dataSource server-action: participants + portal-family + coordination actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";

@@ -1,3 +1,10 @@
+/**
+ * @module Notifications Server Actions
+ * @status COMPLETE
+ * @description Push & in-app notifications — create, fetch, mark read, dismiss, device registration, and preference management
+ * @exports createNotification, fetchNotifications, markAsRead, dismissNotification, registerDevice
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

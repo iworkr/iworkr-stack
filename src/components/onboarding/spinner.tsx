@@ -1,3 +1,9 @@
+/**
+ * @component Spinner / CheckmarkDraw
+ * @status COMPLETE
+ * @description Animated loading spinner and checkmark confirmation SVG components
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

@@ -1,3 +1,9 @@
+/**
+ * @component FleetGrid
+ * @status COMPLETE
+ * @description Responsive grid view of fleet/equipment assets with status badges, custody, and quick actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/dispatch/live
+ * @status COMPLETE
+ * @description Live dispatch control panel with real-time job status, worker tracking, and AI dispatch
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

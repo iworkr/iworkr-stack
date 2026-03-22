@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/travel-ledger
+ * @status COMPLETE
+ * @description Geospatial travel ledger with Mapbox map and GPS-verified NDIS transit claims
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

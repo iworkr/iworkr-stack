@@ -1,3 +1,10 @@
+/**
+ * @module Email Server Actions
+ * @status COMPLETE
+ * @description Transactional email sending — job assignment notifications, team invites, and custom email dispatch via Resend
+ * @exports sendJobAssignmentEmail, sendTeamInviteEmail, sendCustomEmail
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

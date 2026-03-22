@@ -1,3 +1,11 @@
+/**
+ * @module agent-outrider-arbitrator
+ * @status COMPLETE
+ * @auth SECURED — Auth guard via supabase.auth.getUser()
+ * @description Autonomous spatial-temporal arbitration: detects fleet anomalies, calculates blast radius, reassigns jobs via PostGIS, SMS fallback
+ * @dependencies Twilio (SMS), Supabase (Auth, DB, PostGIS RPCs)
+ * @lastAudit 2026-03-22
+ */
 // Edge Function: agent-outrider-arbitrator
 // Project Outrider-Autonomous — Spatial-Temporal Arbitration Engine
 // Pipeline: Anomaly → Blast Radius → PostGIS Spatial Match → Silent Reassignment → SMS Fallback

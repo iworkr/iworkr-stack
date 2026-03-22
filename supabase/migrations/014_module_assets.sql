@@ -1,7 +1,10 @@
--- ============================================================
--- Migration 014: Assets (Fleet, Inventory, Audits)
--- Asset tracking, inventory management, audit log
--- ============================================================
+-- ============================================================================
+-- @migration ModuleAssets
+-- @status COMPLETE
+-- @description Asset tracking, inventory management, audit log
+-- @tables assets, inventory_items, asset_audits
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 create type public.asset_status as enum ('available', 'assigned', 'maintenance', 'retired');
 create type public.asset_category as enum ('vehicle', 'tool', 'equipment', 'other');

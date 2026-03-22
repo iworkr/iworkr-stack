@@ -1,11 +1,10 @@
--- ═══════════════════════════════════════════════════════════
--- Migration 034: Chat Last Messages RPC
--- ═══════════════════════════════════════════════════════════
--- Returns the last message content, sender name, and unread count
--- for a batch of channel IDs. Used by the mobile Channels screen
--- to hydrate message previews without N+1 queries.
---
--- SAFE: Only creates function if messages + channel_members exist.
+-- ============================================================================
+-- @migration ChatLastMessagesRPC
+-- @status COMPLETE
+-- @description RPC returning last message, sender, unread count per channel for mobile
+-- @tables (none — functions only: get_channels_last_messages)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 DO $$
 BEGIN

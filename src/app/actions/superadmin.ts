@@ -1,3 +1,10 @@
+/**
+ * @module SuperAdmin Server Actions
+ * @status COMPLETE
+ * @description Project Olympus — super admin operations with audit logging, impersonation, workspace management, and platform health
+ * @exports fetchAllWorkspacesAction, impersonateUserAction, fetchPlatformHealthAction, fetchAuditLogsAction, toggleFeatureFlagAction
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/finance/quotes/new
+ * @status COMPLETE
+ * @description New quote creation form with drag-reorder line items and AI assist
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence, Reorder } from "framer-motion";

@@ -1,3 +1,10 @@
+/**
+ * @module Doppelganger Server Actions
+ * @status COMPLETE
+ * @description Shadow shift & mentoring system — trainee shadow attachment, mentor evaluations, and competency tracking
+ * @exports attachShadowAction, detachShadowAction, submitMentorEvaluationAction, fetchShadowShiftsAction, fetchEvaluationsAction
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

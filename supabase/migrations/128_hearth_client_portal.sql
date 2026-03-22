@@ -1,11 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════════════
--- Migration 128: Project Hearth — Family & Participant Client Portal
--- Extends: participant_network_members (alias: participant_nominees)
--- Creates: participant_nominees view alias, schedule_block privacy columns,
---          client_approved columns on schedule_blocks,
---          hearth_budget_telemetry RPC, approve_timesheet_client RPC,
---          strict RLS policies for the client-facing data vault
--- ═══════════════════════════════════════════════════════════════════════════
+-- ============================================================================
+-- @migration HearthClientPortal
+-- @status COMPLETE
+-- @description Project Hearth — family portal, nominee views, budget telemetry, client approvals
+-- @tables participant_network_members (altered), schedule_blocks (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Extend participant_network_members with PRD-required fields ─────────
 -- (This table already exists; we add missing fields for the Hearth portal)

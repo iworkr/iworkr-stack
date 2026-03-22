@@ -1,9 +1,9 @@
 -- ============================================================================
--- Migration 116: Project Chameleon — White-Label & Brand Engine
--- 1) Adds app_name, app_icon_url, accent_color_hex, build_status columns
--- 2) Adds enterprise_bundle_id, build_log_url for Build Factory
--- 3) Adds facility-level brand override support
--- SAFE: All statements use IF NOT EXISTS / ADD COLUMN IF NOT EXISTS.
+-- @migration ChameleonBrandEngine
+-- @status COMPLETE
+-- @description Project Chameleon — white-label branding, build factory, facility overrides
+-- @tables workspace_branding (altered), facility_brand_overrides
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Enhance workspace_branding for white-label ──────────────────────────

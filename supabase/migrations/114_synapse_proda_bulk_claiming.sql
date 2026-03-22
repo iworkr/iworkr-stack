@@ -1,8 +1,9 @@
 -- ============================================================================
--- Migration 114: Project Synapse — PRODA Bulk Claiming Engine
--- ============================================================================
--- Adds return file reconciliation, aggregation tracking, and MMM-aware
--- claim line item generation infrastructure.
+-- @migration SynapsePRODABulkClaiming
+-- @status COMPLETE
+-- @description Project Synapse — PRODA return file reconciliation, MMM-aware claim generation
+-- @tables proda_return_entries, proda_aggregation_runs
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- 1. PRODA Return File Entries

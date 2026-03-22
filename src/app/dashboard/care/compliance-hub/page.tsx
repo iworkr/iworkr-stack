@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/care/compliance-hub
+ * @status COMPLETE
+ * @description NDIS/Care compliance hub — audit sessions, policy status, risk matrix, and corrective actions
+ * @dataSource server-action: fetchAuditSessionsAction + zustand: useCareCommandStore
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

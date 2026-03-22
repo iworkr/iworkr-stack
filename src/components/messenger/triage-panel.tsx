@@ -1,3 +1,9 @@
+/**
+ * @component TriagePanel
+ * @status COMPLETE
+ * @description Notification triage panel with categorized alerts, snooze, and bulk actions
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

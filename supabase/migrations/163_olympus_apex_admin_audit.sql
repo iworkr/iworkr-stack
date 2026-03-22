@@ -1,8 +1,10 @@
--- ╔══════════════════════════════════════════════════════════════════╗
--- ║ Migration 163: Project Olympus-Apex — Admin Audit + Comms      ║
--- ║ Immutable admin audit logs, communication_logs indexes,        ║
--- ║ impersonation session tracking                                 ║
--- ╚══════════════════════════════════════════════════════════════════╝
+-- ============================================================================
+-- @migration OlympusApexAdminAudit
+-- @status COMPLETE
+-- @description Project Olympus-Apex — immutable admin audit logs, impersonation tracking
+-- @tables admin_audit_logs, impersonation_sessions
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- 1. Ensure admin_audit_logs exists with immutable constraints
 CREATE TABLE IF NOT EXISTS public.admin_audit_logs (

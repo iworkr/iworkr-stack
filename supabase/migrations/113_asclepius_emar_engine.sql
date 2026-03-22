@@ -1,8 +1,10 @@
--- ═══════════════════════════════════════════════════════════════════
--- Migration 113: Project Asclepius — Advanced eMAR & Clinical Pharmacology
--- ═══════════════════════════════════════════════════════════════════
--- Adds S8 controlled drug support, PRN rules engine, Webster-pak
--- inventory telemetry, clinical PINs, and pharmacy reordering.
+-- ============================================================================
+-- @migration AsclepiusEMAREngine
+-- @status COMPLETE
+-- @description Project Asclepius — S8 drugs, PRN rules, Webster-pak, clinical PINs, pharmacy
+-- @tables s8_register, prn_protocols, webster_pak_inventory, staff_profiles (altered)
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- ── 1. Clinical PINs & Employee IDs on staff_profiles ────────────
 ALTER TABLE public.staff_profiles

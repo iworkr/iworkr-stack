@@ -1,3 +1,10 @@
+/**
+ * @module Team Server Actions
+ * @status COMPLETE
+ * @description Team management — member invitations, role assignments, status updates, and team overview with validation
+ * @exports inviteTeamMember, updateMemberRole, removeMember, fetchTeamOverview, fetchTeamMembers
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

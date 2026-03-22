@@ -1,3 +1,11 @@
+/**
+ * @module sync-engine
+ * @status COMPLETE
+ * @auth UNSECURED — Invoked by pg_cron or internal triggers; no JWT guard
+ * @description Production sync queue worker with rate limiting, exponential backoff, advisory locks, and dead letter queue for Xero/QBO
+ * @dependencies Supabase, Xero, QuickBooks Online
+ * @lastAudit 2026-03-22
+ */
 // ============================================================
 // Edge Function: sync-engine
 // Project Synapse-Prod — Production Sync Queue Worker

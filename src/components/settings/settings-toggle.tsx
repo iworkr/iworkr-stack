@@ -1,3 +1,9 @@
+/**
+ * @component SettingsToggle
+ * @status COMPLETE
+ * @description Animated toggle switch using Signal Green brand color with spring motion
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

@@ -1,3 +1,9 @@
+/**
+ * @component CancellationModal
+ * @status COMPLETE
+ * @description Modal for shift cancellation with NDIS compliance logic and reason capture
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

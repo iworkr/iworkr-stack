@@ -1,3 +1,10 @@
+/**
+ * @route GET /api/integrations/sync-radar
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org membership
+ * @description Returns recent integration sync logs for the sync radar dashboard
+ * @lastAudit 2026-03-22
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 

@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 074: Audit Sessions (Project Nightingale Phase 4)
--- Time-limited magic link audit portal for NDIS Quality & Safeguards audits.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration AuditSessions
+-- @status COMPLETE
+-- @description Time-limited magic link audit portal for NDIS Quality & Safeguards
+-- @tables audit_sessions
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Audit Sessions Table ──────────────────────────────────────────────

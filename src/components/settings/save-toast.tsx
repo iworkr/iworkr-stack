@@ -1,3 +1,9 @@
+/**
+ * @component SaveToast
+ * @status COMPLETE
+ * @description Animated toast notification for settings save with success/error/loading states
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

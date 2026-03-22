@@ -1,4 +1,9 @@
 /**
+ * @component StatementDocument
+ * @status COMPLETE
+ * @description PDF document rendering a client statement with invoice and payment history
+ * @lastAudit 2026-03-22
+ *
  * Client Statement PDF — @react-pdf/renderer
  *
  * Generates a statement listing all invoices and payments for a client.

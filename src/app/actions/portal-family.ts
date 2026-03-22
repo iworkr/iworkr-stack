@@ -1,3 +1,10 @@
+/**
+ * @module PortalFamily Server Actions
+ * @status COMPLETE
+ * @description Family/guardian portal — participant viewing, shift cancellation, daily updates, and communication with care team
+ * @exports fetchParticipantForFamilyAction, cancelShiftAction, fetchDailyUpdatesAction, sendMessageToTeamAction, fetchPortalRelationships
+ * @lastAudit 2026-03-22
+ */
 "use server";
 
 import { headers } from "next/headers";

@@ -1,3 +1,9 @@
+/**
+ * @component StockModal
+ * @status COMPLETE
+ * @description Modal for adding/removing stock items with barcode scanning, supplier, and location fields
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";

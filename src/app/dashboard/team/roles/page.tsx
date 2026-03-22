@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/team/roles
+ * @status COMPLETE
+ * @description Role management with permission matrix and custom role creation
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

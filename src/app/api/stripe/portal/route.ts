@@ -1,3 +1,10 @@
+/**
+ * @route POST /api/stripe/portal
+ * @status COMPLETE
+ * @auth REQUIRED — Authenticated user with org admin/owner role
+ * @description Creates a Stripe Billing Portal session for payment management
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";

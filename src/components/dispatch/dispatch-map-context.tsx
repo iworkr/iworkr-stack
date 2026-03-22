@@ -1,3 +1,9 @@
+/**
+ * @component DispatchMapContext
+ * @status COMPLETE
+ * @description React context provider for sharing the Mapbox map instance across dispatch sub-components
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { createContext, useContext } from "react";

@@ -1,3 +1,9 @@
+/**
+ * @component PollMessage
+ * @status COMPLETE
+ * @description Renders an interactive poll within a chat message with vote tracking
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { motion } from "framer-motion";

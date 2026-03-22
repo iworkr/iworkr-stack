@@ -1,3 +1,10 @@
+/**
+ * @module AstrolabeTravel Server Actions
+ * @status COMPLETE
+ * @description Travel claim verification — GPS-based distance validation, variance flagging, approval workflows
+ * @exports createTravelClaimAction, fetchTravelClaimsAction, verifyTravelClaimAction, approveTravelClaimAction, fetchTravelAuditLog
+ * @lastAudit 2026-03-22
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 

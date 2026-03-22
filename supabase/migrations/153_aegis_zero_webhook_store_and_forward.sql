@@ -1,9 +1,10 @@
--- ============================================================
--- Project Aegis-Zero: P0-1 — Webhook Store-and-Forward DLQ
--- Implements the Inbox Pattern for all inbound webhooks.
--- Webhooks INSERT into this queue and return 200 instantly.
--- A pg_cron worker processes rows with exponential backoff.
--- ============================================================
+-- ============================================================================
+-- @migration AegisZeroWebhookStoreAndForward
+-- @status COMPLETE
+-- @description Project Aegis-Zero — webhook inbox pattern, store-and-forward DLQ, pg_cron worker
+-- @tables webhook_inbox, webhook_processing_log
+-- @lastAudit 2026-03-22
+-- ============================================================================
 
 -- 1. Provider enum
 DO $$ BEGIN

@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration 169: Project Hearth-Command
--- Care Houses, ring-fenced rostering, micro-admin RLS for House Leaders
+-- @migration HearthCommand
+-- @status COMPLETE
+-- @description Project Hearth-Command — care houses, ring-fenced rostering, house leader RLS
+-- @tables care_houses, care_house_participants, care_house_staff
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ── 1. Enums ────────────────────────────────────────────────────────────────

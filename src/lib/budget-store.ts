@@ -1,7 +1,9 @@
 /**
- * Budget Store — Project Nightingale Phase 3
- *
- * Zustand store for NDIS budget allocations, claim line items, and PRODA batch management.
+ * @store BudgetStore
+ * @status COMPLETE
+ * @description NDIS budget allocations, claim line items, and PRODA batch management (Nightingale Phase 3)
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
  */
 
 import { create } from "zustand";

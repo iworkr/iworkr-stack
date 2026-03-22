@@ -1,3 +1,12 @@
+/**
+ * @module revenuecat-webhook
+ * @status PARTIAL
+ * @auth SECURED — Bearer token verification against REVENUECAT_WEBHOOK_SECRET
+ * @description Handles RevenueCat mobile subscription webhooks (purchase, renewal, cancellation, billing issues) and syncs subscription state to DB. Missing DLQ routing on failure.
+ * @dependencies RevenueCat, Supabase
+ * @lastAudit 2026-03-22
+ */
+
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isTestEnv } from "../_shared/mockClients.ts";

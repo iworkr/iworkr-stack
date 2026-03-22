@@ -1,3 +1,11 @@
+/**
+ * @store AutomationsStore
+ * @status COMPLETE
+ * @description Manages automation flows, execution runs, and trace logs with SWR caching
+ * @resetSafe NO — No reset() method for workspace switching
+ * @lastAudit 2026-03-22
+ */
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isFresh } from "./cache-utils";

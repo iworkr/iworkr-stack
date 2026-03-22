@@ -1,7 +1,9 @@
 -- ============================================================================
--- Migration 075: Sentinel Alerts (Project Nightingale Phase 4)
--- Automated risk detection and active compliance monitoring.
--- SAFE: All statements use IF NOT EXISTS.
+-- @migration SentinelAlerts
+-- @status COMPLETE
+-- @description Automated risk detection and active compliance monitoring alerts
+-- @tables sentinel_alerts, sentinel_rules
+-- @lastAudit 2026-03-22
 -- ============================================================================
 
 -- ─── 1. Enums ─────────────────────────────────────────────────────────────

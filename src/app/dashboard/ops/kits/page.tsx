@@ -1,3 +1,10 @@
+/**
+ * @page /dashboard/ops/kits
+ * @status COMPLETE
+ * @description Trade kits list with component view and price recalculation
+ * @dataSource server-action
+ * @lastAudit 2026-03-22
+ */
 "use client";
 
 import { useState } from "react";
