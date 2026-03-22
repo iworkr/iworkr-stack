@@ -1,7 +1,7 @@
 /**
  * @module iWorkrConnect Server Actions
  * @status COMPLETE
- * @description Stripe Connect integration — onboarding, account status, payout management, and payment intent creation
+ * @description Stripe Connect integration — onboarding, account status, payout management, and payment intent creation. All functions auth-gated via withAuth.
  * @exports getConnectStatus, createConnectOnboardingLink, createPaymentIntent, fetchPayouts, getConnectDashboardLink
  * @lastAudit 2026-03-22
  */

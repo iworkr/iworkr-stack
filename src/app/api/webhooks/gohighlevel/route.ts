@@ -1,7 +1,7 @@
 /**
  * @route POST /api/webhooks/gohighlevel
  * @status COMPLETE
- * @auth WEBHOOK — GHL event payload (no signature verification)
+ * @auth WEBHOOK — HMAC SHA-256 signature verification required (GHL_WEBHOOK_SECRET mandatory)
  * @description Handles GoHighLevel webhook events for contact and opportunity sync
  * @lastAudit 2026-03-22
  */

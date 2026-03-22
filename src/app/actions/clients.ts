@@ -1,7 +1,7 @@
 /**
  * @module Clients Server Actions
  * @status COMPLETE
- * @description Client CRM — full CRUD, search, filtering, statements, notes, automation events, and bulk operations
+ * @description Client CRM — full CRUD, search, filtering, statements, notes, automation events, and bulk operations. All functions auth-gated via withAuth.
  * @exports createClient, updateClient, deleteClient, fetchClients, fetchClientById
  * @lastAudit 2026-03-22
  */

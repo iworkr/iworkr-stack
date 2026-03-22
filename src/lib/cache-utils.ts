@@ -1,7 +1,7 @@
 /**
  * @module CacheUtils
  * @status COMPLETE
- * @description Shared SWR caching utilities (staleness checks, cache clearing) for all Zustand stores
+ * @description Shared SWR caching utilities with workspace-scoped cache isolation, deduplication, and memory cache lifecycle management
  * @lastAudit 2026-03-22
  */
 

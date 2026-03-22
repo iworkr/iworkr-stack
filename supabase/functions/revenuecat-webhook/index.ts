@@ -1,8 +1,8 @@
 /**
  * @module revenuecat-webhook
- * @status PARTIAL
+ * @status COMPLETE
  * @auth SECURED — Bearer token verification against REVENUECAT_WEBHOOK_SECRET
- * @description Handles RevenueCat mobile subscription webhooks (purchase, renewal, cancellation, billing issues) and syncs subscription state to DB. Missing DLQ routing on failure.
+ * @description Handles RevenueCat mobile subscription webhooks (purchase, renewal, cancellation, billing issues) and syncs subscription state to DB. DLQ routing implemented for failed payloads.
  * @dependencies RevenueCat, Supabase
  * @lastAudit 2026-03-22
  */

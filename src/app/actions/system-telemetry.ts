@@ -1,7 +1,7 @@
 /**
  * @module SystemTelemetry Server Actions
  * @status COMPLETE
- * @description System telemetry collection — event tracking, error logging, performance metrics, and workspace-level analytics
+ * @description System telemetry collection — event tracking, error logging, performance metrics, and workspace-level analytics. All functions auth-gated via withAuth.
  * @exports logTelemetryEvent, fetchTelemetryEvents, fetchTelemetryStats, fetchErrorLogs
  * @lastAudit 2026-03-22
  */

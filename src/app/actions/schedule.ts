@@ -1,7 +1,7 @@
 /**
  * @module Schedule Server Actions
  * @status COMPLETE
- * @description Scheduling engine — schedule block CRUD, drag-drop updates, conflict detection, and calendar view data fetching
+ * @description Scheduling engine — schedule block CRUD, drag-drop updates, conflict detection, and calendar view data fetching. All functions auth-gated via withAuth.
  * @exports createScheduleBlock, updateScheduleBlock, deleteScheduleBlock, fetchScheduleBlocks, detectConflicts
  * @lastAudit 2026-03-22
  */

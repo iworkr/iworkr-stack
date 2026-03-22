@@ -1,7 +1,7 @@
 /**
  * @module SMS Server Actions
  * @status COMPLETE
- * @description SMS messaging — app download link delivery via Twilio with phone validation
+ * @description SMS messaging — app download link delivery via Twilio with phone validation. All functions auth-gated via withAuth.
  * @exports sendAppDownloadLink
  * @lastAudit 2026-03-22
  */
