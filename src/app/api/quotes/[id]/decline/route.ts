@@ -69,11 +69,19 @@ export async function POST(
       .eq("id", id);
 
     if (updateErr) {
-      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      console.error("[Quote Decline Error] Quote ID:", id, "Error:", updateErr);
+      return NextResponse.json(
+        { error: "Failed to process your request. Please try again or contact the business directly." },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ message: "Quote declined", quote_id: id });
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    console.error("[Quote Decline Error] Quote ID:", id, "Error:", err);
+    return NextResponse.json(
+      { error: "Failed to process your request. Please try again or contact the business directly." },
+      { status: 500 }
+    );
   }
 }

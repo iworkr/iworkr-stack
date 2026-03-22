@@ -26,6 +26,7 @@ import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 import { GlobalErrorBoundary } from "@/components/telemetry/global-error-boundary";
 import { TelemetryProvider } from "@/components/telemetry/telemetry-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { InactivityGuard } from "@/components/shell/inactivity-guard";
 
 const ImpersonationBanner = dynamic(() => import("@/components/olympus/impersonation-banner").then((m) => m.ImpersonationBanner), { ssr: false });
 
@@ -181,6 +182,7 @@ export default function DashboardLayout({
     <QueryProvider>
     <MapboxProvider>
     <HydrationGate>
+    <InactivityGuard>
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
       {/* Noise grain */}
       <div
@@ -269,6 +271,7 @@ export default function DashboardLayout({
       <DesktopOfflineBanner />
       {/* ChronosFAB removed — will be re-enabled when Chronos feature is ready */}
     </div>
+    </InactivityGuard>
     </HydrationGate>
     </MapboxProvider>
     </QueryProvider>

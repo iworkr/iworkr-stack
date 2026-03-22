@@ -83,7 +83,11 @@ export async function POST(
       .single();
 
     if (updateErr) {
-      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      console.error("[Quote Accept Error] Quote ID:", id, "Error:", updateErr);
+      return NextResponse.json(
+        { error: "Failed to process your request. Please try again or contact the business directly." },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -93,8 +97,9 @@ export async function POST(
       invoice_id: updated.invoice_id,
     });
   } catch (err) {
+    console.error("[Quote Accept Error] Quote ID:", id, "Error:", err);
     return NextResponse.json(
-      { error: (err as Error).message },
+      { error: "Failed to process your request. Please try again or contact the business directly." },
       { status: 500 }
     );
   }

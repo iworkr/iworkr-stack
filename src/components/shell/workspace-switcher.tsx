@@ -22,6 +22,7 @@ import {
 import { useAuthStore } from "@/lib/auth-store";
 import { cachedFetch } from "@/lib/cache-utils";
 import { clearOrgCache } from "@/lib/hooks/use-org";
+import { useSettingsStore } from "@/lib/stores/settings-store";
 import { getDashboardPath } from "@/lib/hooks/use-dashboard-path";
 import { useActiveBranch, setActiveBranchId as setGlobalBranch } from "@/lib/hooks/use-active-branch";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
@@ -119,9 +120,10 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
         return;
       }
 
-      // Purge org module cache + clear branch selection for new workspace
+      // Purge org module cache + clear branch selection + reset settings for new workspace
       clearOrgCache();
       setGlobalBranch(null);
+      useSettingsStore.getState().reset();
 
       // TanStack Query: drop cached data so hooks refetch with the new orgId from useOrg()
       queryClient.clear();
