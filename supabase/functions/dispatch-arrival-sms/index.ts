@@ -2,28 +2,18 @@
  * @module dispatch-arrival-sms
  * @status COMPLETE
  * @auth UNSECURED — No user auth; invoked by DB trigger or direct call with service_role key
- * @description Sends tracking URL via Twilio SMS when a tracking session is created, supports Trade and Care modes
- * @dependencies Twilio (SMS), Supabase (DB)
- * @lastAudit 2026-03-22
+ * @description Project Outrider-Pulse — Sends tracking URL via ClickSend SMS (Twilio fallback)
+ *   when a tracking session is created. Supports Trade and Care modes.
+ * @dependencies ClickSend (primary), Twilio (fallback), Supabase (DB)
+ * @lastAudit 2026-03-24
  */
-// ============================================================================
-// Project Glasshouse-Arrival — SMS Dispatch Edge Function
-// ============================================================================
-// Triggered when a tracking_session is created (INSERT trigger or direct call).
-// 1. Fetches client phone + workspace branding
-// 2. Sends tracking URL via Twilio SMS
-// 3. Updates the tracking_session with SMS dispatch confirmation
-// ============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import { isTestEnv } from "../_shared/mockClients.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 interface DispatchPayload {
-  // Direct invocation
   session_id?: string;
-  // DB trigger payload (INSERT on tracking_sessions)
   type?: string;
   table?: string;
   record?: {
@@ -39,6 +29,88 @@ interface DispatchPayload {
   };
 }
 
+async function sendViaClickSend(
+  to: string,
+  body: string,
+  customString?: string,
+): Promise<{ success: boolean; message_id?: string }> {
+  const username = Deno.env.get("CLICKSEND_USERNAME");
+  const apiKey = Deno.env.get("CLICKSEND_API_KEY");
+
+  if (!username || !apiKey) return { success: false };
+
+  const auth = "Basic " + btoa(`${username}:${apiKey}`);
+
+  try {
+    const res = await fetch("https://rest.clicksend.com/v3/sms/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: auth,
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            source: "iWorkr",
+            from: Deno.env.get("CLICKSEND_SENDER_ID") || "iWorkr",
+            to,
+            body: body.slice(0, 960),
+            custom_string: customString || "",
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) return { success: false };
+
+    const data = await res.json();
+    const msg = data?.data?.messages?.[0];
+    return {
+      success: msg?.status === "SUCCESS" || msg?.status === "success",
+      message_id: msg?.message_id,
+    };
+  } catch {
+    return { success: false };
+  }
+}
+
+async function sendViaTwilio(
+  to: string,
+  body: string,
+): Promise<{ success: boolean; sid?: string }> {
+  const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+  const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
+  const twilioFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
+
+  if (!twilioSid || !twilioAuth || !twilioFrom) return { success: false };
+
+  try {
+    const params = new URLSearchParams({
+      To: to,
+      From: twilioFrom,
+      Body: body.slice(0, 1600),
+    });
+
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
+        },
+        body: params.toString(),
+      },
+    );
+
+    if (!res.ok) return { success: false };
+    const data = await res.json();
+    return { success: true, sid: data.sid };
+  } catch {
+    return { success: false };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -48,10 +120,10 @@ serve(async (req) => {
     const payload: DispatchPayload = await req.json();
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // ── 1. Resolve session data ──────────────────────────────────────
+    // ── 1. Resolve session ──
     let sessionId: string;
     let sessionData: {
       id: string;
@@ -67,43 +139,33 @@ serve(async (req) => {
     };
 
     if (payload.record) {
-      // Triggered by DB webhook
       sessionId = payload.record.id;
       sessionData = payload.record as any;
     } else if (payload.session_id) {
-      // Direct invocation
       sessionId = payload.session_id;
       const { data, error } = await supabase
         .from("tracking_sessions")
         .select("*")
         .eq("id", sessionId)
         .single();
-      if (error || !data)
-        throw new Error(`Session not found: ${sessionId}`);
+      if (error || !data) throw new Error(`Session not found: ${sessionId}`);
       sessionData = data;
     } else {
       throw new Error("No session_id or record provided");
     }
 
-    // Skip if SMS already dispatched
     if (sessionData.sms_dispatched) {
       return new Response(
         JSON.stringify({ success: true, message: "SMS already sent" }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // ── 2. Fetch client details ────────────────────────────────────
+    // ── 2. Get client ──
     if (!sessionData.client_id) {
       return new Response(
         JSON.stringify({ success: false, error: "No client linked to session" }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -115,18 +177,12 @@ serve(async (req) => {
 
     if (!client?.phone) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Client has no phone number",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "Client has no phone number" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // ── 3. Fetch workspace branding (optional) ────────────────────
+    // ── 3. Workspace branding ──
     const { data: org } = await supabase
       .from("organizations")
       .select("name")
@@ -136,108 +192,77 @@ serve(async (req) => {
     const orgName = org?.name || "iWorkr";
     const workerName = sessionData.worker_name || "Your technician";
     const workerRole = sessionData.worker_role || "technician";
-    const clientName = client.name?.split(" ")[0] || "there";
+    const clientFirstName = client.name?.split(" ")[0] || "there";
 
-    // ── 4. Build tracking URL ─────────────────────────────────────
-    const baseUrl =
-      Deno.env.get("TRACKING_BASE_URL") || "https://iworkr.app";
+    // ── 4. Build tracking URL ──
+    const baseUrl = Deno.env.get("TRACKING_BASE_URL") || "https://iworkr.app";
     const trackingUrl = `${baseUrl}/track/${sessionData.secure_token}`;
 
-    // ── 5. Compose SMS message ────────────────────────────────────
-    // Differentiate Trade vs Care based on worker_role
+    // ── 5. Compose SMS ──
     let smsBody: string;
-
-    if (
+    const isCareMode =
       workerRole.toLowerCase().includes("support") ||
-      workerRole.toLowerCase().includes("care")
-    ) {
-      // NDIS / Care mode
+      workerRole.toLowerCase().includes("care");
+
+    if (isCareMode) {
       smsBody =
-        `Hi ${clientName}, ${workerName} (Support Worker) from ${orgName} is on the way. ` +
+        `Hi ${clientFirstName}, ${workerName} (Support Worker) from ${orgName} is on the way. ` +
         `Track their arrival here: ${trackingUrl}`;
     } else {
-      // Trade mode
       smsBody =
-        `Hi ${clientName}, ${workerName} from ${orgName} is on the way. ` +
+        `Hi ${clientFirstName}, ${workerName} from ${orgName} is on the way. ` +
         `Track their arrival live: ${trackingUrl}`;
     }
 
-    // ── 6. Send via Twilio ────────────────────────────────────────
-    const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const twilioFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
+    // ── 6. Send via ClickSend (primary) or Twilio (fallback) ──
+    let smsSent = false;
+    let smsProvider = "clicksend";
+    let messageId: string | null = null;
 
-    if (!twilioSid || !twilioAuth || !twilioFrom) {
-      console.error("Twilio credentials not configured");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Twilio not configured",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    const clickResult = await sendViaClickSend(client.phone, smsBody, sessionId);
+    if (clickResult.success) {
+      smsSent = true;
+      smsProvider = "clicksend";
+      messageId = clickResult.message_id || null;
+    } else {
+      const twilioResult = await sendViaTwilio(client.phone, smsBody);
+      if (twilioResult.success) {
+        smsSent = true;
+        smsProvider = "twilio";
+        messageId = twilioResult.sid || null;
+      }
     }
 
-    const smsParams = new URLSearchParams({
-      To: client.phone,
-      From: twilioFrom,
-      Body: smsBody.slice(0, 1600), // Twilio max
-    });
-
-    const twilioData = isTestEnv
-      ? { sid: "SM_TEST_123" }
-      : await (async () => {
-        const twilioRes = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-              Authorization: `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
-            },
-            body: smsParams.toString(),
-          }
-        );
-        if (!twilioRes.ok) return { _failed: true, ...(await twilioRes.json()) };
-        return await twilioRes.json();
-      })();
-    const smsSent = !("_failed" in twilioData);
-    const smsSid = twilioData?.sid || null;
-
-    // ── 7. Update tracking session with SMS confirmation ──────────
+    // ── 7. Update session ──
     await supabase
       .from("tracking_sessions")
       .update({
         sms_dispatched: smsSent,
         sms_dispatched_at: smsSent ? new Date().toISOString() : null,
-        sms_sid: smsSid,
+        sms_provider: smsProvider,
+        sms_message_id: messageId,
+        sms_sid: messageId,
         updated_at: new Date().toISOString(),
       })
       .eq("id", sessionId);
 
-    // ── 8. Log the dispatch ───────────────────────────────────────
     console.log(
-      `[dispatch-arrival-sms] Session ${sessionId}: SMS ${smsSent ? "SENT" : "FAILED"} to ${client.phone} (SID: ${smsSid})`
+      `[dispatch-arrival-sms] Session ${sessionId}: SMS ${smsSent ? "SENT" : "FAILED"} via ${smsProvider} to ${client.phone} (ID: ${messageId})`,
     );
 
     return new Response(
       JSON.stringify({
         success: smsSent,
-        sms_sid: smsSid,
+        sms_provider: smsProvider,
+        sms_message_id: messageId,
         client_name: client.name,
         client_phone: client.phone,
         tracking_url: trackingUrl,
         message: smsSent
-          ? `SMS sent to ${client.name}`
-          : `SMS delivery failed: ${twilioData?.message || "unknown error"}`,
+          ? `SMS sent to ${client.name} via ${smsProvider}`
+          : "SMS delivery failed on all providers",
       }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
     console.error("[dispatch-arrival-sms] Error:", err);
@@ -246,10 +271,7 @@ serve(async (req) => {
         success: false,
         error: err instanceof Error ? err.message : "Unknown error",
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

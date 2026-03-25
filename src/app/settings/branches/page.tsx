@@ -23,6 +23,7 @@ import {
   deleteBranch,
   type Branch,
 } from "@/app/actions/branches";
+import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
 
 const TIMEZONES = [
   "Australia/Brisbane",
@@ -275,7 +276,23 @@ export default function BranchesPage() {
                     className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-[10px] text-zinc-600">Address</label>
+                  <AddressAutocomplete
+                    value={address}
+                    onChange={setAddress}
+                    onSelect={(result: AddressResult) => {
+                      setAddress(result.address);
+                      if (result.city) setCity(result.city);
+                      if (result.state) setState(result.state);
+                      if (result.postalCode) setPostalCode(result.postalCode);
+                    }}
+                    placeholder="Search address…"
+                    inputClassName="rounded-lg border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 focus:border-[#10B981]/30"
+                    showIcon
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="mb-1 block text-[10px] text-zinc-600">City</label>
                     <input value={city} onChange={(e) => setCity(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
@@ -284,10 +301,10 @@ export default function BranchesPage() {
                     <label className="mb-1 block text-[10px] text-zinc-600">State</label>
                     <input value={state} onChange={(e) => setState(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
                   </div>
-                </div>
-                <div>
-                  <label className="mb-1 block text-[10px] text-zinc-600">Address</label>
-                  <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+                  <div>
+                    <label className="mb-1 block text-[10px] text-zinc-600">Postal Code</label>
+                    <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

@@ -28,6 +28,7 @@ import {
   createServiceAgreement,
 } from "@/app/actions/participants";
 import { validateNDISNumber, formatNDISNumber } from "@/lib/ndis-utils";
+import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -990,16 +991,21 @@ export function ParticipantIntakeWizard({
                       {/* Address */}
                       <div>
                         <label className={LABEL_CLASS}>Address</label>
-                        <input
-                          type="text"
+                        <AddressAutocomplete
                           value={step1.address}
-                          onChange={(e) => setStep1((p) => ({ ...p, address: e.target.value }))}
+                          onChange={(val) => setStep1((p) => ({ ...p, address: val }))}
+                          onSelect={(result: AddressResult) => {
+                            setStep1((p) => ({
+                              ...p,
+                              address: result.address,
+                              addressLat: result.lat ?? null,
+                              addressLng: result.lng ?? null,
+                            }));
+                          }}
                           placeholder="Street address, suburb, state"
-                          className={INPUT_CLASS}
+                          inputClassName="bg-zinc-900/50 border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50"
+                          showIcon
                         />
-                        {/* Hidden lat/lng fields — populated by geocoder */}
-                        <input type="hidden" value={step1.addressLat ?? ""} />
-                        <input type="hidden" value={step1.addressLng ?? ""} />
                       </div>
                     </motion.div>
                   )}

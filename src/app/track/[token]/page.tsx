@@ -17,6 +17,7 @@ import {
   MapPin,
   Gauge,
   Route,
+  Shield,
 } from "lucide-react";
 
 import {
@@ -24,15 +25,9 @@ import {
   type TrackingPublicData,
 } from "@/app/actions/glasshouse-arrival";
 
-// Re-export type for convenience — the server action returns { data, error }
 type TrackingResult = { data: TrackingPublicData | null; error: string | null };
 
-// ═══════════════════════════════════════════════════════════════
-// /track/[token] — Public Uber-style arrival tracking page
-// No authentication required. Anonymous access via secure token.
-// ═══════════════════════════════════════════════════════════════
-
-type PageState = "loading" | "error" | "active" | "arrived";
+type PageState = "loading" | "error" | "active" | "arrived" | "approaching";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -42,23 +37,10 @@ function formatEta(mins: number | undefined | null): string {
   return `${Math.round(mins)} mins`;
 }
 
-function formatDistance(km: number | undefined | null): string {
-  if (km == null) return "—";
-  if (km < 0.1) return "< 100m";
-  if (km < 1) return `${Math.round(km * 1000)}m`;
-  return `${km.toFixed(1)} km`;
-}
-
 function formatSpeed(speed: number | undefined | null): string {
   if (speed == null || speed <= 0) return "—";
-  // speed from DB is m/s, convert to km/h
   const kmh = speed * 3.6;
   return `${Math.round(kmh)} km/h`;
-}
-
-function formatCoord(val: number | undefined | null): string {
-  if (val == null) return "—";
-  return val.toFixed(4) + "°";
 }
 
 function formatTime(iso: string | undefined | null): string {
@@ -91,6 +73,82 @@ function formatRoleBadge(role: string | undefined | null): string {
     .join(" ");
 }
 
+// ── Supabase Realtime Hook ───────────────────────────────────
+
+function useTrackingRealtime(
+  sessionId: string | undefined,
+  onUpdate: (payload: any) => void,
+) {
+  const channelRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    let mounted = true;
+
+    async function subscribe() {
+      try {
+        const { createBrowserClient } = await import("@supabase/ssr");
+        const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+        const key = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
+        if (!url || !key) return;
+
+        const supabase = createBrowserClient(url, key);
+
+        const channel = supabase
+          .channel(`tracking_live_${sessionId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "tracking_sessions",
+              filter: `id=eq.${sessionId}`,
+            },
+            (payload: any) => {
+              if (mounted) onUpdate(payload.new);
+            },
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "telemetry_pings",
+              filter: `session_id=eq.${sessionId}`,
+            },
+            (payload: any) => {
+              if (mounted && !payload.new.is_suppressed) {
+                onUpdate({
+                  _ping: true,
+                  lat: payload.new.lat,
+                  lng: payload.new.lng,
+                  heading: payload.new.heading,
+                  speed: payload.new.speed,
+                });
+              }
+            },
+          )
+          .subscribe();
+
+        channelRef.current = channel;
+      } catch (err) {
+        console.error("Realtime subscription error:", err);
+      }
+    }
+
+    subscribe();
+
+    return () => {
+      mounted = false;
+      if (channelRef.current) {
+        channelRef.current.unsubscribe?.();
+        channelRef.current = null;
+      }
+    };
+  }, [sessionId, onUpdate]);
+}
+
 // ── Main Page Component ─────────────────────────────────────
 
 export default function TrackingPage() {
@@ -104,15 +162,12 @@ export default function TrackingPage() {
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ── Fetch logic ────────────────────────────────────────────
-
   const fetchData = useCallback(async () => {
     if (!token) return;
 
     try {
       const result: TrackingResult = await getTrackingByToken(token);
 
-      // Server action wrapper returned an error
       if (result.error || !result.data) {
         setErrorType("not_found");
         setErrorMessage(result.error ?? "Something went wrong");
@@ -126,7 +181,6 @@ export default function TrackingPage() {
 
       const tracking = result.data;
 
-      // The RPC returns an error field inside the data for not_found/expired/cancelled
       if (tracking.error) {
         setErrorType(tracking.error);
         setErrorMessage(tracking.message ?? "Something went wrong");
@@ -147,6 +201,11 @@ export default function TrackingPage() {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
+      } else if (
+        tracking.status === "geofence_approach" ||
+        (tracking as any).geofence_approach
+      ) {
+        setPageState("approaching");
       } else {
         setPageState("active");
       }
@@ -157,14 +216,62 @@ export default function TrackingPage() {
     }
   }, [token]);
 
-  // ── Lifecycle ──────────────────────────────────────────────
+  // Realtime handler
+  const handleRealtimeUpdate = useCallback(
+    (payload: any) => {
+      if (!payload) return;
+
+      if (payload._ping) {
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                current_lat: payload.lat,
+                current_lng: payload.lng,
+                current_heading: payload.heading ?? prev.current_heading,
+                current_speed: payload.speed ?? prev.current_speed,
+                last_position_update: new Date().toISOString(),
+              }
+            : prev,
+        );
+        return;
+      }
+
+      if (payload.status === "arrived") {
+        setPageState("arrived");
+        setData((prev) =>
+          prev ? { ...prev, ...payload, status: "arrived" } : prev,
+        );
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      } else if (payload.status === "geofence_approach") {
+        setPageState("approaching");
+        setData((prev) => (prev ? { ...prev, ...payload } : prev));
+      } else if (
+        payload.status === "expired" ||
+        payload.status === "cancelled"
+      ) {
+        setErrorType(payload.status);
+        setErrorMessage(
+          payload.status === "expired"
+            ? "This tracking link has expired"
+            : "This session was cancelled",
+        );
+        setPageState("error");
+      } else {
+        setData((prev) => (prev ? { ...prev, ...payload } : prev));
+      }
+    },
+    [],
+  );
+
+  useTrackingRealtime(data?.session_id, handleRealtimeUpdate);
 
   useEffect(() => {
     fetchData();
-
-    // Poll every 5 seconds
-    intervalRef.current = setInterval(fetchData, 5000);
-
+    intervalRef.current = setInterval(fetchData, 10000);
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -172,8 +279,6 @@ export default function TrackingPage() {
       }
     };
   }, [fetchData]);
-
-  // ── Render ─────────────────────────────────────────────────
 
   return (
     <div className="min-h-dvh bg-[#0A0A0A] text-white flex flex-col overflow-hidden">
@@ -186,11 +291,12 @@ export default function TrackingPage() {
             message={errorMessage}
           />
         )}
-        {pageState === "active" && data && (
+        {(pageState === "active" || pageState === "approaching") && data && (
           <ActiveState
             key="active"
             data={data}
             lastFetched={lastFetched}
+            isApproaching={pageState === "approaching"}
           />
         )}
         {pageState === "arrived" && data && (
@@ -213,7 +319,6 @@ function LoadingState() {
       exit={{ opacity: 0 }}
       className="flex-1 flex flex-col items-center justify-center gap-6 px-6"
     >
-      {/* Pulsing rings */}
       <div className="relative w-24 h-24">
         <div className="absolute inset-0 rounded-full border-2 border-emerald-500/30 animate-ping" />
         <div
@@ -230,7 +335,7 @@ function LoadingState() {
         <div className="h-3 w-32 bg-zinc-800/60 rounded-full animate-pulse mx-auto" />
       </div>
 
-      <p className="text-zinc-500 text-sm">Loading tracking data...</p>
+      <p className="text-zinc-500 text-sm">Connecting to live tracking...</p>
     </motion.div>
   );
 }
@@ -278,15 +383,17 @@ function ErrorState({ type, message }: { type: string; message: string }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 3. ACTIVE STATE — Main tracking UI
+// 3. ACTIVE STATE — Main tracking UI with Mapbox
 // ═══════════════════════════════════════════════════════════════
 
 function ActiveState({
   data,
   lastFetched,
+  isApproaching,
 }: {
   data: TrackingPublicData;
   lastFetched: Date | null;
+  isApproaching: boolean;
 }) {
   return (
     <motion.div
@@ -295,17 +402,18 @@ function ActiveState({
       exit={{ opacity: 0 }}
       className="flex-1 flex flex-col"
     >
-      {/* ── Top Bar ──────────────────────────────────────────── */}
-      <TopBar data={data} />
+      <TopBar data={data} isApproaching={isApproaching} />
 
-      {/* ── Map Visualization (60%) ──────────────────────────── */}
       <div className="flex-[6] relative overflow-hidden">
-        <MapVisualization data={data} />
+        <MapboxTrackingView data={data} />
       </div>
 
-      {/* ── Bottom Drawer (40%) ──────────────────────────────── */}
       <div className="flex-[4] bg-zinc-950 border-t border-white/5 overflow-y-auto">
-        <BottomDrawer data={data} lastFetched={lastFetched} />
+        <BottomDrawer
+          data={data}
+          lastFetched={lastFetched}
+          isApproaching={isApproaching}
+        />
       </div>
     </motion.div>
   );
@@ -313,42 +421,234 @@ function ActiveState({
 
 // ── Top Bar ──────────────────────────────────────────────────
 
-function TopBar({ data }: { data: TrackingPublicData }) {
+function TopBar({
+  data,
+  isApproaching,
+}: {
+  data: TrackingPublicData;
+  isApproaching: boolean;
+}) {
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-zinc-950 border-b border-white/5">
       <div className="flex items-center gap-2.5">
-        {/* Pulsing green dot */}
         <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          <span
+            className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+              isApproaching ? "bg-amber-400" : "bg-emerald-400"
+            }`}
+          />
+          <span
+            className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+              isApproaching ? "bg-amber-500" : "bg-emerald-500"
+            }`}
+          />
         </span>
-        <span className="text-sm font-medium text-white">Live Tracking</span>
+        <span className="text-sm font-medium text-white">
+          {isApproaching ? "Arriving Momentarily" : "Live Tracking"}
+        </span>
       </div>
 
       <div className="flex items-center gap-2">
-        <Clock className="w-3.5 h-3.5 text-emerald-500" />
-        <span className="text-sm font-mono text-emerald-500 font-medium">
-          {data.eta_minutes != null
-            ? `Arriving in ${formatEta(data.eta_minutes)}`
-            : "Calculating ETA..."}
+        <Clock
+          className={`w-3.5 h-3.5 ${isApproaching ? "text-amber-500" : "text-emerald-500"}`}
+        />
+        <span
+          className={`text-sm font-mono font-medium ${
+            isApproaching ? "text-amber-500" : "text-emerald-500"
+          }`}
+        >
+          {isApproaching
+            ? "Almost there!"
+            : data.eta_minutes != null
+              ? `Arriving in ${formatEta(data.eta_minutes)}`
+              : "Calculating ETA..."}
         </span>
       </div>
     </div>
   );
 }
 
-// ── Map Visualization ────────────────────────────────────────
-// Pure CSS — no mapping library.
+// ── Mapbox Tracking View ─────────────────────────────────────
 
-function MapVisualization({ data }: { data: TrackingPublicData }) {
+function MapboxTrackingView({ data }: { data: TrackingPublicData }) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const workerMarkerRef = useRef<any>(null);
+  const destMarkerRef = useRef<any>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+
   const workerLat = data.current_lat;
   const workerLng = data.current_lng;
   const destLat = data.destination_lat;
   const destLng = data.destination_lng;
 
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    if (!token) {
+      setMapLoaded(false);
+      return;
+    }
+
+    let map: any;
+    let cancelled = false;
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.css";
+    if (!document.getElementById("mapbox-gl-css-tracking")) {
+      link.id = "mapbox-gl-css-tracking";
+      document.head.appendChild(link);
+    }
+
+    import("mapbox-gl").then((mod) => {
+      if (cancelled) return;
+      const mapboxgl = mod.default;
+      mapboxgl.accessToken = token;
+
+      const centerLat = workerLat || destLat || -27.4698;
+      const centerLng = workerLng || destLng || 153.0251;
+
+      map = new mapboxgl.Map({
+        container: mapContainerRef.current!,
+        style: "mapbox://styles/mapbox/dark-v11",
+        center: [centerLng, centerLat],
+        zoom: 13,
+        attributionControl: false,
+        logoPosition: "bottom-right",
+      });
+
+      map.addControl(
+        new mapboxgl.AttributionControl({ compact: true }),
+        "bottom-right",
+      );
+
+      map.on("load", () => {
+        if (cancelled) return;
+        mapRef.current = map;
+        setMapLoaded(true);
+
+        // Worker marker (custom car SVG)
+        if (workerLat && workerLng) {
+          const workerEl = document.createElement("div");
+          workerEl.innerHTML = `
+            <div style="position:relative;width:44px;height:44px;">
+              <div style="position:absolute;inset:-8px;border-radius:50%;background:rgba(16,185,129,0.15);animation:pulse 2s ease-in-out infinite;"></div>
+              <div style="width:44px;height:44px;border-radius:50%;background:#10B981;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(16,185,129,0.5);transform:rotate(${data.current_heading ?? 0}deg);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+                </svg>
+              </div>
+            </div>
+          `;
+          workerEl.style.cursor = "pointer";
+
+          workerMarkerRef.current = new mapboxgl.Marker({
+            element: workerEl,
+            anchor: "center",
+          })
+            .setLngLat([workerLng, workerLat])
+            .addTo(map);
+        }
+
+        // Destination marker
+        if (destLat && destLng) {
+          const destEl = document.createElement("div");
+          destEl.innerHTML = `
+            <div style="width:36px;height:36px;border-radius:50%;background:#F43F5E;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(244,63,94,0.4);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+          `;
+
+          destMarkerRef.current = new mapboxgl.Marker({
+            element: destEl,
+            anchor: "center",
+          })
+            .setLngLat([destLng, destLat])
+            .addTo(map);
+        }
+
+        // Fit bounds to show both markers
+        if (workerLat && workerLng && destLat && destLng) {
+          const bounds = new mapboxgl.LngLatBounds();
+          bounds.extend([workerLng, workerLat]);
+          bounds.extend([destLng, destLat]);
+          map.fitBounds(bounds, { padding: 80, maxZoom: 15 });
+        }
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      map?.remove();
+      mapRef.current = null;
+    };
+    // Only init once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Animate worker marker on position updates
+  useEffect(() => {
+    if (!mapLoaded || !workerMarkerRef.current || !workerLat || !workerLng)
+      return;
+
+    workerMarkerRef.current.setLngLat([workerLng, workerLat]);
+
+    // Rotate marker to heading
+    const el = workerMarkerRef.current.getElement();
+    const innerDiv = el?.querySelector("div > div:nth-child(2)");
+    if (innerDiv && data.current_heading != null) {
+      (innerDiv as HTMLElement).style.transform = `rotate(${data.current_heading}deg)`;
+    }
+
+    // Pan map to follow worker
+    if (mapRef.current) {
+      mapRef.current.panTo([workerLng, workerLat], { duration: 1000 });
+    }
+  }, [workerLat, workerLng, data.current_heading, mapLoaded]);
+
   return (
     <div className="absolute inset-0 bg-[#0A0A0A]">
-      {/* Grid background */}
+      <div ref={mapContainerRef} className="w-full h-full" />
+
+      {!mapLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <CssMapFallback data={data} />
+        </div>
+      )}
+
+      {/* Off-route banner */}
+      <AnimatePresence>
+        {data.is_off_route && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-3 left-3 right-3 z-10"
+          >
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 backdrop-blur-sm">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              <p className="text-xs text-amber-400">
+                {data.off_route_message ??
+                  "Technician has made a brief operational stop."}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── CSS Map Fallback (when Mapbox token unavailable) ─────────
+
+function CssMapFallback({ data }: { data: TrackingPublicData }) {
+  return (
+    <div className="absolute inset-0 bg-[#0A0A0A]">
       <div
         className="absolute inset-0 opacity-[0.04]"
         style={{
@@ -360,7 +660,6 @@ function MapVisualization({ data }: { data: TrackingPublicData }) {
         }}
       />
 
-      {/* Subtle radial gradient backdrop */}
       <div
         className="absolute inset-0 opacity-30"
         style={{
@@ -369,8 +668,11 @@ function MapVisualization({ data }: { data: TrackingPublicData }) {
         }}
       />
 
-      {/* Animated dashed route line */}
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
         <defs>
           <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
@@ -389,25 +691,22 @@ function MapVisualization({ data }: { data: TrackingPublicData }) {
         />
       </svg>
 
-      {/* Worker position — pulsing emerald */}
       <div className="absolute left-[28%] top-[50%] -translate-x-1/2 -translate-y-1/2">
-        {/* Outer pulse rings */}
-        <div className="absolute -inset-6 rounded-full border border-emerald-500/20 animate-ping" style={{ animationDuration: "2s" }} />
-        <div className="absolute -inset-4 rounded-full border border-emerald-500/30 animate-ping" style={{ animationDuration: "2.5s", animationDelay: "0.5s" }} />
-
-        {/* Glow */}
+        <div
+          className="absolute -inset-6 rounded-full border border-emerald-500/20 animate-ping"
+          style={{ animationDuration: "2s" }}
+        />
         <div className="absolute -inset-3 rounded-full bg-emerald-500/10 blur-md" />
-
-        {/* Dot */}
         <motion.div
           animate={{ scale: [1, 1.15, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           className="relative w-5 h-5 rounded-full bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center justify-center"
         >
-          <Navigation className="w-3 h-3 text-white" style={{ transform: `rotate(${data.current_heading ?? 45}deg)` }} />
+          <Navigation
+            className="w-3 h-3 text-white"
+            style={{ transform: `rotate(${data.current_heading ?? 45}deg)` }}
+          />
         </motion.div>
-
-        {/* Label */}
         <div className="absolute top-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <span className="text-[10px] font-mono text-emerald-500/70 bg-zinc-950/80 px-2 py-0.5 rounded-full border border-emerald-500/20">
             {data.worker_name ?? "Worker"}
@@ -415,17 +714,11 @@ function MapVisualization({ data }: { data: TrackingPublicData }) {
         </div>
       </div>
 
-      {/* Destination — static rose dot */}
       <div className="absolute left-[68%] top-[36%] -translate-x-1/2 -translate-y-1/2">
-        {/* Glow */}
         <div className="absolute -inset-2 rounded-full bg-rose-500/10 blur-sm" />
-
-        {/* Pin */}
         <div className="relative w-4 h-4 rounded-full bg-rose-500/90 shadow-[0_0_12px_rgba(244,63,94,0.4)] flex items-center justify-center">
           <MapPin className="w-2.5 h-2.5 text-white" />
         </div>
-
-        {/* Label */}
         <div className="absolute top-7 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <span className="text-[10px] font-mono text-rose-400/70 bg-zinc-950/80 px-2 py-0.5 rounded-full border border-rose-500/20">
             Destination
@@ -433,42 +726,6 @@ function MapVisualization({ data }: { data: TrackingPublicData }) {
         </div>
       </div>
 
-      {/* Coordinate readout */}
-      <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
-        <div className="bg-zinc-950/80 backdrop-blur-sm rounded-lg border border-white/5 px-3 py-2 space-y-0.5">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Worker Position</p>
-          <p className="text-xs font-mono text-zinc-300">
-            {formatCoord(workerLat)}, {formatCoord(workerLng)}
-          </p>
-        </div>
-        <div className="bg-zinc-950/80 backdrop-blur-sm rounded-lg border border-white/5 px-3 py-2 space-y-0.5 text-right">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Destination</p>
-          <p className="text-xs font-mono text-zinc-300">
-            {formatCoord(destLat)}, {formatCoord(destLng)}
-          </p>
-        </div>
-      </div>
-
-      {/* Off-route banner */}
-      <AnimatePresence>
-        {data.is_off_route && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-3 left-3 right-3"
-          >
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 backdrop-blur-sm">
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-              <p className="text-xs text-amber-400">
-                {data.off_route_message ?? "Technician has made a brief operational stop."}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* CSS animation for dashed line */}
       <style jsx>{`
         @keyframes dashScroll {
           to {
@@ -488,15 +745,15 @@ function MapVisualization({ data }: { data: TrackingPublicData }) {
 function BottomDrawer({
   data,
   lastFetched,
+  isApproaching,
 }: {
   data: TrackingPublicData;
   lastFetched: Date | null;
+  isApproaching: boolean;
 }) {
-  // Calculate progress percentage
   const progressPct = (() => {
     const dist = data.distance_remaining_km;
     if (dist == null) return 0;
-    // Assume max distance ~30km for visual progress
     const maxDist = 30;
     const pct = Math.max(0, Math.min(100, ((maxDist - dist) / maxDist) * 100));
     return pct;
@@ -504,9 +761,34 @@ function BottomDrawer({
 
   return (
     <div className="px-4 py-4 space-y-4">
-      {/* ── Worker Identity Card ─────────────────────────────── */}
+      {/* Approaching banner */}
+      <AnimatePresence>
+        {isApproaching && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <Navigation className="w-5 h-5 text-amber-500 animate-pulse" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-amber-400">
+                  Arriving momentarily
+                </p>
+                <p className="text-xs text-amber-400/60">
+                  {data.worker_name} is very close to your location
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Worker Identity Card */}
       <div className="flex items-start gap-4">
-        {/* Avatar */}
         <div className="shrink-0">
           {data.worker_avatar_url ? (
             <img
@@ -523,7 +805,6 @@ function BottomDrawer({
           )}
         </div>
 
-        {/* Name + role + vehicle */}
         <div className="flex-1 min-w-0 space-y-1.5">
           <h2 className="text-lg font-semibold text-white truncate">
             {data.worker_name ?? "Your Technician"}
@@ -540,44 +821,43 @@ function BottomDrawer({
               <span className="truncate">
                 {[data.vehicle_description, data.vehicle_registration]
                   .filter(Boolean)
-                  .join(" • ")}
+                  .join(" · ")}
               </span>
             </div>
           )}
         </div>
 
-        {/* Phone button */}
         {data.worker_phone_masked && (
-          <button
-            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs"
-            onClick={() => {
-              // In production this would initiate a masked call
-            }}
-          >
+          <button className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs">
             <Phone className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Call {data.worker_phone_masked}</span>
+            <span className="hidden sm:inline">
+              Call {data.worker_phone_masked}
+            </span>
           </button>
         )}
       </div>
 
-      {/* ── Destination ──────────────────────────────────────── */}
+      {/* Destination */}
       {data.destination_address && (
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-zinc-900 border border-white/5">
           <MapPin className="w-4 h-4 text-zinc-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-0.5">Heading to</p>
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-0.5">
+              Heading to
+            </p>
             <p className="text-sm text-zinc-300">{data.destination_address}</p>
           </div>
         </div>
       )}
 
-      {/* ── Stats Row ────────────────────────────────────────── */}
+      {/* Stats Row */}
       <div className="grid grid-cols-3 gap-2">
-        {/* ETA */}
         <div className="bg-zinc-900 rounded-xl border border-white/5 px-3 py-3 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Clock className="w-3 h-3 text-emerald-500" />
-            <span className="text-[10px] uppercase tracking-wider text-zinc-500">ETA</span>
+            <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+              ETA
+            </span>
           </div>
           <p className="text-2xl font-mono font-bold text-emerald-500">
             {data.eta_minutes != null ? data.eta_minutes : "—"}
@@ -587,11 +867,12 @@ function BottomDrawer({
           </p>
         </div>
 
-        {/* Distance */}
         <div className="bg-zinc-900 rounded-xl border border-white/5 px-3 py-3 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Route className="w-3 h-3 text-zinc-400" />
-            <span className="text-[10px] uppercase tracking-wider text-zinc-500">Distance</span>
+            <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+              Distance
+            </span>
           </div>
           <p className="text-2xl font-mono font-bold text-white">
             {data.distance_remaining_km != null
@@ -603,11 +884,12 @@ function BottomDrawer({
           </p>
         </div>
 
-        {/* Speed */}
         <div className="bg-zinc-900 rounded-xl border border-white/5 px-3 py-3 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Gauge className="w-3 h-3 text-zinc-400" />
-            <span className="text-[10px] uppercase tracking-wider text-zinc-500">Speed</span>
+            <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+              Speed
+            </span>
           </div>
           <p className="text-2xl font-mono font-bold text-white">
             {formatSpeed(data.current_speed).replace(" km/h", "")}
@@ -616,15 +898,19 @@ function BottomDrawer({
         </div>
       </div>
 
-      {/* ── Progress Bar ─────────────────────────────────────── */}
+      {/* Progress Bar */}
       <div className="space-y-1.5">
         <div className="flex justify-between text-[10px] text-zinc-500">
           <span>En Route</span>
-          <span>Arriving</span>
+          <span>{isApproaching ? "Almost There!" : "Arriving"}</span>
         </div>
         <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400"
+            className={`h-full rounded-full ${
+              isApproaching
+                ? "bg-gradient-to-r from-amber-600 to-amber-400"
+                : "bg-gradient-to-r from-emerald-600 to-emerald-400"
+            }`}
             initial={{ width: 0 }}
             animate={{ width: `${progressPct}%` }}
             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -632,24 +918,21 @@ function BottomDrawer({
         </div>
       </div>
 
-      {/* ── Last Updated ─────────────────────────────────────── */}
-      <div className="flex items-center justify-center gap-1.5 pt-1">
-        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-pulse" />
-        <p className="text-[10px] text-zinc-600">
-          Data current as of{" "}
-          <span className="font-mono text-zinc-500">
-            {lastFetched ? formatTime(lastFetched.toISOString()) : "—"}
-          </span>
-          {data.last_position_update && (
-            <>
-              {" · "}
-              Position updated{" "}
-              <span className="font-mono text-zinc-500">
-                {formatTime(data.last_position_update)}
-              </span>
-            </>
-          )}
-        </p>
+      {/* Privacy notice + last updated */}
+      <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center gap-1 text-[10px] text-zinc-600">
+          <Shield className="w-3 h-3" />
+          <span>End-to-end encrypted</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-pulse" />
+          <p className="text-[10px] text-zinc-600">
+            Updated{" "}
+            <span className="font-mono text-zinc-500">
+              {lastFetched ? formatTime(lastFetched.toISOString()) : "—"}
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -667,7 +950,6 @@ function ArrivedState({ data }: { data: TrackingPublicData }) {
       exit={{ opacity: 0 }}
       className="flex-1 flex flex-col items-center justify-center gap-6 px-6 relative overflow-hidden"
     >
-      {/* ── Particle Background ──────────────────────────────── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {Array.from({ length: 20 }).map((_, i) => (
           <div
@@ -685,7 +967,6 @@ function ArrivedState({ data }: { data: TrackingPublicData }) {
         ))}
       </div>
 
-      {/* ── Radial glow ──────────────────────────────────────── */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -694,25 +975,28 @@ function ArrivedState({ data }: { data: TrackingPublicData }) {
         }}
       />
 
-      {/* ── Success Icon ─────────────────────────────────────── */}
       <motion.div
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
+        transition={{
+          type: "spring",
+          stiffness: 200,
+          damping: 20,
+          delay: 0.2,
+        }}
         className="relative"
       >
-        {/* Outer ring */}
         <div className="w-28 h-28 rounded-full border-2 border-emerald-500/30 flex items-center justify-center">
           <div className="w-24 h-24 rounded-full bg-emerald-500/10 flex items-center justify-center">
             <CheckCircle2 className="w-14 h-14 text-emerald-500" />
           </div>
         </div>
-
-        {/* Pulse ring */}
-        <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping" style={{ animationDuration: "2s" }} />
+        <div
+          className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping"
+          style={{ animationDuration: "2s" }}
+        />
       </motion.div>
 
-      {/* ── Text ─────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -729,7 +1013,6 @@ function ArrivedState({ data }: { data: TrackingPublicData }) {
         )}
       </motion.div>
 
-      {/* ── Arrived time ─────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -745,7 +1028,6 @@ function ArrivedState({ data }: { data: TrackingPublicData }) {
         </p>
       </motion.div>
 
-      {/* ── Worker card (compact) ────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -771,7 +1053,6 @@ function ArrivedState({ data }: { data: TrackingPublicData }) {
         </div>
       </motion.div>
 
-      {/* ── Particle animation keyframes ─────────────────────── */}
       <style jsx>{`
         @keyframes emeraldFloat {
           0% {

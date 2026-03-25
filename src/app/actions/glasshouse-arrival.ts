@@ -63,7 +63,7 @@ export type TrackingSession = {
   worker_phone_masked: string | null;
   vehicle_description: string | null;
   vehicle_registration: string | null;
-  status: "active" | "arrived" | "cancelled" | "expired";
+  status: "active" | "geofence_approach" | "arrived" | "cancelled" | "expired";
   current_lat: number | null;
   current_lng: number | null;
   current_heading: number | null;

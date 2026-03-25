@@ -1,4 +1,5 @@
 /// ScheduleBlock model — maps to public.schedule_blocks
+/// Updated for Project Outrider-Route: route_sequence, pinning, travel metadata
 class ScheduleBlock {
   final String id;
   final String organizationId;
@@ -13,6 +14,12 @@ class ScheduleBlock {
   final int travelMinutes;
   final bool isConflict;
   final String? notes;
+  final int routeSequence;
+  final bool isTimePinned;
+  final int plannedTravelDurationSeconds;
+  final int plannedTravelDistanceMeters;
+  final bool isSupplierWaypoint;
+  final String? waypointName;
 
   const ScheduleBlock({
     required this.id,
@@ -28,6 +35,12 @@ class ScheduleBlock {
     this.travelMinutes = 0,
     this.isConflict = false,
     this.notes,
+    this.routeSequence = 0,
+    this.isTimePinned = false,
+    this.plannedTravelDurationSeconds = 0,
+    this.plannedTravelDistanceMeters = 0,
+    this.isSupplierWaypoint = false,
+    this.waypointName,
   });
 
   Duration get duration => endTime.difference(startTime);
@@ -37,6 +50,20 @@ class ScheduleBlock {
     final endHour = endTime.hour.toString().padLeft(2, '0');
     final endMin = endTime.minute.toString().padLeft(2, '0');
     return '$startHour:$startMin – $endHour:$endMin';
+  }
+
+  /// Travel distance formatted as km
+  String get travelDistanceKm {
+    if (plannedTravelDistanceMeters <= 0) return '';
+    return '${(plannedTravelDistanceMeters / 1000).toStringAsFixed(1)} km';
+  }
+
+  /// Travel duration formatted for display
+  String get travelDurationFormatted {
+    if (plannedTravelDurationSeconds <= 0) return '';
+    final mins = (plannedTravelDurationSeconds / 60).round();
+    if (mins < 60) return '$mins min';
+    return '${mins ~/ 60}h ${mins % 60}m';
   }
 
   factory ScheduleBlock.fromJson(Map<String, dynamic> json) {
@@ -54,6 +81,12 @@ class ScheduleBlock {
       travelMinutes: json['travel_minutes'] as int? ?? 0,
       isConflict: json['is_conflict'] as bool? ?? false,
       notes: json['notes'] as String?,
+      routeSequence: json['route_sequence'] as int? ?? 0,
+      isTimePinned: json['is_time_pinned'] as bool? ?? false,
+      plannedTravelDurationSeconds: json['planned_travel_duration_seconds'] as int? ?? 0,
+      plannedTravelDistanceMeters: json['planned_travel_distance_meters'] as int? ?? 0,
+      isSupplierWaypoint: json['is_supplier_waypoint'] as bool? ?? false,
+      waypointName: json['waypoint_name'] as String?,
     );
   }
 }

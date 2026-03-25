@@ -176,6 +176,13 @@ String _tableForEntity(String entityType) {
     'job_subtask' => 'job_subtasks',
     'job_timer_session' => 'job_timer_sessions',
     'job_media' => 'job_media',
+    'schedule_block' => 'schedule_blocks',
+    'shift_notes' => 'shift_notes',
+    'medication_records' => 'medication_records',
+    'inventory_consumption' => 'inventory_consumptions',
+    'client' => 'clients',
+    'participant' => 'participant_profiles',
+    'care_plan' => 'care_plans',
     _ => entityType,
   };
 }

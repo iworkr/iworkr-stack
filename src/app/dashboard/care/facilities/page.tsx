@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { useOrg } from "@/lib/hooks/use-org";
@@ -286,11 +287,15 @@ function CreateFacilitySlideOver({
               </div>
               <div>
                 <label className="block text-xs text-zinc-400 mb-1.5">Address</label>
-                <input
+                <AddressAutocomplete
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={setAddress}
+                  onSelect={(result: AddressResult) => {
+                    setAddress(result.address);
+                  }}
                   placeholder="e.g., 123 Coastal Drive, Brisbane"
-                  className="w-full h-10 px-3 bg-zinc-900 border border-white/10 rounded-md text-sm text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                  inputClassName="h-10 px-3 bg-zinc-900 border-white/10 rounded-md text-sm text-white placeholder:text-zinc-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
+                  showIcon
                 />
               </div>
               <div>

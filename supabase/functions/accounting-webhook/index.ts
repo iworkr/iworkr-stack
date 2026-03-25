@@ -299,7 +299,7 @@ async function processXeroEvents(
         metadata: { xero_status: xeroInvoice.Status, event_type: eventType },
       });
 
-      // Reconciliation
+      // Reconciliation + entity map update
       if (xeroInvoice.Status === "PAID") {
         await supabase
           .from("invoices")
@@ -312,6 +312,15 @@ async function processXeroEvents(
           })
           .eq("id", iworkrInvoice.id);
 
+        await supabase.rpc("upsert_entity_mapping", {
+          p_workspace_id: workspaceId,
+          p_provider: "XERO",
+          p_entity_type: "INVOICE",
+          p_iworkr_id: iworkrInvoice.id,
+          p_external_id: resourceId,
+          p_metadata: JSON.stringify({ status: "PAID", paid_date: xeroInvoice.FullyPaidOnDate }),
+        });
+
         await triggerRevalidation("/dashboard/finance/invoicing");
         processed.push(`Invoice ${iworkrInvoice.display_id} marked PAID`);
       } else if (xeroInvoice.Status === "VOIDED") {
@@ -319,6 +328,16 @@ async function processXeroEvents(
           .from("invoices")
           .update({ status: "voided", sync_status: "SUCCESS" })
           .eq("id", iworkrInvoice.id);
+
+        await supabase.rpc("upsert_entity_mapping", {
+          p_workspace_id: workspaceId,
+          p_provider: "XERO",
+          p_entity_type: "INVOICE",
+          p_iworkr_id: iworkrInvoice.id,
+          p_external_id: resourceId,
+          p_metadata: JSON.stringify({ status: "VOIDED" }),
+        });
+
         processed.push(`Invoice ${iworkrInvoice.display_id} voided`);
       }
 

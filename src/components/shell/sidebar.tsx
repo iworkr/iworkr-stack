@@ -55,6 +55,7 @@ import {
   Send,
   RefreshCw,
   Phone,
+  Route,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -141,6 +142,7 @@ const CARE_NAV: NavGroup[] = [
     children: [
       { id: "nav_master_roster", label: "Master Roster", icon: CalendarClock, href: "/dashboard/schedule", shortcut: "G S" },
       { id: "nav_roster_dispatch", label: "Roster Dispatch", icon: CalendarClock, href: "/dashboard/roster/dispatch" },
+      { id: "nav_route_optimizer_care", label: "Route Optimizer", icon: Route, href: "/dashboard/schedule/route-optimizer" },
       { id: "nav_daily_ops", label: "Daily Ops", icon: Activity, href: "/dashboard/care/daily-ops" },
       { id: "nav_houses", label: "Houses / SIL", icon: Building2, href: "/dashboard/houses" },
       { id: "nav_fleet", label: "Fleet Management", icon: Truck, href: "/dashboard/fleet/overview" },
@@ -230,6 +232,7 @@ const TRADES_NAV: NavGroup[] = [
       { id: "nav_jobs", label: "Jobs", icon: Briefcase, href: "/dashboard/jobs", shortcut: "G J" },
       { id: "nav_schedule", label: "Schedule", icon: Calendar, href: "/dashboard/schedule", shortcut: "G S" },
       { id: "nav_dispatch", label: "Dispatch", icon: Map, href: "/dashboard/dispatch" },
+      { id: "nav_route_optimizer", label: "Route Optimizer", icon: Route, href: "/dashboard/schedule/route-optimizer" },
     ],
   },
   {

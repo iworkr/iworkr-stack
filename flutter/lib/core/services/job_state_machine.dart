@@ -1,5 +1,13 @@
+import 'dart:convert';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+
 import 'package:iworkr_mobile/core/database/app_database.dart';
 import 'package:iworkr_mobile/core/database/sync_engine.dart';
+import 'package:iworkr_mobile/features/compliance/services/cerberus_validator.dart';
+
+const _uuid = Uuid();
 
 // ═══════════════════════════════════════════════════════════
 // ── Field Job States (Technician Workflow) ────────────────
@@ -35,6 +43,14 @@ enum FieldJobState {
     }
   }
 
+  String get cerberusTrigger {
+    switch (this) {
+      case inProgress: return 'PRE_START';
+      case completed: return 'POST_COMPLETION';
+      default: return '';
+    }
+  }
+
   static FieldJobState fromDbStatus(String status) {
     switch (status) {
       case 'in_progress': return inProgress;
@@ -66,20 +82,31 @@ class GateResult {
   final bool passed;
   final String? gateType;
   final String? message;
+  final ComplianceResult? complianceResult;
 
-  const GateResult.pass() : passed = true, gateType = null, message = null;
-  const GateResult.blocked({required this.gateType, required this.message}) : passed = false;
+  const GateResult.pass()
+      : passed = true,
+        gateType = null,
+        message = null,
+        complianceResult = null;
+
+  const GateResult.blocked({
+    required this.gateType,
+    required this.message,
+    this.complianceResult,
+  }) : passed = false;
 }
 
 // ═══════════════════════════════════════════════════════════
-// ── Job State Machine (Offline-Aware) ────────────────────
+// ── Job State Machine (Cerberus-Gate Integrated) ─────────
 // ═══════════════════════════════════════════════════════════
 
 class JobStateMachine {
   final AppDatabase _db;
   final SyncEngine _sync;
+  final CerberusValidator _cerberus;
 
-  JobStateMachine(this._db, this._sync);
+  JobStateMachine(this._db, this._sync, this._cerberus);
 
   List<FieldJobState> nextStates(FieldJobState current) {
     return _fieldTransitions[current] ?? [];
@@ -89,32 +116,39 @@ class JobStateMachine {
     return _fieldTransitions[from]?.contains(to) ?? false;
   }
 
-  /// Check compliance gates before allowing transition.
-  /// Returns [GateResult.pass()] if clear, or a blocked result with details.
-  Future<GateResult> checkGates({
+  /// Attempt a job state transition with full Cerberus compliance evaluation.
+  /// Returns [GateResult] with compliance violations if blocked.
+  Future<GateResult> attemptTransition({
     required String jobId,
+    required String orgId,
     required FieldJobState from,
     required FieldJobState to,
+    String? shiftId,
   }) async {
-    // Gate 1: SWMS / Pre-Start check before starting work
-    if (to == FieldJobState.inProgress && from == FieldJobState.onSite) {
-      final criticalTasks = await _db.getCriticalIncompleteTasks(jobId);
-      if (criticalTasks.isNotEmpty) {
-        return GateResult.blocked(
-          gateType: 'swms',
-          message: '${criticalTasks.length} mandatory safety item${criticalTasks.length > 1 ? 's' : ''} not completed',
-        );
-      }
+    if (!canTransition(from, to)) {
+      return GateResult.blocked(
+        gateType: 'invalid_transition',
+        message: 'Cannot move from ${from.label} to ${to.label}',
+      );
     }
 
-    // Gate 2: Mandatory evidence before completion
-    if (to == FieldJobState.completed) {
-      // Check for incomplete critical tasks
-      final criticalTasks = await _db.getCriticalIncompleteTasks(jobId);
-      if (criticalTasks.isNotEmpty) {
+    // Determine the Cerberus trigger for this transition
+    final trigger = to.cerberusTrigger;
+
+    if (trigger.isNotEmpty) {
+      final complianceResult = await _cerberus.evaluate(
+        jobId: jobId,
+        organizationId: orgId,
+        triggerState: trigger,
+        shiftId: shiftId,
+      );
+
+      if (!complianceResult.passed) {
         return GateResult.blocked(
-          gateType: 'critical_tasks',
-          message: '${criticalTasks.length} critical task${criticalTasks.length > 1 ? 's' : ''} incomplete',
+          gateType: 'cerberus_compliance',
+          message:
+              '${complianceResult.violations.length} compliance requirement${complianceResult.violations.length > 1 ? 's' : ''} not met',
+          complianceResult: complianceResult,
         );
       }
     }
@@ -123,7 +157,8 @@ class JobStateMachine {
   }
 
   /// Execute a field state transition, writing locally and queuing sync.
-  Future<GateResult> transition({
+  /// Call [attemptTransition] first to validate compliance gates.
+  Future<GateResult> executeTransition({
     required String jobId,
     required String orgId,
     required FieldJobState from,
@@ -139,10 +174,6 @@ class JobStateMachine {
       );
     }
 
-    final gate = await checkGates(jobId: jobId, from: from, to: to);
-    if (!gate.passed) return gate;
-
-    // Handle timer lifecycle
     if (to == FieldJobState.inProgress && userId != null) {
       await _sync.startTimer(
         jobId: jobId,
@@ -162,7 +193,31 @@ class JobStateMachine {
     return const GateResult.pass();
   }
 
-  /// Get the slider configuration for the current state.
+  /// Record a compliance override in the sync outbox.
+  Future<void> recordOverride({
+    required String orgId,
+    required String ruleId,
+    required String workerId,
+    required String jobId,
+    required String justification,
+    required String overrideType,
+    String? adminId,
+    String? pinId,
+  }) async {
+    final overrideId = _uuid.v4();
+    await _sync.createComplianceOverride(
+      overrideId: overrideId,
+      organizationId: orgId,
+      ruleId: ruleId,
+      workerId: workerId,
+      jobId: jobId,
+      justification: justification,
+      overrideType: overrideType,
+      adminId: adminId,
+      pinId: pinId,
+    );
+  }
+
   SliderConfig? getSliderConfig(FieldJobState current) {
     switch (current) {
       case FieldJobState.dispatched:
@@ -201,3 +256,14 @@ class SliderConfig {
   final FieldJobState targetState;
   const SliderConfig({required this.label, required this.targetState});
 }
+
+// ═══════════════════════════════════════════════════════════
+// ── Providers ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+final jobStateMachineProvider = Provider<JobStateMachine>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  final sync = ref.watch(syncEngineProvider);
+  final cerberus = ref.watch(cerberusValidatorProvider);
+  return JobStateMachine(db, sync, cerberus);
+});

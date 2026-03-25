@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useOrg } from "@/lib/hooks/use-org";
 import { fetchHouses, createHouse, type CareHouse } from "@/app/actions/care-houses";
+import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
 
 export default function HousesListPage() {
   const { orgId } = useOrg();
@@ -147,8 +148,16 @@ export default function HousesListPage() {
                   </div>
                   <div>
                     <label className="block text-[9px] font-semibold uppercase tracking-wider text-zinc-600 mb-1">Address</label>
-                    <input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="42 Maple Street, Brisbane QLD"
-                      className="w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-[13px] text-white placeholder:text-zinc-600 outline-none focus:border-zinc-600" />
+                    <AddressAutocomplete
+                      value={newAddress}
+                      onChange={setNewAddress}
+                      onSelect={(result: AddressResult) => {
+                        setNewAddress(result.address);
+                      }}
+                      placeholder="42 Maple Street, Brisbane QLD"
+                      inputClassName="rounded-lg border-zinc-800 bg-zinc-900/50 px-3 py-2 text-[13px] text-white placeholder:text-zinc-600 focus:border-zinc-600"
+                      showIcon
+                    />
                   </div>
                   <div>
                     <label className="block text-[9px] font-semibold uppercase tracking-wider text-zinc-600 mb-1">House Phone</label>

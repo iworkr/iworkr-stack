@@ -95,44 +95,101 @@ function buildDialTwiml(
   workspaceId: string,
   toNumber: string,
   routingStrategy: string,
-  assignedWorkerIds: string[]
+  assignedWorkerIds: string[],
+  options: {
+    callSid?: string;
+    fromNumber?: string;
+    forwardingNumber?: string;
+    aiTimeoutSeconds?: number;
+    voipRecordId?: string;
+    logId?: string;
+  } = {}
 ): string {
   const statusCallback = `${SUPABASE_URL}/functions/v1/twilio-voice-status`;
+  const aiStreamUrl = `${SUPABASE_URL}/functions/v1/siren-voice-agent`;
+  const timeout = options.aiTimeoutSeconds || 15;
 
-  if (routingStrategy === "ring_all") {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Dial callerId="${escapeXml(toNumber)}" timeout="30" action="${statusCallback}">
-    <Client>workspace_${workspaceId}</Client>
-  </Dial>
+  // AI Stream connection block with custom parameters
+  const streamParams = [
+    `<Parameter name="workspace_id" value="${escapeXml(workspaceId)}" />`,
+    `<Parameter name="call_sid" value="${escapeXml(options.callSid || "")}" />`,
+    `<Parameter name="from" value="${escapeXml(options.fromNumber || "")}" />`,
+    `<Parameter name="to" value="${escapeXml(toNumber)}" />`,
+    `<Parameter name="voip_record_id" value="${escapeXml(options.voipRecordId || "")}" />`,
+    `<Parameter name="log_id" value="${escapeXml(options.logId || "")}" />`,
+  ].join("\n      ");
+
+  const aiStreamBlock = `
+  <Connect>
+    <Stream url="${aiStreamUrl}">
+      ${streamParams}
+    </Stream>
+  </Connect>`;
+
+  const voicemailBlock = `
   <Say>We're sorry, no one is available to take your call. Please leave a message.</Say>
-  <Record maxLength="120" action="${statusCallback}" transcribe="false" />
+  <Record maxLength="120" action="${statusCallback}" transcribe="false" />`;
+
+  // AI_ONLY: Skip human, go straight to AI
+  if (routingStrategy === "ai_only") {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>${aiStreamBlock}${voicemailBlock}
 </Response>`;
   }
 
+  // AI_FIRST: Try AI first, then ring human
+  if (routingStrategy === "ai_first") {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>${aiStreamBlock}
+  <Dial callerId="${escapeXml(toNumber)}" timeout="30" action="${statusCallback}">
+    <Client>workspace_${workspaceId}</Client>
+  </Dial>${voicemailBlock}
+</Response>`;
+  }
+
+  // HUMAN_THEN_AI: Ring human first, fall through to AI if unanswered
+  if (routingStrategy === "human_then_ai") {
+    const dialTarget = options.forwardingNumber
+      ? `<Number>${escapeXml(options.forwardingNumber)}</Number>`
+      : `<Client>workspace_${workspaceId}</Client>`;
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial callerId="${escapeXml(toNumber)}" timeout="${timeout}" action="${statusCallback}" record="record-from-answer">
+    ${dialTarget}
+  </Dial>${aiStreamBlock}${voicemailBlock}
+</Response>`;
+  }
+
+  // RING_ALL: Ring workspace client, fall through to AI agent
+  if (routingStrategy === "ring_all") {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial callerId="${escapeXml(toNumber)}" timeout="${timeout}" action="${statusCallback}" record="record-from-answer">
+    <Client>workspace_${workspaceId}</Client>
+  </Dial>${aiStreamBlock}${voicemailBlock}
+</Response>`;
+  }
+
+  // SEQUENTIAL: Ring each worker in sequence, fall through to AI
   if (routingStrategy === "sequential" && assignedWorkerIds.length > 0) {
-    // Ring each worker in sequence (first available picks up)
     const clients = assignedWorkerIds
       .map((wid) => `    <Client>worker_${wid}</Client>`)
       .join("\n");
     return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${escapeXml(toNumber)}" timeout="20" action="${statusCallback}">
+  <Dial callerId="${escapeXml(toNumber)}" timeout="20" action="${statusCallback}" record="record-from-answer">
 ${clients}
-  </Dial>
-  <Say>We're sorry, no one is available to take your call. Please leave a message.</Say>
-  <Record maxLength="120" action="${statusCallback}" transcribe="false" />
+  </Dial>${aiStreamBlock}${voicemailBlock}
 </Response>`;
   }
 
-  // Default fallback — ring workspace client
+  // Default fallback — ring workspace client, then AI agent
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${escapeXml(toNumber)}" timeout="30" action="${statusCallback}">
+  <Dial callerId="${escapeXml(toNumber)}" timeout="${timeout}" action="${statusCallback}" record="record-from-answer">
     <Client>workspace_${workspaceId}</Client>
-  </Dial>
-  <Say>We're sorry, no one is available to take your call. Please leave a message.</Say>
-  <Record maxLength="120" action="${statusCallback}" transcribe="false" />
+  </Dial>${aiStreamBlock}${voicemailBlock}
 </Response>`;
 }
 
@@ -212,7 +269,7 @@ serve(async (req) => {
     // ── 1. Look up workspace by called number ────────────────
     const { data: phoneRecord, error: phoneErr } = await supabase
       .from("workspace_phone_numbers")
-      .select("workspace_id, routing_strategy, assigned_worker_ids, friendly_name")
+      .select("workspace_id, routing_strategy, assigned_worker_ids, friendly_name, forwarding_number, ai_timeout_seconds")
       .eq("phone_number", to)
       .eq("is_active", true)
       .maybeSingle();
@@ -349,7 +406,14 @@ serve(async (req) => {
     }
 
     // ── 6. Return TwiML routing response ─────────────────────
-    const twiml = buildDialTwiml(workspaceId, to, routingStrategy, assignedWorkerIds);
+    const twiml = buildDialTwiml(workspaceId, to, routingStrategy, assignedWorkerIds, {
+      callSid,
+      fromNumber: from,
+      forwardingNumber: phoneRecord.forwarding_number || undefined,
+      aiTimeoutSeconds: phoneRecord.ai_timeout_seconds || 15,
+      voipRecordId: logId ? logId : undefined,
+      logId: logId || undefined,
+    });
     console.log(`[twilio-voice-inbound] Returning TwiML for ${routingStrategy}`);
 
     return twimlResponse(twiml);

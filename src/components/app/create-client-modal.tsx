@@ -27,6 +27,7 @@ import { useToastStore } from "./action-toast";
 import { useClientsStore } from "@/lib/clients-store";
 import { InlineMap } from "@/components/maps/inline-map";
 import { StaticMap } from "@/components/maps/static-map";
+import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
 import { useOrg } from "@/lib/hooks/use-org";
 import { type Client, type ClientStatus } from "@/lib/data";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -463,11 +464,18 @@ export function CreateClientModal({
                       {/* Address input (if not auto-filled) */}
                       {!address && (
                         <div className="mt-3">
-                          <input
+                          <AddressAutocomplete
                             value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            placeholder="Enter address..."
-                            className="w-full border-b border-[var(--border-base)] bg-transparent pb-2 text-[13px] text-zinc-300 outline-none transition-colors placeholder:text-zinc-700 focus:border-[var(--brand)]"
+                            onChange={setAddress}
+                            onSelect={(result: AddressResult) => {
+                              setAddress(result.address);
+                              if (result.lat != null && result.lng != null) {
+                                setAddressCoords({ lat: result.lat, lng: result.lng });
+                              }
+                            }}
+                            placeholder="Search address…"
+                            variant="underline"
+                            showIcon
                           />
                         </div>
                       )}

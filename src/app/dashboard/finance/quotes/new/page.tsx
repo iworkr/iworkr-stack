@@ -17,6 +17,7 @@ import {
 import { createQuote, sendQuote } from "@/app/actions/quotes";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useToastStore } from "@/components/app/action-toast";
+import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -251,11 +252,15 @@ export default function NewQuotePage() {
                 <label className="mb-1 block font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
                   Address
                 </label>
-                <input
+                <AddressAutocomplete
                   value={clientAddress}
-                  onChange={(e) => setClientAddress(e.target.value)}
+                  onChange={setClientAddress}
+                  onSelect={(result: AddressResult) => {
+                    setClientAddress(result.address);
+                  }}
                   placeholder="Street address, city, state"
-                  className="h-9 w-full rounded-lg border border-[var(--border-active)] bg-white/[0.02] px-3 text-[13px] text-zinc-200 outline-none transition-colors focus:border-emerald-500/30"
+                  inputClassName="h-9 rounded-lg border-[var(--border-active)] bg-white/[0.02] px-3 text-[13px] text-zinc-200 focus:border-emerald-500/30"
+                  showIcon
                 />
               </div>
             </div>

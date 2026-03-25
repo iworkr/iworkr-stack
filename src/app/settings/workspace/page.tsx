@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Camera, Building2, Globe, Receipt, Clock, MapPin } from "lucide-react";
 import { SettingRow, SettingSection, Select } from "@/components/settings/settings-toggle";
+import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
 import { useSettingsStore } from "@/lib/stores/settings-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useTeamStore } from "@/lib/team-store";
@@ -272,12 +273,18 @@ export default function WorkspacePage() {
           />
         </SettingRow>
         <SettingRow label="Headquarters address" description="Main office or depot location">
-          <input
+          <AddressAutocomplete
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={setAddress}
+            onSelect={(result: AddressResult) => {
+              setAddress(result.address);
+              handleAddressBlur();
+            }}
             onBlur={handleAddressBlur}
-            className="w-[280px] rounded-md border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-zinc-200 outline-none transition-colors focus:border-[#10B981]/40"
             placeholder="123 Main St, Brisbane QLD 4000"
+            className="w-[280px]"
+            inputClassName="rounded-md border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-zinc-200 focus:border-[#10B981]/40"
+            showIcon
           />
         </SettingRow>
       </SettingSection>

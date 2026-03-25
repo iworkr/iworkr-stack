@@ -202,11 +202,37 @@ Deno.serve(async (req: Request) => {
 
       case "payment_intent.succeeded": {
         const piId = obj.id as string;
+        const piMeta = (obj.metadata as Record<string, string>) ?? {};
+
         await supabase
           .from("payments")
           .update({ status: "succeeded", updated_at: new Date().toISOString() })
           .eq("stripe_payment_intent_id", piId);
 
+        // Revenue-Net: If this PI was created by auto-charge, use the RPC
+        if (piMeta.source === "revenue_net_auto_charge" && piMeta.invoice_id) {
+          await supabase.rpc("mark_invoice_paid_via_stripe", {
+            p_invoice_id: piMeta.invoice_id,
+            p_payment_intent_id: piId,
+          });
+
+          // Queue for Ledger-Bridge/Xero sync
+          try {
+            await supabase.rpc("enqueue_ledger_sync", {
+              p_org_id: piMeta.organization_id || "",
+              p_entity_type: "payment",
+              p_entity_id: piMeta.invoice_id,
+              p_action: "create",
+              p_payload: {
+                invoice_id: piMeta.invoice_id,
+                payment_intent_id: piId,
+              },
+            });
+          } catch { /* non-fatal */ }
+          break;
+        }
+
+        // Legacy path: lookup via payments table
         const { data: payment } = await supabase
           .from("payments")
           .select("invoice_id")
@@ -224,10 +250,81 @@ Deno.serve(async (req: Request) => {
 
       case "payment_intent.payment_failed": {
         const piId = obj.id as string;
+        const piMeta = (obj.metadata as Record<string, string>) ?? {};
+
         await supabase
           .from("payments")
           .update({ status: "failed", updated_at: new Date().toISOString() })
           .eq("stripe_payment_intent_id", piId);
+
+        // Revenue-Net dunning waterfall for off-session charges
+        if (piMeta.source === "revenue_net_auto_charge" && piMeta.invoice_id) {
+          const lastError = (obj.last_payment_error as Record<string, unknown>);
+          const errorCode = (lastError?.code as string) || "card_declined";
+          const errorMsg = (lastError?.message as string) || "Payment failed";
+
+          await supabase.rpc("advance_dunning", {
+            p_invoice_id: piMeta.invoice_id,
+            p_error_message: `${errorCode}: ${errorMsg}`,
+          });
+        }
+        break;
+      }
+
+      // Revenue-Net: Handle SetupIntent completion → save mandate
+      case "setup_intent.succeeded": {
+        const siMeta = (obj.metadata as Record<string, string>) ?? {};
+        const pmId = obj.payment_method as string;
+        const customerId = obj.customer as string;
+
+        if (siMeta.mandate_flow === "revenue_net" && siMeta.client_id && siMeta.organization_id && pmId) {
+          // Revoke any existing default mandates for this client
+          await supabase
+            .from("payment_mandates")
+            .update({ is_default: false, updated_at: new Date().toISOString() })
+            .eq("client_id", siMeta.client_id)
+            .eq("is_default", true);
+
+          const mandateType = siMeta.mandate_type === "BECS_DEBIT" ? "BECS_DEBIT" : "CREDIT_CARD";
+
+          await supabase.from("payment_mandates").insert({
+            organization_id: siMeta.organization_id,
+            client_id: siMeta.client_id,
+            stripe_customer_id: customerId,
+            stripe_payment_method_id: pmId,
+            stripe_setup_intent_id: obj.id as string,
+            mandate_type: mandateType,
+            status: "ACTIVE",
+            is_default: true,
+            card_brand: siMeta.card_brand || null,
+            last4: siMeta.last4 || null,
+            exp_month: siMeta.exp_month ? parseInt(siMeta.exp_month) : null,
+            exp_year: siMeta.exp_year ? parseInt(siMeta.exp_year) : null,
+            bsb_last4: siMeta.bsb_last4 || null,
+            account_last4: siMeta.account_last4 || null,
+          });
+
+          // If client was suspended, trigger immediate sweep for overdue invoices
+          const { data: clientData } = await supabase
+            .from("clients")
+            .select("is_financially_suspended")
+            .eq("id", siMeta.client_id)
+            .single();
+
+          if ((clientData as Record<string, unknown>)?.is_financially_suspended) {
+            // Trigger manual sweep via the cron function
+            const fnUrl = `${SUPABASE_URL}/functions/v1/cron-auto-charge`;
+            fetch(fnUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                "x-cron-secret": Deno.env.get("CRON_SECRET") || "",
+              },
+              body: JSON.stringify({ org_id: siMeta.organization_id }),
+            }).catch(() => {});
+          }
+        }
         break;
       }
     }

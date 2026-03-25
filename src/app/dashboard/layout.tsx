@@ -42,6 +42,7 @@ const CreateInvoiceModal = dynamic(() => import("@/components/app/create-invoice
 const KeyboardShortcuts = dynamic(() => import("@/components/app/keyboard-shortcuts").then((m) => m.KeyboardShortcuts), { ssr: false });
 const UpgradeCelebration = dynamic(() => import("@/components/monetization/upgrade-celebration").then((m) => m.UpgradeCelebration), { ssr: false });
 const UpgradeModal = dynamic(() => import("@/components/app/upgrade-modal").then((m) => m.UpgradeModal), { ssr: false });
+const CtiScreenPop = dynamic(() => import("@/components/communications/screen-pop").then((m) => m.ScreenPop), { ssr: false });
 // ChronosFAB removed — will be re-enabled when Chronos feature is ready
 
 export default function DashboardLayout({
@@ -269,6 +270,7 @@ export default function DashboardLayout({
       <DesktopBridge />
       <DesktopBadge />
       <DesktopOfflineBanner />
+      <CtiScreenPopWrapper />
       {/* ChronosFAB removed — will be re-enabled when Chronos feature is ready */}
     </div>
     </InactivityGuard>
@@ -282,4 +284,10 @@ function PastDueBannerWrapper() {
   const currentOrg = useAuthStore((s) => s.currentOrg);
   if (!currentOrg?.id) return null;
   return <PastDueBanner orgId={currentOrg.id} />;
+}
+
+function CtiScreenPopWrapper() {
+  const currentOrg = useAuthStore((s) => s.currentOrg);
+  if (!currentOrg?.id) return null;
+  return <CtiScreenPop orgId={currentOrg.id} />;
 }

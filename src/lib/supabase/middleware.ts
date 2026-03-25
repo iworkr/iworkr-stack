@@ -172,7 +172,13 @@ export async function updateSession(request: NextRequest) {
 
   // ─── Public Routes (unauthenticated access allowed) ─────────
   const publicPaths = ["/auth", "/accept-invite", "/join", "/invite", "/api"];
-  if (publicPaths.some((p) => pathname.startsWith(p)) || isMarketingPage || isSignupPage) {
+  const portalPublicPaths = ["/portal/view", "/portal/login", "/portal/magic"];
+  if (
+    publicPaths.some((p) => pathname.startsWith(p)) ||
+    portalPublicPaths.some((p) => pathname.startsWith(p)) ||
+    isMarketingPage ||
+    isSignupPage
+  ) {
     return supabaseResponse;
   }
 
@@ -192,13 +198,31 @@ export async function updateSession(request: NextRequest) {
   const jwtOrgId = user?.app_metadata?.org_id as string | undefined;
 
   // ─── Portal Routes ────────────────────────────────────────────
-  // Portal is for participants/carers. Staff shouldn't access it.
+  // Portal is for participants/carers/portal_users. Staff shouldn't access it
+  // unless they also have a portal_access_grant or participant_network_member link.
   if (user && pathname.startsWith("/portal")) {
+    // /portal/c/ routes are the white-labeled client portal — allow any authenticated user
+    // (RLS handles data isolation via portal_access_grants)
+    if (pathname.startsWith("/portal/c/")) {
+      return supabaseResponse;
+    }
+
     // If JWT says user is staff (not participant/carer), redirect to dashboard
     if (jwtRole && !PORTAL_ROLES.includes(jwtRole)) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
+      // But check if they have a portal_access_grant first (they might be a portal user too)
+      const { data: hasPortalGrant } = await (supabase as SupabaseClient)
+        .from("portal_access_grants")
+        .select("id")
+        .eq("portal_user_id", user.id)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!hasPortalGrant) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
     }
 
     // If no JWT role, fall back to DB check
@@ -211,9 +235,20 @@ export async function updateSession(request: NextRequest) {
         .maybeSingle();
 
       if (!hasPortalLink) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/dashboard";
-        return NextResponse.redirect(url);
+        // Also check portal_access_grants for B2C/B2B portal users
+        const { data: hasPortalGrant } = await (supabase as SupabaseClient)
+          .from("portal_access_grants")
+          .select("id")
+          .eq("portal_user_id", user.id)
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
+
+        if (!hasPortalGrant) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/dashboard";
+          return NextResponse.redirect(url);
+        }
       }
     }
   }
